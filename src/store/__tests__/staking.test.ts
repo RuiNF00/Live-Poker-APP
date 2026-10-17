@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, closePackage, ledgerYears, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { backerLedger, closePackage, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -265,4 +265,20 @@ test('a package with sessions in two currencies counts its makeup in its own, at
   assert.equal(next!.currency, '€');
   const after = packageStates([mk({ currency: '$', buyIn: 200, cashOut: 0, stakes: [{ ...x, packageId: 'py' }] })], [next!], { table }).states.get('py')!;
   assert.deepEqual([after.currency, after.makeup], ['€', 300]);
+});
+
+test('a new package starts from the backer\'s last deal and the current trip', () => {
+  const list = [pkg({ id: 'a', createdAt: 1, kind: 'action', share: 10, markup: 1.2 }), pkg({ id: 'b', createdAt: 2, kind: 'makeup', share: 50, playerCut: 40 }), pkg({ id: 'c', backerId: 'b2', createdAt: 3, share: 5 })];
+  assert.deepEqual(packageDefaults('b1', list, 'Estoril'), { kind: 'makeup', share: 50, markup: 1, playerCut: 40, name: 'Estoril' });
+  assert.deepEqual(packageDefaults('b9', list), { kind: 'action', share: 20, markup: 1.1, playerCut: 50, name: '' });
+});
+
+test('last stake terms skip package pieces and other backers', () => {
+  const list = [
+    mk({ startedAt: 1, stakes: [{ backerId: 'b1', share: 15, markup: 1.15 }] }),
+    mk({ startedAt: 2, stakes: [{ backerId: 'b1', share: 30, markup: 1, unpaid: true }, { backerId: 'b2', share: 5, markup: 1.3 }] }),
+    mk({ startedAt: 3, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] }),
+  ];
+  assert.deepEqual(lastStakeTerms('b1', list), { share: 30, markup: 1, unpaid: true });
+  assert.equal(lastStakeTerms('b3', list), null);
 });

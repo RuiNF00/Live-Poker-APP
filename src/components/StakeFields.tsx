@@ -9,7 +9,7 @@ import { View } from 'react-native';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { stakesOf, stakingSummary } from '@/store/session-math';
-import { stakeCost } from '@/store/staking';
+import { lastStakeTerms, stakeCost } from '@/store/staking';
 import { useStore } from '@/store/store';
 import type { Session, Stake } from '@/store/types';
 
@@ -96,14 +96,23 @@ function AddStake({ s, maxShare, taken, onAdd, onCancel }: { s: Session; maxShar
   const open = packages.filter((p) => p.backerId === who && !p.closedAt);
   const [pkgId, setPkgId] = useState<string | null>(open[0]?.id ?? null);
   const pkg = open.find((p) => p.id === pkgId);
-  const [share, setShare] = useState(Math.min(20, maxShare) || maxShare);
-  const [markup, setMarkup] = useState(1.1);
-  const [paid, setPaid] = useState(true);
+  // Outside a package, start from what this backer took last time: the deal is usually the same.
+  const last = who ? lastStakeTerms(who, sessions) : null;
+  const fit = (n: number) => Math.min(n, maxShare) || maxShare;
+  const [share, setShare] = useState(fit(last?.share ?? 20));
+  const [markup, setMarkup] = useState(last?.markup ?? 1.1);
+  const [paid, setPaid] = useState(!last?.unpaid);
 
   const pick = (id: string | null) => {
     setWho(id);
     setNaming(false);
     setPkgId(packages.find((p) => p.backerId === id && !p.closedAt)?.id ?? null);
+    const prev = id ? lastStakeTerms(id, sessions) : null;
+    if (prev) {
+      setShare(fit(prev.share));
+      setMarkup(prev.markup);
+      setPaid(!prev.unpaid);
+    }
   };
   const finalShare = Math.min(pkg ? pkg.share : share, maxShare);
 

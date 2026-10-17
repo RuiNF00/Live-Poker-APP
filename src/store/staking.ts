@@ -431,3 +431,23 @@ export function pieceSteps(r: BackerLedgerRow) {
     balance: r.owed - (r.stake.unpaid ? r.cost : 0),
   };
 }
+
+/**
+ * What a new package with this backer starts from: the terms of their most
+ * recent package (deals rarely change between series), named after the trip
+ * the player is on when there is one.
+ */
+export function packageDefaults(backerId: string, packages: StakePackage[], tripName = ''): Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut' | 'name'> {
+  const last = packages.filter((p) => p.backerId === backerId).sort((a, b) => b.createdAt - a.createdAt)[0];
+  return last
+    ? { kind: last.kind, share: last.share, markup: last.markup, playerCut: last.playerCut, name: tripName }
+    : { kind: 'action', share: 20, markup: 1.1, playerCut: 50, name: tripName };
+}
+
+/** The % and markup last sold to this backer outside a package, and whether they paid on the spot. */
+export function lastStakeTerms(backerId: string, sessions: Session[]): { share: number; markup: number; unpaid: boolean } | null {
+  let best: { at: number; x: Stake } | null = null;
+  for (const s of sessions)
+    for (const x of s.stakes ?? []) if (x.backerId === backerId && !x.packageId && (!best || s.startedAt > best.at)) best = { at: s.startedAt, x };
+  return best ? { share: best.x.share, markup: best.x.markup || 1, unpaid: !!best.x.unpaid } : null;
+}
