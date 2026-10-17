@@ -9,6 +9,7 @@ export type Lang = 'pt' | 'en';
 function detect(): Lang {
   try {
     // Required lazily so plain Node (the tests) falls back to Portuguese.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getLocales } = require('expo-localization') as typeof import('expo-localization');
     const code = getLocales()[0]?.languageCode;
     return !code || code === 'pt' ? 'pt' : 'en';

@@ -13,7 +13,7 @@ import { positions, replay, isComplete } from '@/poker/engine';
 import { amount, blindsLabel, duration, shortDate, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { useStore } from '@/store/store';
-import { BRAND, C, R, ff } from '@/theme';
+import { C, R, ff } from '@/theme';
 
 export default function HandsScreen() {
   const insets = useSafeAreaInsets();
