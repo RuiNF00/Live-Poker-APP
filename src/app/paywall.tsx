@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { chargeNoticeAt } from '@/billing/nudges';
-import { usePro } from '@/billing/pro';
+import { restoreNotice, usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
@@ -38,7 +38,9 @@ export default function Paywall() {
   const monthly = plans.find((p) => p.id === 'monthly');
   const annual = plans.find((p) => p.id === 'annual');
   const saving = monthly && annual ? annualSavingPct(monthly.price, annual.price) : annualSavingPct(PLANS.monthly.price, PLANS.annual.price);
-  const chosen = sel === 'annual' ? annual : monthly;
+  // An offering without one of the plans still buys in one tap: the other one is chosen.
+  const chosen = sel === 'annual' ? (annual ?? monthly) : (monthly ?? annual);
+  const plan: PlanId = chosen?.id ?? sel;
   const trial = chosen?.trialDays ?? 0;
 
   // Prices failed earlier (offline at launch): try again now that the player is looking at them.
@@ -72,7 +74,7 @@ export default function Paywall() {
 
   const onBuy = async () => {
     setBusy('buy');
-    const res = await purchase(sel, reason);
+    const res = await purchase(plan, reason);
     setBusy(null);
     if (res === 'ok') {
       // A trial just started: the day-5 reminder the timeline promised, asked once, over this screen.
@@ -87,20 +89,25 @@ export default function Paywall() {
       return unlocked();
     }
     // Cancelled in the store sheet: stay here, nothing to say.
-    if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
+    if (res === 'pending') {
+      // Ask to Buy or a card still being checked: nothing more to do here, Pro turns on by itself.
+      notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
+      takeResume();
+      close();
+    } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
     else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
   const onRestore = async () => {
     setBusy('restore');
-    const ok = await restore();
+    const res = await restore();
     setBusy(null);
-    if (ok) return unlocked();
-    notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+    if (res === 'ok') return unlocked();
+    restoreNotice(res, store);
   };
 
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
-  const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[sel].period) }) : '';
+  const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[plan].period) }) : '';
 
   if (isPro && wasPro) return <AlreadyPro onDone={close} />;
 
@@ -147,14 +154,18 @@ export default function Paywall() {
             <Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={reloadPlans} />
           </View>
         ) : plans.length === 0 ? (
-          <ActivityIndicator color={C.accent} />
+          // Bounded by the store call's deadline: this turns into the retry above, never spins for good.
+          <Row gap={S.sm} style={{ justifyContent: 'center', paddingVertical: S.lg }}>
+            <ActivityIndicator color={C.accent} />
+            <T v="small">{t('A carregar os preços da {store}…', { store })}</T>
+          </Row>
         ) : (
           <View style={{ gap: S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">Sweatbook Pro</T>
             {annual ? (
               <PlanCard
-                active={sel === 'annual'}
+                active={plan === 'annual'}
                 onPress={() => setSel('annual')}
                 title={t('Anual')}
                 big={annual.priceString}
@@ -164,7 +175,7 @@ export default function Paywall() {
                 compact={compact}
               />
             ) : null}
-            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact} /> : null}
+            {monthly ? <PlanCard active={plan === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact} /> : null}
             {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
@@ -217,8 +228,8 @@ export default function Paywall() {
             </T>
           </Pressable>
           <Pressable onPress={onRestore} disabled={!!busy} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-            <T v="tiny" color={C.textDim}>
-              {t('Restaurar compras')}
+            <T v="tiny" color={busy === 'restore' ? C.accent : C.textDim}>
+              {busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')}
             </T>
           </Pressable>
         </Row>
