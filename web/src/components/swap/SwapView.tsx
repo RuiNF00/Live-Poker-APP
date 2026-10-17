@@ -1,0 +1,343 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { Mark, Wordmark } from '@/components/Brand';
+import { StoreButtons } from '@/components/landing/StoreButtons';
+import { landingCopy } from '@/components/landing/copy';
+import type { Locale } from '@/lib/i18n';
+import { readLocal, writeLocal } from '@/lib/local';
+import { storeLinks } from '@/lib/storeLinks';
+import { swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
+import { track } from '@/lib/track';
+import { swapCopy } from './copy';
+import '@/app/landing.css';
+import '@/components/live/live.css';
+import './swap.css';
+
+const POLL_MS = 30000;
+const other = (s: Side): Side => (s === 'a' ? 'b' : 'a');
+
+export function SwapView({ locale, initial, invite }: { locale: Locale; initial: PublicSwap; invite: string | null }) {
+  const c = swapCopy(locale);
+  const id = initial.id;
+  const [swap, setSwap] = useState(initial);
+  const [token, setToken] = useState<string | null>(null);
+  const [gone, setGone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [name, setName] = useState(initial.terms.b.name);
+  const t = swap.terms;
+  const you = token ? swap.you : null;
+  const names: Record<Side, string> = { a: t.a.name, b: swap.confirmedName || t.b.name };
+
+  const load = useCallback(
+    async (tok: string | null) => {
+      try {
+        const res = await fetch(`/api/swaps/${encodeURIComponent(id)}`, { cache: 'no-store', headers: tok ? { 'x-edit-token': tok } : {} });
+        if (res.status === 404) return setGone(true);
+        if (res.ok) setSwap(((await res.json()) as { swap: PublicSwap }).swap);
+      } catch {}
+    },
+    [id],
+  );
+
+  // The private link carries the token in the fragment (never sent to the server); keep it here.
+  useEffect(() => {
+    const m = /[#&]k=([a-f0-9]{32,128})/.exec(window.location.hash);
+    if (m) {
+      writeLocal(`swap:${id}`, m[1]);
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    const tok = m?.[1] ?? readLocal<string>(`swap:${id}`);
+    setToken(tok);
+    if (tok) load(tok);
+    track('share_viewed', { kind: 'swap', swapId: id });
+    if (invite) writeLocal('invite', invite);
+  }, [id, invite, load]);
+
+  useEffect(() => {
+    if (gone) return;
+    const poll = () => document.visibilityState === 'visible' && load(token);
+    const timer = setInterval(poll, POLL_MS);
+    document.addEventListener('visibilitychange', poll);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', poll);
+    };
+  }, [gone, load, token]);
+
+  const fmt = new Intl.NumberFormat(locale === 'pt' ? 'de-DE' : 'en-GB', { maximumFractionDigits: 2 });
+  const money = (n: number) => {
+    const sign = n < 0 ? '−' : '';
+    const a = fmt.format(Math.abs(n));
+    return locale === 'pt' ? `${sign}${a}${t.currency}` : `${sign}${t.currency}${a}`;
+  };
+  const pctLabel = (n: number) => `${fmt.format(n)}%`;
+  const when = (iso: string | number) =>
+    new Date(iso).toLocaleString(locale === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  async function send(url: string, init: RequestInit, onToken?: (tok: string) => void) {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(url, { ...init, headers: { 'content-type': 'application/json', ...(token ? { 'x-edit-token': token } : {}), ...init.headers } });
+      const j = (await res.json().catch(() => ({}))) as { swap?: PublicSwap; token?: string; error?: string };
+      if (j.swap) setSwap(j.swap);
+      if (j.token && onToken) onToken(j.token);
+      if (!res.ok) setError(c.errors[j.error ?? ''] ?? c.errors.generic);
+      return res.ok;
+    } catch {
+      setError(c.errors.generic);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const confirm = () =>
+    send(`/api/swaps/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({ name }) }, (tok) => {
+      writeLocal(`swap:${id}`, tok);
+      setToken(tok);
+    });
+
+  if (gone) {
+    return (
+      <main className="live">
+        <Top state={null} c={c} />
+        <section className="live-card">
+          <p className="live-sub">{c.gone}</p>
+        </section>
+      </main>
+    );
+  }
+
+  const bal = swapBalance(t, swap.entries);
+  const results = swap.entries.filter((e) => e.kind === 'result');
+  const payments = swap.entries.filter((e) => e.kind === 'payment');
+  const confirmed = !!swap.confirmedAt;
+  const creditor: Side | null = Math.abs(bal.net) < 0.005 ? null : bal.net > 0 ? 'a' : 'b';
+  const stores = storeLinks({ utm_source: 'web', utm_medium: 'swap', utm_campaign: id }, invite);
+  const privateLink = token && you ? `${window.location.origin}/swap/${id}#k=${token}` : '';
+
+  return (
+    <main className="live">
+      <Top state={confirmed ? 'confirmed' : 'pending'} c={c} />
+
+      <section className="live-head">
+        <p className="live-eyebrow">{[c.swap, t.scope === 'series' ? c.series : c.event, t.venue].filter(Boolean).join(' · ')}</p>
+        <h1>{t.title}</h1>
+        <p className="live-sub">
+          {names.a} × {names.b}
+        </p>
+      </section>
+
+      <section className="live-card sw-terms">
+        <p className="sw-term">
+          <b>{pctLabel(t.a.pct)}</b> {c.share(names.a, names.b)}
+        </p>
+        <p className="sw-term">
+          <b>{pctLabel(t.b.pct)}</b> {c.share(names.b, names.a)}
+        </p>
+        {t.note ? <p className="sw-note">“{t.note}”</p> : null}
+        {confirmed ? (
+          <div className="sw-seal">
+            <p className="sw-seal-line">✓ {c.confirmedBy(swap.confirmedName ?? names.b, when(swap.confirmedAt!))}</p>
+            {swap.code ? (
+              <p className="sw-code">
+                <span className="live-label">{c.code}</span> <b>{swap.code}</b>
+              </p>
+            ) : null}
+            <p className="sw-hint">{c.codeHint}</p>
+          </div>
+        ) : null}
+      </section>
+
+      {!confirmed && you !== 'a' ? (
+        <section className="live-card sw-form">
+          <h2>{c.confirmTitle(t.a.name)}</h2>
+          <label className="sw-field">
+            <span className="live-label">{c.yourName}</span>
+            <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+          </label>
+          <button className="lp-btn main sw-btn" disabled={busy || !name.trim()} onClick={confirm}>
+            {busy ? c.confirming : c.confirm}
+          </button>
+          <p className="sw-hint">{c.confirmFine}</p>
+          {error ? <p className="sw-error">{error}</p> : null}
+        </section>
+      ) : null}
+      {!confirmed && you === 'a' ? <p className="live-updated">{c.waitingFor(t.b.name)}</p> : null}
+
+      {confirmed ? (
+        <section className="live-card">
+          <p className="live-label">{creditor ? c.owes(names[other(creditor)], names[creditor]) : c.balance}</p>
+          <p className={`live-big ${creditor ? '' : 'sw-dim'}`}>{creditor ? money(Math.abs(bal.net)) : c.square}</p>
+          {bal.aOwes >= 0.005 && bal.bOwes >= 0.005 ? <p className="sw-hint sw-line">{c.owesSplit(names.a, money(bal.aOwes), names.b, money(bal.bOwes))}</p> : null}
+          {bal.aPaid >= 0.005 ? <p className="sw-hint sw-line">{c.paid(names.a, money(bal.aPaid))}</p> : null}
+          {bal.bPaid >= 0.005 ? <p className="sw-hint sw-line">{c.paid(names.b, money(bal.bPaid))}</p> : null}
+        </section>
+      ) : null}
+
+      {confirmed && !swap.entries.length ? <p className="live-updated">{c.noEntries}</p> : null}
+
+      {results.length ? (
+        <section className="sw-list">
+          <p className="live-label">{c.prizes}</p>
+          {results.map((e) => (
+            <EntryRow key={e.id} e={e} mine={e.side === you} c={c} onRemove={() => send(`/api/swaps/${id}/entries/${e.id}`, { method: 'DELETE' })} busy={busy}>
+              <p className="sw-row-title">{e.event || t.title}</p>
+              <p className="sw-row-sub">
+                {[c.won(names[e.side]) + ' ' + money(e.amount), e.finish ? c.place(e.finish) : ''].filter(Boolean).join(' · ')}
+              </p>
+              <p className="sw-row-owe">
+                {c.owes(names[e.side], names[other(e.side)])}: {c.owesPart(pctLabel(t[e.side].pct), money((t[e.side].pct / 100) * e.amount))}
+              </p>
+            </EntryRow>
+          ))}
+        </section>
+      ) : null}
+
+      {payments.length ? (
+        <section className="sw-list">
+          <p className="live-label">{c.payments}</p>
+          {payments.map((e) => (
+            <EntryRow key={e.id} e={e} mine={e.side === you} c={c} onRemove={() => send(`/api/swaps/${id}/entries/${e.id}`, { method: 'DELETE' })} busy={busy}>
+              <p className="sw-row-title">{c.paidTo(names[e.side], names[other(e.side)])}</p>
+              <p className="sw-row-sub">
+                {money(e.amount)} · {when(e.at)}
+              </p>
+            </EntryRow>
+          ))}
+        </section>
+      ) : null}
+
+      {confirmed && you ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
+
+      {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/${id}?k=${token}`} /> : null}
+
+      <p className="live-updated">{c.autoRefresh}</p>
+
+      <section className="live-cta" id="baixar">
+        <Mark size={44} />
+        <h2>{c.ctaTitle}</h2>
+        <p>{c.ctaBody}</p>
+        <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
+      </section>
+    </main>
+  );
+}
+
+type C = ReturnType<typeof swapCopy>;
+
+function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
+  return (
+    <header className="live-top">
+      <a href="/" className="live-brand" aria-label="Sweatbook">
+        <Mark size={26} />
+        <Wordmark className="live-word" />
+      </a>
+      {state ? (
+        <span className={`live-state ${state === 'confirmed' ? 'live-state-live sw-state-ok' : 'live-state-paused'}`}>
+          <i />
+          {c[state]}
+        </span>
+      ) : null}
+    </header>
+  );
+}
+
+function EntryRow({ e, mine, c, onRemove, busy, children }: { e: SwapEntry; mine: boolean; c: C; onRemove: () => void; busy: boolean; children: React.ReactNode }) {
+  return (
+    <div className={`sw-row sw-side-${e.side}`}>
+      <div className="sw-row-main">{children}</div>
+      {mine ? (
+        <button className="sw-remove" disabled={busy} onClick={onRemove} aria-label={c.remove}>
+          {c.remove}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error: string; title: string; onAdd: (e: object) => Promise<boolean> }) {
+  const [kind, setKind] = useState<'result' | 'payment'>('result');
+  const [event, setEvent] = useState(title);
+  const [amount, setAmount] = useState('');
+  const [finish, setFinish] = useState('');
+  const value = Number(amount.replace(/\s/g, '').replace(',', '.'));
+  const ok = Number.isFinite(value) && (kind === 'result' ? value >= 0 && amount !== '' : value > 0);
+  const submit = async () => {
+    const done = await onAdd({
+      cid: Math.random().toString(36).slice(2, 12),
+      kind,
+      amount: value,
+      event: kind === 'result' ? event : '',
+      finish: kind === 'result' && finish ? Number(finish) : null,
+    });
+    if (done) {
+      setAmount('');
+      setFinish('');
+    }
+  };
+  return (
+    <section className="live-card sw-form">
+      <p className="live-label">{c.addTitle}</p>
+      <div className="sw-seg" role="tablist">
+        <button role="tab" aria-selected={kind === 'result'} className={kind === 'result' ? 'on' : ''} onClick={() => setKind('result')}>
+          {c.addPrize}
+        </button>
+        <button role="tab" aria-selected={kind === 'payment'} className={kind === 'payment' ? 'on' : ''} onClick={() => setKind('payment')}>
+          {c.addPayment}
+        </button>
+      </div>
+      {kind === 'result' ? (
+        <label className="sw-field">
+          <span className="live-label">{c.eventName}</span>
+          <input value={event} maxLength={80} placeholder={c.eventPlaceholder} onChange={(e) => setEvent(e.target.value)} />
+        </label>
+      ) : null}
+      <div className="sw-pair">
+        <label className="sw-field">
+          <span className="live-label">{kind === 'result' ? c.amountPrize : c.amountPayment}</span>
+          <input value={amount} inputMode="decimal" onChange={(e) => setAmount(e.target.value)} />
+        </label>
+        {kind === 'result' ? (
+          <label className="sw-field sw-narrow">
+            <span className="live-label">{c.finish}</span>
+            <input value={finish} inputMode="numeric" onChange={(e) => setFinish(e.target.value.replace(/\D/g, ''))} />
+          </label>
+        ) : null}
+      </div>
+      <button className="lp-btn main sw-btn" disabled={busy || !ok} onClick={submit}>
+        {busy ? c.saving : c.save}
+      </button>
+      <p className="sw-hint">{c.onlyYours}</p>
+      {error ? <p className="sw-error">{error}</p> : null}
+    </section>
+  );
+}
+
+function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <section className="live-card sw-form">
+      <p className="sw-hint">{c.keepLink}</p>
+      <div className="sw-copy">
+        <code>{link}</code>
+        <button
+          className="lp-btn ghost"
+          onClick={() =>
+            navigator.clipboard?.writeText(link).then(
+              () => setCopied(true),
+              () => {},
+            )
+          }>
+          {copied ? c.copied : c.copy}
+        </button>
+      </div>
+      <a className="lp-btn main sw-btn" href={appLink}>
+        {c.openApp}
+      </a>
+    </section>
+  );
+}

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// iOS universal links: /h/<id> (shared hand), /r/<code> (invite) and /live/<id> (backer page)
+// iOS universal links: /h/<id> (shared hand), /r/<code> (invite), /live/<id> (backer page) and /swap/<id>
 // open the app when installed; everything else, and the demo hand, stays in the browser.
 // Needs APPLE_TEAM_ID (Apple Developer > Membership) on the host.
 export function GET() {
@@ -19,6 +19,7 @@ export function GET() {
             { '/': '/live/*/og', exclude: true },
             { '/': '/r/*' },
             { '/': '/live/*' },
+            { '/': '/swap/*' },
           ],
         },
       ],

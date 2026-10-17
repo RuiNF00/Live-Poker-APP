@@ -10,6 +10,7 @@ import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, range
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
+import { SwapsEntry } from '@/components/swaps/SwapsEntry';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
@@ -185,6 +186,7 @@ function BankrollTab() {
         </View>
 
         <StakingEntry />
+        <SwapsEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (
