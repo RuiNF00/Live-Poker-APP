@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
+import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festivals';
 import { EMPTY_PLAN } from '../festival-plan';
 import { currentTrip, toTripCurrency, tripFromFestival, tripSessions, tripsIn, tripSummary } from '../trip-math';
 import type { Session, Trip } from '../types';
@@ -89,4 +89,12 @@ test('tripFromFestival spans the planned events plus a travel day each side', ()
   const all = tripFromFestival('t', F, EMPTY_PLAN);
   assert.equal(new Date(all.from).getDate(), 1);
   assert.equal(new Date(all.to).getDate(), 18);
+});
+
+test('tripFromFestival with no schedule yet uses the official dates', () => {
+  const x = tripFromFestival('t', BAHIA_JAN_2027, EMPTY_PLAN);
+  assert.equal(x.currency, 'R$');
+  assert.equal(new Date(x.from).getDate(), 21);
+  assert.equal(new Date(x.from).getMonth(), 0);
+  assert.equal(new Date(x.to).getDate(), 31);
 });

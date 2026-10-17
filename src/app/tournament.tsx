@@ -12,6 +12,7 @@ import { AmountPad } from '@/components/AmountPad';
 import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { askExactAlarms, exactAlarmsAllowed } from '@/lib/lock-screen/reminder';
 import { useSheetAnimation } from '@/lib/motion';
 import { canReadStructure, photoStructure } from '@/lib/structure-photo';
 import { bbs, chips, decimal, money, timeOf } from '@/poker/format';
@@ -116,6 +117,7 @@ function Tournament({ s }: { s: Session }) {
       <Stack.Screen options={{ title: t('Modo torneio') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <LevelCard s={s} st={st} onLevel={goLevel} onSync={syncMinutes} onPause={togglePause} />
+        {s.levelMinutes ? <ExactAlarms /> : null}
 
         <Section title={t('O teu stack')}>
           <Card onPress={() => setPad('stack')} accessibilityLabel={t('Atualizar stack')} style={{ gap: S.md }}>
@@ -477,5 +479,32 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+/** Android only, when exact alarms are refused: the level reminders may come a few minutes late, so offer the setting. */
+function ExactAlarms() {
+  const [allowed, setAllowed] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      let live = true;
+      void exactAlarmsAllowed().then((ok) => live && setAllowed(ok));
+      return () => {
+        live = false;
+      };
+    }, []),
+  );
+  if (allowed || Platform.OS !== 'android') return null;
+  return (
+    <Card tone="inset" style={{ gap: S.sm }}>
+      <Row>
+        <Ionicons name="alarm-outline" size={16} color={C.warn} />
+        <T v="h3" style={{ flex: 1 }}>
+          {t('Os avisos de nível podem chegar atrasados')}
+        </T>
+      </Row>
+      <T v="small">{t('Com o telemóvel parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos chegam à hora; o relógio aqui está sempre certo.')}</T>
+      <Button size="sm" kind="secondary" icon="alarm-outline" title={t('Permitir alarmes exatos')} onPress={() => void askExactAlarms().then(setAllowed)} />
+    </Card>
   );
 }

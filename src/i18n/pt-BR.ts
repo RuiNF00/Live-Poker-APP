@@ -1195,6 +1195,10 @@ const ptBR: Record<string, string> = {
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
   'Fotografar a folha da estrutura: disponível na versão da loja': 'Fotografar a folha da estrutura: disponível na versão da loja do app',
   'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'Não conseguimos ler os níveis nesta foto. Tente com mais luz e a folha reta, ou cole o texto.',
+  // Festival with dates only
+  'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': 'A programação ainda não saiu. Os torneios aparecem aqui quando o organizador publicar; você já pode criar a viagem.',
+  'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Datas a confirmar: por enquanto o organizador só publicou os dias do festival. Os torneios aparecem aqui quando sair a programação.',
+  'Com o telemóvel parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos chegam à hora; o relógio aqui está sempre certo.': 'Com o celular parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos eles chegam na hora; o relógio aqui está sempre certo.',
   // Swaps: groups, history, read-only copy
   "Tens 1 swap por acertar. A outra pessoa fica com a cópia dela.": "Você tem 1 swap por acertar. A outra pessoa fica com a cópia dela.",
   "Tens {n} swaps por acertar. A outra pessoa fica com a cópia dela.": "Você tem {n} swaps por acertar. A outra pessoa fica com a cópia dela.",
