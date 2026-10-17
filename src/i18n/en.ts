@@ -470,6 +470,11 @@ const en: Record<string, string> = {
   'Incluir as minhas notas da mão': 'Include my notes on the hand',
   'Vale para links novos. Uma mão já partilhada fica como estava.': 'Applies to new links. A hand already shared stays as it was.',
   'Novos: {list}. O que já tinhas ficou.': 'New: {list}. Everything you had is still there.',
+  'Não foi possível guardar': 'Couldn’t save',
+  'O telemóvel recusou gravar os dados (pouco espaço livre?). Tenta libertar espaço; a app volta a tentar sozinha.': 'Your phone refused to save the data (low on storage?). Try freeing some space; the app will retry on its own.',
+  'Algo correu mal neste ecrã': 'Something went wrong on this screen',
+  'As tuas mãos estão guardadas no telemóvel. Tenta de novo; se voltar a acontecer, fecha e abre a app.': 'Your hands are saved on your phone. Try again; if it happens again, close and reopen the app.',
+  'Tentar de novo': 'Try again',
 };
 
 export default en;
