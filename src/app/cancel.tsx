@@ -184,7 +184,7 @@ export default function Cancel() {
               ) : null}
 
               {reason === 'slow' ? (
-                <OfferCard icon="flash" title={t('Guarda em 5 toques')} body={t('Posição, as tuas 2 cartas e «Guardar já». O resto completas depois da sessão.')} />
+                <OfferCard icon="flash" title={t('Guarda em 4 toques')} body={t('Posição, as tuas 2 cartas e «Guardar já». O resto completas depois da sessão.')} />
               ) : null}
 
               {reason === 'feature' || reason === 'slow' || reason === 'otherApp' ? (
