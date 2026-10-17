@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cors } from '@/lib/cors';
-import { voteFromComment } from '@/lib/hand';
-import { getStore, VOTE_CHOICES, type VoteChoice } from '@/lib/store';
+import { resolveHand, voteFromComment } from '@/lib/hand';
+import { getStore, loadShare, VOTE_CHOICES, type VoteChoice } from '@/lib/store';
 import { ipHash, limited, voterUuid } from '@/lib/abuse';
 
 /** Votes from the web plus the app's "🗳️ <choice>" comments. */
@@ -33,5 +33,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // The browser's id is only a key for re-votes: the server derives the stored id, and SQL
   // caps voters per IP per hand.
   await getStore().vote(id, voterUuid(voterId), choice, ipHash(req));
-  return NextResponse.json({ counts: await counts(id) }, { headers: cors });
+  // The challenge page only had the hand up to the decision: the vote unlocks the rest.
+  const share = await loadShare(id);
+  const hand = share ? (resolveHand(share.payload)?.hand ?? null) : null;
+  return NextResponse.json({ counts: await counts(id), hand }, { headers: cors });
 }

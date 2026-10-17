@@ -24,6 +24,8 @@ import { track } from '@/lib/track';
 interface Props {
   shareId: string;
   hand: HandRecord;
+  /** `hand` stops at the challenge decision; the whole hand comes back with the vote. */
+  teaser?: boolean;
   title: string | null;
   revealAll: boolean;
   quiz: QuizSpot | null;
@@ -41,7 +43,9 @@ interface Props {
 const PLAY_MS = 1100;
 
 export function ShareView(props: Props) {
-  const { hand, locale, quiz } = props;
+  const { locale, quiz } = props;
+  const [hand, setHand] = useState(props.hand);
+  const [revealed, setRevealed] = useState(!props.teaser);
   const d = t(locale);
   const steps = useMemo(() => buildReplay(hand, { revealAll: props.revealAll, locale }), [hand, props.revealAll, locale]);
   const quizStep = useMemo(
@@ -53,6 +57,21 @@ export function ShareView(props: Props) {
   const [playing, setPlaying] = useState(false);
   const [mode, setMode] = useState<AmountMode>('chips');
   const [comments, setComments] = useState(props.initialComments);
+
+  /** The whole hand arrived with a vote: replay it, and load the comments the page held back. */
+  const reveal = useCallback(
+    (full: HandRecord) => {
+      if (revealed) return;
+      setHand(full);
+      setRevealed(true);
+      if (props.allowComments)
+        fetch(`/api/hands/${props.shareId}/comments`)
+          .then((r) => r.json())
+          .then((j) => setComments(j.comments ?? []))
+          .catch(() => {});
+    },
+    [revealed, props.allowComments, props.shareId],
+  );
   const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>(quizStep > 0 ? 'open' : 'pending');
   // Until the friend has voted, nothing may give the answer away: notes, tags, later actions, comments.
   const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
@@ -70,6 +89,23 @@ export function ShareView(props: Props) {
     const id = setTimeout(() => setPlaying(true), 700);
     return () => clearTimeout(id);
   }, [props.shareId, quizStep]);
+
+  // Back after voting on a challenge: the same vote again (the server keeps one per voter)
+  // brings the whole hand.
+  const revealRef = useRef(reveal);
+  revealRef.current = reveal;
+  useEffect(() => {
+    const choice = readLocal<string>(`quiz:${props.shareId}`);
+    if (!props.teaser || !choice) return;
+    fetch(`/api/hands/${props.shareId}/vote`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ voterId: voterId(), choice }),
+    })
+      .then((r) => r.json())
+      .then((j) => j.hand && revealRef.current(j.hand as HandRecord))
+      .catch(() => {});
+  }, [props.shareId, props.teaser]);
 
   /** Moves to a step, stopping at the quiz spot the first time it is reached. */
   const goTo = useCallback(
@@ -139,7 +175,7 @@ export function ShareView(props: Props) {
 
   return (
     <main className="page">
-      <Header {...props} spoilers={!quizHidesSpoilers} />
+      <Header {...props} hand={hand} spoilers={!quizHidesSpoilers} />
 
       <section className="replayer" aria-label="Replayer" ref={replayer}>
         <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
@@ -157,6 +193,8 @@ export function ShareView(props: Props) {
             mode={mode}
             locale={locale}
             onDone={finishQuiz}
+            onHand={reveal}
+            hideAnswer={!revealed}
           />
         )}
 
