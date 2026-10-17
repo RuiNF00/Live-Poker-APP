@@ -12,7 +12,20 @@ import { notifications, setup } from './lock-screen/reminder';
 
 const CHANNEL = 'festival';
 
-export async function syncFestivalReminders(f: Festival, plan: FestivalPlan, now = Date.now()): Promise<void> {
+/** Every planned-tournament reminder, of every festival. */
+export async function cancelFestivalReminders(): Promise<void> {
+  const n = notifications();
+  if (!n) return;
+  try {
+    const scheduled = await n.getAllScheduledNotificationsAsync();
+    await Promise.all(scheduled.filter((x) => x.content.data?.url === 'sweatbook://festival').map((x) => n.cancelScheduledNotificationAsync(x.identifier)));
+  } catch (e) {
+    console.warn('[festival] cancel', e);
+  }
+}
+
+/** `on`: the "Torneios planeados" switch in Settings; off only clears what was scheduled. */
+export async function syncFestivalReminders(f: Festival, plan: FestivalPlan, on = true, now = Date.now()): Promise<void> {
   const n = notifications();
   if (!n) return;
   try {
@@ -23,7 +36,7 @@ export async function syncFestivalReminders(f: Festival, plan: FestivalPlan, now
     const prefix = f.id + ':';
     const scheduled = await n.getAllScheduledNotificationsAsync();
     await Promise.all(scheduled.filter((x) => x.identifier.startsWith(prefix)).map((x) => n.cancelScheduledNotificationAsync(x.identifier)));
-    if (!(await n.getPermissionsAsync()).granted) return;
+    if (!on || !(await n.getPermissionsAsync()).granted) return;
     // iOS keeps at most 64 pending local notifications; a festival plan stays well under that.
     for (const r of planReminders(f, plan, now).slice(0, 40)) {
       await n.scheduleNotificationAsync({

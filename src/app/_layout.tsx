@@ -120,6 +120,8 @@ export default function RootLayout() {
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
             <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
+            <Stack.Screen name="festivals" options={{ title: t('Festivais') }} />
+            <Stack.Screen name="festival-new" options={{ title: t('Adicionar o meu festival'), presentation: 'modal' }} />
             <Stack.Screen name="tournament" options={{ title: t('Modo torneio') }} />
             <Stack.Screen name="tournament-stats" options={{ title: t('Torneios') }} />
             <Stack.Screen name="tournament-card" options={{ title: t('Currículo de torneios'), presentation: 'modal' }} />
