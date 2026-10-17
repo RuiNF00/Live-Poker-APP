@@ -2048,6 +2048,7 @@ const en: Record<string, string> = {
   'E tu, como acabaste?': 'How did you finish?',
   'Quando {name} registar o resultado, recebes um aviso com as contas.': "When {name} records their result, you'll get a notification with the balance.",
   'Envia o link só a {name}: quem o abrir primeiro pode confirmar.': 'Send the link only to {name}: whoever opens it first can confirm.',
+  'Mãos jogadas': 'Hands played',
 };
 
 export default en;

@@ -340,6 +340,8 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     const cashOut = parseNum(get(r, 'cashOut'));
     const net = parseNum(get(r, 'profit'));
     const srcExp = Math.abs(parseNum(get(r, 'expenses')) ?? 0);
+    const tips = Math.abs(parseNum(get(r, 'tips')) ?? 0);
+    const handsDealt = parseNum(get(r, 'handsDealt'));
     if (buyIn === null && cashOut === null && net === null) {
       unreadable++;
       failed.push({ line, reason: 'noMoney', value: [get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')].filter(Boolean).join(' · ') || preview(r) });
@@ -359,11 +361,11 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     if (net !== null) {
       if (buyIn === null && cashOut === null) {
         // Only the result is known (Pokerbase): put it all on one side.
-        const g = net + expenses;
+        const g = net + expenses + tips;
         if (g >= 0) out = g;
         else cost = -g;
       } else {
-        const diff = round2(net - (out - cost - Math.abs(addOn) - expenses));
+        const diff = round2(net - (out - cost - Math.abs(addOn) - expenses - tips));
         if (diff < 0) expenses = round2(expenses - diff);
         else if (diff > 0 && (kind === 'cash' || out > 0)) out = round2(out + diff);
         else if (diff > 0) expenses = round2(expenses - diff);
@@ -429,6 +431,8 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
       finish: kind === 'mtt' && finish && finish > 0 ? Math.round(finish) : undefined,
       field: kind === 'mtt' && field && field > 0 ? Math.round(field) : undefined,
       expenses: expenses ? round2(expenses) : undefined,
+      ...(tips ? { tips: round2(tips) } : null),
+      ...(handsDealt && handsDealt > 0 ? { handsDealt: Math.round(handsDealt) } : null),
       sb,
       bb,
       ante: 0,
@@ -452,4 +456,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb');

@@ -89,3 +89,12 @@ test('line numbers skip the blank lines and the title above the header', () => {
   assert.equal(r.sessions.length, 1);
   assert.deepEqual(r.failed, [{ line: 6, reason: 'badDate', value: 'soon' }]);
 });
+
+test('tips and hands get their own fields, and the result still lands on the file', () => {
+  const r = run(['Date,Venue,Buy-in,Cash-out,Tips,Hands,Profit', '01/05/2025,Estoril,300,520,20,210,200'].join('\n'));
+  const s = r.sessions[0];
+  assert.equal(s.tips, 20);
+  assert.equal(s.handsDealt, 210);
+  assert.equal(s.expenses, undefined);
+  assert.equal(profit(s), 200);
+});

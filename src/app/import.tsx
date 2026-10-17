@@ -80,6 +80,8 @@ const FIELD_LABEL: Partial<Record<Field, string>> = {
   cashOut: t('Cash-out / prémio'),
   profit: t('Lucro'),
   expenses: t('Despesas'),
+  tips: t('Gorjetas'),
+  handsDealt: t('Mãos jogadas'),
   finish: t('Lugar final'),
   field: t('Jogadores no torneio'),
   notes: t('Notas'),
