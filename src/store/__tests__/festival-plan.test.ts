@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, plannedNow, planReminders, planTotals, togglePicked } from '../festival-plan';
+import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -147,4 +147,20 @@ test('Las Vegas: published starting stack and level length, none for Turbo fligh
   assert.equal(ev('10-2').stack, undefined);
   assert.equal(ev('29-1B Turbo').stack, undefined);
   assert.equal(ev('29-1A').stack, 40000);
+});
+
+test('a tournament the player adds: in the schedule, planned, reminded, startable; delete takes it out', () => {
+  const e = ownEvent('fe_1', { name: ' Deepstack ', start: '2026-12-05T15:00', game: 'NLH', buyIn: 400, stack: 30000, levelMinutes: 30 }, 1);
+  assert.equal(e.name, 'Deepstack');
+  const plan = { ...EMPTY_PLAN, events: [e], picked: ['fe_1'], lateReg: { fe_1: 120 } };
+  const all = withPlanEvents(F, plan);
+  assert.equal(all.events.length, F.events.length + 1);
+  assert.equal(withPlanEvents(all, plan).events.length, all.events.length);
+  assert.deepEqual(planTotals(F, plan), { events: 1, entries: 1, buyIns: 400 });
+  assert.equal(planReminders(F, plan, venueTime(F, '2026-12-01T00:00'))[0].url, 'sweatbook://festival?id=bahamas-dez-2026&event=fe_1');
+  const now = plannedNow(F, plan, [], venueTime(F, '2026-12-05T14:00'))!;
+  assert.equal(now.e.id, 'fe_1');
+  assert.equal(now.action.kind, 'start');
+  const gone = removeOwnEvent(plan, 'fe_1');
+  assert.deepEqual([gone.events, gone.picked, gone.lateReg], [[], [], {}]);
 });

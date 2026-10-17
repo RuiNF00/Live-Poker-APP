@@ -3086,6 +3086,11 @@ const en: Record<string, string> = {
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
   'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Still missing: the $600 and $800 events with six flights at the start of the festival. The organiser has not published the time of each flight.',
+  'Apagar torneio': 'Delete tournament',
+  'Adicionar torneio': 'Add tournament',
+  'Ex.: Main Event': 'E.g. Main Event',
+  'Hora (local)': 'Time (local)',
+  'Níveis (opcional)': 'Levels (optional)',
 };
 
 export default en;

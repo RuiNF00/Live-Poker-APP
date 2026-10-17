@@ -1426,6 +1426,9 @@ const ptBR: Record<string, string> = {
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
   'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou o horário de cada flight.',
+  'Apagar torneio': 'Excluir torneio',
+  'Adicionar torneio': 'Adicionar torneio',
+  'Hora (local)': 'Horário (local)',
 };
 
 export default ptBR;

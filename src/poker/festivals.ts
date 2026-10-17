@@ -20,6 +20,8 @@ export interface FestivalEvent {
   guarantee: number;
   /** Local wall-clock start at the venue, 'YYYY-MM-DDTHH:MM'. */
   start: string;
+  /** Added by the player (see FestivalPlan.events). */
+  own?: boolean;
   /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
   stack?: number;
   levelMinutes?: number;

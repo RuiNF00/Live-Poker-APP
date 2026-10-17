@@ -8,6 +8,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { AddFestivalEvent } from '@/components/AddFestivalEvent';
 import { spanLabel } from '@/components/FestivalItem';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { useStartEvent } from '@/components/useStartEvent';
@@ -21,7 +22,7 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
+import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
@@ -46,8 +47,10 @@ export default function FestivalScreen() {
   return f ? <FestivalView key={f.id} f={f} focus={event} /> : null;
 }
 
-function FestivalView({ f, focus }: { f: Festival; focus?: string }) {
-  const plan = useFestivalPlan(f.id);
+function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
+  const plan = useFestivalPlan(base.id);
+  // The schedule plus the tournaments the player added.
+  const f = useMemo(() => withPlanEvents(base, plan), [base, plan]);
   const { sessions, transfers, bankrolls, defaultBankroll, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
   const [lateFor, setLateFor] = useState<string | null>(null);
@@ -199,6 +202,8 @@ function FestivalView({ f, focus }: { f: Festival; focus?: string }) {
           </Section>
           </View>
         ))}
+
+        <AddFestivalEvent f={base} />
 
         {f.own ? null : (
           <View style={{ gap: 6, paddingHorizontal: 4 }}>
@@ -385,6 +390,7 @@ function EventRow({
               </ChipRow>
             </View>
           ) : null}
+          {e.own ? <Button kind="plain" size="sm" title={t('Apagar torneio')} onPress={() => updatePlan(f.id, (p) => removeOwnEvent(p, e.id))} /> : null}
         </View>
       ) : null}
     </Card>
