@@ -264,6 +264,7 @@ export function importSummary(n: {
   packages?: number;
   payments?: number;
   backing?: number;
+  swaps?: number;
 }): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
@@ -278,6 +279,7 @@ export function importSummary(n: {
   if (n.packages) parts.push(n.packages === 1 ? t('1 pacote de staking') : t('{n} pacotes de staking', { n: n.packages }));
   if (n.payments) parts.push(n.payments === 1 ? t('1 pagamento a backers') : t('{n} pagamentos a backers', { n: n.payments }));
   if (n.backing) parts.push(n.backing === 1 ? t('1 jogador que apoias') : t('{n} jogadores que apoias', { n: n.backing }));
+  if (n.swaps) parts.push(n.swaps === 1 ? t('1 swap') : t('{n} swaps', { n: n.swaps }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

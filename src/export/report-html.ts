@@ -94,10 +94,12 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
         )}</p>`
       : '';
 
+  // Swap net per session, already inside the result; its own column so an accountant can trace it.
+  const hasSwaps = c.sessions.some((s) => s.swapNet);
   const sessions = c.sessions
     .map(
       (s) =>
-        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${mttTag(s)}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
+        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${mttTag(s)}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td>${hasSwaps ? `<td class="n">${s.swapNet ? esc(signed(s.swapNet, cur)) : ''}</td>` : ''}<td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
     )
     .join('');
 
@@ -115,7 +117,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
         c.sessions.length
           ? `<h3>${esc(t('Sessões'))}</h3>
       <table class="sessions">
-        <thead><tr><th>${esc(t('Data'))}</th><th>${esc(t('Jogo'))}</th><th>${esc(t('Sala'))}</th><th class="n">${esc(t('Tempo'))}</th><th class="n">Buy-in</th><th class="n">Cash-out</th><th class="n">${esc(t('Resultado'))}</th></tr></thead>
+        <thead><tr><th>${esc(t('Data'))}</th><th>${esc(t('Jogo'))}</th><th>${esc(t('Sala'))}</th><th class="n">${esc(t('Tempo'))}</th><th class="n">Buy-in</th><th class="n">Cash-out</th>${hasSwaps ? '<th class="n">Swaps</th>' : ''}<th class="n">${esc(t('Resultado'))}</th></tr></thead>
         <tbody>${sessions}</tbody>
       </table>`
           : ''

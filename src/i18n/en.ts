@@ -1941,6 +1941,8 @@ const en: Record<string, string> = {
   'Data que não se lê': 'Date we can not read',
   'Valor que não é um número': 'Amount that isn\'t a number',
   'Resultado em {currency}': 'Result in {currency}',
+  '1 swap': '1 swap',
+  '{n} swaps': '{n} swaps',
   'Sem resultado, buy-in nem prémio': 'No result, buy-in or prize',
   'Depósito ou levantamento sem valor': 'Deposit or withdrawal with no amount',
   'Linhas que ficam de fora': 'Rows left out',

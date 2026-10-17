@@ -96,3 +96,9 @@ test('a restore on an empty phone brings the preferences back; a phone in use ke
   assert.equal(junk.currency, DEFAULT_SETTINGS.currency);
   assert.equal(junk.defaultTableSize, DEFAULT_SETTINGS.defaultTableSize);
 });
+
+test('the restore summary lists swaps when the backup brought any', () => {
+  assert.match(importSummary({ hands: 0, sessions: 1, players: 0, swaps: 2 }), /2 swaps/);
+  assert.match(importSummary({ hands: 0, sessions: 1, players: 0, swaps: 1 }), /1 swap\b/);
+  assert.doesNotMatch(importSummary({ hands: 0, sessions: 1, players: 0 }), /swap/);
+});

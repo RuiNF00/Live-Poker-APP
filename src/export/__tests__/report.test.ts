@@ -116,3 +116,11 @@ test('home currency leads; tournaments count entries, not sessions', () => {
   assert.equal(two.currencies[0].mtt.entries, 2);
   assert.match(reportHtml(two), /Torneios: 2 entradas/);
 });
+
+test('the PDF sessions table gets a Swaps column only when a session has a swap', () => {
+  const plain = reportHtml(buildReport({ sessions: [sess('p', {})], transfers: [], bankrolls: brs, range: year }));
+  assert.doesNotMatch(plain, /<th class="n">Swaps<\/th>/);
+  const html = reportHtml(buildReport({ sessions: [sess('s', { kind: 'mtt', cashOut: 0, swapNet: 250 })], transfers: [], bankrolls: brs, range: year }));
+  assert.match(html, /<th class="n">Swaps<\/th>/);
+  assert.match(html, /\+250/);
+});

@@ -22,7 +22,7 @@ import { clearPlans } from './festival-plan';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
-import { withSwaps, type Swap } from './swaps';
+import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
@@ -82,7 +82,7 @@ interface StoreValue {
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
   /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
   readonly swaps: Swap[];
-  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number };
+  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
 }
@@ -443,8 +443,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setBacking(bc.list);
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
+      // Counted against what's loaded now; importSwaps merges the same way.
+      const sw = mergeSwaps(currentSwaps(), b.swaps ?? []).added;
       importSwaps(b.swaps ?? []).catch(() => {});
-      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added };
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing],
   );
