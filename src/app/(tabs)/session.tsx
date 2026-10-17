@@ -19,6 +19,7 @@ import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { askNotificationPermission } from '@/lib/lock-screen/reminder';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
+import { WSOP_PARADISE_2026 } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
@@ -56,6 +57,16 @@ export default function SessionScreen() {
   return (
     <Screen title={t('Sessão')}>
       <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
+      <ListGroup>
+        <ListItem
+          icon="calendar-outline"
+          iconColor={C.accent}
+          title={WSOP_PARADISE_2026.name}
+          subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
+          chevron
+          onPress={() => router.push('/festival')}
+        />
+      </ListGroup>
       <SessionForm
         initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
         bankrolls={bankrolls}
