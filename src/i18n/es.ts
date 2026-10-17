@@ -3174,6 +3174,10 @@ const es: Record<string, string> = {
   'Nunca o total nem a banca': 'Nunca el total ni tu banca',
   'O meu plano: {name}': 'Mi plan: {name}',
   'Feito com Sweatbook: {link}': 'Hecho con Sweatbook: {link}',
+  'Sem acesso à câmara ou ao microfone': 'Sin acceso a la cámara o al micrófono',
+  'Liga-os nas Definições para gravares a tua cara.': 'Actívalos en Ajustes para grabar tu cara.',
+  'Abrir Definições': 'Abrir Ajustes',
+  'Pára antes da tua decisão, para quem vê votar no link.': 'Se detiene antes de tu decisión, para que quien la vea vote en el link.',
 };
 
 export default es;

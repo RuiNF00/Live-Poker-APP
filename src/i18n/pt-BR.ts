@@ -1515,6 +1515,10 @@ const ptBR: Record<string, string> = {
   'O meu plano: {name}': 'Meu plano: {name}',
   'Dias, horas e torneios, para o grupo': 'Dias, horários e torneios, para o grupo',
   'Nunca o total nem a banca': 'Nunca o total nem a banca',
+  'Sem acesso à câmara ou ao microfone': 'Sem acesso à câmera ou ao microfone',
+  'Liga-os nas Definições para gravares a tua cara.': 'Ative nas Configurações para gravar seu rosto.',
+  'Abrir Definições': 'Abrir Configurações',
+  'Pára antes da tua decisão, para quem vê votar no link.': 'Para antes da sua decisão, para quem vê votar no link.',
 };
 
 export default ptBR;

@@ -5,6 +5,7 @@
 // still shows up there as "Stories"). Pro players can add their voice: the
 // story then goes out as a video rendered by the share server.
 
+import { requestRecordingPermissionsAsync } from 'expo-audio';
 import * as Clipboard from 'expo-clipboard';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
@@ -62,8 +63,10 @@ export interface FaceClip {
 }
 
 /** Records the player talking (front camera, up to 30 s). Null if they cancel or say no to the camera. */
-export async function recordFace(): Promise<FaceClip | null> {
-  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
+/** The front-camera clip; 'denied' when the camera or the microphone is off for the app (the screen offers Settings). */
+export async function recordFace(): Promise<FaceClip | 'denied' | null> {
+  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return 'denied';
+  if (!(await requestRecordingPermissionsAsync()).granted) return 'denied';
   const r = await ImagePicker.launchCameraAsync({
     mediaTypes: ['videos'],
     cameraType: ImagePicker.CameraType.front,

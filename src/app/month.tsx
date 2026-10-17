@@ -15,7 +15,8 @@ import { SmallSample } from '@/components/SmallSample';
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { lang, locale, t } from '@/i18n';
+import { lang, locale, t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
@@ -87,7 +88,7 @@ export default function MonthScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=month`;
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=month`, variant);
       const target = await shareStory(await captureStory(card), link);
       track('story_shared', { target: String(target), kind: 'month', money: !hideMoney });
     } catch {
@@ -100,7 +101,7 @@ export default function MonthScreen() {
   // Text G: time and volume only; the result stays on the card if the player shows it there.
   const postText = async (to: 'x' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`;
+    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`, variant);
     const name = monthName(key);
     const line = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
       month: lang === 'en' ? name : name.toLowerCase(),

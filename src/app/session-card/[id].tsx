@@ -14,7 +14,8 @@ import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
 import { notice } from '@/lib/notice';
@@ -58,7 +59,7 @@ export default function SessionCardScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=session`;
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=session`, variant);
       const node = { current: refs.current[page] };
       const target =
         look === 'sticker' ? await shareSticker(await captureSticker(node, STICKER_W, STICKER_H), link) : await shareStory(await captureStory(node), link);
@@ -79,7 +80,7 @@ export default function SessionCardScreen() {
   };
   const inviteLink = async (to: 'x' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    return `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`;
+    return withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`, variant);
   };
 
   // X or any other app: the card (the story look, also for the sticker) as a picture, the invite link in the text.

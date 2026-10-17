@@ -3180,6 +3180,10 @@ const en: Record<string, string> = {
   'Nunca o total nem a banca': 'Never the total or your bankroll',
   'O meu plano: {name}': 'My plan: {name}',
   'Feito com Sweatbook: {link}': 'Made with Sweatbook: {link}',
+  'Sem acesso à câmara ou ao microfone': 'No access to the camera or microphone',
+  'Liga-os nas Definições para gravares a tua cara.': 'Turn them on in Settings to record your face.',
+  'Abrir Definições': 'Open Settings',
+  'Pára antes da tua decisão, para quem vê votar no link.': 'Stops before your decision, so viewers vote on the link.',
 };
 
 export default en;
