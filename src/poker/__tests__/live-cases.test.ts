@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { board2Needed, isComplete, legal, positions, replay, totalPot, usedCards } from '../engine';
+import { autoTags, board2Needed, isComplete, legal, positions, replay, totalPot, usedCards } from '../engine';
 import type { GameInfo, Hand, HandAction } from '../types';
 
 const CASH: GameInfo = { kind: 'cash', name: '2/5', sb: 2, bb: 5, ante: 0, anteType: 'none', currency: '€' };
@@ -76,6 +76,7 @@ test('bomb pot: everyone in, no preflop betting, small blind first on the flop',
   assert.equal(rr.result!.won[0], 60);
   assert.equal(rr.result!.net[0], 50);
   assert.equal(rr.result!.net[3], -10);
+  assert.ok(!autoTags(full, rr).includes('Limped'));
 });
 
 test('multiway all-in: main pot and side pot, each to the right winner, uncalled chips back', () => {

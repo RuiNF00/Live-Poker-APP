@@ -22,8 +22,10 @@ import { clearPlans } from './festival-plan';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
-import { withSwaps, type Swap } from './swaps';
+import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
+import type { SwapGroup } from './swap-groups';
+import { currentGroups, importGroups, useGroups } from './swap-groups-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
 export function uid(prefix = ''): string {
@@ -84,7 +86,8 @@ interface StoreValue {
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
   /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
   readonly swaps: Swap[];
-  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number };
+  readonly swapGroups: SwapGroup[];
+  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
 }
@@ -162,8 +165,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // What screens see: each session with its makeup package cut and what swaps add or take
   // (derived, never stored; swaps can be turned off).
   const { swaps } = useSwaps();
+  const { groups } = useGroups();
   const includeSwaps = settings.includeSwaps !== false;
-  const sessions = useMemo(() => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : []), [rawSessions, packages, swaps, includeSwaps]);
+  const sessions = useMemo(
+    () => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : [], includeSwaps ? groups : []),
+    [rawSessions, packages, swaps, groups, includeSwaps],
+  );
   // Privacy mode applies to every amount on screen, set before anything renders with it.
   setMoneyMasked(!!settings.hideAmounts);
   // The draft changes on every tap of hand entry. Keeping it in a ref (and
@@ -448,14 +455,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setBacking(bc.list);
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
+      // Counted against what's loaded now; importSwaps merges the same way.
+      const sw = mergeSwaps(currentSwaps(), b.swaps ?? []).added;
       importSwaps(b.swaps ?? []).catch(() => {});
+      importGroups(b.swapGroups ?? []).catch(() => {});
       // Values another phone had set aside: kept here too; each launch tries them again with this version's checks.
       const q = (b.quarantine ?? []).filter(([k]) => !quarantine.some(([have]) => have === k));
       if (q.length) {
         AsyncStorage.multiSet(q).catch(storageFailed);
         setQuarantine((cur) => [...cur, ...q]);
       }
-      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added };
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine],
   );
@@ -558,6 +568,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       importData,
       get swaps() {
         return currentSwaps();
+      },
+      get swapGroups() {
+        return currentGroups();
       },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.

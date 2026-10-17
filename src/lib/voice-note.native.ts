@@ -28,3 +28,11 @@ export function dropVoiceNote(uri: string | undefined) {
     if (f.exists) f.delete();
   } catch {}
 }
+
+/** "Delete all my data": every voice note on this phone. */
+export function dropAllVoiceNotes(): void {
+  try {
+    const dir = new Directory(Paths.document, 'voice');
+    if (dir.exists) dir.delete();
+  } catch {}
+}

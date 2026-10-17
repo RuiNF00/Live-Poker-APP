@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import { useRates } from '@/lib/fx';
 import { FESTIVALS } from '@/poker/festivals';
 import { money } from '@/poker/format';
-import { pendingCost, useOffers } from '@/store/action-offer';
+import { missedRefund, pendingCost, useOffers } from '@/store/action-offer';
 import { getPlan } from '@/store/festival-plan';
 import { rate } from '@/store/fx-math';
 import { backerLedger, packageStates, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
@@ -38,11 +38,13 @@ export function useStaking() {
       for (const line of o.lines) {
         const l = ledgers.get(line.backerId);
         const due = l ? pendingCost(f, o, line, started) : 0;
-        if (!l || !due) continue;
+        // Paid for events that went by with no session: that money goes back to them.
+        const back = l ? missedRefund(f, o, line, started) : 0;
+        if (!l || (!due && !back)) continue;
         if (!l.rows.length) l.currency = f.currency;
         const k = rate(table, f.currency, l.currency, o.createdAt, manual) ?? 1;
         l.unpaid += due * k;
-        l.balance -= due * k;
+        l.balance += (back - due) * k;
       }
     }
     const totals = stakingTotals([...ledgers.values()], home, table, manual);

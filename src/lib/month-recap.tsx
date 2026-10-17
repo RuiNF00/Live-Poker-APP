@@ -1,4 +1,4 @@
-// The recap on the 1st: one local notification at 10:00 for the month just
+// The recap on the 1st: one local notification at 13:00 for the month just
 // finished, rescheduled whenever sessions or privacy mode change so its text
 // matches what the app would show. Never asks for permission by itself; the
 // month screen offers that.
@@ -14,7 +14,10 @@ import type { Session, Settings } from '@/store/types';
 import { notifications, setup } from './lock-screen/reminder';
 
 const ID = 'sweatbook-month-recap';
-const CHANNEL = 'month-recap';
+const CHANNEL = 'recap';
+
+/** The notice carries results only with "show amounts in notifications" on and privacy mode off. */
+export const recapHidden = (s: Settings) => !s.notifyAmounts || !!s.hideAmounts;
 
 export async function syncMonthRecap(sessions: Session[], settings: Settings, now = Date.now()): Promise<void> {
   const n = notifications();
@@ -28,7 +31,7 @@ export async function syncMonthRecap(sessions: Session[], settings: Settings, no
     const r = monthRecap(sessions, key);
     if (!r.sessions) return;
     if (!(await n.getPermissionsAsync()).granted) return;
-    const { title, body } = recapNotice(r, !!settings.hideAmounts);
+    const { title, body } = recapNotice(r, recapHidden(settings));
     await n.scheduleNotificationAsync({
       identifier: ID,
       content: { title, body, data: { url: `sweatbook://month?m=${key}` } },
@@ -42,12 +45,12 @@ export async function syncMonthRecap(sessions: Session[], settings: Settings, no
 /** Mounted once at the root: keeps the notification in step with the data. */
 export function MonthRecapSync() {
   const { sessions, settings, ready } = useStore();
-  const { hideAmounts, monthRecap: on } = settings;
+  const { hideAmounts, monthRecap: on, notifyAmounts } = settings;
   useEffect(() => {
     if (!ready) return;
     const id = setTimeout(() => void syncMonthRecap(sessions, settings), 1500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only the fields the notice reads
-  }, [ready, sessions, hideAmounts, on]);
+  }, [ready, sessions, hideAmounts, on, notifyAmounts]);
   return null;
 }

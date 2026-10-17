@@ -1,16 +1,13 @@
 // Hands out to GTO Wizard, PioSolver, Hold'em Manager or PokerTracker, as a
 // PokerStars hand-history .txt they all import.
 
-import { isComplete } from '@/poker/engine';
 import { pokerStarsFile } from '@/poker/pokerstars';
 import type { Hand } from '@/poker/types';
 
 import { saveTextFile } from './files';
+import { solverReady } from './solver-export-core';
 
-/** Hands a solver can read: only finished ones. */
-export function solverReady(hands: Hand[]): Hand[] {
-  return hands.filter((h) => isComplete(h));
-}
+export { solverReady };
 
 export function solverFileName(hands: Hand[], now = Date.now()): string {
   const d = new Date(now);

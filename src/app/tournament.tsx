@@ -11,10 +11,12 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } fr
 import { AmountPad } from '@/components/AmountPad';
 import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
-import { bbs, chips, money } from '@/poker/format';
+import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { useSheetAnimation } from '@/lib/motion';
+import { bbs, chips, decimal, money, timeOf } from '@/poker/format';
 import { averageStack, levelOf, parsePayouts, parseStructure, payState, stackDepth, syncTo, syncedLevelStart, TEMPLATES, templateStructure, type Level, type Tourney } from '@/poker/tourney';
 import { useStore } from '@/store/store';
+import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 
@@ -37,6 +39,8 @@ const mmss = (ms: number) => {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 };
 const blindsOf = (l: { sb: number; bb: number; ante: number }) => `${chips(l.sb)}/${chips(l.bb)}` + (l.ante ? ` (${chips(l.ante)})` : '');
+/** The structure as the paste sheet shows it: one level per line, breaks as "Break 15". */
+const structureText = (st: Level[]) => st.map((l) => `${l.sb}/${l.bb}/${l.ante} ${l.minutes}` + (l.breakAfter ? `\nBreak ${l.breakAfter}` : '')).join('\n');
 
 /** Minutes the player can tap to match the floor's clock: the last few one by one, then every 5. */
 function syncChoices(levelMinutes: number): number[] {
@@ -89,6 +93,13 @@ function Tournament({ s }: { s: Session }) {
     if (st) save(syncTo(st, level, m));
     else if (s.levelMinutes) save({ levelStartedAt: syncedLevelStart(s.levelMinutes, m) });
   };
+  // The floor stops the clock for a break: pausing the session does the same to the level clock.
+  const togglePause = () => {
+    tap();
+    const now = Date.now();
+    if (isPaused(s)) save({ breaks: s.breaks.map((b, i) => (i === s.breaks.length - 1 ? { ...b, end: now } : b)) });
+    else save({ breaks: [...s.breaks, { start: now }] });
+  };
   const bust = (n: number) => {
     if (!tour.left) return;
     tap();
@@ -103,7 +114,7 @@ function Tournament({ s }: { s: Session }) {
     <>
       <Stack.Screen options={{ title: t('Modo torneio') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
-        <LevelCard s={s} st={st} onLevel={goLevel} onSync={syncMinutes} />
+        <LevelCard s={s} st={st} onLevel={goLevel} onSync={syncMinutes} onPause={togglePause} />
 
         <Section title={t('O teu stack')}>
           <Card onPress={() => setPad('stack')} accessibilityLabel={t('Atualizar stack')} style={{ gap: S.md }}>
@@ -117,8 +128,8 @@ function Tournament({ s }: { s: Session }) {
               {chips(s.stack)}
             </T>
             <StatGrid cols={3}>
-              <Stat label="BB" value={depth.bb.toFixed(depth.bb < 10 ? 1 : 0)} tone={depth.bb < 10 ? 'bad' : depth.bb < 20 ? 'warn' : undefined} />
-              <Stat label="M" value={depth.m.toFixed(depth.m < 10 ? 1 : 0)} tone={depth.m < 6 ? 'bad' : depth.m < 12 ? 'warn' : undefined} />
+              <Stat label="BB" value={decimal(depth.bb, depth.bb < 10 ? 1 : 0)} tone={depth.bb < 10 ? 'bad' : depth.bb < 20 ? 'warn' : undefined} />
+              <Stat label="M" value={decimal(depth.m, depth.m < 10 ? 1 : 0)} tone={depth.m < 6 ? 'bad' : depth.m < 12 ? 'warn' : undefined} />
               <Stat label={t('vs média')} value={avg ? Math.round((s.stack / avg) * 100) + '%' : '—'} tone={avg ? (s.stack >= avg ? 'good' : 'bad') : undefined} />
             </StatGrid>
           </Card>
@@ -194,6 +205,20 @@ function Tournament({ s }: { s: Session }) {
                       </T>
                       <T v="monoS">{l.minutes}′</T>
                     </Row>
+                    {l.breakAfter ? (
+                      <>
+                        <Divider inset={S.lg} />
+                        <Row style={{ paddingHorizontal: S.lg, paddingVertical: 8 }}>
+                          <Ionicons name="cafe-outline" size={14} color={n < level ? C.muted : C.warn} style={{ width: 28 }} />
+                          <T v="small" color={n < level ? C.muted : C.warn} style={{ flex: 1 }}>
+                            {t('Intervalo')}
+                          </T>
+                          <T v="monoS" color={n < level ? C.muted : C.warn}>
+                            {l.breakAfter}′
+                          </T>
+                        </Row>
+                      </>
+                    ) : null}
                   </View>
                 );
               })}
@@ -231,9 +256,9 @@ function Tournament({ s }: { s: Session }) {
       <PasteSheet
         visible={sheet === 'structure'}
         title={t('Estrutura de blinds')}
-        hint={t('Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40')}
-        placeholder={'100/200/200 40\n200/300/300 40\n200/400/400 40'}
-        initial={st && !tour.structureName ? st.map((l) => `${l.sb}/${l.bb}/${l.ante} ${l.minutes}`).join('\n') : ''}
+        hint={t('Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos numa linha própria: Break 15')}
+        placeholder={'100/200/200 40\n200/300/300 40\nBreak 15\n200/400/400 40'}
+        initial={st && !tour.structureName ? structureText(st) : ''}
         parse={(x) => parseStructure(x, s.levelMinutes || 30).length}
         onClose={() => setSheet(null)}
         onSave={(x) => {
@@ -280,7 +305,7 @@ function Cell({ label, value, onPress, big }: { label: string; value?: string; o
   );
 }
 
-function LevelCard({ s, st, onLevel, onSync }: { s: Session; st?: Level[]; onLevel: (dir: 1 | -1) => void; onSync: (m: number) => void }) {
+function LevelCard({ s, st, onLevel, onSync, onPause }: { s: Session; st?: Level[]; onLevel: (dir: 1 | -1) => void; onSync: (m: number) => void; onPause: () => void }) {
   const now = useTick(1000);
   const level = s.level ?? 1;
   const nextAt = nextLevelAt(s, now);
@@ -291,6 +316,10 @@ function LevelCard({ s, st, onLevel, onSync }: { s: Session; st?: Level[]; onLev
   const lm = st ? levelOf(st, level).minutes : s.levelMinutes;
   const choices = lm ? syncChoices(lm) : [];
   const near = choices.reduce((a, m) => (Math.abs(m - leftMin) < Math.abs(a - leftMin) ? m : a), choices[0]);
+  const paused = isPaused(s);
+  const brk = breakOf(s, now);
+  // The break follows this level: from its last minutes on, offer the pause right here.
+  const breakNext = !!brk && brk.afterLevel === level;
   return (
     <Card tone="raised" style={{ gap: S.md }}>
       <Row>
@@ -307,8 +336,27 @@ function LevelCard({ s, st, onLevel, onSync }: { s: Session; st?: Level[]; onLev
         <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={due ? C.accent : nextAt && left < 120_000 ? C.warn : C.text}>
           {nextAt ? (due ? '0:00' : mmss(left)) : '—:—'}
         </T>
-        <T v="small">{!lm ? t('Escolhe a estrutura em baixo para teres o relógio do nível') : due ? t('Nível acabou · sobe para {blinds}', { blinds: blindsOf(after) }) : t('Depois: {blinds}', { blinds: blindsOf(after) })}</T>
+        <T v="small">{!lm ? t('Escolhe a estrutura em baixo para teres o relógio do nível') : due ? (breakNext ? t('Nível acabou · intervalo de {n} min', { n: brk!.minutes }) : t('Nível acabou · sobe para {blinds}', { blinds: blindsOf(after) })) : t('Depois: {blinds}', { blinds: blindsOf(after) })}</T>
       </View>
+      {paused || (breakNext && (due || left < 5 * 60_000)) ? (
+        <Card tone="accent" style={{ gap: S.sm }}>
+          <Row>
+            <Ionicons name="cafe-outline" size={16} color={C.warn} />
+            <T v="h3" style={{ flex: 1 }}>
+              {paused ? t('Em pausa: o relógio do nível parou') : t('Intervalo de {n} min a seguir', { n: brk!.minutes })}
+            </T>
+          </Row>
+          <T v="small">{paused ? t('Retoma quando o torneio recomeçar.') : t('Põe a sessão em pausa no intervalo para o relógio do nível acertar com o do torneio.')}</T>
+          <Button size="sm" kind={paused ? 'primary' : 'secondary'} icon={paused ? 'play' : 'pause'} title={paused ? t('Retomar') : t('Pausar no intervalo')} onPress={onPause} />
+        </Card>
+      ) : brk ? (
+        <Row style={{ justifyContent: 'center' }}>
+          <Ionicons name="cafe-outline" size={13} color={C.textDim} />
+          <T v="tiny" color={C.textDim}>
+            {t('Intervalo às {time} · depois do nível {n} · {m} min', { time: timeOf(brk.at), n: brk.afterLevel, m: brk.minutes })}
+          </T>
+        </Row>
+      ) : null}
       {choices.length ? (
         <View style={{ gap: S.sm }}>
           <Row>
@@ -392,8 +440,9 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
     if (visible) setText(initial);
   }
   const n = useMemo(() => parse(text), [parse, text]);
+  const animation = useSheetAnimation();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={title} onClose={onClose} />

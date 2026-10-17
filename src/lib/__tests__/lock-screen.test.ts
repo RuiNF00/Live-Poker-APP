@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Session } from '../../store/types';
-import { levelAfter, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
+import { breakEndMessage, breakLabel, breakOf, levelAfter, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
 
 const MIN = 60_000;
 
@@ -94,4 +94,28 @@ test('privacy mode: a cash stack is money and shows •••, tournament chips 
 test('privacy mode: the session name (often the venue) gives way to the game', () => {
   assert.equal(liveProps(mk({ kind: 'cash', name: 'Casino X 2/5' }), 60 * MIN).title, 'Casino X 2/5');
   assert.equal(liveProps(mk({ kind: 'cash', name: 'Casino X 2/5' }), 60 * MIN, true).title, 'Cash game');
+});
+
+test('breaks on the structure: lock-screen line, the level-up reminder and the call back to the table', () => {
+  const structure = [
+    { sb: 100, bb: 200, ante: 200, minutes: 30 },
+    { sb: 200, bb: 400, ante: 400, minutes: 30, breakAfter: 15 },
+    { sb: 300, bb: 600, ante: 600, minutes: 30 },
+  ];
+  const at = (level: number) => mk({ level, sb: structure[level - 1].sb, bb: structure[level - 1].bb, levelMinutes: 30, levelStartedAt: 60 * MIN, tourney: { structure } });
+  // Level 1 started at 60 min and ends at 90, level 2 at 120: the break starts then.
+  const b1 = breakOf(at(1), 70 * MIN);
+  assert.deepEqual(b1, { afterLevel: 2, at: 120 * MIN, minutes: 15 });
+  assert.match(liveProps(at(1), 70 * MIN).breakAt, /^Intervalo às .+ · 15 min$/);
+  assert.equal(breakLabel(b1, 125 * MIN), 'Intervalo agora · 15 min');
+  // Not a break yet: the usual reminder. The level before the break: the reminder says pause.
+  assert.equal(levelUpMessage(at(1), 70 * MIN).title, 'Subida de nível');
+  const m = levelUpMessage(at(2), 70 * MIN);
+  assert.equal(m.title, 'Intervalo de 15 min');
+  assert.match(m.body, /pausa.*nível 3/);
+  assert.match(breakEndMessage(at(2), breakOf(at(2), 70 * MIN)!).body, /nível 3: blinds 300\/600/);
+  // No structure, a cash game or no level clock: nothing.
+  assert.equal(liveProps(mk({ levelMinutes: 30, levelStartedAt: 60 * MIN }), 70 * MIN).breakAt, '');
+  assert.equal(breakOf({ ...at(1), kind: 'cash' }, 70 * MIN), null);
+  assert.equal(breakOf({ ...at(1), levelMinutes: undefined }, 70 * MIN), null);
 });

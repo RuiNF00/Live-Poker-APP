@@ -7,6 +7,7 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import type { SwapGroup } from './swap-groups';
 import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
 import { validSwapId, validSwapToken, type Swap } from './swaps';
@@ -31,6 +32,8 @@ export interface BackupData {
   trips?: Trip[];
   /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
   swaps?: Swap[];
+  /** Group swaps with this player's seat token (absent before group swaps). */
+  swapGroups?: SwapGroup[];
   settings?: Partial<Settings>;
   /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
   quarantine?: [string, string][];
@@ -52,6 +55,7 @@ export function buildBackup(
     trips?: Trip[];
     backing?: BackedPlayer[];
     swaps?: Swap[];
+    swapGroups?: SwapGroup[];
     settings: Settings;
     quarantine?: [string, string][];
   },
@@ -72,6 +76,7 @@ export function buildBackup(
     trips: d.trips ?? [],
     backing: d.backing ?? [],
     swaps: d.swaps ?? [],
+    swapGroups: d.swapGroups ?? [],
     settings: d.settings,
     ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
@@ -115,6 +120,11 @@ export function parseBackup(text: string): BackupData {
   const swaps = arr('swaps').filter(
     (x) => isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
   ) as unknown as Swap[];
+  const swapGroups = arr('swapGroups').filter(
+    (x) =>
+      isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && Number.isInteger(x.seat) && (x.seat as number) >= 0 && (x.seat as number) < 8 &&
+      (x.invite === undefined || validSwapToken(x.invite)) && isObj(x.terms) && Array.isArray(x.seats) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+  ) as unknown as SwapGroup[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -130,6 +140,7 @@ export function parseBackup(text: string): BackupData {
     transfers,
     trips,
     swaps,
+    swapGroups,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
     // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
     quarantine: Array.isArray(j.quarantine)
@@ -275,6 +286,7 @@ export function importSummary(n: {
   packages?: number;
   payments?: number;
   backing?: number;
+  swaps?: number;
 }): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
@@ -289,6 +301,7 @@ export function importSummary(n: {
   if (n.packages) parts.push(n.packages === 1 ? t('1 pacote de staking') : t('{n} pacotes de staking', { n: n.packages }));
   if (n.payments) parts.push(n.payments === 1 ? t('1 pagamento a backers') : t('{n} pagamentos a backers', { n: n.payments }));
   if (n.backing) parts.push(n.backing === 1 ? t('1 jogador que apoias') : t('{n} jogadores que apoias', { n: n.backing }));
+  if (n.swaps) parts.push(n.swaps === 1 ? t('1 swap') : t('{n} swaps', { n: n.swaps }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

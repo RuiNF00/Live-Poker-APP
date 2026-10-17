@@ -43,6 +43,16 @@ test('the month adds up in its own currency', () => {
   assert.equal(monthRecap(all, '2026-10', '$').profit, 50);
 });
 
+test('no BB/h from a few cash minutes', () => {
+  // A 1-minute 1/2 session at −200 would be −6 000 BB/h: under 3 cash hours there is no rate.
+  const r = monthRecap([...oct, s(9, 20, 1 / 60, -200, { sb: 1, bb: 2, buyIn: 200, cashOut: 0 })], '2026-10');
+  // With 10 cash hours the minute just counts in: (80 − 100) bb in 10 h ≈ −2 BB/h.
+  assert.equal(Math.round(r.bbHourly! * 100) / 100, -2);
+  const tiny = monthRecap([s(9, 20, 1 / 60, -200, { sb: 1, bb: 2, buyIn: 200, cashOut: 0 })], '2026-10');
+  assert.equal(tiny.bbHourly, null);
+  assert.equal(tiny.cashSessions, 1);
+});
+
 test('months, defaults and the year boundary', () => {
   assert.deepEqual(recapMonths(all), ['2026-10', '2026-09', '2026-07']);
   assert.equal(prevKey('2026-01'), '2025-12');
@@ -72,7 +82,11 @@ test('comparison with the months before', () => {
 test('the notification on the 1st, and privacy mode', () => {
   const r = monthRecap(all, '2026-10');
   const open = recapNotice(r, false);
-  assert.match(open.title, /: 18 h, \+8 BB\/h$/);
+  // A month with a tournament gives money, never a cash-only BB/h next to it.
+  assert.match(open.title, /: 18 h, \+1[ .\u00a0\u202f]?720/);
+  assert.doesNotMatch(open.title, /BB/);
+  // An all-cash month gives BB/h.
+  assert.match(recapNotice(monthRecap(before, '2026-09'), false).title, /: 10 h, \+4 BB\/h$/);
   assert.match(open.body, /\+1200€|\+1\.200€|\+1 200€/);
   assert.match(open.body, /Casino Estoril/);
   const priv = recapNotice(r, true);
@@ -83,13 +97,13 @@ test('the notification on the 1st, and privacy mode', () => {
   assert.match(mtt.title, /: 8 h, \+1/);
 });
 
-test('next recap: the 1st at 10:00, for the month just finished', () => {
+test('next recap: the 1st at 13:00, for the month just finished', () => {
   const mid = nextRecap(new Date(2026, 9, 17, 15).getTime());
-  assert.equal(mid.at, new Date(2026, 10, 1, 10).getTime());
+  assert.equal(mid.at, new Date(2026, 10, 1, 13).getTime());
   assert.equal(mid.key, '2026-10');
   // Early on the 1st, it is still today.
   const early = nextRecap(new Date(2026, 10, 1, 8).getTime());
-  assert.equal(early.at, new Date(2026, 10, 1, 10).getTime());
+  assert.equal(early.at, new Date(2026, 10, 1, 13).getTime());
   assert.equal(early.key, '2026-10');
   const dec = nextRecap(new Date(2026, 11, 5).getTime());
   assert.equal(dec.key, '2026-12');

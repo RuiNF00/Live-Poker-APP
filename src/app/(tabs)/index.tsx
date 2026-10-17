@@ -18,6 +18,8 @@ import { filterPills, HandFilterSheet } from '@/components/HandFilters';
 import { activeFilters, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
+import { openInGtoWizard } from '@/lib/gto-wizard';
+import { useIdleCount } from '@/lib/idle-count';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { ProMoment, useProMoment } from '@/components/ProMoment';
@@ -96,7 +98,8 @@ export default function HandsScreen() {
   // While the list is narrowed, nudges about the rest of it get out of the way.
   const narrowed = !!tag || pills.length > 0;
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
-  const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
+  // Replays every hand: counted in slices after the list has drawn (years of hands take a second on a mid-range phone).
+  const incomplete = useIdleCount(hands, isIncomplete) ?? 0;
   const checklist = useStartChecklist();
   const moment = useProMoment();
   const [now] = useState(() => Date.now());
@@ -263,12 +266,21 @@ export default function HandsScreen() {
           hands.length === 0 ? (
             <FirstRun />
           ) : (
-            <Empty
-              icon="search"
-              title={t('Nada encontrado')}
-              body={t('Tenta outro nome, torneio ou mão.')}
-              action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false), setFilter(NO_FILTER))} />}
-            />
+            pills.length && !q.trim() ? (
+              <Empty
+                icon="options-outline"
+                title={t('Nenhuma mão com estes filtros')}
+                body={t('Tira um filtro ou limpa todos para voltares a ver as mãos.')}
+                action={<Button title={t('Limpar filtros')} kind="secondary" size="md" onPress={() => setFilter(NO_FILTER)} />}
+              />
+            ) : (
+              <Empty
+                icon="search"
+                title={t('Nada encontrado')}
+                body={t('Tenta outro nome, torneio ou mão.')}
+                action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false), setFilter(NO_FILTER))} />}
+              />
+            )
           )
         }
         renderItem={renderItem}
@@ -300,7 +312,7 @@ export default function HandsScreen() {
               setPicked(new Set());
             }}
           />
-          <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
+          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro ? toSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton
@@ -508,6 +520,8 @@ function rowSummary(hand: Hand) {
   return v;
 }
 
+const isIncomplete = (h: Hand) => !rowSummary(h).done;
+
 const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick, coach }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void; coach: number }) {
   const { net, done } = rowSummary(hand);
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
@@ -644,6 +658,17 @@ function FilterPill({ label, onClear }: { label: string; onClear: () => void }) 
   );
 }
 
+
+/** Picked hands to GTO Wizard in one go, or as one PokerStars .txt for other solvers and trackers. */
+function toSolver(list: Hand[]) {
+  tap();
+  if (Platform.OS === 'web') return openInGtoWizard(list);
+  Alert.alert(t('Exportar {n} mãos', { n: list.length }), t('Formato PokerStars: GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+    { text: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard(list) },
+    { text: t('Guardar ficheiro .txt'), onPress: () => exportSolver(list) },
+    { text: t('Cancelar'), style: 'cancel' },
+  ]);
+}
 
 /** Picked hands as one PokerStars file; unfinished hands are left out, and the player is told. */
 function exportSolver(list: Hand[]) {

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { localeFormat } from '../../i18n';
-import { bbs, chips, moneyIn } from '../format';
+import { storedCurrency } from '../../store/currencies';
+import { bbs, chips, moneyIn, rawCompactMoney } from '../format';
 
 // U+00A0, so "R$" never wraps away from its amount.
 const NB = ' ';
@@ -13,6 +14,8 @@ test('money reads the way each language writes it', () => {
   assert.equal(money('pt-PT', 370, '€'), '370€');
   assert.equal(money('pt-PT', 1234.5, '€'), '1235€');
   assert.equal(money('pt-PT', 12.5, '€'), '12,50€');
+  // Portugal and Spain group thousands only from 5 digits: 2500€, 12 345€ (CLDR, RAE).
+  assert.equal(money('pt-PT', 12345, '€'), `12${NB}345€`);
   assert.equal(money('pt-BR', 1234.56, 'R$'), `R$${NB}1.235`);
   assert.equal(money('pt-BR', 12.5, 'R$'), `R$${NB}12,50`);
   assert.equal(money('pt-BR', -370, 'R$'), `−R$${NB}370`);
@@ -42,4 +45,18 @@ test('short chip and bb amounts use the local decimal', () => {
   assert.equal(chips(1250000), '1,25M');
   assert.equal(bbs(500, 200), '2,5 bb');
   assert.equal(bbs(4000, 200), '20 bb');
+});
+
+test('compact money keeps the currency where the language puts it', () => {
+  assert.equal(rawCompactMoney(2500, '€'), '2500€');
+  assert.equal(rawCompactMoney(12500, '€'), '12,5k€');
+  assert.equal(rawCompactMoney(-2500000, '$'), '−2,5M$');
+});
+
+test('a fresh install takes the currency of the phone region', () => {
+  assert.equal(storedCurrency('BRL'), 'R$');
+  assert.equal(storedCurrency('usd'), '$');
+  assert.equal(storedCurrency('MXN'), 'MXN');
+  assert.equal(storedCurrency('XYZ'), undefined);
+  assert.equal(storedCurrency(null), undefined);
 });

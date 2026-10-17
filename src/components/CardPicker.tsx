@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 
-import { displayRank, RANKS, SUIT_SYMBOL, SUITS } from '@/poker/cards';
+import { cardName, displayRank, RANKS, SUIT_SYMBOL, SUITS } from '@/poker/cards';
 import type { CardCode } from '@/poker/types';
 import { C, ff } from '@/theme';
 
@@ -41,6 +41,9 @@ export function CardPicker({
               return (
                 <Pressable
                   key={c}
+                  accessibilityRole="button"
+                  accessibilityLabel={cardName(c)}
+                  accessibilityState={{ disabled: isUsed, selected: isSel }}
                   disabled={isUsed}
                   onPress={() => {
                     tap('select');

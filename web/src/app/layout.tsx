@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { brand } from '@/config/brand';
 import { pickLocale } from '@/lib/i18n';
+import { PAGE_LANG_HEADER, pageLangFrom } from '@/lib/page-lang';
 import localFont from 'next/font/local';
 import './globals.css';
 
@@ -39,10 +40,12 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Same choice the pages make from Accept-Language, so screen readers and translators get the right language.
-  const lang = pickLocale((await headers()).get('accept-language'));
+  // Same choice the pages make: the route's language when it has one (help center, /support,
+  // /delete-account; set by proxy.ts), else Accept-Language, so screen readers get the right voice.
+  const h = await headers();
+  const lang = pickLocale(h.get('accept-language'));
   return (
-    <html lang={lang === 'pt' ? 'pt-PT' : lang} className={`${body.variable} ${mono.variable}`}>
+    <html lang={pageLangFrom(h.get(PAGE_LANG_HEADER)) ?? (lang === 'pt' ? 'pt-PT' : lang)} className={`${body.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

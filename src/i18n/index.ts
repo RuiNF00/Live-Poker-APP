@@ -5,6 +5,8 @@
 // closest language (pt-BR to pt-PT, es to English, English to pt-PT);
 // src/i18n/__tests__ and scripts/i18n-missing.ts list what is missing.
 
+import { localeFormat, type LocaleFormat } from '../../packages/hand-format/src/money';
+
 import en from './en';
 import es from './es';
 import ptBR from './pt-BR';
@@ -73,39 +75,8 @@ const detected = detect();
 export const variant: Variant = detected.variant;
 export const lang: Lang = variant === 'pt-PT' || variant === 'pt-BR' ? 'pt' : variant;
 
-/** How one language writes numbers and money. */
-export type LocaleFormat = {
-  /** BCP 47 tag for Intl dates and numbers. */
-  locale: string;
-  /** Writes 3,5 rather than 3.5. */
-  decimalComma: boolean;
-  /** Money reads "370 €" (Portugal, Spain) rather than "$370" / "R$ 370". */
-  currencyAfter: boolean;
-  /** Between the amount and the symbol: Portugal keeps "370€" short, Brazil and Spain use a no-break space. */
-  currencySpace: string;
-};
-
-/** The number and money format for a language. Spanish keeps the device's region (es-MX writes $1,234.50). */
-export function localeFormat(v: Variant, tag?: string): LocaleFormat {
-  const locale =
-    v === 'pt-PT' ? 'pt-PT'
-    : v === 'pt-BR' ? 'pt-BR'
-    : v === 'es' ? (tag?.toLowerCase().startsWith('es') ? tag : 'es-ES')
-    : 'en-GB';
-  let decimalComma: boolean;
-  try {
-    decimalComma = new Intl.NumberFormat(locale).format(1.5).includes(',');
-  } catch {
-    decimalComma = v !== 'en';
-  }
-  const spain = v === 'es' && /^es(-ES)?$/i.test(locale);
-  return {
-    locale,
-    decimalComma,
-    currencyAfter: v === 'pt-PT' || spain,
-    currencySpace: v === 'pt-BR' || spain ? '\u00a0' : '',
-  };
-}
+// Number and money rules are shared with the web pages (packages/hand-format/src/money.ts).
+export { localeFormat, type LocaleFormat };
 
 export const FORMAT: LocaleFormat = localeFormat(variant, detected.tag);
 export const { locale, decimalComma, currencyAfter } = FORMAT;

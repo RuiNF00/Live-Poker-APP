@@ -32,9 +32,22 @@ const nextConfig: NextConfig = {
       { source: '/api/coach/:path*', headers: secret },
     ];
   },
+  // Localised entry points for the store pages: Apple's Support URL and Google's data deletion URL.
+  async redirects() {
+    const to = (path: string, lang: string) => ({ destination: `${path}?lang=${lang}`, permanent: false });
+    return [
+      { source: '/suporte', ...to('/support', 'pt') },
+      { source: '/pt-br/suporte', ...to('/support', 'pt-BR') },
+      { source: '/es/soporte', ...to('/support', 'es') },
+      { source: '/apagar-conta', ...to('/delete-account', 'pt') },
+      { source: '/pt-br/apagar-conta', ...to('/delete-account', 'pt-BR') },
+      { source: '/es/eliminar-cuenta', ...to('/delete-account', 'es') },
+    ];
+  },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
+  // /support and /delete-account are pages of their own (src/app), in the four help languages.
   async rewrites() {
-    return ['privacy', 'terms', 'support', 'delete-account'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
+    return ['privacy', 'terms'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
   },
 };
 

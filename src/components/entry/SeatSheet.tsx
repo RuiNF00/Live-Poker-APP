@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { useSheetAnimation } from '@/lib/motion';
 import { bbs, chips } from '@/poker/format';
 import type { Player } from '@/poker/types';
 import type { OpponentStats } from '@/store/queries';
@@ -48,6 +49,7 @@ export function SeatSheet({
   /** Table changes between hands, one tap each; left out once the hand has actions. */
   reseat?: SeatChanges;
 }) {
+  const sheetAnimation = useSheetAnimation();
   const [name, setName] = useState('');
   const [stack, setStack] = useState(0);
   const [pad, setPad] = useState(false);
@@ -65,7 +67,7 @@ export function SeatSheet({
   const knownId = playerId ?? known.find((k) => q && k.name.trim().toLowerCase() === q)?.id;
   const quick = [20, 40, 60, 100].map((x) => x * bb);
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, padding: S.gutter, paddingTop: S.lg, paddingBottom: 36, gap: S.lg }}>
         <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />

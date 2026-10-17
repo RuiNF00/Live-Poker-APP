@@ -29,3 +29,9 @@ export function dropDoc(file: string) {
   if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
   urls.delete(file);
 }
+
+/** "Delete all my data": forget this tab's attachments. */
+export function dropAllDocs(): void {
+  for (const u of urls.values()) if (u.startsWith('blob:')) URL.revokeObjectURL(u);
+  urls.clear();
+}

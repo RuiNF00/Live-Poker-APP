@@ -8,6 +8,7 @@ import { View } from 'react-native';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { balanceOf, bankrollOf, sessionsIn } from '@/store/bankroll-math';
+import { buyIn, shotState, withdrawable } from '@/store/moveup-math';
 import { aboveRules, allowedStakes, DEFAULT_RULES, goalReachedLive, stopLoss, targetProgress } from '@/store/rules-math';
 import { useStore } from '@/store/store';
 import type { Bankroll, BankrollRules, Session } from '@/store/types';
@@ -26,14 +27,14 @@ function Bar({ value, color }: { value: number; color: string }) {
 }
 
 /** On Bankroll, for one bankroll: what its rules allow today. */
-export function RulesCard({ bankroll, sessions, balance, hidden, onEdit }: { bankroll: Bankroll; sessions: Session[]; balance: number; hidden: boolean; onEdit: () => void }) {
+export function RulesCard({ bankroll, sessions, balance, hidden, onEdit, onMoveUp, onWithdraw }: { bankroll: Bankroll; sessions: Session[]; balance: number; hidden: boolean; onEdit: () => void; onMoveUp?: () => void; onWithdraw?: (amount: number) => void }) {
   const cur = bankroll.currency;
   const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), cur));
   const r = bankroll.rules;
   const [now] = useState(() => Date.now());
   const info = useMemo(() => {
     if (!r) return null;
-    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY, fmt), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance) };
+    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY, fmt), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance), keep: withdrawable(balance, sessions, r, now) };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt changes with `hidden` and the currency only
   }, [r, sessions, balance, now, hidden, cur]);
 
@@ -48,7 +49,7 @@ export function RulesCard({ bankroll, sessions, balance, hidden, onEdit }: { ban
       </Card>
     );
   }
-  const { a, over, sl, goal } = info;
+  const { a, over, sl, goal, keep } = info;
   return (
     <Section title={t('Regras de bankroll')}>
       <Card style={{ gap: S.md }}>
@@ -79,6 +80,16 @@ export function RulesCard({ bankroll, sessions, balance, hidden, onEdit }: { ban
           ) : (
             <T v="small">{t('Stop-loss de {limit} por sessão: avisamos-te durante a sessão.', { limit: fmt(r.stopLoss) })}</T>
           )
+        ) : null}
+        {onWithdraw && keep && keep.free > 0 ? (
+          <T v="small" color={C.accent} onPress={() => onWithdraw(keep.free)} accessibilityRole="link">
+            {t('Podes levantar até {amount} e manter as regras ›', { amount: fmt(keep.free) })}
+          </T>
+        ) : null}
+        {onMoveUp ? (
+          <T v="small" color={C.accent} onPress={onMoveUp} accessibilityRole="link">
+            {t('Posso subir de stake? ›')}
+          </T>
         ) : null}
         {goal !== null ? (
           <View style={{ gap: 6 }}>
@@ -145,7 +156,12 @@ export function StopLossBanner({ s }: { s: Session }) {
   const b = bankrollOf(s, bankrolls);
   const sl = useMemo(() => stopLoss(b?.rules, b ? sessionsIn({ bankrollId: b.id }, sessions, bankrolls) : [], s), [b, sessions, bankrolls, s]);
   const goal = useMemo(() => (b?.rules?.target ? goalReachedLive(b.rules, balanceOf({ bankrollId: b.id }, sessions, transfers, bankrolls).balance, s) : false), [b, sessions, transfers, bankrolls, s]);
-  const [dismissed, setDismissed] = useState<'near' | 'hit' | 'goal' | null>(null);
+  const shot = useMemo(() => {
+    const p = b?.shot;
+    if (!p || s.kind !== 'cash' || s.sb !== p.sb || s.bb !== p.bb) return null;
+    return shotState(p, sessionsIn({ bankrollId: b!.id }, sessions, bankrolls));
+  }, [b, s, sessions, bankrolls]);
+  const [dismissed, setDismissed] = useState<'near' | 'hit' | 'goal' | 'shot' | null>(null);
   const fmt = (n: number) => (settings.hideAmounts ? '•••' : money(Math.round(n), s.currency));
   if (sl?.near) {
     const level = sl.hit ? 'hit' : 'near';
@@ -158,6 +174,24 @@ export function StopLossBanner({ s }: { s: Session }) {
         title={sl.hit ? t('Chegaste ao teu stop-loss') : t('Estás perto do teu stop-loss')}
         body={sl.hit ? t('Perdeste {lost} {scope}; o teu limite é {limit}. Pode ser boa altura para parar.', { lost: fmt(sl.lost), scope, limit: fmt(sl.limit) }) : t('Faltam {left} para o limite de {limit} {scope}.', { left: fmt(sl.left), limit: fmt(sl.limit), scope })}
         onDismiss={() => setDismissed(level)}
+        dismissLabel={t('Fechar aviso')}
+      />
+    );
+  }
+  if (shot && dismissed !== 'shot') {
+    const p = shot.plan;
+    const back = `${p.back.sb}/${p.back.bb}`;
+    return (
+      <Banner
+        tone={shot.over ? 'warn' : 'info'}
+        icon="flag-outline"
+        title={shot.over ? t('Combinaste voltar a {back}', { back }) : t('Tentativa em {stake}', { stake: `${p.sb}/${p.bb}` })}
+        body={
+          shot.over
+            ? t('Já perdeste {n} buy-ins nesta stake desde o início da tentativa. Parar ou voltar a {back} era o teu plano.', { n: Math.round(shot.lostBuyIns * 10) / 10, back })
+            : t('Ainda podes perder {amount} antes de voltares a {back}, como definiste.', { amount: fmt(shot.left * buyIn(p)), back })
+        }
+        onDismiss={() => setDismissed('shot')}
         dismissLabel={t('Fechar aviso')}
       />
     );

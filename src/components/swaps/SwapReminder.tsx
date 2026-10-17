@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { useLocked } from '@/components/ProGate';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -17,9 +18,12 @@ import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { other, owedOn, swapLedger, swapNames, swapsForSession, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, getSwap, onSwapNews, syncAllSwaps, useSwaps } from '@/store/swaps-store';
+import { groupOwedOn, groupShareOf, groupsForSession, type GroupEntry, type SwapGroup } from '@/store/swap-groups';
+import { addGroupPrize, getGroup, onGroupNews, syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { C, S } from '@/theme';
 
-import { BalanceHero, pctLabel } from './parts';
+import { GroupHero, GroupSettle, seatLabel } from './group-parts';
+import { AccountsLocked, BalanceHero, pctLabel } from './parts';
 
 const ASKED = 'rl.swapAsked.v1';
 /** Only tournaments finished this recently ask: an old one edited later doesn't. */
@@ -28,7 +32,9 @@ const SYNC_EVERY = 2 * 60000;
 
 export function SwapReminder() {
   const { sessions } = useStore();
+  const locked = useLocked('swaps');
   const { ready, swaps } = useSwaps();
+  const { ready: gReady, groups } = useGroups();
   const [asked, setAsked] = useState<string[] | null>(null);
   const [step, setStep] = useState<'ask' | 'done'>('ask');
   const [busy, setBusy] = useState(false);
@@ -39,7 +45,7 @@ export function SwapReminder() {
       .catch(() => setAsked([]));
   }, []);
 
-  const live = useMemo(() => swaps.some((s) => s.confirmedAt && !s.gone && !s.archived), [swaps]);
+  const live = useMemo(() => swaps.some((s) => s.confirmedAt && !s.gone && !s.archived) || groups.some((g) => !g.gone && !g.archived), [swaps, groups]);
 
   // Their side only reaches this phone by syncing: at launch and when the app comes back.
   const lastSync = useRef(0);
@@ -49,6 +55,7 @@ export function SwapReminder() {
       if (Date.now() - lastSync.current < SYNC_EVERY) return;
       lastSync.current = Date.now();
       syncAllSwaps().catch(() => {});
+      syncAllGroups().catch(() => {});
     };
     run();
     const sub = AppState.addEventListener('change', (st) => st === 'active' && run());
@@ -56,24 +63,26 @@ export function SwapReminder() {
   }, [live]);
 
   useEffect(() => onSwapNews((s, news) => void notify(s, news)), []);
+  useEffect(() => onGroupNews((g, news) => void notifyGroup(g, news)), []);
 
   // The tournament to ask about: finished recently, in a swap, not asked before. Shown a
   // moment later, so the end-of-session screen lands first.
-  const [shown, setShown] = useState<{ session: Session; swaps: Swap[] } | null>(null);
+  const [shown, setShown] = useState<{ session: Session; swaps: Swap[]; groups: SwapGroup[] } | null>(null);
   useEffect(() => {
-    if (shown || !ready || !asked || !live) return;
+    if (shown || !ready || !gReady || !asked || !live) return;
     const now = Date.now();
     for (const s of sessions) {
       if (!s.endedAt || now - s.endedAt > RECENT || asked.includes(s.id)) continue;
       const list = swapsForSession(swaps, s);
-      if (!list.length) continue;
+      const gl = groupsForSession(groups, s);
+      if (!list.length && !gl.length) continue;
       const id = setTimeout(() => {
         setStep('ask');
-        setShown({ session: s, swaps: list });
+        setShown({ session: s, swaps: list, groups: gl });
       }, 900);
       return () => clearTimeout(id);
     }
-  }, [shown, ready, asked, live, sessions, swaps]);
+  }, [shown, ready, gReady, asked, live, sessions, swaps, groups]);
 
   function close() {
     if (shown) {
@@ -92,6 +101,9 @@ export function SwapReminder() {
     tap('success');
     for (const sw of shown.swaps) {
       await addEntry(sw.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || sw.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
+    }
+    for (const g of shown.groups) {
+      await addGroupPrize(g.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || g.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
     }
     setBusy(false);
     setStep('done');
@@ -122,7 +134,24 @@ export function SwapReminder() {
                       {pctLabel(sw.terms[sw.side].pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
+                      {locked ? t('Swap com {name}', { name }) : owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
+                    </T>
+                  </Row>
+                );
+              })}
+              {shown.groups.map((g) => {
+                const owe = groupOwedOn(g, prize);
+                return (
+                  <Row key={g.id} gap={S.sm} style={{ alignItems: 'baseline' }}>
+                    <T v="monoL" color={C.accent} style={{ minWidth: 48 }}>
+                      {pctLabel(g.terms.pct)}
+                    </T>
+                    <T v="body" style={{ flex: 1 }}>
+                      {locked
+                        ? t('Swap de grupo · {title}', { title: g.terms.title })
+                        : owe > 0
+                        ? t('Grupo de {n}: pagas {each} a cada um ({amount})', { n: g.seats.length, each: money(groupShareOf(g, prize), s.currency), amount: money(owe, s.currency) })
+                        : t('Grupo de {n}: não deves nada', { n: g.seats.length })}
                     </T>
                   </Row>
                 );
@@ -143,7 +172,8 @@ export function SwapReminder() {
           </>
         ) : (
           <>
-            {shown.swaps.map((sw0) => {
+            {locked ? <AccountsLocked /> : null}
+            {!locked && shown.swaps.map((sw0) => {
               const sw = getSwap(sw0.id) ?? sw0;
               const name = swapNames(sw)[other(sw.side)];
               return (
@@ -158,14 +188,26 @@ export function SwapReminder() {
                 </View>
               );
             })}
+            {!locked && shown.groups.map((g0) => {
+              const g = getGroup(g0.id) ?? g0;
+              return (
+                <View key={g.id} style={{ gap: S.sm }}>
+                  <T v="label">{t('Swap de grupo · {title}', { title: g.terms.title })}</T>
+                  <GroupHero g={g} />
+                  <GroupSettle g={g} />
+                </View>
+              );
+            })}
             <View style={{ gap: S.sm }}>
               <Button
                 title={t('Ver swap')}
                 icon="swap-horizontal-outline"
                 onPress={() => {
-                  const id = shown.swaps[0].id;
+                  const sw = shown.swaps[0];
+                  const g = shown.groups[0];
                   close();
-                  router.push({ pathname: '/swap/[id]', params: { id } });
+                  if (sw) router.push({ pathname: '/swap/[id]', params: { id: sw.id } });
+                  else if (g) router.push({ pathname: '/swap/g/[id]', params: { id: g.id } });
                 }}
               />
               <Button kind="ghost" title={t('Fechar')} onPress={close} />
@@ -201,5 +243,28 @@ async function notify(sw: Swap, news: SwapEntry[]) {
     });
   } catch (e) {
     console.warn('[swaps] notify', e);
+  }
+}
+
+/** What other players' new group entries mean for me (only if notifications are already allowed). */
+async function notifyGroup(g: SwapGroup, news: GroupEntry[]) {
+  const n = notifications();
+  if (!n) return;
+  try {
+    if (!(await n.getPermissionsAsync()).granted) return;
+    await setup(n);
+    const cur = g.terms.currency;
+    const lines = news.map((e) => {
+      const name = seatLabel(g, e.seat);
+      if (e.kind === 'payment') return t('{name} pagou {amount} a {to}.', { name, amount: money(e.amount, cur), to: e.to === undefined ? '?' : seatLabel(g, e.to) });
+      return e.amount > 0 ? t('{name} cobrou {amount}: a tua parte é {owed}.', { name, amount: money(e.amount, cur), owed: money(groupShareOf(g, e.amount), cur) }) : t('{name} não cobrou no {event}.', { name, event: e.event || g.terms.title });
+    });
+    if (g.terms.scope === 'event' && news.some((e) => e.kind === 'result') && !g.entries.some((e) => e.seat === g.seat && e.kind === 'result')) lines.push(t('E tu, como acabaste?'));
+    await n.scheduleNotificationAsync({
+      content: { title: t('Swap de grupo · {title}', { title: g.terms.title }), body: lines.join(' '), data: { url: `sweatbook://swap/g/${g.id}` }, sound: true },
+      trigger: null,
+    });
+  } catch (e) {
+    console.warn('[swaps] notify group', e);
   }
 }

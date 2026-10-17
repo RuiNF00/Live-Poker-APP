@@ -19,6 +19,7 @@ import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
+import { SettleReminder } from '@/components/staking/SettleReminder';
 import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { MonthRecapSync } from '@/lib/month-recap';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
@@ -84,6 +85,7 @@ export default function RootLayout() {
           <SwapReminder />
           <TrialFollowUp />
           <MonthRecapSync />
+          <SettleReminder />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },

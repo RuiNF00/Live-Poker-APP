@@ -63,7 +63,7 @@ export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499
 export const PRO_ONLY = {
   /** Backers, makeup and settling up (staking screens). */
   staking: true,
-  /** Swap settlement (swaps screens). */
+  /** Swap settlement: who owes whom, the group's minimum transfers and the history breakdowns. Creating, sharing and recording results stay free. */
   swaps: true,
   /** The yearly report with tax per country (PDF export). */
   taxReport: true,
@@ -76,6 +76,7 @@ export const PRO_ONLY = {
   /** Win rate by game, stake, venue and weekday, and how many hours until it is known. The headline win rate stays free. */
   winrateDetail: true,
   monthCompare: true,
+  moveUpPlan: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -155,6 +156,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   monthCompare: {
     title: t('Este mês foi melhor?'),
     body: t('Compara cada mês com os anteriores e vê onde ganhaste.'),
+  },
+  moveUpPlan: {
+    title: t('Decide a stake com os teus números'),
+    body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),

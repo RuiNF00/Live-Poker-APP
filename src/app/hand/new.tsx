@@ -306,7 +306,7 @@ export default function NewHand() {
           </T>
         </Row>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => save()} hitSlop={10}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Guardar mão')} onPress={() => save()} hitSlop={10}>
         <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
           {t('Guardar já')}
         </T>
@@ -319,7 +319,11 @@ export default function NewHand() {
       {/* header: one compact row, so the felt gets the screen */}
       <View style={{ paddingTop: insets.top + 4, paddingHorizontal: S.gutter, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
         <IconButton name="close" label={t('Fechar')} onPress={() => (busy ? router.back() : discard())} />
-        <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, minHeight: 40, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, borderRadius: R.pill, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('Contexto da mão: {context}. Toca para mudar', { context: (hand.game.name || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ', ' + blindsLabel(hand) + ', ' + t('{n} jog.', { n }) })}
+          onPress={() => setCtxOpen(true)}
+          style={{ flex: 1, minHeight: 44, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, borderRadius: R.pill, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name={hand.game.kind === 'mtt' ? 'trophy' : 'cash'} size={14} color={C.accent} />
           <T v="small" numberOfLines={1} style={{ flex: 1, color: C.text, fontWeight: '700', fontFamily: ff(700) }}>
             {(hand.game.name || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ' · ' + blindsLabel(hand) + (stage ? ' · ' + stage : '') + ' · ' + t('{n} jog.', { n })}
@@ -338,8 +342,10 @@ export default function NewHand() {
           />
         )}
         <Pressable
-          accessibilityRole="button"
           accessibilityLabel={t('Valores em big blinds')}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: inBB }}
+          hitSlop={4}
           onPress={() => setInBB((b) => !b)}
           style={{ height: 40, minWidth: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: inBB ? C.accentSoft : C.surface2, borderWidth: 1, borderColor: inBB ? C.accentLine : C.border, borderRadius: 20, paddingHorizontal: 8 }}>
           <T v="tiny" color={inBB ? C.accent : C.textDim} style={{ fontWeight: '800', fontFamily: ff(800) }}>
@@ -393,6 +399,8 @@ export default function NewHand() {
                 return (
                   <Pressable
                     key={label}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
                     onPress={() => {
                       tap('select');
                       setHeroPos(label);
@@ -457,7 +465,7 @@ export default function NewHand() {
                     <Pressable
                       key={p.label}
                       accessibilityRole="button"
-                      accessibilityLabel={p.last ? t('{size}, o teu último tamanho', { size: p.label }) : p.label}
+                      accessibilityLabel={(p.allIn ? 'All-in ' + amount(p.to, hand, inBB) : t('{action} para {amount}', { action: l.canBet ? 'Bet' : raiseName(s), amount: amount(p.to, hand, inBB) }) + ', ' + bbs(p.to, hand.game.bb)) + (p.last ? ' · ' + t('{size}, o teu último tamanho', { size: p.label }) : '')}
                       onPress={() => act(l.canBet ? 'bet' : 'raise', p.to)}
                       style={({ pressed }) => ({
                         flex: 1,
@@ -485,6 +493,7 @@ export default function NewHand() {
                     </Pressable>
                   ))}
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel={t('Outro valor')}
                     onPress={() => setPad(true)}
                     style={({ pressed }) => ({ width: 46, minHeight: 58, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: pressed ? 0.7 : 1 })}>
@@ -714,6 +723,8 @@ function BigAction({ label, kind, onPress }: { label: string; kind: 'fold' | 'ch
   const solid = kind === 'call';
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => ({
         flex: solid ? 1.4 : 1,

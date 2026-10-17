@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import { intlTag, numberTag, withCurrency, type Locale } from '@/lib/i18n';
+import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
 import { swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
@@ -28,7 +28,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
   const [name, setName] = useState(initial.terms.b.name);
   const t = swap.terms;
   const you = token ? swap.you : null;
-  const names: Record<Side, string> = { a: t.a.name, b: swap.confirmedName || t.b.name };
+  const left = swap.leftSide ?? null;
+  const shown = (n: string) => (n === '-' ? c.left : n);
+  const names: Record<Side, string> = { a: shown(t.a.name), b: shown(swap.confirmedName || t.b.name) };
 
   const load = useCallback(
     async (tok: string | null) => {
@@ -67,11 +69,7 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
   }, [gone, load, token]);
 
   const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
-  const money = (n: number) => {
-    const sign = n < 0 ? '−' : '';
-    const a = fmt.format(Math.abs(n));
-    return withCurrency(a, t.currency, locale, sign);
-  };
+  const money = (n: number) => formatMoney(n, t.currency, locale);
   const pctLabel = (n: number) => `${fmt.format(n)}%`;
   const when = (iso: string | number) =>
     new Date(iso).toLocaleString(intlTag(locale), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -214,7 +212,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
         </section>
       ) : null}
 
-      {confirmed && you ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
+      {left ? <p className="live-updated">{c.leftNote(c.leftPlayer)}</p> : null}
+
+      {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
 
       {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/${id}?k=${token}`} /> : null}
 
@@ -225,19 +225,21 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
         </p>
       ) : null}
 
-      <section className="live-cta" id="baixar">
-        <Mark size={44} />
-        <h2>{c.ctaTitle}</h2>
-        <p>{c.ctaBody}</p>
-        <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
-      </section>
+      {/* Only once both confirmed: before that the page is about the deal, not the app. */}
+      {confirmed ? (
+        <section className="live-cta" id="baixar">
+          <Mark size={36} />
+          <p>{c.confirmedCta}</p>
+          <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
+        </section>
+      ) : null}
     </main>
   );
 }
 
-type C = ReturnType<typeof swapCopy>;
+export type C = ReturnType<typeof swapCopy>;
 
-function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
+export function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   return (
     <header className="live-top">
       <a href="/" className="live-brand" aria-label="Sweatbook">
@@ -254,9 +256,9 @@ function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   );
 }
 
-function EntryRow({ e, mine, c, onRemove, busy, children }: { e: SwapEntry; mine: boolean; c: C; onRemove: () => void; busy: boolean; children: React.ReactNode }) {
+export function EntryRow({ e, mine, c, onRemove, busy, children }: { e: Pick<SwapEntry, 'id'> & { side?: string }; mine: boolean; c: C; onRemove: () => void; busy: boolean; children: React.ReactNode }) {
   return (
-    <div className={`sw-row sw-side-${e.side}`}>
+    <div className={`sw-row ${e.side ? `sw-side-${e.side}` : ''}`}>
       <div className="sw-row-main">{children}</div>
       {mine ? (
         <button className="sw-remove" disabled={busy} onClick={onRemove} aria-label={c.remove}>
@@ -267,8 +269,24 @@ function EntryRow({ e, mine, c, onRemove, busy, children }: { e: SwapEntry; mine
   );
 }
 
-function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error: string; title: string; onAdd: (e: object) => Promise<boolean> }) {
+export function AddEntry({
+  c,
+  busy,
+  error,
+  title,
+  onAdd,
+  payees,
+}: {
+  c: C;
+  busy: boolean;
+  error: string;
+  title: string;
+  onAdd: (e: object) => Promise<boolean>;
+  /** Group swaps: who a payment can go to. */
+  payees?: { seat: number; name: string }[];
+}) {
   const [kind, setKind] = useState<'result' | 'payment'>('result');
+  const [to, setTo] = useState(payees?.[0]?.seat ?? -1);
   const [event, setEvent] = useState(title);
   const [amount, setAmount] = useState('');
   const [finish, setFinish] = useState('');
@@ -281,6 +299,7 @@ function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error
       amount: value,
       event: kind === 'result' ? event : '',
       finish: kind === 'result' && finish ? Number(finish) : null,
+      ...(payees && kind === 'payment' ? { to } : {}),
     });
     if (done) {
       setAmount('');
@@ -304,6 +323,18 @@ function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error
           <input value={event} maxLength={80} placeholder={c.eventPlaceholder} onChange={(e) => setEvent(e.target.value)} />
         </label>
       ) : null}
+      {payees && kind === 'payment' ? (
+        <label className="sw-field">
+          <span className="live-label">{c.payTo}</span>
+          <select value={to} onChange={(e) => setTo(Number(e.target.value))}>
+            {payees.map((p) => (
+              <option key={p.seat} value={p.seat}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <div className="sw-pair">
         <label className="sw-field">
           <span className="live-label">{kind === 'result' ? c.amountPrize : c.amountPayment}</span>
@@ -325,7 +356,7 @@ function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error
   );
 }
 
-function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink: string }) {
+export function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <section className="live-card sw-form">

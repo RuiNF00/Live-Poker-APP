@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -14,7 +14,7 @@ import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
-import { MindAfter } from '@/components/MindCheckIn';
+import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
@@ -26,6 +26,7 @@ import { FESTIVALS, type Festival } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
 import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
+import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -82,7 +83,7 @@ function SinceStart({ s }: { s: Session }) {
   const now = useTick(30000);
   return (
     <T v="tiny" style={{ textAlign: 'center' }}>
-      {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(profit(s), s.currency) })}
+      {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(s.kind === 'cash' ? liveResult(s) : profit(s), s.currency) })}
     </T>
   );
 }
@@ -99,6 +100,14 @@ export default function SessionScreen() {
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
 
   const startRef = useRef<(() => void) | null>(null);
+  // "Como chegas?" between Começar agora and the clock, unless turned off.
+  const [arriving, setArriving] = useState<Session | null>(null);
+  const begin = (s: Session) => {
+    tap('success');
+    saveSession(s);
+    // The next session goes to the same bankroll.
+    if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
+  };
   if (activeSession) return <Live s={activeSession} />;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -142,12 +151,7 @@ export default function SessionScreen() {
           recentVenues={recentVenues}
           submitLabel={t('Começar agora')}
           submitRef={startRef}
-          onSubmit={(s) => {
-            tap('success');
-            saveSession(s);
-            // The next session goes to the same bankroll.
-            if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
-          }}
+          onSubmit={(s) => (settings.mindAsk === false ? begin(s) : setArriving(s))}
         />
       </Screen>
       {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
@@ -170,7 +174,52 @@ export default function SessionScreen() {
           <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
         )}
       </View>
+      <ArrivalSheet
+        s={arriving}
+        onClose={() => setArriving(null)}
+        onStart={(s) => {
+          setArriving(null);
+          begin(s);
+        }}
+        onNever={(s) => {
+          setArriving(null);
+          setSettings({ mindAsk: false });
+          begin(s);
+        }}
+      />
     </View>
+  );
+}
+
+/**
+ * "Como chegas?" in one screen between Começar agora and the clock. Every
+ * answer is optional: Saltar starts straight away, and "Não perguntar mais"
+ * turns the journal off (Definições turns it back on).
+ */
+function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onClose: () => void; onStart: (s: Session) => void; onNever: (s: Session) => void }) {
+  const sheetAnim = useSheetAnimation();
+  const [mind, setMind] = useState<Session['mind']>(undefined);
+  const [shownFor, setShownFor] = useState<Session | null>(s);
+  if (s !== shownFor) {
+    setShownFor(s);
+    if (s) setMind(s.mind);
+  }
+  return (
+    <Modal visible={!!s} transparent animationType={sheetAnim} onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md, maxHeight: '92%' }}>
+          <SheetHeader title={t('Antes de começar')} onClose={onClose} />
+          <ScrollView contentContainerStyle={{ gap: S.md }} keyboardShouldPersistTaps="handled">
+            <MindBefore value={mind} onChange={setMind} />
+          </ScrollView>
+          <Row gap={S.sm}>
+            <Button kind="secondary" size="md" title={t('Saltar')} haptic={false} style={{ flex: 1 }} onPress={() => s && onStart(s)} />
+            <Button size="md" icon="play" title={t('Começar')} haptic={false} style={{ flex: 1.6 }} onPress={() => s && onStart({ ...s, mind })} />
+          </Row>
+          <Button kind="plain" size="sm" title={t('Não perguntar mais')} haptic={false} onPress={() => s && onNever(s)} />
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -191,7 +240,7 @@ function FestivalItem({ f }: { f: Festival }) {
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
-  const { saveSession, hands } = useStore();
+  const { saveSession, hands, settings } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -302,7 +351,12 @@ function Live({ s }: { s: Session }) {
         {s.stackLog.length > 1 && (
           <Section title={t('Stack ao longo da sessão')}>
             <Card style={{ paddingHorizontal: S.md }}>
-              <LineChart values={s.stackLog.map((x) => x.stack)} height={120} zeroLine={false} />
+              <LineChart
+                values={s.stackLog.map((x) => x.stack)}
+                height={120}
+                zeroLine={false}
+                label={t('Stack de {from} para {to}; o mais alto foi {max}.', { from: chips(s.stackLog[0].stack), to: chips(s.stack), max: chips(Math.max(...s.stackLog.map((x) => x.stack))) })}
+              />
             </Card>
           </Section>
         )}
@@ -364,7 +418,7 @@ function Live({ s }: { s: Session }) {
                   ))}
                 </View>
               </View>
-              <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />
+              {settings.mindAsk === false ? null : <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />}
               <StakeFields s={s} onChange={save} />
               {(() => {
                 const end = { ...s, cashOut: finish.cashOut };

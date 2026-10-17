@@ -10,7 +10,9 @@ import type { Session } from './types';
 
 const H = 3600000;
 /** When the recap notification goes out on the 1st, local time. */
-export const RECAP_HOUR = 10;
+export const RECAP_HOUR = 13;
+/** Cash hours before a month shows a BB/h rate: one short session says nothing. */
+export const MIN_BB_HOURS = 3;
 
 /** "2026-10" for any moment in October 2026, local time. */
 export function monthKey(ts: number): string {
@@ -44,9 +46,10 @@ export interface MonthRecap {
   profit: number;
   /** Money per hour; 0 without hours. */
   hourly: number;
-  /** Cash only, each session in its own blinds; null without cash hours. */
+  /** Cash only, each session in its own blinds; null under MIN_BB_HOURS of cash. */
   bbHourly: number | null;
   cashSessions: number;
+  cashHours: number;
   mtts: number;
   /** Tournaments with a prize. */
   cashes: number;
@@ -79,8 +82,9 @@ export function monthRecap(sessions: Session[], key: string, currency?: string):
     hours,
     profit: total,
     hourly: hours > 0 ? total / hours : 0,
-    bbHourly: cashHours > 0 ? cash.reduce((a, x) => a + x.profit / x.session.bb, 0) / cashHours : null,
+    bbHourly: cashHours >= MIN_BB_HOURS ? cash.reduce((a, x) => a + x.profit / x.session.bb, 0) / cashHours : null,
     cashSessions: cash.length,
+    cashHours,
     mtts: mtts.length,
     cashes: mtts.filter((s) => s.cashOut > 0).length,
     best: sorted[0] ?? null,
@@ -136,8 +140,9 @@ const oneDec = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 
 const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + rawMoney(Math.abs(Math.round(n)), cur);
 
 /**
- * What the notification on the 1st says. With privacy mode on it carries no
- * result at all (no money, no BB/h): it may show on a locked phone.
+ * What the notification on the 1st says. It shows on a locked phone, so it
+ * carries no result (no money, no BB/h) unless the player turned on "show
+ * amounts in notifications" and privacy mode is off; `hidden` covers both.
  */
 export function recapNotice(r: MonthRecap, hidden: boolean): { title: string; body: string } {
   const month = monthName(r.key);
@@ -148,7 +153,8 @@ export function recapNotice(r: MonthRecap, hidden: boolean): { title: string; bo
       body: t('O resumo do teu mês está pronto. Toca para o veres.'),
     };
   }
-  const rate = r.bbHourly !== null ? `${r.bbHourly > 0 ? '+' : ''}${oneDec(r.bbHourly)} BB/h` : signedMoney(r.profit, r.currency);
+  // BB/h is cash only: it stands for the month only when the month was all cash.
+  const rate = r.bbHourly !== null && r.cashSessions === r.sessions ? `${r.bbHourly > 0 ? '+' : ''}${oneDec(r.bbHourly)} BB/h` : signedMoney(r.profit, r.currency);
   const b = r.best && r.best.profit > 0 ? r.best : null;
   return {
     title: t('{month}: {h} h, {rate}', { month, h, rate }),
