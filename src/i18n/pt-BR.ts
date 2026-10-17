@@ -1030,6 +1030,16 @@ const ptBR: Record<string, string> = {
   'Sabe onde o teu win rate é real': 'Saiba onde seu win rate é real',
   'Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.': 'Intervalo de 95%: com estes resultados, seu win rate verdadeiro quase certamente está aqui dentro. Fica mais estreito com mais horas.',
   '{size}, o teu último tamanho': '{size}, seu último tamanho',
+  // Tournament breaks
+  'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos numa linha própria: Break 15': 'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos em uma linha separada: Break 15',
+  'Nível acabou · intervalo de {n} min': 'Fim do nível · intervalo de {n} min',
+  'Intervalo de {n} min a seguir': 'Depois, intervalo de {n} min',
+  'Retoma quando o torneio recomeçar.': 'Retome quando o torneio recomeçar.',
+  'Põe a sessão em pausa no intervalo para o relógio do nível acertar com o do torneio.': 'Pause a sessão no intervalo para o relógio do nível bater com o do torneio.',
+  'Põe a sessão em pausa. Depois do intervalo, nível {n}: blinds {blinds}.': 'Pause a sessão. Depois do intervalo, nível {n}: blinds {blinds}.',
+  'O intervalo está a acabar': 'O intervalo está acabando',
+  'Recomeça daqui a 2 min com o nível {n}: blinds {blinds}. Retoma a sessão.': 'Recomeça em 2 min com o nível {n}: blinds {blinds}. Retome a sessão.',
+  'Recomeça daqui a 2 min. Retoma a sessão.': 'Recomeça em 2 min. Retome a sessão.',
 };
 
 export default ptBR;

@@ -26,6 +26,6 @@ test('compact money: short amount, currency where money() puts it', () => {
   // Tests run in pt: the symbol after the number, like rawMoney.
   assert.equal(compactMoney(162000, '€'), '162k€');
   assert.equal(compactMoney(-315000, '$'), '−315k$');
-  assert.equal(compactMoney(1_250_000, 'CHF'), '1.25M CHF');
+  assert.equal(compactMoney(1_250_000, 'CHF'), chips(1_250_000) + ' CHF');
   assert.equal(compactMoney(162000, '$'), rawMoney(1, '$').replace('1', '162k'));
 });

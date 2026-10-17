@@ -2368,6 +2368,23 @@ const es: Record<string, string> = {
   'Amostra pequena': 'Muestra pequeña',
   'Amostra pequena: menos de 50 h ou 10 sessões. Por agora é uma pista, não uma conclusão.': 'Muestra pequeña: menos de 50 h o 10 sesiones. Por ahora es una pista, no una conclusión.',
   '{size}, o teu último tamanho': '{size}, tu último tamaño',
+  // Tournament breaks
+  'Intervalo': 'Descanso',
+  'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos numa linha própria: Break 15': 'Un nivel por línea: ciegas, ante y minutos. Ej.: 100/200/200 40. Los descansos en su propia línea: Break 15',
+  'Nível acabou · intervalo de {n} min': 'Nivel terminado · descanso de {n} min',
+  'Em pausa: o relógio do nível parou': 'En pausa: el reloj del nivel se detuvo',
+  'Intervalo de {n} min a seguir': 'Descanso de {n} min a continuación',
+  'Retoma quando o torneio recomeçar.': 'Reanuda la sesión cuando el torneo vuelva a empezar.',
+  'Põe a sessão em pausa no intervalo para o relógio do nível acertar com o do torneio.': 'Pausa la sesión en el descanso para que el reloj del nivel coincida con el del torneo.',
+  'Pausar no intervalo': 'Pausar en el descanso',
+  'Intervalo às {time} · depois do nível {n} · {m} min': 'Descanso a las {time} · tras el nivel {n} · {m} min',
+  'Intervalo agora · {n} min': 'Descanso ahora · {n} min',
+  'Intervalo às {time} · {n} min': 'Descanso a las {time} · {n} min',
+  'Intervalo de {n} min': 'Descanso de {n} min',
+  'Põe a sessão em pausa. Depois do intervalo, nível {n}: blinds {blinds}.': 'Pausa la sesión. Tras el descanso, nivel {n}: ciegas {blinds}.',
+  'O intervalo está a acabar': 'El descanso está terminando',
+  'Recomeça daqui a 2 min com o nível {n}: blinds {blinds}. Retoma a sessão.': 'Se reanuda en 2 min con el nivel {n}: ciegas {blinds}. Reanuda la sesión.',
+  'Recomeça daqui a 2 min. Retoma a sessão.': 'Se reanuda en 2 min. Reanuda la sesión.',
 };
 
 export default es;
