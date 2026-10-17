@@ -45,6 +45,8 @@ interface StoreValue {
   trips: Trip[];
   /** Players you back, each with the last statement they sent you. */
   backing: BackedPlayer[];
+  /** Values set aside at launch because they couldn't be read: [key, raw]. In the backup, and in Settings › Enviar ao suporte. */
+  quarantine: [string, string][];
   settings: Settings;
   activeSession: Session | null;
   /** Where a new session goes: the last one picked, else the first in the player's currency. */
@@ -155,6 +157,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [payments, setPayments] = useState<BackerPayment[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [backing, setBacking] = useState<BackedPlayer[]>([]);
+  const [quarantine, setQuarantine] = useState<[string, string][]>([]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
   // What screens see: each session with its makeup package cut and what swaps add or take
   // (derived, never stored; swaps can be turned off).
@@ -198,6 +201,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       boot = null;
       if (!alive) return;
       if (d.quarantined) quarantined(d.quarantined);
+      else if (d.recovered) Alert.alert(t('Dados recuperados'), t('{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered }));
       if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
       if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
       const w = {
@@ -238,6 +242,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setPayments(d.payments.items);
       setTrips(d.trips.items);
       setBacking(d.backing.items);
+      setQuarantine(d.quarantine);
       setSettingsState(st);
       draftRef.current = d.draft;
       setDraftKey(draftKeyOf(d.draft));
@@ -444,9 +449,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
       importSwaps(b.swaps ?? []).catch(() => {});
+      // Values another phone had set aside: kept here too; each launch tries them again with this version's checks.
+      const q = (b.quarantine ?? []).filter(([k]) => !quarantine.some(([have]) => have === k));
+      if (q.length) {
+        AsyncStorage.multiSet(q).catch(storageFailed);
+        setQuarantine((cur) => [...cur, ...q]);
+      }
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added };
     },
-    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing],
+    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine],
   );
 
   const eraseAll = useCallback(async () => {
@@ -481,6 +492,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setPayments([]);
     setTrips([]);
     setBacking([]);
+    setQuarantine([]);
     setSettingsState(DEFAULT_SETTINGS);
     setDraftKey(draftKeyOf(null));
   }, [hands, rawSessions]);
@@ -513,6 +525,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       payments,
       trips: sortedTrips,
       backing,
+      quarantine,
       settings,
       activeSession,
       defaultBankroll,
@@ -549,7 +562,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
   );
 
   // Nothing renders before the data is in, so no screen flashes its empty
