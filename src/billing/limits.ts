@@ -1,0 +1,38 @@
+// Free-plan counters. Pure functions over a small usage log, so they can be
+// tested and the log can't be reset by deleting hands.
+
+export type UsageKind = 'hand' | 'share';
+
+export interface UsageEvent {
+  kind: UsageKind;
+  t: number;
+}
+
+function startOfDay(now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+export function usedToday(log: UsageEvent[], kind: UsageKind, now = Date.now()): number {
+  const from = startOfDay(now);
+  return log.filter((e) => e.kind === kind && e.t >= from && e.t <= now).length;
+}
+
+/** How many more are allowed today; `null` = unlimited. */
+export function remainingToday(log: UsageEvent[], kind: UsageKind, limit: number | null, now = Date.now()): number | null {
+  if (limit === null) return null;
+  return Math.max(0, limit - usedToday(log, kind, now));
+}
+
+export function canUse(log: UsageEvent[], kind: UsageKind, limit: number | null, isPro: boolean, now = Date.now()): boolean {
+  if (isPro) return true;
+  const left = remainingToday(log, kind, limit, now);
+  return left === null || left > 0;
+}
+
+/** Keep only what today's counters need, so the stored log stays tiny. */
+export function pruneLog(log: UsageEvent[], now = Date.now()): UsageEvent[] {
+  const from = startOfDay(now) - 86400000;
+  return log.filter((e) => e.t >= from);
+}

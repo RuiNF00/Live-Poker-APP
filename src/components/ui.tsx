@@ -168,3 +168,13 @@ export function Empty({ title, body, action }: { title: string; body?: string; a
 export function Divider() {
   return <View style={{ height: 1, backgroundColor: C.border, marginVertical: S.md }} />;
 }
+
+// Brand wordmark: "Sweat" in text colour + "book" in accent.
+export function Wordmark({ size = 30 }: { size?: number }) {
+  const st: TextStyle = { fontSize: size, fontFamily: ff(800), fontWeight: '800', letterSpacing: -0.035 * size };
+  return (
+    <RNText style={[st, { color: C.text }]}>
+      Sweat<RNText style={{ color: C.accent }}>book</RNText>
+    </RNText>
+  );
+}

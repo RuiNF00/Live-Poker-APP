@@ -29,6 +29,10 @@ export interface TableState {
   minRaise: number;
   toAct: number | null;
   lastAggressor: number | null;
+  /** Bets/raises on this street so far (0 = unopened). */
+  raises: number;
+  /** Last preflop raiser, for c-bet labels and tags. */
+  pfAggressor: number | null;
   /** Board cards visible in this state. */
   boardCount: number;
   /** A street closed and its board cards have not been entered yet. */
@@ -195,6 +199,8 @@ export function initialState(hand: Hand): TableState {
     minRaise: g.bb,
     toAct: null,
     lastAggressor: null,
+    raises: 0,
+    pfAggressor: null,
     boardCount: 0,
     needsBoard: false,
     bettingDone: false,
@@ -273,6 +279,7 @@ function advance(s: TableState, next: Street, hand: Hand) {
   s.minRaise = hand.game.bb;
   s.acted = s.acted.map(() => false);
   s.lastAggressor = null;
+  s.raises = 0;
   s.needsBoard = true;
 }
 
@@ -337,6 +344,8 @@ export function apply(prev: TableState, a: HandAction, hand: Hand): TableState |
       if (raiseBy >= s.minRaise) s.minRaise = raiseBy;
       s.currentBet = to;
       s.lastAggressor = p;
+      s.raises += 1;
+      if (s.street === 'preflop') s.pfAggressor = p;
       // Everyone else must respond to the new amount.
       s.acted = s.acted.map((v, i) => (i === p ? v : false));
     }
@@ -481,6 +490,42 @@ export function computeResult(hand: Hand, s: TableState): HandResult {
 }
 
 // ─── helpers for UIs ───────────────────────────────────────
+
+/** What poker players call the next bet/raise here: Open, 3-Bet, C-bet… */
+export function raiseName(s: TableState): string {
+  if (s.street === 'preflop') return s.raises === 0 ? 'Open' : `${s.raises + 2}-Bet`;
+  if (s.raises === 0) return s.street === 'flop' && s.toAct !== null && s.toAct === s.pfAggressor ? 'C-bet' : 'Bet';
+  return s.raises === 1 ? 'Raise' : `${s.raises + 1}-Bet`;
+}
+
+export function callName(s: TableState): string {
+  return s.street === 'preflop' && s.raises === 0 ? 'Limp' : 'Call';
+}
+
+/** Tags the app can work out by itself. */
+export function autoTags(hand: Hand, r: Replay): string[] {
+  const tags: string[] = [];
+  let maxPf = 0;
+  let sawFlop = 0;
+  let allIn = false;
+  for (const st of r.steps) {
+    if ((st.actStreet ?? st.street) === 'preflop') maxPf = Math.max(maxPf, st.state.raises);
+    if (st.kind === 'board' && st.street === 'flop') sawFlop = st.state.folded.filter((f) => !f).length;
+    if (st.state.last?.allIn) allIn = true;
+  }
+  if (maxPf >= 3) tags.push('4-bet pot');
+  else if (maxPf === 2) tags.push('3-bet pot');
+  else if (maxPf === 0 && r.final.street !== 'preflop') tags.push('Limped');
+  if (sawFlop >= 3) tags.push('Multiway');
+  if (allIn) tags.push('All-in');
+  if (r.result && !r.final.foldWin) tags.push('Showdown');
+  if (r.result) {
+    const bb = hand.game.bb || 1;
+    const pot = r.result.pots.reduce((a, p) => a + p.amount, 0);
+    if (pot >= 40 * bb) tags.push('Pote grande');
+  }
+  return tags;
+}
 
 /** Cards already used in the hand, to grey them out in pickers. */
 export function usedCards(hand: Hand, except: string[] = []): Set<string> {

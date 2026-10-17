@@ -48,11 +48,13 @@ export interface StoryCardProps {
   moment: StoryMoment;
   comment: string;
   inBB: boolean;
+  /** Sweatbook wordmark and site name. Free stories always carry it. */
+  brand?: boolean;
   onLayout?: (e: LayoutChangeEvent) => void;
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
 
-export function StoryCard({ hand, moment, comment, inBB, onLayout, ref }: StoryCardProps) {
+export function StoryCard({ hand, moment, comment, inBB, brand = true, onLayout, ref }: StoryCardProps) {
   const g = hand.game;
   const st = moment.step.state;
   const isQ = moment.mode === 'question';
@@ -81,8 +83,8 @@ export function StoryCard({ hand, moment, comment, inBB, onLayout, ref }: StoryC
 
       {/* Below Instagram's profile bar */}
       <View style={{ position: 'absolute', top: 70, left: 22, right: 22, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Wordmark size={13} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: brand ? 'space-between' : 'flex-end' }}>
+          {brand ? <Wordmark size={13} /> : null}
           <View style={{ backgroundColor: isQ ? C.accent : C.surface3, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }}>
             <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1, color: isQ ? C.accentInk : C.text }}>
               {isQ ? 'O QUE FAZIAS?' : 'MÃO JOGADA'}
@@ -138,8 +140,8 @@ export function StoryCard({ hand, moment, comment, inBB, onLayout, ref }: StoryC
           </View>
         ) : null}
         <Text style={{ textAlign: 'center', fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
-          {isQ ? 'Vota e vê o que aconteceu em ' : 'Replay completo em '}
-          <Text style={{ color: C.accent }}>{linkHost}</Text>
+          {isQ ? 'Vota e vê o que aconteceu ' : 'Replay completo '}
+          <Text style={{ color: C.accent }}>{brand ? 'em ' + linkHost : 'no link'}</Text>
         </Text>
       </View>
     </View>

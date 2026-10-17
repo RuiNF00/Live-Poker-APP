@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ProProvider } from '@/billing/pro';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 
@@ -42,6 +43,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={theme}>
         <StoreProvider>
+          <ProProvider>
           <StatusBar style="light" />
           <Stack
             screenOptions={{
@@ -56,7 +58,9 @@ export default function RootLayout() {
             <Stack.Screen name="hand/[id]" options={{ title: 'Mão' }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
+            <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
           </Stack>
+          </ProProvider>
         </StoreProvider>
       </ThemeProvider>
     </SafeAreaProvider>

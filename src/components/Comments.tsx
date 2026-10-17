@@ -31,8 +31,8 @@ export function CommentsList({
       const c = await postComment(shareId, { name: name.trim() || 'Anónimo', text: text.trim() });
       onPosted(c);
       setText('');
-    } catch {
-      setErr('Não deu para enviar. Tenta outra vez.');
+    } catch (e) {
+      setErr(e instanceof Error && e.message === 'offensive' ? 'Comentário recusado: linguagem ofensiva.' : 'Não deu para enviar. Tenta outra vez.');
     } finally {
       setBusy(false);
     }

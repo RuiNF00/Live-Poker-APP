@@ -3,21 +3,22 @@
 
 import { Link, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
-import { Button, Empty, Row, T } from '@/components/ui';
-import { fetchComments, fetchHand, type Comment } from '@/lib/share-api';
+import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
+import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 import { BRAND, C, R } from '@/theme';
 
 export default function SharedHand() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, q } = useLocalSearchParams<{ id: string; q?: string }>();
   const [hand, setHand] = useState<Hand | null>(null);
   const [err, setErr] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [reported, setReported] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -30,7 +31,7 @@ export default function SharedHand() {
       <Row style={{ justifyContent: 'space-between', paddingTop: Platform.OS === 'web' ? 4 : 44 }}>
         <Row gap={8}>
           <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: C.accent }} />
-          <T v="h2">{BRAND.name}</T>
+          <Wordmark size={20} />
         </Row>
         <T v="tiny">{BRAND.tagline}</T>
       </Row>
@@ -40,8 +41,17 @@ export default function SharedHand() {
         <T v="small">A carregar a mão…</T>
       ) : (
         <>
-          <HandHeader hand={hand} />
-          <Replayer hand={hand} autoPlay />
+          <HandHeader hand={hand} quiz={q === '1'} />
+          <Replayer
+            hand={hand}
+            autoPlay
+            quiz={q === '1'}
+            onVote={(choice) =>
+              postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
+                .then((c) => setComments((x) => [...x, c]))
+                .catch(() => {})
+            }
+          />
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
             <T v="h2">Regista as tuas mãos live em segundos</T>
             <T v="small">
@@ -53,6 +63,16 @@ export default function SharedHand() {
           </View>
           <T v="h2">Comentários</T>
           <CommentsList shareId={id!} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} />
+          <Pressable
+            disabled={reported}
+            hitSlop={8}
+            style={{ alignSelf: 'center', paddingTop: 8 }}
+            onPress={() => {
+              setReported(true);
+              reportHand(id!, anonId()).catch(() => {});
+            }}>
+            <T v="tiny">{reported ? 'Obrigado, vamos rever esta mão.' : 'Denunciar esta mão'}</T>
+          </Pressable>
         </>
       )}
     </ScrollView>

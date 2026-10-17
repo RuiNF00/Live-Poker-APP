@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { comboLabel } from '@/poker/cards';
-import { positions } from '@/poker/engine';
+import { autoTags, positions, replay } from '@/poker/engine';
 import { blindsLabel, shortDate, timeOf } from '@/poker/format';
 import { STAGES, type Hand } from '@/poker/types';
 import { C, R, ff } from '@/theme';
@@ -10,11 +10,12 @@ import { C, R, ff } from '@/theme';
 import { CardRow } from './PlayingCard';
 import { Row, T } from './ui';
 
-export function HandHeader({ hand }: { hand: Hand }) {
+export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
   const pos = positions(hand.players.length, hand.button);
   const g = hand.game;
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const hero = hand.players[hand.hero];
+  const auto = React.useMemo(() => (quiz ? [] : autoTags(hand, replay(hand))).filter((t) => !hand.tags.includes(t)), [hand, quiz]);
   return (
     <View style={{ gap: 8 }}>
       <Row style={{ justifyContent: 'space-between' }}>
@@ -35,7 +36,7 @@ export function HandHeader({ hand }: { hand: Hand }) {
           </T>
         </View>
       </Row>
-      {hand.tags.length > 0 && (
+      {hand.tags.length + auto.length > 0 && (
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
           {hand.tags.map((t) => (
             <View key={t} style={{ backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
@@ -44,9 +45,14 @@ export function HandHeader({ hand }: { hand: Hand }) {
               </T>
             </View>
           ))}
+          {auto.map((t) => (
+            <View key={t} style={{ borderColor: C.border, borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 2 }}>
+              <T v="tiny">{t}</T>
+            </View>
+          ))}
         </Row>
       )}
-      {hand.notes ? (
+      {hand.notes && !quiz ? (
         <T v="small" style={{ color: C.text, lineHeight: 19 }}>
           {hand.notes}
         </T>
