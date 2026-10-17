@@ -76,3 +76,11 @@ test('derived prices keep the store currency', async () => {
   assert.match(formatPrice(16.67, 'EUR', 'pt-PT'), /16,67\s€/);
   assert.match(formatPrice(359.88, 'USD', 'en-GB'), /US\$359\.88|\$359\.88/);
 });
+
+test('turning the clock back does not free up today\'s hands', () => {
+  const full = [day(20), day(20, 1), day(20, 2)].map((t) => ({ kind: 'hand' as const, t }));
+  // Same day, clock set back to the morning.
+  assert.equal(canUse(full, 'hand', 3, false, day(8)), false);
+  // Clock set back to yesterday: today's saves still count (kept by pruneLog too).
+  assert.equal(canUse(pruneLog(full, yesterday), 'hand', 3, false, yesterday), false);
+});
