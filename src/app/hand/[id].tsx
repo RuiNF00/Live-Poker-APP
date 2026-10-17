@@ -23,6 +23,7 @@ import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
+import { shareSampleHand } from '@/lib/sample-share';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Street } from '@/poker/types';
@@ -71,6 +72,23 @@ export default function HandScreen() {
         <HandHeader hand={hand} inBB={settings.inBB} />
         <Replayer hand={hand} initialInBB={settings.inBB} autoPlay />
         <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
+        <Section title={t('Partilhar')}>
+          <Button
+            kind="secondary"
+            title={busy ? t('A criar link…') : t('Partilhar com amigos')}
+            icon="share-social"
+            disabled={busy}
+            onPress={() => {
+              tap('medium');
+              setBusy(true);
+              shareSampleHand(hand).finally(() => setBusy(false));
+            }}
+          />
+          <Row gap={S.sm}>
+            <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: 'sample' } })} />
+            <ShareTile icon="analytics-outline" label="Solver" sub="GTO Wizard" onPress={() => openInGtoWizard([hand])} />
+          </Row>
+        </Section>
       </ScrollView>
     );
 
