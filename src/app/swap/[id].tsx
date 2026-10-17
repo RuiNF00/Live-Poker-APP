@@ -2,7 +2,7 @@
 // prizes and payments, and buttons to add yours. Someone else's link: the terms and a button
 // to confirm them, which makes it yours too (side b).
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';

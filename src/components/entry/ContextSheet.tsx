@@ -45,8 +45,8 @@ export function ContextSheet({
             value={game.kind}
             onChange={(k) =>
               k === 'mtt'
-                ? set({ kind: 'mtt', anteType: game.anteType === 'none' ? 'bb' : game.anteType, ante: game.ante || game.bb })
-                : set({ kind: 'cash', anteType: 'none', ante: 0, stage: undefined })
+                ? set({ kind: 'mtt', anteType: game.anteType === 'none' ? 'bb' : game.anteType, ante: game.ante || game.bb, straddles: undefined, straddleFrom: undefined, bombPot: undefined })
+                : set({ kind: 'cash', anteType: 'none', ante: 0, stage: undefined, level: undefined, playersLeft: undefined })
             }
           />
 
@@ -55,7 +55,7 @@ export function ContextSheet({
               label={game.kind === 'mtt' ? t('Torneio') : t('Sala / jogo')}
               value={game.name}
               onChangeText={(name) => set({ name })}
-              placeholder={game.kind === 'mtt' ? t('Ex.: EPT Main Event') : t('Ex.: Casino Lisboa 1/2')}
+              placeholder={game.kind === 'mtt' ? t('Ex.: Main Event do festival') : t('Ex.: Casino, 1/2')}
             />
             {recentNames.length > 0 && (
               <ChipRow>
@@ -71,7 +71,7 @@ export function ContextSheet({
             <ChipRow>
               {levels.map(([sb, bb]) => (
                 <Chip
-                  key={bb}
+                  key={`${sb}/${bb}`}
                   label={`${chips(sb)}/${chips(bb)}`}
                   active={game.sb === sb && game.bb === bb}
                   onPress={() => set({ sb, bb, ante: game.kind === 'mtt' && game.anteType !== 'none' ? (game.anteType === 'bb' ? bb : Math.round(bb / 8)) : 0 })}

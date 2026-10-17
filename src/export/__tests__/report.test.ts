@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { replay } from '../../poker/engine';
 import { sampleHand } from '../../poker/sample';
 import { sessionsCsv } from '../../store/backup';
+import { dayKey } from '../../store/fx-math';
 import type { Bankroll, Session, Transfer, Trip } from '../../store/types';
 import { buildReport, handsCsv } from '../report';
 import { reportHtml } from '../report-html';
@@ -89,7 +90,20 @@ test('trips in the range get their own table, after expenses, and expenses go to
   assert.ok(html.includes('Vegas &lt;WSOP&gt;'));
   const csv = sessionsCsv([], brs, [], [{ trip: vegas, x: vegas.expenses[0] }]).trim().split('\n');
   assert.equal(csv.length, 2);
-  assert.ok(csv[1].startsWith(`${new Date(at(5, 2)).toISOString().slice(0, 10)},expense,`));
+  assert.ok(csv[1].startsWith(`${dayKey(at(5, 2))},,expense,`), csv[1]);
   assert.ok(csv[1].includes(',-200,'));
   assert.ok(csv[1].endsWith('hotel: 3 nights'));
+});
+
+test('a multi-day tournament row says its day and when it is in the bag', () => {
+  const s = sess('md', { kind: 'mtt', name: 'Main Event Multi', day: 2, bag: { stack: 154000, at: at(0, 2) }, buyIn: 600 });
+  const html = reportHtml(buildReport({ sessions: [s], transfers: [], bankrolls: [], range: year }));
+  assert.ok(html.includes('Main Event Multi <span class="muted">· Dia 2 · no saco</span>'), 'day and bag on the row');
+});
+
+test('the report says when results include swaps', () => {
+  const plain = reportHtml(buildReport({ sessions: [sess('a', {})], transfers: [], bankrolls: [], range: year }));
+  assert.ok(!plain.includes('inclui swaps'));
+  const html = reportHtml(buildReport({ sessions: [sess('b', { swapNet: 120 })], transfers: [], bankrolls: [], range: year }));
+  assert.ok(html.includes('inclui swaps'));
 });

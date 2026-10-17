@@ -20,13 +20,14 @@ import { uid, useStore } from '@/store/store';
 import type { BackerLedgerRow } from '@/store/staking';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
+import { withPro } from '@/components/ProGate';
 
 function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')) {
   if (Platform.OS === 'web') ok();
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: okLabel, style: 'destructive', onPress: ok }]);
 }
 
-export default function BackerScreen() {
+function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sessions, backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
   const { pk, ledgers } = useStaking();
@@ -36,7 +37,8 @@ export default function BackerScreen() {
   const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
   const backer = backers.find((b) => b.id === id);
   const l = backer ? ledgers.get(backer.id) : undefined;
-  const cur = settings.currency;
+  // Totals are in the deal's currency; each session row in its own.
+  const cur = l?.currency || settings.currency;
 
   if (!backer || !l)
     return (
@@ -152,7 +154,7 @@ export default function BackerScreen() {
         </Section>
 
         <StatGrid cols={3}>
-          <Stat label={t('Investido')} value={money(l.invested, cur)} />
+          <Stat label={t('Custo')} value={money(l.invested, cur)} />
           <Stat label={t('Resultado')} value={money(l.result, cur)} tone={l.result > 0 ? 'good' : l.result < 0 ? 'bad' : undefined} />
           <Stat label="Makeup" value={money(l.makeup, cur)} tone={l.makeup ? 'warn' : undefined} />
         </StatGrid>
@@ -160,7 +162,7 @@ export default function BackerScreen() {
         <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id))}>
           {mine.length === 0 ? (
             <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id))}>
-              <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao vender ação numa sessão, escolhes o pacote.')}</T>
+              <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao registar ação vendida numa sessão, escolhes o pacote.')}</T>
             </Card>
           ) : (
             <ListGroup>
@@ -217,10 +219,10 @@ export default function BackerScreen() {
                           {[shortDate(s.startedAt), `${r.stake.share}%`, r.stake.markup !== 1 ? markupLabel(r.stake.markup) : '', pkgName(r.stake.packageId) ?? ''].filter(Boolean).join(' · ')}
                         </T>
                         {!s.endedAt ? <Pill label={t('A decorrer')} color={C.good} icon="ellipse" /> : null}
-                        {r.stake.unpaid ? <Pill label={t('Por pagar {amount}', { amount: money(r.cost, cur) })} color={C.warn} /> : null}
+                        {r.stake.unpaid ? <Pill label={t('Por pagar {amount}', { amount: money(r.cost, s.currency || cur) })} color={C.warn} /> : null}
                       </Row>
                     }
-                    right={s.endedAt ? <Amount value={net} text={money(net, cur)} style={{ fontSize: 14 }} /> : undefined}
+                    right={s.endedAt ? <Amount value={net} text={money(net, s.currency || cur)} style={{ fontSize: 14 }} /> : undefined}
                     onPress={() => setPiece(r)}
                   />
                 );
@@ -297,7 +299,7 @@ export default function BackerScreen() {
         row={piece}
         name={backer.name}
         pkgName={pkgName(piece?.stake.packageId)}
-        currency={cur}
+        currency={piece?.session.currency || cur}
         onClose={() => setPiece(null)}
         onTogglePaid={togglePaid}
       />
@@ -314,3 +316,5 @@ export default function BackerScreen() {
     </>
   );
 }
+
+export default withPro('staking', 'Staking', BackerScreen);

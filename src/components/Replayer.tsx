@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -6,7 +6,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { t } from '@/i18n';
 import { legal, raiseName, replay } from '@/poker/engine';
 import { pct } from '@/poker/format';
-import type { Hand } from '@/poker/types';
+import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
 import { timeline, viewAt, type TimelineItem } from './replayer/model';
@@ -29,6 +29,9 @@ export function Replayer({
   autoPlay = false,
   quiz = false,
   onVote,
+  onStreet,
+  seek,
+  streetNotes,
 }: {
   hand: Hand;
   initialInBB?: boolean;
@@ -38,6 +41,12 @@ export function Replayer({
   /** Stop before hero's last decision and ask "what do you do?". */
   quiz?: boolean;
   onVote?: (choice: string) => void;
+  /** Called with the street on screen whenever it changes (comments mark "you are here"). */
+  onStreet?: (street: Street) => void;
+  /** Jump to the start of a street; bump `n` to jump again to the same one. */
+  seek?: { street: Street; n: number };
+  /** The player's private note on each street, shown while that street is on screen. */
+  streetNotes?: Partial<Record<Street, string>>;
 }) {
   const r = useMemo(() => replay(hand), [hand]);
   const steps = r.steps;
@@ -100,6 +109,13 @@ export function Replayer({
     AsyncStorage.setItem(TIPS_KEY, '1').catch(() => {});
   };
 
+  const street = steps[k]?.street ?? 'preflop';
+  useEffect(() => {
+    onStreet?.(street);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [street]);
+  const note = streetNotes?.[street]?.trim();
+
   const view = useMemo(() => viewAt(hand, r, k, { inBB, reveal: reveal && !locked, atEnd }), [hand, r, k, inBB, reveal, locked, atEnd]);
   const items = useMemo(() => timeline(hand, r, inBB), [hand, r, inBB]);
 
@@ -109,6 +125,13 @@ export function Replayer({
     setPlaying(false);
     setI(Math.max(0, Math.min(last, to)));
   };
+  // A street tapped outside the replayer (in the comments).
+  useEffect(() => {
+    if (!seek) return;
+    const at = steps.findIndex((s) => s.street === seek.street && (s.kind === 'start' || s.kind === 'board'));
+    if (at >= 0 && at <= last) go(at);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seek?.n]);
   const nextStreet = () => {
     const n = steps.findIndex((s, j) => j > k && (s.kind === 'board' || s.kind === 'showdown'));
     go(n < 0 ? last : n);
@@ -131,6 +154,12 @@ export function Replayer({
       ) : (
         <InfoBar view={view} />
       )}
+      {note ? (
+        <View accessibilityLabel={`${t('Nota privada')}: ${note}`} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+          <Ionicons name="lock-closed" size={13} color={C.textDim} style={{ marginTop: 2 }} />
+          <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>{note}</Text>
+        </View>
+      ) : null}
       {answered ? (
         <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
           {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}
@@ -239,7 +268,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
         </>
       ) : (
         <>
-          <Text numberOfLines={1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
+          <Text numberOfLines={view.board2 ? 2 : 1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
             {view.narration}
           </Text>
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
@@ -323,7 +352,7 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                 }}
               />
             </View>
-            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street ? 0.8 : 0 }}>
+            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
               {it.label}
             </Text>
             {it.detail ? (

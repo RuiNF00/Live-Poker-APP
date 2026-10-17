@@ -66,9 +66,9 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
       `${chips(g.sb)}/${chips(bb)}${ante}`,
       straddles,
       bomb,
-      g.level ? `Level ${g.level}` : '',
+      g.kind === 'mtt' && g.level ? `Level ${g.level}` : '',
       g.kind === 'mtt' && g.stage ? STAGE_EN[g.stage] : '',
-      g.playersLeft ? `${g.playersLeft} left` : '',
+      g.kind === 'mtt' && g.playersLeft ? `${g.playersLeft} left` : '',
       `${hand.players.length}-handed`,
     ]
       .filter(Boolean)

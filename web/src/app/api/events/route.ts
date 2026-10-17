@@ -1,6 +1,7 @@
 import { after, NextResponse } from 'next/server';
 import { APP_EVENTS, getStore, type AppEvent } from '@/lib/store';
 import { limited } from '@/lib/abuse';
+import { analytics } from '@/lib/analytics';
 import { cors } from '@/lib/cors';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -44,10 +45,14 @@ export async function POST(req: Request) {
   }
   // Retention backstop for databases without pg_cron (migrations 20261017030000, 20261017090000).
   if (Math.random() < 0.005) after(() => getStore().purgeOldEvents().catch(() => {}));
+  const row: AppEvent = { event, installId, platform, props: cleanProps(body?.props) };
   try {
-    await getStore().logEvent({ event, installId, platform, props: cleanProps(body?.props) });
+    await getStore().logEvent(row);
   } catch {
     return NextResponse.json({ error: 'unavailable' }, { status: 503, headers: cors });
   }
+  // Optional copy to product analytics, after the response so the app never waits on it.
+  const a = analytics();
+  if (a) after(() => a.capture(row).catch(() => {}));
   return new NextResponse(null, { status: 204, headers: cors });
 }

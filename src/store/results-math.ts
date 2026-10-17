@@ -2,6 +2,8 @@
 // (standard deviation) and what that spread means over the next N hours or
 // tournaments. Pure, so it can be tested.
 
+import { t } from '@/i18n';
+
 import { cost, mainCurrency, playedMs, profit } from './session-math';
 import type { Session } from './types';
 
@@ -153,4 +155,162 @@ export function bestWeekday(list: Session[]): { day: number; profit: number; ses
     if (a.sessions >= 2 && a.profit > 0 && (!best || a.profit > best.profit)) best = { day, ...a };
   });
   return best;
+}
+
+/** Cash hours and tournaments needed before the verdict says anything. */
+export const VERDICT_MIN = { cashHours: 100, cashSessions: 20, tournaments: 50 };
+
+export interface Verdict {
+  /** False: still watching (sample too small). */
+  ready: boolean;
+  tone: 'good' | 'bad' | 'neutral';
+  text: string;
+}
+
+/**
+ * One sentence on whether the player wins, said only when the sample can
+ * carry it: the win rate has to stay on one side of zero at 95% one-sided
+ * (rate ± 1.645 standard errors). Cash by the hour; tournaments by ROI.
+ */
+export function verdict(list: Session[], currency: string, money: (n: number) => string): Verdict {
+  const done = list.filter((s) => s.endedAt && s.currency === currency);
+  const cash = cashStats(done, currency);
+  const mtt = mttStats(done, currency);
+  if (cash && cash.hours >= VERDICT_MIN.cashHours && cash.sessions >= VERDICT_MIN.cashSessions) {
+    const se = cash.sdHour / Math.sqrt(cash.hours);
+    const h = Math.round(cash.hours);
+    const rate = money(Math.round(cash.hourly));
+    if (cash.hourly - 1.645 * se > 0) return { ready: true, tone: 'good', text: t('Ganhas cerca de {rate}/h em cash, e com {h} h já não é sorte.', { rate, h }) };
+    if (cash.hourly + 1.645 * se < 0) return { ready: true, tone: 'bad', text: t('Perdes cerca de {rate}/h em cash, e com {h} h já não é azar.', { rate: money(Math.round(-cash.hourly)), h }) };
+    return { ready: true, tone: 'neutral', text: t('Com {h} h de cash, os teus {rate}/h ainda cabem na variância: nem dá para dizer que ganhas, nem que perdes.', { rate, h }) };
+  }
+  if (mtt && mtt.tournaments >= VERDICT_MIN.tournaments) {
+    const se = (mtt.sdBuyIns * 100) / Math.sqrt(mtt.tournaments);
+    const n = mtt.tournaments;
+    const roi = `${Math.round(mtt.roi)}%`;
+    if (mtt.roi - 1.645 * se > 0) return { ready: true, tone: 'good', text: t('Ganhas nos torneios: ROI de {roi} em {n} torneios, e já não é sorte.', { roi, n }) };
+    if (mtt.roi + 1.645 * se < 0) return { ready: true, tone: 'bad', text: t('Perdes nos torneios: ROI de {roi} em {n} torneios, e já não é azar.', { roi, n }) };
+    return { ready: true, tone: 'neutral', text: t('Com {n} torneios, um ROI de {roi} ainda cabe na variância dos torneios.', { roi, n }) };
+  }
+  return { ready: false, tone: 'neutral', text: t('Ainda a observar ({n} sessões): o veredito aparece com 100 h de cash ou 50 torneios.', { n: done.length }) };
+}
+
+export interface Downswing {
+  /** How far it fell from the peak (positive). */
+  depth: number;
+  /** When the peak was reached (end of that session; the first session's start for a fall from zero). */
+  from: number;
+  /** The lowest point. */
+  to: number;
+  /** Sessions from the peak to the low. */
+  sessions: number;
+  /** When the curve got back to the peak; null while still below it. */
+  recovered: number | null;
+}
+
+/**
+ * The biggest downswing and the current one, on the profit curve of one
+ * currency, plus the curve below its running peak (0 at a peak, negative
+ * below), for the drawdown chart.
+ */
+export function downswings(list: Session[], currency: string): { underwater: number[]; biggest: Downswing | null; current: Downswing | null } {
+  const done = list.filter((s) => s.endedAt && s.currency === currency).sort((a, b) => a.endedAt! - b.endedAt!);
+  let v = 0;
+  let peak = 0;
+  let peakAt = done[0]?.startedAt ?? 0;
+  let peakIdx = 0;
+  let open: Downswing | null = null;
+  let biggest: Downswing | null = null;
+  const underwater = [0];
+  done.forEach((s, i) => {
+    v += profit(s);
+    if (v >= peak) {
+      if (open) open.recovered = s.endedAt!;
+      open = null;
+      peak = v;
+      peakAt = s.endedAt!;
+      peakIdx = i + 1;
+    } else {
+      const depth = peak - v;
+      if (!open) open = { depth, from: peakAt, to: s.endedAt!, sessions: i + 1 - peakIdx, recovered: null };
+      if (depth >= open.depth) Object.assign(open, { depth, to: s.endedAt!, sessions: i + 1 - peakIdx });
+      if (!biggest || open.depth > biggest.depth) biggest = open;
+    }
+    underwater.push(v - peak);
+  });
+  return { underwater, biggest: biggest ? { ...(biggest as Downswing) } : null, current: open ? { ...(open as Downswing) } : null };
+}
+
+/** Seeded PRNG (mulberry32), so a simulation reads the same every time it is drawn. */
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let x = Math.imul(a ^ (a >>> 15), 1 | a);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Fewest finished sessions before the downswing read says anything. */
+export const DOWNSWING_MIN = 20;
+
+export interface DownswingOdds {
+  sessions: number;
+  /** Average result per session the simulation assumes (the player's own). */
+  mean: number;
+  /** Biggest downswing in a typical run of this many sessions (median), and in 1 run of 20 (95th percentile). */
+  typical: number;
+  bad: number;
+  /** Share of runs (0–1) with a downswing at least this deep. */
+  atLeast: (depth: number) => number;
+}
+
+/**
+ * Is a downswing normal for this player? Replays the player's own session
+ * results in random order, with replacement, as many sessions as they have
+ * played, and measures the biggest downswing of each run. No normal curve:
+ * tournament results are far too skewed for one. Null below DOWNSWING_MIN.
+ */
+export function downswingOdds(results: number[], runs = 1000, seed = 7): DownswingOdds | null {
+  const n = results.length;
+  if (n < DOWNSWING_MIN) return null;
+  const rand = rng(seed);
+  const maxes: number[] = [];
+  for (let r = 0; r < runs; r++) {
+    let v = 0;
+    let peak = 0;
+    let max = 0;
+    for (let i = 0; i < n; i++) {
+      v += results[Math.floor(rand() * n)];
+      if (v > peak) peak = v;
+      else if (peak - v > max) max = peak - v;
+    }
+    maxes.push(max);
+  }
+  maxes.sort((a, b) => a - b);
+  const at = (q: number) => maxes[Math.min(runs - 1, Math.floor(q * runs))];
+  return {
+    sessions: n,
+    mean: results.reduce((a, b) => a + b, 0) / n,
+    typical: at(0.5),
+    bad: at(0.95),
+    atLeast: (depth) => {
+      // First index with max >= depth (binary search on the sorted runs).
+      let lo = 0;
+      let hi = runs;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (maxes[mid] >= depth) hi = mid;
+        else lo = mid + 1;
+      }
+      return (runs - lo) / runs;
+    },
+  };
+}
+
+/** A usual buy-in for the currency: the median of what one entry cost. */
+export function usualBuyIn(list: Session[], currency: string): number {
+  const v = list.filter((s) => s.endedAt && s.currency === currency && s.buyIn > 0).map((s) => s.buyIn).sort((a, b) => a - b);
+  return v.length ? v[Math.floor(v.length / 2)] : 0;
 }

@@ -43,6 +43,34 @@ export const RETENTION = {
   pauseMonths: 3,
 };
 
+/**
+ * One-time Pro, offered only in the cancel flow to players who don't want a
+ * subscription (Rui, 17 Oct). Never on the paywall. Without a release, turn it
+ * off by removing the Lifetime package from the RevenueCat offering or by
+ * setting `"lifetime": false` in its metadata. Create `product` in both stores as a
+ * non-consumable granting the `pro` entitlement, in RevenueCat's offering as
+ * the Lifetime package. The price shown always comes from the store; `usd`
+ * is what to set there.
+ */
+export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499 };
+
+/**
+ * High-stakes features that need Pro (Rui, 17 Oct: "Sim, Pro"). Fixed from
+ * launch: after launch a feature may go from Pro to free, never the other way.
+ * The shared sides stay free (a backer's page, confirming a swap by link).
+ */
+export const PRO_ONLY = {
+  /** Backers, makeup and settling up (staking screens). */
+  staking: true,
+  /** Swap settlement (swaps screens). */
+  swaps: true,
+  /** The yearly report with tax per country (PDF export). */
+  taxReport: true,
+  /** Net worth and results across currencies in one total (bankroll). */
+  homeTotal: true,
+};
+export type ProFeature = keyof typeof PRO_ONLY;
+
 /** Free plan. `null` means no limit. */
 export const FREE = {
   /** New hands saved per calendar day. The 4th waits as a draft, never lost. */
@@ -58,20 +86,31 @@ export const FREE = {
   bankrolls: 1 as number | null,
   /** Trips (festivals) with expenses. The first is free so a player sees it work on a real trip. */
   trips: 1 as number | null,
-  /**
-   * Pair swaps you propose that are still open. One is free so a player sees it work; group
-   * swaps and the swap history are Pro. Confirming someone else's swap is always free.
-   */
-  swaps: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
+export type PaywallReason = 'hands' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
     title: t('Mão guardada como rascunho'),
     body: t('Com Pro, guardas mãos sem limite.'),
+  },
+  staking: {
+    title: t('Staking sem folhas de cálculo'),
+    body: t('Backers, makeup e acertos, sempre certos.'),
+  },
+  swaps: {
+    title: t('Swaps acertados sozinhos'),
+    body: t('Percentagens, prémios e quem deve a quem.'),
+  },
+  taxReport: {
+    title: t('O relatório do ano, pronto'),
+    body: t('Resultados por país e imposto retido, em PDF.'),
+  },
+  homeTotal: {
+    title: t('Tudo numa moeda'),
+    body: t('Património e resultado do ano, ao câmbio de cada dia.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
@@ -88,6 +127,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   solver: {
     title: t('Leva as mãos todas para o solver'),
     body: t('Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.'),
+  },
+  coach: {
+    title: t('Revê as mãos com o teu coach'),
+    body: t('Com Pro, envias ao coach todas as pastas e mãos que quiseres.'),
   },
   welcome: {
     title: t('Primeira mão feita'),
@@ -116,6 +159,23 @@ export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATU
   const key: FeatureKey | null = reason === 'hands' || reason === 'welcome' ? 'hands' : reason === 'stats' || reason === 'story' ? reason : null;
   const first = PRO_FEATURES.filter((f) => f.key === key);
   return [...first, ...PRO_FEATURES.filter((f) => f.key !== key)].map((feature) => ({ feature, highlight: feature.key === key }));
+}
+
+type Cell = string | boolean;
+
+/** Free vs Pro, for the "table" paywall. Built from FREE so the limits never drift. Portuguese labels; show with t(). */
+export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
+  const n = (v: number | null): Cell => (v === null ? '∞' : String(v));
+  return [
+    { label: 'Mãos novas por dia', free: n(FREE.handsPerDay), pro: '∞' },
+    { label: 'Replayer e partilha por link', free: true, pro: true },
+    { label: 'Bankrolls', free: n(FREE.bankrolls), pro: '∞' },
+    { label: 'Filtros, salas e CSV', free: FREE.bankrollFilters, pro: true },
+    { label: 'Stories com voz', free: false, pro: true },
+    { label: 'Várias mãos para o solver', free: false, pro: true },
+    { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
+    { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
+  ];
 }
 
 export function perMonth(annualPrice: number): number {

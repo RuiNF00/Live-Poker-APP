@@ -15,6 +15,7 @@ export function AmountPad({
   title,
   bb,
   initialInBB,
+  plain,
   min,
   max,
   onClose,
@@ -24,6 +25,8 @@ export function AmountPad({
   title: string;
   bb: number;
   initialInBB?: boolean;
+  /** A count or a plain number (players, entries): no BB toggle or conversion. */
+  plain?: boolean;
   min?: number;
   max?: number;
   onClose: () => void;
@@ -51,27 +54,31 @@ export function AmountPad({
         <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -4 }} />
         <Row style={{ justifyContent: 'space-between' }}>
           <T v="h2">{title}</T>
-          <Segmented
-            size="sm"
-            style={{ width: 132 }}
-            options={[
-              { key: 'chips', label: t('Fichas') },
-              { key: 'bb', label: 'BB' },
-            ]}
-            value={inBB ? 'bb' : 'chips'}
-            onChange={(k) => setInBB(k === 'bb')}
-          />
+          {plain ? null : (
+            <Segmented
+              size="sm"
+              style={{ width: 132 }}
+              options={[
+                { key: 'chips', label: t('Fichas') },
+                { key: 'bb', label: 'BB' },
+              ]}
+              value={inBB ? 'bb' : 'chips'}
+              onChange={(k) => setInBB(k === 'bb')}
+            />
+          )}
         </Row>
         <View style={{ backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'flex-end', gap: 2 }}>
           <Text style={{ color: C.text, fontSize: 38, fontFamily: F.mono, fontVariant: ['tabular-nums'], letterSpacing: -1 }}>
             {txt || '0'}
             <Text style={{ color: C.muted, fontSize: 18 }}>{inBB ? ' bb' : ''}</Text>
           </Text>
-          <T v="monoS" color={tooLow ? C.danger : C.muted}>
-            = {inBB ? chips(capped) + ' ' + t('fichas') : bbs(capped, bb)}
-            {max !== undefined && value >= max ? ' (all-in)' : ''}
-            {tooLow ? ' · ' + t('mínimo {amount}', { amount: chips(min!) }) : ''}
-          </T>
+          {plain ? null : (
+            <T v="monoS" color={tooLow ? C.danger : C.muted}>
+              = {inBB ? chips(capped) + ' ' + t('fichas') : bbs(capped, bb)}
+              {max !== undefined && value >= max ? ' (all-in)' : ''}
+              {tooLow ? ' · ' + t('mínimo {amount}', { amount: chips(min!) }) : ''}
+            </T>
+          )}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {keys.map((k) => (
@@ -89,7 +96,8 @@ export function AmountPad({
                 borderColor: C.border,
                 alignItems: 'center',
                 justifyContent: 'center',
-              })}>
+              })}
+            >
               <Text style={{ color: k === 'k' || k === ',' || k === '⌫' ? C.textDim : C.text, fontSize: 24, fontFamily: F.mono }}>{k}</Text>
             </Pressable>
           ))}

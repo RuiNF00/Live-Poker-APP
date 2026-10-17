@@ -1,7 +1,7 @@
 // Pieces of the swap screens: the terms, where you stand, one prize or payment, and the sheet
 // to add one.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 

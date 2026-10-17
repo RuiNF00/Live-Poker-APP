@@ -79,3 +79,49 @@ test('last results, results per day and the best weekday', async () => {
   assert.equal(dailyResults(list).get(day), 100);
   assert.deepEqual(bestWeekday(list), { day: 5, profit: 150, sessions: 3 });
 });
+
+test('verdict: only with enough sample, and only when the rate clears variance', async () => {
+  const { verdict } = await import('../results-math');
+  const fmt = (n: number) => `${n}€`;
+  const mk = (i: number, hours: number, res: number): Session =>
+    ({ id: 'v' + i, kind: 'cash', name: '', venue: '', currency: '€', startedAt: i * 86400000, endedAt: i * 86400000 + hours * 3600000, breaks: [], buyIn: 500, entries: 1, addOn: 0, cashOut: 500 + res, sb: 2, bb: 5, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '' }) as Session;
+  assert.equal(verdict([mk(1, 5, 100)], '€', fmt).ready, false);
+  // 40 sessions × 5 h at a steady ~30/h: a clear winner.
+  const steady = Array.from({ length: 40 }, (_, i) => mk(i, 5, i % 2 ? 140 : 160));
+  const v = verdict(steady, '€', fmt);
+  assert.equal(v.ready, true);
+  assert.equal(v.tone, 'good');
+  assert.match(v.text, /30€\/h/);
+  // Same win rate, huge swings: still inside variance.
+  const swingy = Array.from({ length: 40 }, (_, i) => mk(i, 5, i % 2 ? 2150 : -1850));
+  assert.equal(verdict(swingy, '€', fmt).tone, 'neutral');
+});
+
+test('downswings: biggest, recovered or not, and the current one', async () => {
+  const { downswings } = await import('../results-math');
+  const H = 3600000;
+  const mk = (i: number, r: number) => ({ id: 'd' + i, kind: 'cash', name: '', venue: '', currency: '€', startedAt: i * 10 * H, endedAt: i * 10 * H + 4 * H, breaks: [], buyIn: 200, entries: 1, addOn: 0, cashOut: 200 + r, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '' }) as Session;
+  // +500, −300, −400 (down 700), +900 (new peak), −200 (current)
+  const d = downswings([500, -300, -400, 900, -200].map((r, i) => mk(i + 1, r)), '€');
+  assert.deepEqual(d.underwater, [0, 0, -300, -700, 0, -200]);
+  assert.equal(d.biggest!.depth, 700);
+  assert.equal(d.biggest!.sessions, 2);
+  assert.equal(d.biggest!.recovered, 4 * 10 * H + 4 * H);
+  assert.equal(d.current!.depth, 200);
+  assert.equal(d.current!.recovered, null);
+  assert.equal(downswings([], '€').biggest, null);
+});
+
+test('downswingOdds: needs 20 sessions, is repeatable, and a deeper fall is rarer', async () => {
+  const { downswingOdds } = await import('../results-math');
+  assert.equal(downswingOdds(Array(19).fill(10)), null);
+  const results = Array.from({ length: 60 }, (_, i) => (i % 3 === 0 ? -400 : 260));
+  const a = downswingOdds(results)!;
+  const b = downswingOdds(results)!;
+  assert.equal(a.typical, b.typical);
+  assert.ok(a.typical > 0 && a.bad >= a.typical);
+  assert.ok(a.atLeast(a.typical) >= 0.5);
+  assert.ok(a.atLeast(a.bad) <= 0.06);
+  assert.ok(a.atLeast(a.bad * 3) < a.atLeast(a.typical));
+  assert.equal(Math.round(a.mean), 40);
+});

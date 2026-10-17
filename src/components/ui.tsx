@@ -3,7 +3,7 @@
 // type and touch targets stay the same everywhere. Phone first: 16 px gutters,
 // 44 pt minimum touch targets, numbers always in JetBrains Mono.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import {
@@ -53,7 +53,7 @@ export function confirmAction(title: string, body: string, okLabel: string, onOk
 
 // ─── Type ────────────────────────────────────────────────────────────────────
 
-type TV =
+export type TV =
   | 'display'
   | 'title'
   | 'h1'

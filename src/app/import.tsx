@@ -2,7 +2,7 @@
 // Poker Analytics, any CSV, or a Sweatbook backup. Pick where it comes from,
 // pick the file, check what was read (and fix a column if needed), import.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
@@ -13,9 +13,9 @@ import { usePro } from '@/billing/pro';
 import { Amount, Banner, Button, Card, Chip, ChipRow, Empty, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
-import { prepare, toSessions, type DateOrder, type ImportResult, type Prepared } from '@/import/convert';
+import { prepare, toSessions, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
-import { pickTextFile } from '@/lib/files';
+import { pickTextFile, saveTextFile } from '@/lib/files';
 import { money } from '@/poker/format';
 import { importSummary, parseBackup } from '@/store/backup';
 import { profit } from '@/store/session-math';
@@ -80,6 +80,8 @@ const FIELD_LABEL: Partial<Record<Field, string>> = {
   cashOut: t('Cash-out / prémio'),
   profit: t('Lucro'),
   expenses: t('Despesas'),
+  tips: t('Gorjetas'),
+  handsDealt: t('Mãos jogadas'),
   finish: t('Lugar final'),
   field: t('Jogadores no torneio'),
   notes: t('Notas'),
@@ -297,6 +299,8 @@ function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: nu
           </Card>
         ) : null}
 
+        {r.failed.length ? <FailedRows file={file} failed={r.failed} /> : null}
+
         {fileCurrencies.length ? (
           <Section title={t('Para que bankroll')} hint={t('Cada moeda vai para uma bankroll dessa moeda.')}>
             {fileCurrencies.map((c) => {
@@ -435,6 +439,60 @@ function ColumnSheet({ field, headers, sample, current, onClose, onPick }: { fie
         </ScrollView>
       </View>
     </Modal>
+  );
+}
+
+const FAIL_TEXT: Record<FailReason, string> = {
+  noDate: t('Sem data'),
+  badDate: t('Data que não se lê'),
+  noMoney: t('Sem resultado, buy-in nem prémio'),
+  badMove: t('Depósito ou levantamento sem valor'),
+};
+
+/** Each row left out, with its line in the file and why, plus the choice to send us the file. */
+function FailedRows({ file, failed }: { file: Prepared; failed: FailedRow[] }) {
+  const insets = useSafeAreaInsets();
+  const [all, setAll] = useState(false);
+  const [send, setSend] = useState(false);
+  const shown = all ? failed.slice(0, 100) : failed.slice(0, 4);
+  return (
+    <Section title={t('Linhas que ficam de fora')} hint={t('O resto entra na mesma. Podes corrigir no ficheiro e importar outra vez: o que já entrou não se repete.')}>
+      <ListGroup>
+        {shown.map((f) => (
+          <ListItem key={f.line} icon="alert-circle-outline" iconColor={C.warn} title={t('Linha {n}', { n: f.line })} subtitle={`${FAIL_TEXT[f.reason]}${f.value ? ' · ' + f.value : ''}`} chevron={false} />
+        ))}
+      </ListGroup>
+      <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+        {failed.length > shown.length && !all ? <Button kind="ghost" size="sm" title={t('Ver as {n}', { n: failed.length })} onPress={() => setAll(true)} /> : null}
+        <Button kind="ghost" size="sm" icon="mail-outline" title={t('Envia-nos o ficheiro')} onPress={() => setSend(true)} />
+      </Row>
+      <Modal visible={send} transparent animationType="slide" onRequestClose={() => setSend(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={() => setSend(false)} accessibilityLabel={t('Fechar')} />
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, paddingTop: S.lg + 4, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + S.md, gap: S.md }}>
+          <SheetHeader title={t('Envia-nos o ficheiro')} onClose={() => setSend(false)} closeLabel={t('Fechar')} />
+          <T v="body" style={{ color: C.textDim }}>
+            {t('Vemos porque é que estas linhas não entram e melhoramos a importação para o teu ficheiro.')}
+          </T>
+          <Card tone="inset" style={{ gap: S.xs }}>
+            <Row gap={S.sm}>
+              <Ionicons name="lock-closed-outline" size={16} color={C.info} />
+              <T v="h3" color={C.info} style={{ flex: 1 }}>
+                {t('O ficheiro tem os teus dados de póquer')}
+              </T>
+            </Row>
+            <T v="small">{t('Datas, salas e resultados. Só sai do telemóvel se o enviares tu, por email ou outra app à tua escolha. Nada é enviado sozinho.')}</T>
+          </Card>
+          <Button
+            icon="share-outline"
+            title={t('Escolher como enviar')}
+            onPress={async () => {
+              setSend(false);
+              await saveTextFile(`sweatbook-importacao-${file.source}.csv`, file.text, 'text/csv').catch(() => {});
+            }}
+          />
+        </View>
+      </Modal>
+    </Section>
   );
 }
 

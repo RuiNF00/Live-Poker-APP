@@ -4,7 +4,7 @@
 
 import { totals } from '@/store/session-math';
 
-export type CancelReason = 'notPlaying' | 'bankroll' | 'feature' | 'slow' | 'otherApp';
+export type CancelReason = 'notPlaying' | 'bankroll' | 'noSubscription' | 'feature' | 'slow' | 'otherApp';
 
 /** In this order on screen. Portuguese keys; show with t(). */
 export const CANCEL_REASONS: { key: CancelReason; icon: string; label: string }[] = [
@@ -14,6 +14,13 @@ export const CANCEL_REASONS: { key: CancelReason; icon: string; label: string }[
   { key: 'slow', icon: 'timer-outline', label: 'Registar à mesa é lento' },
   { key: 'otherApp', icon: 'swap-horizontal-outline', label: 'Encontrei outra app' },
 ];
+
+const NO_SUBSCRIPTION = { key: 'noSubscription' as const, icon: 'repeat-outline', label: 'Não quero uma subscrição' };
+
+/** The reasons on screen. "Não quero uma subscrição" only when there's a one-time Pro to offer for it. */
+export function cancelReasons(lifetime: boolean): typeof CANCEL_REASONS {
+  return lifetime ? [...CANCEL_REASONS.slice(0, 2), NO_SUBSCRIPTION, ...CANCEL_REASONS.slice(2)] : CANCEL_REASONS;
+}
 
 export interface Logged {
   sessions: number;

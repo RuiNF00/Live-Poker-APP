@@ -1,29 +1,34 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CANCEL_REASONS, logged, type CancelReason } from '@/billing/cancel';
+import { cancelReasons, logged, type CancelReason } from '@/billing/cancel';
 import { annualSavingPct, formatPrice, perMonth, RETENTION } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
-import { getSubscription, manageSubscription, retentionOffer } from '@/billing/purchases';
+import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } from '@/billing/purchases';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
-import { C, S } from '@/theme';
+import { BRAND, C, S } from '@/theme';
 
 type Offer = Awaited<ReturnType<typeof retentionOffer>>;
 
 export default function Cancel() {
   const insets = useSafeAreaInsets();
   const { hands, sessions } = useStore();
-  const { plans, purchase } = usePro();
+  const { plans, purchase, restore } = usePro();
   const [reason, setReason] = useState<CancelReason | null>(null);
   const [plan, setPlan] = useState<'monthly' | 'annual' | null>(null);
+  const [willRenew, setWillRenew] = useState<boolean | null>(null);
   const [offer, setOffer] = useState<Offer>(null);
+  const [lifetime, setLifetime] = useState<Offer>(null);
+  // The reason shows only when there's a one-time Pro in the store to offer for it.
+  const CANCEL_REASONS = cancelReasons(!!lifetime);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
@@ -31,14 +36,22 @@ export default function Cancel() {
 
   useEffect(() => {
     track('cancel_flow', { step: 'open' });
-    getSubscription().then((s) => setPlan(s?.plan ?? null));
+    getSubscription().then((s) => {
+      setPlan(s?.plan ?? null);
+      setWillRenew(s?.willRenew ?? null);
+    });
+    lifetimeOffer().then(setLifetime);
   }, []);
   useEffect(() => {
     if (reason === 'bankroll') retentionOffer(plans).then(setOffer);
   }, [reason, plans]);
 
+  // Lifetime is judged on long-term revenue: who saw it, from which plan, and
+  // whether the subscription was still set to renew (i.e. they were about to cancel).
+  const lifetimeProps = () => ({ reason: reason ?? '', plan: plan ?? '', will_renew: willRenew ?? '' });
   const pick = (r: CancelReason) => {
     track('cancel_flow', { step: 'reason', reason: r });
+    if (r === 'noSubscription' && lifetime) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
     setReason(r);
   };
   const keep = () => {
@@ -55,6 +68,19 @@ export default function Cancel() {
       Alert.alert(t('Feito'), t('O teu Pro continua.'));
       router.back();
     } else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+  };
+  // Pro for good, but the subscription is still running: send them to the store to stop it.
+  const lifetimeResult = (res: string) => {
+    track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: 'lifetime', result: res });
+    if (res === 'ok') {
+      track('lifetime_purchased', lifetimeProps());
+      Alert.alert(t('Pro para sempre'), t('Agora cancela a subscrição na {store}, para não pagares mais.', { store }), [{ text: t('Abrir a {store}', { store }), onPress: toStore }]);
+    } else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+  };
+  const onRestore = async () => {
+    track('cancel_flow', { step: 'restore' });
+    const ok = await restore();
+    Alert.alert(ok ? t('Compras restauradas') : t('Sem compras'), ok ? t('O teu Pro está ativo nesta conta da loja.') : t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
   };
   const send = () => {
     track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: note.trim().slice(0, 120) });
@@ -146,6 +172,16 @@ export default function Cancel() {
                 </>
               ) : null}
 
+              {reason === 'noSubscription' ? (
+                lifetime ? (
+                  <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. Depois cancelas a subscrição na {store}.', { store })}>
+                    <Button title={t('Comprar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
+                  </OfferCard>
+                ) : (
+                  <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} />
+                )
+              ) : null}
+
               {reason === 'slow' ? (
                 <OfferCard icon="flash" title={t('Guarda em 5 toques')} body={t('Posição, as tuas 2 cartas e «Guardar já». O resto completas depois da sessão.')} />
               ) : null}
@@ -175,6 +211,19 @@ export default function Cancel() {
         {/* Cancelling is never hidden or blocked: the store's page is one tap away on every step. */}
         <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm, paddingBottom: insets.bottom + S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
           <Button kind="ghost" title={t('Cancelar na {store}', { store })} onPress={toStore} />
+          {/* Charged twice, or Pro missing after a reinstall: the fixes are here too, not only in Settings. */}
+          <Row gap={S.lg} style={{ justifyContent: 'center', paddingTop: S.xs }}>
+            <Pressable onPress={onRestore} hitSlop={8} accessibilityRole="button">
+              <T v="tiny" color={C.textDim}>
+                {t('Restaurar compras')}
+              </T>
+            </Pressable>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} hitSlop={8} accessibilityRole="link">
+              <T v="tiny" color={C.textDim}>
+                {t('Ajuda e contacto')}
+              </T>
+            </Pressable>
+          </Row>
         </View>
       </View>
     </>

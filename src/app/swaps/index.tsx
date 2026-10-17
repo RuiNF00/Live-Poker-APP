@@ -11,18 +11,17 @@ import { pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
-import { usePro } from '@/billing/pro';
 import { useStore } from '@/store/store';
 import { assignGroups, groupLedger, groupReady, type SwapGroup } from '@/store/swap-groups';
 import { syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
+import { withPro } from '@/components/ProGate';
 
-export default function SwapsScreen() {
+function SwapsScreen() {
   const { swaps, ready } = useSwaps();
   const { groups } = useGroups();
-  const { isPro, paywall } = usePro();
   const { sessions, settings, setSettings } = useStore();
   const include = settings.includeSwaps !== false;
   const loose = include ? assignSwaps(sessions, swaps).unassigned.length + assignGroups(sessions, groups).unassigned.length : 0;
@@ -52,7 +51,7 @@ export default function SwapsScreen() {
   const pastGroups = groups.filter((g) => g.archived || g.gone);
   const totals = [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= 0.5);
   const any = swaps.length + groups.length > 0;
-  const newGroup = () => (isPro ? router.push('/swaps/group-new') : paywall('generic'));
+  const newGroup = () => router.push('/swaps/group-new');
 
   return (
     <>
@@ -79,7 +78,7 @@ export default function SwapsScreen() {
               <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
                 <Row gap={S.sm}>
               <Button title={t('Novo swap')} icon="add" style={{ flex: 1 }} onPress={() => router.push('/swaps/new')} />
-              <Button title={t('Grupo')} kind="secondary" icon={isPro ? 'people-outline' : 'lock-closed'} style={{ flex: 1 }} onPress={newGroup} />
+              <Button title={t('Grupo')} kind="secondary" icon="people-outline" style={{ flex: 1 }} onPress={newGroup} />
             </Row>
             {tot.open ? (
               <ListGroup>
@@ -87,12 +86,11 @@ export default function SwapsScreen() {
                   left={<Ionicons name="analytics-outline" size={22} color={C.accent} />}
                   title={t('Histórico de swaps')}
                   subtitle={t('Quanto ganhaste ou perdeste com swaps, por parceiro e por série')}
-                  right={isPro ? undefined : <Ionicons name="lock-closed" size={16} color={C.muted} />}
-                  onPress={() => (isPro ? router.push('/swaps/history') : paywall('stats'))}
+                  onPress={() => router.push('/swaps/history')}
                 />
               </ListGroup>
             ) : null}
-                <Button title={t('Swap de grupo')} kind="secondary" icon={isPro ? 'people-outline' : 'lock-closed'} onPress={newGroup} />
+                <Button title={t('Swap de grupo')} kind="secondary" icon="people-outline" onPress={newGroup} />
               </View>
             }
           />
@@ -255,3 +253,5 @@ function GroupRow({ g }: { g: SwapGroup }) {
     />
   );
 }
+
+export default withPro('swaps', t('Swaps'), SwapsScreen);

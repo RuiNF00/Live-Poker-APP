@@ -7,7 +7,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
-import { usePro } from '@/billing/pro';
+import { withPro } from '@/components/ProGate';
 import { pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -27,9 +27,8 @@ import { C, S } from '@/theme';
 const PCTS = [0.5, 1, 2, 3, 5];
 const CURRENCIES = ['$', '€', '£'];
 
-export default function NewGroupSwap() {
+function NewGroupSwap() {
   const { settings, sessions, activeSession, setSettings } = useStore();
-  const { isPro, paywall } = usePro();
   const { swaps } = useSwaps();
   const { groups } = useGroups();
   const live = activeSession?.kind === 'mtt' ? activeSession : null;
@@ -98,7 +97,6 @@ export default function NewGroupSwap() {
 
   async function create() {
     if (!ok) return;
-    if (!isPro) return paywall('generic');
     setBusy(true);
     tap('medium');
     const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: Date.now() };
@@ -213,7 +211,7 @@ export default function NewGroupSwap() {
         <View style={{ gap: S.sm }}>
           <Button
             title={busy ? t('A criar…') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
-            icon={isPro ? 'paper-plane-outline' : 'lock-closed'}
+            icon="paper-plane-outline"
             disabled={!ok}
             onPress={create}
           />
@@ -228,3 +226,5 @@ export default function NewGroupSwap() {
     </>
   );
 }
+
+export default withPro('swaps', t('Swap de grupo'), NewGroupSwap);

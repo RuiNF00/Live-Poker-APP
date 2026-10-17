@@ -1,4 +1,4 @@
-import { fromAppHand, isAppHand, validateHand, type HandRecord, type Street } from '@livepoker/hand-format';
+import { buildReplay, fromAppHand, isAppHand, validateHand, type HandRecord, type ReplayStep, type Street } from '@livepoker/hand-format';
 import type { QuizSpot, VoteChoice } from './types';
 
 export interface ResolvedHand {
@@ -102,4 +102,21 @@ export function challengeTeaser(hand: HandRecord, spot: QuizSpot): HandRecord {
     playedAt: hand.playedAt,
     location: hand.location,
   };
+}
+
+/** The street a comment's step belongs to; null for a comment on the whole hand. */
+export function streetOfStep(steps: ReplayStep[], stepIndex: number | null): Street | null {
+  return stepIndex !== null && steps[stepIndex] ? steps[stepIndex].street : null;
+}
+
+/** Where a comment "on the flop" points: the step that deals that street (the start, preflop). */
+export function streetStep(steps: ReplayStep[], street: Street): number | null {
+  const i = steps.findIndex((s) => s.street === street && (s.kind === 'start' || s.kind === 'street'));
+  return i < 0 ? null : i;
+}
+
+/** Replay steps of a stored share, or null when the payload doesn't replay. */
+export function stepsOf(payload: unknown): ReplayStep[] | null {
+  const r = resolveHand(payload);
+  return r ? buildReplay(r.hand) : null;
 }

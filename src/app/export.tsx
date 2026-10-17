@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, View } from 'react-native';
 
+import { PRO_ONLY } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { Chip, ChipRow, Field, ListGroup, ListItem, Pill, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -64,7 +65,7 @@ export default function ExportScreen() {
   const stamp = period === 'year' ? String(y) : period === 'lastYear' ? String(y - 1) : new Date(now).toISOString().slice(0, 10);
 
   const run = async (key: string, pro_: boolean, fn: () => Promise<void>) => {
-    if (pro_ && !pro.isPro) return pro.paywall('stats');
+    if (pro_ && !pro.isPro) return pro.paywall(key === 'pdf' && PRO_ONLY.taxReport ? 'taxReport' : 'stats');
     setBusy(key);
     try {
       await fn();
@@ -130,7 +131,7 @@ export default function ExportScreen() {
           </Section>
         ) : null}
 
-        <Section title={t('No relatório')} hint={report.currencies.length > 1 ? t('Mais {n} moedas, cada uma com o seu resumo.', { n: report.currencies.length - 1 }) : undefined}>
+        <Section title={t('No relatório')} hint={report.currencies.length > 1 ? report.currencies.length === 2 ? t('Mais 1 moeda, com o seu resumo.') : t('Mais {n} moedas, cada uma com o seu resumo.', { n: report.currencies.length - 1 }) : undefined}>
           <StatGrid cols={3}>
             <Stat label={t('Resultado')} value={main ? (main.totals.profit > 0 ? '+' : '') + money(main.totals.profit, main.currency) : '—'} tone={main ? (main.totals.profit >= 0 ? 'good' : 'bad') : undefined} />
             <Stat label={t('Sessões')} value={String(main?.totals.sessions ?? 0)} />

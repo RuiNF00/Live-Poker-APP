@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { describeStep, streetLabel, type AmountMode, type ReplayStep } from '@livepoker/hand-format';
+import { describeStep, streetLabel, type AmountMode, type ReplayStep, type Street } from '@livepoker/hand-format';
+
+const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
 import { t, type Dict, type Locale } from '@/lib/i18n';
 import type { HandComment } from '@/lib/types';
 import { voteFromComment } from '@/lib/hand';
@@ -48,6 +50,18 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
 
   useEffect(() => setName(readLocal<string>('name') ?? ''), []);
 
+  const here = steps[currentStep]?.street ?? null;
+  const reached = STREETS.filter((st) => steps.some((x) => x.street === st));
+  const streetOf = (c: HandComment) => (c.stepIndex !== null && steps[c.stepIndex] ? steps[c.stepIndex].street : null);
+  const groups = [
+    { street: null as Street | null, items: comments.filter((c) => streetOf(c) === null) },
+    ...reached.map((st) => ({ street: st as Street | null, items: comments.filter((c) => streetOf(c) === st) })),
+  ].filter((g) => g.items.length > 0 || (g.street !== null && g.street === here));
+  const jumpStreet = (st: Street) => {
+    const i = steps.findIndex((x) => x.street === st && (x.kind === 'start' || x.kind === 'street'));
+    if (i >= 0) onJump(i);
+  };
+
   const anchorLabel = (i: number) => {
     const s = steps[i];
     if (!s) return '';
@@ -91,32 +105,47 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
       {comments.length === 0 ? (
         <p className="muted">{d.noComments}</p>
       ) : (
-        <ul className="comment-list">
-          {comments.map((c) => (
-            <li key={c.id} className="comment">
-              <div className="comment-head">
-                <span className="avatar" aria-hidden>
-                  {c.name.slice(0, 1).toUpperCase()}
-                </span>
-                <strong>{c.name}</strong>
-                <span className="muted">{ago(c.createdAt, d)}</span>
-                {reported.has(c.id) ? (
-                  <span className="report-done">{d.reported}</span>
-                ) : (
-                  <button className="report" onClick={() => report(c.id)}>
-                    {d.report}
-                  </button>
-                )}
-              </div>
-              {c.stepIndex !== null && steps[c.stepIndex] && (
-                <button className="anchor" onClick={() => onJump(c.stepIndex!)}>
-                  ▶ {anchorLabel(c.stepIndex)}
-                </button>
-              )}
-              <p className="comment-body">{c.text}</p>
-            </li>
-          ))}
-        </ul>
+        // Grouped by street, like the conversation at the table: the hand as a whole first,
+        // then each street, with the street on screen marked "you are here".
+        groups.map((g) => (
+          <div key={g.street ?? 'hand'} className={`comment-street${g.street && g.street === here ? ' here' : ''}`}>
+            <button className="comment-street-head" disabled={!g.street} onClick={() => g.street && jumpStreet(g.street)}>
+              <span>{g.street ? streetLabel(g.street, locale) : d.wholeHand}</span>
+              {g.street && g.street === here && <span className="here-pill">{d.youAreHere}</span>}
+              {g.items.length > 0 && <span className="count">{g.items.length}</span>}
+            </button>
+            {g.items.length === 0 ? (
+              <p className="muted comment-street-empty">{d.noStreetComments}</p>
+            ) : (
+              <ul className="comment-list">
+                {g.items.map((c) => (
+                  <li key={c.id} className="comment">
+                    <div className="comment-head">
+                      <span className="avatar" aria-hidden>
+                        {c.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <strong>{c.name}</strong>
+                      <span className="muted">{ago(c.createdAt, d)}</span>
+                      {reported.has(c.id) ? (
+                        <span className="report-done">{d.reported}</span>
+                      ) : (
+                        <button className="report" onClick={() => report(c.id)}>
+                          {d.report}
+                        </button>
+                      )}
+                    </div>
+                    {c.stepIndex !== null && steps[c.stepIndex] && steps[c.stepIndex].kind === 'action' && (
+                      <button className="anchor" onClick={() => onJump(c.stepIndex!)}>
+                        ▶ {anchorLabel(c.stepIndex)}
+                      </button>
+                    )}
+                    <p className="comment-body">{c.text}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))
       )}
 
       <form className="comment-form" onSubmit={submit}>

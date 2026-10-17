@@ -6,9 +6,9 @@ import { Stack } from 'expo-router';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
+import { withPro } from '@/components/ProGate';
 import { Avatar } from '@/components/Avatar';
-import { Button, Card, Empty, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
+import { Card, Empty, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -19,30 +19,13 @@ import { C, R, S } from '@/theme';
 
 const signed = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), cur);
 
-export default function SwapHistoryScreen() {
+function SwapHistoryScreen() {
   const { swaps } = useSwaps();
   const { groups } = useGroups();
   const { sessions, settings } = useStore();
-  const { isPro, paywall } = usePro();
   const h = useMemo(() => swapHistory(swaps, groups, sessions), [swaps, groups, sessions]);
   const hidden = !!settings.hideAmounts;
   const show = (n: number, cur: string) => (hidden ? '•••' : signed(n, cur));
-
-  if (!isPro) {
-    return (
-      <>
-        <Stack.Screen options={{ title: t('Histórico de swaps'), headerBackTitle: t('Voltar') }} />
-        <Screen>
-          <Empty
-            icon="lock-closed"
-            title={t('Histórico de swaps')}
-            body={t('Vê quanto ganhaste ou perdeste com swaps, com quem e em que séries, e quanto te reduziram a variância.')}
-            action={<Button title={t('Ver o Pro')} icon="sparkles-outline" onPress={() => paywall('stats')} />}
-          />
-        </Screen>
-      </>
-    );
-  }
 
   if (!h.enough) {
     return (
@@ -170,3 +153,5 @@ function SpreadBar({ label, value, max, cur, hidden, color }: { label: string; v
     </View>
   );
 }
+
+export default withPro('swaps', t('Histórico de swaps'), SwapHistoryScreen);

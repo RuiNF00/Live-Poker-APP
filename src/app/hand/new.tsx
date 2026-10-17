@@ -11,7 +11,7 @@
 //  - no time at the table: "Voz" records a note and saves the hand as it is,
 //    to be completed after the session.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -32,7 +32,7 @@ import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
-import { newHand, nextLevel, rescaleStacks, resizeTable } from '@/poker/factory';
+import { addSeat, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
@@ -63,7 +63,8 @@ export default function NewHand() {
     if (editing) return { hand: editing, posChosen: true };
     if (store.draft) return { hand: store.draft, posChosen: !!store.draft.actions.length || store.draft.button !== 0 || !!store.draft.players[0].cards };
     const last = hands[0] ?? null;
-    return { hand: newHand({ id: uid('h_'), session: activeSession, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: false };
+    // Same table as the last hand: seats, stacks and the moved button are already right.
+    return { hand: newHand({ id: uid('h_'), session: activeSession, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, activeSession) };
   });
   const [history, setHistory] = useState<Draft[]>([]);
   const [ctxOpen, setCtxOpen] = useState(false);
@@ -640,6 +641,39 @@ export default function NewHand() {
         known={store.players}
         stats={reads}
         onClose={() => setSeatEdit(null)}
+        reseat={
+          seatEdit === null || seatEdit === hand.hero || hand.actions.length
+            ? undefined
+            : {
+                swapWith: hand.players.map((_, k) => ({ index: k, label: pos[k] })).filter((x) => x.index !== seatEdit && x.index !== hand.hero),
+                onNewPlayer: () => {
+                  tap();
+                  update({ ...hand, players: hand.players.map((x, k) => (k === seatEdit ? { name: '', stack: x.stack } : x)) });
+                  setSeatEdit(null);
+                },
+                onLeave:
+                  n > 2
+                    ? () => {
+                        tap();
+                        update(removeSeat(hand, seatEdit));
+                        setSeatEdit(null);
+                      }
+                    : undefined,
+                onJoin:
+                  n < 10
+                    ? () => {
+                        tap();
+                        update(addSeat(hand, seatEdit, hand.players[hand.hero].stack));
+                        setSeatEdit(null);
+                      }
+                    : undefined,
+                onSwap: (k) => {
+                  tap();
+                  update(swapSeats(hand, seatEdit, k));
+                  setSeatEdit(null);
+                },
+              }
+        }
         onSave={(p, all) => {
           if (seatEdit === null) return;
           const players = hand.players.map((x, k) => (k === seatEdit ? p : all ? { ...x, stack: p.stack } : x));

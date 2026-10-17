@@ -1,7 +1,7 @@
 // Invite link opened in the app (sweatbook.poker/r/<code> or sweatbook://r/<code>):
 // claim it, then send the friend straight to their first hand.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
