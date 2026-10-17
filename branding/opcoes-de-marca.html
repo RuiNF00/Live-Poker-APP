@@ -1,0 +1,275 @@
+<title>Escolher a Marca</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700&family=Bowlby+One&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Chivo:ital,wght@0,400;0,700;0,900;1,900&family=DM+Sans:wght@400;600;700&family=DM+Serif+Display&family=Fredoka:wght@500;600;700&family=IBM+Plex+Sans:wght@400;600&family=Instrument+Serif:ital@0;1&family=Italiana&family=JetBrains+Mono:wght@400;600&family=Karla:wght@400;600;700&family=Manrope:wght@400;600;700&family=Nunito:wght@400;700;800&family=Outfit:wght@400;600;700&family=Schibsted+Grotesk:wght@400;500;700&family=Sora:wght@600;700&family=Syne:wght@700;800&family=Work+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: neutral page chrome; each brand is a full-width band in its own colours with info on one side and a phone mock on the other. */
+:root{
+  --bg:#F4F5F7; --fg:#15181D; --muted:#5D6470; --line:#DADDE3; --panel:#FFFFFF; --pick:#1F6FEB;
+  --f-ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#111317;--fg:#ECEEF2;--muted:#9AA1AD;--line:#2A2E36;--panel:#1A1D23;--pick:#5B9BFF;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111317;--fg:#ECEEF2;--muted:#9AA1AD;--line:#2A2E36;--panel:#1A1D23;--pick:#5B9BFF;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{padding-block:40px 24px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.08;margin:6px 0 12px;text-wrap:balance;font-weight:700}
+.lede{max-width:64ch;color:var(--muted);margin:0}
+.rec{margin-top:20px;padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--pick);background:var(--panel);border-radius:6px;max-width:72ch}
+.rec b{color:var(--fg)}
+.index{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding-block:8px 32px}
+@media (max-width:720px){.index{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.index a{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg);text-decoration:none;font-weight:500;min-width:0}
+.index a:hover,.index a:focus-visible{border-color:var(--pick);outline:none}
+.index .ic{width:36px;height:36px;flex:none}
+.index span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.index small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+
+/* Brand band */
+.brand{background:var(--b-bg);color:var(--b-ink);font-family:var(--b-body)}
+.brand .inner{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:40px;align-items:center;padding-block:56px}
+@media (max-width:860px){.brand .inner{grid-template-columns:minmax(0,1fr);gap:28px;padding-block:40px}}
+.num{font-family:var(--f-ui);font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.lockup{display:flex;align-items:center;gap:16px;margin:10px 0 6px;flex-wrap:wrap}
+.lockup svg{width:64px;height:64px;flex:none}
+.word{font-family:var(--b-disp);font-size:clamp(44px,8vw,76px);line-height:1;letter-spacing:var(--b-track,0);font-weight:var(--b-dw,700);font-style:var(--b-ds,normal);text-transform:var(--b-tt,none)}
+.tag{font-family:var(--b-disp);font-size:clamp(18px,2.4vw,24px);font-weight:var(--b-dw,700);font-style:var(--b-ds,normal);margin:4px 0 16px;color:var(--b-acc);text-wrap:balance}
+.why{max-width:58ch;margin:0 0 20px;opacity:.92}
+.meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 18px;align-items:center;font-size:14px;max-width:560px}
+.meta dt{font-family:var(--f-ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.meta dd{margin:0;min-width:0}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw i{display:inline-flex;flex-direction:column;align-items:center;gap:3px;font-style:normal;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;opacity:.95}
+.sw i b{width:30px;height:30px;border-radius:8px;border:1px solid color-mix(in srgb,var(--b-ink) 25%,transparent)}
+.apps{display:flex;gap:14px;align-items:flex-end;margin-top:22px;flex-wrap:wrap}
+.appicon{width:76px;height:76px;border-radius:18px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.appicon.sm{width:44px;height:44px;border-radius:11px}
+.appicon svg{width:100%;height:100%;display:block}
+.applabel{font-family:var(--f-ui);font-size:12px;opacity:.75;max-width:120px}
+.check{margin-top:16px;font-size:12.5px;opacity:.75;max-width:58ch;font-family:var(--f-ui)}
+
+/* Phone */
+.stage{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.phone{width:min(300px,100%);border-radius:38px;padding:10px;background:#0A0A0B;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.scr{border-radius:30px;overflow:hidden;background:var(--b-scr);color:var(--b-sink);font-family:var(--b-body);font-size:12px}
+.sb{display:flex;justify-content:space-between;padding:10px 20px 4px;font-weight:600;font-size:11px;font-family:var(--f-ui)}
+.ah{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 8px}
+.ah .w{font-family:var(--b-disp);font-size:20px;font-weight:var(--b-dw,700);font-style:var(--b-ds,normal);letter-spacing:var(--b-track,0);text-transform:var(--b-tt,none);display:flex;align-items:center;gap:6px}
+.ah .w svg{width:22px;height:22px}
+.ah .av{width:26px;height:26px;border-radius:50%;background:var(--b-acc);color:var(--b-onacc);display:grid;place-items:center;font-weight:700;font-size:11px}
+.ctx{margin:0 12px;padding:8px 10px;border-radius:12px;background:var(--b-card);display:flex;justify-content:space-between;gap:8px}
+.ctx b{display:block;font-size:12px}
+.ctx span{opacity:.7;font-size:10.5px}
+.ctx .lv{text-align:right;font-variant-numeric:tabular-nums}
+.streets{display:flex;gap:4px;margin:10px 12px 0}
+.streets span{flex:1;text-align:center;padding:5px 0;border-radius:8px;font-size:10.5px;font-weight:600;background:var(--b-card);opacity:.75}
+.streets span.on{background:var(--b-acc);color:var(--b-onacc);opacity:1}
+.table{position:relative;margin:24px 26px 30px;aspect-ratio:1.55/1;border-radius:999px;background:var(--b-felt);border:5px solid var(--b-rail);max-width:100%}
+.seat{position:absolute;transform:translate(-50%,-50%);text-align:center;font-size:9px;line-height:1.15;font-variant-numeric:tabular-nums}
+.seat .p{background:var(--b-card);color:var(--b-sink);padding:3px 6px;border-radius:7px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--b-sink) 15%,transparent)}
+.seat .p b{display:block;font-size:9.5px}
+.seat.hero .p{background:var(--b-acc);color:var(--b-onacc);border-color:transparent}
+.seat.fold{opacity:.62}
+.board{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);display:flex;gap:3px}
+.pot{position:absolute;left:50%;top:68%;transform:translate(-50%,-50%);font-size:9.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.35);padding:2px 7px;border-radius:99px;font-variant-numeric:tabular-nums}
+.cd{width:22px;height:30px;border-radius:4px;background:#fff;color:#16181c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"DM Sans",system-ui,sans-serif;font-weight:700;font-size:11px;line-height:1;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.cd.r{color:#D7263D}.cd.d{color:#1D6FD1}.cd.c{color:#1E8A4C}
+.cd.empty{background:transparent;border:1px dashed rgba(255,255,255,.55);box-shadow:none}
+.hc{position:absolute;left:50%;top:100%;transform:translate(-50%,calc(-100% - 14px));display:flex;gap:2px}
+.hc .cd{width:20px;height:27px;font-size:10px}
+.log{margin:0 12px;font-size:10.5px;opacity:.8;display:flex;justify-content:space-between}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:8px 12px}
+.acts span{padding:9px 0;text-align:center;border-radius:10px;background:var(--b-card);font-weight:700;font-size:11px}
+.acts span.main{background:var(--b-acc2);color:var(--b-onacc2)}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin:2px 12px 10px}
+.tags span{padding:3px 8px;border-radius:99px;border:1px solid color-mix(in srgb,var(--b-sink) 30%,transparent);font-size:10px}
+.share{margin:0 12px 14px;padding:11px;border-radius:14px;background:var(--b-acc);color:var(--b-onacc);text-align:center;font-weight:700;font-size:12.5px}
+.home{height:5px;width:96px;border-radius:9px;background:var(--b-sink);opacity:.35;margin:0 auto 8px}
+
+/* Share preview (how a friend receives the hand) */
+.msg{width:min(300px,100%);background:var(--panel);color:var(--fg);border-radius:18px;padding:12px;font-family:var(--f-ui);font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.msg .who{font-size:11px;color:var(--muted);margin-bottom:6px}
+.msg .bub{background:#2B7CF6;color:#fff;border-radius:16px 16px 4px 16px;padding:7px 11px;margin-left:auto;width:fit-content;max-width:85%}
+.lp{margin-top:8px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.lp .img{background:var(--b-bg);color:var(--b-ink);padding:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lp .img .w{font-family:var(--b-disp);font-weight:var(--b-dw,700);font-style:var(--b-ds,normal);text-transform:var(--b-tt,none);letter-spacing:var(--b-track,0);font-size:15px;display:flex;align-items:center;gap:6px}
+.lp .img .w svg{width:20px;height:20px}
+.lp .img .cards{display:flex;gap:2px}
+.lp .txt{padding:8px 10px;background:var(--panel)}
+.lp .txt b{display:block;font-size:12.5px}
+.lp .txt span{color:var(--muted);font-size:11px}
+
+footer{padding-block:40px 56px;color:var(--muted);font-size:14px}
+footer b{color:var(--fg)}
+a:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.index a{transition:border-color .15s}}
+</style>
+
+<header class="top wrap">
+  <div class="eyebrow">App de póquer live · proposta de marca</div>
+  <h1>Dez nomes, dez identidades. Escolhe um.</h1>
+  <p class="lede">Cada opção tem logótipo, ícone da app, cores, letra e o ecrã de registar mão já vestido com a marca. Por baixo do telemóvel está o que o teu amigo recebe quando lhe partilhas uma mão, porque é aí que a app ganha clientes.</p>
+  <div class="rec"><b>A minha escolha: Railbird.</b> No póquer, o railbird é quem está à grade a ver a mão dos amigos, que é exatamente o que a partilha faz. É fácil de dizer em português e em inglês e dá um ícone simpático. A segunda escolha é <b>Sweat</b>, pela mesma razão: "suar uma mão" com os amigos.</div>
+</header>
+
+<nav class="wrap index" id="index" aria-label="As dez opções"></nav>
+
+<main id="brands"></main>
+
+<footer class="wrap">
+  <p><b>Para escolher</b>, responde no fio com o nome (por exemplo "Railbird") ou com uma mistura ("nome do Sweat com as cores do Ante"). Enquanto não escolhes, a app usa uma marca provisória e é fácil trocar depois.</p>
+  <p>Verificação rápida feita a 17 de outubro de 2026: procurei cada nome na App Store e na web e não encontrei nenhuma app de póquer com o mesmo nome. Foi descartado Straddle (já existe "Straddled: Poker Tracker"), Hijack (Hijack Poker, sala online no Texas), Riverlog e TableMate (apps já publicadas). Antes de lançar convém um registo de marca a sério e confirmar o domínio .app.</p>
+</footer>
+
+<script>
+const B = [
+ {id:"railbird", name:"Railbird", tag:"Os teus amigos à grade, em cada mão.",
+  why:"O railbird é quem assiste da grade. A app transforma cada mão partilhada num convite para os amigos verem e comentarem. Tom amigável, verde de mesa escuro com âmbar de luz de sala.",
+  disp:'"Bricolage Grotesque",system-ui,sans-serif', body:'"DM Sans",system-ui,sans-serif', dw:800, track:"-0.02em",
+  fonts:"Bricolage Grotesque + DM Sans",
+  c:{bg:"#0E3B3A",ink:"#F2EFE6",acc:"#F2B33D",onacc:"#1B1A14",acc2:"#E8674A",onacc2:"#fff",scr:"#0B2F2E",sink:"#F2EFE6",card:"#164A48",felt:"#1F6B5A",rail:"#08201F"},
+  sw:[["#0E3B3A","Grade"],["#F2B33D","Âmbar"],["#E8674A","Coral"],["#F2EFE6","Giz"],["#1F6B5A","Pano"]],
+  check:"Existe uma app de bilhar chamada Railbird Pool. Não é póquer, mas convém o nome completo ser \"Railbird Poker\" nas lojas.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="46" width="52" height="4" rx="2" fill="var(--b-ink)"/><path d="M20 33 L7 27 L11 40 Z" fill="var(--b-acc)"/><ellipse cx="30" cy="35" rx="13" ry="9.5" fill="var(--b-acc)"/><circle cx="41" cy="25" r="7" fill="var(--b-acc)"/><path d="M47 23.5 L55 26 L47 28.5 Z" fill="var(--b-acc2)"/><circle cx="42.5" cy="24" r="1.6" fill="var(--b-bg)"/><rect x="26" y="43" width="2" height="4" fill="var(--b-ink)"/><rect x="32" y="43" width="2" height="4" fill="var(--b-ink)"/></svg>`},
+ {id:"sweat", name:"Sweat", tag:"Partilha a mão. Deixa os amigos suar contigo.",
+  why:"\"Sweat a hand\" é acompanhar a mão de um amigo como se fosse tua. Marca energética e clara, a única em fundo claro, pensada para a imagem de partilha se destacar em qualquer chat.",
+  disp:'"Anton",Impact,sans-serif', body:'"Barlow",system-ui,sans-serif', dw:400, tt:"uppercase", track:"0.01em",
+  fonts:"Anton + Barlow",
+  c:{bg:"#FFF1E8",ink:"#2B1A14",acc:"#FF5A36",onacc:"#fff",acc2:"#2E5BFF",onacc2:"#fff",scr:"#FFF8F3",sink:"#2B1A14",card:"#FFE3D4",felt:"#2E5BFF",rail:"#1B2C73"},
+  sw:[["#FF5A36","Calor"],["#2E5BFF","Azul"],["#2B1A14","Café"],["#FFF1E8","Pele"],["#1B2C73","Noite"]],
+  check:"Sem app de póquer com este nome. \"Sweat\" é palavra comum, por isso nas lojas fica \"Sweat: Live Poker Hands\".",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 C32 4 12 28 12 41 a20 20 0 0 0 40 0 C52 28 32 4 32 4Z" fill="var(--b-acc)"/><path d="M32 26 c-6 6 -10 9 -10 13 a5 5 0 0 0 8.5 3.4 l-2.5 7.6 h8 l-2.5 -7.6 a5 5 0 0 0 8.5 -3.4 c0 -4 -4 -7 -10 -13z" fill="var(--b-bg)"/></svg>`},
+ {id:"muck", name:"Muck", tag:"Nenhuma mão vai para o lixo.",
+  why:"O muck é onde vão as cartas que ninguém vê. A ideia é o contrário: guardar e mostrar todas. Tom irreverente e social, ameixa com rosa, para um público mais novo que vive nos grupos de WhatsApp.",
+  disp:'"Bowlby One",Impact,sans-serif', body:'"Work Sans",system-ui,sans-serif', dw:400, track:"0",
+  fonts:"Bowlby One + Work Sans",
+  c:{bg:"#2D1B3D",ink:"#FCE9F1",acc:"#FF7AB6",onacc:"#2D1B3D",acc2:"#FFD166",onacc2:"#2D1B3D",scr:"#24152F",sink:"#FCE9F1",card:"#3D2852",felt:"#5B3A7A",rail:"#160D1E"},
+  sw:[["#2D1B3D","Ameixa"],["#FF7AB6","Rosa"],["#FFD166","Ficha"],["#FCE9F1","Leite"],["#5B3A7A","Pano"]],
+  check:"Existe um jogo de PC chamado Muck (sobrevivência). Não é póquer, mas a pesquisa nas lojas fica mais disputada.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="12" width="26" height="36" rx="4" fill="var(--b-acc2)" transform="rotate(-14 25 30)"/><rect x="25" y="15" width="26" height="36" rx="4" fill="var(--b-acc)" transform="rotate(10 38 33)"/><g transform="rotate(10 38 33)" stroke="var(--b-bg)" stroke-width="2" fill="none"><rect x="29" y="19" width="18" height="28" rx="2"/><path d="M29 26 L47 40 M29 40 L47 26"/></g></svg>`},
+ {id:"kicker", name:"Kicker", tag:"Regista a mão antes do próximo deal.",
+  why:"O kicker decide mãos empatadas. Nome curto, desportivo e com movimento, que puxa pela promessa principal: registar uma mão em segundos. Amarelo forte que se reconhece no ecrã inicial.",
+  disp:'"Chivo",system-ui,sans-serif', body:'"Chivo",system-ui,sans-serif', dw:900, ds:"italic", track:"-0.03em",
+  fonts:"Chivo Black Italic + Chivo",
+  c:{bg:"#FFD23F",ink:"#141414",acc:"#141414",onacc:"#FFD23F",acc2:"#E63946",onacc2:"#fff",scr:"#FFF7D6",sink:"#141414",card:"#FFE88A",felt:"#1E7A4D",rail:"#141414"},
+  sw:[["#FFD23F","Amarelo"],["#141414","Preto"],["#E63946","Vermelho"],["#FFF7D6","Papel"],["#1E7A4D","Pano"]],
+  check:"Sem app de póquer com este nome. Há uma \"Roulette Kicker\" de casino, sem relação.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="21" width="11" height="3.5" rx="1.5" fill="var(--b-acc2)"/><rect x="6" y="29" width="8" height="3.5" rx="1.5" fill="var(--b-acc2)"/><rect x="3" y="37" width="11" height="3.5" rx="1.5" fill="var(--b-acc2)"/><g transform="skewX(-10) translate(6 0)"><rect x="18" y="12" width="9" height="40" fill="var(--b-ink)"/><path d="M27 31 L44 12 H55 L35 34 Z" fill="var(--b-ink)"/><path d="M31 30 L55 52 H44 L27 37 Z" fill="var(--b-ink)"/></g></svg>`},
+ {id:"feltpad", name:"Feltpad", tag:"O bloco de notas da tua mesa.",
+  why:"Pano verde e caderno de notas numa palavra. É a opção clássica de casino, com dourado e serifa elegante, para quem quer que a app pareça séria e premium desde o primeiro dia.",
+  disp:'"DM Serif Display",Georgia,serif', body:'"Manrope",system-ui,sans-serif', dw:400, track:"0",
+  fonts:"DM Serif Display + Manrope",
+  c:{bg:"#0B4D2C",ink:"#F6F1E1",acc:"#C9A24A",onacc:"#1A1408",acc2:"#8C1C13",onacc2:"#F6F1E1",scr:"#083D23",sink:"#F6F1E1",card:"#0F5E37",felt:"#117A43",rail:"#3A2412"},
+  sw:[["#0B4D2C","Pano"],["#C9A24A","Ouro"],["#8C1C13","Bordô"],["#F6F1E1","Marfim"],["#3A2412","Madeira"]],
+  check:"Sem resultados para Feltpad em lojas ou web. Nome inventado, mais fácil de registar.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="32" rx="27" ry="19" fill="none" stroke="var(--b-acc)" stroke-width="4"/><ellipse cx="32" cy="32" rx="20" ry="12.5" fill="var(--b-felt)"/><path d="M21 27 H43 M19 32 H45 M21 37 H37" stroke="var(--b-ink)" stroke-width="2" stroke-linecap="round"/><circle cx="45" cy="37" r="3" fill="var(--b-acc)"/></svg>`},
+ {id:"stackd", name:"Stackd", tag:"Cada mão, cada sessão, cada euro.",
+  why:"Fala do stack e do que se acumula: mãos, horas, lucro. Encaixa melhor na segunda parte da app (bankroll e sessões). Visual de app financeira, com números em letra monoespaçada.",
+  disp:'"Sora",system-ui,sans-serif', body:'"Sora",system-ui,sans-serif', dw:700, track:"-0.03em",
+  fonts:"Sora + JetBrains Mono para números",
+  c:{bg:"#0F1720",ink:"#E6EEF5",acc:"#3DDC97",onacc:"#06140D",acc2:"#5B8CFF",onacc2:"#fff",scr:"#0B1219",sink:"#E6EEF5",card:"#18232F",felt:"#1A3A4A",rail:"#060A0E"},
+  sw:[["#0F1720","Ardósia"],["#3DDC97","Lucro"],["#5B8CFF","Azul"],["#E6EEF5","Névoa"],["#1A3A4A","Pano"]],
+  check:"Existem StackTracker e StackTrack, apps de stack. O nome é parecido, por isso é a opção com mais risco de confusão.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="30" cy="46" rx="21" ry="7" fill="var(--b-acc2)"/><ellipse cx="34" cy="35" rx="21" ry="7" fill="var(--b-acc)"/><ellipse cx="30" cy="24" rx="21" ry="7" fill="var(--b-ink)"/><ellipse cx="30" cy="24" rx="12" ry="3.6" fill="none" stroke="var(--b-bg)" stroke-width="2" stroke-dasharray="4 3"/></svg>`},
+ {id:"shove", name:"Shove", tag:"All-in na partilha.",
+  why:"Empurrar as fichas todas, e empurrar a mão para o grupo. Nome de ação, curto, com logótipo em setas que sugere rapidez. Azul elétrico para fugir do verde de póquer que toda a gente usa.",
+  disp:'"Syne",system-ui,sans-serif', body:'"Outfit",system-ui,sans-serif', dw:800, track:"-0.02em",
+  fonts:"Syne ExtraBold + Outfit",
+  c:{bg:"#2443FF",ink:"#FFFFFF",acc:"#FFE066",onacc:"#14206B",acc2:"#FF6FA5",onacc2:"#14206B",scr:"#1A33D6",sink:"#FFFFFF",card:"#3654FF",felt:"#0F2499",rail:"#0A1560"},
+  sw:[["#2443FF","Elétrico"],["#FFE066","Limão"],["#FF6FA5","Chiclete"],["#FFFFFF","Branco"],["#0F2499","Pano"]],
+  check:"Existe a SnapShove (calculadora de push/fold). O nome não é igual, mas partilha a palavra.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 14 H20 L38 32 L20 50 H6 L24 32 Z" fill="var(--b-acc)"/><path d="M28 14 H40 L58 32 L40 50 H28 L46 32 Z" fill="var(--b-acc2)"/></svg>`},
+ {id:"ante", name:"Ante", tag:"Antes de tudo, a mão.",
+  why:"O ante é a primeira coisa que entra no pote. Marca minimalista e elegante, quase de relojoaria, para jogadores de torneio que gostam de coisas bem feitas. Fundo claro e bronze discreto.",
+  disp:'"Italiana",Georgia,serif', body:'"Karla",system-ui,sans-serif', dw:400, tt:"uppercase", track:"0.18em",
+  fonts:"Italiana + Karla",
+  c:{bg:"#EEF0F2",ink:"#1C2230",acc:"#8A6D3B",onacc:"#fff",acc2:"#1C2230",onacc2:"#EEF0F2",scr:"#F7F8F9",sink:"#1C2230",card:"#E3E6EA",felt:"#3B5B8A",rail:"#1C2230"},
+  sw:[["#EEF0F2","Pérola"],["#1C2230","Tinta"],["#8A6D3B","Bronze"],["#3B5B8A","Aço"],["#FFFFFF","Branco"]],
+  check:"Sem app de póquer com este nome. Palavra muito curta, por isso o domínio pode ser caro.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--b-acc)" stroke-width="2.2"/><circle cx="32" cy="32" r="20.5" fill="none" stroke="var(--b-acc)" stroke-width="1" stroke-dasharray="3 3"/><path d="M22 45 L32 18 L42 45 M26 36 H38" fill="none" stroke="var(--b-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
+ {id:"tells", name:"Tells", tag:"Conta a mão. Eles leem-te.",
+  why:"Um tell é o que denuncia o jogador, e \"tell\" é também contar. A mão partilhada é uma história contada aos amigos. Tom editorial, azul-noite com dourado, olho com um ouro (♦) na pupila.",
+  disp:'"Instrument Serif",Georgia,serif', body:'"IBM Plex Sans",system-ui,sans-serif', dw:400, ds:"italic", track:"-0.01em",
+  fonts:"Instrument Serif Italic + IBM Plex Sans",
+  c:{bg:"#1F2A44",ink:"#F1EEE6",acc:"#E9C46A",onacc:"#1F2A44",acc2:"#7FB7BE",onacc2:"#10202A",scr:"#18213A",sink:"#F1EEE6",card:"#2A3757",felt:"#2E4A6B",rail:"#0E1424"},
+  sw:[["#1F2A44","Noite"],["#E9C46A","Dourado"],["#7FB7BE","Água"],["#F1EEE6","Papel"],["#2E4A6B","Pano"]],
+  check:"Sem app de póquer com este nome nas pesquisas feitas.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 32 Q32 6 60 32 Q32 58 4 32Z" fill="var(--b-ink)"/><circle cx="32" cy="32" r="11" fill="var(--b-acc)"/><path d="M32 24 L39 32 L32 40 L25 32 Z" fill="var(--b-bg)"/></svg>`},
+ {id:"chipnote", name:"Chipnote", tag:"Uma ficha, uma nota, uma mão.",
+  why:"A opção mais simpática e fácil de perceber à primeira: fichas e notas. Formas redondas, cores alegres, pensada para quem joga em clubes e home games e quer algo leve.",
+  disp:'"Fredoka",system-ui,sans-serif', body:'"Nunito",system-ui,sans-serif', dw:700, track:"-0.01em",
+  fonts:"Fredoka + Nunito",
+  c:{bg:"#E3F1FF",ink:"#10324F",acc:"#FF6B6B",onacc:"#fff",acc2:"#2BB673",onacc2:"#fff",scr:"#F5FAFF",sink:"#10324F",card:"#D6E9FB",felt:"#2BB673",rail:"#10324F"},
+  sw:[["#E3F1FF","Céu"],["#FF6B6B","Coral"],["#2BB673","Menta"],["#10324F","Marinho"],["#FFFFFF","Branco"]],
+  check:"Sem resultados para Chipnote em lojas ou web. Nome inventado, mais fácil de registar.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="var(--b-acc)"/><circle cx="32" cy="32" r="21" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="8 8.5"/><circle cx="32" cy="32" r="14" fill="#fff"/><path d="M25 29 H39 M25 34 H35" stroke="var(--b-ink)" stroke-width="2.6" stroke-linecap="round"/></svg>`}
+];
+
+const card=(r,s)=>{const cls={"♥":"r","♦":"d","♣":"c","♠":""}[s];return `<span class="cd ${cls}">${r}<span>${s}</span></span>`};
+const vars=b=>{const c=b.c;return `--b-bg:${c.bg};--b-ink:${c.ink};--b-acc:${c.acc};--b-onacc:${c.onacc};--b-acc2:${c.acc2};--b-onacc2:${c.onacc2};--b-scr:${c.scr};--b-sink:${c.sink};--b-card:${c.card};--b-felt:${c.felt};--b-rail:${c.rail};--b-disp:${b.disp.replace(/"/g,"'")};--b-body:${b.body.replace(/"/g,"'")};--b-dw:${b.dw};--b-ds:${b.ds||"normal"};--b-tt:${b.tt||"none"};--b-track:${b.track||0}`};
+const icon=(b,sm)=>`<div class="appicon${sm?" sm":""}" style="${vars(b)};background:${b.c.bg}"><svg viewBox="-14 -14 92 92">${b.logo.replace(/^<svg[^>]*>|<\/svg>$/g,"")}</svg></div>`;
+const domain=b=>b.id+".app";
+
+const seats=[
+ {x:50,y:-4,n:"Paulo",s:"UTG · 41k",f:1},
+ {x:97,y:24,n:"Sofia",s:"HJ · 88k",f:1},
+ {x:97,y:78,n:"Miguel",s:"BB · 54k"},
+ {x:50,y:104,n:"Tu",s:"BTN · 62k",h:1},
+ {x:3,y:78,n:"André",s:"SB · 27k",f:1},
+ {x:3,y:24,n:"João",s:"CO · 73k",f:1}
+];
+
+function phone(b){
+  const st=seats.map(s=>`<div class="seat${s.h?" hero":""}${s.f?" fold":""}" style="left:${s.x}%;top:${s.y}%"><div class="p"><b>${s.n}</b>${s.s}</div></div>`).join("");
+  return `<div class="phone"><div class="scr">
+   <div class="sb"><span>23:41</span><span>5G ▮▮▮</span></div>
+   <div class="ah"><div class="w">${b.logo}${b.name}</div><div class="av">RF</div></div>
+   <div class="ctx"><div><b>Estoril Main Event</b><span>Dia 1B · Mesa 12 · 9 jogadores</span></div><div class="lv"><b>Nível 14</b><span>1.5k/3k (3k)</span></div></div>
+   <div class="streets"><span>Pré-flop</span><span class="on">Flop</span><span>Turn</span><span>River</span></div>
+   <div class="table">${st}
+     <div class="board">${card("Q","♥")}${card("J","♠")}${card("4","♦")}<span class="cd empty"></span><span class="cd empty"></span></div>
+     <div class="pot">Pote 21k</div>
+     <div class="hc" style="left:50%;top:104%">${card("A","♠")}${card("K","♥")}</div>
+   </div>
+   <div class="log"><span>Miguel aposta 8k</span><span>Tu a agir</span></div>
+   <div class="acts"><span>Fold</span><span>Call 8k</span><span class="main">Raise</span><span>All-in</span></div>
+   <div class="tags"><span>#3bet pot</span><span>#reg forte</span><span>+ tag</span></div>
+   <div class="share">Partilhar mão</div>
+   <div class="home"></div>
+  </div></div>`;
+}
+
+function share(b){
+  return `<div class="msg" aria-label="Como um amigo recebe a mão partilhada">
+   <div class="who">Rui → grupo "Póquer de quinta"</div>
+   <div class="bub">Fiz bem em dar raise aqui? 🤔</div>
+   <div class="lp"><div class="img" style="${vars(b)}"><div class="w">${b.logo}${b.name}</div><div class="cards">${card("A","♠")}${card("K","♥")}<span style="width:6px"></span>${card("Q","♥")}${card("J","♠")}${card("4","♦")}</div></div>
+   <div class="txt"><b>AK no BTN vs BB · Estoril Main Event</b><span>${domain(b)}/m/7Kq2 · Ver replay e comentar</span></div></div>
+  </div>`;
+}
+
+document.getElementById("index").innerHTML=B.map((b,i)=>`<a href="#${b.id}">${icon(b,true).replace('appicon sm','appicon sm ic')}<span>${b.name}<small>${String(i+1).padStart(2,"0")} de 10</small></span></a>`).join("");
+
+document.getElementById("brands").innerHTML=B.map((b,i)=>`
+ <section class="brand" id="${b.id}" style="${vars(b)}">
+  <div class="wrap inner">
+   <div>
+    <div class="num">Opção ${i+1} de 10</div>
+    <div class="lockup">${b.logo}<div class="word">${b.name}</div></div>
+    <p class="tag">${b.tag}</p>
+    <p class="why">${b.why}</p>
+    <dl class="meta">
+     <dt>Cores</dt><dd><div class="sw">${b.sw.map(([h,n])=>`<i><b style="background:${h}"></b>${n}</i>`).join("")}</div></dd>
+     <dt>Letra</dt><dd>${b.fonts}</dd>
+     <dt>Domínio</dt><dd>${domain(b)}</dd>
+    </dl>
+    <div class="apps">${icon(b)}<div class="applabel">Ícone no ecrã inicial do iPhone e Android</div></div>
+    <p class="check">${b.check}</p>
+   </div>
+   <div class="stage">${phone(b)}${share(b)}</div>
+  </div>
+ </section>`).join("");
+</script>
