@@ -45,7 +45,7 @@ PARA QUEM JOGA LIVE
 • Sem contas: as tuas mãos ficam no teu telemóvel
 
 SWEATBOOK PRO
-Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas, os filtros de bankroll de 30 e 90 dias e Stories sem marca de água. Subscrição mensal ou anual, com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
+Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas, os filtros de bankroll de 30 e 90 dias e Stories com a tua voz e sem marca de água. Subscrição mensal ou anual, com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
 
 {{APP_NAME}} é uma ferramenta de registo e estudo. Não permite apostar nem jogar a dinheiro.
 
