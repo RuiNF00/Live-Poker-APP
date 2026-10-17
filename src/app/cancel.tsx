@@ -27,6 +27,7 @@ export default function Cancel() {
   const [reason, setReason] = useState<CancelReason | null>(null);
   const [plan, setPlan] = useState<'monthly' | 'annual' | null>(null);
   const [willRenew, setWillRenew] = useState<boolean | null>(null);
+  const [product, setProduct] = useState<string | null>(null);
   const [offer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<Offer>(null);
   const [seen, setSeen] = useState<CancelOffer[] | null>(null);
@@ -43,6 +44,7 @@ export default function Cancel() {
     getSubscription().then((s) => {
       setPlan(s?.plan ?? null);
       setWillRenew(s?.willRenew ?? null);
+      setProduct(s?.product ?? null);
     });
     // Each offer shows once ever: on a later visit only the plain way out is left.
     offersSeen().then((s) => {
@@ -102,8 +104,8 @@ export default function Cancel() {
 
   const annual = plans.find((p) => p.id === 'annual');
   const monthly = plans.find((p) => p.id === 'monthly');
-  // Switching plans inside one App Store group is a plain purchase; Google Play needs a plan change we don't do yet.
-  const toAnnual = plan === 'monthly' && annual && Platform.OS === 'ios';
+  // Inside one App Store group the switch is a plain purchase; on Google Play it replaces the monthly product (purchases.buy).
+  const toAnnual = plan === 'monthly' && annual && (Platform.OS === 'ios' || !!product);
 
   return (
     <>
@@ -178,7 +180,7 @@ export default function Cancel() {
                       icon="calendar"
                       title={t('Anual: {price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
                       body={t('{price} por ano, −{pct}% face ao mensal.', { price: annual.priceString, pct: monthly ? annualSavingPct(monthly.price, annual.price) : 0 })}>
-                      <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual'), 'annual')} />
+                      <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual', undefined, product ?? undefined), 'annual')} />
                     </OfferCard>
                   ) : null}
                   {!offer && !toAnnual ? <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} /> : null}

@@ -3259,6 +3259,13 @@ const en: Record<string, string> = {
   'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Still watching (1 session): the verdict shows after 100 h of cash or 50 tournaments.',
   'Enviar o meu resultado para o swap': 'Send my result to the swap',
   '{n} torneios, {c} cashes.': '{n} tournaments, {c} cashes.',
+  'Pagamento por atualizar na loja': 'Payment needs updating in the store',
+  'A {store} não conseguiu cobrar': '{store} couldn\'t charge you',
+  'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Your Pro stays on for now. Update your payment in {store} to keep it.',
+  'Atualizar pagamento': 'Update payment',
+  'Termina a {date}': 'Ends on {date}',
+  'Renova a {date}': 'Renews on {date}',
+  'Verifica a rede e tenta outra vez daqui a pouco.': 'Check your connection and try again in a moment.',
 };
 
 export default en;

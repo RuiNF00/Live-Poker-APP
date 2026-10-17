@@ -8,7 +8,7 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
 import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
-import { buyError, type BuyResult } from './buy-result';
+import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
@@ -166,13 +166,27 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 }
 
 /** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
-export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean } | null> {
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
   if (!LIVE) return null;
   try {
     const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
     if (!e || e.store === 'PROMOTIONAL') return null;
     const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
-    return plan ? { plan, willRenew: e.willRenew } : null;
+    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * When the store couldn't charge a renewal: Pro stays on through the store's grace period
+ * (App Store Billing Grace Period, Google Play grace) while it retries. Null when all is well.
+ */
+export async function getBillingIssue(): Promise<{ since: number } | null> {
+  if (!LIVE) return null;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    return e?.billingIssueDetectedAtMillis ? { since: e.billingIssueDetectedAtMillis } : null;
   } catch {
     return null;
   }
@@ -228,7 +242,8 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
 
 async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
   try {
-    return hasPro((await run()).customerInfo) ? 'ok' : 'error';
+    // The store finished the purchase but Pro isn't on yet (RevenueCat still syncing): never say nothing was charged.
+    return hasPro((await run()).customerInfo) ? 'ok' : 'pending';
   } catch (e) {
     return buyError(e);
   }
@@ -252,10 +267,22 @@ export async function lifetimeOffer(): Promise<{ priceString: string; buy: () =>
   }
 }
 
-export async function buy(plan: StorePlan): Promise<BuyResult> {
+/**
+ * Buys a plan. `replacing` is the store product of the plan being left (monthly to annual):
+ * the App Store swaps plans inside the subscription group by itself; Google Play needs it said,
+ * or the player would end up with two subscriptions.
+ */
+export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResult> {
   if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';
   if (!plan.pkg) return 'unavailable';
-  return attempt(async () => (await rc()).purchasePackage(plan.pkg!));
+  const P = await rc().catch(() => null);
+  if (!P) return 'unavailable';
+  const { PRORATION_MODE } = await rcModule();
+  const change =
+    Platform.OS === 'android' && replacing
+      ? { oldProductIdentifier: playSubscriptionId(replacing), prorationMode: PRORATION_MODE.IMMEDIATE_WITH_TIME_PRORATION }
+      : null;
+  return attempt(() => P.purchasePackage(plan.pkg!, null, change));
 }
 
 /** 'none': the store answered and this account has no subscription; 'error': it didn't answer. */
