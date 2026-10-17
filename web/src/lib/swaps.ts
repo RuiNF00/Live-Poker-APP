@@ -158,12 +158,14 @@ class LocalSwaps implements SwapStore {
 
   async create(terms: SwapTerms, own?: string) {
     const token = own ?? randomBytes(32).toString('hex');
-    const again = Object.values(await this.read()).find((r) => r.aHash === sha256(token));
-    if (again) return { id: again.id, token };
-    const id = shortId();
-    const now = new Date().toISOString();
-    await this.mutate((d) => {
+    // Looked up inside the write, so two sends of the same draft at once make one swap.
+    const id = await this.mutate((d) => {
+      const again = Object.values(d).find((r) => r.aHash === sha256(token));
+      if (again) return again.id;
+      const id = shortId();
+      const now = new Date().toISOString();
       d[id] = { id, terms, confirmedAt: null, confirmedName: null, entries: [], createdAt: now, updatedAt: now, aHash: sha256(token), bHash: null };
+      return id;
     });
     return { id, token };
   }

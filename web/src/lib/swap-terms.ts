@@ -125,6 +125,8 @@ export interface SwapBalance {
   net: number;
 }
 
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
 /** Who owes whom: each side's percentage of the other's prizes, less what each already paid. */
 export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[]): SwapBalance {
   let aOwes = 0;
@@ -133,14 +135,14 @@ export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<Swa
   let bPaid = 0;
   for (const e of entries) {
     if (e.kind === 'result') {
-      if (e.side === 'a') aOwes += (terms.a.pct / 100) * e.amount;
-      else bOwes += (terms.b.pct / 100) * e.amount;
+      // Each prize's share to the cent, as the app does: the two never differ by a cent.
+      if (e.side === 'a') aOwes += r2((terms.a.pct / 100) * e.amount);
+      else bOwes += r2((terms.b.pct / 100) * e.amount);
     } else if ((e.side === 'a') === (e.kind === 'payment')) aPaid += e.amount;
     // A payment by b, or a's own note that b paid them.
     else bPaid += e.amount;
   }
-  const r = (n: number) => Math.round(n * 100) / 100;
-  return { aOwes: r(aOwes), bOwes: r(bOwes), aPaid: r(aPaid), bPaid: r(bPaid), net: r(bOwes - bPaid - (aOwes - aPaid)) };
+  return { aOwes: r2(aOwes), bOwes: r2(bOwes), aPaid: r2(aPaid), bPaid: r2(bPaid), net: r2(bOwes - bPaid - (aOwes - aPaid)) };
 }
 
 /**

@@ -38,9 +38,12 @@ export function usedKeys(): Map<string, string> {
 const PT_PT_ONLY =
   /(?<!\p{L})(tu|teu|tua|teus|tuas|ti|contigo|ecrã|ecrãs|telemóve(l|is)|regist(ar|a|as|o|os|ad[ao]s?|ei|aste)|partilh\w*|ficheiros?|definições|utilizador\w*|palavra-passe|equipa|guard(ar|a|as|ei|aste)|descarreg\w*|câmara|secção|póquer|percentage(m|ns)|prémios?|facto|contactos?|estás|podes|queres|tens|vês|fazes|sabes|consegues|precisas|escolhe|toca|tenta|carrega|vais|jogaste|ganhaste|perdeste|percebes|ganhas|perdes|jogas|pára|\w+aste|deves|registou|decorrer|cobr\w*|até ao)(?!\p{L})/iu;
 const PT_PT_PROGRESSIVE = /\ba \w+[aei]r…/i; // "A guardar…" is "Salvando…" in Brazil
+// "deve-te", "paga-te": the pronoun after the verb is European; Brazil says "te deve".
+const PT_PT_ENCLITIC = /(?<!\p{L})\p{L}+-(te|o|a|os|as|lhe|lhes)(?!\p{L})/iu;
+const PT_PT_VERBS = /(?<!\p{L})(pagas|recebeste|desliga|liga|deixar de fora)(?!\p{L})/iu;
 
 export function needsBrazilianText(key: string): boolean {
-  return PT_PT_ONLY.test(key) || PT_PT_PROGRESSIVE.test(key);
+  return PT_PT_ONLY.test(key) || PT_PT_PROGRESSIVE.test(key) || PT_PT_ENCLITIC.test(key) || PT_PT_VERBS.test(key);
 }
 
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
