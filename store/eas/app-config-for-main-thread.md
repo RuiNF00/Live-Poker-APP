@@ -6,7 +6,7 @@ For the thread that owns the app code. Merge these into `app.json` (`expo` key);
 {
   "expo": {
     "name": "{{APP_NAME}}",
-    "slug": "live-poker",
+    "slug": "sweatbook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
