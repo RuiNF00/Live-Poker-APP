@@ -245,6 +245,8 @@ export interface StakePackage {
   share: number;
   markup: number;
   playerCut: number;
+  /** Makeup deals: losses carried over from the package before it (the player chose to carry them when closing it). */
+  makeupIn?: number;
   createdAt: number;
   closedAt?: number;
   updatedAt?: number;

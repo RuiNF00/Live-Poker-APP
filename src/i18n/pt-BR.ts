@@ -1236,6 +1236,7 @@ const ptBR: Record<string, string> = {
   'Partilhar carrossel': 'Compartilhar carrossel',
   '{c}/{n} nos prémios': '{c}/{n} nos prêmios',
   'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'Registro minhas mãos e sessões ao vivo com o Sweatbook: {link}',
+  'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Combine com o backer o que acontece com o makeup quando o pacote fecha.',
 };
 
 export default ptBR;

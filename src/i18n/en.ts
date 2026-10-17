@@ -2789,6 +2789,12 @@ const en: Record<string, string> = {
   '{n} dias de jogo': '{n} days played',
   'Resultado: {v}': 'Result: {v}',
   'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'I log my live hands and sessions with Sweatbook: {link}',
+  'Abre um pacote novo com as mesmas condições, que começa com este makeup por recuperar.': 'Opens a new package on the same terms, starting with this makeup to win back.',
+  'Ainda há {amount} de makeup': "There's still {amount} of makeup",
+  'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Agree with the backer what happens to the makeup when the package closes.',
+  'Fica perdoado': "It's forgiven",
+  'O makeup acaba com o pacote: o próximo começa do zero.': 'The makeup ends with the package: the next one starts from zero.',
+  'Passa para um pacote novo': 'Carry to a new package',
 };
 
 export default en;
