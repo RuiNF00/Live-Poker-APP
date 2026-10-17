@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 import { BACKUP_ID_RE, BACKUP_MAX_BYTES, BACKUP_SECRET_RE, backups, keyHash, type BackupType } from '@/lib/backups';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited } from '@/lib/abuse';
 
 // Cloud backup by recovery code. The secret travels only in the x-backup-key header.
 const cors = {
@@ -16,7 +16,7 @@ export function OPTIONS() {
 }
 
 async function auth(req: Request, params: Promise<{ id: string }>, bucket: string, max: number) {
-  if (rateLimited(`backup:${bucket}:${clientIp(req)}`, max, 60_000)) return { error: fail('rate_limited', 429) };
+  if (await limited(req, `backup_${bucket}`, max, 3600)) return { error: fail('rate_limited', 429) };
   const b = backups();
   if (!b) return { error: fail('backups_disabled', 503) };
   const id = (await params).id.toUpperCase();
@@ -25,9 +25,12 @@ async function auth(req: Request, params: Promise<{ id: string }>, bucket: strin
   return { b, id, hash: keyHash(secret) };
 }
 
-/** Body: gzip (detected by its magic bytes) or plain JSON, up to ~4.4 MB → 204. 403 if the id has another secret. */
+/**
+ * Body: gzip (detected by its magic bytes) or plain JSON, up to 2 MB → 204. 403 if the id has
+ * another secret, 507 when the server's storage quota is full (try again later).
+ */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const a = await auth(req, params, 'put', 20);
+  const a = await auth(req, params, 'put', 30);
   if (a.error) return a.error;
   const declared = Number(req.headers.get('content-length') ?? 0);
   if (declared > BACKUP_MAX_BYTES) return fail('too_large', 413);
@@ -47,7 +50,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (Math.random() < 0.01) after(() => a.b.purgeOld().catch(() => {}));
   try {
     if (!(await a.b.put(a.id, a.hash, data, type))) return fail('forbidden', 403);
-  } catch {
+  } catch (e) {
+    if (String((e as Error)?.message).includes('quota')) return fail('quota', 507);
     return fail('unavailable', 503);
   }
   return new NextResponse(null, { status: 204, headers: cors });
@@ -55,7 +59,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 /** → the stored body (its original content type) with x-updated-at; 404 for a wrong code or no backup. */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const a = await auth(req, params, 'get', 30);
+  const a = await auth(req, params, 'get', 60);
   if (a.error) return a.error;
   try {
     const found = await a.b.get(a.id, a.hash);
@@ -69,7 +73,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const a = await auth(req, params, 'delete', 20);
+  const a = await auth(req, params, 'delete', 30);
   if (a.error) return a.error;
   try {
     if (!(await a.b.remove(a.id, a.hash))) return fail('not_found', 404);

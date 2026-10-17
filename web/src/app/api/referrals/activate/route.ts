@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cors } from '@/lib/cors';
 import { grantPending } from '@/lib/referrals';
+import { isNewSubscriber, revenueCatConfigured } from '@/lib/revenuecat';
 import { codeToRegister, json, readBody } from '../shared';
 
 export function OPTIONS() {
@@ -18,7 +19,12 @@ export async function POST(req: Request) {
   const { installId, rcUserId } = r.body;
   try {
     await r.b.codeFor(installId, codeToRegister(r.body), rcUserId);
-    const booked = await r.b.activate(installId);
+    // Rewards are for new players: with RevenueCat configured, the friend's RevenueCat user
+    // (the one stored first, not whatever this request says) must exist and be first seen
+    // this week, or nothing is booked and the referral stays open.
+    const rc = await r.b.awaitingRc(installId);
+    const ok = !rc || !revenueCatConfigured() || (await isNewSubscriber(rc));
+    const booked = ok ? await r.b.activate(installId) : [];
     await grantPending(r.b, [...booked, ...(await r.b.pending(installId))]);
     return json({ status: await r.b.status(installId) });
   } catch {

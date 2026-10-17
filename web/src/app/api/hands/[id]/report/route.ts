@@ -1,25 +1,28 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited, reporterId } from '@/lib/abuse';
+import { notifyModeration } from '@/lib/notify';
+import { brand } from '@/config/brand';
 import { cors } from '@/lib/cors';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function OPTIONS() {
   return new NextResponse(null, { headers: cors });
 }
 
-/** POST { reporterId (uuid), reason? }: reports a shared hand; five reports take it down. */
+/**
+ * POST { reason? }: reports a shared hand. Five different reporters (counted by a daily IP
+ * hash, never the client's reporterId) hide it for review; it is deleted after 30 days.
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (rateLimited(`report:${clientIp(req)}`, 20, 60_000)) {
+  if (await limited(req, 'report', 20, 3600)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   }
-  const body = (await req.json().catch(() => null)) as { reporterId?: string; reason?: unknown } | null;
-  if (!body?.reporterId || !UUID.test(body.reporterId)) {
-    return NextResponse.json({ error: 'invalid_report' }, { status: 422, headers: cors });
+  const body = (await req.json().catch(() => null)) as { reason?: unknown } | null;
+  const reason = typeof body?.reason === 'string' ? body.reason.slice(0, 200) : null;
+  const result = await getStore().reportHand(id, reporterId(req), reason);
+  if (result === 'hidden') {
+    after(() => notifyModeration(`Mão ${brand.siteUrl}/h/${id} escondida por denúncias. Rever e, se estiver bem, repor com select restore_shared_hand('${id}');`));
   }
-  const reason = typeof body.reason === 'string' ? body.reason.slice(0, 200) : null;
-  const ok = await getStore().reportHand(id, body.reporterId, reason);
-  return NextResponse.json({ reported: ok }, { status: ok ? 200 : 404, headers: cors });
+  return NextResponse.json({ reported: result !== 'missing' }, { status: result === 'missing' ? 404 : 200, headers: cors });
 }

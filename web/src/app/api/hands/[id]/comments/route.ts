@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
 import { isOffensive } from '@/lib/moderation';
 
@@ -18,7 +18,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 /** POST { name, text, stepIndex? } -> 201 { comment } */
 export async function POST(req: Request, { params }: Ctx) {
   const { id } = await params;
-  if (rateLimited(`comment:${clientIp(req)}`, 6, 60_000)) {
+  if (await limited(req, 'comment', 30, 3600)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   }
   const body = (await req.json().catch(() => null)) as { name?: unknown; text?: unknown; stepIndex?: unknown } | null;

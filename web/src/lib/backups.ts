@@ -2,15 +2,16 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { serviceClient } from './supabase';
 
 // Cloud backup keyed by a recovery code <id>-<secret> (see migration 20261017050000).
 // Only sha256(secret) is stored. Server-only: the table is closed to app/browser keys.
 
 export const BACKUP_ID_RE = /^[0-9A-HJKMNP-TV-Z]{10}$/;
 export const BACKUP_SECRET_RE = /^[0-9A-HJKMNP-TV-Z]{16}$/;
-/** Vercel caps a function's request body at 4.5 MB; stay under it. */
-export const BACKUP_MAX_BYTES = 4_400_000;
+/** 2 MB (gzip JSON is far smaller); the database refuses more (app_backups_bytes_check). */
+export const BACKUP_MAX_BYTES = 2 * 1024 * 1024;
 
 export type BackupType = 'application/json' | 'application/gzip';
 export interface StoredBackup {
@@ -93,8 +94,11 @@ let backend: BackupBackend | null | undefined;
 /** null when Supabase is configured without the service role key: backups are then off. */
 export function backups(): BackupBackend | null {
   if (backend !== undefined) return backend;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  backend = url && service ? new SupabaseBackups(createClient(url, service, { auth: { persistSession: false } })) : url ? null : new LocalBackups();
+  try {
+    const db = serviceClient();
+    backend = db ? new SupabaseBackups(db) : new LocalBackups();
+  } catch {
+    return null;
+  }
   return backend;
 }

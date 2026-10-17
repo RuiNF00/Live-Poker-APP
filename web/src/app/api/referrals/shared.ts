@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { brand } from '@/config/brand';
 import { cors } from '@/lib/cors';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited } from '@/lib/abuse';
 import { newCode, normalizeCode, referrals } from '@/lib/referrals';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,9 +17,12 @@ export interface ReferralBody {
   raw: Record<string, unknown>;
 }
 
+// Hits per IP per hour. Claims are tight: each fake install needs one, and they're the farming path.
+const HOURLY: Record<string, number> = { code: 60, status: 60, claim: 10, activate: 30 };
+
 /** Common checks: rate limit, backend on, installId uuid, optional RevenueCat app user id. */
 export async function readBody(req: Request, bucket: string) {
-  if (rateLimited(`ref:${bucket}:${clientIp(req)}`, 30, 60_000)) return { error: json({ error: 'rate_limited' }, 429) };
+  if (await limited(req, `ref_${bucket}`, HOURLY[bucket] ?? 30, 3600)) return { error: json({ error: 'rate_limited' }, 429) };
   const b = referrals();
   if (!b) return { error: json({ error: 'referrals_disabled' }, 503) };
   const raw = (await req.json().catch(() => null)) as Record<string, unknown> | null;

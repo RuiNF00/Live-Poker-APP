@@ -15,6 +15,8 @@ select purge_old_app_backups() = 1 as stale_backup_purged;
 select delete_app_backup('0123456789', :h1) as deleted;
 \set ON_ERROR_STOP off
 select put_app_backup('ILOU000000', :h1, 'eA==', 'application/json');
+-- Over 2 MB is refused (20261017090000)
+select put_app_backup('0123456789', :h1, encode(convert_to(repeat('a', 2200000), 'utf8'), 'base64'), 'application/json');
 set role anon;
 select * from app_backups;
 select get_app_backup('0123456789', :h1);

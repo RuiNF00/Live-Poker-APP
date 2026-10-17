@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { brand } from '@/config/brand';
 import { getStore } from '@/lib/store';
 import { parseQuiz, resolveHand } from '@/lib/hand';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
 
 export function OPTIONS() {
@@ -15,7 +15,7 @@ export function OPTIONS() {
  * -> 201 { id, token, url }. The app keeps `token` to delete the share later.
  */
 export async function POST(req: Request) {
-  if (rateLimited(`share:${clientIp(req)}`, 30, 60_000)) {
+  if (await limited(req, 'share', 60, 3600)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   }
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;

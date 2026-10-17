@@ -34,7 +34,12 @@ export function parseSlot(raw: unknown): Slot | null {
   return { x, y, w, h };
 }
 
+// Inputs are uploads, so ffmpeg must not guess what they are: each one is read by a single
+// named demuxer from a local file only (no playlists, concat lists or URLs).
+const VOICE_DEMUXER: Record<string, string> = { m4a: 'mov', '3gp': 'mov', aac: 'aac', mp3: 'mp3', webm: 'matroska', ogg: 'ogg' };
+
 export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot | null): string[] {
+  const voiceFormat = VOICE_DEMUXER[path.extname(voice).slice(1).toLowerCase()] ?? 'mov';
   // The waveform branch is normalised so a quiet voice still moves the bars;
   // the audio itself goes out untouched.
   const filter = slot
@@ -47,9 +52,15 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
     '-hide_banner',
     '-loglevel', 'error',
     '-y',
+    '-protocol_whitelist', 'file',
+    '-f', 'image2',
+    '-pattern_type', 'none',
+    '-c:v', 'png',
     '-loop', '1',
     '-framerate', '24',
     '-i', frame,
+    '-protocol_whitelist', 'file',
+    '-f', voiceFormat,
     '-i', voice,
     '-filter_complex', filter,
     '-map', '[v]',

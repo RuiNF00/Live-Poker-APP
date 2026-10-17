@@ -24,7 +24,8 @@ set role service_role;
 select claim_referral('33333333-3333-3333-3333-333333333333', 'ABCD2345', 'manual') = 'too_late' as late_claim_rejected;
 -- Cap: the 11th activated friend in a year gives the referrer nothing
 select count(*) from (
-  select claim_referral(('44444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'ABCD2345', 'link'),
+  select referral_code_for(('44444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'CAP' || substr('ABCDEFGHJKLM', i, 1) || '2345', 'rc_cap_' || i),
+         claim_referral(('44444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'ABCD2345', 'link'),
          activate_referral(('44444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid)
   from generate_series(1, 12) i) x;
 reset role;
@@ -43,10 +44,10 @@ set role service_role;
 select referral_code_for('55555555-5555-5555-5555-555555555555', 'a1b2c3d4e5', 'rc5') = 'a1b2c3d4e5' as hex_code_kept;
 select claim_referral('66666666-6666-6666-6666-666666666666', 'A1B2C3D4E5', 'share', 'demo') = 'ok' as hex_code_claimed;
 reset role;
-set role anon;
+set role service_role;
 select log_app_event('link_opened', gen_random_uuid(), 'ios', '{"ref":"a1b2c3d4e5"}') is null as link_event_ok;
 reset role;
-set role anon;
+set role service_role;
 select log_app_event('invite_claimed', gen_random_uuid(), 'android', '{"source":"play_referrer","result":"ok"}') is null as invite_claimed_event_ok;
 reset role;
 
@@ -61,4 +62,40 @@ select claim_referral('99999999-9999-9999-9999-999999999999', 'qrst2345', 'manua
 -- Someone else's app code is never stolen as an alias
 select referral_code_for('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'WXYZ2345', null) = 'WXYZ2345' as other_server_code;
 select referral_code_for('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4e5', null) = 'WXYZ2345' as taken_alias_refused;
+reset role;
+
+-- Security review fixes (20261017090000)
+set role service_role;
+-- The RevenueCat user of an install is never replaced (no reward hijack)
+select referral_code_for(:referrer, 'ZZZZ9999', 'rc_attacker') = 'ABCD2345' and
+       (select rc_user_id from referral_codes where install_id = :referrer) = 'rc_referrer' as rc_not_overwritten;
+-- Farming: many fresh installs with one RevenueCat user get the friend reward once
+select referral_code_for('bbbbbbbb-0000-0000-0000-000000000000', 'FARM2345', 'rc_farm_ref') as farm_ref_code;
+select count(*) from (
+  select referral_code_for(('bbbbbbbb-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'FRM' || chr(64 + i) || '2345', '$RCAnonymousID:attacker'),
+         claim_referral(('bbbbbbbb-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'FARM2345', 'link'),
+         activate_referral(('bbbbbbbb-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid)
+  from generate_series(1, 6) i) x;
+select count(*) = 1 as one_friend_reward_per_rc_user from referral_rewards w join referral_codes c on c.install_id = w.install_id
+  where w.role = 'friend' and c.rc_user_id = '$RCAnonymousID:attacker';
+-- Referrer cap counts every install of the same RevenueCat user
+select referral_code_for('cccccccc-0000-0000-0000-000000000000', 'SAME2345', 'rc_referrer') as second_install_of_referrer;
+select referral_code_for('cccccccc-0000-0000-0000-000000000001', 'NEWF2345', 'rc_new_friend'),
+       claim_referral('cccccccc-0000-0000-0000-000000000001', 'SAME2345', 'link');
+select count(*) = 0 as referrer_cap_spans_installs from referral_rewards
+  where install_id = 'cccccccc-0000-0000-0000-000000000000' and role = 'referrer'
+  and exists (select activate_referral('cccccccc-0000-0000-0000-000000000001'));
+select count(*) = 1 as but_friend_still_rewarded from referral_rewards
+  where install_id = 'cccccccc-0000-0000-0000-000000000001' and role = 'friend';
+-- No RevenueCat user: nothing booked, and the referral stays open for a retry
+select referral_code_for('dddddddd-0000-0000-0000-000000000001', 'NRCC2345', null),
+       claim_referral('dddddddd-0000-0000-0000-000000000001', 'FARM2345', 'link');
+select count(*) = 0 as no_rc_no_reward from activate_referral('dddddddd-0000-0000-0000-000000000001');
+select referral_awaiting_rc('dddddddd-0000-0000-0000-000000000001') is null and
+       exists (select 1 from referrals where friend_install_id = 'dddddddd-0000-0000-0000-000000000001' and activated_at is null) as still_awaiting;
+select referral_awaiting_rc('cccccccc-0000-0000-0000-000000000001') is null as activated_not_awaiting;
+-- Same RevenueCat user on both sides earns nothing
+select referral_code_for('eeeeeeee-0000-0000-0000-000000000001', 'SELF2345', 'rc_farm_ref'),
+       claim_referral('eeeeeeee-0000-0000-0000-000000000001', 'FARM2345', 'link');
+select count(*) = 0 as same_rc_user_earns_nothing from activate_referral('eeeeeeee-0000-0000-0000-000000000001');
 reset role;

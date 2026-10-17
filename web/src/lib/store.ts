@@ -2,7 +2,8 @@ import 'server-only';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { serviceClient } from './supabase';
 import { DEMO_SHARE } from './demo';
 import type { HandComment, QuizSpot, SharedHand, VoteChoice } from './types';
 
@@ -29,16 +30,19 @@ export interface ShareStore {
   recordView(id: string): Promise<void>;
   listComments(id: string): Promise<HandComment[]>;
   addComment(id: string, c: NewComment): Promise<HandComment | null>;
-  /** Returns false when the comment does not exist. Hidden after 3 distinct reports. */
-  reportComment(commentId: string, reporterId: string): Promise<boolean>;
-  /** Returns false when the hand does not exist. Taken down after 5 distinct reports. */
-  reportHand(id: string, reporterId: string, reason: string | null): Promise<boolean>;
-  vote(id: string, voterId: string, choice: VoteChoice): Promise<void>;
+  /** Hidden after 3 distinct reporters; 'hidden' when this report did it. */
+  reportComment(commentId: string, reporterId: string): Promise<ReportResult>;
+  /** Taken down for review after 5 distinct reporters; 'hidden' when this report did it. */
+  reportHand(id: string, reporterId: string, reason: string | null): Promise<ReportResult>;
+  /** At most 5 voters per IP hash per hand. */
+  vote(id: string, voterId: string, choice: VoteChoice, ipHash: string): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
   logEvent(e: AppEvent): Promise<void>;
   /** Deletes usage events older than 12 months (privacy policy retention). */
   purgeOldEvents(): Promise<void>;
 }
+
+export type ReportResult = 'missing' | 'ok' | 'hidden';
 
 export const APP_EVENTS = [
   'app_open',
@@ -110,12 +114,10 @@ class SupabaseStore implements ShareStore {
   }
 
   async getShare(id: string) {
-    const { data, error } = await this.db
-      .from('shared_hands')
-      .select('id,payload,title,reveal_all,quiz,allow_comments,view_count,created_at')
-      .eq('id', id)
-      .maybeSingle<ShareRow>();
+    // Only live hands (not taken down), never the secret columns.
+    const { data: rows, error } = await this.db.rpc('get_shared_hand', { p_id: id });
     if (error) throw error;
+    const data = (rows as ShareRow[] | null)?.[0];
     if (!data) return null;
     return {
       id: data.id,
@@ -140,14 +142,9 @@ class SupabaseStore implements ShareStore {
   }
 
   async listComments(id: string) {
-    const { data, error } = await this.db
-      .from('hand_comments')
-      .select('id,author_name,body,step_index,created_at')
-      .eq('hand_id', id)
-      .order('created_at', { ascending: true })
-      .limit(500);
+    const { data, error } = await this.db.rpc('list_hand_comments', { p_hand_id: id });
     if (error) throw error;
-    return (data as CommentRow[]).map(toComment);
+    return ((data ?? []) as CommentRow[]).map(toComment);
   }
 
   async addComment(id: string, c: NewComment) {
@@ -165,17 +162,17 @@ class SupabaseStore implements ShareStore {
   async reportComment(commentId: string, reporterId: string) {
     const { data, error } = await this.db.rpc('report_hand_comment', { p_comment_id: commentId, p_reporter_id: reporterId });
     if (error) throw error;
-    return !!data;
+    return data as ReportResult;
   }
 
   async reportHand(id: string, reporterId: string, reason: string | null) {
     const { data, error } = await this.db.rpc('report_shared_hand', { p_hand_id: id, p_reporter_id: reporterId, p_reason: reason });
     if (error) throw error;
-    return !!data;
+    return data as ReportResult;
   }
 
-  async vote(id: string, voterId: string, choice: VoteChoice) {
-    const { error } = await this.db.rpc('cast_hand_vote', { p_hand_id: id, p_voter_id: voterId, p_choice: choice });
+  async vote(id: string, voterId: string, choice: VoteChoice, ipHash: string) {
+    const { error } = await this.db.rpc('cast_hand_vote', { p_hand_id: id, p_voter_id: voterId, p_choice: choice, p_ip_hash: ipHash });
     if (error) throw error;
   }
 
@@ -199,6 +196,7 @@ class SupabaseStore implements ShareStore {
 
   async purgeOldEvents() {
     await this.db.rpc('purge_old_app_events');
+    await this.db.rpc('purge_moderation');
   }
 }
 
@@ -303,11 +301,12 @@ class LocalStore implements ShareStore {
   }
 
   async reportComment(commentId: string, reporterId: string) {
-    return this.mutate((d) => {
-      if (!Object.values(d.comments).some((list) => list.some((c) => c.id === commentId))) return false;
+    return this.mutate((d): ReportResult => {
+      if (!Object.values(d.comments).some((list) => list.some((c) => c.id === commentId))) return 'missing';
       const list = ((d.reports ??= {})[commentId] ??= []);
-      if (!list.includes(reporterId)) list.push(reporterId);
-      return true;
+      if (list.includes(reporterId)) return 'ok';
+      list.push(reporterId);
+      return list.length === 3 ? 'hidden' : 'ok';
     });
   }
 
@@ -321,16 +320,19 @@ class LocalStore implements ShareStore {
   }
 
   async reportHand(id: string, reporterId: string) {
-    return this.mutate((d) => {
-      if (!d.shares[id]) return false;
+    return this.mutate((d): ReportResult => {
+      if (!d.shares[id]) return 'missing';
       const list = ((d.handReports ??= {})[id] ??= []);
-      if (!list.includes(reporterId)) list.push(reporterId);
-      if (list.length >= 5) delete d.shares[id];
-      return true;
+      if (list.includes(reporterId)) return 'ok';
+      list.push(reporterId);
+      if (list.length < 5) return 'ok';
+      delete d.shares[id];
+      return 'hidden';
     });
   }
 
   async vote(id: string, voterId: string, choice: VoteChoice) {
+    // Local dev only: no per-IP cap here.
     await this.mutate((d) => {
       if (!d.shares[id]) return;
       (d.votes[id] ??= {})[voterId] = choice;
@@ -370,8 +372,7 @@ export async function loadShare(id: string): Promise<SharedHand | null> {
 
 export function getStore(): ShareStore {
   if (store) return store;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  store = url && key ? new SupabaseStore(createClient(url, key, { auth: { persistSession: false } })) : new LocalStore();
+  const db = serviceClient();
+  store = db ? new SupabaseStore(db) : new LocalStore();
   return store;
 }

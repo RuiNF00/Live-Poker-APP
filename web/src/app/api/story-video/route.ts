@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { cors } from '@/lib/cors';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited } from '@/lib/abuse';
+import { hasPro, revenueCatConfigured } from '@/lib/revenuecat';
 import { parseSlot, renderStoryVideo } from '@/lib/story-video';
 
 export const runtime = 'nodejs';
@@ -9,6 +10,7 @@ export const maxDuration = 60;
 
 const MAX_FRAME = 4 * 1024 * 1024;
 const MAX_VOICE = 3 * 1024 * 1024;
+// Each voice type maps to the one ffmpeg demuxer allowed to read it (see ffmpegArgs).
 const VOICE_EXT: Record<string, string> = {
   'audio/mp4': 'm4a',
   'audio/m4a': 'm4a',
@@ -28,13 +30,23 @@ export function OPTIONS() {
  * Renders a voice story for Instagram. Called by the app
  * (src/lib/story-video.ts): multipart form with `frame` (PNG 1080×1920),
  * `voice` (m4a/aac, up to 30 s) and optional `slot` (JSON {x,y,w,h} in
- * pixels where the waveform goes) -> 200 video/mp4.
+ * pixels where the waveform goes) and `rcUserId` (RevenueCat app user id) -> 200 video/mp4.
+ * Voice stories are Pro: 403 pro_required unless RevenueCat says the user has Pro now.
  */
 export async function POST(req: Request) {
-  if (rateLimited(`story:${clientIp(req)}`, 10, 60_000)) {
+  if (await limited(req, 'story', 30, 3600)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   }
   const form = await req.formData().catch(() => null);
+  const rcUserId = form?.get('rcUserId');
+  if (revenueCatConfigured()) {
+    if (typeof rcUserId !== 'string' || !rcUserId || rcUserId.length > 100 || !(await hasPro(rcUserId))) {
+      return NextResponse.json({ error: 'pro_required' }, { status: 403, headers: cors });
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    // Without the RevenueCat key the server can't tell who is Pro: don't render for anyone.
+    return NextResponse.json({ error: 'unavailable' }, { status: 503, headers: cors });
+  }
   const frame = form?.get('frame');
   const voice = form?.get('voice');
   if (!(frame instanceof Blob) || !(voice instanceof Blob)) {
