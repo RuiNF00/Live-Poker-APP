@@ -8,6 +8,7 @@ import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -609,7 +610,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
           <T v="small">
             {s.entries} × {fmt(s.buyIn, s.currency)}
             {s.addOn ? ` + add-on ${fmt(s.addOn, s.currency)}` : ''} → {fmt(s.cashOut, s.currency)}
-            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: fmt(owedToBackers(s), s.currency) }) : ''}
+            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: dec(s.staking.markup), owed: fmt(owedToBackers(s), s.currency) }) : ''}
             {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: fmt(s.makeupCut, s.currency) }) : ''}
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: fmt(s.expenses, s.currency) }) : ''}
           </T>
