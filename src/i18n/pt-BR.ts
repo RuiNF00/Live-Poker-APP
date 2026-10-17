@@ -1354,6 +1354,10 @@ const ptBR: Record<string, string> = {
   'vs a tua range': 'vs sua range',
   'A TUA EQUITY': 'SUA EQUITY',
   // Mãos partilhadas (friends' hands and new comments).
+  'Não foi possível enviar o comentário.': 'Não foi possível enviar o comentário.',
+  'O que queres saber? (opcional)': 'O que você quer saber? (opcional)',
+  'Ex.: call ou fold no river?': 'Ex.: call ou fold no river?',
+  'Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.': 'Você deixa de ver os comentários dessa pessoa nesta mão. Ela não é avisada.',
   '1 comentário novo': '1 comentário novo',
   '{n} comentários novos': '{n} comentários novos',
   'Nas mãos partilhadas': 'Nas mãos compartilhadas',

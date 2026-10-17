@@ -2982,6 +2982,12 @@ const es: Record<string, string> = {
   'Repor': 'Restablecer',
   'Aplicar': 'Aplicar',
   // Mãos partilhadas (friends' hands and new comments).
+  'Não foi possível enviar o comentário.': 'No se pudo enviar el comentario.',
+  'O que queres saber? (opcional)': '¿Qué quieres saber? (opcional)',
+  'Ex.: call ou fold no river?': 'Ej.: ¿call o fold en el river?',
+  'Bloquear': 'Bloquear',
+  'Bloquear {name}?': '¿Bloquear a {name}?',
+  'Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.': 'Dejas de ver los comentarios de esta persona en esta mano. No se le avisa.',
   '1 comentário novo': '1 comentario nuevo',
   '{n} comentários novos': '{n} comentarios nuevos',
   'Nas mãos partilhadas': 'En las manos compartidas',

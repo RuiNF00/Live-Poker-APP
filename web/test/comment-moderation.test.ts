@@ -37,3 +37,19 @@ describe('owner removes and blocks', () => {
     expect(await store.commentCounts([id])).toEqual({ [id]: 1 });
   });
 });
+
+describe('reader blocks', () => {
+  it('gives commenters an opaque id per hand, never the key', async () => {
+    const { getStore } = await import('../src/lib/store');
+    const store = getStore();
+    const a = await store.createShare({ payload: { version: 1 } });
+    const b = await store.createShare({ payload: { version: 1 } });
+    const posted = await store.addComment(a.id, { name: 'Zé', text: 'Call', stepIndex: null, authorKey: 'kZ' });
+    await store.addComment(b.id, { name: 'Zé', text: 'Fold', stepIndex: null, authorKey: 'kZ' });
+    const [la, lb] = [await store.listComments(a.id), await store.listComments(b.id)];
+    expect(la[0].by).toMatch(/^[a-f0-9]{20}$/);
+    expect(posted!.by).toBe(la[0].by);
+    expect(la[0].by).not.toBe(lb[0].by);
+    expect(JSON.stringify([posted, la, lb])).not.toContain('kZ');
+  });
+});

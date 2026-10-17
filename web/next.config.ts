@@ -5,6 +5,11 @@ import type { NextConfig } from 'next';
 // bundler root is the repository root.
 const repoRoot = path.join(__dirname, '..');
 
+// Reports must reach a person before production goes out (Apple 1.2).
+if (process.env.VERCEL_ENV === 'production' && !process.env.MODERATION_WEBHOOK_URL) {
+  throw new Error('MODERATION_WEBHOOK_URL em falta: as denúncias não chegam a ninguém (security/incidentes.md §3)');
+}
+
 const nextConfig: NextConfig = {
   transpilePackages: ['@livepoker/hand-format'],
   // Shared links open on casino Wi-Fi and in chat apps: the CSS (~10 KB) rides in the HTML instead of

@@ -84,6 +84,8 @@ export interface Hand {
   /** Private note per street ("no turn devia..."); never leaves the phone, not even when notes are shared. */
   streetNotes?: Partial<Record<Street, string>>;
   title?: string;
+  /** "O que queres saber?": one optional line shown at the top of the shared link. */
+  ask?: string;
   /** Manual winner(s) when showdown cards are unknown. */
   winners?: number[];
   /** Run it twice: the second run's cards, after the cards both runs share. */

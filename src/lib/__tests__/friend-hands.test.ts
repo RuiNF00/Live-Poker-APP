@@ -36,3 +36,4 @@ test('keeps the hole cards only when they are two real cards', () => {
   assert.equal(remember([], { id: 'abcd1', title: 'AK', cards: ['As', 'Xx'] }, 1)[0].cards, undefined);
   assert.equal(parseFriendHands([{ id: 'abcd1', title: '', openedAt: 1, cards: ['As'] }])[0].cards, undefined);
 });
+
