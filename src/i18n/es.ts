@@ -2878,7 +2878,6 @@ const es: Record<string, string> = {
   '{h} h ao vivo.': '{h} h en vivo.',
   'Sticker no Instagram': 'Sticker en Instagram',
   'O meu {year} no póquer: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Mi {year} en el póker: {sessions} sesiones, {hours} horas y {hands} manos registradas.',
-  'Post no X': 'Post en X',
   'Outras apps': 'Otras apps',
   'WhatsApp, Mensagens, guardar imagem…': 'WhatsApp, Mensajes, guardar imagen…',
   '{game}: o que fazes aqui? Vota antes de ver o resultado 🗳️': '{game}: ¿qué haces aquí? Vota antes de ver el resultado 🗳️',
@@ -2907,6 +2906,7 @@ const es: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'reto: ¿qué haces aquí? Vota antes de ver el resultado 🗳️',
   'o que fazias aqui? 👀': '¿qué harías aquí? 👀',
+  'Publicar no X': 'Publicar en X',
 };
 
 export default es;
