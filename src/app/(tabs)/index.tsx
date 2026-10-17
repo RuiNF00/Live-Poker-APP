@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert, BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
@@ -147,6 +147,22 @@ export default function HandsScreen() {
   // Long-press a hand to start picking several; tap then adds or removes.
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const picking = picked.size > 0;
+  // Android back closes the selection or the search first, instead of leaving the app.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || (!picking && !searching)) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (picking) setPicked(new Set());
+        else {
+          setSearching(false);
+          setQ('');
+          setFilter((f) => ({ ...f, result: null, session: null }));
+        }
+        return true;
+      });
+      return () => sub.remove();
+    }, [picking, searching]),
+  );
   const togglePick = useCallback((id: string) => {
     tap('select');
     setPicked((cur) => {

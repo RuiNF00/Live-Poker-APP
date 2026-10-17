@@ -4,10 +4,10 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -333,6 +333,14 @@ function Live({ s }: { s: Session }) {
   const { saveSession, hands, settings, sessions } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
+  // Android back while closing the session works like «Voltar»: the form closes, the session stays.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || !ending) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => (setEnding(false), true));
+      return () => sub.remove();
+    }, [ending]),
+  );
   // The clock and stack first; the chart, money and staking a frame later.
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
