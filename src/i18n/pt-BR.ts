@@ -1416,6 +1416,9 @@ const ptBR: Record<string, string> = {
   'cartas tapadas': 'cartas fechadas',
   'Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.': 'Este arquivo é XML. Exporte as sessões em CSV no outro app e escolha esse arquivo.',
   'Todas as tuas viagens': 'Todas as suas viagens',
+  'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Card do mês para compartilhar: {h} h, {n} sessões.',
+  'Últimas {n} sessões: {won} a ganhar, {lost} a perder.': 'Últimas {n} sessões: {won} no positivo, {lost} no negativo.',
+  'Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.': 'Calendário das últimas 15 semanas: {n} dias jogados, {won} no positivo, {lost} no negativo.',
 };
 
 export default ptBR;

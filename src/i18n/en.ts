@@ -2621,7 +2621,7 @@ const en: Record<string, string> = {
   'O festival acabou': 'The festival is over',
   'Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.': 'Get a story of your days, events and best hand. No amounts unless you want to show them.',
   'Criar story do festival': 'Create festival story',
-  'Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}.': 'Cumulative result chart: {now} over {n} sessions, high {max}.',
+  'Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.': 'Cumulative result chart: {now} over {n} sessions, high {max}, biggest drop {drop}.',
   'Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.': 'Drawdown chart: now −{now} below the peak, at most −{max}.',
   'Prefiro começar na próxima sessão': 'I\'d rather start at my next session',
   'O teu trial acabou': 'Your trial has ended',
@@ -3073,6 +3073,11 @@ const en: Record<string, string> = {
   'Todas as tuas viagens': 'All your trips',
   'Despesas e resultado líquido de cada festival.': 'Expenses and net result for every festival.',
   'Despesas e líquido por festival': 'Expenses and net per festival',
+  'Últimas {n} sessões: {won} a ganhar, {lost} a perder.': 'Last {n} sessions: {won} up, {lost} down.',
+  'Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.': 'Calendar for the last 15 weeks: {n} days played, {won} up, {lost} down.',
+  'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Month card to share: {h} h, {n} sessions.',
+  'Resultado por mês: {list}.': 'Result by month: {list}.',
+  'Gráfico das quedas: agora no pico, no máximo −{max}.': 'Drawdown chart: at the peak now, at most −{max}.',
 };
 
 export default en;

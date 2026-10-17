@@ -61,7 +61,11 @@ export default function DownswingScreen() {
           )}
           {done.length > 1 ? (
             <View style={{ marginTop: S.sm }}>
-              <Underwater values={d.underwater} label={t('Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.', { now: fmt(cu?.depth ?? 0), max: fmt(big?.depth ?? 0) })} />
+              <Underwater values={d.underwater} label={
+                  cu
+                    ? t('Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.', { now: fmt(cu.depth), max: fmt(big?.depth ?? 0) })
+                    : t('Gráfico das quedas: agora no pico, no máximo −{max}.', { max: fmt(big?.depth ?? 0) })
+                } />
               <T v="tiny">{t('Quanto estavas abaixo do teu melhor resultado acumulado, sessão a sessão. Zero é um pico.')}</T>
             </View>
           ) : null}
@@ -151,7 +155,7 @@ function Read({ odds, big, cu, fmt, cur }: { odds: NonNullable<ReturnType<typeof
 function Mini({ label, value }: { label: string; value: string }) {
   return (
     // minWidth: at large text sizes the two tiles stack instead of breaking words.
-    <View style={{ flex: 1, minWidth: 128, gap: 2, padding: S.md, borderRadius: R.md, backgroundColor: C.surface2 }}>
+    <View style={{ flex: 1, minWidth: 128, gap: 2, padding: S.md, borderRadius: R.md, backgroundColor: C.surface2 }} accessible accessibilityLabel={`${label}: ${value}`}>
       <T v="label">{label}</T>
       <T v="mono" color={C.bad} numberOfLines={1} adjustsFontSizeToFit>
         {value}
