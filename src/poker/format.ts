@@ -43,6 +43,11 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   raise: 'Raise',
 };
 
+/** A 0..1 share as a percentage in the app's language: "84,7%" in Portuguese, "84.7%" in English. */
+export function pct(x: number, digits = 0): string {
+  return (x * 100).toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }) + '%';
+}
+
 export function blindsLabel(hand: Pick<Hand, 'game'>): string {
   const g = hand.game;
   const base = `${chips(g.sb)}/${chips(g.bb)}`;

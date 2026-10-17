@@ -16,6 +16,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
+import { isNetworkError, queueShare, useQueuedShare } from '@/lib/share-queue';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
@@ -30,6 +31,8 @@ export default function HandScreen() {
   const sample = useMemo(() => (isSample ? sampleHand('sample') : undefined), [isSample]);
   const hand = sample ?? hands.find((h) => h.id === id);
   const [busy, setBusy] = useState(false);
+  // A link made without signal waits here and lands on the hand when the network is back.
+  const shareWaiting = useQueuedShare(isSample ? undefined : hand, saveHand);
   const [comments, setComments] = useState<Comment[]>([]);
 
   const [votes, setVotes] = useState<Record<string, number>>({});
@@ -59,8 +62,12 @@ export default function HandScreen() {
       const { id: shareId, token } = await uploadHand(hand, { names: settings.shareNames, notes: settings.shareNotes });
       saveHand({ ...hand, shareId, shareToken: token });
       return shareId;
-    } catch {
-      Alert.alert(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
+    } catch (e) {
+      if (isNetworkError(e)) {
+        const opts = { names: settings.shareNames, notes: settings.shareNotes };
+        queueShare(hand, opts);
+        Alert.alert(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
+      } else Alert.alert(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
     } finally {
       setBusy(false);
@@ -154,7 +161,7 @@ ${link}`;
         <Replayer hand={hand} initialInBB={settings.inBB} />
 
         <Section title={t('Partilhar')}>
-          <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />
+          <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : shareWaiting ? t('Link à espera de rede') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />
           <Row gap={S.sm}>
             <ShareTile icon="help-circle-outline" label={t('Desafio')} sub={t('Votação')} disabled={busy} onPress={() => share(true)} />
             <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })} />

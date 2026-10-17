@@ -12,6 +12,7 @@ import { Card, Chip, ChipRow, Row, Section, Segmented, T, tap } from '@/componen
 import { t } from '@/i18n';
 import { FULL_DECK } from '@/poker/cards';
 import { equity } from '@/poker/equity';
+import { pct } from '@/poker/format';
 import { equityVsRange, topRange } from '@/poker/ranges';
 import type { CardCode } from '@/poker/types';
 import { C, R, S } from '@/theme';
@@ -45,9 +46,9 @@ export default function OddsScreen() {
     return s;
   });
   const [mode, setMode] = useState<'range' | 'cards'>('range');
-  const [pct, setPct] = useState(20);
-  // Fill order: your cards, the flop, villain's cards, then turn and river (optional).
-  const order = (m: typeof mode) => [...HERO, 2, 3, 4, ...(m === 'cards' ? VILLAIN : []), 5, 6];
+  const [rangePct, setRangePct] = useState(20);
+  // Fill order: your cards, villain's cards, then the board (optional), like dealing a hand.
+  const order = (m: typeof mode) => [...HERO, ...(m === 'cards' ? VILLAIN : []), ...BOARD];
   const firstEmpty = (s: (CardCode | null)[], m = mode) => order(m).find((i) => !s[i]) ?? null;
   const [active, setActive] = useState<number | null>(() => firstEmpty(slots));
 
@@ -69,9 +70,9 @@ export default function OddsScreen() {
       const [h, v] = equity([hero, villain], board);
       return { hero: h, villain: v };
     }
-    const e = equityVsRange(hero, topRange(pct), board);
+    const e = equityVsRange(hero, topRange(rangePct), board);
     return e == null ? null : { hero: e, villain: 1 - e };
-  }, [heroKey, villainKey, boardKey, mode, pct, boardGap]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [heroKey, villainKey, boardKey, mode, rangePct, boardGap]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const used = new Set(slots.filter(Boolean) as string[]);
   const pick = (c: CardCode) => {
@@ -111,7 +112,7 @@ export default function OddsScreen() {
     else setActive(firstEmpty(slots.map((c, i) => (VILLAIN.includes(i) ? null : c)), 'range'));
   };
 
-  const pctLabel = (e: number) => `${(e * 100).toFixed(1)}%`;
+  const pctLabel = (e: number) => pct(e, 1);
   const street = boardLen === 0 ? t('Pré-flop') : boardLen === 3 ? 'Flop' : boardLen === 4 ? 'Turn' : 'River';
 
   return (
@@ -127,7 +128,7 @@ export default function OddsScreen() {
           <Result
             result={result}
             missing={hero.length < 2 ? t('Escolhe as tuas duas cartas.') : boardGap ? t('Completa o flop (ou tira o turn e o river).') : t('Escolhe as duas cartas do vilão.')}
-            label={mode === 'range' ? `vs top ${pct}%` : t('vs cartas do vilão')} street={street} fmt={pctLabel} />
+            label={mode === 'range' ? `vs top ${rangePct}%` : t('vs cartas do vilão')} street={street} fmt={pctLabel} />
         </Card>
 
         <Section title={t('Vilão')}>
@@ -142,7 +143,7 @@ export default function OddsScreen() {
           {mode === 'range' ? (
             <ChipRow>
               {RANGES.map((p) => (
-                <Chip key={p} label={p === 100 ? t('Qualquer') : `Top ${p}%`} active={pct === p} onPress={() => setPct(p)} />
+                <Chip key={p} label={p === 100 ? t('Qualquer') : `Top ${p}%`} active={rangePct === p} onPress={() => setRangePct(p)} />
               ))}
             </ChipRow>
           ) : null}

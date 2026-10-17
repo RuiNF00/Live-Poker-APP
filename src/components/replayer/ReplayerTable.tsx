@@ -7,6 +7,7 @@ import { Animated, Pressable, Text, View, type LayoutChangeEvent } from 'react-n
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { t } from '@/i18n';
+import { pct } from '@/poker/format';
 import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
@@ -298,7 +299,7 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
             zIndex: 3,
           }}>
           <Text allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
-            {Math.round(s.equity * 100)}%
+            {pct(s.equity)}
           </Text>
         </View>
       ) : null}

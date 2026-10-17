@@ -552,6 +552,8 @@ const en: Record<string, string> = {
   'HERO A DECIDIR': 'HERO TO ACT',
   'Pot odds': 'Pot odds',
   'vs top': 'vs top',
+  'O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.': "The link will be ready once there's signal. Then just tap Share again.",
+  'Link à espera de rede': 'Link waiting for signal',
   'Percebi': 'Got it',
   'Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.': 'Tap the right of the table to step forward and the left to step back. Tap an action below to jump to it.',
   'Próxima street': 'Next street',
