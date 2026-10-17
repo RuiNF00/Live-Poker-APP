@@ -3191,6 +3191,14 @@ const en: Record<string, string> = {
   'Hora oficial': 'Official time',
   'Punta Cana, janeiro 2027': 'Punta Cana, January 2027',
   'República Dominicana': 'Dominican Republic',
+  'Re-entrar · {amount}': 'Re-enter · {amount}',
+  'Late reg aberto até às {time}': 'Late reg open until {time}',
+  'Próximo do plano: {event} às {time}': 'Next in your plan: {event} at {time}',
+  'Próximo do plano: {event}, {day} às {time}': 'Next in your plan: {event}, {day} at {time}',
+  'Guarda esta e começa já': 'Saves this one and starts now',
+  'Dia {n} a {date}: lembrar-me': 'Day {n} on {date}: remind me',
+  'Avisamos-te {n} min antes.': "We'll remind you {n} min before.",
+  'Avisamos-te antes do Dia {n}': "We'll remind you before Day {n}",
 };
 
 export default en;

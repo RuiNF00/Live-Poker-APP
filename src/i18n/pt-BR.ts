@@ -1523,6 +1523,14 @@ const ptBR: Record<string, string> = {
   'Hora oficial': 'Horário oficial',
   'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
   'República Dominicana': 'República Dominicana',
+  'Re-entrar · {amount}': 'Reentrar · {amount}',
+  'Late reg aberto até às {time}': 'Late reg aberto até as {time}',
+  'Próximo do plano: {event} às {time}': 'Próximo do plano: {event} às {time}',
+  'Próximo do plano: {event}, {day} às {time}': 'Próximo do plano: {event}, {day} às {time}',
+  'Guarda esta e começa já': 'Salva esta e começa já',
+  'Dia {n} a {date}: lembrar-me': 'Dia {n} em {date}: me lembre',
+  'Avisamos-te {n} min antes.': 'A gente avisa {n} min antes.',
+  'Avisamos-te antes do Dia {n}': 'A gente avisa antes do Dia {n}',
 };
 
 export default ptBR;

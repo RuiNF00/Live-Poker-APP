@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -289,4 +289,42 @@ test('Punta del Este Main: the official 00:30 close fills late reg and its remin
   assert.equal(r.at, venueTime(f, '2026-12-05T00:10'));
   assert.equal(r.title, 'Registo do #8 Main Event · Flight 1A fecha às 00:30');
   assert.equal(lateRegOf(plan, e), 270);
+});
+
+const mtt = (id: string, startedAt: number, extra: object = {}) =>
+  ({ id, kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt, breaks: [], buyIn: 2750, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 20000, stackLog: [], roster: [], notes: '', ...extra });
+
+test('after a festival session: re-entry while late reg is open, then the next planned event', () => {
+  const f = PUNTA_DEL_ESTE_DEC_2026;
+  const s = mtt('s', venueTime(f, '2026-12-04T20:00'));
+  const plans = { [f.id]: { ...EMPTY_PLAN, picked: ['8-1A', '8-1C', '13'], sessions: { '8-1A': 's' } } };
+  // Busted at 22:00: late reg (official, 00:30) still open; the next planned is 13 the next day, not startable yet.
+  const a = afterSession(FESTIVALS, plans, [s], s, venueTime(f, '2026-12-04T22:00'))!;
+  assert.equal(a.e.id, '8-1A');
+  assert.equal(a.reenterUntil, venueTime(f, '2026-12-05T00:30'));
+  assert.deepEqual([a.next!.e.id, a.next!.now], ['13', false]);
+  // After late reg: no re-entry here.
+  assert.equal(afterSession(FESTIVALS, plans, [s], s, venueTime(f, '2026-12-05T01:00'))!.reenterUntil, undefined);
+  // Within 2 h of a later flight of the same event: it's next, and starts straight away (as a re-entry).
+  const b = afterSession(FESTIVALS, { [f.id]: { ...plans[f.id], picked: ['8-1A', '8-1C'] } }, [s], s, venueTime(f, '2026-12-06T19:00'))!;
+  assert.deepEqual([b.next!.e.id, b.next!.now], ['8-1C', true]);
+  // A session from no plan: nothing.
+  assert.equal(afterSession(FESTIVALS, plans, [s], mtt('other', 0), 0), null);
+});
+
+test('after bagging: the Day 2 that takes this flight', () => {
+  const pc = PUNTA_CANA_JAN_2027;
+  const s = mtt('pc', venueTime(pc, '2027-01-29T13:00'), { bag: { stack: 90000, at: 0 }, endedAt: 1 });
+  const a = afterSession(FESTIVALS, { [pc.id]: { ...EMPTY_PLAN, picked: ['11-1B'], sessions: { '11-1B': 'pc' } } }, [s], s, venueTime(pc, '2027-01-29T23:00'))!;
+  assert.deepEqual([a.day2!.e.id, a.day2!.planned, a.next], ['11-2B', false, undefined]);
+  // Torrelodones: flight 1C goes to Day 2A, 1E to Day 2B.
+  const tr = TORRELODONES_NOV_2026;
+  const t1 = mtt('t1', venueTime(tr, '2026-11-19T20:00'), { bag: { stack: 1, at: 0 }, endedAt: 1 });
+  const at = venueTime(tr, '2026-11-21T08:00');
+  assert.equal(afterSession(FESTIVALS, { [tr.id]: { ...EMPTY_PLAN, sessions: { '6-1C': 't1' } } }, [t1], t1, at)!.day2!.e.id, '6-2A');
+  assert.equal(afterSession(FESTIVALS, { [tr.id]: { ...EMPTY_PLAN, sessions: { '6-1E': 't1' } } }, [t1], t1, at)!.day2!.e.id, '6-2B');
+  // And Day 2B resumes a session bagged in 1E (the planner's "Começar Dia 2").
+  const plan = { ...EMPTY_PLAN, sessions: { '6-1E': 't1' } };
+  assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2B')!)?.kind, 'resume');
+  assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2A')!), null);
 });
