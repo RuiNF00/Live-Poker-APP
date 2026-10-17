@@ -11,12 +11,15 @@ export function track(event: 'share_viewed' | 'store_click' | 'landing_view', pr
       const v = q.get(k);
       if (v) utm[k] = v;
     }
-    const ref = document.referrer ? new URL(document.referrer).hostname : '';
+    // Sharer's invite code from the app's links (?r=), so views and store clicks tie back to them.
+    const r = q.get('r');
+    if (r && /^[0-9A-Za-z]{6,12}$/.test(r)) utm.ref = r;
+    const host = document.referrer ? new URL(document.referrer).hostname : '';
     const body = JSON.stringify({
       event,
       installId: voterId(),
       platform: 'web',
-      props: { ...utm, ...(ref && ref !== window.location.hostname ? { ref } : {}), ...props },
+      props: { ...utm, ...(host && host !== window.location.hostname ? { from_host: host } : {}), ...props },
     });
     const blob = new Blob([body], { type: 'application/json' });
     if (!navigator.sendBeacon?.('/api/events', blob)) {

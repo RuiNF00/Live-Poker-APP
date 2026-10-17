@@ -7,22 +7,25 @@ export type Utm = Partial<Record<'utm_source' | 'utm_medium' | 'utm_campaign' | 
  * Google Play takes the utm_* inside `referrer`; the App Store takes a campaign token `ct`
  * (plus `pt`, the provider token from App Store Connect, when set) and `mt=8`.
  */
-export function storeLinks(utm: Utm): { ios: string; android: string } {
-  return { ios: appStoreUrl(utm), android: playStoreUrl(utm) };
+export function storeLinks(utm: Utm, ref?: string | null): { ios: string; android: string } {
+  return { ios: appStoreUrl(utm), android: playStoreUrl(utm, ref) };
 }
 
-function playStoreUrl(utm: Utm): string {
+/** `ref` (an invite code) rides in the Play referrer as `r` so Android claims it without the friend typing it. */
+function playStoreUrl(utm: Utm, ref?: string | null): string {
   if (!brand.playStoreUrl) return '';
   const u = new URL(brand.playStoreUrl);
-  const ref = new URLSearchParams(Object.entries(utm).filter(([, v]) => !!v) as [string, string][]);
-  if ([...ref].length) u.searchParams.set('referrer', ref.toString());
+  const referrer = new URLSearchParams(Object.entries(utm).filter(([, v]) => !!v) as [string, string][]);
+  if (ref) referrer.set('r', ref);
+  if ([...referrer].length) u.searchParams.set('referrer', referrer.toString());
   return u.toString();
 }
 
 function appStoreUrl(utm: Utm): string {
   if (!brand.appStoreUrl) return '';
   const u = new URL(brand.appStoreUrl);
-  const ct = [utm.utm_source, utm.utm_campaign].filter(Boolean).join('-').slice(0, 40);
+  // Campaign token per channel (instagram-story, app-share_link, site...), App Analytics groups by it.
+  const ct = [utm.utm_source, utm.utm_medium].filter(Boolean).join('-').slice(0, 40);
   if (ct) u.searchParams.set('ct', ct);
   if (brand.appStoreProviderToken) u.searchParams.set('pt', brand.appStoreProviderToken);
   u.searchParams.set('mt', '8');

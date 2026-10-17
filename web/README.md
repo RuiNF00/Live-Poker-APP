@@ -25,6 +25,13 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
 | `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
 | `POST /api/events` `{ event, installId (uuid), platform: ios\|android\|web, props? }` | `204`. Eventos do funil: `app_open`, `hand_saved`, `limit_hit`, `paywall_shown`, `purchase`, `share_created`, `story_shared` (app) e `share_viewed`, `store_click`, `landing_view` (site). Sem dados pessoais. Contagens diárias no Supabase: `select * from app_event_daily limit 100;` |
+| `POST /api/referrals/code` `{ installId, code?, rcUserId? }` | `{ code, url }` (convite `https://sweatbook.poker/r/<code>`; o mesmo código sempre; `code` regista o código da app, 10 hex) |
+| `POST /api/referrals/claim` `{ installId, code, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
+| `POST /api/referrals/activate` `{ installId, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
+| `POST /api/referrals/status` `{ installId, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |
+| `PUT /api/backup/<id>` header `x-backup-key: <secret>`, corpo gzip ou JSON (até ~4,4 MB) | `204`; `403` se o id já existe com outro segredo |
+| `GET /api/backup/<id>` (mesmo header) | o corpo guardado + `x-updated-at`; `404` se o código está errado ou não há cópia |
+| `DELETE /api/backup/<id>` (mesmo header) | `204`. Cópias sem alterações há 18 meses são apagadas |
 | `POST /api/hands/<id>/report` `{ reporterId (uuid), reason? }` | `{ reported }` (5 denúncias tiram a mão do ar) |
 | `POST /api/hands/<id>/comments/<commentId>/report` `{ reporterId }` | `{ reported }` (3 denúncias escondem o comentário) |
 | `POST /api/story-video` multipart `frame` (PNG 1080×1920), `voice` (m4a, até 30 s), `slot` (JSON `{x,y,w,h}` em px) | `200 video/mp4`: a história com a voz e uma onda animada no `slot` (ffmpeg via `ffmpeg-static`) |
