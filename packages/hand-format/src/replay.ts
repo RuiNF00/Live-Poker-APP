@@ -307,7 +307,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     winners = hand.winners.map((w) => ({ ...w, handLabel: seatState(w.seat).handLabel }));
   } else if (second) {
     const two = evaluateOn(second, hand.winnerSeats2, false);
-    const halves = awardRuns(seats, [first.values, two.values], pot);
+    const halves = awardRuns(seats, [first.values, two.values], pot, hand.format === 'cash');
     const named = (list: { seat: number; amount: number }[], labels: Map<number, string>) =>
       list.map((w) => ({ ...w, handLabel: labels.get(w.seat) }));
     runs = [
@@ -318,7 +318,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     for (const run of halves) for (const w of run) total.set(w.seat, (total.get(w.seat) ?? 0) + w.amount);
     winners = [...total].map(([seat, amount]) => ({ seat, amount, handLabel: seatState(seat).handLabel }));
   } else {
-    winners = awardPots(seats, first.values, pot);
+    winners = awardPots(seats, first.values, pot, hand.format === 'cash');
   }
   for (const w of winners) {
     const s = seatState(w.seat);
@@ -339,24 +339,24 @@ export function secondBoard(hand: HandRecord, board: Card[], runoutFrom: number 
   return [...board.slice(0, runoutFrom), ...extra.slice(0, 5 - runoutFrom)];
 }
 
-/** `amount` split k ways, odd chips to the first: whole chips, or cents when it has cents (€3.25 → 1.63 + 1.62). */
-function splitChips(amount: number, k: number): number[] {
-  const unit = Number.isInteger(amount) ? 1 : 100;
+/** `amount` split k ways, odd chips to the first: to the cent in cash (€1 → 0.50 + 0.50), whole chips in tournaments unless it has decimals. */
+function splitChips(amount: number, k: number, cents = false): number[] {
+  const unit = cents || !Number.isInteger(amount) ? 100 : 1;
   const total = Math.round(amount * unit);
   const share = Math.floor(total / k);
   return Array.from({ length: k }, (_, i) => (share + (i < total - share * k ? 1 : 0)) / unit);
 }
 
 /** Splits the pot into main/side pots by investment and awards each to the best eligible hand. */
-export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number) {
-  return awardRuns(seats, [values], totalPot)[0];
+export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number, cents = false) {
+  return awardRuns(seats, [values], totalPot, cents)[0];
 }
 
 /**
  * Same, once per run: each pot is split evenly between the runs (the odd chip goes with
  * the first, like the app) and each run's share goes to the best hand on that run's board.
  */
-export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null>[], totalPot: number) {
+export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null>[], totalPot: number, cents = false) {
   const levels = [...new Set(seats.map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
   // Only dead money in the pot (a bomb pot checked down): one pot for everyone still in.
   if (!levels.length) levels.push(0);
@@ -382,7 +382,7 @@ export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null
         const last = best.filter((b) => eligible.find((e) => e.seat === b.seat)!.invested === level);
         if (last.length) best = last;
       }
-      const shares = splitChips(runAmount, best.length);
+      const shares = splitChips(runAmount, best.length, cents);
       best.forEach((b, i) => won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + shares[i]));
     });
   }

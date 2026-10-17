@@ -122,7 +122,7 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
       }
     }
     const wins = (won: number[]) => won.map((w, i) => (w > 0 ? `${who(i)} wins ${inBB(w, bb)}` : '')).filter(Boolean).join(', ');
-    const runs = runWinnings(r.result);
+    const runs = runWinnings(r.result, hand.game.kind === 'cash');
     if (runs.length === 2) {
       // Run it twice: each board with who took its half.
       out.push('Run it twice');
