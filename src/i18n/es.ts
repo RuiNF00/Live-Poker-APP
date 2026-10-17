@@ -2680,6 +2680,7 @@ const es: Record<string, string> = {
   'Etapa nacional, Barcelona · março 2027': 'Etapa nacional, Barcelona · marzo 2027',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. La primera etapa suele ser en marzo.',
   'O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.': 'El organizador aún no ha publicado las fechas. Los torneos aparecerán aquí cuando salga el programa.',
+  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': '¿Sin tiempo? Posición y cartas bastan: «Guardar ya» y la completas después.',
   // Swaps: groups, history, read-only copy
   "Tens 1 swap por acertar. A outra pessoa fica com a cópia dela.": "Tienes 1 swap por liquidar. La otra persona conserva su copia.",
   "Tens {n} swaps por acertar. A outra pessoa fica com a cópia dela.": "Tienes {n} swaps por liquidar. La otra persona conserva su copia.",
@@ -2844,7 +2845,6 @@ const es: Record<string, string> = {
   'O teu {year} no póquer': 'Tu {year} en el póker',
   '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h en {n} sesiones. El resumen de tu año está listo.',
   '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h en {n} sesiones, {amount}. El resumen de tu año está listo.',
-  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': '¿Sin tiempo? Posición y cartas bastan: «Guardar ya» y la completas después.',
   'Avisamos-te quando o coach comentar': 'Te avisamos cuando tu coach comente',
   'Quando o nível sobe e o intervalo acaba': 'Cuando sube el nivel y acaba el descanso',
   '30 min antes e quando o late reg fecha': '30 min antes y cuando cierra el late reg',
