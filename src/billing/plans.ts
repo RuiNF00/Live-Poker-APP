@@ -151,7 +151,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   bigWin: {
     title: t('Vê de onde vem o teu lucro'),
-    body: t('Salas, jogos e stakes, com filtros e CSV.'),
+    body: t('Salas, jogos e stakes, com filtros.'),
   },
   winrateDetail: {
     title: t('Sabe onde o teu win rate é real'),
@@ -187,7 +187,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   stats: {
     title: t('Conhece o teu bankroll'),
-    body: t('Várias bankrolls, filtros, salas, jogos e CSV.'),
+    body: t('Várias bankrolls, filtros, salas e jogos.'),
   },
   trips: {
     title: t('Todas as tuas viagens'),
@@ -224,7 +224,7 @@ export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mtt
 /** The first three are the generic rows; the rest lead only when they triggered the paywall. */
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
   { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Sem limite diário') },
-  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls, filtros, CSV') },
+  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls e filtros') },
   { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
   { key: 'solver', icon: 'analytics', title: t('Mãos para o solver'), body: t('Várias de uma vez') },
   { key: 'coach', icon: 'school', title: t('Revisão com coach'), body: t('Pastas e mãos sem limite') },
@@ -289,7 +289,7 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Mãos novas por dia', free: n(FREE.handsPerDay), pro: '∞' },
     { label: 'Replayer e partilha por link', free: true, pro: true },
     { label: 'Bankrolls', free: n(FREE.bankrolls), pro: '∞' },
-    { label: 'Filtros, salas e CSV', free: FREE.bankrollFilters, pro: true },
+    { label: 'Filtros e salas', free: FREE.bankrollFilters, pro: true },
     { label: 'Stories com voz', free: false, pro: true },
     { label: 'Várias mãos para o solver', free: false, pro: true },
     { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
