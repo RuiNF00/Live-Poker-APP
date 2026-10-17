@@ -10,7 +10,7 @@ import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
 import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
-import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
+import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
 const KEY = Platform.select({
   ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
@@ -250,6 +250,29 @@ async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Prom
 }
 
 export { buyError, type BuyResult } from './buy-result';
+
+/**
+ * Uses the invite discount on the monthly plan. Google Play: buys the monthly with the invite
+ * offer. App Store: opens the redeem page with the player's one-time code ('redeem': Pro turns
+ * on through the listener once redeemed; without the app id the sheet opens and the code is pasted).
+ */
+export async function redeemInviteOffer(plans: StorePlan[], iosCode: string | null): Promise<BuyResult | 'redeem'> {
+  if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';
+  try {
+    if (Platform.OS === 'ios') {
+      if (!iosCode) return 'unavailable';
+      const id = process.env.EXPO_PUBLIC_APPLE_APP_ID;
+      if (id) await Linking.openURL(`https://apps.apple.com/redeem?ctx=offercodes&id=${encodeURIComponent(id)}&code=${encodeURIComponent(iosCode)}`);
+      else await (await rc()).presentCodeRedemptionSheet();
+      return 'redeem';
+    }
+    const opt = plans.find((p) => p.id === 'monthly')?.pkg?.product.subscriptionOptions?.find((o) => o.tags.includes(INVITE.android) || o.id.endsWith(`:${INVITE.android}`));
+    if (!opt) return 'unavailable';
+    return await attempt(async () => (await rc()).purchaseSubscriptionOption(opt));
+  } catch {
+    return 'unavailable';
+  }
+}
 
 /** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
 export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {

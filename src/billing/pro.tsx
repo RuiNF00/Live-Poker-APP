@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
 
 import { devPro, localProFrom } from './dev-pro';
 import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
@@ -12,17 +12,33 @@ import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
 import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
-import { FREE, type PaywallReason, type PlanId } from './plans';
+import { FREE, INVITE, type PaywallReason, type PlanId } from './plans';
 import { deferState, markProEnded, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
-import { activateInvite, claimState, newInviteDays } from '@/lib/referrals';
+import { activateInvite, claimState, newInviteOffer, type InviteOffer } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
 import { useStore } from '@/store/store';
+
+/**
+ * An invite discount, said once with the way to use it: received, never won. Nothing for a
+ * player already on Pro (there's no first month left to discount).
+ */
+function announceInviteOffer(offer: InviteOffer, side: 'friend' | 'inviter') {
+  track('invite_rewarded', { side, pct: INVITE.pct });
+  const vars = { pct: INVITE.pct, date: shortDate(Date.parse(offer.until)) };
+  const title = side === 'friend' ? t('{pct}% no primeiro mês do Pro', vars) : t('Um amigo guardou a primeira mão');
+  const body =
+    side === 'friend'
+      ? t('Guardaste a primeira mão: tu e quem te convidou recebem {pct}% no primeiro mês do Pro. Dá para usar até {date}.', vars)
+      : t('Recebem os dois {pct}% no primeiro mês do Pro. Dá para usar até {date}.', vars);
+  if (Platform.OS === 'web') notice(title, body);
+  else Alert.alert(title, body, [{ text: t('Agora não'), style: 'cancel' }, { text: t('Ver desconto'), onPress: () => router.push('/invite') }]);
+}
 
 const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcome.v1' };
 
@@ -61,6 +77,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [storePro, setIsPro] = useState(false);
   // Screenshot builds can force Pro (dev-pro.ts); always false in a store build.
   const isPro = storePro || DEV_PRO || LOCAL_PRO;
+  const isProRef = useRef(isPro);
+  useEffect(() => {
+    isProRef.current = isPro;
+  }, [isPro]);
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
   const [plansFailed, setPlansFailed] = useState(false);
@@ -104,21 +124,19 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   const record = useCallback((kind: UsageKind, props?: Record<string, string | number | boolean>) => {
     track(kind === 'hand' ? 'hand_saved' : 'share_created', props);
-    // Came through an invite? The first saved hand turns on both players' Pro days.
+    // Came through an invite? The first saved hand books the discount for both players.
     if (kind === 'hand')
-      activateInvite().then((granted) => {
-        if (!granted) return;
-        track('invite_rewarded', { side: 'friend', days: 7 });
-        store.getIsPro().then((v) => v !== null && setPro(v));
-        // Said the moment it happens, in the same words as the invite: days of Pro, nothing to win.
-        notice(t('7 dias de Pro para os dois'), t('Guardaste a primeira mão: tu e quem te convidou têm Pro até {date}.', { date: shortDate(Date.now() + 7 * 86_400_000) }));
+      activateInvite().then(async (granted) => {
+        if (!granted || isProRef.current) return;
+        const offer = await newInviteOffer({ force: true });
+        if (offer) announceInviteOffer(offer, 'friend');
       });
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
       AsyncStorage.setItem(KEYS.usage, JSON.stringify(next)).catch(() => {});
       return next;
     });
-  }, [setPro]);
+  }, []);
 
   const canSaveHand = useCallback(() => canUse(usage, 'hand', FREE.handsPerDay, isPro), [usage, isPro]);
 
@@ -174,13 +192,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
   // The inviter hears about a friend's first hand on the next open, not only in Definições.
   const inviteNews = useCallback(() => {
-    newInviteDays().then((days) => {
-      if (!days) return;
-      track('invite_rewarded', { side: 'inviter', days });
-      store.getIsPro().then((v) => v !== null && setPro(v));
-      notice(t('Um amigo guardou a primeira mão'), t('Têm os dois {n} dias de Pro.', { n: days }));
+    newInviteOffer().then((offer) => {
+      if (offer && !isProRef.current) announceInviteOffer(offer, 'inviter');
     });
-  }, [setPro]);
+  }, []);
   useEffect(() => {
     inviteNews();
     const sub = AppState.addEventListener('change', (st) => {

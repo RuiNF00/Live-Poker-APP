@@ -42,7 +42,7 @@ export function InvitePaste({ onClaimed }: { onClaimed: () => void }) {
       <Row gap={S.md}>
         <View style={{ flex: 1, gap: 2 }}>
           <T v="h3">{t('Vens por convite?')}</T>
-          <T v="small">{t('Cola o link do convite: tu e o teu amigo recebem 7 dias de Pro com a tua primeira mão.')}</T>
+          <T v="small">{t('Cola o link do convite: tu e o teu amigo recebem 50% no primeiro mês do Pro com a tua primeira mão.')}</T>
         </View>
         <Clipboard.ClipboardPasteButton
           onPress={paste}

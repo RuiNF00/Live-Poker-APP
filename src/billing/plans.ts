@@ -56,6 +56,14 @@ export const RETENTION = {
 export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499 };
 
 /**
+ * Invite reward (Rui, 17 Oct): when the friend saves a first hand, both players get `pct` off
+ * the first month of Pro, usable for `hours`. Never Pro days: a festival lasts 1-2 weeks, so free
+ * days covered the trip. Google Play: a developer-determined offer tagged `android` on the
+ * monthly base plan. App Store: one-time offer codes on the monthly, loaded on the server.
+ */
+export const INVITE = { pct: 50, hours: 72, android: 'sweatbook-invite-50' };
+
+/**
  * High-stakes features that need Pro (Rui, 17 Oct: "Sim, Pro"). Fixed from
  * launch: after launch a feature may go from Pro to free, never the other way.
  * The shared sides stay free (a backer's page, confirming a swap by link).

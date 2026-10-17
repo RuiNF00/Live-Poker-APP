@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { writeLocal } from '@/lib/local';
 import { appHref, useAndroid } from '@/lib/app-link';
-import { REWARD_DAYS_PUBLIC, type LandingCopy } from './copy';
+import { INVITE_DISCOUNT_PUBLIC, type LandingCopy } from './copy';
 import { MainCta } from './Cta';
 import type { StoreLinks } from './StoreButtons';
 
@@ -47,7 +47,7 @@ export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; 
           {copied ? c.invite.copied : c.invite.copy}
         </button>
         <div className="lp-reward">
-          <span className="lp-reward-n">+{REWARD_DAYS_PUBLIC}</span>
+          <span className="lp-reward-n">−{INVITE_DISCOUNT_PUBLIC}%</span>
           <span>{c.invite.days}</span>
         </div>
       </div>

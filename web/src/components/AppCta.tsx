@@ -7,7 +7,7 @@ import { Mark, Wordmark } from './Brand';
 import { track } from '@/lib/track';
 import { storeLinks } from '@/lib/storeLinks';
 import { StoreButtons } from './landing/StoreButtons';
-import { landingCopy, REWARD_DAYS_PUBLIC } from './landing/copy';
+import { INVITE_DISCOUNT_PUBLIC, landingCopy } from './landing/copy';
 import { writeLocal } from '@/lib/local';
 import { appHref } from '@/lib/app-link';
 import '@/app/landing.css';
@@ -57,7 +57,7 @@ export function AppCta({
         </div>
         <h2 className="cta-title">{d.ctaTitle}</h2>
         <p className="cta-body">{d.ctaBody}</p>
-        {invite && <p className="cta-invite">🎁 {d.ctaInvite(REWARD_DAYS_PUBLIC)}</p>}
+        {invite && <p className="cta-invite">🎁 {d.ctaInvite(INVITE_DISCOUNT_PUBLIC)}</p>}
         <div className="cta-badges">
           <StoreButtons c={landingCopy(locale)} stores={{ ios, android }} from="share" fallback="/" shareId={shareId} />
         </div>

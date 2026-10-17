@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { restoreNotice, usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
@@ -14,6 +14,7 @@ import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/componen
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
+import { savedInviteOffer, type InviteOffer } from '@/lib/referrals';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
@@ -42,6 +43,12 @@ export default function Paywall() {
   const chosen = sel === 'annual' ? (annual ?? monthly) : (monthly ?? annual);
   const plan: PlanId = chosen?.id ?? sel;
   const trial = chosen?.trialDays ?? 0;
+
+  // An invite discount still open: one line to where it's used, so it isn't missed here.
+  const [inviteOffer, setInviteOffer] = useState<InviteOffer | null>(null);
+  useEffect(() => {
+    savedInviteOffer().then(setInviteOffer);
+  }, []);
 
   // Prices failed earlier (offline at launch): try again now that the player is looking at them.
   useEffect(() => {
@@ -163,6 +170,20 @@ export default function Paywall() {
           <View style={{ gap: S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">Sweatbook Pro</T>
+            {inviteOffer ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.replace('/invite')}
+                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.md, borderRadius: R.md, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, opacity: pressed ? 0.7 : 1 })}>
+                <Ionicons name="gift" size={18} color={C.accent} />
+                <T v="small" color={C.text} style={{ flex: 1 }}>
+                  {t('Tens {pct}% no primeiro mês pelo convite', { pct: INVITE.pct })}
+                </T>
+                <T v="small" color={C.accent}>
+                  {t('Usar')}
+                </T>
+              </Pressable>
+            ) : null}
             {annual ? (
               <PlanCard
                 active={plan === 'annual'}
