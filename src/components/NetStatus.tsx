@@ -26,7 +26,8 @@ export function NetStatus() {
       style={{ position: 'absolute', top: insets.top + 2, left: 0, right: 0, alignItems: 'center', zIndex: 50 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: 0.95 }}>
         <Ionicons name="cloud-offline-outline" size={12} color={C.textDim} />
-        <T v="tiny" color={C.textDim}>
+        {/* It floats over the header: at the largest text sizes it would cover the first rows. */}
+        <T v="tiny" color={C.textDim} maxFontSizeMultiplier={1.2} numberOfLines={1}>
           {pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')}
         </T>
       </View>
