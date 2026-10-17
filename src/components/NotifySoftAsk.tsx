@@ -6,11 +6,14 @@ import { Modal, Pressable, View } from 'react-native';
 import { Button, Row, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
+import { track } from '@/lib/events';
 import { softAskAllowed } from '@/lib/notify-policy';
 import { noteOverlay } from '@/lib/review';
 import { C, R, S } from '@/theme';
 
 export interface SoftAsk {
+  /** Where it was asked, for the notify_permission event. */
+  where: 'session' | 'festival' | 'trial' | 'swap' | 'coach' | 'month' | 'staking';
   /** Why the player wants this, in one line. */
   title: string;
   /** The notification they will get, drawn the way iOS shows it. */
@@ -53,6 +56,7 @@ export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<
     noteOverlay(false);
     if (!yes) AsyncStorage.setItem(SOFT_NO_KEY, String(Date.now())).catch(() => {});
     const ok = yes ? await askNotificationPermission() : false;
+    if (ask) track('notify_permission', { where: ask.where, result: !yes ? 'later' : ok ? 'granted' : 'denied' });
     done.current?.(ok);
     done.current = null;
   };

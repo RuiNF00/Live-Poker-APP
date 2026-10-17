@@ -69,6 +69,7 @@ export default function FestivalScreen() {
     tap('select');
     if (!plan.picked.length)
       void askNotify({
+        where: 'festival',
         title: t('Avisamos-te antes de cada torneio que escolheres'),
         preview: { title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }), body: eventTitle(e) },
       });

@@ -199,7 +199,7 @@ export const BAHIA_JAN_2027: Festival = {
   utcOffset: -180,
   // https://bsop.com.br/proximas-etapas/
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
-  notes: ['Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.'],
+  notes: [],
   events: [],
   dates: { from: '2027-01-22', to: '2027-01-30' },
 };
