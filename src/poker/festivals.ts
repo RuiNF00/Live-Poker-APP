@@ -192,7 +192,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
  */
 export const BAHIA_JAN_2027: Festival = {
   id: 'bahia-jan-2027',
-  name: 'Série de verão, janeiro 2027',
+  name: 'Bahia, janeiro 2027',
   venue: 'Bahia',
   city: 'Brasil',
   currency: 'R$',
@@ -211,7 +211,7 @@ export const BAHIA_JAN_2027: Festival = {
  */
 export const BARCELONA_MAR_2027: Festival = {
   id: 'barcelona-mar-2027',
-  name: 'Etapa nacional, Barcelona · março 2027',
+  name: 'Barcelona, março 2027',
   venue: 'Barcelona',
   city: 'Espanha',
   currency: '€',

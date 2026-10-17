@@ -14,6 +14,14 @@ import { parseDay } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
+/** "Malta, novembro 2026" from the city and the first day; just the city before there's a day. */
+function autoName(city: string, from: string): string {
+  const c = city.trim();
+  if (!c || !from) return c;
+  const d = new Date(from + 'T12:00:00');
+  return `${c}, ${d.toLocaleDateString(locale, { month: 'long' })} ${d.getFullYear()}`;
+}
+
 const dd = (day: string) => (day ? new Date(day + 'T12:00:00').toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
 
 export default function FestivalNewScreen() {
@@ -26,11 +34,28 @@ export default function FestivalNewScreen() {
   );
   const [fromText, setFromText] = useState(dd(x.from));
   const [toText, setToText] = useState(dd(x.to));
-  const set = (p: Partial<OwnFestivalInput>) => setX((c) => ({ ...c, ...p }));
+  // Until the player types a name, it follows the city and the first day: "Malta, novembro 2026".
+  const [named, setNamed] = useState(editing);
+  const [autoTo, setAutoTo] = useState(false);
+  const set = (p: Partial<OwnFestivalInput>) =>
+    setX((c) => {
+      const n = { ...c, ...p };
+      return named || p.name !== undefined ? n : { ...n, name: autoName(n.city, n.from) };
+    });
 
   const setDay = (which: 'from' | 'to', v: string) => {
     (which === 'from' ? setFromText : setToText)(v);
     const d = parseDay(v, Date.now(), true);
+    if (which === 'to') setAutoTo(false);
+    // A first day with no last day typed: a week, which the player can change.
+    if (which === 'from' && d !== null && (!x.to || autoTo)) {
+      setAutoTo(true);
+      const week = new Date(d);
+      week.setDate(week.getDate() + 7);
+      setToText(dd(dayKey(week.getTime())));
+      set({ from: dayKey(d), to: dayKey(week.getTime()) });
+      return;
+    }
     set({ [which]: d === null ? '' : dayKey(d) });
   };
 
@@ -56,8 +81,7 @@ export default function FestivalNewScreen() {
     <>
       <Stack.Screen options={{ title: editing ? t('Editar festival') : t('Adicionar o meu festival') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-        <Field label={t('Nome')} value={x.name} onChangeText={(name) => set({ name: name.slice(0, 60) })} placeholder={t('Ex.: Malta, novembro 2026')} autoFocus={!editing} />
-        <Field label={t('Cidade')} value={x.city} onChangeText={(city) => set({ city: city.slice(0, 40) })} placeholder={t('Ex.: St. Julian’s')} />
+        <Field label={t('Cidade')} value={x.city} onChangeText={(city) => set({ city: city.slice(0, 40) })} placeholder={t('Ex.: St. Julian’s')} autoFocus={!editing} />
         <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
           <Field label={t('De')} value={fromText} onChangeText={(v) => setDay('from', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />
           <Field label={t('Até')} value={toText} onChangeText={(v) => setDay('to', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />
@@ -69,6 +93,15 @@ export default function FestivalNewScreen() {
         ) : (
           <T v="tiny">{t('As sessões que jogares nestes dias entram na viagem do festival.')}</T>
         )}
+        <Field
+          label={t('Nome')}
+          value={x.name}
+          onChangeText={(name) => {
+            setNamed(true);
+            set({ name: name.slice(0, 60) });
+          }}
+          placeholder={t('Ex.: Malta, novembro 2026')}
+        />
         <Section title={t('Moeda')}>
           <ChipRow>
             {CURRENCIES.map((c) => (
