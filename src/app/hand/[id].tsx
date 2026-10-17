@@ -349,6 +349,8 @@ ${link}`;
           title: '',
           headerRight: () => (
             <Row gap={S.sm}>
+              {/* Share stays one tap away while the replayer is scrolled into view. */}
+              <IconButton name="share-social-outline" size={36} label={t('Partilhar')} onPress={() => setShareOpen(true)} />
               <IconButton name="create-outline" size={36} label={t('Editar mão')} onPress={edit} />
               <IconButton name="trash-outline" size={36} color={C.danger} label={t('Apagar mão')} onPress={remove} />
             </Row>
