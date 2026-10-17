@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BRAND } from '@/theme';
 
 import type { ProfileDraft, ProfileLink } from './profile-payload';
+import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const KEY = 'pp.link.v1';
@@ -90,6 +91,21 @@ export async function updateProfile(link: ProfileLink, draft: ProfileDraft, body
     return 'offline';
   }
 }
+
+/** Delete all my data: the profile goes now or when the signal is back, and this phone forgets it. */
+export async function queueProfileDelete(): Promise<void> {
+  const link = await loadProfileLink();
+  if (!link) return;
+  queue('profile-delete', { handle: link.handle, token: link.token }, link.handle);
+  await keep(null);
+}
+
+registerSender('profile-delete', async (p) => {
+  const { handle, token } = p as { handle: string; token: string };
+  const r = await fetch(`${API}/api/profiles/${encodeURIComponent(handle)}`, { method: 'DELETE', headers: { 'x-edit-token': token } }).catch(() => null);
+  if (!r) return 'retry';
+  return r.status === 404 ? 'done' : outcomeOf(r.status);
+});
 
 /** Takes the page down for good. */
 export async function deleteProfile(link: ProfileLink): Promise<SaveResult> {
