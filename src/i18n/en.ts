@@ -43,7 +43,8 @@ const en: Record<string, string> = {
   'Sequência': 'Straight',
   'Cor': 'Flush',
   'Poker': 'Four of a kind',
-  'Início': 'Early',
+  'Início': 'Start',
+  'Mesa': 'Table',
   'Meio': 'Middle',
   'Bolha': 'Bubble',
   'Mesa final': 'Final table',
@@ -304,6 +305,8 @@ const en: Record<string, string> = {
   'Depois {after}': 'Then {after}',
   'Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.': 'Renews automatically. Cancel in the {store} at least 24 h before the period ends.',
   'Convida um amigo: 7 dias Pro para os dois': 'Invite a friend: 7 Pro days for you both',
+  'Convidar um amigo': 'Invite a friend',
+  'Agora não': 'Not now',
   'Agora não · amanhã tens mais {n}': 'Not now · {n} more tomorrow',
   'Tudo desbloqueado. 0 a pagar.': 'Everything unlocked. Nothing to pay.',
   'Começa: {price}': 'Starts: {price}',
@@ -910,6 +913,7 @@ const en: Record<string, string> = {
   'Tudo, sempre grátis. Para mudar de telemóvel ou de app.': 'Everything, always free. To change phones or apps.',
   'Um relatório em PDF para o contabilista ou o teu backer, ou os dados em CSV para o Excel.': 'A PDF report for your accountant or backer, or the data as CSV for Excel.',
   '{from} a {to}': '{from} to {to}',
+  'Cópia parada: tens menos do que a nuvem': 'Backup paused: this phone has less than the cloud',
 };
 
 export default en;
