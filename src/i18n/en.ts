@@ -2834,6 +2834,7 @@ const en: Record<string, string> = {
   "Enviado automaticamente: cobraste {amount}.": "Sent automatically: you cashed {amount}.",
   "Enviado automaticamente: não cobraste.": "Sent automatically: you didn't cash.",
   "Para desligar, abre o swap.": "To turn it off, open the swap.",
+  "O grupo fica com {n} jogadores e as contas começam quando estiverem todos. A percentagem de cada um não muda.": "The group goes to {n} players and the accounts start once everyone is in. Each player's percentage stays the same.",
   "Jogador que saiu": "A player who left",
   "O outro jogador dá": "The other player gives",
   "Se cobrares {prize}, pagas {mine} ao outro jogador.": "If you cash {prize}, you pay {mine} to the other player.",

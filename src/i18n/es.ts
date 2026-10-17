@@ -2801,6 +2801,7 @@ const es: Record<string, string> = {
   "Enviado automaticamente: cobraste {amount}.": "Enviado automáticamente: cobraste {amount}.",
   "Enviado automaticamente: não cobraste.": "Enviado automáticamente: no cobraste.",
   "Para desligar, abre o swap.": "Para desactivarlo, abre el swap.",
+  "O grupo fica com {n} jogadores e as contas começam quando estiverem todos. A percentagem de cada um não muda.": "El grupo queda con {n} jugadores y las cuentas empiezan cuando estén todos. El porcentaje de cada uno no cambia.",
   "Jogador que saiu": "Jugador que se fue",
   "O outro jogador dá": "El otro jugador da",
   "Se cobrares {prize}, pagas {mine} ao outro jogador.": "Si cobras {prize}, le pagas {mine} al otro jugador.",

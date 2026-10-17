@@ -32,3 +32,15 @@ describe('group swaps', () => {
     ]);
   });
 });
+
+describe('seat gaps', () => {
+  it('a seat dropped before anyone took it changes nothing for the others', () => {
+    const seats = [{ seat: 0 }, { seat: 1 }, { seat: 3 }];
+    const net = groupNet({ pct: 2 }, seats, [
+      { seat: 3, kind: 'result', amount: 100000 },
+      { seat: 1, kind: 'payment', amount: 500, to: 3 },
+    ]);
+    expect([...net.entries()]).toEqual([[0, 2000], [1, 2500], [3, -4500]]);
+    expect(minTransfers(net).reduce((a, x) => a + x.amount, 0)).toBe(4500);
+  });
+});
