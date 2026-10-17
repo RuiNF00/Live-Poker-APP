@@ -5,7 +5,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert,
   Platform,
@@ -84,8 +84,58 @@ const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.3, h1: 1.5, h2: 
 /** Text inside buttons, chips and pills. */
 const CONTROL_SCALE = 1.6;
 
+const WEB = Platform.OS === 'web';
+
+/**
+ * React Native for web ignores adjustsFontSizeToFit, so one-line amounts and
+ * labels were cut ("Você deve € 5.…"). On web this measures the rendered text
+ * and scales the font down to fit, never below `min`. Native does nothing here.
+ */
+function useWebFit(on: boolean, min: number) {
+  const ref = useRef<unknown>(null);
+  const [scale, setScale] = useState(1);
+  const fit = () => {
+    const el = ref.current as HTMLElement | null;
+    if (!on || !el || !el.clientWidth) return;
+    // scrollWidth is the text's width at the current scale; undo it to get the full-size width.
+    const natural = el.scrollWidth / scale;
+    const next = natural > el.clientWidth + 0.5 ? Math.max(min, Math.floor((el.clientWidth / natural) * 100) / 100) : 1;
+    if (Math.abs(next - scale) >= 0.01) setScale(next);
+  };
+  // After every render (the text may have changed); fit() only sets state when the scale changes.
+  useLayoutEffect(fit);
+  // The web fonts arrive after the first measure and are wider than the fallback: measure again.
+  const [fonts, setFonts] = useState(0);
+  useEffect(() => {
+    if (!on || typeof document === 'undefined' || !document.fonts) return;
+    const bump = () => setFonts((n) => n + 1);
+    document.fonts.addEventListener('loadingdone', bump);
+    return () => document.fonts.removeEventListener('loadingdone', bump);
+  }, [on]);
+  void fonts;
+  return { ref, scale, fit };
+}
+
+/** Text that may shrink to one line on web too; same props as RN Text. */
+export function FitText({ style, onLayout, ...rest }: TextProps) {
+  const { ref, scale, fit } = useWebFit(WEB && !!rest.adjustsFontSizeToFit && rest.numberOfLines === 1, rest.minimumFontScale || 0.5);
+  if (!WEB) return <RNText {...rest} style={style} onLayout={onLayout} />;
+  const size = scale < 1 ? StyleSheet.flatten(style)?.fontSize : undefined;
+  return (
+    <RNText
+      ref={ref as React.Ref<never>}
+      {...rest}
+      style={size ? [style, { fontSize: size * scale }] : style}
+      onLayout={(e) => {
+        fit();
+        onLayout?.(e);
+      }}
+    />
+  );
+}
+
 export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string }) {
-  return <RNText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
+  return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
 }
 
 const mono: TextStyle = { fontFamily: F.mono, fontVariant: ['tabular-nums'], color: C.text };
@@ -332,9 +382,6 @@ export function ListGroup({ children, style }: { children: React.ReactNode; styl
   );
 }
 
-// Web ignores adjustsFontSizeToFit: there a long value (pt-BR amounts, dates) wraps instead of being cut.
-const STAT_LINES = Platform.OS === 'web' ? 2 : 1;
-
 export function ListItem({
   icon,
   iconColor,
@@ -395,7 +442,7 @@ export function ListItem({
       </View>
       {value ? (
         // Capped, so a long amount at large text can't squeeze the title to nothing.
-        <T v="mono" color={valueColor ?? C.textDim} numberOfLines={STAT_LINES} adjustsFontSizeToFit style={{ flexShrink: 1, maxWidth: '45%', textAlign: 'right' }}>
+        <T v="mono" color={valueColor ?? C.textDim} numberOfLines={1} adjustsFontSizeToFit style={{ flexShrink: 1, maxWidth: '45%', textAlign: 'right' }}>
           {value}
         </T>
       ) : null}
@@ -499,12 +546,12 @@ export function Stat({
       // Read as one line: "Por hora: 26 €. Lucro ÷ horas à mesa".
       accessibilityLabel={`${label}: ${locked ? t('Pro') : value}${sub ? '. ' + sub : ''}`}>
       <Row gap={4}>
-        <T v="label" numberOfLines={1} style={{ flexShrink: 1 }}>
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
           {label}
         </T>
         {locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
       </Row>
-      <T v={big ? 'monoL' : 'mono'} color={locked ? C.muted : col} numberOfLines={STAT_LINES} adjustsFontSizeToFit style={big ? null : { fontSize: 18, lineHeight: 24 }}>
+      <T v={big ? 'monoL' : 'mono'} color={locked ? C.muted : col} numberOfLines={1} adjustsFontSizeToFit style={big ? null : { fontSize: 18, lineHeight: 24 }}>
         {value}
       </T>
       {sub ? (
@@ -608,9 +655,9 @@ export function Button({
       {iconNode}
       {/* Shrinks to fit a narrow slot (the session dock at 200%) instead of cutting to "Nova…". */}
       <View style={{ alignItems: 'center', flexShrink: 1 }}>
-        <RNText numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1, textAlign: 'center' }}>
+        <FitText numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1, textAlign: 'center' }}>
           {title}
-        </RNText>
+        </FitText>
         {sub ? <RNText maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}
       </View>
       {iconRight ? <Ionicons name={iconRight} size={fs + 1} color={fg} /> : null}

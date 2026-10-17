@@ -345,7 +345,9 @@ function Live({ s }: { s: Session }) {
               </T>
               <Ionicons name="pencil" size={13} color={C.accent} />
             </Row>
-            <T v="monoL">{chips(s.stack)}</T>
+            <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+              {chips(s.stack)}
+            </T>
             <Row gap={6}>
               <T v="monoS">{bbs(s.stack, s.bb)}</T>
               {delta ? (

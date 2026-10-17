@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SessionMiniBar } from '@/components/SessionMiniBar';
-import { setHaptics, tap } from '@/components/ui';
+import { FitText, setHaptics, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { useStore } from '@/store/store';
 import { C, ff } from '@/theme';
@@ -75,7 +75,12 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: C.text,
         tabBarInactiveTintColor: C.muted,
-        tabBarLabelStyle: { fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2 },
+        // Shrinks rather than cutting "Bankroll" / "Jugadores" on a narrow screen or a zoomed browser.
+        tabBarLabel: ({ color, children }) => (
+          <FitText allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color, fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2, textAlign: 'center' }}>
+            {children}
+          </FitText>
+        ),
         // The bar has a fixed height; iOS shows the big label on long-press instead.
         tabBarAllowFontScaling: false,
       }}>
