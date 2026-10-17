@@ -1026,3 +1026,7 @@ a {
 .wordmark span {
   color: var(--accent);
 }
+
+.cta-badges .lp-stores {
+  justify-content: center;
+}

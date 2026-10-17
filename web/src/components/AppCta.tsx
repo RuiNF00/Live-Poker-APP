@@ -5,6 +5,9 @@ import { brand } from '@/config/brand';
 import { t, type Locale } from '@/lib/i18n';
 import { Mark, Wordmark } from './Brand';
 import { track } from '@/lib/track';
+import { StoreButtons } from './landing/StoreButtons';
+import { landingCopy } from './landing/copy';
+import '@/app/landing.css';
 
 type Platform = 'ios' | 'android' | 'other';
 
@@ -26,7 +29,6 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
   const ios = withUtm(brand.appStoreUrl);
   const android = withUtm(brand.playStoreUrl);
   const primary = platform === 'ios' ? ios : platform === 'android' ? android : ios || android;
-  const hasStores = !!(ios || android);
 
   return (
     <>
@@ -36,22 +38,9 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
         </div>
         <h2 className="cta-title">{d.ctaTitle}</h2>
         <p className="cta-body">{d.ctaBody}</p>
-        {hasStores ? (
-          <div className="cta-stores">
-            {ios && (platform !== 'android') && (
-              <a className="btn btn-primary" href={ios} onClick={() => track('store_click', { store: 'ios', from: 'share', shareId })}>
-                App Store
-              </a>
-            )}
-            {android && (platform !== 'ios') && (
-              <a className="btn btn-primary" href={android} onClick={() => track('store_click', { store: 'android', from: 'share', shareId })}>
-                Google Play
-              </a>
-            )}
-          </div>
-        ) : (
-          <p className="muted">{d.comingSoon}</p>
-        )}
+        <div className="cta-badges">
+          <StoreButtons c={landingCopy(locale)} stores={{ ios, android }} from="share" fallback="/" shareId={shareId} />
+        </div>
         {platform !== 'other' && (
           <a className="cta-open" href={`${brand.appScheme}://h/${shareId}`}>
             {d.openInApp}
