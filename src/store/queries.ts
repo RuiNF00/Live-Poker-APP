@@ -41,6 +41,21 @@ export function handCounts(hands: Hand[], players: PlayerNote[]): Map<string, nu
   return counts;
 }
 
+/** Sessions each known player was seen in (a hand outside a session counts by its day). */
+export function sessionsSeen(hands: Hand[], players: PlayerNote[]): Map<string, number> {
+  const byName = nameIndex(players);
+  const ids = new Set(players.map((p) => p.id));
+  const seen = new Map<string, Set<string>>();
+  for (const h of hands) {
+    const seats = knownSeats(h, ids, byName);
+    if (!seats.length) continue;
+    const d = new Date(h.createdAt);
+    const key = h.sessionId ?? `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    for (const [, id] of seats) seen.set(id, (seen.get(id) ?? new Set()).add(key));
+  }
+  return new Map([...seen].map(([id, keys]) => [id, keys.size]));
+}
+
 /**
  * Preflop reads from the hands entered against each player. A hand counts once
  * the player has a preflop action in it (walks and unfinished hands don't).

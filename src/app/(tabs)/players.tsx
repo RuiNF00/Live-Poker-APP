@@ -6,7 +6,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, ScrollView, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { OpponentStatsRow } from '@/components/OpponentStats';
+import { OpponentStatsRow, tagColor } from '@/components/OpponentStats';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
 import { sampleColor, SmallSample } from '@/components/SmallSample';
@@ -134,14 +134,6 @@ export default function PlayersScreen() {
       </Modal>
     </Screen>
   );
-}
-
-/** Weak spots in green, danger in red, the rest neutral: what to exploit at a glance. */
-function tagColor(tag: string): string | undefined {
-  if (['Fish', 'Calling station', 'Tilt', 'Passivo'].includes(tag)) return C.good;
-  if (['Reg', 'Agressivo', 'Bluffer'].includes(tag)) return C.bad;
-  if (['Nit', 'Tight'].includes(tag)) return C.info;
-  return undefined;
 }
 
 function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {

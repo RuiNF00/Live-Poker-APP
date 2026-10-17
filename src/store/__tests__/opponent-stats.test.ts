@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { buttonForHeroPosition, positions, replay } from '../../poker/engine';
 import { skipTo } from '../../poker/entry';
 import type { Hand, HandAction } from '../../poker/types';
-import { handCounts, opponentStats } from '../queries';
+import { handCounts, opponentStats, sessionsSeen } from '../queries';
 import type { PlayerNote } from '../types';
 
 const note = (id: string, name: string): PlayerNote => ({ id, name, look: '', tags: [], notes: '', createdAt: 0, updatedAt: 0 });
@@ -47,4 +47,18 @@ test('VPIP, PFR and 3-bet from the hands entered against a player', () => {
 test('an unfinished hand where the player has not acted yet adds nothing', () => {
   const h = hand('g', 'CO', [['UTG', 'fold']]);
   assert.equal(opponentStats([h], [ZE]).get(ZE.id), undefined);
+});
+
+test('"visto em n sessões": one per session, or per day for hands outside a session', () => {
+  const day = (d: number) => new Date(2026, 9, d, 21).getTime();
+  const at = (h: Hand, createdAt: number, sessionId?: string): Hand => ({ ...h, createdAt, sessionId });
+  const hands = [
+    at(hand('a', 'CO', []), day(3), 's1'),
+    at(hand('b', 'CO', []), day(3), 's1'),
+    at(hand('c', 'HJ', [], true), day(10), 's2'),
+    at(hand('d', 'CO', []), day(12)),
+    at(hand('e', 'CO', []), day(12) + 3600e3),
+  ];
+  assert.equal(sessionsSeen(hands, [ZE]).get(ZE.id), 3);
+  assert.equal(sessionsSeen(hands, [note('p_x', 'Ninguém')]).get('p_x'), undefined);
 });

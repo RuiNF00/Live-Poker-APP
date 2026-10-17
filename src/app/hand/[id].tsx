@@ -21,6 +21,7 @@ import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
+import { markCommentsSeen } from '@/lib/friend-hands';
 import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
@@ -48,7 +49,13 @@ export default function HandScreen() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const loadComments = useCallback(() => {
     if (!hand?.shareId) return;
-    fetchComments(hand.shareId).then(setComments).catch(() => {});
+    const sid = hand.shareId;
+    fetchComments(sid)
+      .then((c) => {
+        setComments(c);
+        markCommentsSeen(sid, c.length);
+      })
+      .catch(() => {});
     fetchVotes(hand.shareId).then(setVotes).catch(() => {});
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
@@ -313,7 +320,13 @@ ${link}`;
             <CommentsList
               shareId={hand.shareId}
               comments={comments}
-              onPosted={(c) => setComments((x) => [...x, c])}
+              onPosted={(c) =>
+                setComments((x) => {
+                  // Your own reply isn't news to you.
+                  if (hand?.shareId) markCommentsSeen(hand.shareId, x.length + 1);
+                  return [...x, c];
+                })
+              }
               defaultName={settings.nickname}
               streets={streets}
               street={street}
