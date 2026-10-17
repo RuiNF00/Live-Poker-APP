@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { devPro } from './dev-pro';
 import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
 import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
@@ -13,6 +14,7 @@ import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
 import * as store from './purchases';
+import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { activateInvite, claimState } from '@/lib/referrals';
 import { useStore } from '@/store/store';
@@ -42,9 +44,12 @@ interface ProValue {
 }
 
 const Ctx = createContext<ProValue | null>(null);
+const DEV_PRO = devPro();
 
 export function ProProvider({ children }: { children: React.ReactNode }) {
-  const [isPro, setIsPro] = useState(false);
+  const [storePro, setIsPro] = useState(false);
+  // Screenshot builds can force Pro (dev-pro.ts); always false in a store build.
+  const isPro = storePro || DEV_PRO;
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
   const [plansFailed, setPlansFailed] = useState(false);
@@ -93,7 +98,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const canShare = useCallback(() => canUse(usage, 'share', FREE.sharesPerDay, isPro), [usage, isPro]);
 
   const paywall = useCallback((reason: PaywallReason = 'generic') => {
-    if (reason === 'hands' || reason === 'shares') track('limit_hit', { reason });
+    if (reason === 'hands' || reason === 'handsLive' || reason === 'shares') track('limit_hit', { reason });
     track('paywall_shown', { reason, trial: trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout });
     router.push({ pathname: '/paywall', params: { reason } });
   }, [trialDays, paywallConfig]);
@@ -128,6 +133,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   // Trial and come-back notifications follow the data: re-planned when it
   // changes and each time the app comes back to the front.
   const { hands, sessions, activeSession } = useStore();
+  useEffect(() => setLiveSession(!!activeSession), [activeSession]);
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
   useEffect(() => {

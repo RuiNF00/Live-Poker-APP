@@ -8,15 +8,15 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTo } from '../entry';
+import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
-function mk(heroPos: string, heroCards: string[], n = 9): Hand {
+function mk(heroPos: string, heroCards: string[], n = 9, kind: 'mtt' | 'cash' = 'mtt'): Hand {
   const players = Array.from({ length: n }, (_, i) => ({ name: i ? '' : 'Hero', stack: 20000, cards: i ? undefined : heroCards }));
   return {
     v: 1, id: 't', createdAt: 0, updatedAt: 0,
-    game: { kind: 'mtt', name: 'T', sb: 100, bb: 200, ante: 200, anteType: 'bb', currency: '€' },
+    game: kind === 'mtt' ? { kind, name: 'T', sb: 100, bb: 200, ante: 200, anteType: 'bb', currency: '€' } : { kind, name: 'C', sb: 100, bb: 200, ante: 0, anteType: 'bb', currency: '€' },
     players, button: buttonForHeroPosition(n, 0, heroPos), hero: 0, actions: [], board: [], tags: [], notes: '',
   };
 }
@@ -28,9 +28,11 @@ class Entry {
   autoFrom?: number;
   private done = new Set<string>();
   private history: { hand: Hand; autoFrom?: number }[] = [];
+  /** What hand/new.tsx keeps in settings: the last size per spot. */
+  memory: SizeMemory = {};
 
-  constructor(heroPos: string, heroCards: string[]) {
-    this.hand = mk(heroPos, heroCards);
+  constructor(heroPos: string, heroCards: string[], kind: 'mtt' | 'cash' = 'mtt') {
+    this.hand = mk(heroPos, heroCards, 9, kind);
     this.settle();
   }
   get s() {
@@ -69,11 +71,22 @@ class Entry {
   act(kind: HandAction['kind']) {
     this.push([{ p: this.s.toAct!, kind }]);
   }
-  size(label: string) {
+  private bet(to: number) {
     const s = this.s;
-    const p = sizePresets(this.hand, s).find((x) => x.label === label);
+    const m = sizeToRemember(this.hand, s, to);
+    if (m) this.memory = { ...this.memory, [m.spot]: m.mult };
+    this.push([{ p: s.toAct!, kind: legal(s)!.canBet ? 'bet' : 'raise', to }]);
+  }
+  size(label: string) {
+    const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.label === label);
     assert.ok(p, `no preset ${label}`);
-    this.push([{ p: s.toAct!, kind: legal(s)!.canBet ? 'bet' : 'raise', to: p.to }]);
+    this.bet(p.to);
+  }
+  /** The keypad: open it, switch to bb, type the digits (e.g. "2,2" is 3), confirm. */
+  keypad(bbs: number) {
+    const keys = String(bbs).replace('.', ',').length;
+    this.taps += 1 + 1 + keys + 1 - 1; // push() adds the confirm tap
+    this.bet(Math.round(bbs * this.hand.game.bb));
   }
   only(label: string | null) {
     const target = label === null ? null : this.seat(label);
@@ -313,4 +326,130 @@ test('the next hand at the same table skips the position tap: the typical hand t
   const next = newHand({ id: 'n', last });
   assert.equal(positions(next.players.length, next.button)[next.hero], 'HJ', 'the button moved, hero is one seat earlier');
   assert.equal(e.taps - 1, 10);
+});
+
+// ── Tap audit (2026-10-17): five typical live hands at the table ─────────────
+// Before = the integration head before this change; after = now.
+
+test('audit 1a: raise and everyone folds — 6 taps', () => {
+  const e = new Entry('CO', ['Ah', 'Jd']);
+  e.size('2.5x');
+  e.only(null);
+  const r = e.save();
+  assert.equal(e.taps, 6);
+  assert.equal(r.final.foldWin, true);
+});
+
+test('audit 1b: hero opens, BTN 3-bets, the blinds fold by themselves, hero folds — 7 taps (was 8)', () => {
+  const e = new Entry('CO', ['Kh', 'Td']);
+  e.size('2.5x');
+  e.size('3x'); // BTN 3-bets
+  assert.equal(e.s.toAct, 0, 'SB and BB fold by themselves after the 3-bet');
+  e.act('fold');
+  const r = e.save();
+  assert.equal(e.taps, 7);
+  assert.equal(r.final.foldWin, true);
+});
+
+test('audit 1b: a blind who called the 3-bet is one tap on its seat', () => {
+  const e = new Entry('CO', ['Kh', 'Td']);
+  e.size('2.5x');
+  e.size('3x');
+  e.entered('BB');
+  e.act('call');
+  assert.equal(e.s.toAct, 0);
+});
+
+test('audit 3: single-raised pot to showdown — 17 taps', () => {
+  const e = new Entry('CO', ['Ac', 'Qc']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Qh', '8d', '4s');
+  e.size('⅓');
+  e.only('BTN');
+  e.board('2c');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.shows('BTN', ['Kd', 'Qs']);
+  const r = e.save();
+  assert.equal(e.taps, 17);
+  assert.equal(r.result!.resolved, true);
+  assert.deepEqual(r.result!.pots[0].winners, [0]);
+});
+
+test('audit 4: limped multiway (UTG and CO limp, SB completes, hero checks the BB) — 19 taps', () => {
+  const e = new Entry('BB', ['9c', '5c']);
+  e.entered('UTG');
+  e.act('call');
+  e.entered('CO');
+  e.act('call');
+  e.entered('SB'); // BTN and SB folded by themselves; the SB completing is a tap on its seat
+  e.act('call');
+  e.act('check');
+  e.board('Td', '6h', '2c');
+  e.checkAround();
+  e.board('5d');
+  e.skip('Hero');
+  e.size('½');
+  e.only(null);
+  const r = e.save();
+  assert.equal(e.taps, 19);
+  assert.equal(r.final.foldWin, true);
+});
+
+test('remembered size: a player who opens 2.2x pays the keypad once, then it is a chip', () => {
+  const first = new Entry('CO', ['Ah', 'Kd']);
+  first.keypad(2.2);
+  first.only(null);
+  first.save();
+  assert.equal(first.taps, 3 + 6 + 1 + 1, 'keypad, bb, "2", ",", "2", confirm');
+
+  const next = new Entry('CO', ['Ah', 'Kd']);
+  next.memory = first.memory;
+  const presets = sizePresets(next.hand, next.s, next.memory);
+  assert.deepEqual(presets.map((p) => p.label), ['2.2x', '2.5x', '3x', 'All-in'], '2.2x takes the place of 2x');
+  assert.equal(presets.find((p) => p.last)?.to, 440);
+  next.size('2.2x');
+  next.only(null);
+  next.save();
+  assert.equal(next.taps, 6, 'was 11 every hand');
+});
+
+test('remembered size: the typical hand with a 2.2x open and a 25% c-bet — 11 taps (was 19)', () => {
+  const play = (e: Entry, before: boolean) => {
+    if (before) e.keypad(2.2);
+    else e.size('2.2x');
+    e.only('BTN');
+    e.board('Kc', '8d', '3s');
+    if (before) e.keypad(1); // ¼ pot of 4 bb+ in bb, typed
+    else e.size('¼');
+    e.act('fold');
+    e.save();
+  };
+  const before = new Entry('CO', ['Ah', 'Kd']);
+  play(before, true);
+  const after = new Entry('CO', ['Ah', 'Kd']);
+  after.memory = { open: 2.2, bet: 0.25 };
+  play(after, false);
+  assert.equal(after.taps, 11);
+  assert.equal(before.taps, 19);
+});
+
+test('size memory: spots are kept apart, all-in is never remembered, cash opens bigger', () => {
+  const h0 = mk('CO', ['Ah', 'Kd']);
+  const h = { ...h0, actions: autoFold(h0, replay(h0).final) };
+  const s = replay(h).final;
+  assert.deepEqual(sizeToRemember(h, s, 440), { spot: 'open', mult: 2.2 });
+  assert.equal(sizeToRemember(h, s, 20000), null);
+  assert.equal(sizeToRemember(h0, replay(h0).final, 440), null, "UTG's open is not hero's size");
+  const c = mk('CO', ['Ah', 'Kd'], 9, 'cash');
+  assert.deepEqual(sizePresets(c, replay(c).final).map((p) => p.label), ['3x', '4x', '5x', 'All-in']);
+  // Postflop: a remembered ¾ replaces ⅔, the open memory does not leak in.
+  let p = mk('CO', ['Ah', 'Kd']);
+  p = { ...p, actions: [...skipTo(p, replay(p).final, 0), { p: 0, kind: 'raise', to: 500 }] };
+  p = { ...p, actions: [...p.actions, ...onlyCaller(p, replay(p).final, p.button)], board: ['2c', '3d', '4h'] };
+  const ps = sizePresets(p, replay(p).final, { open: 2.2, bet: 0.75 });
+  assert.deepEqual(ps.map((x) => x.label), ['⅓', '½', '¾', 'Pote', 'All-in']);
+  assert.equal(ps.filter((x) => x.last).length, 1);
 });

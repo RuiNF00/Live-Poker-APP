@@ -106,6 +106,7 @@ export function fixSettings(x: unknown): { settings: Settings; bad: boolean } {
     bankrollId: (v) => typeof v === 'string',
     hideAmounts: (v) => typeof v === 'boolean',
     streakPauses: (v) => Array.isArray(v) && v.every((p) => isObj(p) && isNum(p.from)),
+    sizes: (v) => isObj(v) && Object.values(v).every((m) => isObj(m) && Object.values(m).every((x) => isNum(x) && x > 0)),
   };
   for (const [k, ok] of Object.entries(optional)) {
     if (out[k] !== undefined && !ok(out[k])) {

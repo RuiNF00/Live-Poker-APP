@@ -8,7 +8,7 @@ import { Alert, Platform, View } from 'react-native';
 import { Sheet } from '@/components/BankrollSheets';
 import { ExpenseForm, KIND, TripForm, tripDates } from '@/components/TripSheets';
 import { Button, Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
-import { locale, t } from '@/i18n';
+import { decimalComma, locale, t } from '@/i18n';
 import { FESTIVALS } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { planTotals, useFestivalPlan } from '@/store/festival-plan';
@@ -148,7 +148,7 @@ export default function TripScreen() {
                     key={x.id}
                     icon={x.kind === 'mtt' ? 'trophy-outline' : 'cash-outline'}
                     title={x.name || x.venue || t('Sessão')}
-                    subtitle={[day(x.startedAt), `${(playedMs(x) / 3600000).toFixed(1).replace('.', locale.startsWith('pt') ? ',' : '.')} h`].join(' · ')}
+                    subtitle={[day(x.startedAt), `${(playedMs(x) / 3600000).toFixed(1).replace('.', decimalComma ? ',' : '.')} h`].join(' · ')}
                     value={p === null ? signed(profit(x), x.currency) : signed(p)}
                     valueColor={profit(x) >= 0 ? C.good : C.bad}
                   />

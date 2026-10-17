@@ -6,7 +6,7 @@
 import { Linking, Platform } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
-import { lang } from '../i18n';
+import { currencyAfter, decimalComma, lang } from '../i18n';
 
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
@@ -68,7 +68,8 @@ function hasPro(info: CustomerInfo): boolean {
 }
 
 function usd(n: number) {
-  return lang === 'pt' ? `${n.toFixed(2).replace('.', ',')} US$` : `$${n.toFixed(2)}`;
+  const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
+  return lang === 'en' ? `$${s}` : currencyAfter ? `${s}\u00a0US$` : `US$\u00a0${s}`;
 }
 
 function fallbackPlans(): StorePlan[] {
@@ -112,7 +113,7 @@ export async function getPaywallConfig(): Promise<PaywallConfig> {
   if (!LIVE) return DEFAULT_PAYWALL;
   try {
     const cur = (await (await rc()).getOfferings()).current;
-    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang) : DEFAULT_PAYWALL;
+    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang === 'pt' ? 'pt' : 'en') : DEFAULT_PAYWALL;
   } catch {
     return DEFAULT_PAYWALL;
   }
@@ -205,7 +206,9 @@ export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
 
 /** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
 export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
-  if (!LIVE || !LIFETIME.enabled) return null;
+  if (!LIFETIME.enabled) return null;
+  // Expo Go / dev checkout (demo store): a stand-in so the cancel flow can be tried. Never in a store build.
+  if (!LIVE) return __DEV__ ? { priceString: usd(LIFETIME.usd), buy: async () => 'ok' as const } : null;
   try {
     const P = await rc();
     const cur = (await P.getOfferings()).current;
