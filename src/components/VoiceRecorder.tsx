@@ -2,7 +2,7 @@
 // listen back or delete. The note goes to the server with the story frame and
 // comes back as the story's video.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   RecordingPresets,
   requestRecordingPermissionsAsync,

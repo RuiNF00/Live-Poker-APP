@@ -1,7 +1,7 @@
 // Sheets for trips: the trip itself (name, dates, currency, exchange rate)
 // and one expense (flight, hotel, food, other).
 
-import type { Ionicons } from '@expo/vector-icons';
+import type Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
