@@ -12,3 +12,6 @@ export async function mailSupport(o: { to: string; subject: string; body: string
   window.location.href = `mailto:${o.to}?subject=${encodeURIComponent(o.subject)}&body=${encodeURIComponent(o.body)}`;
   return 'share';
 }
+
+/** Nothing is kept on web: the download is the browser's. */
+export function dropSupportCopies(): void {}
