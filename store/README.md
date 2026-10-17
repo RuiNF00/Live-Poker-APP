@@ -48,7 +48,7 @@ python3 store/scripts/check-lengths.py store/out/listing/*.md   # confirma limit
 
 ## Alojamento das páginas
 
-As páginas de `web/` são HTML estático. Plano: publicar no Vercel do Rui (o acesso já funciona a partir daqui) assim que o nome e o domínio estiverem decididos, no mesmo domínio dos links de partilha de mãos, para que `https://{{WEB_DOMAIN}}/privacy` funcione. Se ainda não houver domínio, usa-se o endereço `*.vercel.app` provisório; o URL de privacidade pode ser alterado mais tarde nas duas lojas.
+As páginas de `web/` ficam em `https://sweatbook.poker` (domínio comprado no Vercel). Projeto Vercel `sweatbook` importado deste repositório com **Root Directory = `store`**; o `store/vercel.json` trata do resto (preenche os templates e serve `out/web` com URLs limpos, por isso `/privacy` funciona). Quando a app web de partilha de mãos existir, as páginas podem passar para dentro dela mantendo os mesmos caminhos.
 
 ## Conta de demonstração para os revisores
 
