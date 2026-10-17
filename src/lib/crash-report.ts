@@ -18,7 +18,7 @@ import { onEraseAll } from './erase-all';
 import { scrubBreadcrumb, scrubEvent, TAGS, type CrashTag } from './crash-scrub';
 
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined;
-/** 'off' when the player turned reports off. Erase-all removes it (back to on). */
+/** 'off' when the player turned reports off. Kept by erase-all (a choice, not data). */
 export const CRASH_KEY = 'rl.crash.v1';
 
 type SentryModule = typeof import('@sentry/react-native');

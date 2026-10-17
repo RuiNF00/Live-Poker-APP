@@ -17,6 +17,7 @@ test('links perdem query, # e tokens no caminho', () => {
   assert.equal(stripUrl('sweatbook://swap/AbCdEfGh12345678'), 'sweatbook://swap/:id');
   assert.equal(stripUrl('/hand/h_000123'), '/hand/:id');
   assert.equal(stripUrl('/bankroll'), '/bankroll');
+  assert.equal(stripUrl('https://sweatbook.poker/api/coach/AbCdEfGhIjKlMnOpQr/comments?x=1'), 'https://sweatbook.poker/api/coach/:id/comments');
 });
 
 test('o URL dentro da mensagem de erro também é limpo', () => {
@@ -28,7 +29,8 @@ test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquet
     user: { id: 'install-123', ip_address: '1.2.3.4' },
     server_name: 'iPhone do Rui',
     request: { url: 'https://x.pt/a?code=1', cookies: 'c=1', headers: { a: 'b' } },
-    contexts: { device: { name: 'iPhone do Rui', model: 'iPhone15,2' } },
+    contexts: { device: { name: 'iPhone do Rui', id: 'dev-123', model: 'iPhone15,2' } },
+    transaction: '/swap/AbCdEfGh12345678',
     tags: { channel: 'production', install_id: 'abc', amount: '500' },
     extra: { note: 'Ele 3-beta muito leve com A5s, liga-me 912345678' },
     exception: { values: [{ type: 'TypeError', value: 'cannot read rui@x.pt', stacktrace: { frames: [{ filename: 'app:///index.bundle', lineno: 12 }] } }] },
@@ -39,6 +41,7 @@ test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquet
   assert.deepEqual(e.request, { url: 'https://x.pt/a' });
   assert.equal('headers' in (e.request as object), false);
   assert.deepEqual(e.contexts, { device: { model: 'iPhone15,2' } });
+  assert.equal(e.transaction, '/swap/:id');
   assert.deepEqual(e.tags, { channel: 'production' });
   assert.equal((e.extra as { note: string }).note, 'Ele 3-beta muito leve com A5s, liga-me [number]');
   assert.equal(e.exception.values[0].value, 'cannot read [email]');

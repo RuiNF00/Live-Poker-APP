@@ -53,6 +53,7 @@ export function scrubEvent<E extends object>(event: E): E {
   const e: Obj = { ...(event as Obj) };
   delete e.user;
   delete e.server_name;
+  if (typeof e.transaction === 'string') e.transaction = stripUrl(e.transaction);
   if (e.request && typeof e.request === 'object') {
     const r = { ...(e.request as Obj) };
     delete r.cookies;
@@ -67,6 +68,7 @@ export function scrubEvent<E extends object>(event: E): E {
     if (c.device && typeof c.device === 'object') {
       const d = { ...(c.device as Obj) };
       delete d.name;
+      delete d.id;
       c.device = d;
     }
     e.contexts = c;
