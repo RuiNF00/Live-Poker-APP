@@ -139,7 +139,11 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
           .join('  ')
       : null;
   const heroNet = result?.resolved ? result.net[hand.hero] : 0;
-  const heroHand = result?.handNames[hand.hero] ?? null;
+  // Run it twice: hero's hand on each board.
+  const heroSeat = view.seats.find((x) => x.hero);
+  const heroHand = heroSeat?.handName && heroSeat.handName2
+    ? `${t('Mesa')} 1 ${heroSeat.handName} · ${t('Mesa')} 2 ${heroSeat.handName2}`
+    : (result?.handNames[hand.hero] ?? null);
   // A smaller table leaves room for Instagram's Poll sticker above the reply bar.
   const pollRoom = isQ && !!poll;
   const tableW = pollRoom ? (text ? 200 : 256) : text ? 250 : 320;
@@ -376,7 +380,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
             }}>
             <View style={{ gap: 1 }}>
               <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.muted }}>{t('RESULTADO DO HERO')}</Text>
-              <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
+              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
                 {heroHand ?? (heroNet > 0 ? t('Hero leva o pote') : t('Pote {pot}', { pot: moment.pot }))}
               </Text>
             </View>

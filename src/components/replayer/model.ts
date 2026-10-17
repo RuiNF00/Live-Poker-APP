@@ -32,6 +32,8 @@ export interface RpSeat {
   /** Won at the end of the hand, formatted, e.g. "+12,5 bb". */
   won: string | null;
   handName: string | null;
+  /** Run it twice: the hand on the second board ("Par de Ases" on board 1, "Trio de 8" on board 2). */
+  handName2?: string | null;
   /** Run it twice: the one run this player won (1 or 2), when they didn't win both. */
   run: 1 | 2 | null;
   /** Share of the pot if the board ran out now, 0..1, when every live hand is face up. */
@@ -185,7 +187,8 @@ export function spokenTable(v: RpView): string {
   const parts: string[] = [];
   if (v.spoken || v.narration) parts.push(v.spoken || v.narration);
   parts.push(`${t('Pote')} ${v.potLabel}`);
-  if (v.board.length) parts.push(`${t('Mesa')}: ${v.board.map(spokenCard).join(', ')}`);
+  if (v.board2) [v.board, v.board2].forEach((b, j) => parts.push(`${t('Mesa')} ${j + 1}: ${b.map(spokenCard).join(', ')}`));
+  else if (v.board.length) parts.push(`${t('Mesa')}: ${v.board.map(spokenCard).join(', ')}`);
   for (const s of v.seats) {
     if (s.folded) continue;
     const who = spokenWho(s.name, s.pos);
@@ -195,7 +198,8 @@ export function spokenTable(v: RpView): string {
     if (s.allIn) bits.push('all-in');
     if (s.cards) bits.push(s.cards.map(spokenCard).join(' e '));
     else if (s.cards === null) bits.push(t('cartas tapadas'));
-    if (s.handName) bits.push(s.handName);
+    if (s.handName && s.handName2) bits.push(`${t('Mesa')} 1 ${s.handName}`, `${t('Mesa')} 2 ${s.handName2}`);
+    else if (s.handName) bits.push(s.handName);
     if (s.equity != null) bits.push(`equity ${pct(s.equity)}`);
     if (s.won) bits.push(`${t('ganha')} ${s.won}`);
     parts.push(bits.filter(Boolean).join(', '));
@@ -310,16 +314,19 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   const board2 = result && r.boards.length === 2 ? r.boards[1] : null;
   if (result && board2) {
     const runs = runPayouts(result, hand.players.length);
-    for (const s of seats) if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
+    for (const s of seats) {
+      if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
+      if (s.cards && s.handName) s.handName2 = evaluate([...s.cards, ...board2]).name;
+    }
     narration = runs
       .map((paid, j) => {
         const names = seats
           .filter((s) => paid[s.i] > 0)
           .map((s) => {
-            const hn = s.cards ? (j === 0 ? s.handName : evaluate([...s.cards, ...board2]).name) : null;
+            const hn = j === 0 ? s.handName : s.handName2;
             return `${s.name} ${t('ganha')} ${fmt(paid[s.i])}${hn ? ` (${hn})` : ''}`;
           });
-        return `Board ${j + 1}: ${names.join(', ')}`;
+        return `${t('Mesa')} ${j + 1}: ${names.join(', ')}`;
       })
       .join(' · ');
   } else if (result) {

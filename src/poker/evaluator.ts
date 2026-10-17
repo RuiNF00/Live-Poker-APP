@@ -1,19 +1,11 @@
-import { t } from '../i18n';
+import { handName, type HandNameLocale } from '../../packages/hand-format/src/hand-name';
+import { variant } from '../i18n';
 
 import { cardCode, score7 } from './equity';
 import type { CardCode } from './types';
 
-export const HAND_NAMES = [
-  t('Carta alta'),
-  t('Par'),
-  t('Dois pares'),
-  t('Trio'),
-  t('Sequência'),
-  t('Cor'),
-  'Full house',
-  t('Poker'),
-  'Straight flush',
-];
+// Named as players say it at the table, in the app's language: "Par de Ases", "Full: Damas e 4".
+const NAME_LOCALE: HandNameLocale = variant === 'pt-PT' ? 'pt' : variant;
 
 export interface Evaluation {
   score: number;
@@ -31,5 +23,5 @@ export function evaluate(cards: CardCode[]): Evaluation {
   if (cards.length < 5) return { score: -1, category: -1, name: '' };
   const best = score7(cards.map(cardCode));
   const category = Math.floor(best / 15 ** 5);
-  return { score: best, category, name: HAND_NAMES[category] ?? '' };
+  return { score: best, category, name: handName(best, NAME_LOCALE) };
 }

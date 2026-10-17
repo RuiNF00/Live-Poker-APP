@@ -1,4 +1,5 @@
-import { bestHand, categoryLabel, type HandValue } from './evaluate';
+import { bestHand, type HandValue } from './evaluate';
+import { handName } from './hand-name';
 import type { Action, ActionType, Card, HandRecord, Locale, Player, Street } from './types';
 import { STREETS } from './types';
 
@@ -293,7 +294,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     for (const s of contenders) {
       const v = s.cards ? bestHand(s.cards, b, hand.game) : null;
       values.set(s.seat, v);
-      if (v) labels.set(s.seat, categoryLabel(v.category, opts.locale));
+      if (v) labels.set(s.seat, handName(v.score, opts.locale));
       if (v && label) s.handLabel = labels.get(s.seat);
     }
     // Manually picked winners outrank any evaluated hand.

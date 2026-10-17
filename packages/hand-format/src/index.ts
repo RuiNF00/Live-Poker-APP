@@ -1,5 +1,6 @@
 export * from './types';
 export * from './evaluate';
+export * from './hand-name';
 export * from './replay';
 export * from './format';
 export * from './validate';
