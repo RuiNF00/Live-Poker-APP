@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { chipChop, icm, icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix } from '../icm';
+import { chipChop, icm, icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix, tablePaidPlaces } from '../icm';
 
 const close = (a: number[], b: number[], eps = 0.01) => a.forEach((x, i) => assert.ok(Math.abs(x - b[i]) < eps, `${x} vs ${b[i]}`));
 
@@ -66,4 +66,16 @@ test('PKO: a covered bounty lowers the equity needed', () => {
   assert.equal(plain, 0.4);
   assert.ok(Math.abs(pko - 1 / 3) < 1e-9);
   assert.equal(pkoBountyChips(0, 20000, 1000), 0);
+});
+
+test('table paid places from players left of the field', () => {
+  // 300 entries pay 45: one off the bubble at a 9-handed table pays 8 of them.
+  assert.equal(tablePaidPlaces(9, 46, 300), 8);
+  assert.equal(tablePaidPlaces(9, 50, 300), 4);
+  // Far from the money, or already in it: the whole table.
+  assert.equal(tablePaidPlaces(9, 100, 300), 9);
+  assert.equal(tablePaidPlaces(9, 40, 300), 9);
+  // Missing or impossible numbers keep the fallback.
+  assert.equal(tablePaidPlaces(9, 0, 300, 8), 8);
+  assert.equal(tablePaidPlaces(9, 100, 50, 8), 8);
 });

@@ -339,6 +339,8 @@ export interface Settings {
   notify?: Partial<Record<import('@/lib/notify-policy').NotifyKind, boolean>>;
   /** Hold what isn't the session's until the session ends or pauses. Missing = yes. */
   notifyHoldInSession?: boolean;
+  /** Replayer: the ICM estimate under tournament hands. Missing = off (it's a guess, easy to misread). */
+  icm?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

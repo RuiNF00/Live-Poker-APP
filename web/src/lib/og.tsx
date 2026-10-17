@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { buildReplay, formatChips, stakesText, type Card, type HandRecord } from '@livepoker/hand-format';
+import { buildReplay, stakesText, type Card, type HandRecord } from '@livepoker/hand-format';
 import { brand } from '@/config/brand';
 import { heroLastSpot, resolveHand } from '@/lib/hand';
 import { numberTag, type Locale } from '@/lib/i18n';
@@ -92,7 +92,7 @@ const oneLine = { display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', te
 const bbs = (n: number, bb: number, l: Locale) =>
   `${new Intl.NumberFormat(numberTag(l), { maximumFractionDigits: 1 }).format(n / bb)} BB`;
 
-/** What the hero faces at the challenge spot, without giving the answer away. */
+/** What the hero faces at the challenge spot, without giving the answer away. In big blinds: a preview never shows money. */
 function spotLine(hand: HandRecord, quiz: QuizSpot, l: Locale): string | null {
   const c = previewCopy(l);
   const steps = buildReplay(hand, { revealAll: false, locale: l });
@@ -106,8 +106,8 @@ function spotLine(hand: HandRecord, quiz: QuizSpot, l: Locale): string | null {
   const bb = hand.blinds.bb;
   return [
     c.spotStack(hero.position, bbs(hero.stack + hero.committed, bb, l)),
-    facing > 0 ? c.facing(formatChips(facing)) : c.first,
-    c.pot(formatChips(pot)),
+    facing > 0 ? c.facing(bbs(facing, bb, l)) : c.first,
+    c.pot(bbs(pot, bb, l)),
   ].join(' · ');
 }
 

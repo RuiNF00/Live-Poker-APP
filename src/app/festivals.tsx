@@ -21,7 +21,7 @@ export default function FestivalsScreen() {
         <T v="small" style={{ marginTop: -S.sm }}>
           {t('O calendário só tem datas publicadas pelos organizadores. Joga outro festival? Adiciona-o: a viagem e o planeador funcionam da mesma forma.')}
         </T>
-        <Button title={t('Adicionar o meu festival')} icon="add" kind="secondary" onPress={() => router.push('/festival-new')} />
+        <Button title={t('Adicionar o meu festival')} icon="add" kind="secondary" lines={2} onPress={() => router.push('/festival-new')} />
         {coming.length ? (
           <Section title={t('Próximos')}>
             <ListGroup>
