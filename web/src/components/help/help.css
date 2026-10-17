@@ -1,0 +1,314 @@
+/* Help center (/ajuda, /help) and /support, phone first, "Noite". */
+.hc {
+  --gutter: 16px;
+  min-height: 100vh;
+  background: radial-gradient(120% 34% at 50% -8%, rgba(255, 106, 61, 0.14), rgba(12, 19, 17, 0) 60%), var(--bg);
+}
+.hc-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) var(--gutter) 10px;
+  background: rgba(12, 19, 17, 0.86);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.hc-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  color: var(--text);
+  text-decoration: none;
+}
+.hc-nav {
+  display: flex;
+  gap: 4px;
+}
+.hc-nav a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.hc-nav a:first-child {
+  color: var(--text);
+}
+.hc-main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 40px;
+}
+.hc-hero {
+  padding: 32px 0 16px;
+}
+.hc-hero h1,
+.hc-article h1 {
+  margin: 0;
+  font-size: clamp(28px, 7.5vw, 40px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+.hc-lede {
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.hc-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.hc-search:focus-within {
+  border-color: var(--accent);
+}
+.hc-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* no zoom on iOS */
+}
+.hc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.hc-count {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.hc-cat {
+  margin-top: 28px;
+}
+.hc-cat h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.hc-list li + li {
+  border-top: 1px solid var(--line);
+}
+.hc-list a {
+  display: grid;
+  gap: 2px;
+  min-height: 56px;
+  padding: 12px 40px 12px 16px;
+  position: relative;
+  color: var(--text);
+  text-decoration: none;
+}
+.hc-list a::after {
+  content: '›';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 20px;
+}
+.hc-list a:active {
+  background: var(--surface-2);
+}
+.hc-list strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.hc-list span {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.hc-more {
+  margin: 12px 0 0;
+  font-size: 15px;
+}
+.hc-more a,
+.hc-plain a,
+.hc-foot a,
+.hc-crumbs a {
+  color: var(--accent);
+}
+
+.hc-crumbs {
+  padding-top: 20px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.hc-article {
+  padding-top: 12px;
+}
+.hc-article > p,
+.hc-plain {
+  margin: 14px 0 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.hc-steps,
+.hc-bullets {
+  margin: 14px 0 0;
+  padding: 0 0 0 22px;
+  display: grid;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.hc-steps li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+.hc-note {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.hc-contact {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.hc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hc-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+.hc-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.hc-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.hc-form textarea:focus {
+  outline: 0;
+  border-color: var(--accent);
+}
+.hc-details {
+  font-size: 13px;
+  color: var(--muted);
+}
+.hc-details ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hc-details li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.hc-details code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  color: var(--text);
+}
+.hc-form .hc-btn {
+  width: 100%;
+}
+.hc-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.hc-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hc-foot {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px var(--gutter) calc(28px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.hc-foot p {
+  margin: 0 0 6px;
+}

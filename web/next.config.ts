@@ -33,8 +33,9 @@ const nextConfig: NextConfig = {
     ];
   },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
+  // /support is a page of its own (src/app/support), opened by the app with topic, version and OS.
   async rewrites() {
-    return ['privacy', 'terms', 'support', 'delete-account'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
+    return ['privacy', 'terms', 'delete-account'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
   },
 };
 
