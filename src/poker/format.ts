@@ -102,6 +102,11 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
   raise: 'Raise',
 };
 
+/** A number as typed, up to 2 decimals, in the app's language: 12,5 in Portuguese, 12.5 in English. */
+export function num(x: number): string {
+  return numFmt().format(Math.round(x * 100) / 100);
+}
+
 /** A 0..1 share as a percentage in the app's language: "84,7%" in Portuguese, "84.7%" in English. */
 export function pct(x: number, digits = 0): string {
   return numFmt(digits).format(x * 100) + '%';

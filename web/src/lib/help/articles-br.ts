@@ -204,7 +204,8 @@ export const BR: Record<string, ArticleText> = {
     body: [
       'Uma mão: na página da mão, toque em Exportar para solver e depois em Copiar texto ou Salvar arquivo .txt. O formato hand history abre no GTO Wizard, PioSolver, Hold’em Manager e PokerTracker. Só funciona com mãos completas.',
       'Várias mãos de uma vez: selecione na lista de mãos e toque em Exportar para solver (Pro).',
-      'Relatórios: Configurações → Backup → Relatório PDF e CSV. Escolha o período e exporte o relatório em PDF, ou as sessões ou as mãos em CSV (Pro). O backup completo em .json é grátis.',
+      'Todas as sessões em CSV, grátis: Configurações → Exportar sessões em CSV. Abre no Excel e volta a entrar pelo Importar.',
+      'Relatórios (Pro): Configurações → Backup → Relatório PDF e CSV. Escolha um período ou um bankroll e exporte o PDF, as sessões ou as mãos em CSV. O backup completo em .json é grátis.',
     ],
   },
   'erase-all': {
@@ -238,10 +239,10 @@ export const BR: Record<string, ArticleText> = {
           'Criar swaps e registrar resultados.',
           'Compartilhar a contagem de fichas.',
           'Um bankroll e uma viagem.',
-          'Exportar uma mão para solver, e o backup completo em .json.',
+          'Exportar uma mão para solver, todas as sessões em CSV e o backup completo em .json.',
         ],
       },
-      'O Pro tira o limite de mãos e adiciona: a gestão do staking (contas e extratos dos backers), o acerto e o histórico dos swaps, o relatório de impostos, o total em várias moedas, vários bankrolls com filtros, as leituras do bankroll (variância, comparação de meses e risco de ruína), o range editável, relatórios PDF e CSV, exportação de várias mãos, viagens ilimitadas e Stories com a sua voz ou o seu rosto e sem marca.',
+      'O Pro tira o limite de mãos e adiciona: a gestão do staking (contas e extratos dos backers), o acerto e o histórico dos swaps, o relatório de impostos, o total em várias moedas, vários bankrolls com filtros, as leituras do bankroll (variância, comparação de meses e risco de ruína), o range editável, o relatório PDF e o CSV por período e das mãos, exportação de várias mãos, viagens ilimitadas e Stories com a sua voz ou o seu rosto e sem marca.',
     ],
   },
   pro: {

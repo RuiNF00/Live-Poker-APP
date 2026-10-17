@@ -208,7 +208,8 @@ export const ES: Record<string, ArticleText> = {
     body: [
       'Una mano: en la página de la mano, toca Exportar al solver y luego Copiar texto o Guardar archivo .txt. El formato hand history se abre en GTO Wizard, PioSolver, Hold’em Manager y PokerTracker. Solo funciona con manos completas.',
       'Varias manos a la vez: selecciónalas en la lista de manos y toca Exportar al solver (Pro).',
-      'Informes: Ajustes → Copia de seguridad → Informe PDF y CSV. Elige el periodo y exporta el informe en PDF, o las sesiones o las manos en CSV (Pro). La copia completa en .json es gratis.',
+      'Todas las sesiones en CSV, gratis: Ajustes → Exportar sesiones en CSV. Se abre en Excel y vuelve a entrar por Importar.',
+      'Informes (Pro): Ajustes → Copia de seguridad → Informe PDF y CSV. Elige un periodo o un bankroll y exporta el PDF, las sesiones o las manos en CSV. La copia completa en .json es gratis.',
     ],
   },
   'erase-all': {
@@ -242,10 +243,10 @@ export const ES: Record<string, ArticleText> = {
           'Crear swaps y registrar resultados.',
           'Compartir tu conteo de fichas.',
           'Un bankroll y un viaje.',
-          'Exportar una mano para solver, y la copia completa en .json.',
+          'Exportar una mano para solver, todas las sesiones en CSV y la copia completa en .json.',
         ],
       },
-      'El Pro quita el límite de manos y añade: la gestión del staking (cuentas y extractos de los backers), el ajuste y el historial de los swaps, el informe de impuestos, el total en varias monedas, varios bankrolls con filtros, las lecturas del bankroll (varianza, comparación de meses y riesgo de ruina), el rango editable, informes PDF y CSV, exportar varias manos, viajes ilimitados y Stories con tu voz o tu cara y sin marca.',
+      'El Pro quita el límite de manos y añade: la gestión del staking (cuentas y extractos de los backers), el ajuste y el historial de los swaps, el informe de impuestos, el total en varias monedas, varios bankrolls con filtros, las lecturas del bankroll (varianza, comparación de meses y riesgo de ruina), el rango editable, el informe PDF y el CSV por periodo y de las manos, exportar varias manos, viajes ilimitados y Stories con tu voz o tu cara y sin marca.',
     ],
   },
   pro: {
