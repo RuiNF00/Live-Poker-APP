@@ -1,7 +1,7 @@
 {
   "name": "sweatbook",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index",
   "dependencies": {
     "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",

@@ -119,7 +119,7 @@ function quarantined(n: number) {
   console.warn('[store] values moved to quarantine', n);
   Alert.alert(
     t('Alguns dados estavam danificados'),
-    t('{n} registo(s) não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n }),
+    (n === 1 ? t('1 registo não pôde ser lido. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.') : t('{n} registos não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n: n })),
   );
 }
 
@@ -208,7 +208,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       boot = null;
       if (!alive) return;
       if (d.quarantined) quarantined(d.quarantined);
-      else if (d.recovered) Alert.alert(t('Dados recuperados'), t('{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered }));
+      else if (d.recovered) Alert.alert(t('Dados recuperados'), (d.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered })));
       if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
       if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
       const w = {
