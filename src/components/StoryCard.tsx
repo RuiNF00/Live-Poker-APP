@@ -3,6 +3,7 @@
 // at 1080×1920. Instagram covers roughly the top and bottom 14% of a story
 // (profile bar, reply box), so nothing important sits there.
 
+import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
@@ -339,9 +340,10 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
                 <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
                   <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 9, color: C.muted }}>{String.fromCharCode(65 + i)}</Text>
                 </View>
-                <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
+                {/* Button width less its padding, letter and gap: "All-in 12 345,67" shrinks instead of being cut. */}
+                <FitText width={(STORY_W - 2 * GUTTER - 8 * (moment.options.length - 1)) / moment.options.length - 12 - 16 - 6} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
                   {o.label}
-                </Text>
+                </FitText>
               </View>
             ))}
           </View>

@@ -3,6 +3,7 @@
 // transparent sticker to lay over a photo of the table. Full cards are laid
 // out at 360×640 points and captured at 1080×1920 like the hand stories.
 
+import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -152,9 +153,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, br
         {lead ? (
           <View style={{ gap: 2 }}>
             <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>{lead.label.toUpperCase()}</Text>
-            <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: numFont(lead), fontSize: 64, lineHeight: 72, color: toneColor(lead.tone, accent, fg), letterSpacing: -2 }}>
-              {lead.value}
-            </Text>
+            <FitText style={{ fontFamily: numFont(lead), fontSize: 64, lineHeight: 72, color: toneColor(lead.tone, accent, fg), letterSpacing: -2 }}>{lead.value}</FitText>
           </View>
         ) : null}
         <View style={{ height: 1, backgroundColor: line }} />
@@ -162,9 +161,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, br
           {rest.map((x) => (
             <View key={x.key} style={{ flex: 1, gap: 4 }}>
               <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{x.label.toUpperCase()}</Text>
-              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontFamily: numFont(x), fontSize: 30, lineHeight: 36, color: toneColor(x.tone, accent, fg) }}>
-                {x.value}
-              </Text>
+              <FitText style={{ fontFamily: numFont(x), fontSize: 30, lineHeight: 36, color: toneColor(x.tone, accent, fg) }}>{x.value}</FitText>
             </View>
           ))}
         </View>
@@ -204,9 +201,7 @@ function SessionSticker({ session: s, stats, hideVenue, brand = true, ref }: Ses
               <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 9, letterSpacing: 1.2, color: C.textDim }}>
                 {x.label.toUpperCase()}
               </Text>
-              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: numFont(x), fontSize: 20, color: toneColor(x.tone, false, C.text) }}>
-                {x.value}
-              </Text>
+              <FitText style={{ fontFamily: numFont(x), fontSize: 20, color: toneColor(x.tone, false, C.text) }}>{x.value}</FitText>
             </View>
           ))}
         </View>
