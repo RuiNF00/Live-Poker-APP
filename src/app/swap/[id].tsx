@@ -8,7 +8,8 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
 
-import { BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
+import { useLocked } from '@/components/ProGate';
+import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
 import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
@@ -138,6 +139,7 @@ function Head({ terms, names }: { terms: Swap['terms']; names: Record<'a' | 'b',
 }
 
 function OwnSwap({ s }: { s: Swap }) {
+  const locked = useLocked('swaps');
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
   const [offline, setOffline] = useState(false);
   const names = swapNames(s);
@@ -217,7 +219,7 @@ function OwnSwap({ s }: { s: Swap }) {
           </Card>
         ) : null}
 
-        {s.confirmedAt ? <BalanceHero l={l} name={them} currency={cur} /> : null}
+        {s.confirmedAt ? locked ? <AccountsLocked /> : <BalanceHero l={l} name={them} currency={cur} /> : null}
 
         {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm}>
@@ -245,7 +247,7 @@ function OwnSwap({ s }: { s: Swap }) {
           <Section title={t('Prémios')} hint={t('Mantém premido um registo teu para o apagar.')}>
             <ListGroup>
               {results.map((e) => (
-                <EntryRow key={e.cid + e.side} swap={s} e={e} onLongPress={() => onEntry(e)} />
+                <EntryRow key={e.cid + e.side} swap={s} e={e} hideOwed={locked} onLongPress={() => onEntry(e)} />
               ))}
             </ListGroup>
           </Section>
@@ -255,14 +257,14 @@ function OwnSwap({ s }: { s: Swap }) {
           <Section title={t('Pagamentos')}>
             <ListGroup>
               {payments.map((e) => (
-                <EntryRow key={e.cid + e.side} swap={s} e={e} onLongPress={() => onEntry(e)} />
+                <EntryRow key={e.cid + e.side} swap={s} e={e} hideOwed={locked} onLongPress={() => onEntry(e)} />
               ))}
             </ListGroup>
           </Section>
         ) : null}
 
         <View style={{ gap: S.sm, marginTop: S.md }}>
-          {s.confirmedAt && !s.gone ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
+          {s.confirmedAt && !s.gone && !locked ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
           {s.confirmedAt ? (
             <Button
               title={s.archived ? t('Tirar do arquivo') : t('Arquivar')}

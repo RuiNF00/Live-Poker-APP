@@ -7,7 +7,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
-import { withPro } from '@/components/ProGate';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
@@ -227,4 +226,4 @@ function NewGroupSwap() {
   );
 }
 
-export default withPro('swaps', t('Swap de grupo'), NewGroupSwap);
+export default NewGroupSwap;

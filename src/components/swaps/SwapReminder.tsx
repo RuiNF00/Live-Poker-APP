@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { useLocked } from '@/components/ProGate';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -22,7 +23,7 @@ import { addGroupPrize, getGroup, onGroupNews, syncAllGroups, useGroups } from '
 import { C, S } from '@/theme';
 
 import { GroupHero, GroupSettle, seatLabel } from './group-parts';
-import { BalanceHero, pctLabel } from './parts';
+import { AccountsLocked, BalanceHero, pctLabel } from './parts';
 
 const ASKED = 'rl.swapAsked.v1';
 /** Only tournaments finished this recently ask: an old one edited later doesn't. */
@@ -31,6 +32,7 @@ const SYNC_EVERY = 2 * 60000;
 
 export function SwapReminder() {
   const { sessions } = useStore();
+  const locked = useLocked('swaps');
   const { ready, swaps } = useSwaps();
   const { ready: gReady, groups } = useGroups();
   const [asked, setAsked] = useState<string[] | null>(null);
@@ -132,7 +134,7 @@ export function SwapReminder() {
                       {pctLabel(sw.terms[sw.side].pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
+                      {locked ? t('Swap com {name}', { name }) : owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
                     </T>
                   </Row>
                 );
@@ -145,7 +147,9 @@ export function SwapReminder() {
                       {pctLabel(g.terms.pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {owe > 0
+                      {locked
+                        ? t('Swap de grupo · {title}', { title: g.terms.title })
+                        : owe > 0
                         ? t('Grupo de {n}: pagas {each} a cada um ({amount})', { n: g.seats.length, each: money(groupShareOf(g, prize), s.currency), amount: money(owe, s.currency) })
                         : t('Grupo de {n}: não deves nada', { n: g.seats.length })}
                     </T>
@@ -168,7 +172,8 @@ export function SwapReminder() {
           </>
         ) : (
           <>
-            {shown.swaps.map((sw0) => {
+            {locked ? <AccountsLocked /> : null}
+            {!locked && shown.swaps.map((sw0) => {
               const sw = getSwap(sw0.id) ?? sw0;
               const name = swapNames(sw)[other(sw.side)];
               return (
@@ -183,7 +188,7 @@ export function SwapReminder() {
                 </View>
               );
             })}
-            {shown.groups.map((g0) => {
+            {!locked && shown.groups.map((g0) => {
               const g = getGroup(g0.id) ?? g0;
               return (
                 <View key={g.id} style={{ gap: S.sm }}>

@@ -75,7 +75,7 @@ export function GroupSettle({ g }: { g: SwapGroup }) {
 }
 
 /** A prize or a payment in the group, with what it means for me. */
-export function GroupEntryRow({ g, e, onLongPress }: { g: SwapGroup; e: GroupEntry; onLongPress?: () => void }) {
+export function GroupEntryRow({ g, e, onLongPress, hideOwed }: { g: SwapGroup; e: GroupEntry; onLongPress?: () => void; hideOwed?: boolean }) {
   const mine = e.seat === g.seat;
   const cur = g.terms.currency;
   const who = seatLabel(g, e.seat);
@@ -99,6 +99,7 @@ export function GroupEntryRow({ g, e, onLongPress }: { g: SwapGroup; e: GroupEnt
           {e.pending ? ` · ${t('por enviar')}` : ''}
         </T>
       </View>
+      {hideOwed && e.kind === 'result' ? null : (
       <View style={{ alignItems: 'flex-end', gap: 1 }}>
         {e.kind === 'result' && value ? (
           <T v="tiny" color={mine ? C.warn : C.good}>
@@ -109,6 +110,7 @@ export function GroupEntryRow({ g, e, onLongPress }: { g: SwapGroup; e: GroupEnt
           {!value ? '—' : e.kind === 'payment' ? money(value, cur) : signed(mine ? -value : value, cur)}
         </T>
       </View>
+      )}
     </PressRow>
   );
 }

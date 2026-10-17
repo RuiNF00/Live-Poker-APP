@@ -9,7 +9,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
 
 import { GroupEntryRow, GroupEntrySheet, GroupHero, GroupSettle, seatLabel, type GroupDraft } from '@/components/swaps/group-parts';
-import { pctLabel } from '@/components/swaps/parts';
+import { useLocked } from '@/components/ProGate';
+import { AccountsLocked, pctLabel } from '@/components/swaps/parts';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, ListGroup, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -145,6 +146,7 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
 }
 
 function OwnGroup({ g }: { g: SwapGroup }) {
+  const locked = useLocked('swaps');
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
   const [offline, setOffline] = useState(false);
   const ready = groupReady(g);
@@ -218,7 +220,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
           </Card>
         ) : null}
 
-        {ready ? <GroupHero g={g} /> : null}
+        {ready ? locked ? <AccountsLocked /> : <GroupHero g={g} /> : null}
 
         {someoneLeft && !g.gone ? (
           <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('Um jogador apagou os dados. As contas ficam como estavam.')} />
@@ -231,7 +233,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
           </Row>
         ) : null}
 
-        {ready ? <GroupSettle g={g} /> : null}
+        {ready && !locked ? <GroupSettle g={g} /> : null}
 
         <Section title={t('Jogadores')}>
           <ListGroup>
@@ -257,7 +259,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
           <Section title={t('Prémios')} hint={t('Mantém premido um registo teu para o apagar.')}>
             <ListGroup>
               {results.map((e) => (
-                <GroupEntryRow key={e.cid + ':' + e.seat} g={g} e={e} onLongPress={() => onEntry(e)} />
+                <GroupEntryRow key={e.cid + ':' + e.seat} g={g} e={e} hideOwed={locked} onLongPress={() => onEntry(e)} />
               ))}
             </ListGroup>
           </Section>
@@ -267,7 +269,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
           <Section title={t('Pagamentos')}>
             <ListGroup>
               {payments.map((e) => (
-                <GroupEntryRow key={e.cid + ':' + e.seat} g={g} e={e} onLongPress={() => onEntry(e)} />
+                <GroupEntryRow key={e.cid + ':' + e.seat} g={g} e={e} hideOwed={locked} onLongPress={() => onEntry(e)} />
               ))}
             </ListGroup>
           </Section>
@@ -280,7 +282,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
         ) : null}
 
         <View style={{ gap: S.sm, marginTop: S.md }}>
-          {ready && g.invite && !g.gone ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
+          {ready && g.invite && !g.gone && !locked ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
           {ready ? (
             <Button
               title={g.archived ? t('Tirar do arquivo') : t('Arquivar')}

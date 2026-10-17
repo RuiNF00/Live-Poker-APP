@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
+import { usePro } from '@/billing/pro';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
@@ -89,6 +90,21 @@ export function Seal({ swap }: { swap: Pick<Swap, 'confirmedAt' | 'confirmedName
   );
 }
 
+/** Settlement is Pro (PRO_ONLY.swaps): the results stay visible, the accounts open the paywall. */
+export function AccountsLocked() {
+  const { paywall } = usePro();
+  return (
+    <Card onPress={() => paywall('swaps')} accessibilityLabel={t('Ver contas')} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+      <Ionicons name="lock-closed" size={20} color={C.accent} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <T v="h3">{t('Ver contas')}</T>
+        <T v="small">{t('Quem deve a quem e quanto, já calculado. Com o Pro.')}</T>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={C.muted} />
+    </Card>
+  );
+}
+
 /** One number and a sentence: who owes whom in this swap. */
 export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string; currency: string }) {
   const square = settled(l);
@@ -123,7 +139,7 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
 }
 
 /** A prize or a payment, with what it means in money for each side. */
-export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; onLongPress?: () => void }) {
+export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: SwapEntry; onLongPress?: () => void; hideOwed?: boolean }) {
   const names = swapNames(swap);
   const mine = e.side === swap.side;
   const cur = swap.terms.currency;
@@ -148,6 +164,7 @@ export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; o
           {e.pending ? ` · ${t('por enviar')}` : ''}
         </T>
       </View>
+      {hideOwed && e.kind === 'result' ? null : (
       <View style={{ alignItems: 'flex-end', gap: 1 }}>
         {e.kind === 'result' ? (
           <T v="tiny" color={mine ? C.warn : C.good}>
@@ -158,6 +175,7 @@ export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; o
           {!owe ? '—' : e.kind === 'payment' ? money(owe, cur) : signed(mine ? -owe : owe, cur)}
         </T>
       </View>
+      )}
     </PressRow>
   );
 }

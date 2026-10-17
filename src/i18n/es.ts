@@ -2461,6 +2461,8 @@ const es: Record<string, string> = {
   "dos prémios do outro jogador": "de los premios del otro jugador",
   "Deves {mine} dos teus prémios · {name} deve {theirs} dos seus": "Debes {mine} de tus premios · {name} debe {theirs} de los suyos",
   "Regista só os teus prémios; {name} regista os seus.": "Registra solo tus premios; {name} registra los suyos.",
+  "Ver contas": "Ver cuentas",
+  "Quem deve a quem e quanto, já calculado. Com o Pro.": "Quién le debe a quién y cuánto, ya calculado. Con Pro.",
 };
 
 export default es;

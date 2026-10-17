@@ -20,7 +20,6 @@ import { useStore } from '@/store/store';
 import { fromRemote, swapNames, type SwapTerms } from '@/store/swaps';
 import { saveSwap, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
-import { withPro } from '@/components/ProGate';
 
 const PCTS = [1, 2, 3, 5, 7.5, 10];
 
@@ -233,4 +232,4 @@ function NewSwap() {
   );
 }
 
-export default withPro('swaps', t('Swaps'), NewSwap);
+export default NewSwap;

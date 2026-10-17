@@ -7,7 +7,7 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { pctLabel, signed } from '@/components/swaps/parts';
+import { AccountsLocked, pctLabel, signed } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -17,7 +17,7 @@ import { syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
-import { withPro } from '@/components/ProGate';
+import { useLocked } from '@/components/ProGate';
 
 function SwapsScreen() {
   const { swaps, ready } = useSwaps();
@@ -49,7 +49,8 @@ function SwapsScreen() {
   const past = swaps.filter((s) => s.archived || s.gone);
   const activeGroups = groups.filter((g) => !g.archived && !g.gone);
   const pastGroups = groups.filter((g) => g.archived || g.gone);
-  const totals = [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= 0.5);
+  const locked = useLocked('swaps');
+  const totals = locked ? [] : [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= 0.5);
   const any = swaps.length + groups.length > 0;
   const newGroup = () => router.push('/swaps/group-new');
 
@@ -99,15 +100,16 @@ function SwapsScreen() {
               ) : (
                 <>
                   <T v="label">{t('Swaps')}</T>
-                  <T v="h1">{tot.open ? t('Tudo acertado') : t('À espera de confirmação')}</T>
+                  <T v="h1">{locked && tot.open ? (tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open })) : tot.open ? t('Tudo acertado') : t('À espera de confirmação')}</T>
                 </>
               )}
               <T v="small">
-                {[tot.open === 1 ? t('1 swap ativo') : tot.open ? t('{n} swaps ativos', { n: tot.open }) : '', tot.pending ? (tot.pending === 1 ? t('1 por confirmar') : t('{n} por confirmar', { n: tot.pending })) : '']
+                {[locked ? '' : tot.open === 1 ? t('1 swap ativo') : tot.open ? t('{n} swaps ativos', { n: tot.open }) : '', tot.pending ? (tot.pending === 1 ? t('1 por confirmar') : t('{n} por confirmar', { n: tot.pending })) : '']
                   .filter(Boolean)
                   .join(' · ')}
               </T>
             </Card>
+            {locked && tot.open ? <AccountsLocked /> : null}
 
             <Row gap={S.sm}>
               <Button title={t('Novo swap')} icon="add" style={{ flex: 1 }} onPress={() => router.push('/swaps/new')} />
@@ -149,10 +151,10 @@ function SwapsScreen() {
               <Section title={t('Ativos')}>
                 <ListGroup>
                   {activeGroups.map((g) => (
-                    <GroupRow key={g.id} g={g} />
+                    <GroupRow key={g.id} g={g} locked={locked} />
                   ))}
                   {active.map((s) => (
-                    <SwapRow key={s.id} s={s} />
+                    <SwapRow key={s.id} s={s} locked={locked} />
                   ))}
                 </ListGroup>
               </Section>
@@ -161,10 +163,10 @@ function SwapsScreen() {
               <Section title={t('Arquivo')}>
                 <ListGroup>
                   {pastGroups.map((g) => (
-                    <GroupRow key={g.id} g={g} />
+                    <GroupRow key={g.id} g={g} locked={locked} />
                   ))}
                   {past.map((s) => (
-                    <SwapRow key={s.id} s={s} />
+                    <SwapRow key={s.id} s={s} locked={locked} />
                   ))}
                 </ListGroup>
               </Section>
@@ -176,7 +178,7 @@ function SwapsScreen() {
   );
 }
 
-function SwapRow({ s }: { s: Swap }) {
+function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
   const names = swapNames(s);
   const them = names[other(s.side)];
   const l = swapLedger(s);
@@ -184,6 +186,8 @@ function SwapRow({ s }: { s: Swap }) {
   const square = settled(l);
   const right = !s.confirmedAt ? (
     <Pill label={s.gone ? t('Apagado') : t('Por confirmar')} color={s.gone ? C.muted : C.warn} />
+  ) : locked ? (
+    <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (
     <View style={{ alignItems: 'flex-end', gap: 1 }}>
       {square ? null : (
@@ -215,7 +219,7 @@ function SwapRow({ s }: { s: Swap }) {
 }
 
 
-function GroupRow({ g }: { g: SwapGroup }) {
+function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
   const ready = groupReady(g);
   const l = groupLedger(g);
   const cur = g.terms.currency;
@@ -223,6 +227,8 @@ function GroupRow({ g }: { g: SwapGroup }) {
   const missing = g.seats.filter((s) => !s.confirmedAt).length;
   const right = !ready ? (
     <Pill label={g.gone ? t('Apagado') : t('Faltam {n}', { n: missing })} color={g.gone ? C.muted : C.warn} />
+  ) : locked ? (
+    <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (
     <View style={{ alignItems: 'flex-end', gap: 1 }}>
       {square ? null : (
@@ -254,4 +260,4 @@ function GroupRow({ g }: { g: SwapGroup }) {
   );
 }
 
-export default withPro('swaps', t('Swaps'), SwapsScreen);
+export default SwapsScreen;
