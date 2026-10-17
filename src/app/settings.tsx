@@ -2,6 +2,7 @@
 // and the legal pages the stores require.
 
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
@@ -93,7 +94,7 @@ export default function SettingsScreen() {
 
         <Section title={t('Mãos que partilhas')} hint={t('Vale para links novos. Uma mão já partilhada fica como estava.')}>
           <ListGroup>
-            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={t('Desligado, aparecem como posições. As tuas alcunhas nunca saem do telemóvel.')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
+            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={settings.shareNames ? t('Os nomes que lhes deste aparecem no link') : t('Aparecem como BTN, SB, BB…')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
             <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
           </ListGroup>
         </Section>
@@ -143,6 +144,7 @@ export default function SettingsScreen() {
         <View style={{ alignItems: 'center', gap: 4, paddingTop: S.sm }}>
           <Wordmark size={18} />
           <T v="tiny">{BRAND.tagline}</T>
+          {Constants.expoConfig?.version ? <T v="tiny" color={C.muted}>{t('Versão {v}', { v: Constants.expoConfig.version })}</T> : null}
         </View>
       </ScrollView>
     </>
