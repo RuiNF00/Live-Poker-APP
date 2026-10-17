@@ -14,3 +14,4 @@ psql -q -d "$DB" -f tests/live_test.sql
 psql -q -d "$DB" -f tests/swaps_test.sql
 psql -q -d "$DB" -f tests/profiles_test.sql
 psql -q -d "$DB" -f tests/coach_test.sql
+psql -q -d "$DB" -f tests/action_offers_test.sql

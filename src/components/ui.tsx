@@ -53,7 +53,7 @@ export function confirmAction(title: string, body: string, okLabel: string, onOk
 
 // ─── Type ────────────────────────────────────────────────────────────────────
 
-type TV =
+export type TV =
   | 'display'
   | 'title'
   | 'h1'

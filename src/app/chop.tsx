@@ -2,10 +2,11 @@
 // shares out. Works offline, no setup.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { Term } from '@/components/Term';
 import { Card, Chip, ChipRow, Divider, NumField, Row, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { chips, money } from '@/poker/format';
@@ -16,9 +17,12 @@ import { C, S } from '@/theme';
 export default function ChopScreen() {
   const { settings, activeSession } = useStore();
   const cur = activeSession?.currency ?? settings.currency;
-  const [n, setN] = useState(3);
-  const [stacks, setStacks] = useState<number[]>(() => [activeSession?.stack || 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-  const [pays, setPays] = useState<number[]>([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  // From tournament mode: players left, your stack and the payouts still to come.
+  const q = useLocalSearchParams<{ n?: string; stack?: string; pays?: string }>();
+  const nine = (list: number[]) => [...list, 0, 0, 0, 0, 0, 0, 0, 0, 0].slice(0, 9);
+  const [n, setN] = useState(() => Math.min(9, Math.max(2, Number(q.n) || 3)));
+  const [stacks, setStacks] = useState<number[]>(() => nine([Number(q.stack) || activeSession?.stack || 0]));
+  const [pays, setPays] = useState<number[]>(() => nine((q.pays ?? '').split(',').map((x) => Number(x) || 0)));
   // The store loads after the first render: fill in your stack once it's there.
   const liveStack = activeSession?.stack ?? 0;
   useEffect(() => {
@@ -61,9 +65,9 @@ export default function ChopScreen() {
                 <T v="label" style={{ flex: 1.3 }}>
                   {t('Jogador')}
                 </T>
-                <T v="label" style={{ flex: 1, textAlign: 'right' }}>
-                  ICM
-                </T>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Term k="ICM" />
+                </View>
                 <T v="label" style={{ flex: 1, textAlign: 'right' }}>
                   {t('Chip chop')}
                 </T>

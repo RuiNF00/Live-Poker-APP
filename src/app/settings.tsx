@@ -6,15 +6,16 @@ import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { manageSubscription } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
 import { Button, Card, Chip, ChipRow, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
-import { t } from '@/i18n';
+import { LANG_KEY, lang, t } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
@@ -26,6 +27,28 @@ import { BRAND, C, F, S } from '@/theme';
 function note(title: string, body?: string) {
   if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
   else Alert.alert(title, body);
+}
+
+/** What support needs to reproduce a bug, and nothing about the player. */
+function bugParams() {
+  return new URLSearchParams({ topic: 'bug', app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang }).toString();
+}
+
+/**
+ * Phones pick the app's language in the system settings (iOS and Android 13+
+ * list it per app), so the row takes you there. On the web it flips here.
+ */
+function switchLanguage() {
+  if (Platform.OS !== 'web') {
+    Linking.openSettings().catch(() => {});
+    return;
+  }
+  try {
+    localStorage.setItem(LANG_KEY, lang === 'pt' ? 'en' : 'pt');
+    location.reload();
+  } catch {
+    // Storage blocked: nothing to remember the choice in.
+  }
 }
 
 export default function SettingsScreen() {
@@ -114,6 +137,7 @@ export default function SettingsScreen() {
           </Card>
           <ListGroup>
             <ToggleItem icon="calculator-outline" title={t('Valores em big blinds')} subtitle={t('Nas mãos, em vez de fichas')} value={settings.inBB} onChange={(inBB) => setSettings({ inBB })} />
+            <ListItem icon="language-outline" title={t('Idioma')} subtitle={lang === 'pt' ? 'Português' : 'English'} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
           </ListGroup>
         </Section>
 
@@ -143,6 +167,7 @@ export default function SettingsScreen() {
 
         <Section title={t('Ferramentas')}>
           <ListGroup>
+            <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
             <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
             <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
             <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
@@ -151,18 +176,33 @@ export default function SettingsScreen() {
           <InviteCodeField />
         </Section>
 
-        <Section title={t('Conta')}>
+        <Section title={t('Subscrição')}>
           <ListGroup>
-            {pro.isPro ? <ListItem icon="flash-outline" iconColor={C.accent} title={t('A tua subscrição')} subtitle="Sweatbook Pro" onPress={() => router.push('/cancel')} /> : null}
+            <ListItem
+              icon="card-outline"
+              iconColor={pro.isPro ? C.accent : undefined}
+              title={t('Gerir subscrição')}
+              subtitle={pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              onPress={() => (pro.isPro ? router.push('/cancel') : manageSubscription())}
+            />
             <ListItem
               icon="refresh-outline"
               title={t('Restaurar compras')}
+              subtitle={t('Já pagaste noutro telemóvel')}
               onPress={async () => {
                 const ok = await pro.restore();
                 note(ok ? t('Pro restaurado') : t('Não encontrámos compras nesta conta da loja.'));
               }}
             />
-            <ListItem icon="help-buoy-outline" title={t('Ajuda e contacto')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
+          <ListGroup>
+            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?topic=suggestion`)} />
+            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${bugParams()}`)} />
+            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
+            <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
           </ListGroup>

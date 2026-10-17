@@ -1,4 +1,5 @@
 import type { Statement } from '@/lib/backing-link';
+import type { Tourney } from '@/poker/tourney';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
 export interface Session {
@@ -20,8 +21,12 @@ export interface Session {
   cashOut: number;
   finish?: number;
   field?: number;
-  /** Travel, hotel, tips: comes off your result. */
+  /** Travel, hotel, food: comes off your result. */
   expenses?: number;
+  /** Dealer tips: off your result like expenses, with their own total. */
+  tips?: number;
+  /** Hands dealt to you, when the player counts them (for hands per hour). */
+  handsDealt?: number;
   /** Action sold, in total: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%).
    *  Kept as the summary of `stakes` so older copies of the app still read it. */
   staking?: { sold: number; markup: number };
@@ -53,6 +58,8 @@ export interface Session {
   notes: string;
   /** How it went, tapped when ending: focus, tilt, table. */
   tags?: string[];
+  /** Tournament mode: blind structure, field and payouts (see poker/tourney.ts). */
+  tourney?: Tourney;
   /** Tournament day this session is on, when past Day 1 (see store/multi-day.ts). */
   day?: number;
   /** Set when a tournament day ended with chips in the bag: the session waits for its next day. */

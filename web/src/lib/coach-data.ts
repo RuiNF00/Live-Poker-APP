@@ -58,3 +58,31 @@ export function expiryFrom(days: unknown, now = Date.now()): string | null {
   if (typeof days !== 'number' || !Number.isFinite(days) || days <= 0) return null;
   return new Date(now + Math.min(365, Math.max(1, Math.round(days))) * 86400000).toISOString();
 }
+
+/**
+ * Second line of defence behind the app's publicHand(): private fields never reach the coach even if a
+ * client sends them. Names follow the player's sharing setting and notes are a choice on the send screen,
+ * so both stay as sent.
+ */
+export function stripPrivate(hand: unknown): unknown {
+  if (!hand || typeof hand !== 'object' || Array.isArray(hand)) return hand;
+  const { sessionId: _s, shareId: _i, shareToken: _t, voiceNote: _v, folders: _f, ...rest } = hand as Record<string, unknown>;
+  if (Array.isArray(rest.players)) {
+    rest.players = rest.players.map((p) => {
+      if (!p || typeof p !== 'object') return p;
+      const { playerId: _p, ...q } = p as Record<string, unknown>;
+      return q;
+    });
+  }
+  return rest;
+}
+
+/** Biggest request the coach API reads: 50 hands of 64 KB, plus room. Comments are far smaller. */
+export const MAX_CREATE_BYTES = 3_500_000;
+export const MAX_COMMENT_BYTES = 16_000;
+
+/** True when the declared body is too big to read. */
+export function tooBig(req: Request, max: number): boolean {
+  const n = Number(req.headers.get('content-length') ?? 0);
+  return Number.isFinite(n) && n > max;
+}

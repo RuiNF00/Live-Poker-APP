@@ -2,6 +2,8 @@
 // (standard deviation) and what that spread means over the next N hours or
 // tournaments. Pure, so it can be tested.
 
+import { t } from '@/i18n';
+
 import { cost, mainCurrency, playedMs, profit } from './session-math';
 import type { Session } from './types';
 
@@ -153,4 +155,42 @@ export function bestWeekday(list: Session[]): { day: number; profit: number; ses
     if (a.sessions >= 2 && a.profit > 0 && (!best || a.profit > best.profit)) best = { day, ...a };
   });
   return best;
+}
+
+/** Cash hours and tournaments needed before the verdict says anything. */
+export const VERDICT_MIN = { cashHours: 100, cashSessions: 20, tournaments: 50 };
+
+export interface Verdict {
+  /** False: still watching (sample too small). */
+  ready: boolean;
+  tone: 'good' | 'bad' | 'neutral';
+  text: string;
+}
+
+/**
+ * One sentence on whether the player wins, said only when the sample can
+ * carry it: the win rate has to stay on one side of zero at 95% one-sided
+ * (rate ± 1.645 standard errors). Cash by the hour; tournaments by ROI.
+ */
+export function verdict(list: Session[], currency: string, money: (n: number) => string): Verdict {
+  const done = list.filter((s) => s.endedAt && s.currency === currency);
+  const cash = cashStats(done, currency);
+  const mtt = mttStats(done, currency);
+  if (cash && cash.hours >= VERDICT_MIN.cashHours && cash.sessions >= VERDICT_MIN.cashSessions) {
+    const se = cash.sdHour / Math.sqrt(cash.hours);
+    const h = Math.round(cash.hours);
+    const rate = money(Math.round(cash.hourly));
+    if (cash.hourly - 1.645 * se > 0) return { ready: true, tone: 'good', text: t('Ganhas cerca de {rate}/h em cash, e com {h} h já não é sorte.', { rate, h }) };
+    if (cash.hourly + 1.645 * se < 0) return { ready: true, tone: 'bad', text: t('Perdes cerca de {rate}/h em cash, e com {h} h já não é azar.', { rate: money(Math.round(-cash.hourly)), h }) };
+    return { ready: true, tone: 'neutral', text: t('Com {h} h de cash, os teus {rate}/h ainda cabem na variância: nem dá para dizer que ganhas, nem que perdes.', { rate, h }) };
+  }
+  if (mtt && mtt.tournaments >= VERDICT_MIN.tournaments) {
+    const se = (mtt.sdBuyIns * 100) / Math.sqrt(mtt.tournaments);
+    const n = mtt.tournaments;
+    const roi = `${Math.round(mtt.roi)}%`;
+    if (mtt.roi - 1.645 * se > 0) return { ready: true, tone: 'good', text: t('Ganhas nos torneios: ROI de {roi} em {n} torneios, e já não é sorte.', { roi, n }) };
+    if (mtt.roi + 1.645 * se < 0) return { ready: true, tone: 'bad', text: t('Perdes nos torneios: ROI de {roi} em {n} torneios, e já não é azar.', { roi, n }) };
+    return { ready: true, tone: 'neutral', text: t('Com {n} torneios, um ROI de {roi} ainda cabe na variância dos torneios.', { roi, n }) };
+  }
+  return { ready: false, tone: 'neutral', text: t('Ainda a observar ({n} sessões): o veredito aparece com 100 h de cash ou 50 torneios.', { n: done.length }) };
 }

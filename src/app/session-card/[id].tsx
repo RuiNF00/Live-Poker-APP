@@ -24,13 +24,14 @@ const LOOK_NAME: Record<CardStyle, string> = { noite: t('Noite'), brasa: t('Bras
 
 export default function SessionCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sessions, hands } = useStore();
+  const { sessions, hands, settings } = useStore();
   const s = sessions.find((x) => x.id === id);
   const pro = usePro();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [page, setPage] = useState(0);
-  const [hideMoney, setHideMoney] = useState(false);
+  // Privacy mode on: the card starts without amounts, so a result is never shared by accident.
+  const [hideMoney, setHideMoney] = useState(!!settings.hideAmounts);
   const [brand, setBrand] = useState(true);
   const [showMilestone, setShowMilestone] = useState(true);
   const [busy, setBusy] = useState(false);
