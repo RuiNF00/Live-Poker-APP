@@ -9,7 +9,7 @@ export EXPO_ASC_API_KEY_PATH=…/AuthKey_XXXX.p8 EXPO_ASC_KEY_ID=… EXPO_ASC_IS
 git checkout claude/live-poker-app-mvp-kdke3g && npm ci
 eas build --platform ios --profile testflight --non-interactive --auto-submit-with-profile testflight
 ```
-- With the App Store Connect API key, EAS creates the distribution certificate and provisioning profile itself, with no Apple ID login. Without the key, run it once interactively (`eas build -p ios --profile testflight`) and sign in with the Apple ID when it asks.
+- With the App Store Connect API key (role **Admin**), EAS creates the distribution certificate, the App Group `group.com.ruinf.sweatbook` and the provisioning profiles for the app and for the Live Activity extension `com.ruinf.sweatbook.ExpoWidgetsTarget` (PR #28) itself, with no Apple ID login. If it asks to sync capabilities or create the profile for the second target, answer yes. Without the key, run it once interactively (`eas build -p ios --profile testflight`) and sign in with the Apple ID when it asks.
 - Free plan: the build waits in the queue (it can take some time) and the iOS build takes about 15-25 min. Then `--auto-submit` sends it to TestFlight.
 - Prerequisite: the App Store Connect app record created with bundle `com.ruinf.sweatbook` (step 14).
 
