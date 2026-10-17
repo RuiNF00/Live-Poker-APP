@@ -43,6 +43,8 @@ export interface ActionOffer {
   events: string[];
   markup: number;
   lines: PackageLine[];
+  /** Events the player said they didn't play (asked a day after an event with no session). */
+  skipped?: string[];
   createdAt: number;
   updatedAt?: number;
 }
@@ -137,11 +139,17 @@ export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: st
   return out;
 }
 
-/** An event of the package with no session a day after it started: not played, so it isn't charged. */
-const MISSED_AFTER = 24 * 3600e3;
+/** A day after an event starts with no session, the player is asked whether they played it. */
+const ASK_AFTER = 24 * 3600e3;
 
-function missed(f: Festival, e: FestivalEvent, started: Record<string, string>, now: number): boolean {
-  return !started[e.id] && venueTime(f, e.start) + MISSED_AFTER < now;
+/** Not played: the player said so and no session carries it. Never inferred. */
+function missed(o: ActionOffer, e: FestivalEvent, started: Record<string, string>): boolean {
+  return !started[e.id] && !!o.skipped?.includes(e.id);
+}
+
+/** Events that went by with no session and no answer yet: "Não jogaste o Evento X?". */
+export function unanswered(f: Festival, o: ActionOffer, started: Record<string, string>, now = Date.now()): FestivalEvent[] {
+  return offerEvents(f, o).filter((e) => !started[e.id] && !o.skipped?.includes(e.id) && venueTime(f, e.start) + ASK_AFTER < now);
 }
 
 /** One backer's piece of one event: its cost at the markup. */
@@ -153,28 +161,28 @@ function eventPiece(o: ActionOffer, e: FestivalEvent, pct: number): number {
  * What a backer still owes for a piece no session carries yet: the events of the
  * package not started, at the piece's cost. Once a session starts, its stake
  * (unpaid until the line is marked paid) carries that event instead. Events
- * that went by with no session weren't played and aren't charged.
+ * the player said they didn't play aren't charged.
  */
-export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, now = Date.now()): number {
+export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
   if (line.paid) return 0;
   return r2(
     offerEvents(f, o)
-      .filter((e) => !started[e.id] && !missed(f, e, started, now))
+      .filter((e) => !started[e.id] && !missed(o, e, started))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
 
-/** A paid piece of events that went by with no session: the player gives that money back. */
-export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, now = Date.now()): number {
+/** A paid piece of events the player said they didn't play: that money goes back to the backer. */
+export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
   if (!line.paid) return 0;
   return r2(
     offerEvents(f, o)
-      .filter((e) => missed(f, e, started, now))
+      .filter((e) => missed(o, e, started))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
 
-export type SettlementState = 'cashed' | 'busted' | 'live' | 'upcoming' | 'missed';
+export type SettlementState = 'cashed' | 'busted' | 'live' | 'upcoming' | 'waiting' | 'missed';
 
 export interface SettlementRow {
   event: FestivalEvent;
@@ -200,12 +208,14 @@ export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, s
       const prize = s.endedAt ? stakePrize(s, x) : 0;
       return { event: e, state: !s.endedAt ? 'live' : prize > 0 ? 'cashed' : 'busted', cost: stakeCost(s, x), prize };
     }
-    if (missed(f, e, started, now)) return { event: e, state: 'missed', cost: 0, prize: 0 };
-    return { event: e, state: 'upcoming', cost: eventPiece(o, e, line.pct), prize: 0 };
+    if (missed(o, e, started)) return { event: e, state: 'missed', cost: 0, prize: 0 };
+    // Gone by with no session and no answer yet: still charged, until the player says.
+    const waiting = venueTime(f, e.start) + ASK_AFTER < now;
+    return { event: e, state: waiting ? 'waiting' : 'upcoming', cost: eventPiece(o, e, line.pct), prize: 0 };
   });
   const prizes = r2(rows.reduce((a, r) => a + r.prize, 0));
   const cost = r2(rows.reduce((a, r) => a + r.cost, 0));
-  const refund = missedRefund(f, o, line, started, now);
+  const refund = missedRefund(f, o, line, started);
   return {
     rows,
     prizes,
@@ -213,10 +223,12 @@ export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, s
     paid: !!line.paid,
     refund,
     net: r2(prizes + refund - (line.paid ? 0 : cost)),
-    /** Every event ended or not played: the numbers won't change. */
+    /** Every event ended or not played (as the player said): the numbers won't change. */
     done: rows.every((r) => r.state === 'cashed' || r.state === 'busted' || r.state === 'missed'),
     live: rows.filter((r) => r.state === 'live').length,
     upcoming: rows.filter((r) => r.state === 'upcoming').length,
+    /** Events gone by with no session that the player hasn't answered for yet. */
+    waiting: rows.filter((r) => r.state === 'waiting').length,
   };
 }
 

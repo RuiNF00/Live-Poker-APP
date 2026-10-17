@@ -1037,6 +1037,11 @@ const ptBR: Record<string, string> = {
   'prémio {amount}': 'prêmio {amount}',
   'sem prémio': 'sem prêmio',
   'Prémios da parte': 'Prêmios da parte',
+  'Não jogaste o {event}?': 'Você não jogou o {event}?',
+  'Não há sessão registada. As contas deste torneio ficam à espera até responderes.': 'Não há sessão registrada. As contas deste torneio ficam esperando até você responder.',
+  'Joguei, registar resultado': 'Joguei, registrar resultado',
+  'à espera': 'esperando',
+  '{n} à espera de resposta': '{n} esperando resposta',
 };
 
 export default ptBR;

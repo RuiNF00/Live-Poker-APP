@@ -2389,6 +2389,12 @@ const es: Record<string, string> = {
   'Custo da parte (por pagar)': 'Costo de la parte (por pagar)',
   'Não jogados (devolver)': 'No jugados (devolver)',
   'Abre as contas com este backer': 'Abre las cuentas con este backer',
+  'Não jogaste o {event}?': '¿No jugaste el {event}?',
+  'Não há sessão registada. As contas deste torneio ficam à espera até responderes.': 'No hay sesión registrada. Las cuentas de este torneo quedan en espera hasta que respondas.',
+  'Joguei, registar resultado': 'Jugué, registrar resultado',
+  'Não joguei': 'No jugué',
+  'à espera': 'en espera',
+  '{n} à espera de resposta': '{n} esperando tu respuesta',
 };
 
 export default es;

@@ -2414,6 +2414,12 @@ const en: Record<string, string> = {
   'Custo da parte (por pagar)': 'Cost of the piece (not paid)',
   'Não jogados (devolver)': 'Not played (give back)',
   'Abre as contas com este backer': 'Opens your accounts with this backer',
+  'Não jogaste o {event}?': "Didn't play {event}?",
+  'Não há sessão registada. As contas deste torneio ficam à espera até responderes.': "No session logged. This event's accounts wait until you answer.",
+  'Joguei, registar resultado': 'I played, log the result',
+  'Não joguei': "I didn't play",
+  'à espera': 'waiting',
+  '{n} à espera de resposta': '{n} waiting for your answer',
 };
 
 export default en;

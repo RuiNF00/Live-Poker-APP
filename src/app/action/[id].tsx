@@ -10,13 +10,15 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { Sheet } from '@/components/BankrollSheets';
+import { blankSession, SessionForm } from '@/components/SessionForm';
 import { markupLabel } from '@/components/staking/sheets';
 import { balanceLabel } from '@/components/staking/use-staking';
 import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
-import { eventTitle, FESTIVALS, venueTime } from '@/poker/festivals';
+import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, shortDate } from '@/poker/format';
 import {
   MARKUPS,
@@ -30,6 +32,7 @@ import {
   offerPackageIds,
   offerTotals,
   stakesFor,
+  unanswered,
   updateLine,
   updateOffer,
   useOffers,
@@ -39,8 +42,9 @@ import {
   type PackageLine,
   type SettlementState,
 } from '@/store/action-offer';
-import { festivalName, useFestivalPlan } from '@/store/festival-plan';
+import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
 import { uid, useStore } from '@/store/store';
+import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 const pct = (n: number) => `${String(n).replace('.', ',')}%`;
@@ -56,6 +60,7 @@ export default function ActionPackageScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [logging, setLogging] = useState<FestivalEvent | null>(null);
 
   // Confirmations come from the links: check the ones still waiting whenever the screen shows.
   const waiting = (o?.lines ?? []).filter((l) => l.remote && !l.confirmedAt).map((l) => `${l.id}:${l.remote!.id}`).join(',');
@@ -100,6 +105,19 @@ export default function ActionPackageScreen() {
   // Once the first event is played (or goes by), where each backer stands on the festival.
   const settled = o.lines.map((l) => ({ l, st: lineSettlement(f, o, l, plan.sessions, sessions) }));
   const underway = settled.some(({ st }) => st.rows.some((r) => r.state !== 'upcoming'));
+  // Gone by with no session: asked, never assumed (a forgotten session would leave the accounts wrong).
+  const ask = o.lines.length ? unanswered(f, o, plan.sessions) : [];
+  const notPlayed = (e: FestivalEvent) => {
+    tap('select');
+    updateOffer(o.id, (x) => ({ ...x, skipped: [...(x.skipped ?? []).filter((y) => y !== e.id), e.id] }));
+  };
+  // "Joguei": log it as a past session of that event, with the package's stakes, and link it to the plan.
+  const logPlayed = (s: Session) => {
+    if (!logging) return;
+    saveSession(s);
+    updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(logging.id) ? p.picked : [...p.picked, logging.id], sessions: { ...p.sessions, [logging.id]: s.id } }));
+    setLogging(null);
+  };
 
   const sendSettlement = async (l: PackageLine, st: LineSettlement) => {
     tap('medium');
@@ -242,9 +260,17 @@ export default function ActionPackageScreen() {
           </Row>
         </Card>
 
-        {underway ? (
+        {underway || ask.length ? (
           <Section title={t('Contas do festival')}>
             <View style={{ gap: S.sm }}>
+              {ask.map((e) => (
+                <Card key={e.id} tone="raised" style={{ gap: S.sm }}>
+                  <T v="h3">{t('Não jogaste o {event}?', { event: eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '') })}</T>
+                  <T v="small">{t('Não há sessão registada. As contas deste torneio ficam à espera até responderes.')}</T>
+                  <Button size="md" icon="create-outline" title={t('Joguei, registar resultado')} onPress={() => setLogging(e)} />
+                  <Button size="md" kind="secondary" title={t('Não joguei')} onPress={() => notPlayed(e)} />
+                </Card>
+              ))}
               {settled.map(({ l, st }) => (
                 <SettleCard key={l.id} name={nameOf(l)} st={st} cur={f.currency} onOpen={() => router.push(`/staking/${l.backerId}`)} onSend={() => void sendSettlement(l, st)} />
               ))}
@@ -355,6 +381,20 @@ export default function ActionPackageScreen() {
           {t('Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.')}
         </T>
       </Screen>
+
+      <Sheet visible={!!logging} title={t('Sessão passada')} onClose={() => setLogging(null)}>
+        {logging ? (
+          <SessionForm
+            key={logging.id}
+            past
+            initial={pastSession(f, logging, settings.defaultTableSize, uid('s_'))}
+            recentNames={[]}
+            recentVenues={[]}
+            submitLabel={t('Guardar sessão')}
+            onSubmit={logPlayed}
+          />
+        ) : null}
+      </Sheet>
     </>
   );
 }
@@ -393,12 +433,28 @@ function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: st
   );
 }
 
+/** A past session of a festival event, at its start time, with the package's stakes on it. */
+function pastSession(f: Festival, e: FestivalEvent, tableSize: number, id: string): Session {
+  const startedAt = venueTime(f, e.start);
+  return {
+    ...blankSession('mtt', f.currency, tableSize),
+    id,
+    name: eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : ''),
+    venue: `${f.venue}, ${f.city.split(',')[0]}`,
+    buyIn: e.buyIn,
+    stakes: stakesFor(getOffers(), f.id, e.id),
+    startedAt,
+    endedAt: startedAt + 6 * 3600e3,
+  };
+}
+
 /** One event of a backer's piece, in words: "prémio 1 200$", "sem prémio", "a decorrer"... */
 function rowLabel(state: SettlementState, prize: number, cur: string): string {
   if (state === 'cashed') return t('prémio {amount}', { amount: money(prize, cur) });
   if (state === 'busted') return t('sem prémio');
   if (state === 'live') return t('a decorrer');
   if (state === 'missed') return t('não joguei');
+  if (state === 'waiting') return t('à espera');
   return t('por jogar');
 }
 
@@ -406,7 +462,13 @@ function SettleCard({ name, st, cur, onOpen, onSend }: { name: string; st: LineS
   const bal = balanceLabel(st.net, cur);
   const status = st.done
     ? t('Todos os torneios fechados')
-    : [st.live ? t('{n} a decorrer', { n: st.live }) : '', st.upcoming ? t('{n} por jogar', { n: st.upcoming }) : ''].filter(Boolean).join(' · ');
+    : [
+        st.waiting ? t('{n} à espera de resposta', { n: st.waiting }) : '',
+        st.live ? t('{n} a decorrer', { n: st.live }) : '',
+        st.upcoming ? t('{n} por jogar', { n: st.upcoming }) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
   const lines: [string, string][] = [
     [t('Prémios da parte'), money(st.prizes, cur)],
     [st.paid ? t('Custo da parte (pago)') : t('Custo da parte (por pagar)'), (st.paid ? '' : '−') + money(st.cost, cur)],
