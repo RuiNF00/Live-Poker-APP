@@ -1,0 +1,10 @@
+-- More funnel events (launch/metricas-lancamento.md §3): import_done was sent
+-- but rejected; session_started/closed, notify_permission and replay_opened are
+-- new. Names only: the props carry no money amounts and nothing personal.
+alter table public.app_events drop constraint if exists app_events_event_check;
+alter table public.app_events add constraint app_events_event_check check (event in (
+  'app_open', 'hand_saved', 'limit_hit', 'paywall_shown', 'purchase', 'share_created', 'story_shared',
+  'share_viewed', 'store_click', 'landing_view', 'link_shared', 'link_opened', 'invite_claimed', 'cancel_flow',
+  'onboarding_step', 'paywall_closed', 'trial_start', 'lifetime_offer_shown', 'lifetime_purchased',
+  'import_done', 'session_started', 'session_closed', 'notify_permission', 'replay_opened'
+));

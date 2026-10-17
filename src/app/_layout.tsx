@@ -25,7 +25,7 @@ import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { TrialFollowUp } from '@/components/TrialFollowUp';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
-import { track } from '@/lib/events';
+import { track, watchResume } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
 import { HomeWidgetSync } from '@/lib/home-widget';
 import { useReduceMotion } from '@/lib/motion';
@@ -67,6 +67,7 @@ export default function RootLayout() {
   useEffect(() => {
     track('app_open');
     bootReferrals().catch(() => {});
+    return watchResume();
   }, []);
   if (!loaded && !error) return null;
   return (
