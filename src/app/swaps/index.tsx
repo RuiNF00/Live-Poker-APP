@@ -89,8 +89,7 @@ function SwapsScreen() {
                 ))
               ) : (
                 <>
-                  {/* With only archived swaps the heading is "Swaps" itself: no eyebrow repeating it. */}
-                  {tot.open || tot.pending ? <T v="label">{t('Swaps')}</T> : null}
+                  {/* No "Swaps" eyebrow: the screen title already says it. */}
                   <T v="h1">{locked && tot.open ? (tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open })) : tot.open ? t('Tudo acertado') : tot.pending ? t('À espera de confirmação') : t('Swaps')}</T>
                 </>
               )}

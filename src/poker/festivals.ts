@@ -3,7 +3,7 @@
 // include the fee, times are local to the venue. When a schedule changes,
 // update the rows and `source.checked` together.
 
-import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
+import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
 
 export interface FestivalEvent {
   /** Stable across app versions: plans and sessions point at it. */
@@ -27,6 +27,8 @@ export interface FestivalEvent {
   /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
   stack?: number;
   levelMinutes?: number;
+  /** Registration closes this many minutes after the start, when the organiser publishes it. */
+  lateRegMin?: number;
 }
 
 export interface Festival {
@@ -582,6 +584,7 @@ export const FESTIVALS: Festival[] = [
   ESPINHO_DEC_2026,
   PRAGUE_DEC_2026,
   PUNTA_DEL_ESTE_DEC_2026,
+  PUNTA_CANA_JAN_2027,
 ];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */

@@ -82,8 +82,10 @@ export default function ExportScreen() {
 
   const pdf = () =>
     run('pdf', true, () => sharePdf(`sweatbook-relatorio-${stamp}.pdf`, reportHtml(report, { player: settings.nickname || undefined, tax })));
+  // The whole history as CSV is free (the same file Definições exports); a period or one bankroll is Pro.
+  const fullHistory = period === 'all' && !scope;
   const sessionsFile = () =>
-    run('sessions', true, () => {
+    run('sessions', !fullHistory, () => {
       const list = report.currencies.flatMap((c) => c.sessions);
       const tx = transfers.filter((x) => (!ids || ids.has(x.bankrollId)) && inRange(x.at, range));
       const spent = trips.flatMap((trip) => trip.expenses.filter((x) => inRange(x.at, range)).map((x) => ({ trip, x })));
@@ -151,7 +153,7 @@ export default function ExportScreen() {
         <Section title={t('Exportar')}>
           <ListGroup>
             <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')} right={lock} onPress={pdf} />
-            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')} right={lock} onPress={sessionsFile} />
+            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
             <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={t('Posição, cartas, board, resultado, tags e notas')} right={lock} onPress={handsFile} />
             <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')} onPress={backup} />
           </ListGroup>

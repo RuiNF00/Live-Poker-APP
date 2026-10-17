@@ -5,8 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { cancelReasons, logged, scrubNote, type CancelReason } from '@/billing/cancel';
-import { annualSavingPct, formatPrice, perMonth, RETENTION } from '@/billing/plans';
+import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
+import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } from '@/billing/purchases';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
@@ -29,6 +29,7 @@ export default function Cancel() {
   const [willRenew, setWillRenew] = useState<boolean | null>(null);
   const [offer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<Offer>(null);
+  const [seen, setSeen] = useState<CancelOffer[] | null>(null);
   // The reason shows only when there's a one-time Pro in the store to offer for it.
   const CANCEL_REASONS = cancelReasons(!!lifetime);
   const [note, setNote] = useState('');
@@ -43,11 +44,19 @@ export default function Cancel() {
       setPlan(s?.plan ?? null);
       setWillRenew(s?.willRenew ?? null);
     });
-    lifetimeOffer().then(setLifetime);
+    // Each offer shows once ever: on a later visit only the plain way out is left.
+    offersSeen().then((s) => {
+      setSeen(s);
+      if (!s.includes('lifetime')) lifetimeOffer().then(setLifetime);
+    });
   }, []);
   useEffect(() => {
-    if (reason === 'bankroll') retentionOffer(plans).then(setOffer);
-  }, [reason, plans]);
+    if (seen && !seen.includes('discount')) retentionOffer(plans).then(setOffer);
+  }, [seen, plans]);
+  useEffect(() => {
+    if (reason === 'bankroll' && offer) void markOfferSeen('discount');
+    if (reason === 'noSubscription' && lifetime) void markOfferSeen('lifetime');
+  }, [reason, offer, lifetime]);
 
   // Lifetime is judged on long-term revenue: who saw it, from which plan, and
   // whether the subscription was still set to renew (i.e. they were about to cancel).
@@ -67,10 +76,9 @@ export default function Cancel() {
   };
   const result = (res: string, what: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: what, result: res });
-    if (res === 'ok') {
-      notice(t('Feito'), t('O teu Pro continua.'));
-      router.back();
-    } else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    // The store's own sheet already confirmed it: straight back, no extra alert.
+    if (res === 'ok') router.back();
+    else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
   // Pro for good, but the subscription is still running: send them to the store to stop it.
   const lifetimeResult = (res: string) => {
@@ -150,10 +158,10 @@ export default function Cancel() {
               {reason === 'notPlaying' ? (
                 Platform.OS === 'android' ? (
                   <OfferCard icon="pause" title={t('Pausa até {n} meses', { n: RETENTION.pauseMonths })} body={t('Na Google Play, em vez de cancelar. Voltas com tudo como deixaste.')}>
-                    <Button title={t('Pausar na Google Play')} onPress={toStore} />
+                    <Button kind="secondary" title={t('Pausar na Google Play')} onPress={toStore} />
                   </OfferCard>
                 ) : (
-                  <OfferCard icon="bookmark" title={t('O teu caderno espera por ti')} body={t('Quando voltares, o Pro volta com tudo. Mãos, sessões e bankroll ficam.')} />
+                  <OfferCard icon="bookmark" title={t('Fica tudo guardado')} body={t('Quando voltares, o Pro volta com tudo. Mãos, sessões e bankroll ficam.')} />
                 )
               ) : null}
 
@@ -161,13 +169,13 @@ export default function Cancel() {
                 <>
                   {offer ? (
                     <OfferCard icon="pricetag" title={t('−{pct}% durante {n} meses', { pct: RETENTION.discount.pct, n: RETENTION.discount.months })} body={monthly ? t('{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.', { price: offer.priceString, n: RETENTION.discount.months, monthly: monthly.priceString }) : t('{price} por mês. Depois, o preço normal.', { price: offer.priceString })}>
-                      <Button title={t('Aceitar a oferta')} onPress={async () => result(await offer.buy(), 'discount')} />
+                      <Button kind="secondary" title={t('Aceitar a oferta')} onPress={async () => result(await offer.buy(), 'discount')} />
                     </OfferCard>
                   ) : null}
                   {toAnnual ? (
                     <OfferCard
                       icon="calendar"
-                      title={t('Anual: {price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
+                      title={t('Anual: {price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
                       body={t('{price} por ano, −{pct}% face ao mensal.', { price: annual.priceString, pct: monthly ? annualSavingPct(monthly.price, annual.price) : 0 })}>
                       <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual'), 'annual')} />
                     </OfferCard>
@@ -179,7 +187,7 @@ export default function Cancel() {
               {reason === 'noSubscription' ? (
                 lifetime ? (
                   <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
-                    <Button title={t('Comprar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
+                    <Button kind="secondary" title={t('Comprar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
                   </OfferCard>
                 ) : (
                   <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} />
@@ -207,14 +215,15 @@ export default function Cancel() {
                 )
               ) : null}
 
-              <Button title={t('Ficar com o Pro')} onPress={keep} />
+              <Button kind="ghost" title={t('Ficar com o Pro')} onPress={keep} />
             </View>
           )}
         </ScrollView>
 
         {/* Cancelling is never hidden or blocked: the store's page is one tap away on every step. */}
         <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm, paddingBottom: insets.bottom + S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
-          <Button kind="ghost" title={t('Cancelar na {store}', { store })} onPress={toStore} />
+          {/* Same weight as any offer above it (store rules: the way out is never the faint option). */}
+          <Button kind="secondary" title={reason ? t('Continuar a cancelar na {store}', { store }) : t('Cancelar na {store}', { store })} onPress={toStore} lines={2} />
           {/* Charged twice, or Pro missing after a reinstall: the fixes are here too, not only in Settings. */}
           <Row gap={S.lg} style={{ justifyContent: 'center', paddingTop: S.xs }}>
             <Pressable onPress={onRestore} hitSlop={8} accessibilityRole="button">

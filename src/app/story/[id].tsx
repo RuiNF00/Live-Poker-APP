@@ -146,10 +146,6 @@ export default function StoryScreen() {
   const postVideo = async () => {
     tap('medium');
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     setBusy(true);
     try {
       // The link is made on the server while the frames are captured, not before.
@@ -213,10 +209,6 @@ export default function StoryScreen() {
     tap('medium');
     // A story creates the hand's public link, so it counts as the free plan's daily share.
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     setBusy(true);
     try {
       let shareId: string;
@@ -273,10 +265,6 @@ export default function StoryScreen() {
   // The hand's public link, made once (it counts as the free plan's daily share).
   const linkFor = async (channel: 'x' | 'whatsapp' | 'link'): Promise<{ link: string; shareId: string; ref: string } | null> => {
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return null;
-    }
     let shareId: string;
     try {
       shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });

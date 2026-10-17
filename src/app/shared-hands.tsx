@@ -9,7 +9,10 @@ import { Linking, ScrollView, View } from 'react-native';
 import { CardRow } from '@/components/PlayingCard';
 import { Badge, Button, Card, Empty, ListItem, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { refreshCommentPush } from '@/lib/comment-push';
 import { useSharedHands } from '@/lib/friend-hands';
+import { kindOn } from '@/lib/notify-policy';
+import { useStore } from '@/store/store';
 import { comboLabel } from '@/poker/cards';
 import { blindsLabel } from '@/poker/format';
 import { BRAND, C, S } from '@/theme';
@@ -31,6 +34,12 @@ export default function SharedHands() {
   const { friends, mine, counts, fresh } = useSharedHands({ refresh: true });
   // From the "Novo comentário na tua mão" notice: straight on to that hand, on the newest comment's street.
   const { open } = useLocalSearchParams<{ open?: string }>();
+  const { settings } = useStore();
+  const commentsOn = kindOn(settings, 'comments');
+  // Tells the server the notices are still wanted (unused tokens are deleted after 180 days).
+  useEffect(() => {
+    if (commentsOn) void refreshCommentPush(mine);
+  }, [commentsOn, mine]);
   const jumped = useRef(false);
   useEffect(() => {
     const h = open ? mine.find((x) => x.shareId === open) : undefined;

@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { devPro } from './dev-pro';
+import { devPro, localProFrom } from './dev-pro';
 import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
 import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
@@ -36,7 +36,6 @@ interface ProValue {
   /** Free trial days this player can still start on the annual plan (0 = none). */
   trialDays: number;
   canSaveHand: () => boolean;
-  canShare: () => boolean;
   record: (kind: UsageKind) => void;
   /** Opens the paywall. `then` runs after a purchase or restore there, so the tapped action happens without tapping again. */
   paywall: (reason?: PaywallReason, then?: () => void) => void;
@@ -50,11 +49,13 @@ interface ProValue {
 
 const Ctx = createContext<ProValue | null>(null);
 const DEV_PRO = devPro();
+/** Test-iPhone build only (dev-pro.ts); never written to the cached Pro flag, so turning it off removes Pro at once. */
+export const LOCAL_PRO = localProFrom(process.env.EXPO_PUBLIC_LOCAL_PRO, store.LIVE);
 
 export function ProProvider({ children }: { children: React.ReactNode }) {
   const [storePro, setIsPro] = useState(false);
   // Screenshot builds can force Pro (dev-pro.ts); always false in a store build.
-  const isPro = storePro || DEV_PRO;
+  const isPro = storePro || DEV_PRO || LOCAL_PRO;
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
   const [plansFailed, setPlansFailed] = useState(false);
@@ -101,7 +102,6 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [setPro]);
 
   const canSaveHand = useCallback(() => canUse(usage, 'hand', FREE.handsPerDay, isPro), [usage, isPro]);
-  const canShare = useCallback(() => canUse(usage, 'share', FREE.sharesPerDay, isPro), [usage, isPro]);
 
   const resume = useRef<(() => void) | null>(null);
   const takeResume = useCallback(() => {
@@ -111,7 +111,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const paywall = useCallback((reason: PaywallReason = 'generic', then?: () => void) => {
     resume.current = then ?? null;
-    if (reason === 'hands' || reason === 'handsLive' || reason === 'shares') track('limit_hit', { reason });
+    if (reason === 'hands' || reason === 'handsLive') track('limit_hit', { reason });
     track('paywall_shown', { reason, trial: trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout });
     void noteReviewBlocker('paywall');
     router.push({ pathname: '/paywall', params: { reason } });
@@ -166,8 +166,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession]);
 
   const value = useMemo(
-    () => ({ isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, takeResume, purchase, restore, refreshNudges }),
-    [isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, takeResume, purchase, restore, refreshNudges],
+    () => ({ isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),
+    [isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

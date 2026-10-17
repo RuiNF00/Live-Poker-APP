@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
+import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -44,7 +44,7 @@ test('totals count entries, not Day 2s, and compare with the bankroll', () => {
   assert.equal(bankrollShare(1000, 0), null);
 });
 
-test('reminders: 30 min before start, and 30 min before late reg closes when set', () => {
+test('reminders: 30 min before start, and 20 min before late reg closes when set', () => {
   const p = { ...EMPTY_PLAN, picked: ['12-A', '1-A'], lateReg: { '12-A': 6 * 60 } };
   const start12 = venueTime(F, '2026-12-10T11:00');
   const r = planReminders(F, p, venueTime(F, '2026-12-01T00:00'));
@@ -53,9 +53,15 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
     [
       ['bahamas-dez-2026:1-A:start', venueTime(F, '2026-12-02T10:30')],
       ['bahamas-dez-2026:12-A:start', start12 - 30 * 60_000],
-      ['bahamas-dez-2026:12-A:late', start12 + (6 * 60 - 30) * 60_000],
+      ['bahamas-dez-2026:12-A:late', start12 + (6 * 60 - 20) * 60_000],
     ],
   );
+  // Names the event and the venue time it closes; no amounts.
+  assert.equal(r[2].title, 'Registo do #12 Main Event · Flight A fecha às 17:00');
+  assert.doesNotMatch(r[2].title + r[2].body, /\$|€|\d{3,}/);
+  // A Day 2 has no registration to close.
+  const d2 = F.events.find((e) => e.day2)!;
+  assert.ok(!planReminders(F, { ...EMPTY_PLAN, picked: [d2.id], lateReg: { [d2.id]: 120 } }, 0).some((x) => x.id.endsWith(':late')));
   // Past ones are dropped.
   assert.deepEqual(planReminders(F, p, start12).map((x) => x.id), ['bahamas-dez-2026:12-A:late']);
   // A tap opens this festival on this event, not whichever festival comes first.
@@ -167,7 +173,7 @@ test('a tournament the player adds: in the schedule, planned, reminded, startabl
 });
 
 test('November schedules: official rows only, start order, unique ids, Day 2s free and without a structure', () => {
-  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026]) {
+  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, PUNTA_CANA_JAN_2027]) {
     assert.ok(FESTIVALS.includes(f), f.id);
     assert.equal(new Set(f.events.map((e) => e.id)).size, f.events.length, f.id);
     const starts = f.events.map((e) => e.start);
@@ -178,6 +184,11 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
       if (e.levelMinutes) assert.ok(e.stack, `${f.id} ${e.id}`);
     }
   }
+  // Punta Cana: #1-#18; the Main's three flights each with its Day 2 the next day.
+  const pc = PUNTA_CANA_JAN_2027;
+  assert.deepEqual([...new Set(pc.events.map((e) => e.number))].sort((a, b) => a - b), Array.from({ length: 18 }, (_, i) => i + 1));
+  assert.deepEqual(pc.events.filter((e) => e.number === 11).map((e) => e.flight), ['1A', '2A', '1B', '2B', '1C', '2C']);
+  assert.deepEqual(festivalSpan(pc), { from: '2027-01-24', to: '2027-02-02' });
   // São Paulo: #1-#105, in the venue's time (UTC-3).
   const sp = SAO_PAULO_NOV_2026;
   assert.deepEqual([...new Set(sp.events.map((e) => e.number))].sort((a, b) => a - b), Array.from({ length: 105 }, (_, i) => i + 1));
@@ -232,4 +243,50 @@ test('a session for a planned event runs its level clock from the published star
   assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 10 * 60_000), start + 10 * 60_000);
   // The festival runs to the 23rd although its last row is the 22nd.
   assert.deepEqual(festivalSpan(TORRELODONES_NOV_2026), { from: '2026-11-12', to: '2026-11-23' });
+});
+
+test('schedule filters: satellites, turbo and deep by name or flight; a buy-in cap keeps a Day 2 with its Day 1', () => {
+  assert.equal(LV.events.filter((e) => isKind(e, 'sat')).length, 25);
+  assert.ok(isKind(LV.events.find((e) => e.flight === '1B Turbo')!, 'turbo'));
+  assert.ok(SAO_PAULO_NOV_2026.events.some((e) => isKind(e, 'deep')));
+  const me2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
+  assert.equal(entryBuyIn(LV, me2), 10400);
+  const caps = buyInCaps(LV);
+  assert.ok(caps.length >= 2 && caps.every((c, i) => i === 0 || c > caps[i - 1]));
+});
+
+test('clashes: overlapping planned events warn on both rows; flights of one tournament do not', () => {
+  // Main Event Day 2 (16 Dec 12:00) and the $1,100 NLH 1A (16 Dec 11:00).
+  const me2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
+  const nlh = LV.events.find((e) => e.id === '19-1A')!;
+  const c = clashes(LV, { ...EMPTY_PLAN, picked: [me2.id, nlh.id] });
+  assert.equal(c.get(me2.id)?.id, nlh.id);
+  assert.equal(c.get(nlh.id)?.id, me2.id);
+  // 1A and 1B of the Main Event are alternatives.
+  assert.equal(clashes(LV, { ...EMPTY_PLAN, picked: ['10-1A', '10-1B'] }).size, 0);
+  // Events on different days don't clash.
+  assert.equal(clashes(LV, { ...EMPTY_PLAN, picked: ['85-1A', '10-1A'] }).size, 0);
+});
+
+test('late reg: the organiser\'s close time sets the reminder until the player picks their own', () => {
+  const base = F.events.find((e) => e.id === '12-A')!;
+  const G = { ...F, events: F.events.map((e) => (e.id === '12-A' ? { ...e, lateRegMin: 330 } : e)) };
+  const start = venueTime(F, base.start);
+  const late = (p: typeof EMPTY_PLAN) => planReminders(G, p, 0).find((x) => x.id.endsWith('12-A:late'))!.at;
+  const plan = { ...EMPTY_PLAN, picked: ['12-A'] };
+  assert.equal(lateRegOf(plan, G.events.find((e) => e.id === '12-A')!), 330);
+  assert.equal(late(plan), start + (330 - 20) * 60_000);
+  assert.equal(late({ ...plan, lateReg: { '12-A': 120 } }), start + (120 - 20) * 60_000);
+  // No official time and none picked: no late reminder.
+  assert.ok(!planReminders(F, plan, 0).some((x) => x.id.endsWith(':late')));
+});
+
+test('Punta del Este Main: the official 00:30 close fills late reg and its reminder', () => {
+  const f = PUNTA_DEL_ESTE_DEC_2026;
+  const e = f.events.find((x) => x.id === '8-1A')!;
+  const plan = { ...EMPTY_PLAN, picked: ['8-1A'] };
+  const r = planReminders(f, plan, 0).find((x) => x.id.endsWith(':late'))!;
+  assert.equal(r.at, venueTime(f, '2026-12-05T00:10'));
+  assert.equal(r.title, 'Registo do #8 Main Event · Flight 1A fecha às 00:30');
+  assert.equal(lateRegOf(plan, e), 270);
 });

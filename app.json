@@ -220,6 +220,7 @@
     "plugins": [
       "expo-router",
       "./plugins/with-async-storage-size",
+      "./plugins/with-android-backup",
       [
         "expo-splash-screen",
         {
@@ -269,7 +270,12 @@
           "faceIDPermission": "O Sweatbook usa o Face ID para desbloquear a app, se ligares o bloqueio nas Definições."
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false
+        }
+      ],
       [
         "expo-notifications",
         {

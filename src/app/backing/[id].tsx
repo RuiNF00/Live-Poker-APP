@@ -10,7 +10,7 @@ import { markupLabel } from '@/components/staking/sheets';
 import { backedLabel, useLiveSnapshots } from '@/components/staking/use-backing';
 import { Amount, Button, Card, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { chips, money, shortDate } from '@/poker/format';
+import { chips, money, num, shortDate } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -82,7 +82,7 @@ export default function BackedPlayerScreen() {
                   title={r.n || (r.k === 'mtt' ? t('Torneio') : 'Cash')}
                   subtitle={
                     <Row gap={6} style={{ flexWrap: 'wrap' }}>
-                      <T v="small">{[shortDate(r.d), `${r.sh}%`, r.mu !== 1 ? markupLabel(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}</T>
+                      <T v="small">{[shortDate(r.d), `${num(r.sh)}%`, r.mu !== 1 ? markupLabel(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}</T>
                       {!r.e ? <Pill label={snap?.paused ? t('Em pausa') : t('A decorrer')} color={snap?.paused ? C.warn : C.good} icon="ellipse" /> : null}
                       {r.u ? <Pill label={t('Por pagar {amount}', { amount: money(r.c, r.cu ?? cur) })} color={C.warn} /> : null}
                     </Row>

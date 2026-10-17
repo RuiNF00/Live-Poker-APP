@@ -178,7 +178,10 @@ describe('run it twice in the action log', () => {
     const h = base({}, [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'raise', to: 1000 }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }], ['2c', '7d', '9s', 'Jh', '3c']);
     h.board2 = ['Ks', '4h', '8d', 'Qc', '5s'];
     const text = describeStep(end(h), 5, 'chips', 'pt');
-    expect(text).toMatch(/^Board 1: BTN ganha 1004 .* · Board 2: CO ganha 1003 /);
+    expect(text).toMatch(/^Mesa 1: BTN ganha 1004 \(Par de Ases\) · Mesa 2: CO ganha 1003 /);
+    const at = (locale: 'en' | 'es') => describeStep(buildReplay(fromAppHand(h).hand, { locale }).at(-1)!, 5, 'chips', locale);
+    expect(at('en')).toMatch(/^Board 1: BTN wins 1,004 \(Pair of Aces\) · Board 2: CO wins 1,003 \(Three of a kind, Kings\)$/);
+    expect(at('es')).toMatch(/^Mesa 1: BTN gana 1004 \(Pareja de Ases\) · Mesa 2: CO gana 1003 \(Trío de Reyes\)$/);
   });
 });
 

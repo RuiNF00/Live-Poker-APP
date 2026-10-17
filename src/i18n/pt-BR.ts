@@ -3,6 +3,7 @@
 // Brazil are here: anything else shows the pt-PT text as is.
 
 const ptBR: Record<string, string> = {
+  'Pro local (build de teste)': 'Pro local (build de teste)',
   'O teu caderno de póquer live': 'Seu caderno de poker ao vivo',
   'Guardar': 'Salvar',
   'Apagar': 'Excluir',
@@ -175,7 +176,6 @@ const ptBR: Record<string, string> = {
   'Falta-me uma funcionalidade': 'Falta um recurso que eu preciso',
   'Registar à mesa é lento': 'Registrar na mesa é lento',
   'Na Google Play, em vez de cancelar. Voltas com tudo como deixaste.': 'Na Google Play, em vez de cancelar. Você volta com tudo como deixou.',
-  'O teu caderno espera por ti': 'Seu caderno espera por você',
   'Quando voltares, o Pro volta com tudo. Mãos, sessões e bankroll ficam.': 'Quando você voltar, o Pro volta com tudo. Mãos, sessões e bankroll ficam.',
   '{price} por ano, −{pct}% face ao mensal.': '{price} por ano, −{pct}% em relação ao mensal.',
   'Fica tudo guardado': 'Fica tudo salvo',
@@ -185,7 +185,7 @@ const ptBR: Record<string, string> = {
   'Lemos tudo o que nos mandam.': 'Lemos tudo o que você nos manda.',
   'Onde perdes mais tempo?': 'Onde você perde mais tempo?',
   'O que te falta?': 'O que está faltando?',
-  'O teu Pro continua.': 'Seu Pro continua.',
+  'Continuar a cancelar na {store}': 'Continuar cancelando na {store}',
   'Avisamos-te antes de cobrar.': 'Avisamos você antes de cobrar.',
   'Avisamos-te antes de cobrar': 'Avisamos você antes de cobrar',
   'Vês as mãos que registaste e o dia em que o teste acaba.': 'Veja as mãos que você registrou e o dia em que o teste acaba.',
@@ -205,7 +205,6 @@ const ptBR: Record<string, string> = {
   'Grava a tua voz. Sem marca de água.': 'Grave sua voz. Sem marca d\'água.',
   'Mão guardada como rascunho': 'Mão salva como rascunho',
   'Com Pro, guardas mãos sem limite.': 'Com o Pro, você salva mãos sem limite.',
-  'Com Pro, partilhas sem limite.': 'Com o Pro, você compartilha sem limite.',
   'Conhece o teu bankroll': 'Conheça seu bankroll',
   'Vídeo com voz, sem marca de água.': 'Vídeo com voz, sem marca d\'água.',
   'Com Pro, guardas todas as mãos da sessão.': 'Com o Pro, você salva todas as mãos da sessão.',
@@ -213,7 +212,6 @@ const ptBR: Record<string, string> = {
   'Continuar grátis · amanhã tens mais {n} mãos': 'Continuar grátis · amanhã você tem mais {n} mãos',
   'Já guardaste as tuas 3 mãos de hoje': 'Você já salvou suas 3 mãos de hoje',
   'Esta mão fica guardada como rascunho. Com Pro guardas todas as mãos da sessão, sem limite.': 'Esta mão fica salva como rascunho. Com o Pro, você salva todas as mãos da sessão, sem limite.',
-  'Já partilhaste a mão de hoje': 'Você já compartilhou a mão de hoje',
   'Com Pro partilhas todas as mãos que quiseres com os teus amigos.': 'Com o Pro, você compartilha quantas mãos quiser com seus amigos.',
   'Vê o teu bankroll a fundo': 'Veja seu bankroll a fundo',
   'Filtra por 30 dias, 90 dias ou ano e percebe onde estás a ganhar.': 'Filtre por 30 dias, 90 dias ou ano e entenda onde você está ganhando.',
@@ -629,7 +627,6 @@ const ptBR: Record<string, string> = {
   'Prémio': 'Prêmio',
   'Mãos registadas': 'Mãos registradas',
   'Começa daqui a {n} min': 'Começa em {n} min',
-  'Late reg fecha daqui a {n} min': 'Late reg fecha em {n} min',
   'Torneios planeados': 'Torneios planejados',
   'Termina a sessão "{name}" antes de começar outra.': 'Encerre a sessão "{name}" antes de começar outra.',
   'Já tens uma sessão a decorrer': 'Você já tem uma sessão em andamento',
@@ -1519,6 +1516,13 @@ const ptBR: Record<string, string> = {
   'Liga-os nas Definições para gravares a tua cara.': 'Ative nas Configurações para gravar seu rosto.',
   'Abrir Definições': 'Abrir Configurações',
   'Pára antes da tua decisão, para quem vê votar no link.': 'Para antes da sua decisão, para quem vê votar no link.',
+  'Coincide com {name} às {time}': 'Coincide com {name} às {time}',
+  'Registo do {event} fecha às {time}': 'Registro do {event} fecha às {time}',
+  'Ainda dá para entrar. Toca para começar a sessão.': 'Ainda dá para entrar. Toque para começar a sessão.',
+  'Avisamos-te {n} min antes de fechar.': 'A gente avisa {n} min antes de fechar.',
+  'Hora oficial': 'Horário oficial',
+  'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
+  'República Dominicana': 'República Dominicana',
 };
 
 export default ptBR;

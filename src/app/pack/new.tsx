@@ -49,11 +49,6 @@ export default function NewPack() {
 
   const create = async () => {
     tap('medium');
-    const fresh = send.filter((h) => !h.shareId).length;
-    if (fresh && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     setBusy(true);
     const name = title.trim().slice(0, 80);
     const r = await createPack({ hands: send, title: name, hideAmounts: !chips, share: { names: settings.shareNames, notes: settings.shareNotes }, saveHand });

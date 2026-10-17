@@ -68,7 +68,7 @@ test('paywall leads with the feature the player reached for', async () => {
   assert.equal(featuresFor('story')[0].highlight, true);
   assert.equal(featuresFor('welcome')[0].feature.key, 'hands');
   assert.equal(featuresFor('generic').filter((f) => f.highlight).length, 0);
-  for (const r of ['hands', 'stats', 'story', 'welcome', 'generic', 'shares', 'taxReport', 'staking'] as const) assert.equal(featuresFor(r).length, 3);
+  for (const r of ['hands', 'stats', 'story', 'welcome', 'generic', 'taxReport', 'staking'] as const) assert.equal(featuresFor(r).length, 3);
   // A gated feature leads with its own row, then two generic ones.
   assert.deepEqual(featuresFor('taxReport').map((f) => f.feature.key), ['taxReport', 'hands', 'stats']);
   assert.ok(PRO_FEATURES.length > 3);
@@ -78,6 +78,15 @@ test('derived prices keep the store currency', async () => {
   const { formatPrice } = await import('../plans');
   assert.match(formatPrice(16.67, 'EUR', 'pt-PT'), /16,67\s€/);
   assert.match(formatPrice(359.88, 'USD', 'en-GB'), /US\$359\.88|\$359\.88/);
+});
+
+test('per-month price is written like the store price next to it', async () => {
+  const { priceLike } = await import('../plans');
+  assert.equal(priceLike('$199.99', 16.67, 'USD', 'en-GB'), '$16.67');
+  assert.equal(priceLike('199,99\u00a0US$', 16.67, 'USD', 'pt-PT'), '16,67\u00a0US$');
+  assert.equal(priceLike('R$ 1.099,90', 91.66, 'BRL', 'pt-BR'), 'R$ 91,66');
+  assert.equal(priceLike('¥30,000', 2500, 'JPY', 'ja-JP'), '¥2500');
+  assert.match(priceLike('free', 16.67, 'EUR', 'pt-PT'), /16,67\s€/);
 });
 
 test('turning the clock back does not free up today\'s hands', () => {

@@ -93,9 +93,11 @@ test('evaluator ranks', () => {
   const quads = evaluate(['9h', '9d', '9s', '9c', 'Kh', '2c', '3d']);
   const wheel = evaluate(['Ah', '2d', '3s', '4c', '5h', 'Kc', 'Kd']);
   const trips = evaluate(['Ah', 'Ad', 'As', '4c', '9h', 'Kc', '2d']);
-  assert.equal(sf.name, 'Straight flush');
+  assert.equal(sf.name, 'Sequência de cor ao Rei');
+  assert.equal(quads.name, 'Poker de 9');
+  assert.equal(trips.name, 'Trio de Ases');
   assert.ok(sf.score > quads.score);
-  assert.equal(wheel.name, 'Sequência');
+  assert.equal(wheel.name, 'Sequência ao 5');
   assert.ok(wheel.score > trips.score);
 });
 

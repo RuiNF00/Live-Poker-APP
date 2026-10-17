@@ -82,6 +82,24 @@ export async function turnOffCommentPush(hands: Owned[]): Promise<void> {
   await Promise.all(hands.filter((h) => h.shareId && ids.has(h.shareId)).map((h) => send(h, null).then(() => remember(h.shareId!, false)).catch(() => {})));
 }
 
+const REFRESH_KEY = 'rl.commentPush.at.v1';
+
+/**
+ * "Mãos partilhadas" opened: the hands this phone asked notices for are sent again, at most once
+ * a day, so the server's 180-day clean-up only takes tokens nobody uses and a new token replaces an old one.
+ */
+export async function refreshCommentPush(hands: Owned[]): Promise<void> {
+  const last = Number(await AsyncStorage.getItem(REFRESH_KEY).catch(() => null)) || 0;
+  if (Date.now() - last < 86_400_000) return;
+  const ids = new Set(await registered());
+  const mine = hands.filter((h) => h.shareId && ids.has(h.shareId)).slice(-50);
+  if (!mine.length) return;
+  const token = await pushToken();
+  if (!token) return;
+  await AsyncStorage.setItem(REFRESH_KEY, String(Date.now())).catch(() => {});
+  await Promise.all(mine.map((h) => send(h, token).catch(() => false)));
+}
+
 /**
  * The owner opened the hand: the next comment may notify again. A hand shared before notices
  * were on gets them now, without asking (only when they're already allowed).
