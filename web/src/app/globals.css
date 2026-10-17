@@ -269,6 +269,14 @@ a {
   container-type: inline-size;
 }
 
+/* A computer (WhatsApp Web, X): the header and the controls take more of a short, wide screen,
+   so the felt leaves room for the scrubber and play buttons above the bottom bar. */
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .table-wrap {
+    max-width: min(460px, max(300px, calc((100dvh - 440px) / 1.22)));
+  }
+}
+
 /* Every size on the table follows the stage width, like the app: k = width / 366. */
 .rt-stage {
   --k: clamp(0.82px, calc(100cqw / 366), 1.18px);
