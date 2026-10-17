@@ -77,6 +77,24 @@ export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[]
   return linked && isBagged(linked) ? null : { kind: 'start' };
 }
 
+/** How long after the start a planned event still offers a session when the player gave no late reg. */
+export const LATE_DEFAULT_MIN = 4 * 60;
+
+/**
+ * The planned event to start right now, if any: from 2 h before its start
+ * until late reg closes. The earliest such event that still has something to
+ * start (not running already, not a Day 2 nobody bagged for).
+ */
+export function plannedNow(f: Festival, plan: FestivalPlan, sessions: Session[], now = Date.now()): { e: FestivalEvent; start: number; action: EventAction } | null {
+  for (const e of planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))) {
+    const start = venueTime(f, e.start);
+    if (now < start - 2 * 3_600_000 || now > start + (plan.lateReg[e.id] || LATE_DEFAULT_MIN) * 60_000) continue;
+    const action = eventAction(f, plan, sessions, e);
+    if (action && action.kind !== 'view') return { e, start, action };
+  }
+  return null;
+}
+
 /** A Day 2 named after its flights ("2BC") only takes players bagged in those flights. */
 function day2Takes(f: Festival, plan: FestivalPlan, e: FestivalEvent, s: Session): boolean {
   const from = e.flight?.slice(1) ?? '';
@@ -177,11 +195,14 @@ export function useFestivalPlan(festivalId: string): FestivalPlan {
   );
 }
 
-/** Every festival's plan, for screens that look across festivals (swap suggestions). */
-export function usePlans(): Record<string, FestivalPlan> {
+/** Every festival's plan, by festival id (the Sessão tab looks across all of them). */
+export function useFestivalPlans(): Plans {
   return useSyncExternalStore(
     subscribe,
     () => plans,
     () => plans,
   );
 }
+
+/** Same as useFestivalPlans (the swap suggestions use this name). */
+export const usePlans = useFestivalPlans;

@@ -71,8 +71,9 @@ function BackerForm({ backer, onSave, onDelete }: { backer: Backer; onSave: (b: 
   );
 }
 
-export function blankPackage(backerId: string): StakePackage {
-  return { id: uid('k_'), backerId, name: '', kind: 'action', share: 20, markup: 1.1, playerCut: 50, createdAt: Date.now() };
+/** `terms`: where to start from, usually the backer's last deal (see packageDefaults). */
+export function blankPackage(backerId: string, terms?: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut'>): StakePackage {
+  return { id: uid('k_'), backerId, name: '', kind: 'action', share: 20, markup: 1.1, playerCut: 50, ...terms, createdAt: Date.now() };
 }
 
 export function packageTerms(p: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut'>): string {
@@ -87,26 +88,32 @@ export function packageTerms(p: Pick<StakePackage, 'kind' | 'share' | 'markup' |
  */
 export function PackageSheet({
   pkg,
+  suggestName,
   makeup,
+  balance,
   onSave,
   onDelete,
   onClose,
 }: {
   pkg: StakePackage | null;
+  /** Name a new package starts with (the trip the player is on), editable. */
+  suggestName?: string;
   makeup?: string | null;
+  /** Where things stand with the backer ("Deves 120 € a João."), shown when closing so there's no need to leave the sheet. */
+  balance?: string | null;
   onSave: (p: StakePackage, carry: boolean) => void;
   onDelete?: () => void;
   onClose: () => void;
 }) {
   return (
     <Sheet visible={!!pkg} title={pkg?.name ? pkg.name : t('Novo pacote')} onClose={onClose}>
-      {pkg ? <PackageForm key={pkg.id} pkg={pkg} makeup={makeup ?? null} onSave={onSave} onDelete={onDelete} /> : null}
+      {pkg ? <PackageForm key={pkg.id} pkg={pkg} suggestName={suggestName} makeup={makeup ?? null} balance={balance ?? null} onSave={onSave} onDelete={onDelete} /> : null}
     </Sheet>
   );
 }
 
-function PackageForm({ pkg, makeup, onSave, onDelete }: { pkg: StakePackage; makeup: string | null; onSave: (p: StakePackage, carry: boolean) => void; onDelete?: () => void }) {
-  const [x, setX] = useState(pkg);
+function PackageForm({ pkg, suggestName, makeup, balance, onSave, onDelete }: { pkg: StakePackage; suggestName?: string; makeup: string | null; balance: string | null; onSave: (p: StakePackage, carry: boolean) => void; onDelete?: () => void }) {
+  const [x, setX] = useState(() => (pkg.name || !suggestName ? pkg : { ...pkg, name: suggestName }));
   const set = (p: Partial<StakePackage>) => setX((v) => ({ ...v, ...p }));
   // Closing it now with makeup still to win back: forgive it, or carry it to a new package (the usual deal).
   const closing = !!makeup && x.kind === 'makeup' && !!x.closedAt && !pkg.closedAt;
@@ -166,6 +173,7 @@ function PackageForm({ pkg, makeup, onSave, onDelete }: { pkg: StakePackage; mak
           />
         </ListGroup>
       ) : null}
+      {balance && x.closedAt && !pkg.closedAt ? <T v="small">{balance}</T> : null}
       {closing ? (
         <Card tone="inset" style={{ gap: S.sm }}>
           <T v="h3">{t('Ainda há {amount} de makeup', { amount: makeup! })}</T>

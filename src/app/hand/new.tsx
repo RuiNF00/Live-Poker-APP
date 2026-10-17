@@ -310,7 +310,9 @@ export default function NewHand() {
     phase !== 'action' || !l
       ? null
       : autoSeats.length
-        ? (l.p === hand.hero ? t('Fold de todos até ti') : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })) + ' · ' + t('alguém entrou? Toca no lugar dele na mesa')
+        ? l.p === hand.hero
+          ? t('Fold de todos até ti')
+          : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
         : skips.length > 1
           ? t('Toca num lugar da mesa para saltar até ele')
           : null;
@@ -468,6 +470,17 @@ export default function NewHand() {
                 {seatHint}
               </T>
             ) : null}
+            {/* The seats folded by the app, as big targets: whoever came in is one tap (the felt works too). */}
+            {autoSeats.length > 0 && (
+              <ChipRow>
+                <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
+                  {t('Alguém entrou?')}
+                </T>
+                {autoSeats.map((i) => (
+                  <Chip key={i} label={displayName(hand, i, pos)} onPress={() => rewind(i)} />
+                ))}
+              </ChipRow>
+            )}
             {/* First hand only (onboarded is set when it's saved): the rest is optional. */}
             {!settings.onboarded && !isEdit ? (
               <T v="tiny" color={C.accent} numberOfLines={2}>
@@ -576,7 +589,43 @@ export default function NewHand() {
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
                   <T v="h2">Showdown</T>
-                  <T v="small">{t('Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)')}</T>
+                  {/* Who won comes first: it is the one answer the hand needs. Cards shown are optional. */}
+                  {r.boards.length === 2 &&
+                    r.boards.map((b, run) => (
+                      <Row key={run} gap={10}>
+                        <T v="small" style={{ minWidth: 80 }}>
+                          {run ? t('2.ª vez') : t('1.ª vez')}
+                        </T>
+                        <CardRow cards={b} />
+                      </Row>
+                    ))}
+                  {/* Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
+                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== 2)) && (
+                    <View style={{ gap: 6 }}>
+                      {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
+                        <View key={key} style={{ gap: 6 }}>
+                          <T v="label">{r.boards.length === 2 ? (run ? t('Quem ganhou a 2.ª vez?') : t('Quem ganhou a 1.ª vez?')) : t('Quem ganhou?')}</T>
+                          <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                            {hand.players.map((p, i) =>
+                              s.folded[i] ? null : (
+                                <Chip
+                                  key={i}
+                                  big
+                                  label={displayName(hand, i, pos)}
+                                  active={hand[key]?.includes(i)}
+                                  onPress={() => {
+                                    const w = hand[key] ?? [];
+                                    update({ ...hand, [key]: w.includes(i) ? w.filter((x) => x !== i) : [...w, i] });
+                                  }}
+                                />
+                              ),
+                            )}
+                          </Row>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  <T v="label">{t('Cartas mostradas (opcional)')}</T>
                   <Row style={{ flexWrap: 'wrap' }} gap={6}>
                     {hand.players.map((p, i) =>
                       i === hand.hero || s.folded[i] ? null : (
@@ -606,40 +655,6 @@ export default function NewHand() {
                     />
                   )}
                   {twiceChip && <ChipRow>{twiceChip}</ChipRow>}
-                  {r.boards.length === 2 &&
-                    r.boards.map((b, run) => (
-                      <Row key={run} gap={10}>
-                        <T v="small" style={{ minWidth: 80 }}>
-                          {run ? t('2.ª vez') : t('1.ª vez')}
-                        </T>
-                        <CardRow cards={b} />
-                      </Row>
-                    ))}
-                  {r.result && !r.result.resolved && (
-                    <View style={{ gap: 6 }}>
-                      {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
-                        <View key={key} style={{ gap: 6 }}>
-                          <T v="label">{r.boards.length === 2 ? (run ? t('Quem ganhou a 2.ª vez?') : t('Quem ganhou a 1.ª vez?')) : t('Quem ganhou?')}</T>
-                          <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                            {hand.players.map((p, i) =>
-                              s.folded[i] ? null : (
-                                <Chip
-                                  key={i}
-                                  big
-                                  label={displayName(hand, i, pos)}
-                                  active={hand[key]?.includes(i)}
-                                  onPress={() => {
-                                    const w = hand[key] ?? [];
-                                    update({ ...hand, [key]: w.includes(i) ? w.filter((x) => x !== i) : [...w, i] });
-                                  }}
-                                />
-                              ),
-                            )}
-                          </Row>
-                        </View>
-                      ))}
-                    </View>
-                  )}
                 </View>
               )}
               {r.result && (

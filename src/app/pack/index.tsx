@@ -12,6 +12,7 @@ import { locale, t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { deletePack, usePacks } from '@/lib/pack-api';
 import type { HandPack } from '@/lib/pack-core';
+import { notice } from '@/lib/notice';
 import type { Hand } from '@/poker/types';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -54,7 +55,7 @@ function PackCard({ pack, hands }: { pack: HandPack; hands: Hand[] }) {
     const msg = `${t('{n} mãos para rever: o que fazias em cada uma? 👀', { n: pack.handIds.length })}\n${withLang(pack.url, variant)}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      Alert.alert(t('Link copiado'));
+      notice(t('Link copiado'));
     } else await Share.share({ message: msg }).catch(() => {});
   };
   const off = async () => {

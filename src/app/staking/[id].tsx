@@ -16,10 +16,12 @@ import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { maybeAskForReview } from '@/lib/review';
+import { notice } from '@/lib/notice';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { closePackage, ledgerYears, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { currentTrip } from '@/store/trip-math';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
 import { withPro } from '@/components/ProGate';
@@ -31,7 +33,7 @@ function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')
 
 function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sessions, backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
+  const { sessions, backers, packages, payments, trips, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
   const { pk, ledgers, fx } = useStaking();
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
@@ -56,11 +58,13 @@ function BackerScreen() {
   const bal = balanceLabel(l.balance, cur);
   const mine = packages.filter((p) => p.backerId === backer.id).sort((a, b) => Number(!!a.closedAt) - Number(!!b.closedAt) || b.createdAt - a.createdAt);
   const pays = payments.filter((p) => p.backerId === backer.id).sort((a, b) => b.at - a.at);
+  // A package started during a trip is usually for that festival.
+  const trip = currentTrip(trips);
   const pkgName = (pid?: string) => packages.find((p) => p.id === pid)?.name;
 
   // "O ano com {backer}": every package of the year, in the deal's currency.
   const years = ledgerYears(l);
-  const yr = years.length ? yearStatement(l, year && years.includes(year) ? year : years[0], packages, pk, (s) => (s.currency && s.currency !== cur ? (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1) : 1)) : null;
+  const yr = years.length ? yearStatement(l, year && years.includes(year) ? year : years[0], packages, pk, (s) => (s.currency && s.currency !== cur ? (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1) : 1), (m, c) => m * (rate(fx.table, c, cur, l.rows[0]?.session.startedAt ?? 0, fx.manual) ?? 1)) : null;
 
   const togglePaid = (r: BackerLedgerRow) => {
     const s: Session = r.session;
@@ -117,7 +121,10 @@ function BackerScreen() {
     const ref = await shareRef().catch(() => '');
     const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined);
     const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
-    if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
+    if (Platform.OS === 'web') {
+      await Clipboard.setStringAsync(msg);
+      notice(t('Texto copiado'));
+    }
     else {
       const r = await Share.share({ message: msg });
       if (r.action === Share.dismissedAction) return;
@@ -178,9 +185,9 @@ function BackerScreen() {
           <Stat label="Makeup" value={money(l.makeup, cur)} tone={l.makeup ? 'warn' : undefined} />
         </StatGrid>
 
-        <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id))}>
+        <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages)))}>
           {mine.length === 0 ? (
-            <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id))}>
+            <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages)))}>
               <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao registar ação vendida numa sessão, escolhes o pacote.')}</T>
             </Card>
           ) : (
@@ -194,7 +201,7 @@ function BackerScreen() {
                     iconColor={p.closedAt ? C.muted : C.accent}
                     title={
                       <Row gap={S.sm}>
-                        <T v="body" numberOfLines={1} style={{ flexShrink: 1 }}>
+                        <T v="body" numberOfLines={2} style={{ flexShrink: 1 }}>
                           {p.name}
                         </T>
                         {p.closedAt ? <Pill label={t('Fechado')} /> : null}
@@ -204,11 +211,17 @@ function BackerScreen() {
                     right={
                       // A closed package's makeup was forgiven or carried to the next one: only open ones show it.
                       st?.makeup && !p.closedAt ? (
-                        <T v="mono" color={C.warn} style={{ fontSize: 14 }}>
-                          {t('makeup {amount}', { amount: money(st.makeup, cur) })}
-                        </T>
+                        // Stacked, so a long package name keeps the width (360 pt, Spanish, larger text).
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <T v="tiny" color={C.warn}>
+                            Makeup
+                          </T>
+                          <T v="mono" color={C.warn} style={{ fontSize: 14 }}>
+                            {money(st.makeup, st.currency || cur)}
+                          </T>
+                        </View>
                       ) : st && st.sessions - st.live > 0 ? (
-                        <Amount value={st.net} text={money(st.net, cur)} style={{ fontSize: 14 }} />
+                        <Amount value={st.net} text={money(st.net, st.currency || cur)} style={{ fontSize: 14 }} />
                       ) : undefined
                     }
                     onPress={() => setPkg(p)}
@@ -260,7 +273,7 @@ function BackerScreen() {
         <Section title={t('Sessões')} hint={t('Toca numa sessão para ver as contas passo a passo.')}>
           {l.rows.length === 0 ? (
             <Card tone="inset">
-              <T v="small">{t('Ainda sem sessões. Na sessão, em Staking, vende uma parte a {name}.', { name: backer.name })}</T>
+              <T v="small">{t('Ainda sem sessões. Na sessão, em Staking, regista a parte vendida a {name}.', { name: backer.name })}</T>
             </Card>
           ) : (
             <ListGroup>
@@ -338,11 +351,19 @@ function BackerScreen() {
       />
       <PackageSheet
         pkg={pkg}
-        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, cur) : null}
+        suggestName={trip ? trip.name || trip.venue : undefined}
+        balance={
+          square
+            ? null
+            : l.balance > 0
+              ? t('Deves {amount} a {name}.', { amount: money(l.balance, cur), name: backer.name })
+              : t('{name} deve-te {amount}.', { amount: money(-l.balance, cur), name: backer.name })
+        }
+        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {
           if (carry) {
-            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'));
+            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
             savePackage(closed);
             if (next) savePackage(next);
           } else savePackage(p);

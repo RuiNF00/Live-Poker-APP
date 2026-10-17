@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
@@ -9,12 +9,13 @@ import { CoachThread } from '@/components/CoachThread';
 import { CommentsList, PrivateStreetNotes } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { isComplete, replay } from '@/poker/engine';
+import { sameTable } from '@/poker/factory';
 import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet } from '@/components/ShareSheet';
-import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
+import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { maybeAskForReview } from '@/lib/review';
@@ -22,20 +23,23 @@ import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { markCommentsSeen } from '@/lib/friend-hands';
+import { streetOfNew } from '@/lib/friend-hands-core';
 import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
+import { notice } from '@/lib/notice';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
 
 export default function HandScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { hands, saveHand, deleteHand, settings } = useStore();
+  // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
+  const { id, c: fresh } = useLocalSearchParams<{ id: string; c?: string }>();
+  const { hands, saveHand, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
   const isSample = id === 'sample';
@@ -43,6 +47,8 @@ export default function HandScreen() {
   const hand = sample ?? hands.find((h) => h.id === id);
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // Shown at the top of the link; only before the link exists.
+  const [ask, setAsk] = useState('');
   // A link made without signal waits here and lands on the hand when the network is back.
   const shareWaiting = useQueuedShare(isSample ? undefined : hand, saveHand);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -64,6 +70,14 @@ export default function HandScreen() {
   const [street, setStreet] = useState<Street>('preflop');
   const [seek, setSeek] = useState<{ street: Street; n: number }>();
   const jumpStreet = (st: Street) => setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }));
+  // Opened from "Mãos partilhadas" with new comments: once, on the street of the newest one.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current || !comments.length) return;
+    opened.current = true;
+    const st = streetOfNew(comments, Number(fresh));
+    if (st) setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }));
+  }, [comments, fresh]);
   const streets = useMemo(() => {
     if (!hand) return [];
     const seen = new Set(replay(hand).steps.map((s) => s.street));
@@ -82,7 +96,7 @@ export default function HandScreen() {
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
         <Banner tone="info" icon="sparkles-outline" title={t('Mão de exemplo')} body={t('É assim que as tuas mãos ficam guardadas.')} />
         <HandHeader hand={hand} inBB={settings.inBB} />
-        <Replayer hand={hand} initialInBB={settings.inBB} autoPlay source="sample" />
+        <Replayer hand={hand} initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} autoPlay source="sample" />
         <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
         <Section title={t('Partilhar')}>
           <Button
@@ -118,13 +132,14 @@ export default function HandScreen() {
         Alert.alert(t('Link quase pronto'), t('Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.'));
         return null;
       }
-      const { id: shareId, token } = await uploadHand(hand, { names: settings.shareNames, notes: settings.shareNotes });
-      saveHand({ ...hand, shareId, shareToken: token });
+      const asked = { ...hand, ask: ask.trim().slice(0, 140) || undefined };
+      const { id: shareId, token } = await uploadHand(asked, { names: settings.shareNames, notes: settings.shareNotes });
+      saveHand({ ...asked, shareId, shareToken: token });
       return shareId;
     } catch (e) {
       if (isNetworkError(e)) {
         const opts = { names: settings.shareNames, notes: settings.shareNotes };
-        queueShare(hand, opts);
+        queueShare({ ...hand, ask: ask.trim().slice(0, 140) || undefined }, opts);
         Alert.alert(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
       } else Alert.alert(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
@@ -133,7 +148,7 @@ export default function HandScreen() {
     }
   };
 
-  const share = async (quiz = false, to?: 'x') => {
+  const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
     tap('medium');
     const isNew = !hand.shareId;
     if (isNew && !pro.canShare()) {
@@ -147,7 +162,7 @@ export default function HandScreen() {
     const channel = to ?? (quiz ? 'challenge' : 'link');
     const link = shareLink(shareId, channel, { quiz, ref });
     track('link_shared', { channel, share_id: shareId, ref });
-    const head = handShareText(hand.game.name, quiz ? 'challenge' : 'link');
+    const head = handShareText(hand.game.name, quiz ? 'challenge' : 'comment');
     const msg = `${head}
 ${link}`;
     if (to === 'x') {
@@ -155,9 +170,16 @@ ${link}`;
       await Linking.openURL(`https://x.com/intent/post?text=${encodeURIComponent(head)}&url=${encodeURIComponent(link)}`).catch(() => Share.share({ message: msg }));
       return;
     }
+    if (to === 'whatsapp') {
+      // Straight to WhatsApp's chat picker: one tap less than the system sheet. Without WhatsApp, the usual sheet.
+      const text = encodeURIComponent(msg);
+      const url = Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`;
+      await Linking.openURL(url).catch(() => Share.share({ message: msg }));
+      return;
+    }
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      Alert.alert(t('Link copiado'));
+      notice(t('Link copiado'));
     } else {
       const res = await Share.share({ message: msg });
       // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
@@ -204,7 +226,7 @@ ${link}`;
     }
     const save = () => saveSolverFile([hand]).catch(() => Alert.alert(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
     if (Platform.OS === 'web') return save();
-    Alert.alert(t('Exportar para solver'), t('Formato PokerStars: GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+    Alert.alert(t('Exportar para solver'), t('Formato hand history (.txt): GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
       {
         text: t('Copiar texto'),
         onPress: async () => {
@@ -250,7 +272,7 @@ ${link}`;
     await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));
     track('link_shared', { channel: 'copy', share_id: shareId, ref });
     tap('success');
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   const unshare = () => {
@@ -264,12 +286,8 @@ ${link}`;
         Alert.alert(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
       }
     };
-    if (Platform.OS === 'web') doIt();
-    else
-      Alert.alert(t('Apagar partilha?'), t('O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.'), [
-        { text: t('Cancelar'), style: 'cancel' },
-        { text: t('Apagar'), style: 'destructive', onPress: doIt },
-      ]);
+    // Asks on the web too: one tap would end the link and every comment.
+    confirmAction(t('Apagar partilha?'), t('O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.'), t('Apagar'), doIt);
   };
 
   const remove = () => {
@@ -288,6 +306,9 @@ ${link}`;
   };
 
   const edit = () => router.push({ pathname: '/hand/new', params: { edit: hand.id } });
+  // Live, or the latest hand of a table still going: the next hand is one tap away.
+  // Only once the hand is finished: an unfinished pot would carry the wrong stacks over.
+  const nextHere = isComplete(hand) && ((!!activeSession && hand.sessionId === activeSession.id) || (hands[0]?.id === hand.id && sameTable(hand, null)));
   return (
     <>
       <Stack.Screen
@@ -305,10 +326,14 @@ ${link}`;
         <View style={{ paddingHorizontal: 4 }}>
           <HandHeader hand={hand} inBB={settings.inBB} />
         </View>
-        <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} />
+        {/* The next hand from the one just saved: one tap, not back and then "Nova mão". */}
+        <Row gap={S.sm}>
+          <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} style={{ flex: 1 }} lines={2} />
+          {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
+        </Row>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
-        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
@@ -350,13 +375,19 @@ ${link}`;
       </ScrollView>
       <ShareSheet
         visible={shareOpen}
+        header={
+          hand.shareId ? null : (
+            <Field label={t('O que queres saber? (opcional)')} value={ask} onChangeText={setAsk} placeholder={t('Ex.: call ou fold no river?')} maxLength={140} />
+          )
+        }
         onClose={() => setShareOpen(false)}
         groups={[
           {
             options: [
-              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id } }) },
+              { icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
+              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
               { icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
-              { icon: 'share-outline', label: t('Outras apps'), sub: t('WhatsApp, Mensagens, Telegram…'), onPress: () => share() },
+              { icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
               { icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
             ],
           },
@@ -366,7 +397,7 @@ ${link}`;
               { icon: 'help-circle-outline', label: t('Desafio'), sub: t('Os amigos votam antes de ver o resultado'), onPress: () => share(true) },
               { icon: 'copy-outline', label: t('Texto para fórum'), sub: t('TwoPlusTwo, Reddit, grupos'), onPress: askCopyText },
               { icon: 'analytics-outline', label: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard([hand]) },
-              { icon: 'document-text-outline', label: t('Exportar para solver'), sub: t('Formato PokerStars'), onPress: exportSolver },
+              { icon: 'document-text-outline', label: t('Exportar para solver'), sub: t('Formato hand history (.txt)'), onPress: exportSolver },
             ],
           },
         ]}

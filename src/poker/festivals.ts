@@ -253,11 +253,11 @@ export const DUBLIN_MAR_2027: Festival = {
   city: 'Irlanda',
   currency: '€',
   utcOffset: 0,
-  // https://www.pokerlistings.com/news/redstar-poker-restarts-half-a-year-of-irish-open-satellites
+  // https://irishpokeropen.com/blog/2026/10/15/every-days-st-paddys-day-dates-announced-for-2027-irish-open/
   source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
   notes: ['Evento principal de 21 a 26 de março.'],
   events: [],
-  dates: { from: '2027-03-18', to: '2027-03-28' },
+  dates: { from: '2027-03-18', to: '2027-03-29' },
 };
 
 /**

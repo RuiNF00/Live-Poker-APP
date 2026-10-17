@@ -222,3 +222,31 @@ export function parseDuration(v: string): number | null {
   else if ((m = x.match(/^(\d{1,2})(?:[.,](\d))?$/))) mins = Math.round((Number(m[1]) + Number(m[2] ?? 0) / 10) * 60);
   return mins !== null && mins >= 15 && mins <= 48 * 60 ? mins : null;
 }
+
+/**
+ * Picking a game or tournament played before: what it cost and its blinds
+ * the last time (`sessions` newest first). Money only carries over in the
+ * same currency; a venue already typed stays.
+ */
+export function lastTimeAt(name: string, s: Session, sessions: Session[]): Partial<Session> {
+  const p = sessions.find((x) => x.name === name && x.kind === s.kind);
+  if (!p) return { name };
+  const same = p.currency === s.currency;
+  return {
+    name,
+    venue: s.venue || p.venue,
+    sb: p.sb,
+    bb: p.bb,
+    ante: p.ante,
+    anteType: p.anteType,
+    ...(same ? { buyIn: p.buyIn } : {}),
+    // Tournament: the starting stack; cash: the stack is the buy-in.
+    ...(s.kind === 'mtt' ? { stack: p.stackLog[0]?.stack ?? p.stack } : same ? { stack: p.buyIn } : {}),
+    // The level clock and the blind structure, so nobody cycles Off→15→20→30 again. The field
+    // and the payouts belong to that day's event and stay behind.
+    ...(p.levelMinutes ? { levelMinutes: p.levelMinutes } : {}),
+    ...(s.kind === 'mtt' && p.tourney?.structure?.length
+      ? { tourney: { structure: p.tourney.structure, structureName: p.tourney.structureName, startStack: p.tourney.startStack } }
+      : {}),
+  };
+}

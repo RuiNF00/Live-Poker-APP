@@ -72,7 +72,17 @@ export interface Prepared {
 export function prepare(text: string): Prepared {
   const table = readTable(text, knownHeader);
   const source = detectSource(text, table);
-  return { text, table, source, mapping: mappingFor(source, table.headers) };
+  return { text, table, source, mapping: byValues(table, mappingFor(source, table.headers)) };
+}
+
+/** "Lugar" is the finishing place in Portuguese and the venue in Spanish: the column's values decide. */
+function byValues(table: Table, m: Mapping): Mapping {
+  const col = m.finish;
+  if (col === undefined || m.venue !== undefined) return m;
+  const vals = table.rows.map((r) => (r[col] ?? '').trim()).filter(Boolean);
+  if (!vals.length || vals.filter((v) => /^\d+(º|ª|st|nd|rd|th|°)?$/i.test(v)).length * 2 > vals.length) return m;
+  const { finish, ...rest } = m;
+  return { ...rest, venue: finish };
 }
 
 const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL: 'R$', CHF: 'CHF', HKD: 'HK$', AUD: 'A$', '€': '€', $: '$', '£': '£', R$: 'R$', US$: '$' };
@@ -98,10 +108,13 @@ interface DateParts {
   hasTime: boolean;
 }
 
-const MONTHS: Record<string, number> = { jan: 1, feb: 2, fev: 2, mar: 3, apr: 4, abr: 4, may: 5, mai: 5, jun: 6, jul: 7, aug: 8, ago: 8, sep: 9, set: 9, oct: 10, out: 10, nov: 11, dec: 12, dez: 12 };
+// English, Portuguese, Spanish and French short names (accents dropped first).
+const MONTHS: Record<string, number> = { jan: 1, ene: 1, feb: 2, fev: 2, mar: 3, apr: 4, abr: 4, avr: 4, may: 5, mai: 5, jun: 6, jul: 7, aug: 8, ago: 8, aou: 8, sep: 9, set: 9, oct: 10, out: 10, nov: 11, dec: 12, dez: 12, dic: 12 };
+const month = (w: string) => MONTHS[w.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()];
 
 function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: boolean } {
-  const m = rest.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?/i);
+  // "20:00", "8:00 PM", and "20h00" as written in Portugal, Spain and France.
+  const m = rest.match(/(\d{1,2})[:h](\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?/i);
   if (!m) return { h: 0, mi: 0, sec: 0, hasTime: false };
   let h = Number(m[1]);
   const pm = m[4]?.toLowerCase().startsWith('p');
@@ -111,7 +124,8 @@ function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: bo
 }
 
 function splitDate(raw: string): DateParts | null {
-  const s = raw.trim();
+  // A weekday in front ("Sat, Oct 17 2026", "sáb. 17 out 2026") says nothing the date doesn't.
+  const s = raw.trim().replace(/^([^\d\s,.]{2,9})\.?,?\s+(?=\d|[^\d\s]{3,}\.?\s+\d)/u, (w, word: string) => (month(word.slice(0, 3)) ? w : ''));
   if (!s) return null;
   let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(.*)$/);
   if (m) return { y: +m[1], a: +m[2], b: +m[3], ymd: true, ...timeOf(m[4]) };
@@ -121,10 +135,10 @@ function splitDate(raw: string): DateParts | null {
     return { a: +m[1], b: +m[2], y, ymd: false, ...timeOf(m[4]) };
   }
   // "20 Sep 2024", "Sep 20, 2024", "20-set-2024"
-  m = s.match(/^(\d{1,2})[\s-]+([a-z]{3})[a-z.]*[\s-]+(\d{4})(.*)$/i) ?? null;
-  if (m && MONTHS[m[2].toLowerCase()]) return { y: +m[3], a: MONTHS[m[2].toLowerCase()], b: +m[1], ymd: true, ...timeOf(m[4]) };
-  m = s.match(/^([a-z]{3})[a-z.]*\s+(\d{1,2}),?\s+(\d{4})(.*)$/i);
-  if (m && MONTHS[m[1].toLowerCase()]) return { y: +m[3], a: MONTHS[m[1].toLowerCase()], b: +m[2], ymd: true, ...timeOf(m[4]) };
+  m = s.match(/^(\d{1,2})[\s-]+(?:de\s+)?([^\d\s-]{3})[^\d\s-]*\.?[\s-]+(?:de\s+)?(\d{4})(.*)$/iu) ?? null;
+  if (m && month(m[2])) return { y: +m[3], a: month(m[2]), b: +m[1], ymd: true, ...timeOf(m[4]) };
+  m = s.match(/^([^\d\s]{3})[^\d\s]*\.?\s+(\d{1,2}),?\s+(\d{4})(.*)$/iu);
+  if (m && month(m[1])) return { y: +m[3], a: month(m[1]), b: +m[2], ymd: true, ...timeOf(m[4]) };
   return null;
 }
 
@@ -164,7 +178,10 @@ export function parseDate(raw: string | undefined, order: DateOrder): { t: numbe
 export function parseHours(raw: string | undefined): number | null {
   if (!raw) return null;
   const s = raw.trim().toLowerCase();
-  let m = s.match(/^(\d+)\s*[:h]\s*(\d{1,2})(?::(\d{2}))?\s*m?i?n?$/);
+  // "1d 2h", "1 day 2 hours": a long tournament day written out.
+  let m = s.match(/^(\d+)\s*d[a-z]*\s*(?:(\d+)\s*h[a-z]*)?\s*(?:(\d+)\s*m[a-z]*)?$/);
+  if (m) return Number(m[1]) * 24 + Number(m[2] ?? 0) + Number(m[3] ?? 0) / 60;
+  m = s.match(/^(\d+)\s*[:h]\s*(\d{1,2})(?::(\d{2}))?\s*m?i?n?$/);
   if (m) return Number(m[1]) + Number(m[2]) / 60;
   m = s.match(/^(\d+)\s*min/);
   if (m) return Number(m[1]) / 60;
@@ -175,7 +192,7 @@ export function parseHours(raw: string | undefined): number | null {
 // ─── Values ──────────────────────────────────────────────────────────────────
 
 const TRANSFER = /deposit|withdraw|payout|cash ?in\b|transfer|transac|bonus|rakeback|dep[oó]sito|levantamento|retirada|transfer[eê]ncia|bankroll/i;
-const MTT = /tourn|torn|torne|mtt|sng|sit ?[&n]|spin|freeze|bounty|\bko\b|satell?it|sat[eé]lit|turnier|tournoi/i;
+const MTT = /tourn|torn|torne|mtt|sng|sit ?[&n]|sit\s*(and|e|y)\s*go|spin|freeze|freeroll|bounty|\bko\b|satell?it|sat[eé]lit|turnier|tournoi/i;
 const CASH = /cash|ring|dinheiro|efectivo|cashgame/i;
 
 export function kindOf(raw: string): 'mtt' | 'cash' | 'transfer' | null {

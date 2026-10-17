@@ -9,6 +9,7 @@ import { Alert, AppState } from 'react-native';
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
 import { eraseLocal, eraseRemote } from '@/lib/erase-all';
+import { useRates } from '@/lib/fx';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { forgetHandShare } from '@/lib/share-queue';
@@ -168,9 +169,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { swaps } = useSwaps();
   const { groups } = useGroups();
   const includeSwaps = settings.includeSwaps !== false;
+  // Rates for makeup packages with sessions in more than one currency (cut worked out in the package's).
+  const fxSince = useMemo(() => {
+    const other = packages.length ? rawSessions.filter((s) => s.stakes?.some((x) => x.packageId) && s.currency && s.currency !== settings.currency) : [];
+    return other.length ? Math.min(...other.map((s) => s.startedAt)) : null;
+  }, [rawSessions, packages.length, settings.currency]);
+  const rates = useRates(fxSince);
   const sessions = useMemo(
-    () => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : [], includeSwaps ? groups : []),
-    [rawSessions, packages, swaps, groups, includeSwaps],
+    () => withSwaps(withCuts(rawSessions, packages, { table: rates, manual: settings.fxManual }), includeSwaps ? swaps : [], includeSwaps ? groups : []),
+    [rawSessions, packages, swaps, groups, includeSwaps, rates, settings.fxManual],
   );
   // Privacy mode applies to every amount on screen, set before anything renders with it.
   setMoneyMasked(!!settings.hideAmounts);

@@ -55,6 +55,18 @@ export interface Step {
   actStreet?: Street;
 }
 
+/**
+ * A pot split k ways, odd chips to the first: whole chips, or cents when the pot has cents
+ * (a €3.25 chop is 1.63 + 1.62, never two 2s).
+ */
+export function splitPot(amount: number, k: number): number[] {
+  const unit = Number.isInteger(amount) ? 1 : 100;
+  const total = Math.round(amount * unit);
+  const share = Math.floor(total / k);
+  const odd = total - share * k;
+  return Array.from({ length: k }, (_, i) => (share + (i < odd ? 1 : 0)) / unit);
+}
+
 export interface Pot {
   amount: number;
   eligible: number[];
@@ -538,23 +550,22 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
         return pot.eligible.filter((i) => run.scores.get(i) === best);
       }
       const w = (run.manual ?? []).filter((i) => pot.eligible.includes(i));
-      return w.length ? w : null;
+      // "Quem ganhou?" names who won something, not which pot. A winner whose last pot this is
+      // (an all-in for less) can only have won here, so it takes this pot alone; a deeper winner
+      // won a side pot instead. Several winners all-in for the same amount chop.
+      const last = w.filter((i) => !pots.some((q) => q !== pot && q.amount > 0 && pots.indexOf(q) > pots.indexOf(pot) && q.eligible.includes(i)));
+      return last.length ? last : w.length ? w : null;
     };
     const pay = (amount: number, winners: number[] | null) => {
       if (!winners) return;
-      const share = Math.floor(amount / winners.length);
-      let odd = amount - share * winners.length;
-      for (const w of winners) {
-        won[w] += share + (odd > 0 ? 1 : 0);
-        if (odd > 0) odd--;
-      }
+      splitPot(amount, winners.length).forEach((x, k) => (won[winners[k]] += x));
     };
     for (const pot of pots) {
       pot.winners = pick(pot, runs[0]);
       if (runs.length === 2) {
         // Each run plays for half the pot; the odd chip goes with the first.
         pot.winners2 = pick(pot, runs[1]);
-        const first = Math.ceil(pot.amount / 2);
+        const [first] = splitPot(pot.amount, 2);
         pay(first, pot.winners);
         pay(pot.amount - first, pot.winners2);
       } else {

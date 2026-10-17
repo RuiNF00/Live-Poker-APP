@@ -130,6 +130,11 @@ export default function ImportScreen() {
         setStep({ at: 'done', added: n.sessions + n.hands + n.players, total: n.sessions, summary: importSummary(n), recap, source: 'sweatbook' });
         return;
       }
+      if (/^\s*</.test(text)) {
+        // Poker Analytics also exports XML, only for its own restore.
+        setError(t('Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.'));
+        return;
+      }
       const file = prepare(text);
       if (!file.table.rows.length) throw new Error('empty');
       if (file.source === 'generic' && source === 'pokeranalytics') file.source = 'pokeranalytics';

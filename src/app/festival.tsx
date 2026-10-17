@@ -6,14 +6,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { spanLabel } from '@/components/FestivalItem';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { useStartEvent } from '@/components/useStartEvent';
 import { usePro } from '@/billing/pro';
 import { FREE } from '@/billing/plans';
 import { ActionOffers } from '@/components/staking/ActionOffers';
-import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
@@ -21,13 +21,11 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { getOffers, stakesFor } from '@/store/action-offer';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
-import { dayOf, reenterFlight, resumeDay } from '@/store/multi-day';
+import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
-import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix';
@@ -49,7 +47,7 @@ export default function FestivalScreen() {
 
 function FestivalView({ f }: { f: Festival }) {
   const plan = useFestivalPlan(f.id);
-  const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
+  const { sessions, transfers, bankrolls, defaultBankroll, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
   const [lateFor, setLateFor] = useState<string | null>(null);
   const [softAsk, askNotify] = useNotifySoftAsk();
@@ -84,27 +82,7 @@ function FestivalView({ f }: { f: Festival }) {
     updatePlan(f.id, (p) => togglePicked(p, e.id));
   };
 
-  const startSession = (e: FestivalEvent) => {
-    const a = eventAction(f, plan, sessions, e);
-    if (!a) return;
-    if (a.kind === 'view') return router.push('/session');
-    if (activeSession) {
-      const msg = t('Termina a sessão "{name}" antes de começar outra.', { name: activeSession.name || t('Sessão') });
-      if (Platform.OS === 'web') router.push('/session');
-      else Alert.alert(t('Já tens uma sessão a decorrer'), msg, [{ text: t('Ver sessão'), onPress: () => router.push('/session') }, { text: t('Cancelar'), style: 'cancel' }]);
-      return;
-    }
-    tap('medium');
-    const s =
-      a.kind === 'resume'
-        ? resumeDay(a.session)
-        : a.kind === 'reenter'
-          ? reenterFlight(a.session, sessionName(e))
-          : sessionFromEvent(f, e, settings.defaultTableSize, sameCurrency ? bankroll.id : undefined);
-    saveSession(s);
-    updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(e.id) ? p.picked : [...p.picked, e.id], sessions: { ...p.sessions, [e.id]: s.id } }));
-    router.push('/session');
-  };
+  const start = useStartEvent();
 
   return (
     <>
@@ -130,6 +108,10 @@ function FestivalView({ f }: { f: Festival }) {
                 accessibilityLabel={t('Nome do festival')}
                 returnKeyType="done"
                 maxLength={60}
+                // Wraps instead of cutting a long name at 360 px or large text; Enter still just closes the keyboard.
+                multiline
+                scrollEnabled={false}
+                submitBehavior="blurAndSubmit"
                 style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
               />
               <Ionicons name="pencil" size={16} color={C.textDim} />
@@ -198,7 +180,7 @@ function FestivalView({ f }: { f: Festival }) {
                     });
                     setLateFor(null);
                   }}
-                  onStart={() => startSession(e)}
+                  onStart={() => start(f, e)}
                 />
               ))}
             </View>
@@ -229,7 +211,7 @@ function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {
   const trip = trips.find((x) => x.festivalId === f.id);
   const open = () => {
     if (trip) return router.push(`/trips/${trip.id}`);
-    if (!isPro && FREE.trips !== null && trips.length >= FREE.trips) return paywall('stats');
+    if (!isPro && FREE.trips !== null && trips.length >= FREE.trips) return paywall('trips');
     tap('medium');
     const x = tripFromFestival(uid('tr_'), f, plan, f.currency !== settings.currency ? { currency: settings.currency, rate: 0 } : undefined);
     saveTrip(x);
@@ -331,15 +313,15 @@ function EventRow({
   return (
     <Card tone={on ? 'accent' : 'default'} padded={false}>
       <Pressable onPress={onToggle} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md }}>
-        <View style={{ width: 48 }}>
+        <View style={{ minWidth: 48 }}>
           <T v="mono">{e.start.slice(11)}</T>
           <T v="tiny">{e.game}</T>
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3" numberOfLines={2}>
+          <T v="h3">
             {eventTitle(e)}
           </T>
-          <T v="small" numberOfLines={1}>
+          <T v="small">
             {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
@@ -394,27 +376,6 @@ function EventRow({
       ) : null}
     </Card>
   );
-}
-
-function sessionName(e: FestivalEvent) {
-  return eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
-}
-
-/** A running tournament session for a festival event, starting now. */
-function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
-  const now = Date.now();
-  const base = blankSession('mtt', f.currency, tableSize);
-  return {
-    ...base,
-    name: sessionName(e),
-    venue: `${f.venue}, ${t(f.city.split(',')[0])}`,
-    buyIn: e.buyIn,
-    bankrollId,
-    // Backers who bought a piece of this event through an action package.
-    stakes: stakesFor(getOffers(), f.id, e.id),
-    startedAt: now,
-    stackLog: [{ t: now, stack: base.stack, level: base.level }],
-  };
 }
 
 /** Venue wall-clock HH:MM of an instant. */

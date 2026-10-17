@@ -8,9 +8,11 @@ import { Pressable, View } from 'react-native';
 
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { newsTarget } from '@/lib/friend-hands-core';
+import type { Hand } from '@/poker/types';
 import { C, R } from '@/theme';
 
-export function SharedHandsCard({ n }: { n: number }) {
+export function SharedHandsCard({ n, fresh, mine }: { n: number; fresh: Record<string, number>; mine: Hand[] }) {
   const title = n === 1 ? t('1 comentário novo') : t('{n} comentários novos', { n });
   return (
     <Pressable
@@ -18,7 +20,10 @@ export function SharedHandsCard({ n }: { n: number }) {
       accessibilityLabel={`${title}, ${t('Nas mãos partilhadas')}`}
       onPress={() => {
         tap();
-        router.push('/shared-hands');
+        // One hand with news: straight to it, on the street of the newest comment. Several: the list.
+        const to = newsTarget(fresh, mine);
+        if (!to) router.push('/shared-hands');
+        else router.push({ pathname: to.kind === 'mine' ? '/hand/[id]' : '/h/[id]', params: { id: to.id, c: String(to.n) } });
       }}>
       {({ pressed }) => (
         <Card style={{ paddingVertical: 12, paddingHorizontal: 14, opacity: pressed ? 0.8 : 1 }}>

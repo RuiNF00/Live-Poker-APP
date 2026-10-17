@@ -19,6 +19,8 @@ interface Props {
   /** `hand` stops at the challenge decision; the whole hand comes back with the vote. */
   teaser?: boolean;
   title: string | null;
+  /** The sharer's question ("O que queres saber?"), shown under the title. */
+  ask?: string | null;
   revealAll: boolean;
   quiz: QuizSpot | null;
   allowComments: boolean;
@@ -320,7 +322,13 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
       <div className="end-title">{d.endTitle}</div>
       <div className="end-actions">
         {allowComments && (
-          <button className="btn btn-ghost btn-sm" onClick={() => scroll('comments')}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              // Straight into the comment box (keyboard up): type, then Enviar.
+              scroll('comments');
+              document.getElementById('comment-text')?.focus({ preventScroll: true });
+            }}>
             {d.endComment}
           </button>
         )}
@@ -335,7 +343,7 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
   );
 }
 
-function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers: boolean }) {
+function Header({ hand, title, ask, locale, viewCount, spoilers }: Props & { spoilers: boolean }) {
   const d = t(locale);
   const tour = hand.tournament;
   const stakes = stakesText(hand.blinds, (n) => formatAmount(n, hand.blinds.bb, 'chips', locale), undefined, straddleOf(hand));
@@ -360,6 +368,7 @@ function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers
       </div>
       <h1 className="hand-title">{title || (hand.game === 'PLO' ? 'PLO' : "Hold'em")}</h1>
       <div className="hand-meta">{meta.join(' · ')}</div>
+      {ask && <p className="hand-ask">“{ask}”</p>}
       {spoilers && !!hand.tags?.length && (
         <div className="tags">
           {hand.tags.map((tag) => (

@@ -18,6 +18,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
+import { notice } from '@/lib/notice';
 import { playedMs } from '@/store/session-math';
 import { CARD_STYLES, milestoneFor, sessionStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
@@ -95,7 +96,7 @@ export default function SessionCardScreen() {
 
   const copy = async () => {
     await Clipboard.setStringAsync(postText(await inviteLink('any'))).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   return (

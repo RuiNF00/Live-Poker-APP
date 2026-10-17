@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
@@ -22,6 +22,7 @@ import { askNotificationPermission, notifications } from '@/lib/lock-screen/remi
 import { recapHidden } from '@/lib/month-recap';
 import { maybeAskForReview } from '@/lib/review';
 import { shareRef } from '@/lib/referrals';
+import { notice } from '@/lib/notice';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
 import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
@@ -44,6 +45,9 @@ export default function MonthScreen() {
   const [hideMoney, setHideMoney] = useState(true);
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(false);
+  // Narrow phones: the preview never runs past the screen edges.
+  const { width } = useWindowDimensions();
+  const preview = Math.min(PREVIEW, (width - 2 * S.gutter) / STORY_W);
   const card = useRef<React.ComponentRef<typeof View>>(null);
   const [granted, setGranted] = useState<boolean | null>(() => (notifications() ? null : false));
   useEffect(() => {
@@ -121,7 +125,7 @@ export default function MonthScreen() {
 
   const copy = async () => {
     await Clipboard.setStringAsync(await postText('any')).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
 
@@ -190,9 +194,12 @@ export default function MonthScreen() {
 
         <Section title={t('Partilhar o mês')} hint={t('Os valores começam escondidos: o cartão mostra horas, sessões e BB/h.')}>
           <View style={{ alignItems: 'center', gap: S.md }}>
-            <View style={{ width: STORY_W * PREVIEW, height: STORY_H * PREVIEW, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
-              <View style={{ position: 'absolute', left: (STORY_W * PREVIEW - STORY_W) / 2, top: (STORY_H * PREVIEW - STORY_H) / 2, transform: [{ scale: PREVIEW }] }}>
-                <MonthCard ref={card} r={r} hideMoney={hideMoney} />
+            <View style={{ width: STORY_W * preview, height: STORY_H * preview, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
+              <View style={{ position: 'absolute', left: (STORY_W * preview - STORY_W) / 2, top: (STORY_H * preview - STORY_H) / 2, transform: [{ scale: preview }] }}>
+                {/* The card's own text reads out; this says what it is. */}
+                <View accessible accessibilityRole="image" accessibilityLabel={t('Cartão do mês a partilhar: {h} h, {n} sessões.', { h: Math.round(r.hours), n: r.sessions })}>
+                  <MonthCard ref={card} r={r} hideMoney={hideMoney} />
+                </View>
               </View>
             </View>
             <Row gap={S.sm}>
@@ -271,14 +278,19 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
   return (
     <Card style={{ gap: S.md }}>
       <T v="h3">{verdict}</T>
-      <Row gap={6} style={{ alignItems: 'flex-end', height: 96 }}>
+      <Row
+        gap={6}
+        style={{ alignItems: 'flex-end', height: 96 }}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={t('Resultado por mês: {list}.', { list: c.history.map((h) => `${monthName(h.key)} ${signed(h.profit)}`).join(', ') })}>
         {c.history.map((h) => {
           const me = h.key === r.key;
           const hgt = Math.max(3, (Math.abs(h.profit) / top) * 72);
           return (
             <View key={h.key} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
               <View style={{ width: '70%', height: hgt, borderRadius: 4, backgroundColor: h.profit > 0 ? C.good : h.profit < 0 ? C.bad : C.surface3, opacity: me ? 1 : 0.45 }} />
-              <T v="tiny" color={me ? C.text : C.muted} numberOfLines={1}>
+              <T v="tiny" color={me ? C.text : C.muted} numberOfLines={1} maxFontSizeMultiplier={1.3}>
                 {monthName(h.key).slice(0, 3)}
               </T>
             </View>

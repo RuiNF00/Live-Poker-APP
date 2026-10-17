@@ -118,3 +118,16 @@ select add_hand_comment(:'bshare', 'Troll', 'voltei', null, 'keyT');
 select count(*) = 1 as blocked_author_refused from list_hand_comments(:'bshare');
 select count(*) = 1 as others_still_comment from add_hand_comment(:'bshare', 'Rui', 'Obrigado', null, 'keyR');
 reset role;
+
+-- Reader-side blocks: the comment list carries the author key for the web server (which turns it
+-- into an opaque id); nobody else can call it.
+set role service_role;
+select id as sshare from create_shared_hand('{"version":1,"game":"NLHE"}'::jsonb, 'De um amigo', false, null) \gset
+select count(*) = 1 from add_hand_comment(:'sshare', 'Zé', 'Call', null, 'keyZ');
+select author_key = 'keyZ' as author_key_listed from list_hand_comments(:'sshare');
+reset role;
+set role anon;
+\set ON_ERROR_STOP off
+select * from list_hand_comments(:'sshare');
+\set ON_ERROR_STOP on
+reset role;

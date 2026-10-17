@@ -1,8 +1,9 @@
 // A quiet pill at the top while there's no signal. Everything keeps working
 // (it's all on the phone); it only says that sharing, backups and invites
-// will go out by themselves later.
+// will go out by themselves later. Not on hand entry, where it would cover the blinds.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { usePathname } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +18,9 @@ export function NetStatus() {
   const online = useOnline();
   const pending = usePending();
   const insets = useSafeAreaInsets();
-  if (online) return null;
+  const path = usePathname();
+  // Hand entry has its own header with the blinds right where the pill floats; the hand is saved on the phone anyway.
+  if (online || path === '/hand/new') return null;
   return (
     <View
       pointerEvents="none"

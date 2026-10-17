@@ -44,12 +44,18 @@ export function Replayer({
   seek,
   streetNotes,
   source,
+  icm = false,
+  onInBB,
 }: {
   hand: Hand;
   /** Where the hand came from, for the replay_opened event. Previews (welcome) pass nothing and aren't counted. */
   source?: 'own' | 'sample' | 'shared';
   initialInBB?: boolean;
   autoPlay?: boolean;
+  /** Called when the player switches chips/BB, so the next hand opens the same way. */
+  onInBB?: (inBB: boolean) => void;
+  /** Tournament hands: the ICM estimate (Settings, off by default). */
+  icm?: boolean;
   /** Kept for callers; the timeline replaces the old action list. */
   compact?: boolean;
   /** Stop before hero's last decision and ask "what do you do?". */
@@ -238,7 +244,7 @@ export function Replayer({
           <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>{note}</Text>
         </View>
       ) : null}
-      {hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
+      {icm && hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
       {answered ? (
         <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
           {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}
@@ -274,7 +280,10 @@ export function Replayer({
         <Ctrl icon="chevron-forward" label={t('Seguinte')} onPress={() => go(k + 1)} />
         <Ctrl icon="play-forward" label={t('Próxima street')} onPress={nextStreet} />
         <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={() => setSpeed((s) => (s + 1) % SPEEDS.length)} />
-        <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => setInBB((b) => !b)} />
+        <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => {
+            setInBB(!inBB);
+            onInBB?.(!inBB);
+          }} />
         <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} toggle onPress={() => setReveal((x) => !x)} />
       </View>
 
@@ -291,6 +300,10 @@ export function Replayer({
             }}
           />
         </View>
+        {/* Step counter, like a video's time: the scrubber already says it to screen readers. */}
+        <Text importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ minWidth: 40, textAlign: 'right', color: C.textDim, fontFamily: F.mono, fontSize: 11, fontVariant: ['tabular-nums'] }}>
+          {k + 1}/{last + 1}
+        </Text>
         {named ? (
           <View style={{ width: 52, flexDirection: 'row' }}>
             <Ctrl icon={hideNames ? 'person-outline' : 'person'} label={hideNames ? t('Mostrar nomes') : t('Esconder nomes')} active={hideNames} onPress={toggleNames} />

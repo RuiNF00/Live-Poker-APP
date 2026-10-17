@@ -140,7 +140,7 @@ export function TransferForm({
         onChange={(kind) => set({ kind })}
       />
       <Row>
-        <NumField label={t('Valor ({currency})', { currency: cur })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} />
+        <NumField label={t('Valor ({currency})', { currency: cur })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} autoFocus={!onDelete} />
       </Row>
       {k && fmt ? <KeepHint k={k} amount={x.amount} fmt={(n) => fmt(n, cur)} onFill={(amount) => set({ amount })} /> : null}
       {bankrolls.length > 1 ? (

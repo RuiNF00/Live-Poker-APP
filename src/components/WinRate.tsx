@@ -21,7 +21,14 @@ const bb = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1, m
 export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: string; hidden: boolean; onPress?: () => void }) {
   const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), cur));
   return (
-    <Card onPress={onPress} style={{ gap: S.sm }} accessibilityLabel={t('Win rate em cash')}>
+    <Card
+      onPress={onPress}
+      style={{ gap: S.sm }}
+      accessibilityLabel={[
+        `${t('Win rate em cash')}: ${t('{amount}/h', { amount: signed(Math.round(w.hourly), fmt) })}`,
+        t('Provavelmente entre {lo} e {hi} por hora.', { lo: signed(Math.round(w.lo), fmt), hi: signed(Math.round(w.hi), fmt) }).replace(/\.$/, ''),
+        t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
+      ].join('. ')}>
       <Row>
         <T v="label" style={{ flex: 1 }}>
           {t('Win rate em cash')}

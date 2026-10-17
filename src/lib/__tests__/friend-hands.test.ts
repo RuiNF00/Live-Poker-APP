@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { MAX_FRIEND_HANDS, parseFriendHands, parseSeen, remember, total, unseen } from '../friend-hands-core';
+import { MAX_FRIEND_HANDS, newsTarget, parseFriendHands, parseSeen, remember, streetOfNew, total, unseen } from '../friend-hands-core';
 
 test('a hand opened again moves to the top, once', () => {
   const a = remember([], { id: 'aaaa1', title: 'AKs' }, 1);
@@ -35,4 +35,24 @@ test('keeps the hole cards only when they are two real cards', () => {
   assert.deepEqual(remember([], { id: 'abcd1', title: 'AK', cards: ['As', 'Kd'] }, 1)[0].cards, ['As', 'Kd']);
   assert.equal(remember([], { id: 'abcd1', title: 'AK', cards: ['As', 'Xx'] }, 1)[0].cards, undefined);
   assert.equal(parseFriendHands([{ id: 'abcd1', title: '', openedAt: 1, cards: ['As'] }])[0].cards, undefined);
+});
+
+
+test('opens on the street of the newest new comment', () => {
+  const c = [
+    { street: 'flop' as const, createdAt: 1 },
+    { street: 'river' as const, createdAt: 3 },
+    { street: null, createdAt: 4 },
+    { street: 'turn' as const, createdAt: 2 },
+  ];
+  assert.equal(streetOfNew(c, 2), 'river');
+  assert.equal(streetOfNew(c, 1), null);
+  assert.equal(streetOfNew(c, 0), null);
+});
+
+test('the home card goes straight to the one hand with news', () => {
+  const mine = [{ id: 'local1', shareId: 'abcd1' }];
+  assert.deepEqual(newsTarget({ abcd1: 2 }, mine), { kind: 'mine', id: 'local1', n: 2 });
+  assert.deepEqual(newsTarget({ zzzz9: 1 }, mine), { kind: 'friend', id: 'zzzz9', n: 1 });
+  assert.equal(newsTarget({ abcd1: 1, zzzz9: 1 }, mine), null);
 });

@@ -263,3 +263,41 @@ test('run it twice on the turn: shared streets once, only the river twice', () =
   assert.ok(txt.includes('*** FIRST RIVER *** [2c 7d 9s Jh] [3c]\n*** SECOND RIVER *** [2c 7d 9s Jh] [Ks]'), txt);
   assert.ok(!txt.includes('SECOND TURN'));
 });
+
+test('all-in for less: main and side pot named the way Stars does, side pot first', () => {
+  const h = mk({
+    players: [
+      { name: 'Rui', stack: 200, cards: ['Kc', 'Kh'] },
+      { name: 'Zé', stack: 50, cards: ['As', 'Ah'] },
+      { name: 'Ana', stack: 120, cards: ['Qc', 'Qd'] },
+      { name: 'V3', stack: 200 },
+      { name: 'V4', stack: 200 },
+      { name: 'V5', stack: 200 },
+    ],
+    actions: [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'raise', to: 200 }, { p: 1, kind: 'call' }, { p: 2, kind: 'call' }],
+    board: ['2c', '7d', '9s', 'Th', '3c'],
+  });
+  const txt = roundTrip(h);
+  assert.ok(txt.includes('Uncalled bet (€80) returned to Hero'), txt);
+  assert.ok(txt.includes('Hero collected €140 from side pot\nSB collected €150 from main pot'), txt);
+  assert.ok(txt.includes('Total pot €290 Main pot €150. Side pot €140. | Rake €0'), txt);
+});
+
+test('a chopped pot with cents splits to the cent, never more than the pot', () => {
+  const h = mk({
+    game: { kind: 'cash', name: 'Casino', sb: 0.25, bb: 0.5, ante: 0, anteType: 'none', currency: '€' },
+    players: [
+      { name: 'Rui', stack: 50, cards: ['2c', '3d'] },
+      { name: 'Zé', stack: 50 },
+      { name: 'Ana', stack: 50 },
+      { name: 'V3', stack: 50, cards: ['4h', '5s'] },
+      { name: 'V4', stack: 50 },
+      { name: 'V5', stack: 50 },
+    ],
+    actions: [{ p: 3, kind: 'raise', to: 1.25 }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }, { p: 3, kind: 'check' }, { p: 0, kind: 'check' }, { p: 3, kind: 'check' }, { p: 0, kind: 'check' }, { p: 3, kind: 'check' }, { p: 0, kind: 'check' }],
+    board: ['Ac', 'Kc', 'Qd', 'Jd', 'Th'],
+  });
+  const txt = roundTrip(h);
+  assert.ok(txt.includes('Hero collected €1.63 from pot\nUTG collected €1.62 from pot'), txt);
+  assert.ok(txt.includes('Total pot €3.25 | Rake €0'), txt);
+});

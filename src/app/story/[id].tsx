@@ -14,6 +14,7 @@ import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { canMakeVideo, canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, sharePost, shareStory, shareVideo } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
+import { notice } from '@/lib/notice';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
@@ -27,7 +28,9 @@ const MAX_COMMENT = 140;
 const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?'), t('Hero call ou spew?'), t('Cooler ou erro meu?')];
 
 export default function StoryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `to=instagram`: Instagram was already picked in the hand's Partilhar sheet, so the button goes straight there.
+  // `ask`: the "O que queres saber?" typed in that sheet; it opens as the story's comment and goes with the link.
+  const { id, to, ask: asked } = useLocalSearchParams<{ id: string; to?: string; ask?: string }>();
   const { hands, saveHand, settings } = useStore();
   const hand = useMemo(() => hands.find((h) => h.id === id) ?? (id === 'sample' ? sampleHand('sample') : undefined), [hands, id]);
   const insets = useSafeAreaInsets();
@@ -35,7 +38,7 @@ export default function StoryScreen() {
   const ask = hand ? canAsk(hand) : false;
   const [mode, setMode] = useState<StoryMode | 'video'>(ask ? 'question' : 'result');
   const video = mode === 'video';
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(() => (asked || hand?.ask || '').slice(0, MAX_COMMENT));
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(false);
   const pro = usePro();
@@ -47,11 +50,14 @@ export default function StoryScreen() {
   const [progress, setProgress] = useState<string | null>(null);
   // What the voice chip shows: sample bars on screen, an empty slot while capturing for the video.
   const [chip, setChip] = useState<'preview' | 'slot' | null>('preview');
+  // Question stories: Instagram gets an empty space for its Poll sticker, other apps get the options drawn.
+  const [capture, setCapture] = useState<'preview' | 'instagram' | 'post'>('preview');
   const onVoice = useCallback((uri: string | null, ms?: number) => {
     setVoice(uri);
     setVoiceMs(ms ?? 0);
   }, []);
   const withVoice = !!voice && pro.isPro;
+  const direct = withVoice || to === 'instagram';
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
@@ -72,18 +78,22 @@ export default function StoryScreen() {
     return () => clearInterval(id);
   }, [video, busy, reel]);
   if (!hand || !shown || !moment) return <Empty title={t('Mão não encontrada')} />;
+  // A link made from here carries the question too, like one made from the Partilhar sheet.
+  const linked = !hand.shareId && !hand.ask && asked?.trim() ? { ...hand, ask: asked.trim().slice(0, 140) } : hand;
 
   // Preview fits the screen; the captured view inside stays 360×640.
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
   const noteHint = hand.notes.trim().split(/(?<=[.?!])\s/)[0]?.slice(0, MAX_COMMENT);
 
-  const captureAs = async (c: 'slot' | null) => {
+  const captureAs = async (c: 'slot' | 'preview' | null, to: 'instagram' | 'post' = 'instagram') => {
     setChip(c);
+    setCapture(to);
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
       return await captureStory(card);
     } finally {
       setChip('preview');
+      setCapture('preview');
     }
   };
 
@@ -98,7 +108,7 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+        shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
         Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
@@ -150,7 +160,7 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+        shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
         Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
@@ -177,10 +187,17 @@ export default function StoryScreen() {
         }
         target = video ? await shareStory(video, link, 'video') : await shareStory(await captureAs(null), link);
       } else {
-        target = await shareStory(await captureStory(card), link);
+        target = await shareStory(await captureAs('preview'), link);
       }
       track('story_shared', { target: String(target), voice: !!voice, share_id: shareId, ref, question: mode === 'question' });
-      if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
+      if (mode === 'question')
+        notice(
+          t('Junta a sondagem'),
+          t('No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.', {
+            options: moment.options.map((o) => o.label).join(' / '),
+          }),
+        );
+      else if (target === 'sheet') notice(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
@@ -198,7 +215,7 @@ export default function StoryScreen() {
     }
     let shareId: string;
     try {
-      shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+      shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
     } catch {
       Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
       return null;
@@ -216,7 +233,7 @@ export default function StoryScreen() {
     try {
       const l = await linkFor(to === 'x' ? 'x' : 'link');
       if (!l) return;
-      await sharePost([await captureStory(card)], postText(l.link), to);
+      await sharePost([await captureAs('preview', 'post')], postText(l.link), to);
       track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -229,7 +246,7 @@ export default function StoryScreen() {
     const l = await linkFor('link');
     if (!l) return;
     await Clipboard.setStringAsync(postText(l.link)).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   return (
@@ -255,7 +272,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} />
+                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : 'hint'} />
               </View>
             </View>
           </View>
@@ -277,7 +294,7 @@ export default function StoryScreen() {
             {video
               ? t('A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.')
               : mode === 'question'
-                ? t('Pára antes da tua decisão e esconde o resultado.')
+                ? t('Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.')
                 : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 
@@ -310,10 +327,10 @@ export default function StoryScreen() {
             <Button title={t('Criar vídeo da mão')} sub={t('Disponível na versão da loja')} icon="film-outline" disabled onPress={() => {}} />
           ) : canShareStory ? (
             <Button
-              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : withVoice ? t('Partilhar no Instagram') : t('Partilhar')}
-              icon={withVoice ? 'logo-instagram' : 'share-outline'}
+              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : direct ? t('Partilhar no Instagram') : t('Partilhar')}
+              icon={direct ? 'logo-instagram' : 'share-outline'}
               disabled={busy}
-              onPress={withVoice ? post : () => setSheet(true)}
+              onPress={direct ? post : () => setSheet(true)}
             />
           ) : (
             <T v="small" style={{ textAlign: 'center' }}>

@@ -19,6 +19,7 @@ import { track } from '@/lib/events';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { countInSlices } from '@/lib/idle-count';
+import { notice } from '@/lib/notice';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -118,7 +119,7 @@ export default function YearScreen() {
 
   const copy = async () => {
     await Clipboard.setStringAsync(await postText('any')).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   if (review.sessions < YEAR_MIN_SESSIONS) {
@@ -193,8 +194,8 @@ export default function YearScreen() {
                   </View>
                 )}
                 {/* Tap the edges to step, like stories; swiping works too. */}
-                {i > 0 ? <Pressable accessibilityLabel={t('Anterior')} onPress={() => go(i - 1)} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
-                {i < cards.length - 1 ? <Pressable accessibilityLabel={t('Seguinte')} onPress={() => go(i + 1)} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
+                {i > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('Anterior')} onPress={() => go(i - 1)} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
+                {i < cards.length - 1 ? <Pressable accessibilityRole="button" accessibilityLabel={t('Seguinte')} onPress={() => go(i + 1)} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
               </View>
             </View>
           );

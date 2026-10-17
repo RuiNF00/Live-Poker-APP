@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, closePackage, ledgerYears, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { backerLedger, closePackage, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -241,4 +241,44 @@ test("a backer's year: package by package, sessions counted in the year they sta
   assert.equal(y.rows[0].makeup, 1000);
   assert.deepEqual([y.sessions, y.cost, y.prizes, y.net, y.makeup], [3, 720, 500, -120, 1000]);
   assert.equal(yearStatement(l, 2025, packages, pk).sessions, 1);
+});
+
+test('a package with sessions in two currencies counts its makeup in its own, at each day rate', () => {
+  const p = pkg({ id: 'px' });
+  const x = { backerId: 'b1', packageId: 'px', share: 100, markup: 1 };
+  const eur = mk({ buyIn: 100, cashOut: 0, stakes: [x] }); // −100€
+  const usdLoss = mk({ currency: '$', buyIn: 200, cashOut: 0, stakes: [x] }); // −200$ = −100€
+  const usdWin = mk({ currency: '$', buyIn: 200, cashOut: 1000, stakes: [x] }); // +800$ = +400€
+  const table = { [new Date(0).toISOString().slice(0, 10)]: { USD: 2 } };
+  const two = packageStates([eur, usdLoss], [p], { table }).states.get('px')!;
+  assert.deepEqual([two.currency, two.makeup, two.unconverted], ['€', 200, 0]);
+  const all = packageStates([eur, usdLoss, usdWin], [p], { table });
+  const st = all.states.get('px')!;
+  assert.deepEqual([st.makeup, st.net, st.cut], [0, 200, 100]);
+  // Your cut on that session in its own currency: 100€ = 200$.
+  assert.equal(all.cuts.get(usdWin.id), 200);
+  // No rate yet (offline): the dollar sessions stay out instead of being added as euros.
+  const off = packageStates([eur, usdLoss], [p]).states.get('px')!;
+  assert.deepEqual([off.makeup, off.unconverted], [100, 1]);
+  // Carried to a new package, the makeup keeps its currency even if the next session is in dollars.
+  const { next } = closePackage(p, two.makeup, true, 'py', 5, two.currency);
+  assert.equal(next!.currency, '€');
+  const after = packageStates([mk({ currency: '$', buyIn: 200, cashOut: 0, stakes: [{ ...x, packageId: 'py' }] })], [next!], { table }).states.get('py')!;
+  assert.deepEqual([after.currency, after.makeup], ['€', 300]);
+});
+
+test('a new package starts from the backer\'s last deal and the current trip', () => {
+  const list = [pkg({ id: 'a', createdAt: 1, kind: 'action', share: 10, markup: 1.2 }), pkg({ id: 'b', createdAt: 2, kind: 'makeup', share: 50, playerCut: 40 }), pkg({ id: 'c', backerId: 'b2', createdAt: 3, share: 5 })];
+  assert.deepEqual(packageDefaults('b1', list, 'Estoril'), { kind: 'makeup', share: 50, markup: 1, playerCut: 40, name: 'Estoril' });
+  assert.deepEqual(packageDefaults('b9', list), { kind: 'action', share: 20, markup: 1.1, playerCut: 50, name: '' });
+});
+
+test('last stake terms skip package pieces and other backers', () => {
+  const list = [
+    mk({ startedAt: 1, stakes: [{ backerId: 'b1', share: 15, markup: 1.15 }] }),
+    mk({ startedAt: 2, stakes: [{ backerId: 'b1', share: 30, markup: 1, unpaid: true }, { backerId: 'b2', share: 5, markup: 1.3 }] }),
+    mk({ startedAt: 3, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] }),
+  ];
+  assert.deepEqual(lastStakeTerms('b1', list), { share: 30, markup: 1, unpaid: true });
+  assert.equal(lastStakeTerms('b3', list), null);
 });

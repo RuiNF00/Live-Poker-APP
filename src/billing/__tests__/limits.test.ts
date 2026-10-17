@@ -89,7 +89,7 @@ test('turning the clock back does not free up today\'s hands', () => {
 });
 
 test('every Pro feature leads its own paywall: a feature row, and the paywall opened from its lock puts it first', () => {
-  for (const f of [...(Object.keys(PRO_ONLY) as ProFeature[]), 'mttStats' as const, 'varianceMine' as const]) {
+  for (const f of [...(Object.keys(PRO_ONLY) as ProFeature[]), 'mttStats' as const, 'varianceMine' as const, 'trips' as const]) {
     assert.ok(PRO_FEATURES.some((x) => x.key === f), `${f} has no feature row`);
     const rows = featuresFor(f);
     assert.equal(rows[0].feature.key, f, `${f} does not lead its paywall`);

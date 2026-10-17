@@ -27,6 +27,8 @@ export interface HandComment {
   /** Street of `stepIndex`, filled in by the comments API so the app can group without replaying. */
   street?: Street | null;
   createdAt: number;
+  /** Opaque id of the commenter on this hand only, for "block" on the reader's phone. */
+  by?: string;
 }
 
 export type VoteChoice = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';

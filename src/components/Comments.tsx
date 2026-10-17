@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -19,6 +20,8 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
  * the conversation at the table: the whole hand first, then each street, with the street the
  * replayer is on marked "you are here". There the player also keeps a private note per street.
  */
+const NAME_KEY = 'rl.commentName.v1';
+
 export function CommentsList({
   shareId,
   comments,
@@ -30,6 +33,7 @@ export function CommentsList({
   notes,
   onNote,
   onRemove,
+  onBlock,
 }: {
   shareId: string;
   comments: Comment[];
@@ -45,8 +49,17 @@ export function CommentsList({
   onNote?: (s: Street, text: string) => void;
   /** Given on the owner's own hand: each comment offers "Apagar" instead of "Denunciar". */
   onRemove?: (c: Comment) => void;
+  /** On someone else's hand: "Bloquear" next to "Denunciar" hides that person's comments on this phone. */
+  onBlock?: (c: Comment) => void;
 }) {
   const [name, setName] = useState(defaultName);
+  // The name used last time on this phone, so a friend's hand doesn't ask for it again.
+  useEffect(() => {
+    if (defaultName) return;
+    AsyncStorage.getItem(NAME_KEY)
+      .then((v) => v && setName((n) => n || v))
+      .catch(() => {});
+  }, [defaultName]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -66,8 +79,11 @@ export function CommentsList({
       const c = await postComment(shareId, { name: name.trim() || t('Anónimo'), text: text.trim(), ...(about ? { street: about } : {}) });
       onPosted({ ...c, street: c.street ?? about ?? null });
       setText('');
+      if (name.trim()) AsyncStorage.setItem(NAME_KEY, name.trim().slice(0, 40)).catch(() => {});
     } catch (e) {
-      setErr(e instanceof Error && e.message === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : t('Não deu para enviar. Tenta outra vez.'));
+      const m = e instanceof Error ? e.message : '';
+      // Blocked by the hand's owner: said plainly, without inviting retries (and without saying why).
+      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -138,17 +154,31 @@ export function CommentsList({
                       </T>
                     </Pressable>
                   ) : (
-                  <Pressable
-                    disabled={reported.has(c.id)}
-                    hitSlop={10}
-                    accessibilityRole="button"
-                    accessibilityLabel={reported.has(c.id) ? t('Comentário denunciado') : `${t('Denunciar comentário de')} ${c.name}`}
-                    onPress={() => report(c.id)}
-                    style={{ alignSelf: 'flex-end', minHeight: 24, justifyContent: 'center' }}>
-                    <T v="tiny" color={C.muted}>
-                      {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
-                    </T>
-                  </Pressable>
+                  <Row gap={16} style={{ alignSelf: 'flex-end' }}>
+                    {onBlock && c.by ? (
+                      <Pressable
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('Bloquear')} ${c.name}`}
+                        onPress={() => onBlock(c)}
+                        style={{ minHeight: 24, justifyContent: 'center' }}>
+                        <T v="tiny" color={C.muted}>
+                          {t('Bloquear')}
+                        </T>
+                      </Pressable>
+                    ) : null}
+                    <Pressable
+                      disabled={reported.has(c.id)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={reported.has(c.id) ? t('Comentário denunciado') : `${t('Denunciar comentário de')} ${c.name}`}
+                      onPress={() => report(c.id)}
+                      style={{ minHeight: 24, justifyContent: 'center' }}>
+                      <T v="tiny" color={C.muted}>
+                        {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
+                      </T>
+                    </Pressable>
+                  </Row>
                   )}
                 </View>
               </Row>

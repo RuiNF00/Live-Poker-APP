@@ -4,7 +4,7 @@
 
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, View } from 'react-native';
+import { Alert, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { Button, Chip, ChipRow, Field, Row, Section, T, tap } from '@/components/ui';
@@ -26,6 +26,7 @@ const dd = (day: string) => (day ? new Date(day + 'T12:00:00').toLocaleDateStrin
 
 export default function FestivalNewScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { fontScale } = useWindowDimensions();
   const { settings } = useStore();
   const old = festivalById(id);
   const editing = !!old?.own;
@@ -82,9 +83,10 @@ export default function FestivalNewScreen() {
       <Stack.Screen options={{ title: editing ? t('Editar festival') : t('Adicionar o meu festival') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <Field label={t('Cidade')} value={x.city} onChangeText={(city) => set({ city: city.slice(0, 40) })} placeholder={t('Ex.: St. Julian’s')} autoFocus={!editing} />
-        <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-          <Field label={t('De')} value={fromText} onChangeText={(v) => setDay('from', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />
-          <Field label={t('Até')} value={toText} onChangeText={(v) => setDay('to', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />
+        {/* Side by side; under large text each date gets its own line instead of being cut. */}
+        <Row gap={S.sm} style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <Field label={t('De')} value={fromText} onChangeText={(v) => setDay('from', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flexGrow: 1, flexBasis: 150 * fontScale }} />
+          <Field label={t('Até')} value={toText} onChangeText={(v) => setDay('to', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flexGrow: 1, flexBasis: 150 * fontScale }} />
         </Row>
         {datesBad ? (
           <T v="tiny" color={C.bad}>

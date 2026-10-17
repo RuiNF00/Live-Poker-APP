@@ -339,6 +339,14 @@ export function secondBoard(hand: HandRecord, board: Card[], runoutFrom: number 
   return [...board.slice(0, runoutFrom), ...extra.slice(0, 5 - runoutFrom)];
 }
 
+/** `amount` split k ways, odd chips to the first: whole chips, or cents when it has cents (€3.25 → 1.63 + 1.62). */
+function splitChips(amount: number, k: number): number[] {
+  const unit = Number.isInteger(amount) ? 1 : 100;
+  const total = Math.round(amount * unit);
+  const share = Math.floor(total / k);
+  return Array.from({ length: k }, (_, i) => (share + (i < total - share * k ? 1 : 0)) / unit);
+}
+
 /** Splits the pot into main/side pots by investment and awards each to the best eligible hand. */
 export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number) {
   return awardRuns(seats, [values], totalPot)[0];
@@ -362,17 +370,20 @@ export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null
     const eligible = seats.filter((s) => !s.folded && s.invested >= level);
     prev = level;
     if (!amount || !eligible.length) continue;
-    const part = Math.floor(amount / runs.length);
+    const parts = splitChips(amount, runs.length);
     runs.forEach((values, k) => {
-      const runAmount = part + (k === 0 ? amount - part * runs.length : 0);
+      const runAmount = parts[k];
       const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
       const top = Math.max(...scored.map((x) => x.score));
-      const best = scored.filter((x) => x.score === top);
-      const share = Math.floor(runAmount / best.length);
-      best.forEach((b, i) => {
-        const extra = i === 0 ? runAmount - share * best.length : 0;
-        won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + share + extra);
-      });
+      let best = scored.filter((x) => x.score === top);
+      // Picked winners (no cards) name who won something, not which pot: one all-in for exactly
+      // this level can only have won here, so it takes this pot; a deeper picked winner won a side pot.
+      if (top === Number.MAX_SAFE_INTEGER && best.length > 1) {
+        const last = best.filter((b) => eligible.find((e) => e.seat === b.seat)!.invested === level);
+        if (last.length) best = last;
+      }
+      const shares = splitChips(runAmount, best.length);
+      best.forEach((b, i) => won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + shares[i]));
     });
   }
   return won.map((m) =>

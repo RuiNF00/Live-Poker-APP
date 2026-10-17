@@ -79,7 +79,7 @@ function InsightCard({ x, fmt }: { x: Insight; fmt: (n: number) => string }) {
       <T v="h3">{x.title}</T>
       <View style={{ gap: 8 }}>
         {x.groups.map((g) => (
-          <Row key={g.label} gap={S.sm}>
+          <Row key={g.label} gap={S.sm} accessible accessibilityLabel={`${g.label}: ${signed(g.rate)}`}>
             <T v="small" numberOfLines={1} style={{ width: 104 }}>
               {g.label}
             </T>

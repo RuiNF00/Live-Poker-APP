@@ -46,3 +46,19 @@ export function unseen(counts: Record<string, number>, seen: Seen): Record<strin
 }
 
 export const total = (m: Record<string, number>) => Object.values(m).reduce((a, b) => a + b, 0);
+
+/** Where the newest of the `n` new comments is: the street to open the hand on (null = the whole hand). */
+export function streetOfNew<S extends string>(comments: { street?: S | null; createdAt: number }[], n: number): S | null {
+  if (!(n > 0)) return null;
+  const fresh = [...comments].sort((a, b) => a.createdAt - b.createdAt).slice(-n);
+  for (let i = fresh.length - 1; i >= 0; i--) if (fresh[i].street) return fresh[i].street!;
+  return null;
+}
+
+/** One tap from the home card: straight to the hand when only one has news, else the list. */
+export function newsTarget(fresh: Record<string, number>, mine: { id: string; shareId?: string }[]): { kind: 'mine' | 'friend'; id: string; n: number } | null {
+  const ids = Object.keys(fresh);
+  if (ids.length !== 1) return null;
+  const own = mine.find((h) => h.shareId === ids[0]);
+  return own ? { kind: 'mine', id: own.id, n: fresh[ids[0]] } : { kind: 'friend', id: ids[0], n: fresh[ids[0]] };
+}

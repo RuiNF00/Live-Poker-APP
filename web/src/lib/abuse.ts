@@ -12,6 +12,12 @@ const hmac = (s: string) => createHmac('sha256', secret()).update(s).digest('hex
 
 const asUuid = (h: string) => `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 
+/**
+ * Opaque id a reader's phone can block by: an HMAC of a stored key with the server secret, so the key
+ * itself never leaves the server and ids from different scopes can't be matched up.
+ */
+export const opaqueId = (scope: string, key: string) => hmac(`opaque:${scope}:${key}`).slice(0, 20);
+
 /** Today's pseudonymous id for the caller's IP (32 hex chars). */
 export const ipHash = (req: Request) => hmac(`ip:${day()}:${clientIp(req)}`).slice(0, 32);
 

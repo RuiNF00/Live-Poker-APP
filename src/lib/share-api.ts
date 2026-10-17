@@ -17,6 +17,8 @@ export interface Comment {
   createdAt: number;
   /** Street the comment is about; null or missing = the whole hand. */
   street?: Street | null;
+  /** Opaque id of who wrote it, on this hand only: "Bloquear" hides their comments on this phone. */
+  by?: string;
 }
 
 export function shareUrl(id: string) {
@@ -24,13 +26,14 @@ export function shareUrl(id: string) {
 }
 
 /** Where a shared link was sent from, for install attribution. */
-export type ShareChannel = 'link' | 'challenge' | 'story' | 'text' | 'x';
+export type ShareChannel = 'link' | 'challenge' | 'story' | 'text' | 'x' | 'whatsapp';
 const CHANNEL: Record<ShareChannel, [source: string, medium: string]> = {
   link: ['app', 'share_link'],
   challenge: ['app', 'challenge'],
   story: ['instagram', 'story'],
   text: ['app', 'text'],
   x: ['x', 'post'],
+  whatsapp: ['whatsapp', 'message'],
 };
 
 /** The public link with its channel, the hand as campaign and the sharer's referral code. */
@@ -105,6 +108,7 @@ export async function postComment(id: string, c: { name: string; text: string; s
     body: JSON.stringify({ ...c, authorId: await authorId() }),
   });
   if (res.status === 422) throw new Error('offensive');
+  if (res.status === 403) throw new Error('blocked');
   if (!res.ok) throw new Error('comment ' + res.status);
   const j = await res.json();
   return (j.comment ?? j) as Comment;

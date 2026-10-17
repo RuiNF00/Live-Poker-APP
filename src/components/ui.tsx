@@ -5,9 +5,11 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert,
+  InputAccessoryView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +17,7 @@ import {
   Switch,
   Text as RNText,
   TextInput,
+  useWindowDimensions,
   View,
   type PressableProps,
   type ScrollViewProps,
@@ -22,6 +25,7 @@ import {
   type TextInputProps,
   type TextProps,
   type TextStyle,
+  type ViewProps,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,8 +86,58 @@ const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.3, h1: 1.5, h2: 
 /** Text inside buttons, chips and pills. */
 const CONTROL_SCALE = 1.6;
 
+const WEB = Platform.OS === 'web';
+
+/**
+ * React Native for web ignores adjustsFontSizeToFit, so one-line amounts and
+ * labels were cut ("Você deve € 5.…"). On web this measures the rendered text
+ * and scales the font down to fit, never below `min`. Native does nothing here.
+ */
+function useWebFit(on: boolean, min: number) {
+  const ref = useRef<unknown>(null);
+  const [scale, setScale] = useState(1);
+  const fit = () => {
+    const el = ref.current as HTMLElement | null;
+    if (!on || !el || !el.clientWidth) return;
+    // scrollWidth is the text's width at the current scale; undo it to get the full-size width.
+    const natural = el.scrollWidth / scale;
+    const next = natural > el.clientWidth + 0.5 ? Math.max(min, Math.floor((el.clientWidth / natural) * 100) / 100) : 1;
+    if (Math.abs(next - scale) >= 0.01) setScale(next);
+  };
+  // After every render (the text may have changed); fit() only sets state when the scale changes.
+  useLayoutEffect(fit);
+  // The web fonts arrive after the first measure and are wider than the fallback: measure again.
+  const [fonts, setFonts] = useState(0);
+  useEffect(() => {
+    if (!on || typeof document === 'undefined' || !document.fonts) return;
+    const bump = () => setFonts((n) => n + 1);
+    document.fonts.addEventListener('loadingdone', bump);
+    return () => document.fonts.removeEventListener('loadingdone', bump);
+  }, [on]);
+  void fonts;
+  return { ref, scale, fit };
+}
+
+/** Text that may shrink to one line on web too; same props as RN Text. */
+export function FitText({ style, onLayout, ...rest }: TextProps) {
+  const { ref, scale, fit } = useWebFit(WEB && !!rest.adjustsFontSizeToFit && rest.numberOfLines === 1, rest.minimumFontScale || 0.5);
+  if (!WEB) return <RNText {...rest} style={style} onLayout={onLayout} />;
+  const size = scale < 1 ? StyleSheet.flatten(style)?.fontSize : undefined;
+  return (
+    <RNText
+      ref={ref as React.Ref<never>}
+      {...rest}
+      style={size ? [style, { fontSize: size * scale }] : style}
+      onLayout={(e) => {
+        fit();
+        onLayout?.(e);
+      }}
+    />
+  );
+}
+
 export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string }) {
-  return <RNText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
+  return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
 }
 
 const mono: TextStyle = { fontFamily: F.mono, fontVariant: ['tabular-nums'], color: C.text };
@@ -119,8 +173,15 @@ export function Amount({ value, text, v = 'mono', style, neutral }: { value: num
 
 // ─── Layout ──────────────────────────────────────────────────────────────────
 
-export function Row({ children, style, gap = S.sm }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; gap?: number }) {
-  return <View style={[{ flexDirection: 'row', alignItems: 'center', gap }, style]}>{children}</View>;
+/** a11y: a row that reads as one line for screen readers (label and value together). */
+type RowA11y = Partial<Pick<ViewProps, 'accessible' | 'accessibilityLabel' | 'accessibilityRole'>>;
+
+export function Row({ children, style, gap = S.sm, ...a11y }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; gap?: number } & RowA11y) {
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap }, style]} {...a11y}>
+      {children}
+    </View>
+  );
 }
 
 export function Spacer() {
@@ -139,6 +200,7 @@ export function Screen({
   children,
   scroll = true,
   contentStyle,
+  scrollRef,
   ...rest
 }: {
   title?: React.ReactNode;
@@ -147,6 +209,8 @@ export function Screen({
   children: React.ReactNode;
   scroll?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  /** To scroll to a part of the screen that just opened (the end-of-session form). */
+  scrollRef?: React.Ref<React.ComponentRef<typeof ScrollView>>;
 } & Omit<ScrollViewProps, 'children' | 'contentContainerStyle'>) {
   const insets = useSafeAreaInsets();
   if (!scroll)
@@ -157,10 +221,13 @@ export function Screen({
     );
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: C.bg }}
       contentContainerStyle={[{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: 48, gap: S.xl }, contentStyle]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
+      // iOS: the field being typed in scrolls above the keyboard instead of hiding under it.
+      automaticallyAdjustKeyboardInsets
       {...rest}>
       {title !== undefined ? <ScreenHeader title={title} eyebrow={eyebrow} right={right} /> : null}
       {children}
@@ -276,7 +343,12 @@ export function Card({
   accessibilityLabel?: string;
 }) {
   const base: ViewStyle = { borderRadius: R.lg, borderWidth: 1, padding: padded ? S.lg : 0, overflow: 'hidden', ...CARD_TONE[tone], ...(tone === 'default' || tone === 'raised' ? SHADOW : null) };
-  if (!onPress) return <View style={[base, style]}>{children}</View>;
+  if (!onPress)
+    return (
+      <View style={[base, style]} accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel}>
+        {children}
+      </View>
+    );
   return (
     <Pressable
       accessibilityRole="button"
@@ -348,10 +420,12 @@ export function ListItem({
   /** What VoiceOver reads for the row, when the visible text alone reads out of order. */
   accessibilityLabel?: string;
 }) {
+  // At 160%+ text the icon tile and chevron leave too little room: titles broke mid-word ("Viagen s").
+  const bigText = useWindowDimensions().fontScale >= 1.6;
   const body = (
     <>
       {left}
-      {icon ? (
+      {icon && !bigText ? (
         <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: (iconColor ? iconColor : C.text) === C.text ? C.surface3 : softOf(iconColor!), alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name={icon} size={17} color={iconColor ?? (destructive ? C.danger : C.text)} />
         </View>
@@ -375,7 +449,8 @@ export function ListItem({
         ) : null}
       </View>
       {value ? (
-        <T v="mono" color={valueColor ?? C.textDim}>
+        // Capped, so a long amount at large text can't squeeze the title to nothing.
+        <T v="mono" color={valueColor ?? C.textDim} numberOfLines={1} adjustsFontSizeToFit style={{ flexShrink: 1, maxWidth: '45%', textAlign: 'right' }}>
           {value}
         </T>
       ) : null}
@@ -452,9 +527,6 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor, 
 // ─── Numbers ─────────────────────────────────────────────────────────────────
 
 /** A labelled number tile. `tone` colours the value. */
-// Web ignores adjustsFontSizeToFit: there a long value (pt-BR amounts, dates) wraps instead of being cut.
-const STAT_LINES = Platform.OS === 'web' ? 2 : 1;
-
 export function Stat({
   label,
   value,
@@ -476,14 +548,18 @@ export function Stat({
 }) {
   const col = tone === 'good' ? C.good : tone === 'bad' ? C.bad : tone === 'accent' ? C.accent : tone === 'warn' ? C.warn : C.text;
   return (
-    <Card onPress={onPress} style={[{ flex: 1, gap: 6, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 }, style]}>
+    <Card
+      onPress={onPress}
+      style={[{ flex: 1, gap: 6, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 }, style]}
+      // Read as one line: "Por hora: 26 €. Lucro ÷ horas à mesa".
+      accessibilityLabel={`${label}: ${locked ? t('Pro') : value}${sub ? '. ' + sub : ''}`}>
       <Row gap={4}>
-        <T v="label" numberOfLines={1} style={{ flexShrink: 1 }}>
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
           {label}
         </T>
         {locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
       </Row>
-      <T v={big ? 'monoL' : 'mono'} color={locked ? C.muted : col} numberOfLines={STAT_LINES} adjustsFontSizeToFit style={big ? null : { fontSize: 18, lineHeight: 24 }}>
+      <T v={big ? 'monoL' : 'mono'} color={locked ? C.muted : col} numberOfLines={1} adjustsFontSizeToFit style={big ? null : { fontSize: 18, lineHeight: 24 }}>
         {value}
       </T>
       {sub ? (
@@ -587,9 +663,9 @@ export function Button({
       {iconNode}
       {/* Shrinks to fit a narrow slot (the session dock at 200%) instead of cutting to "Nova…". */}
       <View style={{ alignItems: 'center', flexShrink: 1 }}>
-        <RNText numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1, textAlign: 'center' }}>
+        <FitText numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1, textAlign: 'center' }}>
           {title}
-        </RNText>
+        </FitText>
         {sub ? <RNText maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}
       </View>
       {iconRight ? <Ionicons name={iconRight} size={fs + 1} color={fg} /> : null}
@@ -841,8 +917,21 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
   );
 }
 
+/** iOS number pads have no return key: one "OK" bar above them, mounted once in the root layout. */
+export const KEYBOARD_DONE_ID = 'sweatbook-keyboard-done';
+export function KeyboardDoneBar() {
+  if (Platform.OS !== 'ios') return null;
+  return (
+    <InputAccessoryView nativeID={KEYBOARD_DONE_ID}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', backgroundColor: C.surface2, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.border, paddingHorizontal: S.sm, paddingVertical: 4 }}>
+        <Button kind="plain" size="sm" title="OK" haptic={false} onPress={() => Keyboard.dismiss()} />
+      </View>
+    </InputAccessoryView>
+  );
+}
+
 /** Whole-number field: chips, money, places. */
-export function NumField({ label, value, onChange, suffix }: { label: string; value: number; onChange: (n: number) => void; suffix?: string }) {
+export function NumField({ label, value, onChange, suffix, autoFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean }) {
   return (
     <Field
       label={label}
@@ -850,13 +939,15 @@ export function NumField({ label, value, onChange, suffix }: { label: string; va
       value={value ? String(value) : ''}
       onChangeText={(x) => onChange(parseInt(x.replace(/\D/g, ''), 10) || 0)}
       keyboardType="number-pad"
+      inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_DONE_ID : undefined}
+      autoFocus={autoFocus}
       placeholder={suffix ? `0 ${suffix}` : '0'}
       inputStyle={{ fontFamily: F.mono, fontVariant: ['tabular-nums'] }}
     />
   );
 }
 
-export function SearchField({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle> }) {
+export function SearchField({ value, onChange, placeholder, style, autoFocus }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle>; autoFocus?: boolean }) {
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.md, paddingHorizontal: 12, borderWidth: 1, borderColor: C.fieldBorder, minHeight: 44, gap: 8 }, style]}>
       <Ionicons name="search" size={17} color={C.muted} />
@@ -864,6 +955,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         maxFontSizeMultiplier={CONTROL_SCALE}
         placeholderTextColor={C.muted}
         selectionColor={C.accent}

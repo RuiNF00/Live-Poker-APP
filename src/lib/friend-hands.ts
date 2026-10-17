@@ -17,6 +17,8 @@ const SEEN_KEY = 'rl.commentsSeen.v1';
 // Hands you reported: they leave the list and don't come back if the link is opened again.
 const HIDDEN_KEY = 'rl.friendHandsHidden.v1';
 const MAX_HIDDEN = 200;
+// Commenters blocked on this phone ("c:<id>", the id is per hand).
+const BLOCKED_KEY = 'rl.blocked.v1';
 const REFRESH_MS = 60_000;
 
 interface State {
@@ -24,9 +26,10 @@ interface State {
   seen: Seen;
   counts: Record<string, number>;
   hidden: string[];
+  blocked: string[];
 }
 
-let state: State = { hands: [], seen: {}, counts: {}, hidden: [] };
+let state: State = { hands: [], seen: {}, counts: {}, hidden: [], blocked: [] };
 let loaded: Promise<void> | null = null;
 let fetchedAt = 0;
 // First run of this feature: what was already there isn't "new".
@@ -34,21 +37,25 @@ let firstRun = false;
 const listeners = new Set<(s: State) => void>();
 
 function load(): Promise<void> {
-  loaded ??= Promise.all([AsyncStorage.getItem(HANDS_KEY), AsyncStorage.getItem(SEEN_KEY), AsyncStorage.getItem(HIDDEN_KEY)])
-    .then(([h, s, x]) => {
+  loaded ??= Promise.all([AsyncStorage.getItem(HANDS_KEY), AsyncStorage.getItem(SEEN_KEY), AsyncStorage.getItem(HIDDEN_KEY), AsyncStorage.getItem(BLOCKED_KEY)])
+    .then(([h, s, x, b]) => {
       firstRun = s === null;
       const hidden: unknown = x ? JSON.parse(x) : [];
+      const blocked: unknown = b ? JSON.parse(b) : [];
       state = {
         ...state,
         hands: parseFriendHands(h ? JSON.parse(h) : []),
         seen: parseSeen(s ? JSON.parse(s) : {}),
-        hidden: Array.isArray(hidden) ? hidden.filter((i): i is string => typeof i === 'string').slice(0, MAX_HIDDEN) : [],
+        hidden: strings(hidden),
+        blocked: strings(blocked),
       };
       emit();
     })
     .catch(() => {});
   return loaded;
 }
+
+const strings = (x: unknown) => (Array.isArray(x) ? x.filter((i): i is string => typeof i === 'string').slice(0, MAX_HIDDEN) : []);
 
 function emit() {
   for (const l of listeners) l(state);
@@ -61,6 +68,7 @@ async function set(next: Partial<State>) {
   if (next.hands) await AsyncStorage.setItem(HANDS_KEY, JSON.stringify(state.hands)).catch(() => {});
   if (next.seen) await AsyncStorage.setItem(SEEN_KEY, JSON.stringify(state.seen)).catch(() => {});
   if (next.hidden) await AsyncStorage.setItem(HIDDEN_KEY, JSON.stringify(state.hidden)).catch(() => {});
+  if (next.blocked) await AsyncStorage.setItem(BLOCKED_KEY, JSON.stringify(state.blocked)).catch(() => {});
 }
 
 /** A friend's hand opened in the app: it goes on the list (your own links never do). */
@@ -80,6 +88,26 @@ export async function forgetFriendHand(id: string) {
   await load();
   const { [id]: _s, ...seen } = state.seen;
   await set({ hands: state.hands.filter((h) => h.id !== id), seen });
+}
+
+/** Their comments disappear from this phone (on the hand where they were blocked). */
+export async function blockCommenter(by: string) {
+  await load();
+  if (!state.blocked.includes(`c:${by}`)) await set({ blocked: [`c:${by}`, ...state.blocked].slice(0, MAX_HIDDEN) });
+}
+
+/** What this phone blocked, for screens that show other people's comments. */
+export function useBlocked() {
+  const [b, setB] = useState(state.blocked);
+  useEffect(() => {
+    const l = (s: State) => setB(s.blocked);
+    listeners.add(l);
+    load().then(() => setB(state.blocked));
+    return () => {
+      listeners.delete(l);
+    };
+  }, []);
+  return useMemo(() => ({ commenter: (by?: string) => !!by && b.includes(`c:${by}`) }), [b]);
 }
 
 /** The comments of this hand were on screen: none of them is new any more. */
@@ -129,6 +157,6 @@ export function useSharedHands(opts: { refresh?: boolean } = {}) {
 
 onEraseAll(() => {
   // The stored copies go with the other rl.* keys; the memory copy goes now.
-  state = { hands: [], seen: {}, counts: {}, hidden: [] };
+  state = { hands: [], seen: {}, counts: {}, hidden: [], blocked: [] };
   emit();
 });

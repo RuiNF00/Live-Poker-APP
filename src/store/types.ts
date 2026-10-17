@@ -247,6 +247,8 @@ export interface StakePackage {
   playerCut: number;
   /** Makeup deals: losses carried over from the package before it (the player chose to carry them when closing it). */
   makeupIn?: number;
+  /** The package's currency (its first session's): its makeup and makeupIn are counted in it. */
+  currency?: string;
   createdAt: number;
   closedAt?: number;
   updatedAt?: number;
@@ -337,6 +339,8 @@ export interface Settings {
   notify?: Partial<Record<import('@/lib/notify-policy').NotifyKind, boolean>>;
   /** Hold what isn't the session's until the session ends or pauses. Missing = yes. */
   notifyHoldInSession?: boolean;
+  /** Replayer: the ICM estimate under tournament hands. Missing = off (it's a guess, easy to misread). */
+  icm?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
