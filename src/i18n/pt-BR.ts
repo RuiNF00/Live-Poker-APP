@@ -1533,6 +1533,14 @@ const ptBR: Record<string, string> = {
   'Criar e enviar por WhatsApp': 'Criar e enviar pelo WhatsApp',
   'Mais formas de partilhar': 'Mais formas de compartilhar',
   'Sessão apagada': 'Sessão excluída',
+  'Re-entrar · {amount}': 'Reentrar · {amount}',
+  'Late reg aberto até às {time}': 'Late reg aberto até as {time}',
+  'Próximo do plano: {event} às {time}': 'Próximo do plano: {event} às {time}',
+  'Próximo do plano: {event}, {day} às {time}': 'Próximo do plano: {event}, {day} às {time}',
+  'Guarda esta e começa já': 'Salva esta e começa já',
+  'Dia {n} a {date}: lembrar-me': 'Dia {n} em {date}: me lembre',
+  'Avisamos-te {n} min antes.': 'A gente avisa {n} min antes.',
+  'Avisamos-te antes do Dia {n}': 'A gente avisa antes do Dia {n}',
 };
 
 export default ptBR;

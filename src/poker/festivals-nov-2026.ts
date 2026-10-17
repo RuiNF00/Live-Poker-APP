@@ -219,8 +219,9 @@ export const TORRELODONES_NOV_2026: Festival = {
     { id: '9', number: 9, name: 'Bounty', unnumbered: true, game: 'NLH', buyIn: 200, guarantee: 0, start: '2026-11-20T18:00', stack: 30000, levelMinutes: 20 },
     { id: '6-1E', number: 6, name: 'Main Event', flight: '1E', unnumbered: true, game: 'NLH', buyIn: 550, guarantee: 0, start: '2026-11-20T20:00', stack: 50000, levelMinutes: 45 },
     { id: '6-1F', number: 6, name: 'Main Event', flight: '1F Non Stop', unnumbered: true, game: 'NLH', buyIn: 550, guarantee: 0, start: '2026-11-21T11:00', stack: 50000, levelMinutes: 45 },
-    { id: '6-2A', number: 6, name: 'Main Event', flight: '2A', day2: true, unnumbered: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-11-21T12:00' },
-    { id: '6-2B', number: 6, name: 'Main Event', flight: '2B', day2: true, unnumbered: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-11-21T17:00' },
+    // Day 2A takes flights 1A, 1C and 1D; Day 2B takes 1B, 1E and 1F.
+    { id: '6-2A', number: 6, name: 'Main Event', flight: '2A', day2: true, takes: 'ACD', unnumbered: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-11-21T12:00' },
+    { id: '6-2B', number: 6, name: 'Main Event', flight: '2B', day2: true, takes: 'BEF', unnumbered: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-11-21T17:00' },
     { id: '10', number: 10, name: 'Mini Main Event', unnumbered: true, game: 'NLH', buyIn: 250, guarantee: 0, start: '2026-11-21T21:00', stack: 50000, levelMinutes: 30 },
     { id: '10-2', number: 10, name: 'Mini Main Event', flight: '2', day2: true, unnumbered: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-11-22T13:00' },
     { id: '11', number: 11, name: 'Crazy Pineapple', unnumbered: true, game: 'Mix', buyIn: 200, guarantee: 0, start: '2026-11-22T17:00', stack: 20000, levelMinutes: 20 },

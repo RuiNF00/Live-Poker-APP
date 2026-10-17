@@ -27,6 +27,8 @@ export interface FestivalEvent {
   /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
   stack?: number;
   levelMinutes?: number;
+  /** A Day 2 that takes only some flights: their letters ("ACD"). Without it, the letters after the "2" in `flight`. */
+  takes?: string;
   /** Registration closes this many minutes after the start, when the organiser publishes it. */
   lateRegMin?: number;
 }
