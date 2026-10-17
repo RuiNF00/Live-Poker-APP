@@ -39,6 +39,12 @@ export default function Paywall() {
   const chosen = sel === 'annual' ? annual : monthly;
   const trial = chosen?.trialDays ?? 0;
 
+  // Prices failed earlier (offline at launch): try again now that the player is looking at them.
+  useEffect(() => {
+    if (plansFailed && !plans.length) reloadPlans();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   // At the end of onboarding the trial can wait for the next live session, so its days are spent at the table.
   const deferable = reason === 'plan' && paywallConfig.defer;
