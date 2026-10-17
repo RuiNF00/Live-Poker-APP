@@ -312,3 +312,20 @@
 .hc-foot p {
   margin: 0 0 6px;
 }
+.hc-langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.hc-langs a,
+.hc-langs span {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+.hc-langs span {
+  color: var(--text);
+  font-weight: 600;
+}

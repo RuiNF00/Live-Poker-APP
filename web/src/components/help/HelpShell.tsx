@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import { brand } from '@/config/brand';
 import { Mark, Wordmark } from '@/components/Brand';
-import type { Locale } from '@/lib/i18n';
-import { HELP_BASE, helpCopy } from './copy';
+import { HELP_LOCALES, type HelpLocale } from '@/lib/help/articles';
+import { HELP_BASE, helpCopy, LANG_NAME, LANG_TAG } from './copy';
 import './help.css';
 
-/** Header and footer shared by /ajuda, /help and /support. `otherHref` is the same page in the other language. */
-export function HelpShell({ locale, otherHref, children }: { locale: Locale; otherHref: string; children: React.ReactNode }) {
+/**
+ * Header and footer shared by the help pages and /support. `hrefs` is this page in every
+ * help language, for the language links at the bottom.
+ */
+export function HelpShell({ locale, hrefs, children }: { locale: HelpLocale; hrefs: Record<HelpLocale, string>; children: React.ReactNode }) {
   const c = helpCopy[locale];
   return (
-    <div className="hc" lang={locale}>
+    <div className="hc" lang={LANG_TAG[locale]}>
       <header className="hc-bar">
         <Link className="hc-logo" href="/" aria-label={brand.name}>
           <Mark size={26} />
@@ -17,13 +20,26 @@ export function HelpShell({ locale, otherHref, children }: { locale: Locale; oth
         </Link>
         <nav className="hc-nav">
           <Link href={HELP_BASE[locale]}>{c.help}</Link>
-          <Link href={otherHref} hrefLang={locale === 'pt' ? 'en' : 'pt'}>
-            {c.otherLang}
-          </Link>
+          <a href="#idioma" aria-label={c.language}>
+            {LANG_TAG[locale].toUpperCase()}
+          </a>
         </nav>
       </header>
       <main className="hc-main">{children}</main>
       <footer className="hc-foot">
+        <nav id="idioma" className="hc-langs" aria-label={c.language}>
+          {HELP_LOCALES.map((l) =>
+            l === locale ? (
+              <span key={l} aria-current="page">
+                {LANG_NAME[l]}
+              </span>
+            ) : (
+              <Link key={l} href={hrefs[l]} hrefLang={LANG_TAG[l]}>
+                {LANG_NAME[l]}
+              </Link>
+            ),
+          )}
+        </nav>
         <p>{c.footer}</p>
         <p>
           <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/delete-account">Delete data</a>
@@ -31,4 +47,9 @@ export function HelpShell({ locale, otherHref, children }: { locale: Locale; oth
       </footer>
     </div>
   );
+}
+
+/** The same path in every help language. */
+export function sameIn(fn: (l: HelpLocale) => string): Record<HelpLocale, string> {
+  return Object.fromEntries(HELP_LOCALES.map((l) => [l, fn(l)])) as Record<HelpLocale, string>;
 }

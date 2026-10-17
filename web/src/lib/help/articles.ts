@@ -1,6 +1,12 @@
 // Help center articles (/ajuda in Portuguese, /help in English). Menu labels match the app's
 // own strings (src/i18n): PT as written in the app, EN as in src/i18n/en.ts.
 import type { Locale } from '@/lib/i18n';
+import { BR } from './articles-br';
+import { ES } from './articles-es';
+
+/** Help pages also come in Spanish and Brazilian Portuguese (the app adds both next). */
+export type HelpLocale = Locale | 'es' | 'br';
+export const HELP_LOCALES: HelpLocale[] = ['pt', 'br', 'es', 'en'];
 
 export type Block = string | { steps: string[] } | { list: string[] } | { note: string };
 
@@ -25,19 +31,19 @@ export interface Article {
 }
 
 /**
- * Features whose articles wait for the store build. Swaps are on their own branch (PR #90);
- * the lifetime plan, offered only in the cancel flow, is in PR #106.
+ * Features whose articles wait for the store build. Both are in the integration branch now
+ * (swaps #90, the cancel-flow lifetime plan #106); set one to false to hide its article.
  */
-export const LIVE_FEATURES = { swaps: false, lifetime: false };
+export const LIVE_FEATURES = { swaps: true, lifetime: true };
 
-export const CATEGORIES: Record<CategoryId, Record<Locale, string>> = {
-  start: { pt: 'Começar', en: 'Getting started' },
-  hands: { pt: 'Registar mãos', en: 'Logging hands' },
-  sharing: { pt: 'Partilha e privacidade', en: 'Sharing and privacy' },
-  staking: { pt: 'Staking e swaps', en: 'Staking and swaps' },
-  data: { pt: 'Os teus dados', en: 'Your data' },
-  plans: { pt: 'Planos e pagamentos', en: 'Plans and billing' },
-  contact: { pt: 'Contacto', en: 'Contact' },
+export const CATEGORIES: Record<CategoryId, Record<HelpLocale, string>> = {
+  start: { pt: 'Começar', en: 'Getting started', es: 'Empezar', br: 'Começar' },
+  hands: { pt: 'Registar mãos', en: 'Logging hands', es: 'Registrar manos', br: 'Registrar mãos' },
+  sharing: { pt: 'Partilha e privacidade', en: 'Sharing and privacy', es: 'Compartir y privacidad', br: 'Compartilhamento e privacidade' },
+  staking: { pt: 'Staking e swaps', en: 'Staking and swaps', es: 'Staking y swaps', br: 'Staking e swaps' },
+  data: { pt: 'Os teus dados', en: 'Your data', es: 'Tus datos', br: 'Seus dados' },
+  plans: { pt: 'Planos e pagamentos', en: 'Plans and billing', es: 'Planes y pagos', br: 'Planos e pagamentos' },
+  contact: { pt: 'Contacto', en: 'Contact', es: 'Contacto', br: 'Contato' },
 };
 
 export const SUPPORT_EMAIL = 'support@sweatbook.poker';
@@ -408,21 +414,37 @@ const ARTICLES: Article[] = [
     pt: {
       slug: 'swaps',
       title: 'Swaps entre jogadores',
-      summary: 'Os dois confirmam os termos; a app guarda o registo.',
+      summary: 'Os dois confirmam os termos por link; a app faz as contas.',
       body: [
-        'Quando combinas um swap, registas os termos na app e mandas o link ao outro jogador. Ele confirma no browser, sem instalar nada, e os dois ficam com os mesmos termos, a hora e o código do acordo.',
-        'No fim do torneio, a app diz quem deve quanto a quem (as contas do acerto são do Pro). O acerto é feito por vocês, como sempre.',
-        { note: 'Registo e contas apenas: nenhum dinheiro passa pela Sweatbook. Só para maiores de 18 anos.' },
+        {
+          steps: [
+            'Em Bankroll → Swaps, toca em Novo swap.',
+            'Escolhe com quem, a percentagem (desliga A mesma percentagem para um swap desigual, por exemplo 3% por 2%) e se é para Um evento ou para a Série inteira.',
+            'Toca em Criar e enviar link e manda-o só ao outro jogador.',
+            'Ele toca em Confirmo o swap no browser, com ou sem a app. A partir daí, os termos e a hora ficam fixados e os dois recebem o código do acordo.',
+          ],
+        },
+        'Quando alguém cobra, toca em Cobrei e regista o prémio. A app diz quem deve quanto a quem; quando pagares, regista em Paguei. Partilhar as contas manda o resumo ao outro jogador.',
+        'Criar swaps e fazer o acerto faz parte do Pro. Confirmar um swap pelo link é sempre grátis.',
+        { note: 'Registo e contas apenas: nenhum dinheiro passa pela Sweatbook, os pagamentos fazem-se entre vocês. Só para maiores de 18 anos.' },
       ],
     },
     en: {
       slug: 'swaps',
       title: 'Swaps between players',
-      summary: 'Both confirm the terms; the app keeps the record.',
+      summary: 'You both confirm the terms by link; the app does the maths.',
       body: [
-        "When you agree a swap, log the terms in the app and send the link to the other player. They confirm in the browser, no app needed, and you both end up with the same terms, time and deal code.",
-        'When the tournament ends, the app shows who owes whom (settlement accounts are part of Pro). You settle between yourselves, as always.',
-        { note: 'Records and accounts only: no money moves through Sweatbook. 18+ only.' },
+        {
+          steps: [
+            'In Bankroll → Swaps, tap New swap.',
+            'Pick who with, the percentage (turn off Same percentage for an uneven swap, say 3% for 2%) and whether it covers One event or the Whole series.',
+            'Tap Create and send link and send it only to the other player.',
+            'They tap I confirm the swap in the browser, with or without the app. From then on the terms and time are fixed and you both get the deal code.',
+          ],
+        },
+        'When someone cashes, tap I cashed and log the prize. The app shows who owes whom; when you pay, log it under I paid. Share the accounts sends the summary to the other player.',
+        'Creating swaps and settling up are part of Pro. Confirming a swap by link is always free.',
+        { note: 'Records and accounts only: no money moves through Sweatbook, payments are made between you. 18+ only.' },
       ],
     },
   },
@@ -820,8 +842,15 @@ export function articles(): Article[] {
   return ARTICLES.filter((a) => (!a.feature || LIVE_FEATURES[a.feature]) && !(a.unless && LIVE_FEATURES[a.unless]));
 }
 
-export function findArticle(locale: Locale, slug: string): Article | undefined {
-  return articles().find((a) => a[locale].slug === slug);
+/** The article in that language (Spanish and Brazilian texts live in their own files, by id). */
+export function textOf(a: Article, locale: HelpLocale): ArticleText {
+  if (locale === 'es') return ES[a.id] ?? a.en;
+  if (locale === 'br') return BR[a.id] ?? a.pt;
+  return a[locale];
+}
+
+export function findArticle(locale: HelpLocale, slug: string): Article | undefined {
+  return articles().find((a) => textOf(a, locale).slug === slug);
 }
 
 /** Plain text of an article, for search. */

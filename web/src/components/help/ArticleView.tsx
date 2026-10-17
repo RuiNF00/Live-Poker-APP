@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import type { Locale } from '@/lib/i18n';
-import { articles, CATEGORIES, type Article, type Block } from '@/lib/help/articles';
+import { articles, CATEGORIES, textOf, type Article, type Block, type HelpLocale } from '@/lib/help/articles';
 import { ArticleList } from './ArticleList';
 import { HELP_BASE, helpCopy } from './copy';
 import { ContactCard } from './HelpIndex';
-import { HelpShell } from './HelpShell';
+import { HelpShell, sameIn } from './HelpShell';
 
 function BlockView({ b }: { b: Block }) {
   if (typeof b === 'string') return <p>{b}</p>;
@@ -27,14 +26,13 @@ function BlockView({ b }: { b: Block }) {
   return <p className="hc-note">{b.note}</p>;
 }
 
-export function ArticleView({ article, locale }: { article: Article; locale: Locale }) {
+export function ArticleView({ article, locale }: { article: Article; locale: HelpLocale }) {
   const c = helpCopy[locale];
-  const other: Locale = locale === 'pt' ? 'en' : 'pt';
-  const a = article[locale];
+  const a = textOf(article, locale);
   const related = articles().filter((x) => x.cat === article.cat && x.id !== article.id).slice(0, 3);
 
   return (
-    <HelpShell locale={locale} otherHref={`${HELP_BASE[other]}/${article[other].slug}`}>
+    <HelpShell locale={locale} hrefs={sameIn((l) => `${HELP_BASE[l]}/${textOf(article, l).slug}`)}>
       <nav className="hc-crumbs" aria-label={c.help}>
         <Link href={HELP_BASE[locale]}>{c.help}</Link> <span aria-hidden>›</span> {CATEGORIES[article.cat][locale]}
       </nav>

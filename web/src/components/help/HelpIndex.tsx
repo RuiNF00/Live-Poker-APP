@@ -1,20 +1,20 @@
 import Link from 'next/link';
-import type { Locale } from '@/lib/i18n';
-import { articles, CATEGORIES, plainText, type CategoryId } from '@/lib/help/articles';
+import { articles, CATEGORIES, plainText, textOf, type CategoryId, type HelpLocale } from '@/lib/help/articles';
 import { ArticleList } from './ArticleList';
 import { HELP_BASE, helpCopy } from './copy';
 import { HelpSearch } from './HelpSearch';
-import { HelpShell } from './HelpShell';
+import { HelpShell, sameIn } from './HelpShell';
 
-export function HelpIndex({ locale }: { locale: Locale }) {
+export function HelpIndex({ locale }: { locale: HelpLocale }) {
   const c = helpCopy[locale];
-  const other: Locale = locale === 'pt' ? 'en' : 'pt';
   const list = articles();
-  const href = (slug: string) => `${HELP_BASE[locale]}/${slug}`;
-  const items = list.map((a) => ({ href: href(a[locale].slug), title: a[locale].title, summary: a[locale].summary, text: plainText(a[locale]) }));
+  const items = list.map((a) => {
+    const t = textOf(a, locale);
+    return { href: `${HELP_BASE[locale]}/${t.slug}`, title: t.title, summary: t.summary, text: plainText(t) };
+  });
 
   return (
-    <HelpShell locale={locale} otherHref={HELP_BASE[other]}>
+    <HelpShell locale={locale} hrefs={sameIn((l) => HELP_BASE[l])}>
       <section className="hc-hero">
         <h1>{c.title}</h1>
         <p className="hc-lede">{c.lede}</p>
@@ -36,12 +36,12 @@ export function HelpIndex({ locale }: { locale: Locale }) {
   );
 }
 
-export function ContactCard({ locale }: { locale: Locale }) {
+export function ContactCard({ locale }: { locale: HelpLocale }) {
   const c = helpCopy[locale];
   return (
     <section className="hc-contact">
       <strong>{c.stillStuck}</strong>
-      <Link className="hc-btn" href={`/support?lang=${locale}`}>
+      <Link className="hc-btn" href={`/support?lang=${locale === 'br' ? 'pt-BR' : locale}`}>
         {c.contactUs}
       </Link>
     </section>
