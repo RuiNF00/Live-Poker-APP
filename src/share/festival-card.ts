@@ -4,7 +4,7 @@
 // it. Money only shows when the player turns it on. Only the trip's own name
 // goes on the card: never the venue (no casino or event brand in a share).
 
-import { lang, t } from '@/i18n';
+import { locale, t } from '@/i18n';
 import { replay } from '@/poker/engine';
 import { rawMoney } from '@/poker/format';
 import type { Hand } from '@/poker/types';
@@ -117,11 +117,8 @@ export function festivalRecap(trip: Trip, sessions: Session[], hands: Hand[]): F
   };
 }
 
-const one = (n: number) => {
-  const r = Math.round(n * 10) / 10;
-  const v = Math.abs(r) >= 100 ? String(Math.round(r)) : String(r);
-  return lang === 'pt' ? v.replace('.', ',') : v;
-};
+/** One decimal in the player's language: "4,2" in Portuguese and Spanish, "4.2" in English. */
+const one = (n: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 1 }).format(Math.round(n * 10) / 10);
 
 /** The result split for the card: a big number and its unit ("+4,2", "buy-ins"). */
 export function resultParts(r: NonNullable<FestivalRecap['result']>): { num: string; unit: string } {
