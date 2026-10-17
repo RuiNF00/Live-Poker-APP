@@ -103,7 +103,7 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   assert.equal(new Set(LV.events.map((e) => e.id)).size, LV.events.length);
   const starts = LV.events.map((e) => e.start);
   assert.deepEqual([...starts].sort(), starts);
-  assert.equal(LV.events[0].start, '2026-11-27T12:00');
+  assert.equal(LV.events[0].start, '2026-11-27T11:00');
   assert.equal(LV.events.at(-1)!.start, '2026-12-21T18:00');
   assert.equal(LV.events.filter((e) => e.name.startsWith('Satellite')).length, 25);
   const wc = LV.events.filter((e) => e.name === 'Main Event');
@@ -188,9 +188,10 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
   // Torrelodones: the Low Cost flight has its own buy-in and structure.
   const lc = TORRELODONES_NOV_2026.events.find((e) => e.id === '6-1C')!;
   assert.deepEqual([lc.buyIn, lc.stack, lc.levelMinutes], [300, 25000, 20]);
-  // Lisbon: #7 has its buy-in; the Turbo flight gets no structure.
+  // Lisbon: #7 has its buy-in; the Turbo flight and the afternoon satellites have their own levels.
   assert.equal(LISBOA_NOV_2026.events.find((e) => e.id === '7')!.buyIn, 125);
-  assert.equal(LISBOA_NOV_2026.events.find((e) => e.id === '2-1E')!.stack, undefined);
+  assert.deepEqual(['stack', 'levelMinutes'].map((k) => LISBOA_NOV_2026.events.find((e) => e.id === '2-1E')![k as 'stack']), [60000, 15]);
+  assert.deepEqual(LISBOA_NOV_2026.events.filter((e) => e.name.startsWith('Satellite')).map((e) => e.levelMinutes), [30, 25, 30, 25, 30]);
   // Prague: the €1,100 Main Event's flights each have their own level length; the €5,300 one has no published levels.
   const pr = PRAGUE_DEC_2026.events;
   assert.deepEqual(pr.filter((e) => e.number === 1 && !e.day2).map((e) => e.levelMinutes), [40, 30, 40, 30, 30, 20]);

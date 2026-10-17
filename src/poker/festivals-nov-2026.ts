@@ -5,7 +5,7 @@
 // generated from those files: only rows marked official, stack and levels as
 // published. Generic names (App Review 5.2.1): no organiser, venue or brand.
 // Day 3+ and final tables aren't rows, as in Las Vegas: a bagged tournament
-// carries on from the Sessão tab. A Turbo flight runs its own structure, not given.
+// carries on from the Sessão tab. A Turbo flight runs its own structure: shown only when published.
 
 import type { Festival } from './festivals';
 
@@ -240,12 +240,12 @@ export const LISBOA_NOV_2026: Festival = {
     { id: '1', number: 1, name: 'Warm Up', game: 'NLH', buyIn: 200, guarantee: 50_000, start: '2026-11-23T18:00', stack: 100000, levelMinutes: 30 },
     { id: '2-1A', number: 2, name: 'Main Event', flight: '1A', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-24T17:30', stack: 60000, levelMinutes: 35 },
     { id: '11-242130', number: 11, name: 'Satellite to High Roller', unnumbered: true, game: 'NLH', buyIn: 110, guarantee: 0, start: '2026-11-24T21:30', stack: 25000, levelMinutes: 30 },
-    { id: '11-251515', number: 11, name: 'Satellite to High Roller', unnumbered: true, game: 'NLH', buyIn: 110, guarantee: 0, start: '2026-11-25T15:15', stack: 25000, levelMinutes: 30 },
+    { id: '11-251515', number: 11, name: 'Satellite to High Roller', unnumbered: true, game: 'NLH', buyIn: 110, guarantee: 0, start: '2026-11-25T15:15', stack: 25000, levelMinutes: 25 },
     { id: '2-1B', number: 2, name: 'Main Event', flight: '1B', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-25T17:30', stack: 60000, levelMinutes: 35 },
     { id: '3', number: 3, name: 'High Roller', game: 'NLH', buyIn: 700, guarantee: 100_000, start: '2026-11-25T18:00', stack: 100000, levelMinutes: 40 },
     { id: '12-252130', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-25T21:30', stack: 25000, levelMinutes: 30 },
     { id: '3-2', number: 3, name: 'High Roller', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 100_000, start: '2026-11-26T15:30' },
-    { id: '12-261530', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T15:30', stack: 25000, levelMinutes: 30 },
+    { id: '12-261530', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T15:30', stack: 25000, levelMinutes: 25 },
     { id: '2-1C', number: 2, name: 'Main Event', flight: '1C', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-26T17:30', stack: 60000, levelMinutes: 35 },
     { id: '4', number: 4, name: 'PLO Knockout', game: 'PLO', buyIn: 550, guarantee: 20_000, start: '2026-11-26T18:30', stack: 40000, levelMinutes: 20 },
     { id: '12-262100', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T21:00', stack: 25000, levelMinutes: 30 },
@@ -253,7 +253,7 @@ export const LISBOA_NOV_2026: Festival = {
     { id: '2-1D', number: 2, name: 'Main Event', flight: '1D', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T15:30', stack: 60000, levelMinutes: 35 },
     { id: '6', number: 6, name: 'Deepstack', game: 'NLH', buyIn: 150, guarantee: 20_000, start: '2026-11-27T16:30', stack: 60000, levelMinutes: 20 },
     { id: '7', number: 7, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-27T22:00', stack: 40000, levelMinutes: 12 },
-    { id: '2-1E', number: 2, name: 'Main Event', flight: '1E Turbo', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T23:30' },
+    { id: '2-1E', number: 2, name: 'Main Event', flight: '1E Turbo', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T23:30', stack: 60000, levelMinutes: 15 },
     { id: '2-2', number: 2, name: 'Main Event', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 200_000, start: '2026-11-28T15:30' },
     { id: '8', number: 8, name: 'Mini Main Event', game: 'NLH', buyIn: 250, guarantee: 50_000, start: '2026-11-28T18:30', stack: 60000, levelMinutes: 30 },
     { id: '9', number: 9, name: 'Super High Roller Knockout', game: 'NLH', buyIn: 1100, guarantee: 25_000, start: '2026-11-28T19:30', stack: 200000, levelMinutes: 20 },

@@ -3088,7 +3088,7 @@ const es: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} hasta ahora: {amount} en {h} h',
   'Começar: {name}': 'Empezar: {name}',
   'Às {time}': 'A las {time}',
-  'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Aún faltan los torneos de $600 y $800 con seis flights al inicio del festival: el organizador no ha publicado la hora de cada flight.',
+  'Ainda falta o torneio de $800 com seis flights de 30 de novembro a 2 de dezembro (Dia 2 a 3 de dezembro): o organizador não publicou a hora de cada flight.': 'Aún falta el torneo de $800 con seis flights del 30 de noviembre al 2 de diciembre (Día 2 el 3 de diciembre): el organizador no ha publicado la hora de cada flight.',
   'Apagar torneio': 'Borrar torneo',
   'Adicionar torneio': 'Añadir torneo',
   'Ex.: Main Event': 'Ej.: Main Event',
