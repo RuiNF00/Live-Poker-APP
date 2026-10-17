@@ -37,6 +37,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 /** DELETE with header `x-edit-token`: the link stops opening for the backer. */
 export async function DELETE(req: Request, { params }: Ctx) {
   const { id } = await params;
+  if (await limited(req, 'page-delete', 120, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors2 });
   const token = req.headers.get('x-edit-token') ?? '';
   const ok = !!token && validId(id) && (await pageStore().remove(id, token));
   return NextResponse.json({ deleted: ok }, { status: ok ? 200 : 404, headers: cors2 });
