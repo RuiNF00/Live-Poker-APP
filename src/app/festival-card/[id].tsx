@@ -15,7 +15,8 @@ import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
 import { notice } from '@/lib/notice';
@@ -58,7 +59,7 @@ export default function FestivalCardScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      let link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`;
+      let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`, variant);
       // The best hand's replay is the link (sharing is unlimited on every plan).
       if (best) {
         try {
@@ -83,7 +84,7 @@ export default function FestivalCardScreen() {
   // The post text (same as the carousel caption) with the best hand's replay, or the invite.
   const postText = async (to: 'x' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    let link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`;
+    let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`, variant);
     if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'x' ? 'x' : 'link', { ref });
     return carouselCaption(recap, link, { showResult, showMoney });
   };

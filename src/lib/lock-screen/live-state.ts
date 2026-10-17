@@ -108,8 +108,8 @@ export function breakLabel(b: NextBreak | null, now = Date.now()): string {
 export function withLevelClock(prev: Session | undefined, next: Session, now = Date.now()): Session {
   if (!next.levelMinutes || next.endedAt) return next;
   const changed = !prev || prev.level !== next.level || prev.bb !== next.bb || prev.sb !== next.sb;
-  // A start set with the change (synced to the floor's clock) is kept.
-  const synced = !!prev && !!next.levelStartedAt && next.levelStartedAt !== prev.levelStartedAt;
+  // A start set with the change (synced to the floor's clock), or set on a new session (a festival event's published start), is kept.
+  const synced = !!next.levelStartedAt && (!prev || next.levelStartedAt !== prev.levelStartedAt);
   if ((changed && !synced) || !next.levelStartedAt) return { ...next, levelStartedAt: now };
   return next;
 }

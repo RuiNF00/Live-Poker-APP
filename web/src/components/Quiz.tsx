@@ -1,5 +1,6 @@
 'use client';
 
+import { scrollMode } from '@/lib/motion';
 import { useEffect, useRef, useState } from 'react';
 import type { AmountMode, HandRecord, ReplayStep } from '@livepoker/hand-format';
 import { actionLabel, formatAmount } from '@/lib/hand-i18n';
@@ -50,7 +51,7 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone, onHand, hideAnsw
   }, [shareId]);
   // On a phone the question sits under the table: bring the choices on screen.
   useEffect(() => {
-    const t = setTimeout(() => box.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 350);
+    const t = setTimeout(() => box.current?.scrollIntoView({ behavior: scrollMode(), block: 'nearest' }), 350);
     return () => clearTimeout(t);
   }, []);
 

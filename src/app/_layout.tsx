@@ -21,6 +21,7 @@ import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
 import { SettleReminder } from '@/components/staking/SettleReminder';
 import { SwapReminder } from '@/components/swaps/SwapReminder';
+import { SwapSettleReminder } from '@/components/swaps/SwapSettleReminder';
 import { MonthRecapSync } from '@/lib/month-recap';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { TrialFollowUp } from '@/components/TrialFollowUp';
@@ -87,6 +88,7 @@ export default function RootLayout() {
           <SessionLockScreen />
           <HomeWidgetSync />
           <SwapReminder />
+          <SwapSettleReminder />
           <TrialFollowUp />
           <MonthRecapSync />
           <SettleReminder />

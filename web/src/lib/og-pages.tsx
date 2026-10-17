@@ -183,14 +183,15 @@ export function siteOgImage() {
 }
 
 /** An invite (/r/<code>): the same for every code, so it caches like a static file. */
-export function inviteOgImage(days: number) {
+export function inviteOgImage(days: number, c: { eyebrow: string; title: string; days: string }) {
+  const [line1, line2] = c.days.split('\n');
   return render(
     <Frame>
       <div style={{ display: 'flex', flexDirection: 'column', width: 720, justifyContent: 'space-between' }}>
         <Logo />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
-          <Eyebrow label="Convite" />
-          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>Um amigo convidou-te para o Sweatbook</div>
+          <Eyebrow label={c.eyebrow} />
+          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>{c.title}</div>
         </div>
         <div
           style={{
@@ -206,8 +207,8 @@ export function inviteOgImage(days: number) {
         >
           <div style={{ display: 'flex', fontSize: 64, fontWeight: 800, color: K.accent, letterSpacing: -2 }}>+{days}</div>
           <div style={{ display: 'flex', flexDirection: 'column', fontSize: 28, fontWeight: 500, color: K.dim, lineHeight: 1.2 }}>
-            <span>dias de Pro</span>
-            <span>para cada um</span>
+            <span>{line1}</span>
+            {line2 ? <span>{line2}</span> : null}
           </div>
         </div>
       </div>

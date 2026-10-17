@@ -4,7 +4,7 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
-import { assignGroups, groupLedger, groupReady, type SwapGroup } from './swap-groups';
+import { assignGroups, groupLedger, groupNet, groupReady, minTransfers, type SwapGroup } from './swap-groups';
 import { t } from '@/i18n';
 
 import type { Session } from './types';
@@ -362,4 +362,43 @@ export function unsettledSwaps(swaps: Swap[], groups: SwapGroup[]): number {
   const pairs = swaps.filter((s) => s.confirmedAt && !s.gone && !s.archived && !s.left && !settled(swapLedger(s))).length;
   const grps = groups.filter((g) => groupReady(g) && !g.gone && !g.archived && Math.abs(groupLedger(g).balance) >= 0.5).length;
   return pairs + grps;
+}
+
+/** A one-event swap with every result in and money still owed: "falta acertar". */
+export interface ToSettle {
+  id: string;
+  group: boolean;
+  /** The event, or the city when the swap has one ("O swap de Lisboa"). */
+  place: string;
+  /** Pair: the other player. Group: the swap's title. */
+  name: string;
+  /** I pay, or I'm paid: the payer lands on "Paguei", the other on the accounts. */
+  pay: boolean;
+  /** When the last result came in. */
+  closedAt: number;
+}
+
+/**
+ * The swaps where everyone's result is in and I still pay or get paid, newest first. Only one
+ * event: a series has no last result. A group counts only the transfers that involve me.
+ */
+export function swapsToSettle(swaps: Swap[], groups: SwapGroup[]): ToSettle[] {
+  const out: ToSettle[] = [];
+  const lastResult = (list: { kind: string; at: number }[]) => Math.max(0, ...list.filter((e) => e.kind === 'result').map((e) => e.at));
+  for (const s of swaps) {
+    if (s.terms.scope !== 'event' || !s.confirmedAt || s.gone || s.archived || s.left) continue;
+    if (!(['a', 'b'] as const).every((side) => s.entries.some((e) => e.side === side && e.kind === 'result'))) continue;
+    const l = swapLedger(s);
+    if (settled(l)) continue;
+    const name = swapNames(s)[other(s.side)];
+    out.push({ id: s.id, group: false, place: s.terms.venue || s.terms.title, name, pay: l.balance < 0, closedAt: lastResult(s.entries) });
+  }
+  for (const g of groups) {
+    if (g.terms.scope !== 'event' || !groupReady(g) || g.gone || g.archived || g.removed || g.seats.some((x) => x.name === '-')) continue;
+    if (!g.seats.every((x) => g.entries.some((e) => e.seat === x.seat && e.kind === 'result'))) continue;
+    const mine = minTransfers(groupNet(g)).filter((x) => x.from === g.seat || x.to === g.seat);
+    if (!mine.length) continue;
+    out.push({ id: g.id, group: true, place: g.terms.venue || g.terms.title, name: g.terms.title, pay: mine.some((x) => x.from === g.seat), closedAt: lastResult(g.entries) });
+  }
+  return out.sort((a, b) => b.closedAt - a.closedAt);
 }

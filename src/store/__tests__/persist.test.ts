@@ -139,3 +139,25 @@ test('hand counts per player match the per-player filter they replace', async ()
   const fast = handCounts(hands, players);
   for (const p of players) assert.equal(fast.get(p.id) ?? 0, slow(p), p.name);
 });
+
+test('an import that fails to save midway leaves the list as it was on disk', async () => {
+  // Thousands of sessions go in several writes; the index goes last, so a write
+  // that fails after some items were saved never makes them part of the list.
+  class FailsLater extends FakeStorage {
+    left = 2;
+    async multiSet(pairs: [string, string][]) {
+      if (this.left-- <= 0) throw new Error('database or disk is full');
+      return super.multiSet(pairs);
+    }
+  }
+  const kv = new FailsLater();
+  const before = bigHistory(5);
+  const w = createWriter<Hand>(kv, SPEC, [], () => {}, 0);
+  w.schedule(before);
+  await w.flush();
+  const big = [...bigHistory(2000).map((h, i) => ({ ...h, id: 'imp_' + i })), ...before];
+  w.schedule(big);
+  await w.flush();
+  const r = await loadCollection<Hand>(kv, SPEC);
+  assert.deepEqual(r.items.map((h) => h.id), before.map((h) => h.id));
+});

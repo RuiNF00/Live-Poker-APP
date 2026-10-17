@@ -142,7 +142,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   views: {
     title: t('A tua mão está a ser vista'),
-    body: t('Com Pro, guardas e partilhas todas as mãos da sessão.'),
+    body: t('Com Pro, guardas todas as mãos da sessão.'),
   },
   bigWin: {
     title: t('Vê de onde vem o teu lucro'),

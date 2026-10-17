@@ -8,6 +8,7 @@ import { AppState, Linking } from 'react-native';
 
 import { ListGroup, ListItem, Section, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
+import { commentPushAvailable, turnOffCommentPush, turnOnCommentPush } from '@/lib/comment-push';
 import { notifications } from '@/lib/lock-screen/reminder';
 import { kindOn, type NotifyKind } from '@/lib/notify-policy';
 import { useStore } from '@/store/store';
@@ -21,6 +22,7 @@ const rows = (): { kind: NotifyKind; title: string; subtitle: string; icon: Icon
   { kind: 'festival', title: t('Torneios planeados'), subtitle: t('30 min antes e quando o late reg fecha'), icon: 'calendar-outline' },
   { kind: 'money', title: t('Swaps e staking'), subtitle: t('Novidades nos swaps e acertos por fazer'), icon: 'people-outline' },
   { kind: 'coach', title: t('Coach'), subtitle: t('Quando o coach comenta as tuas mãos'), icon: 'school-outline' },
+  { kind: 'comments', title: t('Comentários nas tuas mãos'), subtitle: t('Quando alguém comenta uma mão que partilhaste'), icon: 'chatbubbles-outline' },
   { kind: 'recap', title: t('Resumo do mês'), subtitle: t('No dia 1, se jogaste nesse mês'), icon: 'stats-chart-outline' },
   { kind: 'tips', title: t('Lembretes para registar'), subtitle: t('Se passares uns dias sem registar'), icon: 'create-outline' },
 ];
@@ -45,10 +47,16 @@ function useSystemAllowed(): boolean | null {
 }
 
 export function NotificationSettings() {
-  const { settings, setSettings } = useStore();
+  const { settings, setSettings, hands } = useStore();
   const allowed = useSystemAllowed();
-  const set = (kind: NotifyKind, v: boolean) =>
-    kind === 'recap' ? setSettings({ monthRecap: v }) : setSettings({ notify: { ...settings.notify, [kind]: v } });
+  const set = (kind: NotifyKind, v: boolean) => {
+    if (kind === 'recap') return setSettings({ monthRecap: v });
+    setSettings({ notify: { ...settings.notify, [kind]: v } });
+    // Comment notices are a push from the server: off means it forgets this phone's token.
+    const shared = hands.filter((h) => h.shareId && h.shareToken);
+    if (kind === 'comments') void (v ? Promise.all(shared.map(turnOnCommentPush)) : turnOffCommentPush(shared));
+  };
+  const push = commentPushAvailable();
 
   return (
     <Section title={t('Notificações')}>
@@ -65,9 +73,13 @@ export function NotificationSettings() {
         </ListGroup>
       ) : null}
       <ListGroup>
-        {rows().map((r) => (
-          <ToggleItem key={r.kind} icon={r.icon} title={r.title} subtitle={r.subtitle} value={kindOn(settings, r.kind)} onChange={(v) => set(r.kind, v)} />
-        ))}
+        {rows().map((r) =>
+          r.kind === 'comments' && !push ? (
+            <ListItem key={r.kind} icon={r.icon} iconColor={C.textDim} title={r.title} subtitle={t('Disponível na versão da loja')} chevron={false} />
+          ) : (
+            <ToggleItem key={r.kind} icon={r.icon} title={r.title} subtitle={r.subtitle} value={kindOn(settings, r.kind)} onChange={(v) => set(r.kind, v)} />
+          ),
+        )}
         <ListItem icon="card-outline" title={t('Aviso antes de cobrar')} subtitle={t('Durante o teste grátis avisamos-te antes de cobrar.')} />
       </ListGroup>
       <ListGroup>
