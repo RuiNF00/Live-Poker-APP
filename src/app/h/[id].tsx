@@ -10,6 +10,7 @@ import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
+import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
@@ -20,6 +21,7 @@ export default function SharedHand() {
   const { id, q, r, utm_source, utm_medium } = useLocalSearchParams<{ id: string; q?: string; r?: string; utm_source?: string; utm_medium?: string }>();
   // A friend's link opened in the app: credit the sharer and the channel.
   useEffect(() => {
+    if (id) noteSource(linkSource('hand', { r: r ? String(r) : undefined }));
     if (id && r) claimInvite(String(r), utm_medium === 'story' ? 'story' : 'share', String(id));
     if (id) track('link_opened', { share_id: id, ...(r ? { ref: String(r).slice(0, 20) } : {}), ...(utm_source ? { utm_source: String(utm_source) } : {}), ...(utm_medium ? { utm_medium: String(utm_medium) } : {}) });
   }, [id, r, utm_source, utm_medium]);

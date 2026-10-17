@@ -8,13 +8,13 @@ export function OPTIONS() {
   return new NextResponse(null, { headers: cors });
 }
 
-/** The hand exactly as uploaded (the app's fetchHand reads `hand`). */
+/** The hand exactly as uploaded (the app's fetchHand reads `hand`), and its page views for the sharer. Reading doesn't count as a view. */
 export async function GET(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const share = await loadShare(id);
   if (!share) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: cors });
   return NextResponse.json(
-    { id: share.id, hand: share.payload, title: share.title, quiz: share.quiz, createdAt: share.createdAt },
+    { id: share.id, hand: share.payload, title: share.title, quiz: share.quiz, createdAt: share.createdAt, views: share.viewCount },
     { headers: cors },
   );
 }

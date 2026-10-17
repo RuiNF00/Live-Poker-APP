@@ -92,7 +92,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -123,6 +123,18 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   downswingRead: {
     title: t('Azar ou sinal?'),
     body: t('Vê se o teu downswing é normal para os teus resultados.'),
+  },
+  handsLive: {
+    title: t('A sessão continua'),
+    body: t('Guarda esta mão e as próximas sem limite.'),
+  },
+  views: {
+    title: t('A tua mão está a ser vista'),
+    body: t('Com Pro, guardas e partilhas todas as mãos da sessão.'),
+  },
+  bigWin: {
+    title: t('Vê de onde vem o teu lucro'),
+    body: t('Salas, jogos e stakes, com filtros e CSV.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
@@ -158,19 +170,43 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
 };
 
-export type FeatureKey = 'hands' | 'story' | 'stats';
+export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | ProFeature;
 
+/** The first three are the generic rows; the rest lead only when they triggered the paywall. */
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
   { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Sem limite diário') },
   { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls, filtros, CSV') },
   { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
+  { key: 'solver', icon: 'analytics', title: t('Mãos para o solver'), body: t('Várias de uma vez') },
+  { key: 'coach', icon: 'school', title: t('Revisão com coach'), body: t('Pastas e mãos sem limite') },
+  { key: 'staking', icon: 'people', title: t('Staking'), body: t('Backers, makeup, acertos') },
+  { key: 'swaps', icon: 'swap-horizontal', title: t('Swaps'), body: t('Quem deve a quem') },
+  { key: 'taxReport', icon: 'document-text', title: t('Relatório do ano'), body: t('Por país, com imposto') },
+  { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },
 ];
 
-/** Features in paywall order: the one the player just reached for comes first. */
+const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
+  hands: 'hands',
+  handsLive: 'hands',
+  welcome: 'hands',
+  views: 'hands',
+  stats: 'stats',
+  bigWin: 'stats',
+  story: 'story',
+  solver: 'solver',
+  coach: 'coach',
+  staking: 'staking',
+  swaps: 'swaps',
+  taxReport: 'taxReport',
+  homeTotal: 'homeTotal',
+};
+
+/** Three rows: the feature the player just reached for first, then generic ones. */
 export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATURES)[number]; highlight: boolean }[] {
-  const key: FeatureKey | null = reason === 'hands' || reason === 'welcome' ? 'hands' : reason === 'stats' || reason === 'story' ? reason : null;
+  const key = LEADS[reason] ?? null;
   const first = PRO_FEATURES.filter((f) => f.key === key);
-  return [...first, ...PRO_FEATURES.filter((f) => f.key !== key)].map((feature) => ({ feature, highlight: feature.key === key }));
+  const generic = PRO_FEATURES.slice(0, 3).filter((f) => f.key !== key);
+  return [...first, ...generic].slice(0, 3).map((feature) => ({ feature, highlight: feature.key === key }));
 }
 
 type Cell = string | boolean;
@@ -185,6 +221,7 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Filtros, salas e CSV', free: FREE.bankrollFilters, pro: true },
     { label: 'Stories com voz', free: false, pro: true },
     { label: 'Várias mãos para o solver', free: false, pro: true },
+    { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
     { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
     { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
   ];

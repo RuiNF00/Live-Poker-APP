@@ -9,6 +9,7 @@ import { Avatar } from '@/components/Avatar';
 import { backedLabel } from '@/components/staking/use-backing';
 import { Button, Card, Field, Row, Screen, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { noteSource } from '@/lib/attribution';
 import { decodeStatement, type Statement } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { claimInvite } from '@/lib/referrals';
@@ -25,7 +26,10 @@ export default function AddBacking() {
 
   useEffect(() => {
     if (r) claimInvite(String(r), 'link');
-    if (d) track('link_opened', { kind: 'backer_statement' });
+    if (d) {
+      track('link_opened', { kind: 'backer_statement' });
+      noteSource('backer_page');
+    }
   }, [d, r]);
 
   const read = (raw: string) => {

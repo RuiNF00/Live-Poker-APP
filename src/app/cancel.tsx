@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { cancelReasons, logged, type CancelReason } from '@/billing/cancel';
+import { cancelReasons, logged, scrubNote, type CancelReason } from '@/billing/cancel';
 import { annualSavingPct, formatPrice, perMonth, RETENTION } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } from '@/billing/purchases';
@@ -83,7 +83,7 @@ export default function Cancel() {
     Alert.alert(ok ? t('Compras restauradas') : t('Sem compras'), ok ? t('O teu Pro está ativo nesta conta da loja.') : t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
   };
   const send = () => {
-    track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: note.trim().slice(0, 120) });
+    track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: scrubNote(note) });
     setSent(true);
   };
 
