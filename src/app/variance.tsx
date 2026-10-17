@@ -35,8 +35,8 @@ export default function VarianceScreen() {
   const [count, setCount] = useState(100);
 
   const mine = mode === 'cash' ? cash : mtt;
-  const useMine = () => {
-    if (!isPro) return paywall('varianceMine');
+  const useMine = () => (isPro ? applyMine() : paywall('varianceMine', applyMine));
+  const applyMine = () => {
     if (mode === 'cash' && cash) {
       setHourly(Math.round(cash.hourly));
       setSdHour(Math.round(cash.sdHour));

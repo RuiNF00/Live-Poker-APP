@@ -17,19 +17,20 @@ import { notice } from '@/lib/notice';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
+const trialEnd = (days: number) => new Date(Date.now() + days * 86_400_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+
 export default function Paywall() {
   const insets = useSafeAreaInsets();
   // Small phones (SE, mini): drop the hero icon so the plans show without scrolling.
   const compact = useWindowDimensions().height < 760;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
-  const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig } = usePro();
+  const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
   const [sel, setSel] = useState<PlanId>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
-  // Set when Pro arrives on this screen (purchase or restore), to say what just unlocked.
-  const [welcomed, setWelcomed] = useState(false);
-  // Trial days started here, so the welcome can offer the day-5 reminder it promised.
-  const [started, setStarted] = useState(0);
+  // Only a player who was already Pro on arrival sees "Já és Pro"; Pro arriving here goes straight back.
+  const [wasPro] = useState(isPro);
+  const [sheet, ask] = useNotifySoftAsk();
   // The offering can replace the headline for an A/B test; the offer itself never changes.
   const copy = { ...(PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic), ...paywallConfig.copy[reason] };
   const table = paywallConfig.layout === 'table';
@@ -56,7 +57,17 @@ export default function Paywall() {
   };
   const dismiss = () => {
     track('paywall_closed', { reason, plan: sel, offering: paywallConfig.offering, layout: paywallConfig.layout });
+    takeResume();
     close();
+  };
+  // Closed any other way (swipe down): the tapped action must not run on a later, unrelated purchase.
+  useEffect(() => () => void takeResume(), [takeResume]);
+
+  // Pro arrived: straight back to the screen that was tapped, now unlocked, and finish what was tapped there.
+  const unlocked = () => {
+    const then = takeResume();
+    close();
+    if (then) setTimeout(then, 350);
   };
 
   const onBuy = async () => {
@@ -64,9 +75,19 @@ export default function Paywall() {
     const res = await purchase(sel, reason);
     setBusy(null);
     if (res === 'ok') {
-      setWelcomed(true);
-      setStarted(trial);
-    } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
+      // A trial just started: the day-5 reminder the timeline promised, asked once, over this screen.
+      if (trial >= 3) {
+        const ok = await ask({
+          where: 'trial',
+          title: t('Avisamos-te antes de cobrar'),
+          preview: { title: t('O teste grátis acaba a {date}', { date: trialEnd(trial) }), body: t('Vês as mãos que registaste e o dia em que o teste acaba.') },
+        });
+        if (ok) refreshNudges();
+      }
+      return unlocked();
+    }
+    // Cancelled in the store sheet: stay here, nothing to say.
+    if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
     else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
@@ -74,14 +95,14 @@ export default function Paywall() {
     setBusy('restore');
     const ok = await restore();
     setBusy(null);
-    if (ok) setWelcomed(true);
-    else notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+    if (ok) return unlocked();
+    notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
   };
 
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
   const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[sel].period) }) : '';
 
-  if (isPro) return <Unlocked reason={reason} welcomed={welcomed} trial={started} onDone={close} />;
+  if (isPro && wasPro) return <AlreadyPro onDone={close} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -217,6 +238,7 @@ export default function Paywall() {
           </Row>
         ) : null}
       </View>
+      {sheet}
     </View>
   );
 }
@@ -390,58 +412,17 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
   );
 }
 
-function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; welcomed: boolean; trial: number; onDone: () => void }) {
-  const { refreshNudges } = usePro();
-  const [sheet, ask] = useNotifySoftAsk();
-  const [reminder, setReminder] = useState(false);
-  // Right after a trial starts: ask for the day-5 reminder the timeline promised.
-  useEffect(() => {
-    if (trial < 3) return;
-    let live = true;
-    const timer = setTimeout(async () => {
-      const ok = await ask({
-        where: 'trial',
-        title: t('Avisamos-te antes de cobrar'),
-        preview: { title: t('O teste grátis acaba a {date}', { date: new Date(Date.now() + trial * 86_400_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }) }), body: t('Vês as mãos que registaste e o dia em que o teste acaba.') },
-      });
-      if (!live || !ok) return;
-      setReminder(true);
-      refreshNudges();
-    }, 600);
-    return () => {
-      live = false;
-      clearTimeout(timer);
-    };
-  }, [trial, ask, refreshNudges]);
-  const line = !welcomed
-    ? null
-    : reason === 'hands'
-      ? t('Toca em Guardar. A mão vai para o caderno.')
-      : reason === 'story'
-        ? t('Grava a tua voz. Sem marca de água.')
-        : reason === 'stats'
-          ? t('Filtros, salas e jogos abertos.')
-          : reason === 'solver'
-            ? t('Seleciona as mãos e exporta para o solver.')
-            : reason === 'coach'
-              ? t('Volta atrás e envia as mãos ao coach.')
-              : t('Mãos sem limite, a partir de agora.');
+/** Opened while already Pro (a stale link or a second tap): say so and go back. */
+function AlreadyPro({ onDone }: { onDone: () => void }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: S.md, padding: S.xxl }}>
       <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
         <Ionicons name="checkmark" size={40} color={C.accentInk} />
       </View>
       <T v="title" style={{ textAlign: 'center' }}>
-        {welcomed ? t('Bem-vindo ao Pro') : t('Já és Pro')}
+        {t('Já és Pro')}
       </T>
-      {line ? (
-        <T v="callout" style={{ textAlign: 'center' }}>
-          {line}
-        </T>
-      ) : null}
-      {reminder ? <Pill icon="notifications" label={t('Lembrete ativo')} /> : null}
-      <Button title={reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
-      {sheet}
+      <Button title={t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
     </View>
   );
 }
