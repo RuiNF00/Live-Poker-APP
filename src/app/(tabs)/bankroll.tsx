@@ -12,10 +12,11 @@ import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
+import { Insights } from '@/components/Insights';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { duration, money, shortDate } from '@/poker/format';
+import { chips, duration, money, shortDate } from '@/poker/format';
 import {
   activeFilters,
   applyFilter,
@@ -40,6 +41,7 @@ import {
 } from '@/store/bankroll-math';
 import { bestWeekday, dailyResults, drawdown, lastResults } from '@/store/results-math';
 import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
+import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
@@ -251,6 +253,7 @@ function BankrollTab() {
               <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
             </StatGrid>
             <Calendar list={list} cur={cur} />
+            <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
             <Breakdowns list={list} cur={cur} />
             {!isPro ? (
               <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
@@ -610,7 +613,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
         icon={mtt ? 'trophy-outline' : 'cash-outline'}
         iconColor={mtt ? C.warn : C.info}
         title={s.name || (mtt ? t('Torneio') : 'Cash')}
-        subtitle={[shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+        subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
         right={
           <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
             {(p > 0 ? '+' : '') + fmt(p, s.currency)}

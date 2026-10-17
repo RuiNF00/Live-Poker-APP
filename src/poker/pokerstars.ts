@@ -3,10 +3,9 @@
 // antes, every action with Stars' wording, board, showdown and summary.
 // Opponents are named by position, so table reads never leave the phone.
 
-import { positions, replay, straddleSeats, totalPot, type Replay } from './engine';
+import { positions, replay, straddleSeats, totalPot, type HandResult, type Replay } from './engine';
 import type { Hand, Street } from './types';
 
-const STREET_HEAD: Record<Exclude<Street, 'preflop'>, string> = { flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
 const STREET_NAME: Record<Street, string> = { preflop: 'Flop', flop: 'Flop', turn: 'Turn', river: 'River' };
 const CURRENCY: Record<string, string> = { '€': 'EUR', $: 'USD', '£': 'GBP' };
 
@@ -32,6 +31,36 @@ function roman(n: number): string {
       n -= v;
     }
   return out;
+}
+
+function utcTime(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}/${p(d.getUTCMonth() + 1)}/${p(d.getUTCDate())} ${d.getUTCHours()}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} UTC`;
+}
+
+/**
+ * Chips each player won on each run: one row, or two when the hand was run
+ * twice (each run plays for half of every pot, the odd chip with the first).
+ */
+export function runWinnings(res: HandResult): number[][] {
+  if (!res.pots.some((p) => p.winners2 !== undefined)) return [res.won];
+  const runs = [new Array(res.won.length).fill(0), new Array(res.won.length).fill(0)];
+  const pay = (row: number[], amount: number, winners: number[] | null | undefined) => {
+    if (!winners?.length) return;
+    const share = Math.floor(amount / winners.length);
+    let odd = amount - share * winners.length;
+    for (const w of winners) {
+      row[w] += share + (odd > 0 ? 1 : 0);
+      if (odd > 0) odd--;
+    }
+  };
+  for (const p of res.pots) {
+    const first = Math.ceil(p.amount / 2);
+    pay(runs[0], first, p.winners);
+    pay(runs[1], p.amount - first, p.winners2);
+  }
+  return runs;
 }
 
 /** US Eastern time, as Stars prints it: "2026/10/17 7:04:09 ET". */
@@ -64,7 +93,8 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const out: string[] = [];
 
   const id = num(hand.id + ':' + hand.createdAt);
-  const when = easternTime(hand.createdAt);
+  // Stars' "local [ET]" form; parsers that want the bracketed ET accept it, and so do the rest.
+  const when = `${utcTime(hand.createdAt)} [${easternTime(hand.createdAt)}]`;
   if (cash) out.push(`PokerStars Hand #${id}:  Hold'em No Limit (${fmt(g.sb)}/${fmt(g.bb)} ${code}) - ${when}`);
   else {
     const tid = num(hand.sessionId || g.name || hand.id, 10);
@@ -91,14 +121,19 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const heroCards = hand.players[hand.hero].cards;
   if (heroCards?.length === 2) out.push(`Dealt to Hero [${heroCards.join(' ')}]`);
 
+  // Run it twice: streets dealt after the all-in come out once per run.
+  const twice = r.boards.length === 2 && r.runoutFrom !== null;
+  const street = (count: number, cards: string[], run = '') => {
+    const head = `${run}${count === 3 ? 'FLOP' : count === 4 ? 'TURN' : 'RIVER'}`;
+    return count === 3 ? `*** ${head} *** [${cards.slice(0, 3).join(' ')}]` : `*** ${head} *** [${cards.slice(0, count - 1).join(' ')}] [${cards[count - 1]}]`;
+  };
   const foldedOn: (Street | null)[] = new Array(n).fill(null);
   for (let k = 1; k < r.steps.length; k++) {
     const st = r.steps[k];
     const prev = r.steps[k - 1].state;
     if (st.kind === 'board') {
-      const shown = hand.board.slice(0, st.state.boardCount);
-      const head = STREET_HEAD[st.street as Exclude<Street, 'preflop'>];
-      out.push(st.street === 'flop' ? `*** FLOP *** [${shown.join(' ')}]` : `*** ${head} *** [${shown.slice(0, -1).join(' ')}] [${shown[shown.length - 1]}]`);
+      const c = st.state.boardCount;
+      out.push(street(c, hand.board, twice && c > r.runoutFrom! ? 'FIRST ' : ''));
       continue;
     }
     if (st.kind !== 'action' || !st.state.last) continue;
@@ -118,20 +153,25 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
     }
   }
 
+  if (twice) for (const c of [3, 4, 5]) if (c > r.runoutFrom!) out.push(street(c, r.boards[1], 'SECOND '));
+
   const res = r.result;
   const fin = r.final;
   const shows = (i: number) => !fin.folded[i] && hand.players[i].cards?.length === 2;
-  if (res && !fin.foldWin) {
-    out.push('*** SHOW DOWN ***');
-    for (let i = 0; i < n; i++) if (!fin.folded[i]) out.push(shows(i) ? `${name(i)}: shows [${hand.players[i].cards!.join(' ')}]` : `${name(i)}: mucks hand`);
-  }
-  if (res) res.won.forEach((w, i) => w > 0 && out.push(`${name(i)} collected ${fmt(w)} from pot`));
+  const runs = res ? runWinnings(res) : [];
+  runs.forEach((won, k) => {
+    if (!fin.foldWin) {
+      out.push(twice ? `*** ${k ? 'SECOND' : 'FIRST'} SHOW DOWN ***` : '*** SHOW DOWN ***');
+      for (let i = 0; i < n; i++) if (!fin.folded[i]) out.push(shows(i) ? `${name(i)}: shows [${hand.players[i].cards!.join(' ')}]` : `${name(i)}: mucks hand`);
+    }
+    won.forEach((w, i) => w > 0 && out.push(`${name(i)} collected ${fmt(w)} from pot`));
+  });
 
   const pot = res ? res.pots.reduce((x, p) => x + p.amount, 0) : totalPot(fin);
   out.push('*** SUMMARY ***');
   out.push(`Total pot ${fmt(pot)} | Rake ${fmt(0)}`);
-  const board = hand.board.slice(0, fin.boardCount);
-  if (board.length) out.push(`Board [${board.join(' ')}]`);
+  if (twice) out.push('Hand was run twice', `FIRST Board [${r.boards[0].join(' ')}]`, `SECOND Board [${r.boards[1].join(' ')}]`);
+  else if (fin.boardCount) out.push(`Board [${hand.board.slice(0, fin.boardCount).join(' ')}]`);
   for (let i = 0; i < n; i++) {
     const role = i === hand.button ? ' (button)' : g.bombPot ? '' : i === sbI ? ' (small blind)' : i === bbI ? ' (big blind)' : '';
     const won = res?.won[i] ?? 0;

@@ -26,7 +26,7 @@ function mk(over: Partial<Hand> = {}): Hand {
 
 // A minimal PokerStars reader, the way trackers parse these files: seats,
 // button, blinds, actions, board, cards. Used to prove the export round-trips.
-function parse(txt: string): Pick<Hand, 'players' | 'button' | 'actions' | 'board'> & { sb: number; bb: number; ante: number } {
+function parse(txt: string): Pick<Hand, 'players' | 'button' | 'actions' | 'board' | 'board2'> & { sb: number; bb: number; ante: number } {
   const num = (s: string) => Number(s.replace(/[^\d.]/g, ''));
   const lines = txt.split('\n');
   const players: Hand['players'] = [];
@@ -37,6 +37,7 @@ function parse(txt: string): Pick<Hand, 'players' | 'button' | 'actions' | 'boar
   let ante = 0;
   const actions: HandAction[] = [];
   let board: string[] = [];
+  let second: string[] = [];
   for (const l of lines) {
     if (l === '*** SUMMARY ***') break;
     let m: RegExpMatchArray | null;
@@ -48,7 +49,11 @@ function parse(txt: string): Pick<Hand, 'players' | 'button' | 'actions' | 'boar
     else if ((m = l.match(/^(.+): posts big blind (\S+)/))) bb = num(m[2]);
     else if ((m = l.match(/^(.+): posts the ante (\S+)/))) ante = num(m[2]);
     else if ((m = l.match(/^Dealt to (.+) \[(.+)\]$/))) players[names.indexOf(m[1])].cards = m[2].split(' ');
-    else if ((m = l.match(/^\*\*\* (FLOP|TURN|RIVER) \*\*\* (.+)$/))) board = m[2].replace(/[[\]]/g, '').split(' ');
+    else if ((m = l.match(/^\*\*\* (FIRST |SECOND )?(FLOP|TURN|RIVER) \*\*\* (.+)$/))) {
+      const cards = m[3].replace(/[[\]]/g, '').split(' ');
+      if (m[1] === 'SECOND ') second = cards;
+      else board = cards;
+    }
     else if ((m = l.match(/^(.+): shows \[(.+)\]$/))) players[names.indexOf(m[1])].cards = m[2].split(' ');
     else if ((m = l.match(/^(.+): (folds|checks|calls|bets|raises)(?: (\S+))?(?: to (\S+))?/))) {
       const p = names.indexOf(m[1]);
@@ -56,7 +61,10 @@ function parse(txt: string): Pick<Hand, 'players' | 'button' | 'actions' | 'boar
       actions.push(kind === 'bet' ? { p, kind, to: num(m[3]) } : kind === 'raise' ? { p, kind, to: num(m[4]) } : { p, kind });
     }
   }
-  return { players, button, actions, board, sb, bb, ante };
+  // The second run is whatever differs from the first board.
+  let shared = 0;
+  while (shared < second.length && second[shared] === board[shared]) shared++;
+  return { players, button, actions, board, board2: second.length ? second.slice(shared) : undefined, sb, bb, ante };
 }
 
 function roundTrip(h: Hand) {
@@ -69,7 +77,8 @@ function roundTrip(h: Hand) {
     assert.equal(back.sb, h.game.sb);
     assert.equal(back.bb, h.game.bb);
   }
-  const rebuilt: Hand = { ...h, players: back.players, actions: back.actions, board: back.board };
+  assert.deepEqual(back.board2, h.board2);
+  const rebuilt: Hand = { ...h, players: back.players, actions: back.actions, board: back.board, board2: back.board2 };
   const a = replay(h);
   const b = replay(rebuilt);
   // Same table, same story: every state and the payout match the original.
@@ -92,7 +101,7 @@ test('cash hand: header, seats, Stars wording, showdown and summary', () => {
   });
   const txt = roundTrip(h);
   const lines = txt.split('\n');
-  assert.match(lines[0], /^PokerStars Hand #\d{12}: {2}Hold'em No Limit \(€1\/€2 EUR\) - 2026\/10\/17 19:04:09 ET$/);
+  assert.match(lines[0], /^PokerStars Hand #\d{12}: {2}Hold'em No Limit \(€1\/€2 EUR\) - 2026\/10\/17 23:04:09 UTC \[2026\/10\/17 19:04:09 ET\]$/);
   assert.equal(lines[1], "Table 'Casino Lisboa' 6-max Seat #1 is the button");
   assert.equal(lines[2], 'Seat 1: Hero (€200 in chips)');
   assert.equal(lines[3], 'Seat 2: SB (€135 in chips)');
@@ -200,4 +209,57 @@ test('bomb pot: everyone antes, no blinds, the hand opens on the flop and the ta
   assert.equal(txt.match(/posts the ante \$10/g)?.length, 6);
   assert.ok(!/blind/.test(txt.split('*** SUMMARY ***')[0]), txt);
   assert.ok(txt.includes('*** HOLE CARDS ***\nDealt to Hero [As Kd]\n*** FLOP *** [Qd 8h 3h]\nSB: bets $20'), txt);
+});
+
+test('run it twice from preflop: FIRST/SECOND boards and showdowns, half the pot each', () => {
+  const h = mk({
+    players: [
+      { name: 'Rui', stack: 1000, cards: ['As', 'Ad'] },
+      { name: '', stack: 1000 },
+      { name: '', stack: 1000, cards: ['Kh', 'Kc'] },
+      { name: '', stack: 1000 }, { name: '', stack: 1000 }, { name: '', stack: 1000 },
+    ],
+    actions: [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'raise', to: 1000 }, { p: 1, kind: 'fold' }, { p: 2, kind: 'call' }],
+    board: ['2c', '7d', '9s', 'Jh', '3c'],
+    board2: ['Ks', '4h', '8d', 'Qc', '5s'],
+  });
+  const txt = roundTrip(h);
+  for (const l of [
+    '*** FIRST FLOP *** [2c 7d 9s]',
+    '*** FIRST TURN *** [2c 7d 9s] [Jh]',
+    '*** FIRST RIVER *** [2c 7d 9s Jh] [3c]',
+    '*** SECOND FLOP *** [Ks 4h 8d]',
+    '*** SECOND RIVER *** [Ks 4h 8d Qc] [5s]',
+    '*** FIRST SHOW DOWN ***',
+    '*** SECOND SHOW DOWN ***',
+    'Hand was run twice',
+    'FIRST Board [2c 7d 9s Jh 3c]',
+    'SECOND Board [Ks 4h 8d Qc 5s]',
+  ])
+    assert.ok(txt.split('\n').includes(l), `missing: ${l}\n${txt}`);
+  assert.ok(txt.includes('*** FIRST SHOW DOWN ***\nHero: shows [As Ad]\nBB: shows [Kh Kc]\nHero collected €1001 from pot\n*** SECOND SHOW DOWN ***'), txt);
+  assert.ok(txt.includes('BB collected €1000 from pot\n*** SUMMARY ***'), txt);
+  assert.ok(!txt.includes('*** FLOP ***'));
+});
+
+test('run it twice on the turn: shared streets once, only the river twice', () => {
+  const h = mk({
+    players: [
+      { name: 'Rui', stack: 1000, cards: ['As', 'Ad'] },
+      { name: '', stack: 1000 },
+      { name: '', stack: 1000, cards: ['Kh', 'Kc'] },
+      { name: '', stack: 1000 }, { name: '', stack: 1000 }, { name: '', stack: 1000 },
+    ],
+    actions: [
+      { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'check' },
+      { p: 2, kind: 'check' }, { p: 0, kind: 'check' }, { p: 2, kind: 'bet', to: 998 }, { p: 0, kind: 'call' },
+    ],
+    board: ['2c', '7d', '9s', 'Jh', '3c'],
+    board2: ['Ks'],
+  });
+  const txt = roundTrip(h);
+  assert.ok(txt.includes('*** FLOP *** [2c 7d 9s]\nBB: checks'), txt);
+  assert.ok(txt.includes('*** TURN *** [2c 7d 9s] [Jh]'), txt);
+  assert.ok(txt.includes('*** FIRST RIVER *** [2c 7d 9s Jh] [3c]\n*** SECOND RIVER *** [2c 7d 9s Jh] [Ks]'), txt);
+  assert.ok(!txt.includes('SECOND TURN'));
 });

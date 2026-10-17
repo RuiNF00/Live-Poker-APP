@@ -1,4 +1,5 @@
 import { positions, replay, straddleSeats, totalPot, type LastAction } from './engine';
+import { runWinnings } from './pokerstars';
 import { chips } from './format';
 import type { AnteType, Hand, Street } from './types';
 
@@ -104,7 +105,6 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
     out.push(head);
     if (acts.length) out.push(acts.join(', '));
   }
-  if (r.boards.length === 2) out.push('', `Second run: ${r.boards[1].join(' ')}`);
 
   if (r.result) {
     out.push('');
@@ -114,8 +114,13 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
         if (i !== hand.hero && !r.final.folded[i] && c?.length === 2) out.push(`${who(i)} shows ${c.join(' ')}`);
       }
     }
-    const winners = r.result.won.map((w, i) => (w > 0 ? `${who(i)} wins ${inBB(w, bb)}` : '')).filter(Boolean);
-    if (winners.length) out.push(winners.join(', '));
+    const wins = (won: number[]) => won.map((w, i) => (w > 0 ? `${who(i)} wins ${inBB(w, bb)}` : '')).filter(Boolean).join(', ');
+    const runs = runWinnings(r.result);
+    if (runs.length === 2) {
+      // Run it twice: each board with who took its half.
+      out.push('Run it twice');
+      runs.forEach((won, k) => out.push(`${k ? '2nd' : '1st'} run: ${r.boards[k].join(' ')} · ${wins(won) || 'no winner set'}`));
+    } else if (wins(r.result.won)) out.push(wins(r.result.won));
   }
 
   if (opts.notes && hand.notes.trim()) out.push('', hand.notes.trim());

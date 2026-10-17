@@ -8,6 +8,9 @@ import { useSyncExternalStore } from 'react';
 import { t } from '@/i18n';
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 
+import { isBagged } from './multi-day';
+import type { Session } from './types';
+
 export interface FestivalPlan {
   /** Event ids (see FestivalEvent.id) the player plans to play. */
   picked: string[];
@@ -44,6 +47,42 @@ export function planTotals(f: Festival, plan: FestivalPlan) {
 /** Planned buy-ins as a share of the bankroll: null with no (or a negative) bankroll. */
 export function bankrollShare(buyIns: number, balance: number): number | null {
   return balance > 0 ? buyIns / balance : null;
+}
+
+/**
+ * What a planned row's button does. One tournament is one session across its
+ * flights and days: a Day 2 picks up the bagged session, a later flight after
+ * busting is a re-entry on it.
+ */
+export type EventAction =
+  | { kind: 'start' }
+  | { kind: 'view'; session: Session }
+  | { kind: 'resume'; session: Session }
+  | { kind: 'reenter'; session: Session };
+
+export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[], e: FestivalEvent): EventAction | null {
+  const byId = new Map(sessions.map((s) => [s.id, s]));
+  const own = byId.get(plan.sessions[e.id] ?? '');
+  if (own && !own.endedAt) return { kind: 'view', session: own };
+  // The session this event already has, on any of its rows.
+  const linked = f.events
+    .filter((x) => x.number === e.number)
+    .map((x) => byId.get(plan.sessions[x.id] ?? ''))
+    .filter((s): s is Session => !!s)
+    .sort((a, b) => b.startedAt - a.startedAt)[0];
+  if (linked && !linked.endedAt) return { kind: 'view', session: linked };
+  if (e.day2) return linked && isBagged(linked) && day2Takes(f, plan, e, linked) ? { kind: 'resume', session: linked } : null;
+  if (own) return null;
+  if (linked && !isBagged(linked) && !linked.cashOut) return { kind: 'reenter', session: linked };
+  return linked && isBagged(linked) ? null : { kind: 'start' };
+}
+
+/** A Day 2 named after its flights ("2BC") only takes players bagged in those flights. */
+function day2Takes(f: Festival, plan: FestivalPlan, e: FestivalEvent, s: Session): boolean {
+  const from = e.flight?.slice(1) ?? '';
+  if (!from) return true;
+  const bagged = f.events.filter((x) => x.number === e.number && !x.day2 && plan.sessions[x.id] === s.id).map((x) => x.flight ?? '');
+  return !bagged.length || bagged.some((fl) => from.includes(fl));
 }
 
 export interface PlanReminder {
