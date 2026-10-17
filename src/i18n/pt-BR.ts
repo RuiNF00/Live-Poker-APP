@@ -1193,10 +1193,10 @@ const ptBR: Record<string, string> = {
   'Lembretes para registar': 'Lembretes para registrar',
   'Se passares uns dias sem registar': 'Se passar uns dias sem registrar',
   'Notificações desligadas no telemóvel': 'Notificações desativadas no celular',
-  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Ative nos ajustes do sistema para receber os avisos que escolher aqui.',
-  'Abrir definições': 'Abrir ajustes',
+  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Ative nas configurações do sistema para receber os avisos que escolher aqui.',
+  'Abrir definições': 'Abrir configurações',
   'Aparecem no ecrã bloqueado.': 'Aparecem na tela de bloqueio.',
-  'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Escolha quais nos Ajustes da Sweatbook.',
+  'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Você pode escolher quais nas Configurações da Sweatbook.',
 };
 
 export default ptBR;
