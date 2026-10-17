@@ -20,8 +20,11 @@ export interface GroupStore {
   create(t: GroupTerms, names: string[], own?: { token: string; invite: string }): Promise<{ id: string; token: string; invite: string }>;
   get(id: string): Promise<GroupRecord | null>;
   seat(id: string, token: string): Promise<number | null>;
-  /** The seat's token, or null (wrong invite, seat taken or missing). */
-  claim(id: string, invite: string, seat: number): Promise<string | null>;
+  /**
+   * The seat's token, or null (wrong invite, seat taken or missing). `token`: the app's own
+   * (64 hex), so a claim sent again after a lost answer gets the same seat back.
+   */
+  claim(id: string, invite: string, seat: number, token?: string): Promise<string | null>;
   addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   /** Seat 0 frees another seat with nothing in the accounts: open again, its token dead. */
@@ -68,8 +71,8 @@ class SupabaseGroups implements GroupStore {
     return typeof data === 'number' ? data : null;
   }
 
-  async claim(id: string, invite: string, seat: number) {
-    const { data, error } = await this.db.rpc('claim_swap_group_seat', { p_id: id, p_invite: invite, p_seat: seat });
+  async claim(id: string, invite: string, seat: number, token?: string) {
+    const { data, error } = await this.db.rpc('claim_swap_group_seat', { p_id: id, p_invite: invite, p_seat: seat, p_token: token ?? null });
     if (error) throw error;
     return typeof data === 'string' && data ? data : null;
   }
@@ -183,13 +186,16 @@ class LocalGroups implements GroupStore {
     return this.seatOf((await this.read())[id], token);
   }
 
-  async claim(id: string, invite: string, seat: number) {
+  async claim(id: string, invite: string, seat: number, own?: string) {
     return this.mutate((d) => {
       const r = d[id];
       if (!r || !invite || r.inviteHash !== sha256(invite)) return null;
       const s = r.seats[seat];
-      if (!s || s.confirmedAt || r.dropped?.includes(seat)) return null;
-      const token = randomBytes(32).toString('hex');
+      if (!s || r.dropped?.includes(seat)) return null;
+      // Already taken with this same token: the answer of the first time was lost.
+      if (s.confirmedAt) return own && r.hashes[seat] === sha256(own) ? own : null;
+      const token = own ?? randomBytes(32).toString('hex');
+      if (r.hashes.some((h, i) => i !== seat && h === sha256(token))) return null;
       const now = new Date().toISOString();
       r.hashes[seat] = sha256(token);
       r.seats[seat] = { ...s, confirmedAt: now };

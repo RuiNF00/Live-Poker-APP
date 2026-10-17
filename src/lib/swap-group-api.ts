@@ -47,8 +47,9 @@ export async function fetchGroup(id: string, token?: string): Promise<RemoteGrou
   }
 }
 
-export async function claimSeat(id: string, invite: string, seat: number): Promise<{ group: RemoteGroup; token: string }> {
-  const j = await call(`/${encodeURIComponent(id)}/claim`, { method: 'POST', body: JSON.stringify({ seat, invite }) });
+/** `key` (newCreateKey, one per screen): a claim sent again after a lost answer gets the seat, not a 409. */
+export async function claimSeat(id: string, invite: string, seat: number, key?: string): Promise<{ group: RemoteGroup; token: string }> {
+  const j = await call(`/${encodeURIComponent(id)}/claim`, { method: 'POST', body: JSON.stringify({ seat, invite, token: key }) });
   if (!j.group || !j.token) throw new SwapError('bad_response', 500);
   return { group: j.group, token: j.token };
 }

@@ -120,6 +120,11 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
       return draining;
     },
 
+    /** Still waiting to go out (not sent, not given up on). */
+    async has(kind: string, key: string): Promise<boolean> {
+      return (await load()).some((j) => j.kind === kind && j.key === key);
+    },
+
     async size(): Promise<number> {
       return (await load()).length;
     },

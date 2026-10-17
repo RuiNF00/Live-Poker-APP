@@ -43,6 +43,8 @@ import '@/lib/share-queue';
 import '@/lib/pack-api';
 // Registers the swap delete sender ("Delete all my data").
 import '@/lib/swap-cleanup';
+// And the swaps created without signal.
+import '@/lib/swap-create-queue';
 // Same for the public profile's delete.
 import '@/lib/public-profile';
 import { StoreProvider } from '@/store/store';

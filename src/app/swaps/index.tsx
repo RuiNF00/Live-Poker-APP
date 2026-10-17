@@ -11,6 +11,8 @@ import { seatLabel } from '@/components/swaps/group-parts';
 import { AccountsLocked, PAIR, pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
+import { usePendingSwapCreates } from '@/lib/swap-create-queue';
+import type { PendingCreate } from '@/lib/swap-create-core';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { assignGroups, groupLedger, groupNet, groupReady, minTransfers, type SwapGroup } from '@/store/swap-groups';
@@ -23,6 +25,7 @@ import { useLocked } from '@/components/ProGate';
 function SwapsScreen() {
   const { swaps, ready } = useSwaps();
   const { groups } = useGroups();
+  const waiting = usePendingSwapCreates();
   const { sessions, settings, setSettings } = useStore();
   const include = settings.includeSwaps !== false;
   const loose = include ? assignSwaps(sessions, swaps).unassigned.length + assignGroups(sessions, groups).unassigned.length : 0;
@@ -40,7 +43,7 @@ function SwapsScreen() {
   const pastGroups = groups.filter((g) => g.archived || g.gone);
   const locked = useLocked('swaps');
   const totals = locked ? [] : [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= 0.5);
-  const any = swaps.length + groups.length > 0;
+  const any = swaps.length + groups.length + waiting.length > 0;
   const newGroup = () => router.push('/swaps/group-new');
 
   return (
@@ -137,9 +140,12 @@ function SwapsScreen() {
               </Section>
             ) : null}
 
-            {active.length || activeGroups.length ? (
+            {active.length || activeGroups.length || waiting.length ? (
               <Section title={t('Ativos')}>
                 <ListGroup>
+                  {waiting.map((p) => (
+                    <WaitingRow key={p.key} p={p} />
+                  ))}
                   {activeGroups.map((g) => (
                     <GroupRow key={g.id} g={g} locked={locked && !g.accounts} />
                   ))}
@@ -209,6 +215,18 @@ function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
   );
 }
 
+
+/** Made without signal: created by itself when it's back (swap-create-queue.ts). */
+function WaitingRow({ p }: { p: PendingCreate }) {
+  return (
+    <ListItem
+      left={p.group ? <Ionicons name="people-outline" size={22} color={C.muted} /> : <Avatar name={p.with} />}
+      title={p.group ? p.title : p.with}
+      subtitle={p.group ? t('{n} jogadores', { n: Number(p.with) }) : p.title}
+      right={<Pill label={t('Sem rede')} color={C.muted} />}
+    />
+  );
+}
 
 function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
   const ready = groupReady(g);

@@ -19,6 +19,7 @@ import { track } from '@/lib/events';
 import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
 import { createSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
+import { forgetSwapCreate, queueSwapCreate } from '@/lib/swap-create-queue';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { fromRemote, swapNames, type SwapTerms } from '@/store/swaps';
@@ -121,14 +122,16 @@ function NewSwap() {
       note: note.trim(),
       createdAt: Date.now(),
     };
+    const rc = await appUserId();
     try {
-      const rc = await appUserId();
       const { swap, token } = await createSwap(terms, rc, key.current);
       saveSwap({ ...fromRemote(swap, token, 'a'), ownerRc: rc });
+      forgetSwapCreate(key.current);
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');
       const url = swapUrl(swap.id, ref);
-      const msg = t('Swap de {pct} no {title}. Confirma aqui para ficar por escrito: {url}', { pct: pctLabel(pct), title: terms.title, url });
+      // The server's terms: the copy sent while offline may have gone first.
+      const msg = t('Swap de {pct} no {title}. Confirma aqui para ficar por escrito: {url}', { pct: pctLabel(swap.terms.a.pct), title: swap.terms.title, url });
       track('link_shared', { channel: 'swap' });
       const open = () => router.replace({ pathname: '/swap/[id]', params: { id: swap.id } });
       if (Platform.OS === 'web') {
@@ -142,6 +145,9 @@ function NewSwap() {
       const code = e instanceof SwapError ? e.code : 'offline';
       setBusy(false);
       if (code === 'offline') {
+        // Kept on the phone: it is created by itself when the signal is back, even after Voltar.
+        queueSwapCreate({ kind: 'pair', key: key.current, terms, rc });
+        if (!settings.nickname) setSettings({ nickname: me.trim() });
         setWaiting(true);
         return;
       }

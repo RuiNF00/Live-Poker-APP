@@ -58,8 +58,9 @@ export async function fetchSwap(id: string, token?: string): Promise<RemoteSwap 
   }
 }
 
-export async function confirmSwap(id: string, name: string): Promise<{ swap: RemoteSwap; token: string }> {
-  const j = await call(`/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({ name }) });
+/** `key` (newCreateKey, one per screen): a confirm sent again after a lost answer gets in, not a 409. */
+export async function confirmSwap(id: string, name: string, key?: string): Promise<{ swap: RemoteSwap; token: string }> {
+  const j = await call(`/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({ name, token: key }) });
   if (!j.swap || !j.token) throw new SwapError('bad_response', 500);
   return { swap: j.swap, token: j.token };
 }

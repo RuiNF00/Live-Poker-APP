@@ -44,3 +44,29 @@ describe('a create sent again (automatic retry after a lost answer)', () => {
     expect(ownToken(42)).toBeUndefined();
   });
 });
+
+describe('a confirm or a seat claim sent again (automatic retry after a lost answer)', () => {
+  it('lets the other player in with the same token, and nobody else', async () => {
+    const s = swapStore();
+    const { id, token: ta } = await s.create(terms);
+    expect(await s.confirm(id, 'Ana', ta)).toBeNull(); // never the creator's token
+    expect(await s.confirm(id, 'Ana', k('1'))).toBe(k('1'));
+    expect(await s.confirm(id, 'Ana', k('1'))).toBe(k('1'));
+    expect(await s.side(id, k('1'))).toBe('b');
+    expect(await s.confirm(id, 'Eva', k('2'))).toBeNull();
+    expect(await s.confirm(id, 'Eva')).toBeNull();
+    expect((await s.get(id))?.confirmedName).toBe('Ana');
+  });
+
+  it('gives the same seat back for the same token, never a second seat', async () => {
+    const g = groupStore();
+    const gt = { v: 1, scope: 'series', title: 'Bahamas', venue: '', currency: '$', pct: 2, note: '', createdAt: 1 } as never;
+    const { id, invite } = await g.create(gt, ['Rui', 'Ana', 'João']);
+    expect(await g.claim(id, invite, 1, k('3'))).toBe(k('3'));
+    expect(await g.claim(id, invite, 1, k('3'))).toBe(k('3'));
+    expect(await g.seat(id, k('3'))).toBe(1);
+    expect(await g.claim(id, invite, 2, k('3'))).toBeNull();
+    expect(await g.claim(id, invite, 1, k('4'))).toBeNull();
+    expect(await g.claim(id, k('4'), 1, k('3'))).toBeNull();
+  });
+});
