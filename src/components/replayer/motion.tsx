@@ -37,6 +37,17 @@ export function RiseIn({ children, delay = 0, reduce, p: still }: { children: Re
   );
 }
 
+/** A card turning face up: it narrows to an edge and opens again showing its face. */
+export function FlipIn({ children, reduce, delay = 0 }: { children: React.ReactNode; reduce: boolean; delay?: number }) {
+  const [p] = useState(() => new Animated.Value(reduce ? 1 : 0));
+  useEffect(() => {
+    if (reduce) return;
+    Animated.timing(p, { toValue: 1, duration: MOTION.flip, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [p, reduce, delay]);
+  if (reduce) return <>{children}</>;
+  return <Animated.View style={{ transform: [{ scaleX: p.interpolate({ inputRange: [0, 1], outputRange: [0.05, 1] }) }] }}>{children}</Animated.View>;
+}
+
 export interface Flight {
   id: string;
   amount: number;

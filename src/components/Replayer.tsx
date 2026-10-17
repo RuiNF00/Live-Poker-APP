@@ -291,6 +291,10 @@ export function Replayer({
             }}
           />
         </View>
+        {/* Step counter, like a video's time: the scrubber already says it to screen readers. */}
+        <Text importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ minWidth: 40, textAlign: 'right', color: C.textDim, fontFamily: F.mono, fontSize: 11, fontVariant: ['tabular-nums'] }}>
+          {k + 1}/{last + 1}
+        </Text>
         {named ? (
           <View style={{ width: 52, flexDirection: 'row' }}>
             <Ctrl icon={hideNames ? 'person-outline' : 'person'} label={hideNames ? t('Mostrar nomes') : t('Esconder nomes')} active={hideNames} onPress={toggleNames} />
