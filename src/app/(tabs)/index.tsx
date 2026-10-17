@@ -176,7 +176,9 @@ export default function HandsScreen() {
                   </>
                 }
               />
-              {/* One summary row, then at most one context card, so a returning player still sees four hands. */}
+              {/* One summary row, then at most one context card, so a returning player still sees four hands.
+                  At the table only what's about the play (a hand to finish, a charge coming): news, the start
+                  checklist and Pro moments wait until the session ends. */}
               {!searching ? (
                 <HomeSummary
                   sessions={sessions}
@@ -216,11 +218,11 @@ export default function HandsScreen() {
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
               ) : !activeSession && shared.newTotal > 0 ? (
                 <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
-              ) : news.item ? (
+              ) : !activeSession && news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
-              ) : checklist ? (
+              ) : !activeSession && checklist ? (
                 <StartChecklist state={checklist} />
-              ) : moment ? (
+              ) : !activeSession && moment ? (
                 <ProMoment state={moment} />
               ) : incomplete > 0 && tag !== INCOMPLETE ? (
                 <Banner
