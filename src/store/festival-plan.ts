@@ -68,6 +68,51 @@ export function levelStart(f: Festival, e: FestivalEvent, now = Date.now()): num
   return e.levelMinutes ? Math.max(now, venueTime(f, e.start)) : undefined;
 }
 
+/** Schedule filters beyond the game: satellites, fast and deep structures, by the event's name or flight. */
+export type EventKind = 'sat' | 'turbo' | 'deep';
+const KIND_RE: Record<EventKind, RegExp> = { sat: /sat[eé]l[ií]te|satellite/i, turbo: /turbo|hyper/i, deep: /deep|monster/i };
+
+export function isKind(e: FestivalEvent, k: EventKind): boolean {
+  return KIND_RE[k].test(`${e.name} ${e.flight ?? ''}`);
+}
+
+/** What entering costs: a Day 2 counts its Day 1's buy-in, so a buy-in filter keeps the whole tournament. */
+export function entryBuyIn(f: Festival, e: FestivalEvent): number {
+  if (!e.day2) return e.buyIn;
+  return f.events.find((x) => x.number === e.number && !x.day2)?.buyIn ?? 0;
+}
+
+/** Up to three "até X" buy-in caps that split the schedule: its quartiles, below the dearest event. */
+export function buyInCaps(f: Festival): number[] {
+  const all = [...new Set(f.events.filter((e) => !e.day2 && e.buyIn > 0).map((e) => e.buyIn))].sort((a, b) => a - b);
+  if (all.length < 4) return [];
+  return [...new Set([0.25, 0.5, 0.75].map((q) => all[Math.floor((all.length - 1) * q)]))];
+}
+
+/** How long a planned row keeps the player busy: a Day 2 the whole day, a flight until its late reg closes. */
+const DAY2_BUSY_MIN = 10 * 60;
+
+/**
+ * Planned events that overlap another planned event, each with the first one it
+ * runs into. Flights of the same tournament are alternatives, not a clash.
+ */
+export function clashes(f: Festival, plan: FestivalPlan): Map<string, FestivalEvent> {
+  const list = planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start));
+  const busy = (e: FestivalEvent) => venueTime(f, e.start) + (e.day2 ? DAY2_BUSY_MIN : plan.lateReg[e.id] || LATE_DEFAULT_MIN) * 60_000;
+  const out = new Map<string, FestivalEvent>();
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i];
+      const b = list[j];
+      if (venueTime(f, b.start) >= busy(a)) break;
+      if (a.number === b.number && !a.own && !b.own) continue;
+      if (!out.has(a.id)) out.set(a.id, b);
+      if (!out.has(b.id)) out.set(b.id, a);
+    }
+  }
+  return out;
+}
+
 /** What the festival is called on screen: the player's name for it, else the shipped one. */
 export function festivalName(f: Festival, plan: FestivalPlan): string {
   return plan.name?.trim() || t(f.name);

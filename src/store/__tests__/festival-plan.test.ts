@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { buyInCaps, clashes, entryBuyIn, isKind, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -232,4 +232,27 @@ test('a session for a planned event runs its level clock from the published star
   assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 10 * 60_000), start + 10 * 60_000);
   // The festival runs to the 23rd although its last row is the 22nd.
   assert.deepEqual(festivalSpan(TORRELODONES_NOV_2026), { from: '2026-11-12', to: '2026-11-23' });
+});
+
+test('schedule filters: satellites, turbo and deep by name or flight; a buy-in cap keeps a Day 2 with its Day 1', () => {
+  assert.equal(LV.events.filter((e) => isKind(e, 'sat')).length, 25);
+  assert.ok(isKind(LV.events.find((e) => e.flight === '1B Turbo')!, 'turbo'));
+  assert.ok(SAO_PAULO_NOV_2026.events.some((e) => isKind(e, 'deep')));
+  const me2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
+  assert.equal(entryBuyIn(LV, me2), 10400);
+  const caps = buyInCaps(LV);
+  assert.ok(caps.length >= 2 && caps.every((c, i) => i === 0 || c > caps[i - 1]));
+});
+
+test('clashes: overlapping planned events warn on both rows; flights of one tournament do not', () => {
+  // Main Event Day 2 (16 Dec 12:00) and the $1,100 NLH 1A (16 Dec 11:00).
+  const me2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
+  const nlh = LV.events.find((e) => e.id === '19-1A')!;
+  const c = clashes(LV, { ...EMPTY_PLAN, picked: [me2.id, nlh.id] });
+  assert.equal(c.get(me2.id)?.id, nlh.id);
+  assert.equal(c.get(nlh.id)?.id, me2.id);
+  // 1A and 1B of the Main Event are alternatives.
+  assert.equal(clashes(LV, { ...EMPTY_PLAN, picked: ['10-1A', '10-1B'] }).size, 0);
+  // Events on different days don't clash.
+  assert.equal(clashes(LV, { ...EMPTY_PLAN, picked: ['85-1A', '10-1A'] }).size, 0);
 });

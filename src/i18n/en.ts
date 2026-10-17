@@ -3184,6 +3184,10 @@ const en: Record<string, string> = {
   'Liga-os nas Definições para gravares a tua cara.': 'Turn them on in Settings to record your face.',
   'Abrir Definições': 'Open Settings',
   'Pára antes da tua decisão, para quem vê votar no link.': 'Stops before your decision, so viewers vote on the link.',
+  'Satélites': 'Satellites',
+  'Até {amount}': 'Up to {amount}',
+  'Nenhum torneio com estes filtros.': 'No tournaments with these filters.',
+  'Coincide com {name} às {time}': 'Clashes with {name} at {time}',
 };
 
 export default en;
