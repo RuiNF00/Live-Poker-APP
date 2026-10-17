@@ -52,7 +52,7 @@ import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
 import { withdrawable } from '@/store/moveup-math';
-import { defaultMonth, monthName, monthRecap } from '@/store/month-recap';
+import { defaultMonth, monthKey, monthName, monthRecap } from '@/store/month-recap';
 import type { Bankroll, Session, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
 
@@ -103,6 +103,9 @@ function BankrollTab() {
     const k = defaultMonth(list);
     return k ? monthRecap(list, k, cur) : null;
   }, [list, cur]);
+  // "How is this month going?" one tap from the balance, without scrolling to the recap row.
+  const [monthNow] = useState(() => monthKey(Date.now()));
+  const thisMonth = useMemo(() => monthRecap(list, monthNow, cur), [list, monthNow, cur]);
   const hidden = !!settings.hideAmounts;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt only changes with `hidden`
   const verdictNow = useMemo(() => verdict(list, cur, (n) => fmt(n, cur)), [list, cur, hidden]);
@@ -176,6 +179,11 @@ function BankrollTab() {
               .filter(Boolean)
               .join(' · ')}
           </T>
+          {thisMonth.sessions ? (
+            <T v="small" color={C.accent} accessibilityRole="link" onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key } })}>
+              {t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: Math.round(thisMonth.hours) })} ›
+            </T>
+          ) : null}
           <Row gap={S.sm} style={{ marginTop: S.xs }}>
             <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-down" title={t('Depositar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })} />
             <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />

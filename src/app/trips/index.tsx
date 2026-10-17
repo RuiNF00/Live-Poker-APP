@@ -11,9 +11,9 @@ import { Sheet } from '@/components/BankrollSheets';
 import { TripForm, tripDates } from '@/components/TripSheets';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
 import { money } from '@/poker/format';
-import { getPlan } from '@/store/festival-plan';
+import { festivalName, getPlan, useFestivalPlan } from '@/store/festival-plan';
+import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore, uid } from '@/store/store';
 import { blankTrip, currentTrip, tripFromFestival, tripSummary } from '@/store/trip-math';
 import type { Trip } from '@/store/types';
@@ -27,12 +27,15 @@ export default function TripsScreen() {
   const locked = !isPro && FREE.trips !== null && trips.length >= FREE.trips;
   const [now] = useState(() => Date.now());
   const on = currentTrip(trips, now);
-  const festival = BAHAMAS_DEC_2026;
-  const hasFestival = trips.some((x) => x.festivalId === festival.id);
+  // The trip to suggest: the next festival with tournaments already in the plan, else the next one, never one with a trip.
+  const open = useFestivals().filter((f) => notOver(f, dayKey(now)) && !trips.some((x) => x.festivalId === f.id));
+  useFestivalPlan(open[0]?.id ?? '');
+  const festival = open.find((f) => getPlan(f.id).picked.length) ?? open[0];
 
   const add = () => (locked ? paywall('trips') : setEdit(blankTrip(uid('tr_'), settings.currency)));
   const fromFestival = () => {
     if (locked) return paywall('trips');
+    if (!festival) return;
     const x = tripFromFestival(uid('tr_'), festival, getPlan(festival.id), festival.currency !== settings.currency ? { currency: settings.currency, rate: 0 } : undefined);
     saveTrip(x);
     router.push(`/trips/${x.id}`);
@@ -50,7 +53,7 @@ export default function TripsScreen() {
             body={t('Junta as sessões de um festival e o que gastaste em voos, hotel e comida. Vês o resultado depois das despesas, na moeda da viagem e na tua.')}
             action={
               <View style={{ gap: S.sm, alignSelf: 'stretch', marginTop: S.sm }}>
-                {!hasFestival ? <Button title={t('Criar viagem: {name}', { name: t(festival.name) })} icon="trophy-outline" onPress={fromFestival} /> : null}
+                {festival ? <Button title={t('Criar viagem: {name}', { name: festivalName(festival, getPlan(festival.id)) })} icon="trophy-outline" onPress={fromFestival} /> : null}
                 <Button title={t('Nova viagem')} icon="add" kind="secondary" onPress={add} />
               </View>
             }
@@ -83,7 +86,7 @@ export default function TripsScreen() {
                 })}
               </ListGroup>
             </Section>
-            {!hasFestival ? <Button title={t('Criar viagem: {name}', { name: t(festival.name) })} icon="trophy-outline" kind="secondary" size="md" onPress={fromFestival} /> : null}
+            {festival ? <Button title={t('Criar viagem: {name}', { name: festivalName(festival, getPlan(festival.id)) })} icon="trophy-outline" kind="secondary" size="md" onPress={fromFestival} /> : null}
             {locked ? (
               <Card tone="inset" style={{ gap: S.sm }}>
                 <Pill label="Pro" color={C.accent} style={{ alignSelf: 'flex-start' }} />
