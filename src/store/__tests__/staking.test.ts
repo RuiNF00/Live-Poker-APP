@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, packageStates, withCuts } from '../staking';
+import { backerLedger, packageStates, pieceSteps, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -98,6 +98,8 @@ test('backer ledger: owed, unpaid pieces, payments and balance', () => {
   // Prize share 1000; they still owe 100 for the unpaid piece; you paid them 600.
   assert.equal(l.balance, 1000 - 100 - 600);
   assert.equal(Math.round(l.result), 1000 - 220 - 100);
+  const u = pieceSteps(l.rows.find((r) => r.session === unpaid)!);
+  assert.equal(u.balance, -100);
 });
 
 test('backer ledger takes your makeup cut out of what they get back', () => {
@@ -107,6 +109,16 @@ test('backer ledger takes your makeup cut out of what they get back', () => {
   const l = backerLedger('b1', [s], [p], []);
   assert.equal(l.rows[0].owed, 1100);
   assert.equal(l.balance, 1100);
+  // The settlement adds up step by step.
+  assert.equal(l.prizes, 1500);
+  assert.equal(l.cut, 400);
+  assert.equal(l.prizes - l.cut - l.unpaid - l.paid, l.balance);
+  const st = pieceSteps(l.rows[0]);
+  assert.equal(st.piece, 0.5);
+  assert.equal(st.cost, st.piece * st.buyIns * st.markup);
+  assert.equal(st.prize, st.piece * st.prizeTotal);
+  assert.equal(st.owed, st.prize - st.cut);
+  assert.equal(st.net, 600);
   // You: 3000 - 1500 - (1000 - 500) + 400.
   assert.equal(profit(withCuts([s], [p])[0]), 1400);
 });

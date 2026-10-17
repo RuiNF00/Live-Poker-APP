@@ -9,10 +9,11 @@ import { View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankBacker } from '@/components/staking/sheets';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
-import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T } from '@/components/ui';
+import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
+import type { BackerLedger } from '@/store/staking';
 import type { Backer } from '@/store/types';
 import { C, S } from '@/theme';
 
@@ -25,6 +26,9 @@ export default function StakingScreen() {
   const all = [...ledgers.values()];
   const owe = all.reduce((a, l) => a + Math.max(0, l.balance), 0);
   const owed = all.reduce((a, l) => a + Math.max(0, -l.balance), 0);
+  const net = owe - owed;
+  const oweTo = all.filter((l) => l.balance >= 0.5).length;
+  const owedBy = all.filter((l) => l.balance <= -0.5).length;
   const makeup = all.reduce((a, l) => a + l.makeup, 0);
   const live = new Set(all.flatMap((l) => l.rows.filter((r) => !r.session.endedAt).map((r) => r.session.id))).size;
   const sorted = [...backers].sort((a, b) => Math.abs(ledgers.get(b.id)?.balance ?? 0) - Math.abs(ledgers.get(a.id)?.balance ?? 0) || a.name.localeCompare(b.name));
@@ -42,34 +46,14 @@ export default function StakingScreen() {
           />
         ) : (
           <>
-            <Card tone="raised" style={{ gap: S.md }}>
-              <T v="label">{t('Contas com os backers')}</T>
-              <Row gap={S.xl} style={{ alignItems: 'flex-start' }}>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <T v="small">{t('Deves')}</T>
-                  <T v="monoL" color={owe ? C.warn : C.textDim} numberOfLines={1} adjustsFontSizeToFit>
-                    {money(owe, cur)}
-                  </T>
-                </View>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <T v="small">{t('Devem-te')}</T>
-                  <T v="monoL" color={owed ? C.good : C.textDim} numberOfLines={1} adjustsFontSizeToFit>
-                    {money(owed, cur)}
-                  </T>
-                </View>
-              </Row>
-            </Card>
-            <StatGrid cols={3}>
-              <Stat label="Backers" value={String(backers.length)} />
-              <Stat label="Makeup" value={money(makeup, cur)} tone={makeup ? 'warn' : undefined} />
-              <Stat label={t('A decorrer')} value={String(live)} />
-            </StatGrid>
+            <BalanceHeadline net={net} owe={owe} owed={owed} oweTo={oweTo} owedBy={owedBy} makeup={makeup} live={live} currency={cur} />
 
             <Section title="Backers" action={t('+ Novo')} onAction={() => setEdit(blankBacker())}>
               <ListGroup>
                 {sorted.map((b) => {
                   const l = ledgers.get(b.id);
-                  const bal = balanceLabel(l?.balance ?? 0, cur);
+                  const bal = { ...balanceLabel(l?.balance ?? 0, cur), owe: (l?.balance ?? 0) > 0 };
+                  const square = Math.abs(l?.balance ?? 0) < 0.5;
                   const n = l?.rows.length ?? 0;
                   return (
                     <ListItem
@@ -77,12 +61,28 @@ export default function StakingScreen() {
                       left={<Avatar name={b.name} />}
                       title={b.name}
                       subtitle={
-                        [n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l?.makeup ? t('makeup {amount}', { amount: money(l.makeup, cur) }) : ''].filter(Boolean).join(' · ')
+                        <View style={{ gap: 1 }}>
+                          <T v="small" numberOfLines={1}>
+                            {[n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l?.makeup ? t('makeup {amount}', { amount: money(l.makeup, cur) }) : ''].filter(Boolean).join(' · ')}
+                          </T>
+                          {l && parts(l, cur) ? (
+                            <T v="tiny" numberOfLines={1}>
+                              {parts(l, cur)}
+                            </T>
+                          ) : null}
+                        </View>
                       }
                       right={
-                        <T v="mono" color={bal.color} style={{ fontSize: 14 }}>
-                          {bal.text}
-                        </T>
+                        <View style={{ alignItems: 'flex-end', gap: 1 }}>
+                          {square ? null : (
+                            <T v="tiny" color={bal.color}>
+                              {bal.owe ? t('deves') : t('deve-te')}
+                            </T>
+                          )}
+                          <T v="mono" color={bal.color} style={{ fontSize: 15 }}>
+                            {square ? t('Acertado') : money(Math.abs(l?.balance ?? 0), cur)}
+                          </T>
+                        </View>
                       }
                       onPress={() => router.push({ pathname: '/staking/[id]', params: { id: b.id } })}
                     />
@@ -127,5 +127,68 @@ export default function StakingScreen() {
         }}
       />
     </>
+  );
+}
+
+/** What a backer's balance is made of, in one line: "a receber 400€ · por pagar 120€ · pago 100€". */
+function parts(l: BackerLedger, cur: string): string {
+  return [
+    l.owed ? t('a receber {amount}', { amount: money(l.owed, cur) }) : '',
+    l.unpaid ? t('por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
+    Math.abs(l.paid) >= 0.5 ? (l.paid > 0 ? t('pagaste {amount}', { amount: money(l.paid, cur) }) : t('recebeste {amount}', { amount: money(-l.paid, cur) })) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** One coloured number and a sentence, Splitwise style: where you stand with all your backers. */
+function BalanceHeadline({
+  net,
+  owe,
+  owed,
+  oweTo,
+  owedBy,
+  makeup,
+  live,
+  currency,
+}: {
+  net: number;
+  owe: number;
+  owed: number;
+  oweTo: number;
+  owedBy: number;
+  makeup: number;
+  live: number;
+  currency: string;
+}) {
+  const square = Math.abs(net) < 0.5;
+  const color = square ? C.textDim : net > 0 ? C.warn : C.good;
+  const verdict = square ? t('Estás acertado com os backers') : net > 0 ? t('No total, deves aos backers') : t('No total, os backers devem-te');
+  // Both directions at once: say who is on each side, so the net isn't a mystery.
+  const split =
+    owe >= 0.5 && owed >= 0.5
+      ? [
+          oweTo === 1 ? t('deves {amount} a 1 backer', { amount: money(owe, currency) }) : t('deves {amount} a {n} backers', { amount: money(owe, currency), n: oweTo }),
+          owedBy === 1 ? t('1 deve-te {amount}', { amount: money(owed, currency) }) : t('{n} devem-te {amount}', { amount: money(owed, currency), n: owedBy }),
+        ].join(' · ')
+      : '';
+  const extra = [makeup >= 0.5 ? t('makeup {amount}', { amount: money(makeup, currency) }) : '', live ? (live === 1 ? t('1 sessão a decorrer') : t('{n} sessões a decorrer', { n: live })) : '']
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <Card tone="raised" style={{ gap: S.xs, paddingVertical: S.xl }}>
+      <T v="label">{verdict}</T>
+      {square ? null : (
+        <T v="monoXL" color={color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 40, lineHeight: 46 }}>
+          {money(Math.abs(net), currency)}
+        </T>
+      )}
+      {split ? <T v="small">{split}</T> : null}
+      {extra ? (
+        <T v="small" color={makeup >= 0.5 ? C.warn : undefined}>
+          {extra}
+        </T>
+      ) : null}
+    </Card>
   );
 }
