@@ -7,7 +7,7 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { pctLabel } from '@/components/swaps/parts';
+import { pctLabel, signed } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -89,7 +89,7 @@ function SwapsScreen() {
                   <View key={cur} style={{ gap: 2, marginTop: i ? S.sm : 0 }}>
                     <T v="label">{v.net > 0 ? t('No total, devem-te') : t('No total, deves')}</T>
                     <T v="monoXL" color={v.net > 0 ? C.good : C.warn} numberOfLines={1} adjustsFontSizeToFit>
-                      {money(Math.abs(v.net), cur)}
+                      {signed(v.net, cur)}
                     </T>
                     {v.owedToMe >= 0.5 && v.iOwe >= 0.5 ? (
                       <T v="small">{t('devem-te {a} · deves {b}', { a: money(v.owedToMe, cur), b: money(v.iOwe, cur) })}</T>
@@ -192,7 +192,7 @@ function SwapRow({ s }: { s: Swap }) {
         </T>
       )}
       <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }}>
-        {square ? t('Acertado') : money(Math.abs(l.balance), cur)}
+        {square ? t('Acertado') : signed(l.balance, cur)}
       </T>
     </View>
   );
@@ -231,7 +231,7 @@ function GroupRow({ g }: { g: SwapGroup }) {
         </T>
       )}
       <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }}>
-        {square ? t('Acertado') : money(Math.abs(l.balance), cur)}
+        {square ? t('Acertado') : signed(l.balance, cur)}
       </T>
     </View>
   );

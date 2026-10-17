@@ -14,6 +14,9 @@ import { CURRENCIES } from '@/store/currencies';
 import { other, owedOn, settled, swapNames, type Swap, type SwapEntry, type SwapLedger, type SwapSide, type SwapTerms } from '@/store/swaps';
 import { C, R, S } from '@/theme';
 
+/** An amount with its sign, so the direction never depends on colour alone: +1230$ / −1230$. */
+export const signed = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), cur);
+
 export const pctLabel = (n: number) => `${lang === 'pt' ? String(n).replace('.', ',') : n}%`;
 
 const FIRST = ['$', '€', '£'];
@@ -103,7 +106,7 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
       <T v="label">{verdict}</T>
       {square ? null : (
         <T v="monoXL" color={color} numberOfLines={1} adjustsFontSizeToFit>
-          {money(Math.abs(l.balance), currency)}
+          {signed(l.balance, currency)}
         </T>
       )}
       {l.iOwe >= 0.5 && l.theyOwe >= 0.5 ? (
@@ -152,7 +155,7 @@ export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; o
           </T>
         ) : null}
         <T v="mono" color={e.kind === 'payment' ? C.textDim : mine ? C.warn : C.good}>
-          {owe ? money(owe, cur) : '—'}
+          {!owe ? '—' : e.kind === 'payment' ? money(owe, cur) : signed(mine ? -owe : owe, cur)}
         </T>
       </View>
     </PressRow>

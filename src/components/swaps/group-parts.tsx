@@ -12,7 +12,7 @@ import { useStore } from '@/store/store';
 import { groupLedger, groupNet, groupOwedOn, groupShareOf, minTransfers, seatName, type GroupEntry, type SwapGroup } from '@/store/swap-groups';
 import { C, S } from '@/theme';
 
-import { pctLabel } from './parts';
+import { pctLabel, signed } from './parts';
 
 /** "-" (a player who left) reads as "Saiu"; my own seat reads as "Tu". */
 export function seatLabel(g: SwapGroup, seat: number): string {
@@ -33,7 +33,7 @@ export function GroupHero({ g }: { g: SwapGroup }) {
       <T v="label">{verdict}</T>
       {square ? null : (
         <T v="monoXL" color={l.balance > 0 ? C.good : C.warn} numberOfLines={1} adjustsFontSizeToFit>
-          {money(Math.abs(l.balance), cur)}
+          {signed(l.balance, cur)}
         </T>
       )}
       {effect ? (
@@ -65,7 +65,7 @@ export function GroupSettle({ g }: { g: SwapGroup }) {
                   : t('{from} paga a {to}', { from: seatLabel(g, x.from), to: seatLabel(g, x.to) })}
             </T>
             <T v="mono" color={mine ? (x.to === g.seat ? C.good : C.warn) : C.textDim}>
-              {money(x.amount, g.terms.currency)}
+              {mine ? signed(x.to === g.seat ? x.amount : -x.amount, g.terms.currency) : money(x.amount, g.terms.currency)}
             </T>
           </Row>
         );
@@ -106,7 +106,7 @@ export function GroupEntryRow({ g, e, onLongPress }: { g: SwapGroup; e: GroupEnt
           </T>
         ) : null}
         <T v="mono" color={e.kind === 'payment' ? C.textDim : mine ? C.warn : C.good}>
-          {value ? money(value, cur) : '—'}
+          {!value ? '—' : e.kind === 'payment' ? money(value, cur) : signed(mine ? -value : value, cur)}
         </T>
       </View>
     </PressRow>

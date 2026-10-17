@@ -37,6 +37,8 @@ select remove_swap_group_entry(:'gid', :'t1', :'e1') as own_removed;
 select leave_swap_group(:'gid', :'t2') as left_group;
 select seats->2->>'name' = '-' and jsonb_array_length(entries) = 1 as accounts_kept from get_swap_group(:'gid');
 select swap_group_seat(:'gid', :'t2') is null as left_token_dead;
+select add_swap_group_entry(:'gid', :'t1', '{"kind":"result","amount":5,"cid":"late"}'::jsonb) = false as group_read_only_after_leave;
+select left_at is not null as group_left_at_set from swap_groups where id = :'gid';
 -- The creator deleting removes it for everyone.
 select leave_swap_group(:'gid', :'t1') and leave_swap_group(:'gid', :'t0') as creator_deleted;
 select count(*) = 0 as group_gone from get_swap_group(:'gid');
@@ -72,8 +74,26 @@ select leave_swap(:'sid', :'ta') as rui_left;
 select left_side = 'a' and terms->'a'->>'name' = '-' and jsonb_array_length(entries) = 1 as record_kept from get_swap(:'sid');
 select swap_side(:'sid', :'ta') is null as rui_token_dead;
 select add_swap_entry(:'sid', :'tb', '{"kind":"payment","amount":50,"cid":"y"}'::jsonb) = false as read_only_after_leave;
+-- The read-only record lasts 90 days after leaving.
+select purge_swaps() >= 0 and exists (select 1 from swaps where id = :'sid') as kept_before_90_days;
 select leave_swap(:'sid', :'tb') as ana_left_too;
 select count(*) = 0 as gone_when_both_left from get_swap(:'sid');
 select id as sid2, token as ta2 from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
 select leave_swap(:'sid2', :'ta2') as left_unconfirmed;
 select count(*) = 0 as unconfirmed_deleted from get_swap(:'sid2');
+
+-- Left 91 days ago: purged, pair and group.
+select id as sid3, token as ta3 from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
+select confirm_swap(:'sid3', 'Ana') as tb3 \gset
+select leave_swap(:'sid3', :'tb3') as ana_left;
+update swaps set left_at = now() - interval '91 days' where id = :'sid3';
+select purge_swaps() >= 1 as purged_left_swap;
+select not exists (select 1 from swaps where id = :'sid3') as left_swap_purged;
+select id as gid9, token as g9t0, invite as g9inv from create_swap_group('{"v":1}'::jsonb, array['a','b','c']) \gset
+select claim_swap_group_seat(:'gid9', :'g9inv', 1) as g9t1 \gset
+select claim_swap_group_seat(:'gid9', :'g9inv', 2) as g9t2 \gset
+select leave_swap_group(:'gid9', :'g9t2') as g9_left;
+select purge_swap_groups() >= 0 and exists (select 1 from swap_groups where id = :'gid9') as group_kept_before_90_days;
+update swap_groups set left_at = now() - interval '91 days' where id = :'gid9';
+select purge_swap_groups() >= 1 as purged_left_group;
+select not exists (select 1 from swap_groups where id = :'gid9') as left_group_purged;

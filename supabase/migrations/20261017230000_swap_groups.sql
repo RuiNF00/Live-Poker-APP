@@ -16,7 +16,10 @@ create table public.swap_groups (
   entries jsonb not null default '[]'::jsonb
     check (jsonb_typeof(entries) = 'array' and jsonb_array_length(entries) <= 600 and pg_column_size(entries) < 131072),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- When a player first erased their data and left: the group is read-only from then on and
+  -- is purged 90 days later (each phone keeps its own copy).
+  left_at timestamptz
 );
 
 create table public.swap_group_seats (
@@ -106,6 +109,7 @@ declare
 begin
   if v_seat is null or jsonb_typeof(p_entry) <> 'object' then return false; end if;
   if exists (select 1 from public.swap_group_seats s where s.group_id = p_id and s.confirmed_at is null) then return false; end if;
+  if exists (select 1 from public.swap_groups g where g.id = p_id and g.left_at is not null) then return false; end if;
   if p_entry->>'kind' = 'payment' and not exists (
     select 1 from public.swap_group_seats s where s.group_id = p_id and s.seat::text = p_entry->>'to' and s.seat <> v_seat
   ) then return false; end if;
@@ -159,12 +163,12 @@ begin
     update public.swap_group_seats s
        set name = '-', token_hash = public.swap_hash(public.swap_new_token())
      where s.group_id = p_id and s.seat = v_seat;
-    update public.swap_groups g set updated_at = now() where g.id = p_id;
+    update public.swap_groups g set updated_at = now(), left_at = coalesce(g.left_at, now()) where g.id = p_id;
   end if;
   return true;
 end $$;
 
--- Not every seat taken after 30 days, or untouched for 400 days: gone.
+-- Not every seat taken after 30 days, a player left 90 days ago, or untouched for 400 days: gone.
 create or replace function public.purge_swap_groups() returns integer
 language plpgsql security definer set search_path = public as $$
 declare n integer;
@@ -172,6 +176,7 @@ begin
   delete from public.swap_groups g
    where (g.created_at < now() - interval '30 days'
           and exists (select 1 from public.swap_group_seats s where s.group_id = g.id and s.confirmed_at is null))
+      or g.left_at < now() - interval '90 days'
       or g.updated_at < now() - interval '400 days';
   get diagnostics n = row_count;
   return n;
@@ -206,9 +211,12 @@ end $$;
 
 -- "Delete all my data" on a pair swap: the player who erases leaves, the other keeps the
 -- record (read-only, with a note that the other side erased their data). Their name and token
--- go; the amounts stay so the other player still knows where they stand. Nobody left to keep
--- it for (never confirmed, or the other side already left): deleted outright.
+-- go; the amounts stay so the other player still knows where they stand, for 90 days, then the
+-- swap is purged (their phone keeps its own copy). Nobody left to keep it for (never confirmed,
+-- or the other side already left): deleted outright.
 alter table public.swaps add column left_side text check (left_side is null or left_side in ('a', 'b'));
+alter table public.swaps add column left_at timestamptz;
+alter table public.swaps add constraint swaps_left_check check ((left_side is null) = (left_at is null));
 
 drop function if exists public.get_swap(text);
 create function public.get_swap(p_id text)
@@ -229,6 +237,7 @@ begin
   end if;
   update public.swaps s
      set left_side = v_side,
+         left_at = now(),
          terms = case when v_side = 'a' then jsonb_set(s.terms, '{a,name}', '"-"') else jsonb_set(s.terms, '{b,name}', '"-"') end,
          confirmed_name = case when v_side = 'b' then '-' else s.confirmed_name end,
          token_a_hash = case when v_side = 'a' then public.swap_hash(public.swap_new_token()) else s.token_a_hash end,
@@ -297,3 +306,19 @@ grant execute on function public.get_swap(text) to service_role;
 grant execute on function public.leave_swap(text, text) to service_role;
 grant execute on function public.add_swap_entry(text, text, jsonb) to service_role;
 grant execute on function public.add_swap_group_entry(text, text, jsonb) to service_role;
+
+-- Purge also drops a swap 90 days after one side left.
+create or replace function public.purge_swaps() returns integer
+language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  delete from public.swaps
+   where (confirmed_at is null and created_at < now() - interval '30 days')
+      or left_at < now() - interval '90 days'
+      or updated_at < now() - interval '400 days';
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+revoke execute on function public.purge_swaps() from public, anon, authenticated;
+grant execute on function public.purge_swaps() to service_role;

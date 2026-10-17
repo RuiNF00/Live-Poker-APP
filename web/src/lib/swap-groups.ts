@@ -9,7 +9,7 @@ import type { GroupEntry, GroupRecord, GroupTerms, PublicGroup } from './swap-gr
 
 export * from './swap-group-terms';
 
-// Group swaps (/swap/g/<id>). Supabase in production (migration 20261017220000), a JSON file
+// Group swaps (/swap/g/<id>). Supabase in production (migration 20261017230000), a JSON file
 // without it. The database enforces the rules: terms and names never change, each seat is
 // claimed once with the group's invite, and each seat only adds or removes its own entries.
 
