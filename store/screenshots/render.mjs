@@ -23,12 +23,13 @@ async function capture(locale) {
   const ctx = await browser.newContext({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3, locale });
   await ctx.addInitScript((s) => {
     if (localStorage.getItem('rl.hands.v1')) return;
-    for (const [k, v] of Object.entries(s)) localStorage.setItem(k, JSON.stringify(v));
-  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings });
+    for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1' });
   const page = await ctx.newPage();
   const shots = [];
   for (const f of frames) {
     // Opening the hand editor leaves a draft banner on other screens; clear it.
+    // rl.offer.welcome.v1 (seeded above) stops the one-time welcome paywall from covering the hand list.
     await page.evaluate(() => localStorage.removeItem('rl.draft.v1')).catch(() => {});
     await page.goto(appUrl + f.route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
