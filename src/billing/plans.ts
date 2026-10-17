@@ -68,6 +68,10 @@ export const PRO_ONLY = {
   taxReport: true,
   /** Net worth and results across currencies in one total (bankroll). */
   homeTotal: true,
+  /** "Onde ganhas e onde perdes" and the mental journal's cards: the patterns in the player's sessions. Check-ins stay free. */
+  insights: true,
+  /** "É normal?" on Downswings: the read on the player's own variance. The downswing numbers and chart stay free. */
+  downswingRead: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -111,6 +115,14 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   homeTotal: {
     title: t('Tudo numa moeda'),
     body: t('Património e resultado do ano, ao câmbio de cada dia.'),
+  },
+  insights: {
+    title: t('Onde ganhas e onde perdes'),
+    body: t('Salas, stakes, horas, sono e tilt: o que mexe no teu resultado.'),
+  },
+  downswingRead: {
+    title: t('Azar ou sinal?'),
+    body: t('Vê se o teu downswing é normal para os teus resultados.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),

@@ -64,3 +64,14 @@ test('target progress', () => {
   assert.equal(targetProgress({ ...DEFAULT_RULES, target: 20000 }, 25000), 1);
   assert.equal(targetProgress(DEFAULT_RULES, 15000), null);
 });
+
+test('the target is crossed during the live session only when the live result takes the balance past it', async () => {
+  const { goalReachedLive } = await import('../rules-math');
+  const r = { ...DEFAULT_RULES, target: 10000 };
+  const live = cash({ endedAt: undefined, entries: 1, stack: 1400 }); // up 900
+  assert.equal(goalReachedLive(r, 9500, live), true);
+  assert.equal(goalReachedLive(r, 8000, live), false, 'not there yet');
+  assert.equal(goalReachedLive(r, 10500, live), false, 'already past it before the session');
+  assert.equal(goalReachedLive({ ...r, target: 0 }, 9500, live), false);
+  assert.equal(goalReachedLive(r, 9500, null), false);
+});

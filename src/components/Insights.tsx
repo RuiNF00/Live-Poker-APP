@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { useLocked } from '@/components/ProGate';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
 import { insights, MIND_IDS, MIN_SESSIONS, type Insight, type MindId } from '@/store/insights-math';
@@ -19,7 +20,8 @@ import { Button, Card, Row, Section, T } from './ui';
 const FIRST_AT = 4 * MIN_SESSIONS;
 
 export function Insights({ list, cur, hidden, result, mind }: { list: Session[]; cur: string; hidden: boolean; result?: (s: Session) => number; /** The mental game journal's cards (its own screen); without it, every other card. */ mind?: boolean }) {
-  const { isPro, paywall } = usePro();
+  const { paywall } = usePro();
+  const locked = useLocked('insights');
   const fmt = useMemo(() => (n: number) => (hidden ? '•••' : money(n, cur)), [hidden, cur]);
   const all = useMemo(() => insights(list, (n) => fmt(Math.round(n)), { result }).filter((x) => !!mind === MIND_IDS.includes(x.id as MindId)), [list, fmt, result, mind]);
   const done = list.filter((s) => s.endedAt).length;
@@ -46,7 +48,7 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
     );
   }
 
-  if (!isPro) {
+  if (locked) {
     return (
       <Section title={mind ? t('O que o diário já diz') : t('Onde ganhas e onde perdes')}>
         <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
@@ -55,7 +57,7 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
             <T v="h3" style={{ textAlign: 'center' }}>
               {all.length === 1 ? t('Encontrámos 1 padrão nas tuas sessões') : t('Encontrámos {n} padrões nas tuas sessões', { n: all.length })}
             </T>
-            <Button size="md" icon="lock-closed" title={t('Vê onde perdes dinheiro')} onPress={() => paywall('stats')} />
+            <Button size="md" icon="lock-closed" title={t('Vê onde perdes dinheiro')} onPress={() => paywall('insights')} />
           </BlurView>
         </View>
       </Section>

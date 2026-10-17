@@ -125,3 +125,12 @@ export function targetProgress(r: BankrollRules | undefined, balance: number): n
   if (!r || !(r.target > 0)) return null;
   return Math.max(0, Math.min(1, balance / r.target));
 }
+
+/**
+ * The target balance, crossed during the live session: true when the balance
+ * before it was under the target and, with the live result, is at or over it.
+ */
+export function goalReachedLive(r: BankrollRules | undefined, balanceBefore: number, live: Session | null): boolean {
+  if (!r || !(r.target > 0) || !live || live.endedAt) return false;
+  return balanceBefore < r.target && balanceBefore + liveResult(live) >= r.target;
+}

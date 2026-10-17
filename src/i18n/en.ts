@@ -2223,6 +2223,12 @@ const en: Record<string, string> = {
   'Não deu para ligar à {store}': "Couldn't reach the {store}",
   'Não deu para ligar à {store}. Tenta outra vez.': "Couldn't reach the {store}. Please try again.",
   'Mãos jogadas': 'Hands played',
+  // Pro gates for insights and the downswing read; target reached live
+  'Salas, stakes, horas, sono e tilt: o que mexe no teu resultado.': 'Venues, stakes, hours, sleep and tilt: what moves your results.',
+  'Azar ou sinal?': 'Bad luck or a signal?',
+  'Vê se o teu downswing é normal para os teus resultados.': 'See whether your downswing is normal for your results.',
+  'Objetivo de bankroll atingido': 'Bankroll target reached',
+  'Com esta sessão passas os {target}. Boa altura para decidir se paras ou se sobes de stake.': 'This session takes you past {target}. A good moment to decide whether to stop or move up.',
 };
 
 export default en;

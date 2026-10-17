@@ -7,8 +7,8 @@ import { View } from 'react-native';
 
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
-import { bankrollOf, sessionsIn } from '@/store/bankroll-math';
-import { aboveRules, allowedStakes, DEFAULT_RULES, stopLoss, targetProgress } from '@/store/rules-math';
+import { balanceOf, bankrollOf, sessionsIn } from '@/store/bankroll-math';
+import { aboveRules, allowedStakes, DEFAULT_RULES, goalReachedLive, stopLoss, targetProgress } from '@/store/rules-math';
 import { useStore } from '@/store/store';
 import type { Bankroll, BankrollRules, Session } from '@/store/types';
 import { C, R, S } from '@/theme';
@@ -135,27 +135,44 @@ export function RulesForm({ bankroll, balance, onSave, onRemove }: { bankroll: B
 }
 
 /**
- * For the live session screen: a quiet warning near the stop-loss and a
- * clear one once it is reached. Nothing when the bankroll has no stop-loss.
+ * For the live session screen: a quiet warning near the stop-loss, a clear
+ * one once it is reached, and a calm note when the session takes the bankroll
+ * past its target. Each can be closed; amounts follow privacy mode. Nothing
+ * when the bankroll has no rules.
  */
 export function StopLossBanner({ s }: { s: Session }) {
-  const { sessions, bankrolls, settings } = useStore();
+  const { sessions, bankrolls, transfers, settings } = useStore();
   const b = bankrollOf(s, bankrolls);
   const sl = useMemo(() => stopLoss(b?.rules, b ? sessionsIn({ bankrollId: b.id }, sessions, bankrolls) : [], s), [b, sessions, bankrolls, s]);
-  const [dismissed, setDismissed] = useState<'near' | 'hit' | null>(null);
-  if (!sl || !sl.near) return null;
-  const level = sl.hit ? 'hit' : 'near';
-  if (dismissed === level || (dismissed === 'hit' && level === 'near')) return null;
+  const goal = useMemo(() => (b?.rules?.target ? goalReachedLive(b.rules, balanceOf({ bankrollId: b.id }, sessions, transfers, bankrolls).balance, s) : false), [b, sessions, transfers, bankrolls, s]);
+  const [dismissed, setDismissed] = useState<'near' | 'hit' | 'goal' | null>(null);
   const fmt = (n: number) => (settings.hideAmounts ? '•••' : money(Math.round(n), s.currency));
-  const scope = sl.per === 'day' ? t('hoje') : t('nesta sessão');
-  return (
-    <Banner
-      tone="warn"
-      icon={sl.hit ? 'hand-left-outline' : 'alert-circle-outline'}
-      title={sl.hit ? t('Chegaste ao teu stop-loss') : t('Estás perto do teu stop-loss')}
-      body={sl.hit ? t('Perdeste {lost} {scope}; o teu limite é {limit}. Pode ser boa altura para parar.', { lost: fmt(sl.lost), scope, limit: fmt(sl.limit) }) : t('Faltam {left} para o limite de {limit} {scope}.', { left: fmt(sl.left), limit: fmt(sl.limit), scope })}
-      onDismiss={() => setDismissed(level)}
-      dismissLabel={t('Fechar aviso')}
-    />
-  );
+  if (sl?.near) {
+    const level = sl.hit ? 'hit' : 'near';
+    if (dismissed === level || (dismissed === 'hit' && level === 'near')) return null;
+    const scope = sl.per === 'day' ? t('hoje') : t('nesta sessão');
+    return (
+      <Banner
+        tone="warn"
+        icon={sl.hit ? 'hand-left-outline' : 'alert-circle-outline'}
+        title={sl.hit ? t('Chegaste ao teu stop-loss') : t('Estás perto do teu stop-loss')}
+        body={sl.hit ? t('Perdeste {lost} {scope}; o teu limite é {limit}. Pode ser boa altura para parar.', { lost: fmt(sl.lost), scope, limit: fmt(sl.limit) }) : t('Faltam {left} para o limite de {limit} {scope}.', { left: fmt(sl.left), limit: fmt(sl.limit), scope })}
+        onDismiss={() => setDismissed(level)}
+        dismissLabel={t('Fechar aviso')}
+      />
+    );
+  }
+  if (goal && b?.rules && dismissed !== 'goal') {
+    return (
+      <Banner
+        tone="good"
+        icon="flag-outline"
+        title={t('Objetivo de bankroll atingido')}
+        body={t('Com esta sessão passas os {target}. Boa altura para decidir se paras ou se sobes de stake.', { target: fmt(b.rules.target) })}
+        onDismiss={() => setDismissed('goal')}
+        dismissLabel={t('Fechar aviso')}
+      />
+    );
+  }
+  return null;
 }

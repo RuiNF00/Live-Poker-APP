@@ -11,6 +11,7 @@ import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-nati
 import Svg, { Line, Path } from 'react-native-svg';
 
 import { usePro } from '@/billing/pro';
+import { useLocked } from '@/components/ProGate';
 import { Button, Card, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -24,7 +25,8 @@ const date = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'num
 
 export default function DownswingScreen() {
   const { sessions, defaultBankroll, settings } = useStore();
-  const { isPro, paywall } = usePro();
+  const { paywall } = usePro();
+  const locked = useLocked('downswingRead');
   const params = useLocalSearchParams<{ currency?: string }>();
   const cur = params.currency || defaultBankroll.currency;
   const hidden = !!settings.hideAmounts;
@@ -82,7 +84,7 @@ export default function DownswingScreen() {
 
         <Section title={t('É normal?')}>
           {odds ? (
-            isPro ? (
+            !locked ? (
               <Read odds={odds} big={big} cu={cu} fmt={fmt} cur={cur} />
             ) : (
               <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
@@ -91,7 +93,7 @@ export default function DownswingScreen() {
                   <T v="h3" style={{ textAlign: 'center' }}>
                     {t('Vê se este downswing é azar ou sinal')}
                   </T>
-                  <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('stats')} />
+                  <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('downswingRead')} />
                 </BlurView>
               </View>
             )
