@@ -1485,7 +1485,6 @@ const en: Record<string, string> = {
   'Horas locais de Las Vegas.': 'Local Las Vegas times.',
   'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': "The organiser hasn't published late reg close times (Main Event registration stays open until Day 2): check at the tournament desk.",
   'O Main Event não tem garantia publicada (o prémio adicionado não se aplica no Nevada).': "The Main Event has no published guarantee (the added prize doesn't apply in Nevada).",
-  'Só eventos de $1,000 ou mais; sem satélites.': 'Only events of $1,000 and up; no satellites.',
   'Las Vegas, dezembro 2026': 'Las Vegas, December 2026',
   'Por continuar': 'To continue',
   'Dia {n} · {chips} no saco': 'Day {n} · {chips} bagged',
@@ -3097,6 +3096,7 @@ const en: Record<string, string> = {
   '−1 órbita': '−1 orbit',
   'Mais detalhes': 'More details',
   'Menos detalhes': 'Fewer details',
+  'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Still missing: the $600 and $800 events with six flights at the start of the festival. The organiser has not published the time of each flight.',
 };
 
 export default en;

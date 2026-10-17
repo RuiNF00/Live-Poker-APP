@@ -100,8 +100,9 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   assert.equal(new Set(LV.events.map((e) => e.id)).size, LV.events.length);
   const starts = LV.events.map((e) => e.start);
   assert.deepEqual([...starts].sort(), starts);
-  assert.equal(LV.events[0].start, '2026-12-01T13:00');
-  assert.equal(LV.events.at(-1)!.start, '2026-12-21T12:00');
+  assert.equal(LV.events[0].start, '2026-11-27T12:00');
+  assert.equal(LV.events.at(-1)!.start, '2026-12-21T18:00');
+  assert.equal(LV.events.filter((e) => e.name.startsWith('Satellite')).length, 25);
   const wc = LV.events.filter((e) => e.name === 'Main Event');
   assert.deepEqual(wc.map((e) => [e.flight, e.buyIn, e.start]), [
     ['1A', 10400, '2026-12-13T11:00'],
@@ -134,4 +135,14 @@ test('plannedNow: the planned event from 2 h before its start until late reg clo
   const late = plannedNow(F, { ...plan, sessions: { '1-A': 'x' } }, [{ ...running, endedAt: a + 3_600_000 }], venueTime(F, '2026-12-02T16:00'));
   assert.equal(late!.e.id, '1-B');
   assert.equal(late!.action.kind, 'reenter');
+});
+
+test('Las Vegas: published starting stack and level length, none for Turbo flights or Day 2s', () => {
+  const ev = (id: string) => LV.events.find((e) => e.id === id)!;
+  assert.deepEqual([ev('10-1A').stack, ev('10-1A').levelMinutes], [100000, 60]);
+  // High Roller: not confirmed yet, so the session starts with the defaults.
+  assert.equal(ev('24').stack, undefined);
+  assert.equal(ev('10-2').stack, undefined);
+  assert.equal(ev('29-1B Turbo').stack, undefined);
+  assert.equal(ev('29-1A').stack, 40000);
 });

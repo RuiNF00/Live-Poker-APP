@@ -32,8 +32,12 @@ function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bank
     bankrollId,
     // Backers who bought a piece of this event through an action package.
     stakes: stakesFor(getOffers(), f.id, e.id),
+    // The published starting stack and level length, when known: nothing to type, and the level clock runs.
+    stack: e.stack ?? base.stack,
+    levelMinutes: e.levelMinutes,
+    tourney: e.stack ? { startStack: e.stack } : undefined,
     startedAt: now,
-    stackLog: [{ t: now, stack: base.stack, level: base.level }],
+    stackLog: [{ t: now, stack: e.stack ?? base.stack, level: base.level }],
   };
 }
 

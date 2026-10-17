@@ -20,6 +20,9 @@ export interface FestivalEvent {
   guarantee: number;
   /** Local wall-clock start at the venue, 'YYYY-MM-DDTHH:MM'. */
   start: string;
+  /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
+  stack?: number;
+  levelMinutes?: number;
 }
 
 export interface Festival {
@@ -108,8 +111,105 @@ export const BAHAMAS_DEC_2026: Festival = {
 const lv = (...a: Parameters<typeof ev>): FestivalEvent => ({ ...ev(...a), unnumbered: true });
 
 /**
- * The Wynn Las Vegas festival, 27 Nov – 21 Dec 2026, events of $1,000 and up
- * (no satellites). Source: the organiser's schedule page, read on 2026-10-17
+ * Starting stack and level length per tournament (`number` below), from the
+ * organiser's schedule PDF:
+ * https://cdn.wynnresorts.com/image/upload/v1757097329/visitwynn_pdfs_files/Poker/WPT/WPT_World_Championship_Schedule.pdf
+ * Turbo flights run a faster structure the PDF doesn't give, and a Day 2 is a restart: neither gets one.
+ * The High Roller (24) isn't confirmed yet and is left out.
+ */
+const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
+  1: [30000, 30],
+  2: [40000, 40],
+  3: [40000, 40],
+  4: [40000, 40],
+  5: [40000, 40],
+  6: [30000, 30],
+  7: [40000, 40],
+  8: [30000, 30],
+  9: [30000, 30],
+  10: [100000, 60],
+  11: [40000, 40],
+  12: [40000, 40],
+  13: [40000, 40],
+  14: [40000, 40],
+  15: [30000, 20],
+  16: [30000, 30],
+  17: [30000, 30],
+  18: [30000, 20],
+  19: [40000, 40],
+  20: [100000, 30],
+  21: [40000, 40],
+  22: [40000, 40],
+  23: [40000, 40],
+  25: [40000, 40],
+  26: [100000, 30],
+  27: [30000, 20],
+  28: [50000, 60],
+  29: [40000, 40],
+  30: [100000, 30],
+  31: [30000, 30],
+  32: [40000, 40],
+  33: [100000, 30],
+  34: [30000, 30],
+  35: [35000, 30],
+  36: [30000, 30],
+  37: [35000, 30],
+  38: [35000, 30],
+  39: [35000, 30],
+  40: [20000, 20],
+  41: [35000, 30],
+  42: [20000, 20],
+  43: [30000, 20],
+  44: [20000, 20],
+  45: [20000, 20],
+  46: [30000, 20],
+  47: [20000, 25],
+  48: [30000, 20],
+  49: [20000, 25],
+  50: [30000, 20],
+  51: [35000, 30],
+  52: [20000, 25],
+  53: [20000, 25],
+  54: [30000, 20],
+  55: [30000, 30],
+  56: [30000, 30],
+  57: [20000, 25],
+  58: [20000, 20],
+  59: [20000, 25],
+  60: [30000, 20],
+  61: [40000, 40],
+  62: [20000, 25],
+  63: [20000, 25],
+  64: [20000, 25],
+  65: [30000, 20],
+  66: [20000, 25],
+  67: [20000, 25],
+  68: [30000, 30],
+  69: [35000, 30],
+  70: [20000, 25],
+  71: [20000, 20],
+  72: [20000, 20],
+  73: [20000, 20],
+  74: [20000, 15],
+  75: [30000, 30],
+  76: [20000, 20],
+  77: [20000, 20],
+  78: [20000, 20],
+  79: [30000, 20],
+  80: [30000, 30],
+  81: [35000, 30],
+  82: [30000, 20],
+  83: [30000, 20],
+  84: [20000, 25],
+};
+const lvStructure = (e: FestivalEvent): FestivalEvent => {
+  const x = e.day2 || e.flight?.includes('Turbo') ? undefined : LV_STRUCTURE[e.number];
+  return x ? { ...e, stack: x[0], levelMinutes: x[1] } : e;
+};
+
+/**
+ * The Wynn Las Vegas festival, 27 Nov – 21 Dec 2026, side events and
+ * satellites included. Source: the organiser's schedule page, read on 2026-10-17
  * (two separate reads, same rows); the same schedule is linked as a PDF from
  * wynnlasvegas.com. Shipped under a generic name (App Review 5.2.1). The
  * schedule has no event numbers: `number` here only ties flights and Day 2s
@@ -129,7 +229,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     'Horas locais de Las Vegas.',
     'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.',
     'O Main Event não tem garantia publicada (o prémio adicionado não se aplica no Nevada).',
-    'Só eventos de $1,000 ou mais; sem satélites.',
+    'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.',
   ],
   events: [
     lv(1, 'PLO', 'PLO', 1100, 0, '2026-12-01T13:00'),
@@ -181,7 +281,64 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(33, 'NLH 8-Max', 'NLH', 10500, 0, '2026-12-20T13:00'),
     lv(29, 'NLH Mystery Bounty', 'NLH', 1600, 1_000_000, '2026-12-20T19:00', '1D Turbo'),
     lv(34, "No Limit Hold'em", 'NLH', 1100, 100_000, '2026-12-21T12:00'),
-  ],
+    // Under $1,000 and satellites, from the schedule PDF.
+    lv(35, 'TORSE', 'Mix', 600, 0, '2026-11-27T12:00'),
+    lv(36, 'PLO', 'PLO', 400, 0, '2026-11-27T13:00'),
+    lv(37, 'Mixed Triple Draw (A-5, 2-7, Badugi)', 'Mix', 600, 0, '2026-11-28T12:00'),
+    lv(38, 'Limit Omaha 8', 'Mix', 600, 0, '2026-11-30T12:00'),
+    lv(39, 'Limit Omaha 8/Stud 8', 'Mix', 600, 0, '2026-12-01T12:00'),
+    lv(40, 'Satellite (2 × $1,100 seats)', 'NLH', 400, 0, '2026-12-03T19:00'),
+    lv(41, 'HORSE', 'Mix', 600, 0, '2026-12-04T12:00'),
+    lv(42, 'Satellite (2 × $1,100 seats)', 'NLH', 400, 0, '2026-12-04T19:00'),
+    lv(43, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-05T21:00'),
+    lv(44, 'Satellite to NLH Championship', 'NLH', 200, 0, '2026-12-06T12:00'),
+    lv(45, 'Satellite (2 × $1,100 seats)', 'NLH', 400, 0, '2026-12-06T19:00'),
+    lv(46, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-06T21:00'),
+    lv(47, 'Satellite to NLH Championship + Main Event', 'NLH', 1600, 0, '2026-12-07T19:00'),
+    lv(48, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-07T21:00'),
+    lv(49, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-08T19:00'),
+    lv(50, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-08T21:00'),
+    lv(51, 'Limit Omaha 8', 'Mix', 800, 0, '2026-12-09T13:00'),
+    lv(52, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-09T14:00'),
+    lv(53, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-09T19:00'),
+    lv(54, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-09T21:00'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-10T10:00', '1A'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-11T10:00', '1B'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-12T10:00', '1C'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-13T10:00', '1D'),
+    lv(56, "No Limit Hold'em", 'NLH', 800, 100_000, '2026-12-12T10:00'),
+    lv(57, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-12T14:00'),
+    lv(58, 'Satellite to Ladies NLH Championship', 'NLH', 200, 0, '2026-12-12T16:00'),
+    lv(59, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-12T19:00'),
+    lv(60, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-12T21:00'),
+    lv(61, "No Limit Hold'em", 'NLH', 800, 500_000, '2026-12-13T11:00', '1A'),
+    lv(61, "No Limit Hold'em", 'NLH', 800, 500_000, '2026-12-14T11:00', '1B'),
+    lv(62, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-13T12:00'),
+    lv(63, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-13T18:00'),
+    lv(64, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-14T18:00'),
+    lv(84, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-14T12:00'),
+    lv(65, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-14T21:00'),
+    lv(66, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-15T11:00'),
+    lv(67, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-15T18:00'),
+    lv(68, 'PLO Double Board Bomb Pot', 'PLO', 800, 0, '2026-12-16T12:00'),
+    lv(69, 'HORSE', 'Mix', 800, 0, '2026-12-16T13:00'),
+    lv(70, 'Satellite to NLH High Roller', 'NLH', 3000, 0, '2026-12-16T18:00'),
+    lv(71, 'Satellite to $3,000 NLH', 'NLH', 400, 0, '2026-12-16T18:00'),
+    lv(72, 'Satellite to $3,000 NLH', 'NLH', 400, 0, '2026-12-17T14:00'),
+    lv(73, 'Satellite to $3,000 NLH', 'NLH', 400, 0, '2026-12-17T19:00'),
+    lv(74, 'Satellite to $3,000 NLH', 'NLH', 400, 0, '2026-12-18T10:00'),
+    lv(75, "No Limit Hold'em", 'NLH', 600, 100_000, '2026-12-18T12:00'),
+    lv(76, 'Satellite to Seniors High Roller', 'NLH', 600, 0, '2026-12-18T14:00'),
+    lv(77, 'Satellite to NLH Mystery Bounty', 'NLH', 300, 0, '2026-12-19T12:00'),
+    lv(78, 'Satellite to NLH Mystery Bounty', 'NLH', 300, 0, '2026-12-19T17:00'),
+    lv(79, 'NLH 6-Max Turbo', 'NLH', 600, 50_000, '2026-12-19T18:00'),
+    lv(80, "No Limit Hold'em", 'NLH', 600, 50_000, '2026-12-20T12:00'),
+    lv(81, 'Mixed Triple Draw (A-5, 2-7, Badugi)', 'Mix', 600, 0, '2026-12-20T13:00'),
+    lv(82, '5-Card PLO Turbo', 'PLO', 600, 50_000, '2026-12-20T18:00'),
+    lv(83, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-21T18:00'),
+  ]
+    .map(lvStructure)
+    .sort((a, b) => a.start.localeCompare(b.start)),
 };
 
 /**

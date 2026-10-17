@@ -1440,6 +1440,7 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
+  'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou o horário de cada flight.',
 };
 
 export default ptBR;
