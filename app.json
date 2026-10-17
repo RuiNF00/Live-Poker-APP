@@ -139,6 +139,11 @@
             {
               "scheme": "https",
               "host": "sweatbook.poker",
+              "pathPrefix": "/swap/"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
               "pathPrefix": "/b"
             }
           ],
