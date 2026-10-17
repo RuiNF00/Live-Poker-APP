@@ -349,3 +349,14 @@ test('Prague: official late reg on the same playing day only', () => {
   assert.ok(pr.events.filter((e) => e.number === 27).every((e) => !e.lateRegMin));
   assert.ok(pr.events.every((e) => !e.lateRegMin || e.lateRegMin <= 12 * 60));
 });
+
+test('Lisboa: official late reg for the one-day events only', () => {
+  const byId = (id: string) => LISBOA_NOV_2026.events.find((e) => e.id === id)!;
+  assert.deepEqual(['4', '5', '6', '7', '9', '10'].map((id) => byId(id).lateRegMin), [160, 120, 215, 120, 210, 215]);
+  // #5 at 22:00 closes at midnight; the reminder still comes 20 min before.
+  const plan = { ...EMPTY_PLAN, picked: ['5'] };
+  const late = planReminders(LISBOA_NOV_2026, plan, venueTime(LISBOA_NOV_2026, '2026-11-26T12:00')).find((r) => r.title.includes('fecha'))!;
+  assert.equal(late.at, venueTime(LISBOA_NOV_2026, '2026-11-26T23:40'));
+  // Closes on Day 2 or the final day: left to the player.
+  assert.ok(['1', '2-1A', '3', '8'].every((id) => !byId(id).lateRegMin));
+});
