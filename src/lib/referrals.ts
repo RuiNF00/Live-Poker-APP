@@ -10,22 +10,17 @@ import { appUserId } from '@/billing/purchases';
 import { BRAND } from '@/theme';
 
 import { installId, refCode, setRefCode, track } from './events';
+import { createInviteReward, type Activation, type ClaimState } from './invite-reward';
 import { isOnline } from './online';
 import { queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
-const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', claim: 'rl.claim.v1' };
+const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1' };
 const WINDOW = 7 * 86400000;
 
 export type ClaimSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
 /** queued: no signal now; the claim is kept on the phone and sent when there is. */
 export type ClaimResult = 'ok' | 'already' | 'unknown_code' | 'self' | 'too_late' | 'error' | 'disabled' | 'queued';
-interface ClaimState {
-  code: string;
-  result: ClaimResult;
-  activated?: boolean;
-  handSaved?: boolean;
-}
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T | null> {
   const res = await fetch(`${API}/api/referrals/${path}`, {
@@ -56,8 +51,18 @@ export async function firstOpenAt(): Promise<number> {
   return now;
 }
 
+const reward = createInviteReward(AsyncStorage, () => post<{ booked?: boolean }>('activate', {}));
+
+/** Not booked yet (offline, or RevenueCat hasn't seen this user): the outbox tries again later. */
+function retryLater(a: Activation): Activation {
+  if (a === 'not_yet') queue('invite-activate', {}, 'activate');
+  return a;
+}
+
+registerSender('invite-activate', async () => ((await reward.activate()) === 'not_yet' ? 'retry' : 'done'));
+
 export async function claimState(): Promise<ClaimState | null> {
-  return getJSON<ClaimState>(K.claim);
+  return reward.claimState();
 }
 
 /** Can this install still type in an invite code? */
@@ -85,8 +90,7 @@ export async function bootReferrals(): Promise<void> {
   const firstRun = !(await getJSON<number>(K.first));
   await firstOpenAt();
   await ensureRegistered();
-  const c = await claimState();
-  if (c?.result === 'ok' && c.handSaved && !c.activated) await activateInvite();
+  if (await reward.pending()) retryLater(await reward.activate());
   if (firstRun && Platform.OS === 'android') {
     try {
       const { getInstallReferrerAsync } = await import('expo-application');
@@ -129,8 +133,9 @@ async function sendClaim({ code, source, shareId }: ClaimJob): Promise<{ result:
     const status = Number((e as Error).message);
     return { result: 'error', retry: !status || status === 429 || status >= 500 };
   }
-  if (result === 'ok' || result === 'already') await AsyncStorage.setItem(K.claim, JSON.stringify({ code, result })).catch(() => {});
   track('invite_claimed', { source, result });
+  // A first hand saved while this claim waited for signal turns the reward on now.
+  if (result === 'ok' || result === 'already') retryLater(await reward.claimAccepted(code, result));
   return { result, retry: false };
 }
 
@@ -143,18 +148,7 @@ registerSender('invite-claim', async (p) => {
 
 /** After a hand is saved: if we came through an invite, turn the reward on. True when it was just granted. */
 export async function activateInvite(): Promise<boolean> {
-  const c = await claimState();
-  if (!c || c.result !== 'ok' || c.activated) return false;
-  if (!c.handSaved) await AsyncStorage.setItem(K.claim, JSON.stringify({ ...c, handSaved: true })).catch(() => {});
-  try {
-    const r = await post<{ booked?: boolean }>('activate', {});
-    // Not booked yet (RevenueCat hasn't seen this user): try again on next launch.
-    if (!r?.booked) return false;
-    await AsyncStorage.setItem(K.claim, JSON.stringify({ ...c, handSaved: true, activated: true })).catch(() => {});
-    return true;
-  } catch {
-    return false;
-  }
+  return retryLater(await reward.handSaved()) === 'granted';
 }
 
 export interface InviteStatus {
