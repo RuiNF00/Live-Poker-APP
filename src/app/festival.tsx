@@ -9,15 +9,15 @@ import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
 
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
-import { askNotificationPermission } from '@/lib/lock-screen/reminder';
 import { eventDay, eventTitle, venueTime, WSOP_PARADISE_2026, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, planTotals, togglePicked, updatePlan, useFestivalPlan, type FestivalPlan } from '@/store/festival-plan';
+import { bankrollShare, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type FestivalPlan } from '@/store/festival-plan';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
@@ -48,6 +48,7 @@ export default function FestivalScreen() {
   const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
   const [lateFor, setLateFor] = useState<string | null>(null);
+  const [softAsk, askNotify] = useNotifySoftAsk();
 
   // The bankroll in the festival's currency, if there is one; otherwise the default (no % then).
   const bankroll = bankrolls.find((b) => b.currency === f.currency) ?? defaultBankroll;
@@ -69,7 +70,11 @@ export default function FestivalScreen() {
 
   const toggle = (e: FestivalEvent) => {
     tap('select');
-    if (!plan.picked.length) void askNotificationPermission();
+    if (!plan.picked.length)
+      void askNotify({
+        title: t('Avisamos-te antes de cada torneio que escolheres'),
+        preview: { title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }), body: eventTitle(e) },
+      });
     updatePlan(f.id, (p) => togglePicked(p, e.id));
   };
 
@@ -92,6 +97,7 @@ export default function FestivalScreen() {
   return (
     <>
       <Stack.Screen options={{ title: f.name }} />
+      {softAsk}
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <View style={{ gap: 4 }}>
           <T v="label">{`${f.venue} · ${f.city}`}</T>
