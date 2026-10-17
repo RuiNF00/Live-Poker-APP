@@ -118,7 +118,7 @@
 .lp-store.soon {
   background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--lp-line-strong);
+  border: 1px solid #33433d;
 }
 
 /* The hero hand: what a friend sees when you share. Clicks through to the live demo quiz. */
