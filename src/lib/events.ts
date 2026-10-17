@@ -27,7 +27,9 @@ export type FunnelEvent =
   | 'cancel_flow'
   | 'onboarding_step'
   | 'paywall_closed'
-  | 'trial_start';
+  | 'trial_start'
+  | 'lifetime_offer_shown'
+  | 'lifetime_purchased';
 
 // The install id also lives in the keychain, which survives deleting the app on iOS: a
 // reinstall is the same install, so it can't claim the friend's 7 Pro days again.

@@ -64,6 +64,8 @@ export const APP_EVENTS = [
   'onboarding_step',
   'paywall_closed',
   'trial_start',
+  'lifetime_offer_shown',
+  'lifetime_purchased',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 

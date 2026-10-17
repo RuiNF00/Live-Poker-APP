@@ -54,6 +54,23 @@ export const RETENTION = {
  */
 export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499 };
 
+/**
+ * High-stakes features that need Pro (Rui, 17 Oct: "Sim, Pro"). Fixed from
+ * launch: after launch a feature may go from Pro to free, never the other way.
+ * The shared sides stay free (a backer's page, confirming a swap by link).
+ */
+export const PRO_ONLY = {
+  /** Backers, makeup and settling up (staking screens). */
+  staking: true,
+  /** Swap settlement (swaps screens). */
+  swaps: true,
+  /** The yearly report with tax per country (PDF export). */
+  taxReport: true,
+  /** Net worth and results across currencies in one total (bankroll). */
+  homeTotal: true,
+};
+export type ProFeature = keyof typeof PRO_ONLY;
+
 /** Free plan. `null` means no limit. */
 export const FREE = {
   /** New hands saved per calendar day. The 4th waits as a draft, never lost. */
@@ -71,13 +88,29 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
+export type PaywallReason = 'hands' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
     title: t('Mão guardada como rascunho'),
     body: t('Com Pro, guardas mãos sem limite.'),
+  },
+  staking: {
+    title: t('Staking sem folhas de cálculo'),
+    body: t('Backers, makeup e acertos, sempre certos.'),
+  },
+  swaps: {
+    title: t('Swaps acertados sozinhos'),
+    body: t('Percentagens, prémios e quem deve a quem.'),
+  },
+  taxReport: {
+    title: t('O relatório do ano, pronto'),
+    body: t('Resultados por país e imposto retido, em PDF.'),
+  },
+  homeTotal: {
+    title: t('Tudo numa moeda'),
+    body: t('Património e resultado do ano, ao câmbio de cada dia.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
@@ -136,6 +169,8 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Filtros, salas e CSV', free: FREE.bankrollFilters, pro: true },
     { label: 'Stories com voz', free: false, pro: true },
     { label: 'Várias mãos para o solver', free: false, pro: true },
+    { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
+    { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
   ];
 }
 

@@ -1802,6 +1802,17 @@ const en: Record<string, string> = {
   'Na sessão a seguir a uma perda grande, perdes dinheiro.': 'In the session after a big loss, you lose money.',
   'A seguir a uma perda grande, rendes {pct}% menos.': 'After a big loss, you do {pct}% worse.',
   'Perda grande: mais de 3 buy-ins ({amount}). A sessão seguinte, até 2 dias depois.': 'Big loss: more than 3 buy-ins ({amount}). The next session, within 2 days.',
+  'Staking sem folhas de cálculo': 'Staking without spreadsheets',
+  'Backers, makeup e acertos, sempre certos.': 'Backers, makeup and settling up, always right.',
+  'Swaps acertados sozinhos': 'Swaps that settle themselves',
+  'Percentagens, prémios e quem deve a quem.': 'Percentages, prizes and who owes whom.',
+  'O relatório do ano, pronto': 'Your yearly report, done',
+  'Resultados por país e imposto retido, em PDF.': 'Results by country and tax withheld, as a PDF.',
+  'Tudo numa moeda': 'Everything in one currency',
+  'Património e resultado do ano, ao câmbio de cada dia.': "Net worth and this year's result, at each day's rate.",
+  'Juntar as moedas com Pro': 'Combine currencies with Pro',
+  'Staking e swaps': 'Staking and swaps',
+  'Total em todas as moedas': 'Total across currencies',
 };
 
 export default en;

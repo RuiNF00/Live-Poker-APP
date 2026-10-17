@@ -24,6 +24,7 @@ export default function Cancel() {
   const { plans, purchase, restore } = usePro();
   const [reason, setReason] = useState<CancelReason | null>(null);
   const [plan, setPlan] = useState<'monthly' | 'annual' | null>(null);
+  const [willRenew, setWillRenew] = useState<boolean | null>(null);
   const [offer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<Offer>(null);
   // The reason shows only when there's a one-time Pro in the store to offer for it.
@@ -35,15 +36,22 @@ export default function Cancel() {
 
   useEffect(() => {
     track('cancel_flow', { step: 'open' });
-    getSubscription().then((s) => setPlan(s?.plan ?? null));
+    getSubscription().then((s) => {
+      setPlan(s?.plan ?? null);
+      setWillRenew(s?.willRenew ?? null);
+    });
     lifetimeOffer().then(setLifetime);
   }, []);
   useEffect(() => {
     if (reason === 'bankroll') retentionOffer(plans).then(setOffer);
   }, [reason, plans]);
 
+  // Lifetime is judged on long-term revenue: who saw it, from which plan, and
+  // whether the subscription was still set to renew (i.e. they were about to cancel).
+  const lifetimeProps = () => ({ reason: reason ?? '', plan: plan ?? '', will_renew: willRenew ?? '' });
   const pick = (r: CancelReason) => {
     track('cancel_flow', { step: 'reason', reason: r });
+    if (r === 'noSubscription' && lifetime) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
     setReason(r);
   };
   const keep = () => {
@@ -65,6 +73,7 @@ export default function Cancel() {
   const lifetimeResult = (res: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: 'lifetime', result: res });
     if (res === 'ok') {
+      track('lifetime_purchased', lifetimeProps());
       Alert.alert(t('Pro para sempre'), t('Agora cancela a subscrição na {store}, para não pagares mais.', { store }), [{ text: t('Abrir a {store}', { store }), onPress: toStore }]);
     } else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
