@@ -1146,6 +1146,8 @@ const ptBR: Record<string, string> = {
   'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
   'fez fold': 'deu fold',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
+  'Fotografar a folha da estrutura: disponível na versão da loja': 'Fotografar a folha da estrutura: disponível na versão da loja do app',
+  'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'Não conseguimos ler os níveis nesta foto. Tente com mais luz e a folha reta, ou cole o texto.',
 };
 
 export default ptBR;

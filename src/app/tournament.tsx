@@ -13,6 +13,7 @@ import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, 
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { useSheetAnimation } from '@/lib/motion';
+import { canReadStructure, photoStructure } from '@/lib/structure-photo';
 import { bbs, chips, decimal, money, timeOf } from '@/poker/format';
 import { averageStack, levelOf, parsePayouts, parseStructure, payState, stackDepth, syncTo, syncedLevelStart, TEMPLATES, templateStructure, type Level, type Tourney } from '@/poker/tourney';
 import { useStore } from '@/store/store';
@@ -260,6 +261,7 @@ function Tournament({ s }: { s: Session }) {
         placeholder={'100/200/200 40\n200/300/300 40\nBreak 15\n200/400/400 40'}
         initial={st && !tour.structureName ? structureText(st) : ''}
         parse={(x) => parseStructure(x, s.levelMinutes || 30).length}
+        photo={Platform.OS === 'web' ? undefined : () => photoStructure('camera')}
         onClose={() => setSheet(null)}
         onSave={(x) => {
           setSheet(null);
@@ -432,7 +434,7 @@ function PayCard({ pay, payouts, left, currency }: { pay: ReturnType<typeof payS
   );
 }
 
-function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose, onSave }: { visible: boolean; title: string; hint: string; placeholder: string; initial: string; parse: (text: string) => number; onClose: () => void; onSave: (text: string) => void }) {
+function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose, onSave, photo }: { visible: boolean; title: string; hint: string; placeholder: string; initial: string; parse: (text: string) => number; onClose: () => void; onSave: (text: string) => void; photo?: () => Promise<string | null> }) {
   const [text, setText] = useState(initial);
   const [shownFor, setShownFor] = useState(visible);
   if (visible !== shownFor) {
@@ -441,12 +443,35 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
   }
   const n = useMemo(() => parse(text), [parse, text]);
   const animation = useSheetAnimation();
+  const [reading, setReading] = useState(false);
+  const [unread, setUnread] = useState(false);
+  const snap = async () => {
+    if (!photo) return;
+    setReading(true);
+    setUnread(false);
+    try {
+      // null: cancelled. '': a photo with no levels in it.
+      const got = await photo();
+      if (got) setText(got);
+      else if (got === '') setUnread(true);
+    } finally {
+      setReading(false);
+    }
+  };
   return (
     <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={title} onClose={onClose} />
           <T v="small">{hint}</T>
+          {photo ? (
+            canReadStructure ? (
+              <Button kind="secondary" size="sm" icon="camera-outline" title={reading ? t('A ler a folha…') : t('Fotografar a folha da estrutura')} disabled={reading} onPress={snap} style={{ alignSelf: 'flex-start' }} />
+            ) : (
+              <T v="tiny">{t('Fotografar a folha da estrutura: disponível na versão da loja')}</T>
+            )
+          ) : null}
+          {unread ? <T v="tiny" color={C.warn}>{t('Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.')}</T> : null}
           <Field value={text} onChangeText={setText} placeholder={placeholder} multiline autoFocus autoCorrect={false} inputStyle={{ minHeight: 160, maxHeight: 280, textAlignVertical: 'top', paddingTop: 12 }} />
           <Button title={n ? t('Usar {n} linhas', { n }) : t('Nada reconhecido ainda')} icon="checkmark" disabled={!n} onPress={() => onSave(text)} />
         </View>

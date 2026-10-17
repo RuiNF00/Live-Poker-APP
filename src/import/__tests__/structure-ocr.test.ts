@@ -4,20 +4,20 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { parseStructure } from '../../poker/tourney';
-import { structureText } from '../structure-ocr';
+import { ocrStructureText } from '../structure-ocr';
 
-const levels = (raw: string[]) => parseStructure(structureText(raw), 30).map((l) => [l.sb, l.bb, l.ante, l.minutes]);
+const levels = (raw: string[]) => parseStructure(ocrStructureText(raw), 30).map((l) => [l.sb, l.bb, l.ante, l.minutes]);
 
 test('whole rows (iOS reading a row as one line), level numbers and a break', () => {
   const raw = ['DEEPSTACK STRUCTURE', 'LEVEL BLINDS ANTE TIME', '1 100/200 200 40', '2 200/300 300 40', 'BREAK 15 MIN', '3 200/400 400 40'];
-  assert.match(structureText(raw), /Break 15/);
+  assert.match(ocrStructureText(raw), /Break 15/);
   assert.deepEqual(levels(raw), [[100, 200, 200, 40], [200, 300, 300, 40], [200, 400, 400, 40]]);
 });
 
 test('one cell at a time, in reading order', () => {
   const raw = ['Level', 'Blinds', 'Ante', 'Min', '1', '100/200', '200', '30', '2', '200/400', '400', '30', 'Break 10', '3', '300/600', '600', '30'];
   assert.deepEqual(levels(raw), [[100, 200, 200, 30], [200, 400, 400, 30], [300, 600, 600, 30]]);
-  assert.match(structureText(raw), /^Break 10$/m);
+  assert.match(ocrStructureText(raw), /^Break 10$/m);
 });
 
 test('a column per block (Android ML Kit), thousands with commas and k', () => {
@@ -31,6 +31,11 @@ test('no ante column and no times: the session\'s level length is used', () => {
 });
 
 test('nothing like a structure gives nothing', () => {
-  assert.equal(structureText(['WELCOME', 'Good luck at the tables']), '');
-  assert.equal(structureText([]), '');
+  assert.equal(ocrStructureText(['WELCOME', 'Good luck at the tables']), '');
+  assert.equal(ocrStructureText([]), '');
+});
+
+test('breaks on the sheet land on the level before them, as with a paste', () => {
+  const st = parseStructure(ocrStructureText(['1 100/200 200 40', '2 200/300 300 40', 'BREAK 15 MIN', '3 200/400 400 40']), 30);
+  assert.deepEqual(st.map((l) => l.breakAfter ?? 0), [0, 15, 0]);
 });

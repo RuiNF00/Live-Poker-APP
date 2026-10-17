@@ -66,7 +66,7 @@ function columnsFor(toks: Tok[], count: number): { ante?: number[]; minutes?: nu
 }
 
 /** What the photo says, as pasteable structure text ('' when no level was found). */
-export function structureText(raw: string[]): string {
+export function ocrStructureText(raw: string[]): string {
   const toks = tokens(raw);
   const out: string[] = [];
   const blinds = toks.filter((x) => x.kind === 'blinds');

@@ -2627,6 +2627,10 @@ const es: Record<string, string> = {
   'Swaps e staking': 'Swaps y staking',
   'fez fold': 'foldeó',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} a {to}; el máximo fue {max}.',
+  'A ler a folha…': 'Leyendo la hoja…',
+  'Fotografar a folha da estrutura': 'Fotografiar la hoja de estructura',
+  'Fotografar a folha da estrutura: disponível na versão da loja': 'Fotografiar la hoja de estructura: disponible en la versión de la tienda',
+  'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'No pudimos leer los niveles en esta foto. Prueba con más luz y la hoja recta, o pega el texto.',
 };
 
 export default es;

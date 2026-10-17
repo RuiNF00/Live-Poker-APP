@@ -4,13 +4,13 @@
 
 import * as ImagePicker from 'expo-image-picker';
 
-import { structureText } from '@/import/structure-ocr';
+import { ocrStructureText } from '@/import/structure-ocr';
 
 import { canReadReceipts, readReceiptText } from './receipt-ocr';
 
 export const canReadStructure = canReadReceipts;
 
-/** null when cancelled or nothing could be read; '' never comes back. */
+/** null when cancelled (or no camera); '' when the photo had no levels to read. */
 export async function photoStructure(source: 'camera' | 'photos' = 'camera'): Promise<string | null> {
   if (!canReadStructure) return null;
   if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
@@ -18,6 +18,5 @@ export async function photoStructure(source: 'camera' | 'photos' = 'camera'): Pr
   const r = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
   if (r.canceled || !r.assets?.[0]) return null;
   const lines = await readReceiptText(r.assets[0].uri);
-  const text = lines ? structureText(lines) : '';
-  return text || null;
+  return lines ? ocrStructureText(lines) : '';
 }

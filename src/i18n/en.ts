@@ -2640,6 +2640,10 @@ const en: Record<string, string> = {
   'O torneio acabou. Regista o resultado para fechar as contas.': 'The event is over. Log the result to close the accounts.',
   'Acerto: {title}': 'Settle up: {title}',
   'Swaps e staking': 'Swaps and staking',
+  'A ler a folha…': 'Reading the sheet…',
+  'Fotografar a folha da estrutura': 'Photograph the structure sheet',
+  'Fotografar a folha da estrutura: disponível na versão da loja': 'Photograph the structure sheet: available in the store version',
+  'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'We couldn\'t read the levels in this photo. Try with more light and the sheet straight, or paste the text.',
 };
 
 export default en;
