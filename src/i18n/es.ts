@@ -3185,6 +3185,8 @@ const es: Record<string, string> = {
   'Hora oficial': 'Hora oficial',
   'Punta Cana, janeiro 2027': 'Punta Cana, enero 2027',
   'República Dominicana': 'República Dominicana',
+  'Criar e enviar por WhatsApp': 'Crear y enviar por WhatsApp',
+  'Enviar o link': 'Enviar el enlace',
 };
 
 export default es;

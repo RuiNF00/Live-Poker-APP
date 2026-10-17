@@ -1523,6 +1523,7 @@ const ptBR: Record<string, string> = {
   'Hora oficial': 'Horário oficial',
   'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
   'República Dominicana': 'República Dominicana',
+  'Criar e enviar por WhatsApp': 'Criar e enviar pelo WhatsApp',
 };
 
 export default ptBR;
