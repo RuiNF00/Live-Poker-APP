@@ -9,9 +9,9 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
-import { BOARD_Y, BRAND_Y, dealerSpot, POT_Y, scaleFor, SIZE, STAGE_RATIO, tableMap } from './layout';
+import { BOARD_Y, BRAND_Y, cardShow, dealerSpot, POT_Y, scaleFor, SIZE, STAGE_RATIO, tableMap } from './layout';
 import type { BadgeKind, RpSeat, RpView } from './model';
-import { RpCard, SERIF } from './RpCard';
+import { RpCard } from './RpCard';
 
 
 export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
@@ -77,7 +77,7 @@ export function ReplayerTable({
               right: 0,
               textAlign: 'center',
               color: 'rgba(245,237,216,0.16)',
-              fontFamily: SERIF,
+              fontFamily: ff(700),
               fontSize: 13 * k,
               letterSpacing: 7 * k,
             }}>
@@ -149,7 +149,7 @@ export function ReplayerTable({
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                <Text style={{ color: '#3B3424', fontSize: 10 * k, fontFamily: SERIF, fontWeight: '700' }}>D</Text>
+                <Text style={{ color: '#3B3424', fontSize: 10 * k, fontFamily: ff(800) }}>D</Text>
               </View>
             );
           })()}
@@ -211,9 +211,9 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
   const border = s.won ? C.good : s.acting ? C.accent : s.hero ? 'rgba(245,237,216,0.55)' : 'rgba(245,237,216,0.14)';
 
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: x - pw / 2, top: y - ph / 2 - ch * 0.7, width: pw, alignItems: 'center' }}>
+    <View pointerEvents="none" style={{ position: 'absolute', left: x - pw / 2, top: y - ph / 2 - ch * cardShow(s.hero), width: pw, alignItems: 'center' }}>
       {/* cards, or the red FOLD of a player out of the hand */}
-      <View style={{ height: ch * 0.7, width: pw, alignItems: 'center', justifyContent: 'flex-end', zIndex: 0 }}>
+      <View style={{ height: ch * cardShow(s.hero), width: pw, alignItems: 'center', justifyContent: 'flex-end', zIndex: 0 }}>
         {s.folded ? (
           <Text allowFontScaling={false} style={{ color: C.muted, fontFamily: ff(800), fontSize: 11 * k, letterSpacing: 1, marginBottom: 2 }}>
             FOLD
@@ -242,19 +242,19 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
           backgroundColor: s.won ? '#10261C' : '#0E0D0B',
           borderWidth: s.acting || s.won ? 1.5 : 1,
           borderColor: border,
-          paddingHorizontal: 5 * k,
+          paddingHorizontal: 4 * k,
           justifyContent: 'center',
           opacity: s.folded ? 0.45 : 1,
           shadowColor: s.acting ? C.accent : '#000',
           shadowOpacity: s.acting ? 0.7 : 0.4,
           shadowRadius: s.acting ? 8 : 4,
         }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 3 }}>
-          <Text allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, color: C.text, fontFamily: ff(600), fontSize: 11 * k }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, color: C.text, fontFamily: ff(600), fontSize: 10.5 * k, letterSpacing: -0.1 }}>
             {s.name}
           </Text>
           {s.pos && s.pos !== s.name ? (
-            <View style={{ backgroundColor: pos.bg, borderRadius: 3, paddingHorizontal: 3 * k }}>
+            <View style={{ backgroundColor: pos.bg, borderRadius: 3, paddingHorizontal: 2.5 * k, flexShrink: 0 }}>
               <Text allowFontScaling={false} style={{ color: pos.fg, fontFamily: ff(800), fontSize: 8 * k }}>
                 {s.pos}
               </Text>
@@ -270,7 +270,7 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
         <View
           style={{
             position: 'absolute',
-            ...(s.hero ? { left: pw + 4, top: ch * 0.7 + ph / 2 - 8 * k } : { top: ch * 0.7 - 8 * k }),
+            ...(s.hero ? { left: pw + 4, top: ch * cardShow(s.hero) + ph / 2 - 8 * k } : { top: ch * cardShow(s.hero) - 8 * k }),
             backgroundColor: badge.bg,
             borderRadius: 4,
             paddingHorizontal: 4 * k,
@@ -288,7 +288,7 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
         <View
           style={{
             position: 'absolute',
-            ...(s.hero ? { right: pw + 4, top: ch * 0.7 + ph / 2 - 8 * k } : { top: ch * 0.7 + ph - 7 * k }),
+            ...(s.hero ? { right: pw + 4, top: ch * cardShow(s.hero) + ph / 2 - 8 * k } : { top: ch * cardShow(s.hero) + ph - 7 * k }),
             backgroundColor: s.equity >= bestEquity ? C.good : 'rgba(14,12,10,0.92)',
             borderRadius: 4,
             borderWidth: 1,
