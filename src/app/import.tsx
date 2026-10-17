@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
+import { ImportSupport } from '@/components/ImportSupport';
 import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
@@ -17,7 +18,7 @@ import { prepare, toSessions, type DateOrder, type FailedRow, type FailReason, t
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
-import { pickTextFile, saveTextFile } from '@/lib/files';
+import { pickTextFileWithName } from '@/lib/files';
 import { money } from '@/poker/format';
 import { importSummary, parseBackup } from '@/store/backup';
 import { profit } from '@/store/session-math';
@@ -99,13 +100,18 @@ export default function ImportScreen() {
   const [step, setStep] = useState<Step>({ at: 'pick' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The file as picked, so a failed import can go to support as it was.
+  const [picked, setPicked] = useState<{ text: string; name: string; uri: string } | null>(null);
+  const [help, setHelp] = useState(false);
 
   const choose = async () => {
     setError(null);
     setBusy(true);
     try {
-      const text = await pickTextFile();
-      if (text === null) return;
+      const got = await pickTextFileWithName();
+      if (got === null) return;
+      setPicked(got);
+      const { text } = got;
       if (/^\s*\{/.test(text)) {
         // A Sweatbook backup: hands, sessions and players in one go.
         const backup = parseBackup(text);
@@ -185,7 +191,24 @@ export default function ImportScreen() {
                 ))}
               </Card>
             </Section>
-            {error ? <Banner tone="warn" icon="alert-circle" title={t('Ficheiro inválido')} body={error} /> : null}
+            {error ? (
+              <View style={{ gap: S.sm }}>
+                <Banner tone="warn" icon="alert-circle" title={t('Ficheiro inválido')} body={error} />
+                {picked ? (
+                  <>
+                    <Button kind="secondary" icon="mail-outline" title={t('Enviar ao suporte')} onPress={() => setHelp(true)} />
+                    <T v="tiny" style={{ paddingHorizontal: 4 }}>
+                      {t('Fazemos a primeira importação por ti. Só envias se aceitares.')}
+                    </T>
+                    <ImportSupport
+                      visible={help}
+                      onClose={() => setHelp(false)}
+                      file={{ fileName: picked.name, uri: picked.uri, text: picked.text, source: 'unreadable', rows: picked.text ? picked.text.split(/\r?\n/).filter(Boolean).length : 0, read: 0, failed: [] }}
+                    />
+                  </>
+                ) : null}
+              </View>
+            ) : null}
           </ScrollView>
           <Dock bottom={insets.bottom}>
             <Button title={busy ? t('A ler…') : t('Escolher ficheiro')} icon="document-attach" disabled={busy} onPress={choose} />
@@ -193,6 +216,7 @@ export default function ImportScreen() {
         </View>
       ) : step.at === 'review' ? (
         <Review
+          picked={picked}
           file={step.file}
           bottom={insets.bottom}
           onBack={() => setStep({ at: 'pick' })}
@@ -283,7 +307,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
   );
 }
 
-function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
+function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
   const [mapping, setMapping] = useState<Mapping>(file.mapping);
@@ -370,7 +394,7 @@ function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: nu
           </Card>
         ) : null}
 
-        {r.failed.length ? <FailedRows file={file} failed={r.failed} /> : null}
+        {r.failed.length ? <FailedRows file={file} picked={picked} failed={r.failed} read={r.sessions.length} /> : null}
 
         {fileCurrencies.length ? (
           <Section title={t('Para que bankroll')} hint={t('Cada moeda vai para uma bankroll dessa moeda.')}>
@@ -521,9 +545,8 @@ const FAIL_TEXT: Record<FailReason, string> = {
   badMove: t('Depósito ou levantamento sem valor'),
 };
 
-/** Each row left out, with its line in the file and why, plus the choice to send us the file. */
-function FailedRows({ file, failed }: { file: Prepared; failed: FailedRow[] }) {
-  const insets = useSafeAreaInsets();
+/** Each row left out, with its line in the file and why, plus the choice to send the file to support. */
+function FailedRows({ file, picked, failed, read }: { file: Prepared; picked: { name: string; uri: string } | null; failed: FailedRow[]; read: number }) {
   const [all, setAll] = useState(false);
   const [send, setSend] = useState(false);
   const shown = all ? failed.slice(0, 100) : failed.slice(0, 4);
@@ -536,34 +559,13 @@ function FailedRows({ file, failed }: { file: Prepared; failed: FailedRow[] }) {
       </ListGroup>
       <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
         {failed.length > shown.length && !all ? <Button kind="ghost" size="sm" title={t('Ver as {n}', { n: failed.length })} onPress={() => setAll(true)} /> : null}
-        <Button kind="ghost" size="sm" icon="mail-outline" title={t('Envia-nos o ficheiro')} onPress={() => setSend(true)} />
+        <Button kind="ghost" size="sm" icon="mail-outline" title={t('Enviar ao suporte')} onPress={() => setSend(true)} />
       </Row>
-      <Modal visible={send} transparent animationType="slide" onRequestClose={() => setSend(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={() => setSend(false)} accessibilityLabel={t('Fechar')} />
-        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, paddingTop: S.lg + 4, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + S.md, gap: S.md }}>
-          <SheetHeader title={t('Envia-nos o ficheiro')} onClose={() => setSend(false)} closeLabel={t('Fechar')} />
-          <T v="body" style={{ color: C.textDim }}>
-            {t('Vemos porque é que estas linhas não entram e melhoramos a importação para o teu ficheiro.')}
-          </T>
-          <Card tone="inset" style={{ gap: S.xs }}>
-            <Row gap={S.sm}>
-              <Ionicons name="lock-closed-outline" size={16} color={C.info} />
-              <T v="h3" color={C.info} style={{ flex: 1 }}>
-                {t('O ficheiro tem os teus dados de póquer')}
-              </T>
-            </Row>
-            <T v="small">{t('Datas, salas e resultados. Só sai do telemóvel se o enviares tu, por email ou outra app à tua escolha. Nada é enviado sozinho.')}</T>
-          </Card>
-          <Button
-            icon="share-outline"
-            title={t('Escolher como enviar')}
-            onPress={async () => {
-              setSend(false);
-              await saveTextFile(`sweatbook-importacao-${file.source}.csv`, file.text, 'text/csv').catch(() => {});
-            }}
-          />
-        </View>
-      </Modal>
+      <ImportSupport
+        visible={send}
+        onClose={() => setSend(false)}
+        file={{ fileName: picked?.name ?? `import-${file.source}.csv`, uri: picked?.uri, text: file.text, source: file.source, rows: file.table.rows.length, read, failed }}
+      />
     </Section>
   );
 }

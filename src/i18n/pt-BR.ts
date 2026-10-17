@@ -1286,6 +1286,15 @@ const ptBR: Record<string, string> = {
   'Aviso antes de cobrar': 'Aviso antes da cobrança',
   'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante o teste grátis, avisamos você antes de cobrar.',
   'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
+  'Fazemos a primeira importação por ti. Só envias se aceitares.': 'Fazemos a primeira importação para você. Só é enviado se você aceitar.',
+  'Obrigado. Respondemos para o teu email.': 'Obrigado. Respondemos no seu email.',
+  'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'Se o arquivo não entrar sozinho, nós importamos e avisamos quando estiver pronto.',
+  'Vemos o ficheiro e, se for preciso, fazemos a importação por ti. Respondemos por email em até 2 dias úteis.': 'Olhamos o arquivo e, se precisar, fazemos a importação para você. Respondemos por email em até 2 dias úteis.',
+  'O ficheiro que escolheste, tal como está · {kb} KB': 'O arquivo que você escolheu, do jeito que está · {kb} KB',
+  'Versão da app, tipo de telemóvel e as linhas que ficaram de fora': 'Versão do app, tipo de celular e as linhas que ficaram de fora',
+  'Só vai este ficheiro': 'Só vai este arquivo',
+  'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
+  'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
 };
 
 export default ptBR;

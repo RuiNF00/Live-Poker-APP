@@ -18,3 +18,12 @@ export async function pickTextFile(): Promise<string | null> {
   const a = r.assets[0];
   return a.file ? a.file.text() : (await fetch(a.uri)).text();
 }
+
+/** Like pickTextFile, with the file's own name; on the web the picked file stays in memory (uri is a blob: URL). */
+export async function pickTextFileWithName(): Promise<{ text: string; name: string; uri: string } | null> {
+  const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: false });
+  if (r.canceled || !r.assets?.[0]) return null;
+  const a = r.assets[0];
+  const text = await (a.file ? a.file.text() : (await fetch(a.uri)).text()).catch(() => '');
+  return { text, name: a.name, uri: a.file ? URL.createObjectURL(a.file) : a.uri };
+}

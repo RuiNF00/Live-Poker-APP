@@ -19,3 +19,13 @@ export async function pickTextFile(): Promise<string | null> {
   if (r.canceled || !r.assets?.[0]) return null;
   return new File(r.assets[0].uri).text();
 }
+
+/** Like pickTextFile, with the file's own name and where the picked copy is (to attach it as it was). */
+export async function pickTextFileWithName(): Promise<{ text: string; name: string; uri: string } | null> {
+  const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true });
+  if (r.canceled || !r.assets?.[0]) return null;
+  const a = r.assets[0];
+  // An .xlsx or a PDF isn't text: keep the file anyway, so it can go to support as it is.
+  const text = await new File(a.uri).text().catch(() => '');
+  return { text, name: a.name, uri: a.uri };
+}
