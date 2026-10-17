@@ -1,8 +1,9 @@
 // Sheets on the Bankroll tab: a deposit or withdrawal, a bankroll (new or
 // edit), and the date and stake filters.
 
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { locale, t } from '@/i18n';
 import type { Keep } from '@/store/moveup-math';
@@ -21,6 +22,18 @@ export { CURRENCIES };
 /** `footer` stays pinned above the keyboard (a save button that never needs the keyboard put away). */
 export function Sheet({ visible, title, onClose, children, footer }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
   const sheetAnim = useSheetAnimation();
+  const insets = useSafeAreaInsets();
+  // With the keyboard down the footer sits over the home indicator (iOS) or the navigation bar (Android 15): clear it.
+  const [kb, setKb] = useState(false);
+  useEffect(() => {
+    if (!footer) return;
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKb(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKb(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [footer]);
   return (
     <Modal visible={visible} animationType={sheetAnim} onRequestClose={onClose} presentationStyle="pageSheet">
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={footer && Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -28,7 +41,7 @@ export function Sheet({ visible, title, onClose, children, footer }: { visible: 
           <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
           {visible ? children : null}
         </ScrollView>
-        {footer && visible ? <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm, paddingBottom: S.lg, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg }}>{footer}</View> : null}
+        {footer && visible ? <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm, paddingBottom: kb ? S.sm : Math.max(S.lg, insets.bottom + S.sm), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg }}>{footer}</View> : null}
       </KeyboardAvoidingView>
     </Modal>
   );
