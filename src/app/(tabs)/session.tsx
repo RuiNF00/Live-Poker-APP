@@ -5,7 +5,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
@@ -55,34 +55,42 @@ export default function SessionScreen() {
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
 
+  const startRef = useRef<(() => void) | null>(null);
   if (activeSession) return <Live s={activeSession} />;
   return (
-    <Screen title={t('Sessão')}>
-      <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
-      <ListGroup>
-        <ListItem
-          icon="calendar-outline"
-          iconColor={C.accent}
-          title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
-          subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
-          chevron
-          onPress={() => router.push('/festival')}
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Screen title={t('Sessão')} contentStyle={{ paddingBottom: 96 }}>
+        <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
+        <ListGroup>
+          <ListItem
+            icon="calendar-outline"
+            iconColor={C.accent}
+            title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
+            subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
+            chevron
+            onPress={() => router.push('/festival')}
+          />
+        </ListGroup>
+        <SessionForm
+          initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
+          bankrolls={bankrolls}
+          recentNames={recentNames}
+          recentVenues={recentVenues}
+          submitLabel={t('Começar agora')}
+          submitRef={startRef}
+          onSubmit={(s) => {
+            tap('success');
+            saveSession(s);
+            // The next session goes to the same bankroll.
+            if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
+          }}
         />
-      </ListGroup>
-      <SessionForm
-        initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
-        bankrolls={bankrolls}
-        recentNames={recentNames}
-        recentVenues={recentVenues}
-        submitLabel={t('Começar agora')}
-        onSubmit={(s) => {
-          tap('success');
-          saveSession(s);
-          // The next session goes to the same bankroll.
-          if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
-        }}
-      />
-    </Screen>
+      </Screen>
+      {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
+      <View style={styles.thumbBar}>
+        <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+      </View>
+    </View>
   );
 }
 
