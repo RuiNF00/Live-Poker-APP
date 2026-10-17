@@ -3070,6 +3070,9 @@ const en: Record<string, string> = {
   'Alguém entrou?': 'Someone came in?',
   'Cartas mostradas (opcional)': 'Cards shown (optional)',
   'Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.': 'This file is XML. Export your sessions as CSV in the other app and pick that file.',
+  'Todas as tuas viagens': 'All your trips',
+  'Despesas e resultado líquido de cada festival.': 'Expenses and net result for every festival.',
+  'Despesas e líquido por festival': 'Expenses and net per festival',
 };
 
 export default en;

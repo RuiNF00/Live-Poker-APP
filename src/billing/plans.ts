@@ -99,7 +99,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -183,6 +183,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Conhece o teu bankroll'),
     body: t('Várias bankrolls, filtros, salas, jogos e CSV.'),
   },
+  trips: {
+    title: t('Todas as tuas viagens'),
+    body: t('Despesas e resultado líquido de cada festival.'),
+  },
   story: {
     title: t('Stories com a tua voz'),
     body: t('Vídeo com voz, sem marca de água.'),
@@ -209,7 +213,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
 };
 
-export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mttStats' | 'varianceMine' | ProFeature;
+export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mttStats' | 'varianceMine' | 'trips' | ProFeature;
 
 /** The first three are the generic rows; the rest lead only when they triggered the paywall. */
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
@@ -229,6 +233,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'moveUpPlan', icon: 'layers', title: t('Subir de stake'), body: t('Risco de ruína e plano') },
   { key: 'mttStats', icon: 'trophy', title: t('Torneios a fundo'), body: t('ROI e ITM por buy-in e festival') },
   { key: 'varianceMine', icon: 'pulse', title: t('A tua variância'), body: t('Com os teus números') },
+  { key: 'trips', icon: 'airplane', title: t('Viagens'), body: t('Despesas e líquido por festival') },
   { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
 ];
 
@@ -256,6 +261,7 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   mttStats: 'mttStats',
   varianceMine: 'varianceMine',
   villainRange: 'villainRange',
+  trips: 'trips',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */
