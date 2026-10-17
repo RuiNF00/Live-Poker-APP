@@ -163,6 +163,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
             {busy ? c.confirming : c.confirm}
           </button>
           <p className="sw-hint">{c.confirmFine}</p>
+          <p className="sw-hint">
+            {c.noMoney} {c.adults}
+          </p>
           {error ? <p className="sw-error">{error}</p> : null}
         </section>
       ) : null}
@@ -216,6 +219,11 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
       {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/${id}?k=${token}`} /> : null}
 
       <p className="live-updated">{c.autoRefresh}</p>
+      {confirmed || you === 'a' ? (
+        <p className="live-updated">
+          {c.noMoney} {c.adults}
+        </p>
+      ) : null}
 
       <section className="live-cta" id="baixar">
         <Mark size={44} />

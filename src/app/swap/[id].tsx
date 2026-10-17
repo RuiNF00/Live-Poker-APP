@@ -110,9 +110,12 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
           <Section title={t('O teu nome')}>
             <Field value={name} onChangeText={setName} maxLength={40} autoCapitalize="words" />
           </Section>
-          <Button title={busy ? t('A confirmar…') : t('Confirmo o swap')} icon="checkmark-circle-outline" disabled={!name.trim() || busy} onPress={confirm} />
+          <Button title={busy ? t('A confirmar o swap…') : t('Confirmo o swap')} icon="checkmark-circle-outline" disabled={!name.trim() || busy} onPress={confirm} />
           <T v="tiny" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
             {t('Ao confirmar, os termos e a hora ficam fixados. Nenhum dos dois os pode mudar depois.')}
+          </T>
+          <T v="tiny" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
+            {t('Registo e contas apenas. Nenhum dinheiro passa pela Sweatbook: os pagamentos fazem-se entre vocês.')} {t('Só para maiores de 18 anos.')}
           </T>
         </>
       )}

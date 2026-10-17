@@ -1652,6 +1652,9 @@ const en: Record<string, string> = {
   'A tua % sai da sessão onde cobraste; a tua parte dos prémios dele entra na tua última sessão. Conta na bankroll, no €/h e nos relatórios.': 'Your % comes off the session where you cashed; your share of their prizes goes into your latest session. It counts in bankroll, €/h and reports.',
   '1 prémio ainda não entra: falta uma sessão tua terminada nessa moeda, desde o início do swap.': '1 prize isn\'t counted yet: you need a finished session in that currency since the swap began.',
   '{n} prémios ainda não entram: falta uma sessão tua terminada nessa moeda, desde o início do swap.': '{n} prizes aren\'t counted yet: you need a finished session in that currency since the swap began.',
+  'A confirmar o swap…': 'Confirming swap…',
+  'Registo e contas apenas. Nenhum dinheiro passa pela Sweatbook: os pagamentos fazem-se entre vocês.': 'Record and maths only. No money goes through Sweatbook: payments are made between you.',
+  'Só para maiores de 18 anos.': '18+ only.',
 };
 
 export default en;
