@@ -14,6 +14,7 @@ export const brand = {
   appStoreProviderToken: process.env.NEXT_PUBLIC_APP_STORE_PROVIDER_TOKEN || '',
   playStoreUrl: process.env.NEXT_PUBLIC_PLAY_STORE_URL || '',
   appScheme: process.env.NEXT_PUBLIC_APP_SCHEME || 'sweatbook',
+  androidPackage: process.env.NEXT_PUBLIC_ANDROID_PACKAGE || 'com.ruinf.sweatbook',
   colors: {
     accent: '#FF6A3D',
     onAccent: '#1A0A04',

@@ -29,6 +29,8 @@
   --r-lg: 16px;
   --r-xl: 22px;
   min-height: 100vh;
+  /* In-app browsers (Instagram, Facebook) put their own bars over 100vh. */
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   overflow-x: clip;
