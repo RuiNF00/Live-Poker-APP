@@ -19,7 +19,7 @@ poker,tracker,historial,sesiones,torneo,mtt,cash,staking,swap,holdem,notas,estad
 
 La forma más rápida de guardar las manos que juegas en vivo.
 
-En el póker en vivo no hay historial de manos. O lo apuntas en un papel, o lo olvidas. Sweatbook está hecho para que registres una mano en pocos toques, en la mesa, sin perderte la siguiente acción.
+En el póker en vivo no hay historial de manos. O lo anotas en un papel, o lo olvidas. Sweatbook está hecho para que registres una mano en pocos toques, en la mesa, sin perderte la siguiente acción.
 
 REGISTRA EN SEGUNDOS
 • Posiciones, stacks y acciones con el mínimo de toques
@@ -28,7 +28,7 @@ REGISTRA EN SEGUNDOS
 • Etiquetas para encontrar después las manos que importan (bluff, hero call, cooler…)
 • Notas rápidas sobre los jugadores de tu mesa
 
-REVÍSALA EN EL REPLAYER
+REPÁSALA EN EL REPLAYER
 • Repite la mano calle a calle, con el bote y los stacks actualizados
 • Mírala en fichas o en big blinds
 • Ideal para estudiar en el descanso o en casa
@@ -44,13 +44,13 @@ CONTROL DE BANKROLL PARA QUIEN JUEGA EN VIVO
 • Staking: registra la acción que vendiste, tus backers, paquetes y makeup, y lo que debes a cada uno
 • Calculadora de deal para la mesa final (ICM y chip chop)
 • Regulares con tipo, lectura y cuántas veces los viste
-• Sin registrarte: tus manos se quedan en tu teléfono
+• Sin crear cuenta: tus manos se quedan en tu teléfono
 • Copia de seguridad en la nube opcional y cifrada, con código de recuperación y sin correo
 • Exporta todo a un archivo
 • App en español, inglés y portugués
 
 SWEATBOOK PRO
-Gratis: hasta 3 manos guardadas al día, compartir sin límite, importar, calculadora de odds, planificador de festivales y bloqueo de la app. Con Sweatbook Pro tienes manos ilimitadas, gestión de staking (backers, makeup y liquidaciones), liquidación de swaps, informe anual de impuestos, resultados en varias monedas en un solo total, varios bankrolls, todos los filtros de bankroll (30 días, 90 días, 1 año, por stake), dónde ganas y dónde pierdes, win rate por juego, stake y sala, comparación de meses, la lectura de tu varianza en los downswings, el plan para subir de stake, el rango del villano en una cuadrícula 13×13 en el replayer, viajes ilimitados, informes en PDF y CSV, exportación de varias manos a la vez a tu solver, links ilimitados para tu coach e historias con tu voz y sin marca de agua. La página de quien te respalda y confirmar un swap por link son siempre gratis. Suscripción mensual o anual; el plan anual empieza con 3 días gratis para nuevos suscriptores. El pago se carga a tu cuenta de Apple cuando confirmas la compra. La suscripción se renueva automáticamente, salvo que la canceles al menos 24 horas antes del final del periodo, en los ajustes de tu cuenta.
+Gratis: hasta 3 manos guardadas al día, compartir sin límite, importar, calculadora de odds, planificador de festivales y bloqueo de la app. Con Sweatbook Pro tienes manos ilimitadas, gestión de staking (backers, makeup y liquidaciones), liquidación de swaps, informe anual de impuestos, resultados en varias monedas en un solo total, varios bankrolls, todos los filtros de bankroll (30 días, 90 días, 1 año, por stake), dónde ganas y dónde pierdes, win rate por juego, stake y sala, comparación de meses, la lectura de tu varianza en los downswings, el plan para subir de stake, el rango del villano en una cuadrícula 13×13 en el replayer, viajes ilimitados, informes en PDF y CSV, exportación de varias manos a la vez a tu solver, links ilimitados para tu coach e historias con tu voz y sin marca de agua. La página para tus backers y confirmar un swap por link son siempre gratis. Suscripción mensual o anual; el plan anual empieza con 3 días gratis para nuevos suscriptores. El pago se carga a tu cuenta de Apple cuando confirmas la compra. La suscripción se renueva automáticamente, salvo que la canceles al menos 24 horas antes del final del periodo, en los ajustes de tu cuenta.
 
 Sweatbook es una herramienta de registro y estudio: solo registros y cuentas. Ningún dinero pasa por Sweatbook. No se puede jugar con dinero real. Para mayores de 18 años.
 
