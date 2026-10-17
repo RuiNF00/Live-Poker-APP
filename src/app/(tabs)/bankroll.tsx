@@ -8,6 +8,7 @@ import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -148,40 +149,43 @@ function BankrollTab() {
           </Row>
         </Card>
 
-        <View style={{ gap: S.sm }}>
-          <Segmented
-            options={[
-              { key: 'all', label: t('Tudo') },
-              { key: 'mtt', label: t('Torneios') },
-              { key: 'cash', label: 'Cash' },
-            ]}
-            value={game}
-            onChange={setGame}
-          />
-          <Segmented
-            size="sm"
-            options={[
-              { key: 'all', label: t('Live e online') },
-              { key: 'live', label: 'Live' },
-              { key: 'online', label: 'Online' },
-            ]}
-            value={format}
-            onChange={setFormat}
-          />
-          <ChipRow>
-            {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
-            <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
-            {PRESETS.map((o) => (
-              <Chip
-                key={o.key}
-                label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
-                icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
-                active={preset === o.key}
-                onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
-              />
-            ))}
-          </ChipRow>
-        </View>
+        {/* Filters only once there is something to filter. */}
+        {scoped.some((x) => x.endedAt) || nFilters ? (
+          <View style={{ gap: S.sm }}>
+            <Segmented
+              options={[
+                { key: 'all', label: t('Tudo') },
+                { key: 'mtt', label: t('Torneios') },
+                { key: 'cash', label: 'Cash' },
+              ]}
+              value={game}
+              onChange={setGame}
+            />
+            <Segmented
+              size="sm"
+              options={[
+                { key: 'all', label: t('Live e online') },
+                { key: 'live', label: 'Live' },
+                { key: 'online', label: 'Online' },
+              ]}
+              value={format}
+              onChange={setFormat}
+            />
+            <ChipRow>
+              {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
+              <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
+              {PRESETS.map((o) => (
+                <Chip
+                  key={o.key}
+                  label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
+                  icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
+                  active={preset === o.key}
+                  onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
+                />
+              ))}
+            </ChipRow>
+          </View>
+        ) : null}
 
         <StakingEntry />
 
@@ -193,7 +197,12 @@ function BankrollTab() {
               icon="stats-chart"
               title={t('Ainda sem sessões')}
               body={t('Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o €/hora e o ROI aparecem aqui.')}
-              action={<Button title={t('Juntar sessão passada')} icon="add" kind="secondary" size="md" onPress={() => setSheet({ type: 'session', s: 'new' })} />}
+              action={
+                <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
+                  <Button title={t('Juntar sessão passada')} icon="add" kind="secondary" size="md" onPress={() => setSheet({ type: 'session', s: 'new' })} />
+                  <Button title={t('Importar de outra app')} icon="download-outline" kind="ghost" size="md" onPress={() => router.push('/import')} />
+                </View>
+              }
             />
           )
         ) : (
@@ -609,7 +618,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
           <T v="small">
             {s.entries} × {fmt(s.buyIn, s.currency)}
             {s.addOn ? ` + add-on ${fmt(s.addOn, s.currency)}` : ''} → {fmt(s.cashOut, s.currency)}
-            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: fmt(owedToBackers(s), s.currency) }) : ''}
+            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: dec(s.staking.markup), owed: fmt(owedToBackers(s), s.currency) }) : ''}
             {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: fmt(s.makeupCut, s.currency) }) : ''}
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: fmt(s.expenses, s.currency) }) : ''}
           </T>

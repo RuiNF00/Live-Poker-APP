@@ -73,6 +73,8 @@ export interface Hand {
   actions: HandAction[];
   board: CardCode[];
   tags: string[];
+  /** Study folders the player made ("Rever com coach"); private, never shared. */
+  folders?: string[];
   notes: string;
   title?: string;
   /** Manual winner(s) when showdown cards are unknown. */

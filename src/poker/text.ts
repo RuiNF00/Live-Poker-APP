@@ -1,74 +1,129 @@
-// Plain-text hand history, for pasting into WhatsApp/Discord or a coach.
+import { positions, replay, totalPot, type LastAction } from './engine';
+import { chips } from './format';
+import type { Hand, Street } from './types';
 
-import { t } from '../i18n';
+// Forum hand history (TwoPlusTwo, Reddit r/poker, WhatsApp groups): the
+// standard plain-text layout players already read, in English poker notation
+// with every amount in big blinds. Opponents are named by position only, so a
+// table read never ends up on a public forum.
 
-import { comboLabel, SUIT_SYMBOL } from './cards';
-import { positions, replay } from './engine';
-import { amount, blindsLabel } from './format';
-import { STAGES, type Hand, type Street, type Suit } from './types';
-import { actionLabel, displayName } from './view';
+const STAGE_EN: Record<string, string> = { early: 'Early', mid: 'Middle stages', bubble: 'Bubble', itm: 'ITM', ft: 'Final table', hu: 'Heads-up' };
+const STREET_EN: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 
-const STREET_PT: Record<Street, string> = { preflop: t('PRÉ-FLOP'), flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
-
-function card(c: string) {
-  return c[0] + SUIT_SYMBOL[c[1] as Suit];
+/** 135 chips at 2 bb → "67.5 bb". Always a decimal point: forums are read in English. */
+function inBB(n: number, bb: number) {
+  if (!bb) return chips(n);
+  const v = Math.round((n / bb) * 10) / 10;
+  return `${Number.isInteger(v) ? v : v.toFixed(1)} bb`;
 }
 
-export function handText(hand: Hand, opts: { inBB?: boolean; link?: string } = {}): string {
-  const inBB = !!opts.inBB;
+function verb(a: LastAction, bb: number): string {
+  const amt = inBB(a.kind === 'call' ? a.added : a.to, bb);
+  switch (a.kind) {
+    case 'fold':
+      return 'folds';
+    case 'check':
+      return 'checks';
+    case 'call':
+      return a.allIn ? `calls ${amt} all-in` : `calls ${amt}`;
+    case 'bet':
+      return a.allIn ? `bets ${amt} all-in` : `bets ${amt}`;
+    case 'raise':
+      return a.allIn ? `raises to ${amt} all-in` : `raises to ${amt}`;
+  }
+}
+
+export interface ForumTextOptions {
+  /** Link to the replay, added at the end. */
+  link?: string;
+  /** "Shared with Sweatbook" line, on the free plan. */
+  brand?: boolean;
+  /** Include hero's notes. */
+  notes?: boolean;
+}
+
+export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
   const r = replay(hand);
   const pos = positions(hand.players.length, hand.button);
   const g = hand.game;
-  const lines: string[] = [];
-  const stage = STAGES.find((s) => s.id === g.stage)?.label;
-  lines.push(
-    [g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash'), blindsLabel(hand), g.level ? t('Nível {n}', { n: g.level }) : '', stage ?? '', g.playersLeft ? t('{n} restantes', { n: g.playersLeft }) : '']
+  const bb = g.bb;
+  const who = (i: number) => (i === hand.hero ? 'Hero' : pos[i]);
+  const out: string[] = [];
+
+  const ante = g.ante > 0 && g.anteType !== 'none' ? ` (${chips(g.ante)} ${g.anteType === 'bb' ? 'BB ante' : 'ante'})` : '';
+  out.push(
+    [
+      "NL Hold'em",
+      g.kind === 'mtt' ? 'Tournament' : 'Cash',
+      g.name,
+      `${chips(g.sb)}/${chips(bb)}${ante}`,
+      g.level ? `Level ${g.level}` : '',
+      g.kind === 'mtt' && g.stage ? STAGE_EN[g.stage] : '',
+      g.playersLeft ? `${g.playersLeft} left` : '',
+      `${hand.players.length}-handed`,
+    ]
       .filter(Boolean)
       .join(' · '),
   );
+  out.push('');
+  // Seats in preflop order, as forum posts list them.
+  const order = hand.players.map((_, i) => i).sort((a, b) => preflopRank(pos[a]) - preflopRank(pos[b]));
+  for (const i of order) out.push(`${pos[i]}${i === hand.hero ? ' (Hero)' : ''}: ${inBB(hand.players[i].stack, bb)}`);
   const hero = hand.players[hand.hero];
-  lines.push(`Hero (${pos[hand.hero]}) ${(hero.cards ?? []).map(card).join(' ')}  ${comboLabel(hero.cards)}`.trim());
-  lines.push(
-    'Stacks: ' +
-      hand.players.map((p, i) => `${displayName(hand, i, pos)} ${pos[i] === displayName(hand, i, pos) ? '' : '(' + pos[i] + ') '}${amount(p.stack, hand, inBB)}`).join(', '),
-  );
-  let street: Street | null = null;
-  let cur: string[] = [];
-  const flush = () => {
-    if (street && cur.length) lines.push(`${STREET_PT[street]}${boardTag(hand, street)}: ${cur.join(', ')}`);
-    cur = [];
-  };
+  if (hero.cards?.length) out.push('', `Hero is ${pos[hand.hero]} with ${hero.cards.join(' ')}`);
+
+  // One block per street: pot going in, the new card(s), then the actions.
+  type Block = { street: Street; pot: number; cards: string[]; acts: string[] };
+  const blocks: Block[] = [];
   for (const st of r.steps) {
-    if (st.kind !== 'action' || !st.state.last) continue;
-    const s = st.actStreet ?? st.street;
-    if (s !== street) {
-      flush();
-      street = s;
+    if (st.kind === 'start') blocks.push({ street: 'preflop', pot: totalPot(st.state), cards: [], acts: [] });
+    else if (st.kind === 'board') {
+      const n = st.state.boardCount;
+      blocks.push({ street: st.street, pot: totalPot(st.state), cards: st.street === 'flop' ? hand.board.slice(0, 3) : hand.board.slice(n - 1, n), acts: [] });
+    } else if (st.kind === 'action' && st.state.last) {
+      const s = st.actStreet ?? st.street;
+      const b = [...blocks].reverse().find((x) => x.street === s) ?? blocks[blocks.length - 1];
+      b?.acts.push(`${who(st.state.last.p)} ${verb(st.state.last, bb)}`);
     }
-    cur.push(`${displayName(hand, st.state.last.p, pos)} ${actionLabel(st.state.last, hand, inBB).toLowerCase()}`);
   }
-  flush();
-  if (hand.board.length > 0 && street !== 'river') {
-    // Run-out after an all-in.
-    lines.push(`BOARD: ${hand.board.map(card).join(' ')}`);
+  for (const b of blocks) {
+    out.push('');
+    const acts = b.street === 'preflop' ? foldsTo(b.acts) : b.acts;
+    const head = `${STREET_EN[b.street]} (${inBB(b.pot, bb)})${b.cards.length ? ': ' + b.cards.join(' ') : ''}`;
+    out.push(head);
+    if (acts.length) out.push(acts.join(', '));
   }
+
   if (r.result) {
-    const shown = hand.players
-      .map((p, i) => (i !== hand.hero && !r.final.folded[i] && p.cards?.length === 2 ? t('{name} mostra {cards}', { name: displayName(hand, i, pos), cards: p.cards.map(card).join(' ') }) : ''))
-      .filter(Boolean);
-    if (shown.length) lines.push(shown.join(' · '));
-    const winners = r.result.won.map((w, i) => (w > 0 ? t('{name} ganha {amount}', { name: displayName(hand, i, pos), amount: amount(w, hand, inBB) }) : '')).filter(Boolean);
-    if (winners.length) lines.push(winners.join(' · '));
+    out.push('');
+    if (!r.final.foldWin) {
+      for (let i = 0; i < hand.players.length; i++) {
+        const c = hand.players[i].cards;
+        if (i !== hand.hero && !r.final.folded[i] && c?.length === 2) out.push(`${who(i)} shows ${c.join(' ')}`);
+      }
+    }
+    const winners = r.result.won.map((w, i) => (w > 0 ? `${who(i)} wins ${inBB(w, bb)}` : '')).filter(Boolean);
+    if (winners.length) out.push(winners.join(', '));
   }
-  if (hand.tags.length) lines.push('Tags: ' + hand.tags.map((x) => t(x)).join(', '));
-  if (hand.notes) lines.push(t('Notas: ') + hand.notes);
-  if (opts.link) lines.push('', 'Replay: ' + opts.link);
-  return lines.join('\n');
+
+  if (opts.notes && hand.notes.trim()) out.push('', hand.notes.trim());
+  if (opts.link || opts.brand) out.push('');
+  if (opts.link) out.push(`Replay: ${opts.link}`);
+  if (opts.brand) out.push(`Shared with Sweatbook · ${BRAND_HOST}`);
+  return out.join('\n');
 }
 
-function boardTag(hand: Hand, s: Street) {
-  if (s === 'preflop') return '';
-  const n = s === 'flop' ? 3 : s === 'turn' ? 4 : 5;
-  const cards = s === 'flop' ? hand.board.slice(0, 3) : hand.board.slice(n - 1, n);
-  return cards.length ? ' [' + cards.map(card).join(' ') + ']' : '';
+const BRAND_HOST = 'sweatbook.poker';
+
+const PREFLOP_ORDER = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+function preflopRank(p: string) {
+  const i = PREFLOP_ORDER.indexOf(p);
+  return i < 0 ? 99 : i;
+}
+
+/** "UTG folds, HJ folds, CO raises…" → "2 folds, CO raises…". */
+function foldsTo(acts: string[]): string[] {
+  let n = 0;
+  while (n < acts.length && acts[n].endsWith(' folds') && !acts[n].startsWith('Hero ')) n++;
+  return n >= 2 ? [`${n} folds`, ...acts.slice(n)] : acts;
 }

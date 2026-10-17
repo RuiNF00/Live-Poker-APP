@@ -33,17 +33,6 @@ async function currentTrial(): Promise<Trial | null> {
   }
 }
 
-/** Whether local notifications are allowed; null where there are none (web). */
-export async function notificationsAllowed(): Promise<boolean | null> {
-  const n = notifications();
-  if (!n) return null;
-  try {
-    return (await n.getPermissionsAsync()).granted;
-  } catch {
-    return null;
-  }
-}
-
 let channel: Promise<unknown> | null = null;
 
 let queue: Promise<void> = Promise.resolve();

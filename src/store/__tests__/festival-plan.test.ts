@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { venueTime, WSOP_PARADISE_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, planReminders, planTotals, togglePicked } from '../festival-plan';
+import { venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
+import { bankrollShare, EMPTY_PLAN, festivalName, planReminders, planTotals, togglePicked } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -49,11 +49,19 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
   assert.deepEqual(
     r.map((x) => [x.id, x.at]),
     [
-      ['wsop-paradise-2026:1-A:start', venueTime(F, '2026-12-02T10:30')],
-      ['wsop-paradise-2026:12-A:start', start12 - 30 * 60_000],
-      ['wsop-paradise-2026:12-A:late', start12 + (6 * 60 - 30) * 60_000],
+      ['bahamas-dez-2026:1-A:start', venueTime(F, '2026-12-02T10:30')],
+      ['bahamas-dez-2026:12-A:start', start12 - 30 * 60_000],
+      ['bahamas-dez-2026:12-A:late', start12 + (6 * 60 - 30) * 60_000],
     ],
   );
   // Past ones are dropped.
-  assert.deepEqual(planReminders(F, p, start12).map((x) => x.id), ['wsop-paradise-2026:12-A:late']);
+  assert.deepEqual(planReminders(F, p, start12).map((x) => x.id), ['bahamas-dez-2026:12-A:late']);
+});
+
+test('ships without an event brand; the player can name the festival', () => {
+  const shipped = JSON.stringify({ ...F, source: undefined });
+  assert.doesNotMatch(shipped, /wsop|ggmillion|ggpoker/i);
+  assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
+  assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '  Bahamas com a malta ' }), 'Bahamas com a malta');
+  assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '   ' }), 'Bahamas, dezembro 2026');
 });

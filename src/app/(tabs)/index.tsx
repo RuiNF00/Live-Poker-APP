@@ -1,24 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, SectionList, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePro, useWelcomeOffer } from '@/billing/pro';
+import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
-import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
+import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStrip } from '@/components/StreakStrip';
+import { saveSolverFile, solverReady } from '@/lib/solver-export';
+import { StartChecklist } from '@/components/StartChecklist';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
 const DAY = 86400000;
+const FOLDER = 'folder:';
 
 function dayKey(ts: number) {
   const d = new Date(ts);
@@ -50,6 +53,7 @@ export default function HandsScreen() {
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   const { handsLeft, trialDays, paywall } = usePro();
   useWelcomeOffer(hands.length);
+  useOnboarding();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
@@ -58,7 +62,7 @@ export default function HandsScreen() {
     const qq = q.trim().toLowerCase();
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)));
+      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)));
     const out: { title: string; data: Hand[] }[] = [];
     let cur = -1;
     for (const h of rows) {
@@ -95,6 +99,8 @@ export default function HandsScreen() {
   );
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
+  const folders = useMemo(() => [...new Set(hands.flatMap((h) => h.folders ?? []))].sort((a, b) => a.localeCompare(b)), [hands]);
+  const [filing, setFiling] = useState(false);
   // Discarding a draft is one tap, so keep it for a few seconds behind an undo.
   const [discarded, setDiscarded] = useState<Hand | null>(null);
   useEffect(() => {
@@ -122,12 +128,14 @@ export default function HandsScreen() {
                 right={
                   <>
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
+                    <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
                     <IconButton name="settings-outline" label={t('Definições')} onPress={() => router.push('/settings')} />
                   </>
                 }
               />
               {!activeSession && sessions.length > 0 ? <Verdict sessions={sessions} incomplete={incomplete} onIncomplete={() => setTag(INCOMPLETE)} /> : null}
               {hands.length > 0 && !searching ? <StreakStrip /> : null}
+              {!searching ? <StartChecklist /> : null}
               {hasDraft ? (
                 <Banner
                   tone="warn"
@@ -157,9 +165,12 @@ export default function HandsScreen() {
                 <FreeMeter left={handsLeft} cta={handsLeft === 0 && trialDays ? t('{days} dias grátis', { days: trialDays }) : t('Ver Pro')} onPress={() => paywall(handsLeft === 0 ? 'hands' : 'generic')} />
               ) : null}
               {searching ? <SearchField value={q} onChange={setQ} placeholder={t('Torneio, jogador, AKs…')} /> : null}
-              {usedTags.length > 0 ? (
+              {usedTags.length > 0 || folders.length > 0 ? (
                 <ChipRow>
                   <Chip label={t('Todas')} active={!tag} onPress={() => setTag(null)} />
+                  {folders.map((f) => (
+                    <Chip key={FOLDER + f} icon="folder-outline" label={f} active={tag === FOLDER + f} onPress={() => setTag(tag === FOLDER + f ? null : FOLDER + f)} />
+                  ))}
                   {usedTags.map((tg) => (
                     <Chip key={tg} label={t(tg)} active={tag === tg} onPress={() => setTag(tag === tg ? null : tg)} />
                   ))}
@@ -170,7 +181,7 @@ export default function HandsScreen() {
                   <T v="small" style={{ flex: 1 }}>
                     {shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}
                   </T>
-                  {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : t(tag)} onClear={() => setTag(null)} /> : null}
+                  {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : tag.startsWith(FOLDER) ? tag.slice(FOLDER.length) : t(tag)} onClear={() => setTag(null)} /> : null}
                 </Row>
               ) : null}
             </View>
@@ -188,7 +199,12 @@ export default function HandsScreen() {
           hands.length === 0 ? (
             <FirstRun />
           ) : (
-            <Empty icon="search" title={t('Nada encontrado')} body={t('Tenta outro nome, torneio ou mão.')} />
+            <Empty
+              icon="search"
+              title={t('Nada encontrado')}
+              body={t('Tenta outro nome, torneio ou mão.')}
+              action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false))} />}
+            />
           )
         }
         renderItem={renderItem}
@@ -201,9 +217,11 @@ export default function HandsScreen() {
       />
       {picking ? (
         <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: S.md, flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.sm, paddingLeft: S.lg, borderRadius: R.lg, backgroundColor: C.surface3, borderWidth: 1, borderColor: C.borderStrong, ...SHADOW }}>
-          <T v="h3" style={{ flex: 1 }} accessibilityLiveRegion="polite">
+          <T v="h3" numberOfLines={1} style={{ flex: 1 }} accessibilityLiveRegion="polite">
             {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
           </T>
+          <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => exportSolver(hands.filter((h) => picked.has(h.id)))} />
+          <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton
             name="trash-outline"
@@ -219,6 +237,7 @@ export default function HandsScreen() {
           <IconButton name="close" label={t('Cancelar')} onPress={() => setPicked(new Set())} />
         </View>
       ) : null}
+      <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
       <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
           <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
@@ -413,6 +432,46 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
 const INCOMPLETE = '__incomplete';
 
 /** A filter that is on, with an x to take it off. */
+/** "Guardar em pasta": private study folders, toggled on every picked hand. */
+function FolderSheet({ visible, onClose, folders, list, save }: { visible: boolean; onClose: () => void; folders: string[]; list: Hand[]; save: (h: Hand) => void }) {
+  const [name, setName] = useState('');
+  const toggle = (f: string, on: boolean) => list.forEach((h) => save({ ...h, folders: on ? [...new Set([...(h.folders ?? []), f])] : (h.folders ?? []).filter((x) => x !== f) }));
+  const create = () => {
+    const f = name.trim();
+    if (!f) return;
+    toggle(f, true);
+    tap('success');
+    setName('');
+  };
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+            <SheetHeader title={list.length === 1 ? t('Guardar 1 mão em') : t('Guardar {n} mãos em', { n: list.length })} onClose={onClose} />
+            {folders.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+                {folders.map((f) => {
+                  const all = list.length > 0 && list.every((h) => h.folders?.includes(f));
+                  return <Chip key={f} big icon={all ? 'folder' : 'folder-outline'} label={f} active={all} onPress={() => toggle(f, !all)} />;
+                })}
+              </View>
+            ) : (
+              <T v="body" style={{ color: C.textDim }}>
+                {t('Junta mãos para estudar depois, por exemplo "Rever com coach". As pastas são só tuas e nunca saem quando partilhas.')}
+              </T>
+            )}
+            <Row gap={S.sm}>
+              <Field value={name} onChangeText={setName} placeholder={t('Nova pasta')} maxLength={30} returnKeyType="done" onSubmitEditing={create} style={{ flex: 1 }} />
+              <Button title={t('Criar')} size="md" kind="secondary" disabled={!name.trim()} onPress={create} />
+            </Row>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 function FilterPill({ label, onClear }: { label: string; onClear: () => void }) {
   return (
     <Pressable
@@ -471,4 +530,25 @@ function Verdict({ sessions, incomplete, onIncomplete }: { sessions: Session[]; 
       ) : null}
     </Card>
   );
+}
+
+/** Picked hands as one PokerStars file; unfinished hands are left out, and the player is told. */
+function exportSolver(list: Hand[]) {
+  tap();
+  const ready = solverReady(list);
+  const skipped = list.length - ready.length;
+  if (!ready.length) {
+    note(t('Nenhuma mão completa'), t('Os solvers só leem mãos completas.'));
+    return;
+  }
+  saveSolverFile(ready)
+    .then(() => {
+      if (skipped) note(skipped === 1 ? t('1 mão por completar ficou de fora') : t('{n} mãos por completar ficaram de fora', { n: skipped }));
+    })
+    .catch(() => note(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
+}
+
+function note(title: string, body?: string) {
+  if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
+  else Alert.alert(title, body);
 }

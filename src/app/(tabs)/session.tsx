@@ -5,7 +5,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
@@ -13,14 +13,15 @@ import { Avatar } from '@/components/Avatar';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { LEVEL_LENGTHS, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
-import { askNotificationPermission } from '@/lib/lock-screen/reminder';
+import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
-import { WSOP_PARADISE_2026 } from '@/poker/festivals';
+import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
+import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -50,37 +51,46 @@ function confirm(title: string, body: string, ok: () => void) {
 
 export default function SessionScreen() {
   const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
+  const festivalPlan = useFestivalPlan(BAHAMAS_DEC_2026.id);
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
 
+  const startRef = useRef<(() => void) | null>(null);
   if (activeSession) return <Live s={activeSession} />;
   return (
-    <Screen title={t('Sessão')}>
-      <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
-      <ListGroup>
-        <ListItem
-          icon="calendar-outline"
-          iconColor={C.accent}
-          title={WSOP_PARADISE_2026.name}
-          subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
-          chevron
-          onPress={() => router.push('/festival')}
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Screen title={t('Sessão')} contentStyle={{ paddingBottom: 96 }}>
+        <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
+        <ListGroup>
+          <ListItem
+            icon="calendar-outline"
+            iconColor={C.accent}
+            title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
+            subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
+            chevron
+            onPress={() => router.push('/festival')}
+          />
+        </ListGroup>
+        <SessionForm
+          initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
+          bankrolls={bankrolls}
+          recentNames={recentNames}
+          recentVenues={recentVenues}
+          submitLabel={t('Começar agora')}
+          submitRef={startRef}
+          onSubmit={(s) => {
+            tap('success');
+            saveSession(s);
+            // The next session goes to the same bankroll.
+            if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
+          }}
         />
-      </ListGroup>
-      <SessionForm
-        initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
-        bankrolls={bankrolls}
-        recentNames={recentNames}
-        recentVenues={recentVenues}
-        submitLabel={t('Começar agora')}
-        onSubmit={(s) => {
-          tap('success');
-          saveSession(s);
-          // The next session goes to the same bankroll.
-          if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
-        }}
-      />
-    </Screen>
+      </Screen>
+      {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
+      <View style={styles.thumbBar}>
+        <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+      </View>
+    </View>
   );
 }
 
@@ -94,6 +104,7 @@ function Live({ s }: { s: Session }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
   const [moods, setMoods] = useState<string[]>([]);
+  const [softAsk, askNotify] = useNotifySoftAsk();
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
   // Memoised: this screen re-renders every second (clock) and hands can be thousands.
@@ -113,7 +124,9 @@ function Live({ s }: { s: Session }) {
     tap();
     const i = LEVEL_LENGTHS.indexOf((s.levelMinutes ?? 0) as (typeof LEVEL_LENGTHS)[number]);
     const levelMinutes = i + 1 < LEVEL_LENGTHS.length ? LEVEL_LENGTHS[i + 1] : undefined;
-    if (levelMinutes && !s.levelMinutes) void askNotificationPermission();
+    if (levelMinutes && !s.levelMinutes) {
+      void askNotify({ title: t('Avisamos-te quando o nível sobe'), preview: levelUpMessage(s) });
+    }
     save({ levelMinutes, levelStartedAt: undefined });
   };
   const togglePause = () => {
@@ -127,6 +140,7 @@ function Live({ s }: { s: Session }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      {softAsk}
       <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />

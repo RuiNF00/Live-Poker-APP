@@ -8,12 +8,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
-import { uploadHand } from './share-api';
-import { outcomeOf, queue, registerSender } from './sync';
+import { deleteShare, uploadHand } from './share-api';
+import { outcomeOf, queue, registerSender, unqueue } from './sync';
 
 const KEY = 'sweatbook.share-queue.v1';
 type Ready = { shareId: string; shareToken: string };
-type State = { waiting: string[]; ready: Record<string, Ready> };
+/** dropped: hands deleted while their upload was in flight; the link goes as soon as it exists. */
+type State = { waiting: string[]; ready: Record<string, Ready>; dropped: string[] };
 
 let cache: State | null = null;
 const listeners = new Set<() => void>();
@@ -23,9 +24,13 @@ async function load(): Promise<State> {
   try {
     const raw = await AsyncStorage.getItem(KEY);
     const v = raw ? (JSON.parse(raw) as Partial<State>) : {};
-    cache = { waiting: Array.isArray(v.waiting) ? v.waiting : [], ready: v.ready && typeof v.ready === 'object' ? v.ready : {} };
+    cache = {
+      waiting: Array.isArray(v.waiting) ? v.waiting : [],
+      ready: v.ready && typeof v.ready === 'object' ? v.ready : {},
+      dropped: Array.isArray(v.dropped) ? v.dropped : [],
+    };
   } catch {
-    cache = { waiting: [], ready: {} };
+    cache = { waiting: [], ready: {}, dropped: [] };
   }
   return cache;
 }
@@ -59,15 +64,58 @@ registerSender('share-upload', async (p) => {
   } catch (e) {
     if (isNetworkError(e)) return 'retry';
     const verdict = outcomeOf(Number((e as Error).message.slice(7)));
-    if (verdict === 'drop') await update((s) => void (s.waiting = s.waiting.filter((id) => id !== hand.id)));
+    if (verdict === 'drop')
+      await update((s) => {
+        s.waiting = s.waiting.filter((id) => id !== hand.id);
+        s.dropped = s.dropped.filter((id) => id !== hand.id);
+      });
     return verdict;
   }
   await update((s) => {
     s.waiting = s.waiting.filter((id) => id !== hand.id);
-    s.ready[hand.id] = out;
+    // Deleted while it was uploading: the new link goes straight away.
+    if (s.dropped.includes(hand.id)) {
+      s.dropped = s.dropped.filter((id) => id !== hand.id);
+      queueShareDelete(out.shareId, out.shareToken);
+    } else s.ready[hand.id] = out;
   });
   return 'done';
 });
+
+/** Removes a public link, now or when the signal is back. */
+export function queueShareDelete(shareId: string, token: string) {
+  queue('share-delete', { id: shareId, token }, shareId);
+}
+
+registerSender('share-delete', async (p) => {
+  const { id, token } = p as { id: string; token: string };
+  try {
+    await deleteShare(id, token);
+    return 'done';
+  } catch (e) {
+    const m = /^delete (\d+)$/.exec((e as Error)?.message ?? '');
+    return m ? outcomeOf(Number(m[1])) : 'retry';
+  }
+});
+
+/**
+ * The hand was deleted: its public link goes too, including one still waiting for
+ * signal (never sent) or made in the background and not yet saved on the hand.
+ */
+export async function forgetHandShare(hand: Pick<Hand, 'id' | 'shareId' | 'shareToken'>) {
+  if (hand.shareId && hand.shareToken) queueShareDelete(hand.shareId, hand.shareToken);
+  const cancelled = await unqueue('share-upload', hand.id);
+  await update((s) => {
+    const r = s.ready[hand.id];
+    if (r) {
+      queueShareDelete(r.shareId, r.shareToken);
+      delete s.ready[hand.id];
+    }
+    // Still listed as waiting but no longer in the queue: it is being sent right now.
+    if (s.waiting.includes(hand.id) && !cancelled && !s.dropped.includes(hand.id)) s.dropped.push(hand.id);
+    s.waiting = s.waiting.filter((id) => id !== hand.id);
+  });
+}
 
 /**
  * On a hand's screen: saves a link that was made in the background onto the hand,

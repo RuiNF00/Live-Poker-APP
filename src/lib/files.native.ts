@@ -10,7 +10,7 @@ export async function saveTextFile(name: string, text: string, mime: string): Pr
   if (f.exists) f.delete();
   f.create();
   f.write(text);
-  await Sharing.shareAsync(f.uri, { mimeType: mime, dialogTitle: name, UTI: mime === 'text/csv' ? 'public.comma-separated-values-text' : 'public.json' });
+  await Sharing.shareAsync(f.uri, { mimeType: mime, dialogTitle: name, UTI: mime === 'text/csv' ? 'public.comma-separated-values-text' : mime === 'text/plain' ? 'public.plain-text' : 'public.json' });
 }
 
 /** null when the user cancels. */

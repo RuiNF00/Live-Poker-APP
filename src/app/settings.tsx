@@ -109,6 +109,7 @@ export default function SettingsScreen() {
         <Section title={t('Ferramentas')}>
           <ListGroup>
             <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
+            <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
             <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
           </ListGroup>
           <InviteCodeField />
@@ -116,6 +117,7 @@ export default function SettingsScreen() {
 
         <Section title={t('Conta')}>
           <ListGroup>
+            {pro.isPro ? <ListItem icon="flash-outline" iconColor={C.accent} title={t('A tua subscrição')} subtitle="Sweatbook Pro" onPress={() => router.push('/cancel')} /> : null}
             <ListItem
               icon="refresh-outline"
               title={t('Restaurar compras')}
