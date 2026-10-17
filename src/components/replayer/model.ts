@@ -2,6 +2,7 @@
 
 import { t } from '@/i18n';
 import { positions, totalPot, type Replay, type Step } from '@/poker/engine';
+import { equity } from '@/poker/equity';
 import { amount } from '@/poker/format';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
@@ -27,6 +28,8 @@ export interface RpSeat {
   /** Won at the end of the hand, formatted, e.g. "+12,5 bb". */
   won: string | null;
   handName: string | null;
+  /** Share of the pot if the board ran out now, 0..1, when every live hand is face up. */
+  equity: number | null;
 }
 
 export interface RpFacing {
@@ -75,6 +78,18 @@ export function displayName(hand: Hand, i: number, pos: string[]) {
   return hand.players[i].name || pos[i];
 }
 
+const equityCache = new Map<string, number[]>();
+function cachedEquity(holes: CardCode[][], board: CardCode[]) {
+  const key = holes.map((h) => h.join('')).join('|') + '/' + board.join('');
+  let eq = equityCache.get(key);
+  if (!eq) {
+    if (equityCache.size > 200) equityCache.clear();
+    eq = equity(holes, board);
+    equityCache.set(key, eq);
+  }
+  return eq;
+}
+
 /** The view at step `k` of the replay. `reveal` shows every known hand. */
 export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; reveal: boolean; atEnd: boolean }): RpView {
   const step: Step = r.steps[k];
@@ -95,13 +110,19 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     badges.set(a.p, { kind, label: badgeLabel(kind, fmt(a.kind === 'call' ? a.added : a.to)) });
   }
 
+  // All-in with nobody left to bet: the hands go face up for the run-out, as on TV.
+  const final = r.steps[r.steps.length - 1].state;
+  const liveNow = hand.players.map((_, i) => i).filter((i) => !st.folded[i]);
+  const runout =
+    !final.foldWin && st.toAct === null && liveNow.length >= 2 && liveNow.filter((i) => !st.allIn[i]).length <= 1 && liveNow.some((i) => st.allIn[i]);
+
   const seats: RpSeat[] = hand.players.map((p, i) => {
     const hero = i === hand.hero;
     const known = p.cards && p.cards.length >= 2 ? p.cards : undefined;
     let cards: RpSeat['cards'];
     if (st.folded[i]) cards = undefined;
     else if (hero) cards = known ?? null;
-    else if ((isShowdown || opts.reveal || (result && !st.foldWin)) && known) cards = known;
+    else if ((isShowdown || opts.reveal || runout || (result && !st.foldWin)) && known) cards = known;
     else cards = null;
     const won = result?.won[i] ?? 0;
     let stack = st.stacks[i];
@@ -121,8 +142,17 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
       betLabel: !result && st.bets[i] > 0 ? fmt(st.bets[i]) : null,
       won: result && won > 0 ? '+' + fmt(won) : null,
       handName: result && cards ? (result.handNames[i] ?? null) : null,
+      equity: null,
     };
   });
+
+  // Equity, like on TV: once every hand still in is face up and cards are still to come.
+  const board = hand.board.slice(0, st.boardCount);
+  const live = seats.filter((s) => !s.folded);
+  if (!result && board.length < 5 && live.length >= 2 && live.every((s) => s.cards && s.cards.length === 2)) {
+    const eq = cachedEquity(live.map((s) => s.cards!), board);
+    live.forEach((s, j) => (s.equity = eq[j]));
+  }
 
   const pot = result ? result.pots.reduce((a, b) => a + b.amount, 0) : st.pot;
   const potAll = totalPot(st);
@@ -151,22 +181,22 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     }
   }
 
-  const live = hand.players.map((_, i) => i).filter((i) => !st.folded[i]);
+  const liveIdx = hand.players.map((_, i) => i).filter((i) => !st.folded[i]);
   const heroBehind = st.stacks[hand.hero];
-  const villainMax = Math.max(0, ...live.filter((i) => i !== hand.hero).map((i) => st.stacks[i] + st.bets[i]));
+  const villainMax = Math.max(0, ...liveIdx.filter((i) => i !== hand.hero).map((i) => st.stacks[i] + st.bets[i]));
   const eff = Math.min(heroBehind + st.bets[hand.hero], villainMax);
   const spr = st.pot > 0 && step.street !== 'preflop' ? eff / st.pot : null;
   const info = [
     `${t('Pote')} ${fmt(result ? pot : potAll)}`,
-    !st.folded[hand.hero] && !result ? `${t('Efetivo')} ${fmt(eff)}` : null,
-    spr != null && !result && !st.folded[hand.hero] ? `SPR ${spr.toFixed(1)}` : null,
+    !st.folded[hand.hero] && !result && eff > 0 ? `${t('Efetivo')} ${fmt(eff)}` : null,
+    spr != null && eff > 0 && !result && !st.folded[hand.hero] ? `SPR ${spr.toFixed(1)}` : null,
   ]
     .filter(Boolean)
     .join(' · ');
 
   return {
     seats,
-    board: hand.board.slice(0, st.boardCount),
+    board,
     street: step.street,
     pot,
     potLabel: fmt(result ? pot : st.pot),

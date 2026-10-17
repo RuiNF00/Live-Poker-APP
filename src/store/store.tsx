@@ -7,13 +7,15 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Alert, AppState } from 'react-native';
 
 import { t } from '@/i18n';
+import { withLevelClock } from '@/lib/lock-screen/live-state';
 
 import type { Hand } from '@/poker/types';
 
 import { mergeById, type BackupData } from './backup';
+import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
-import { DEFAULT_SETTINGS, type Backer, type BackerPayment, type PlayerNote, type Session, type Settings, type StakePackage } from './types';
+import { DEFAULT_SETTINGS, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer } from './types';
 
 const KEYS = {
   settings: 'rl.settings.v1',
@@ -24,6 +26,8 @@ const SPECS = {
   hands: { index: 'rl.hands.v2', prefix: 'rl.hand.v2.', legacy: 'rl.hands.v1' },
   sessions: { index: 'rl.sessions.v2', prefix: 'rl.session.v2.', legacy: 'rl.sessions.v1' },
   players: { index: 'rl.players.v2', prefix: 'rl.player.v2.', legacy: 'rl.players.v1' },
+  bankrolls: { index: 'rl.bankrolls.v2', prefix: 'rl.bankroll.v2.' },
+  transfers: { index: 'rl.transfers.v2', prefix: 'rl.transfer.v2.' },
   backers: { index: 'rl.backers.v1', prefix: 'rl.backer.v1.' },
   packages: { index: 'rl.packages.v1', prefix: 'rl.package.v1.' },
   payments: { index: 'rl.payments.v1', prefix: 'rl.payment.v1.' },
@@ -38,17 +42,31 @@ interface StoreValue {
   hands: Hand[];
   sessions: Session[];
   players: PlayerNote[];
+  /** Oldest first. Never empty once ready. */
+  bankrolls: Bankroll[];
+  transfers: Transfer[];
   backers: Backer[];
   packages: StakePackage[];
   payments: BackerPayment[];
   settings: Settings;
   activeSession: Session | null;
+  /** Where a new session goes: the last one picked, else the first in the player's currency. */
+  defaultBankroll: Bankroll;
   saveHand: (h: Hand) => void;
   deleteHand: (id: string) => void;
   saveSession: (s: Session) => void;
   deleteSession: (id: string) => void;
   savePlayer: (p: PlayerNote) => void;
   deletePlayer: (id: string) => void;
+  saveBankroll: (b: Bankroll) => void;
+  /**
+   * Deletes a bankroll; its sessions and transfers move to another bankroll
+   * in the same currency. False (nothing changed) when there is none to take
+   * them, or it is the last bankroll.
+   */
+  deleteBankroll: (id: string) => boolean;
+  saveTransfer: (x: Transfer) => void;
+  deleteTransfer: (id: string) => void;
   saveBacker: (b: Backer) => void;
   /** Removes the backer, their packages and payments; their stakes in sessions stay, unnamed. */
   deleteBacker: (id: string) => void;
@@ -98,15 +116,19 @@ function loadAll() {
     loadCollection<Hand>(kv, SPECS.hands),
     loadCollection<Session>(kv, SPECS.sessions),
     loadCollection<PlayerNote>(kv, SPECS.players),
+    loadCollection<Bankroll>(kv, SPECS.bankrolls),
+    loadCollection<Transfer>(kv, SPECS.transfers),
     load<Settings>(KEYS.settings, DEFAULT_SETTINGS),
     load<Hand | null>(KEYS.draft, null),
     loadCollection<Backer>(kv, SPECS.backers),
     loadCollection<StakePackage>(kv, SPECS.packages),
     loadCollection<BackerPayment>(kv, SPECS.payments),
-  ]).then(([hands, sessions, players, settings, draft, backers, packages, payments]) => ({
+  ]).then(([hands, sessions, players, bankrolls, transfers, settings, draft, backers, packages, payments]) => ({
     hands,
     sessions,
     players,
+    bankrolls,
+    transfers,
     settings,
     draft,
     backers,
@@ -146,6 +168,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [hands, setHands] = useState<Hand[]>([]);
   const [rawSessions, setSessions] = useState<Session[]>([]);
   const [players, setPlayers] = useState<PlayerNote[]>([]);
+  const [bankrolls, setBankrolls] = useState<Bankroll[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [backers, setBackers] = useState<Backer[]>([]);
   const [packages, setPackages] = useState<StakePackage[]>([]);
   const [payments, setPayments] = useState<BackerPayment[]>([]);
@@ -157,10 +181,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // every screen behind the entry modal from re-rendering on each tap.
   const draftRef = useRef<Hand | null>(null);
   const [draftKey, setDraftKey] = useState(0);
+  // Hand entry calls this on every tap; write the draft at most every 400 ms
+  // (and at once when the app leaves the screen) instead of on each tap.
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushDraft = useCallback(() => {
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = null;
+    const h = draftRef.current;
+    if (h) persist(KEYS.draft, h);
+    else AsyncStorage.removeItem(KEYS.draft).catch(() => {});
+  }, []);
   const writers = useRef<{
     hands: ReturnType<typeof createWriter<Hand>>;
     sessions: ReturnType<typeof createWriter<Session>>;
     players: ReturnType<typeof createWriter<PlayerNote>>;
+    bankrolls: ReturnType<typeof createWriter<Bankroll>>;
+    transfers: ReturnType<typeof createWriter<Transfer>>;
     backers: ReturnType<typeof createWriter<Backer>>;
     packages: ReturnType<typeof createWriter<StakePackage>>;
     payments: ReturnType<typeof createWriter<BackerPayment>>;
@@ -178,6 +214,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         hands: createWriter(kv, SPECS.hands, d.hands.persisted, storageFailed),
         sessions: createWriter(kv, SPECS.sessions, d.sessions.persisted, storageFailed),
         players: createWriter(kv, SPECS.players, d.players.persisted, storageFailed),
+        bankrolls: createWriter(kv, SPECS.bankrolls, d.bankrolls.persisted, storageFailed),
+        transfers: createWriter(kv, SPECS.transfers, d.transfers.persisted, storageFailed),
         backers: createWriter(kv, SPECS.backers, d.backers.persisted, storageFailed),
         packages: createWriter(kv, SPECS.packages, d.packages.persisted, storageFailed),
         payments: createWriter(kv, SPECS.payments, d.payments.persisted, storageFailed),
@@ -191,13 +229,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (d.backers.persisted !== d.backers.items) w.backers.schedule(d.backers.items);
       if (d.packages.persisted !== d.packages.items) w.packages.schedule(d.packages.items);
       if (d.payments.persisted !== d.payments.items) w.payments.schedule(d.payments.items);
+      if (d.transfers.persisted !== d.transfers.items) w.transfers.schedule(d.transfers.items);
+      const st = { ...DEFAULT_SETTINGS, ...d.settings };
+      // Older data has no bankrolls: one per currency is made on first launch.
+      const br = ensureBankrolls(d.bankrolls.items, d.sessions.items, st.currency);
+      if (d.bankrolls.persisted !== br) w.bankrolls.schedule(br);
       setHands(d.hands.items);
       setSessions(d.sessions.items);
       setPlayers(d.players.items);
+      setBankrolls(br);
+      setTransfers(d.transfers.items);
       setBackers(d.backers.items);
       setPackages(d.packages.items);
       setPayments(d.payments.items);
-      setSettingsState({ ...DEFAULT_SETTINGS, ...d.settings });
+      setSettingsState(st);
       draftRef.current = d.draft;
       setDraftKey(draftKeyOf(d.draft));
       loaded.current = true;
@@ -212,17 +257,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // writes immediately so a killed app doesn't lose the last hand.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active' || !writers.current) return;
+      if (st === 'active') return;
+      if (draftTimer.current) flushDraft(); // only an unsaved change
+      if (!writers.current) return;
       const w = writers.current;
       w.hands.flush();
       w.sessions.flush();
       w.players.flush();
+      w.bankrolls.flush();
+      w.transfers.flush();
       w.backers.flush();
       w.packages.flush();
       w.payments.flush();
     });
     return () => sub.remove();
-  }, []);
+  }, [flushDraft]);
 
   useEffect(() => {
     if (loaded.current) writers.current?.hands.schedule(hands);
@@ -233,6 +282,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loaded.current) writers.current?.players.schedule(players);
   }, [players]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.bankrolls.schedule(bankrolls);
+  }, [bankrolls]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.transfers.schedule(transfers);
+  }, [transfers]);
   useEffect(() => {
     if (loaded.current) writers.current?.backers.schedule(backers);
   }, [backers]);
@@ -245,16 +300,49 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loaded.current) persist(KEYS.settings, settings);
   }, [settings]);
+  // A session in a new currency (or an import) gets a bankroll to count towards.
+  useEffect(() => {
+    if (!loaded.current) return;
+    setBankrolls((cur) => ensureBankrolls(cur, sessions, settings.currency));
+  }, [sessions, settings.currency]);
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
   const deleteHand = useCallback((id: string) => setHands((l) => l.filter((x) => x.id !== id)), []);
-  const saveSession = useCallback((s: Session) => setSessions((l) => upsert(l, { ...bare(s), updatedAt: Date.now() })), []);
+  const saveSession = useCallback(
+    (s: Session) =>
+      setSessions((l) => {
+        const now = Date.now();
+        return upsert(l, { ...withLevelClock(l.find((x) => x.id === s.id), bare(s), now), updatedAt: now });
+      }),
+    [],
+  );
   const deleteSession = useCallback((id: string) => setSessions((l) => l.filter((x) => x.id !== id)), []);
   const savePlayer = useCallback(
     (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),
     [],
   );
   const deletePlayer = useCallback((id: string) => setPlayers((l) => l.filter((x) => x.id !== id)), []);
+  const saveBankroll = useCallback((b: Bankroll) => setBankrolls((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
+  const saveTransfer = useCallback((x: Transfer) => setTransfers((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
+  const deleteTransfer = useCallback((id: string) => setTransfers((l) => l.filter((x) => x.id !== id)), []);
+  const deleteBankroll = useCallback(
+    (id: string) => {
+      const gone = bankrolls.find((b) => b.id === id);
+      if (!gone || bankrolls.length < 2) return false;
+      const to = sortBankrolls(bankrolls).find((b) => b.id !== id && b.currency === gone.currency);
+      const owned = sessions.some((s) => bankrollOf(s, bankrolls)?.id === id) || transfers.some((x) => x.bankrollId === id);
+      if (!to && owned) return false;
+      const now = Date.now();
+      if (to) {
+        setSessions((l) => l.map((s) => (s.bankrollId === id ? { ...s, bankrollId: to.id, updatedAt: now } : s)));
+        setTransfers((l) => l.map((x) => (x.bankrollId === id ? { ...x, bankrollId: to.id, updatedAt: now } : x)));
+      }
+      setBankrolls((l) => l.filter((b) => b.id !== id));
+      setSettingsState((st) => (st.bankrollId === id ? { ...st, bankrollId: to?.id } : st));
+      return true;
+    },
+    [bankrolls, sessions, transfers],
+  );
   const saveBacker = useCallback((b: Backer) => setBackers((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
   const deleteBacker = useCallback((id: string) => {
     setBackers((l) => l.filter((x) => x.id !== id));
@@ -285,34 +373,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const savePayment = useCallback((p: BackerPayment) => setPayments((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
   const deletePayment = useCallback((id: string) => setPayments((l) => l.filter((x) => x.id !== id)), []);
   const setSettings = useCallback((patch: Partial<Settings>) => setSettingsState((s) => ({ ...s, ...patch })), []);
-  const setDraft = useCallback((h: Hand | null) => {
-    draftRef.current = h;
-    setDraftKey(draftKeyOf(h));
-    if (h) persist(KEYS.draft, h);
-    else AsyncStorage.removeItem(KEYS.draft).catch(() => {});
-  }, []);
+  const setDraft = useCallback(
+    (h: Hand | null) => {
+      draftRef.current = h;
+      setDraftKey(draftKeyOf(h));
+      if (!h) flushDraft();
+      else if (!draftTimer.current) draftTimer.current = setTimeout(flushDraft, 400);
+    },
+    [flushDraft],
+  );
 
   const importData = useCallback(
     (b: BackupData) => {
       const h = mergeById(hands, b.hands);
       const s = mergeById(rawSessions, b.sessions.map(bare));
       const p = mergeById(players, b.players);
+      const br = mergeById(bankrolls, b.bankrolls ?? []);
+      const tx = mergeById(transfers, b.transfers ?? []);
       const bk = mergeById(backers, b.backers ?? []);
       setHands(h.list);
       setSessions(s.list);
       setPlayers(p.list);
+      setBankrolls(br.list);
+      setTransfers(tx.list);
       setBackers(bk.list);
       setPackages(mergeById(packages, b.packages ?? []).list);
       setPayments(mergeById(payments, b.payments ?? []).list);
       setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added };
     },
-    [hands, rawSessions, players, backers, packages, payments],
+    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments],
   );
 
   const activeSession = useMemo(
     () => sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0] ?? null,
     [sessions],
+  );
+
+  const sortedBankrolls = useMemo(() => sortBankrolls(bankrolls), [bankrolls]);
+  const defaultBankroll = useMemo(
+    () =>
+      sortedBankrolls.find((b) => b.id === settings.bankrollId) ??
+      sortedBankrolls.find((b) => b.currency === settings.currency) ??
+      sortedBankrolls[0] ?? { id: '', name: '', currency: settings.currency, createdAt: 0 },
+    [sortedBankrolls, settings.bankrollId, settings.currency],
   );
 
   const value = useMemo<StoreValue>(
@@ -321,17 +425,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       hands,
       sessions,
       players,
+      bankrolls: sortedBankrolls,
+      transfers,
       backers,
       packages,
       payments,
       settings,
       activeSession,
+      defaultBankroll,
       saveHand,
       deleteHand,
       saveSession,
       deleteSession,
       savePlayer,
       deletePlayer,
+      saveBankroll,
+      deleteBankroll,
+      saveTransfer,
+      deleteTransfer,
       saveBacker,
       deleteBacker,
       savePackage,
@@ -347,7 +458,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, backers, packages, payments, settings, activeSession, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, setSettings, draftKey, setDraft, importData],
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, setSettings, draftKey, setDraft, importData],
   );
 
   // Nothing renders before the data is in, so no screen flashes its empty

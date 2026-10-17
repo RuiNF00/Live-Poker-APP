@@ -72,6 +72,8 @@ export interface Hand {
   title?: string;
   /** Manual winner(s) when showdown cards are unknown. */
   winners?: number[];
+  /** Voice note recorded at the table (local file); never leaves the phone. */
+  voiceNote?: string;
   /** Share id once uploaded. */
   shareId?: string;
   shareToken?: string;

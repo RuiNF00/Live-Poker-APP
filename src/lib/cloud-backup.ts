@@ -10,6 +10,8 @@ import { BRAND } from '@/theme';
 
 import { deriveKeys, seal, unseal } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
+import { countsOf, uploadBlock } from './cloud-guard';
+import { longSignal } from './net';
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
 
@@ -42,26 +44,37 @@ export function newCloud(): CloudState {
   return { id: randomB32(10), secret: randomB32(16) };
 }
 
-export async function upload(c: CloudState, data: BackupData): Promise<CloudState> {
+/**
+ * Replaces the server copy. Refuses ('would_shrink') when this phone has less
+ * than the copy it would replace, unless force (a brand-new code, or the user
+ * confirmed they deleted things on purpose).
+ */
+export async function upload(c: CloudState, data: BackupData, opts: { force?: boolean } = {}): Promise<CloudState> {
+  const block = uploadBlock(countsOf(data), c, opts.force);
+  if (block) throw new Error(block);
   const { auth, enc } = deriveKeys(c.secret);
   const res = await fetch(`${API}/api/backup/${c.id}`, {
     method: 'PUT',
     // Encrypted on the phone; the server only ever sees a key derived from the code.
     headers: { 'content-type': 'application/json', 'x-backup-key': auth },
     body: seal(JSON.stringify(data), enc, Crypto.getRandomBytes(12)),
+    signal: longSignal(),
   });
   if (res.status === 413) throw new Error('too_big');
   if (res.status === 507) throw new Error('quota');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
-  const next = { ...c, lastAt: Date.now() };
-  await saveCloud(next);
+  const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(data) };
+  // A restore with another code may have finished while this was uploading;
+  // don't put the old code back.
+  const now = await loadCloud();
+  if (!now || now.id === c.id) await saveCloud(next);
   return next;
 }
 
 export async function download(c: CloudState): Promise<BackupData> {
   const { auth, enc } = deriveKeys(c.secret);
-  const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth } });
+  const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth }, signal: longSignal() });
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');

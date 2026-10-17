@@ -1,0 +1,95 @@
+// The running session outside the app: iOS Live Activity / Android ongoing
+// notification (installed build only) and the level-up reminder (works in
+// Expo Go too). Mounted once at the root; follows the active session.
+
+import { requireOptionalNativeModule } from 'expo';
+import * as Linking from 'expo-linking';
+import { useEffect, useRef } from 'react';
+import { AppState, Platform } from 'react-native';
+
+import { useStore } from '@/store/store';
+import type { Session } from '@/store/types';
+
+import { liveProps } from './live-state';
+import { askNotificationPermission, onReminderTap, syncLevelReminder } from './reminder';
+
+type Native = typeof import('./activity');
+
+/**
+ * The lock-screen views need the expo-widgets native module (and on iOS a
+ * widget extension), which Expo Go doesn't have. Check before loading the
+ * module, since importing it without the native side throws.
+ */
+export const lockScreenAvailable = Platform.OS !== 'web' && requireOptionalNativeModule('ExpoWidgets') != null;
+
+let native: Native | null | undefined;
+function lockScreen(): Native | null {
+  if (native !== undefined) return native;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    native = lockScreenAvailable ? (require('./activity') as Native) : null;
+  } catch (e) {
+    console.warn('[lock-screen] unavailable', e);
+    native = null;
+  }
+  return native;
+}
+
+async function show(s: Session) {
+  try {
+    await lockScreen()?.showSession(liveProps(s));
+  } catch (e) {
+    // Live Activities switched off in Settings, notifications denied: the app works as before.
+    console.warn('[lock-screen] show', e);
+  }
+}
+
+async function end() {
+  try {
+    await lockScreen()?.endSession();
+  } catch (e) {
+    console.warn('[lock-screen] end', e);
+  }
+}
+
+export function SessionLockScreen() {
+  const { activeSession } = useStore();
+  const asked = useRef<string | null>(null);
+
+  useEffect(() => {
+    const s = activeSession;
+    if (!s) {
+      void end();
+      void syncLevelReminder(null);
+      return;
+    }
+    void (async () => {
+      // Android 13+ needs permission for any notification; ask once per session, when it starts.
+      if (Platform.OS === 'android' && asked.current !== s.id) {
+        asked.current = s.id;
+        await askNotificationPermission();
+      }
+      await show(s);
+      await syncLevelReminder(s);
+    })();
+  }, [activeSession]);
+
+  // Android can't run a clock in the notification: refresh the played time
+  // every minute while the app is open, and once more on the way out.
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !activeSession || !lockScreenAvailable) return;
+    const s = activeSession;
+    const id = setInterval(() => void show(s), 60_000);
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') void show(s);
+    });
+    return () => {
+      clearInterval(id);
+      sub.remove();
+    };
+  }, [activeSession]);
+
+  useEffect(() => onReminderTap((url) => void Linking.openURL(url).catch(() => {})), []);
+
+  return null;
+}

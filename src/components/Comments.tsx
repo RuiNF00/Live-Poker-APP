@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { t } from '@/i18n';
 import { postComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
-import { C, R, ff } from '@/theme';
+import { C, R, S } from '@/theme';
 
-import { inputStyle } from './entry/ContextSheet';
-import { Button, Row, T } from './ui';
+import { Avatar } from './Avatar';
+import { Button, Card, Field, Row, T } from './ui';
 
 export function CommentsList({
   shareId,
@@ -39,36 +39,38 @@ export function CommentsList({
     }
   };
   return (
-    <View style={{ gap: 8 }}>
-      {comments.length === 0 ? <T v="small">{t('Ainda sem comentários. Sê o primeiro a dar a tua opinião.')}</T> : null}
+    <View style={{ gap: S.sm }}>
+      {comments.length === 0 ? (
+        <Card tone="inset" style={{ alignItems: 'center', paddingVertical: S.lg }}>
+          <T v="small">{t('Ainda sem comentários. Sê o primeiro a dar a tua opinião.')}</T>
+        </Card>
+      ) : null}
       {comments.map((c) => (
-        <View key={c.id} style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 10, gap: 3, borderWidth: 1, borderColor: C.border }}>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <T v="small" style={{ color: C.text, fontWeight: '800', fontFamily: ff(800) }}>
-              {c.name}
-            </T>
-            <T v="tiny">
-              {shortDate(c.createdAt)} {timeOf(c.createdAt)}
-            </T>
-          </Row>
-          <T v="body" style={{ lineHeight: 20 }}>
-            {c.text}
-          </T>
-        </View>
+        <Row key={c.id} gap={10} style={{ alignItems: 'flex-start' }}>
+          <Avatar name={c.name} size={32} />
+          <View style={{ flex: 1, backgroundColor: C.surface, borderRadius: R.md, borderTopLeftRadius: 4, paddingVertical: 10, paddingHorizontal: 12, gap: 3, borderWidth: 1, borderColor: C.border }}>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <T v="h3" style={{ fontSize: 14 }}>
+                {c.name}
+              </T>
+              <T v="monoS">
+                {shortDate(c.createdAt)} {timeOf(c.createdAt)}
+              </T>
+            </Row>
+            <T v="body">{c.text}</T>
+          </View>
+        </Row>
       ))}
-      <View style={{ gap: 6 }}>
-        <TextInput value={name} onChangeText={setName} placeholder={t('O teu nome')} placeholderTextColor={C.muted} style={inputStyle} />
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder={t('O que fazias? Fold, call, shove…')}
-          placeholderTextColor={C.muted}
-          multiline
-          style={[inputStyle, { minHeight: 64, textAlignVertical: 'top' }]}
-        />
-        {err ? <T v="small" color={C.danger}>{err}</T> : null}
-        <Button title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
-      </View>
+      <Card style={{ gap: S.sm, marginTop: S.xs }}>
+        <Field value={name} onChangeText={setName} placeholder={t('O teu nome')} />
+        <Field value={text} onChangeText={setText} placeholder={t('O que fazias? Fold, call, shove…')} multiline inputStyle={{ minHeight: 72 }} />
+        {err ? (
+          <T v="small" color={C.danger}>
+            {err}
+          </T>
+        ) : null}
+        <Button size="md" icon="send" title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
+      </Card>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-// Ivory playing card with a serif rank, and a near-black back with the brand mark:
+// Ivory playing card with a bold rank, and a near-black back with the brand mark:
 // the card style of the stats-app replayer, readable at a glance on a phone.
 
 import React from 'react';
@@ -6,7 +6,7 @@ import { Platform, Text, View, type StyleProp, type ViewStyle } from 'react-nati
 
 import { displayRank, SUIT_SYMBOL } from '@/poker/cards';
 import type { CardCode, Suit } from '@/poker/types';
-import { C } from '@/theme';
+import { C, ff } from '@/theme';
 
 export const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: "Georgia, 'Times New Roman', serif" });
 
@@ -48,7 +48,7 @@ export function RpCard({
           style,
         ]}>
         <View style={{ position: 'absolute', top: 3, left: 3, right: 3, bottom: 3, borderRadius: r - 2, borderWidth: 1, borderColor: 'rgba(255,106,61,0.22)' }} />
-        <Text style={{ color: C.accent, fontFamily: SERIF, fontSize: w * 0.46, opacity: 0.85 }}>S</Text>
+        <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: w * 0.46, opacity: 0.85 }}>S</Text>
       </View>
     );
   }
@@ -77,7 +77,7 @@ export function RpCard({
       ]}>
       <Text
         allowFontScaling={false}
-        style={{ color: ink, fontFamily: SERIF, fontWeight: '700', fontSize: w * (rank.length > 1 ? 0.5 : 0.62), lineHeight: w * 0.7, letterSpacing: rank.length > 1 ? -1.5 : 0 }}>
+        style={{ color: ink, fontFamily: ff(800), fontSize: w * (rank.length > 1 ? 0.5 : 0.62), lineHeight: w * 0.7, letterSpacing: rank.length > 1 ? -1.5 : 0 }}>
         {rank}
       </Text>
       <Text allowFontScaling={false} style={{ color: ink, fontSize: w * 0.4, lineHeight: w * 0.46, marginTop: -w * 0.04 }}>

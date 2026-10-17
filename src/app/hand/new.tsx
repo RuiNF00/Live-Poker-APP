@@ -7,31 +7,35 @@
 //    comes in); whoever else came in is one tap on "alguém entrou?",
 //  - "salta para" chips fold/check everyone in between in one tap,
 //  - "só X paga" / "todos fold" / "todos check" close a street in one tap,
-//  - context (tournament, blinds, table) carries over from the session.
+//  - context (tournament, blinds, table) carries over from the session,
+//  - no time at the table: "Voz" records a note and saves the hand as it is,
+//    to be completed after the session.
 
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
-import { ContextSheet, inputStyle } from '@/components/entry/ContextSheet';
+import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
+import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { ASPECT, Table } from '@/components/Table';
-import { Button, Chip, Row, T, tap } from '@/components/ui';
+import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
 import { newHand, nextLevel, rescaleStacks, resizeTable } from '@/poker/factory';
-import { amount, blindsLabel, chips } from '@/poker/format';
+import { amount, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
 import { uid, useStore } from '@/store/store';
-import { BRAND, C, R, ff } from '@/theme';
+import { BRAND, C, R, S, SHADOW, ff, posColor } from '@/theme';
 
 const STREET_PT = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
@@ -160,10 +164,12 @@ export default function NewHand() {
     update({ ...hand, board: [...hand.board, c] });
   };
 
-  const save = async () => {
+  const save = async (over?: Partial<Hand>) => {
     tap('medium');
+    const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
     if (!params.edit && !pro.canSaveHand()) {
+      if (over) update(hand);
       pro.paywall('hands');
       return;
     }
@@ -204,6 +210,11 @@ export default function NewHand() {
     }
     router.replace({ pathname: '/hand/[id]', params: { id: final.id } });
   };
+
+  const voice = useVoiceCapture(async (recording) => {
+    const voiceNote = await keepVoiceNote(recording, hand.id).catch(() => recording);
+    save({ voiceNote });
+  });
 
   const discard = () => {
     store.setDraft(null);
@@ -246,22 +257,31 @@ export default function NewHand() {
           ? t('Toca num lugar da mesa para saltar até ele')
           : null;
   const tableW = area.w && area.h ? Math.min(area.w, area.h / ASPECT) : 0;
+  // Two ways out at any point of the hand: a voice note (saved when it stops) or just save.
   const quickSave = (
-    <Pressable onPress={save} hitSlop={8}>
-      <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
-        {t('Guardar já')}
-      </T>
-    </Pressable>
+    <Row gap={14}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={voice.start} hitSlop={10}>
+        <Row gap={4}>
+          <Ionicons name="mic" size={15} color={C.accent} />
+          <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+            {t('Voz')}
+          </T>
+        </Row>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => save()} hitSlop={10}>
+        <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+          {t('Guardar já')}
+        </T>
+      </Pressable>
+    </Row>
   );
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
       {/* header: one compact row, so the felt gets the screen */}
-      <View style={{ paddingTop: insets.top + 4, paddingHorizontal: 12, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Pressable onPress={() => (busy ? router.back() : discard())} hitSlop={10}>
-          <Ionicons name="close" size={26} color={C.textDim} />
-        </Pressable>
-        <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.pill, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ paddingTop: insets.top + 4, paddingHorizontal: S.gutter, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
+        <IconButton name="close" label={t('Fechar')} onPress={() => (busy ? router.back() : discard())} />
+        <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, minHeight: 40, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, borderRadius: R.pill, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name={hand.game.kind === 'mtt' ? 'trophy' : 'cash'} size={14} color={C.accent} />
           <T v="small" numberOfLines={1} style={{ flex: 1, color: C.text, fontWeight: '700', fontFamily: ff(700) }}>
             {(hand.game.name || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ' · ' + blindsLabel(hand) + (stage ? ' · ' + stage : '') + ' · ' + t('{n} jog.', { n })}
@@ -269,26 +289,29 @@ export default function NewHand() {
           <Ionicons name="chevron-down" size={14} color={C.muted} />
         </Pressable>
         {levelUp && (
-          <Pressable
-            accessibilityLabel={t('Subiram as blinds? Toca para {blinds}', { blinds: blindsLabel({ ...hand, game: levelUp }) })}
+          <IconButton
+            name="trending-up"
+            color={C.accent}
+            label={t('Subiram as blinds? Toca para {blinds}', { blinds: blindsLabel({ ...hand, game: levelUp }) })}
             onPress={() => {
-              tap();
               // Tournament stacks don't grow with the level: only the blinds change.
               update({ ...hand, game: levelUp });
             }}
-            hitSlop={8}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 }}>
-            <Ionicons name="trending-up" size={16} color={C.accent} />
-          </Pressable>
+          />
         )}
-        <Pressable onPress={() => setInBB((b) => !b)} hitSlop={8} style={{ backgroundColor: inBB ? C.accentSoft : C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('Valores em big blinds')}
+          onPress={() => setInBB((b) => !b)}
+          style={{ height: 40, minWidth: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: inBB ? C.accentSoft : C.surface2, borderWidth: 1, borderColor: inBB ? C.accentLine : C.border, borderRadius: 20, paddingHorizontal: 8 }}>
           <T v="tiny" color={inBB ? C.accent : C.textDim} style={{ fontWeight: '800', fontFamily: ff(800) }}>
             BB
           </T>
         </Pressable>
-        <Pressable onPress={undo} disabled={!history.length} hitSlop={10} style={{ opacity: history.length ? 1 : 0.3 }}>
-          <Ionicons name="arrow-undo" size={24} color={C.text} />
-        </Pressable>
+        {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} compact /> : null}
+        <View style={{ opacity: history.length ? 1 : 0.35 }} pointerEvents={history.length ? 'auto' : 'none'}>
+          <IconButton name="arrow-undo" label={t('Desfazer')} onPress={undo} />
+        </View>
       </View>
 
       {/* the felt takes whatever the dock leaves */}
@@ -311,8 +334,9 @@ export default function NewHand() {
       </View>
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
-      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: 12, paddingTop: 12, paddingBottom: insets.bottom + 10, gap: 10 }}>
-        {phase === 'hero' && (
+      <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
+        {voice.recording && <RecordingBar ms={voice.ms} onStop={voice.stop} onCancel={voice.cancel} />}
+        {!voice.recording && phase === 'hero' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
@@ -325,6 +349,7 @@ export default function NewHand() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {positionOrder(n).map((label) => {
                 const on = draft.posChosen && pos[hand.hero] === label;
+                const col = posColor(label);
                 return (
                   <Pressable
                     key={label}
@@ -338,12 +363,14 @@ export default function NewHand() {
                       paddingVertical: 10,
                       borderRadius: R.md,
                       alignItems: 'center',
-                      backgroundColor: on ? C.accent : C.surface2,
+                      minHeight: 44,
+                      justifyContent: 'center',
+                      backgroundColor: on ? col : C.surface2,
                       borderWidth: 1,
-                      borderColor: on ? C.accent : C.border,
+                      borderColor: on ? col : C.border,
                       opacity: pressed ? 0.75 : 1,
                     })}>
-                    <T v="body" color={on ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+                    <T v="body" color={on ? C.bgDeep : col} style={{ fontWeight: '800', fontFamily: ff(800) }}>
                       {label}
                     </T>
                   </Pressable>
@@ -359,7 +386,7 @@ export default function NewHand() {
           </>
         )}
 
-        {phase === 'action' && l && (
+        {!voice.recording && phase === 'action' && l && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2" numberOfLines={1} style={{ flex: 1 }}>
@@ -374,13 +401,13 @@ export default function NewHand() {
               </T>
             ) : null}
             {(callers.length > 0 || checks.length > 0) && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
+              <ChipRow>
                 {callers.map((i) => (
                   <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
                 ))}
                 {callers.length > 0 && <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />}
                 {checks.length > 0 && <Chip big label={t('Todos check')} onPress={() => pushActions(checks)} />}
-              </ScrollView>
+              </ChipRow>
             )}
             {presets.length > 0 && (
               <View style={{ gap: 4 }}>
@@ -397,15 +424,15 @@ export default function NewHand() {
                         borderRadius: R.md,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: p.allIn ? C.dangerSoft : 'rgba(245,184,61,0.12)',
+                        backgroundColor: p.allIn ? C.dangerSoft : C.warnSoft,
                         borderWidth: 1,
-                        borderColor: p.allIn ? C.danger : 'rgba(245,184,61,0.45)',
+                        borderColor: p.allIn ? C.danger : C.warn + '66',
                         opacity: pressed ? 0.7 : 1,
                       })}>
                       <T v="body" numberOfLines={1} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
                         {p.label}
                       </T>
-                      <T v="tiny" numberOfLines={1} color={C.textDim}>
+                      <T v="monoS" numberOfLines={1}>
                         {amount(p.to, hand, inBB)}
                       </T>
                     </Pressable>
@@ -430,7 +457,7 @@ export default function NewHand() {
           </>
         )}
 
-        {phase === 'board' && (
+        {!voice.recording && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
@@ -440,11 +467,11 @@ export default function NewHand() {
               {quickSave}
             </Row>
             <CardPicker used={usedCards(hand)} selected={hand.board.slice(s.boardCount)} onPick={pickBoard} />
-            {r.steps.length > 0 && s.bettingDone && <Button title={t('Guardar sem board')} kind="ghost" small onPress={save} />}
+            {r.steps.length > 0 && s.bettingDone && <Button title={t('Guardar sem board')} kind="ghost" small onPress={() => save()} />}
           </>
         )}
 
-        {(phase === 'showdown' || phase === 'done') && (
+        {!voice.recording && (phase === 'showdown' || phase === 'done') && (
           <>
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
               {phase === 'showdown' && (
@@ -516,7 +543,7 @@ export default function NewHand() {
               )}
               <FinishPanel hand={hand} onChange={(h) => setDraftState({ ...draft, hand: h })} />
             </ScrollView>
-            <Button title={t('Guardar e ver replay')} onPress={save} />
+            <Button title={t('Guardar e ver replay')} onPress={() => save()} />
           </>
         )}
       </View>
@@ -594,20 +621,12 @@ function FinishPanel({ hand, onChange }: { hand: Hand; onChange: (h: Hand) => vo
   return (
     <View style={{ gap: 10 }}>
       <T v="label">Tags</T>
-      <Row style={{ flexWrap: 'wrap' }} gap={6}>
+      <ChipRow>
         {DEFAULT_TAGS.map((tg) => (
           <Chip key={tg} label={t(tg)} active={hand.tags.includes(tg)} onPress={() => toggle(tg)} />
         ))}
-      </Row>
-      <TextInput
-        value={hand.notes}
-        onChangeText={(notes) => onChange({ ...hand, notes })}
-        placeholder={t('Notas (o que pensaste, reads, dúvidas…)')}
-        placeholderTextColor={C.muted}
-        multiline
-        style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
-      />
-      <T v="tiny">{t('Stack inicial do herói: {stack}', { stack: chips(hand.players[hand.hero].stack) })}</T>
+      </ChipRow>
+      <Field value={hand.notes} onChangeText={(notes) => onChange({ ...hand, notes })} placeholder={t('Notas (o que pensaste, reads, dúvidas…)')} multiline inputStyle={{ minHeight: 70 }} />
     </View>
   );
 }

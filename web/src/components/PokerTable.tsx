@@ -19,17 +19,18 @@ interface Props {
   potLabel: string;
 }
 
-const POS_COLOR: Record<string, [string, string]> = {
-  BTN: ['#C8A84E', '#111'],
-  CO: ['#3B82F6', '#fff'],
-  HJ: ['#8B5CF6', '#fff'],
-  LJ: ['#A855F7', '#fff'],
-  MP: ['#A855F7', '#fff'],
-  UTG: ['#EF4444', '#fff'],
-  'UTG+1': ['#F87171', '#fff'],
-  'UTG+2': ['#FB923C', '#fff'],
-  SB: ['#6B7280', '#fff'],
-  BB: ['#6B7280', '#fff'],
+/** One colour per position, the same as the app's theme (src/theme.ts POS). */
+const POS: Record<string, string> = {
+  BTN: '#F5B83D',
+  CO: '#5AA9FF',
+  HJ: '#B07CFF',
+  LJ: '#7C8CFF',
+  MP: '#B07CFF',
+  'UTG+2': '#FF8A7A',
+  'UTG+1': '#FF8A7A',
+  UTG: '#FF5A5F',
+  SB: '#9DB3AA',
+  BB: '#9DB3AA',
 };
 
 const BADGE_WORD: Partial<Record<ActionType, string>> = {
@@ -85,15 +86,15 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
         <svg className="rt-felt" viewBox="0 0 100 122" preserveAspectRatio="none" aria-hidden>
           <defs>
             <radialGradient id="rt-felt" cx="50%" cy="42%" r="62%">
-              <stop offset="0%" stopColor="#1C211E" />
-              <stop offset="45%" stopColor="#121614" />
-              <stop offset="80%" stopColor="#0A0C0B" />
-              <stop offset="100%" stopColor="#060706" />
+              <stop offset="0%" stopColor="#183A30" />
+              <stop offset="45%" stopColor="#11261F" />
+              <stop offset="80%" stopColor="#0A1713" />
+              <stop offset="100%" stopColor="#060D0B" />
             </radialGradient>
           </defs>
           <rect x="1.2" y="1.5" width="97.6" height="119" rx="46" ry="46" fill="none" stroke="rgba(245,237,216,0.07)" strokeWidth="1.6" />
-          <rect x="3.5" y="3.7" width="93" height="114.6" rx="44" ry="44" fill="url(#rt-felt)" stroke="rgba(255,106,61,0.45)" strokeWidth="0.35" vectorEffect="non-scaling-stroke" />
-          <rect x="6.5" y="6.7" width="87" height="108.6" rx="40.5" ry="40.5" fill="none" stroke="rgba(255,106,61,0.18)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <rect x="3.5" y="3.7" width="93" height="114.6" rx="44" ry="44" fill="url(#rt-felt)" stroke="rgba(238,242,239,0.16)" strokeWidth="0.35" vectorEffect="non-scaling-stroke" />
+          <rect x="6.5" y="6.7" width="87" height="108.6" rx="40.5" ry="40.5" fill="none" stroke="rgba(238,242,239,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
         </svg>
 
         <div className="rt-brand" style={{ top: `${BRAND_Y}%` }}>
@@ -133,7 +134,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
           const acting = step.actingSeat === s.seat;
           const win = winners.get(s.seat);
           const kind = s.isHero ? 'hero' : 'seat';
-          const pos = POS_COLOR[s.position] ?? ['#4B5563', '#fff'];
+          const pos = [POS[s.position] ?? '#7F8D87', '#0C1311'];
           const a = s.lastAction;
           const badgeType = a ? (s.allIn && a.type !== 'fold' && a.type !== 'check' ? 'allin' : a.type) : null;
           const badge = win

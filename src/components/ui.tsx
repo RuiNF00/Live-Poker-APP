@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +26,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { t } from '@/i18n';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -33,6 +35,18 @@ export function tap(kind: 'light' | 'medium' | 'select' = 'light') {
   if (Platform.OS === 'web') return;
   if (kind === 'select') Haptics.selectionAsync().catch(() => {});
   else Haptics.impactAsync(kind === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+}
+
+/** Asks before something that can't be undone (delete, end). */
+export function confirmAction(title: string, body: string, okLabel: string, onOk: () => void, destructive = true) {
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined' || window.confirm(body ? `${title}\n\n${body}` : title)) onOk();
+    return;
+  }
+  Alert.alert(title, body, [
+    { text: t('Cancelar'), style: 'cancel' },
+    { text: okLabel, style: destructive ? 'destructive' : 'default', onPress: onOk },
+  ]);
 }
 
 // ─── Type ────────────────────────────────────────────────────────────────────
@@ -166,7 +180,7 @@ export function SheetHeader({ title, onClose, right, closeLabel }: { title: stri
           {title}
         </T>
         {right}
-        <IconButton name="close" onPress={onClose} label={closeLabel ?? 'Fechar'} />
+        <IconButton name="close" onPress={onClose} label={closeLabel ?? t('Fechar')} />
       </Row>
     </View>
   );
@@ -386,6 +400,8 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }
           trackColor={{ true: C.accent, false: C.surface3 }}
           thumbColor="#FFFFFF"
           ios_backgroundColor={C.surface3}
+          // react-native-web only: its default "on" thumb is teal.
+          {...({ activeThumbColor: '#FFFFFF' } as object)}
         />
       }
     />
@@ -780,7 +796,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         style={{ flex: 1, color: C.text, fontSize: 16, fontFamily: F.regular, paddingVertical: 0 }}
       />
       {value ? (
-        <Pressable onPress={() => onChange('')} hitSlop={10} accessibilityLabel="Limpar">
+        <Pressable onPress={() => onChange('')} hitSlop={10} accessibilityLabel={t('Limpar')}>
           <Ionicons name="close-circle" size={18} color={C.muted} />
         </Pressable>
       ) : null}
@@ -837,7 +853,13 @@ export function Banner({
           </T>
         ) : null}
         {onDismiss ? (
-          <Pressable onPress={onDismiss} hitSlop={12} accessibilityLabel={dismissLabel ?? 'Fechar'}>
+          // Its own tap target, set apart by a hairline, so it isn't hit while reaching for the banner.
+          <Pressable
+            onPress={onDismiss}
+            hitSlop={{ top: 12, bottom: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel={dismissLabel ?? t('Fechar')}
+            style={{ alignSelf: 'stretch', justifyContent: 'center', paddingLeft: 14, marginLeft: 2, borderLeftWidth: 1, borderLeftColor: C.border }}>
             <Ionicons name="close" size={18} color={C.muted} />
           </Pressable>
         ) : onPress && !action ? (

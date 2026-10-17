@@ -5,7 +5,8 @@ import { t } from '@/i18n';
 import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
-import type { Backer, BackerPayment, PlayerNote, Session, Settings, StakePackage } from './types';
+import { bankrollOf, formatOf } from './bankroll-math';
+import type { Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer } from './types';
 
 export interface BackupData {
   app: 'sweatbook';
@@ -18,11 +19,24 @@ export interface BackupData {
   backers?: Backer[];
   packages?: StakePackage[];
   payments?: BackerPayment[];
+  /** Missing in backups made before bankrolls existed. */
+  bankrolls?: Bankroll[];
+  transfers?: Transfer[];
   settings?: Partial<Settings>;
 }
 
 export function buildBackup(
-  d: { hands: Hand[]; sessions: Session[]; players: PlayerNote[]; backers: Backer[]; packages: StakePackage[]; payments: BackerPayment[]; settings: Settings },
+  d: {
+    hands: Hand[];
+    sessions: Session[];
+    players: PlayerNote[];
+    bankrolls?: Bankroll[];
+    transfers?: Transfer[];
+    backers?: Backer[];
+    packages?: StakePackage[];
+    payments?: BackerPayment[];
+    settings: Settings;
+  },
   now = Date.now(),
 ): BackupData {
   return {
@@ -32,9 +46,11 @@ export function buildBackup(
     hands: d.hands,
     sessions: d.sessions,
     players: d.players,
-    backers: d.backers,
-    packages: d.packages,
-    payments: d.payments,
+    bankrolls: d.bankrolls ?? [],
+    transfers: d.transfers ?? [],
+    backers: d.backers ?? [],
+    packages: d.packages ?? [],
+    payments: d.payments ?? [],
     settings: d.settings,
   };
 }
@@ -58,6 +74,10 @@ export function parseBackup(text: string): BackupData {
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];
   const payments = arr('payments').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.amount === 'number') as unknown as BackerPayment[];
+  const bankrolls = arr('bankrolls').filter((b) => isObj(b) && typeof b.name === 'string' && typeof b.currency === 'string' && typeof b.createdAt === 'number') as unknown as Bankroll[];
+  const transfers = arr('transfers').filter(
+    (x) => isObj(x) && typeof x.bankrollId === 'string' && (x.kind === 'deposit' || x.kind === 'withdrawal') && typeof x.amount === 'number' && Number.isFinite(x.amount) && typeof x.at === 'number',
+  ) as unknown as Transfer[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -68,6 +88,8 @@ export function parseBackup(text: string): BackupData {
     backers,
     packages,
     payments,
+    bankrolls,
+    transfers,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
   };
 }
@@ -89,9 +111,9 @@ function cell(v: string | number | undefined): string {
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** Sessions as CSV, for spreadsheets and accountants. */
-export function sessionsCsv(list: Session[]): string {
-  const head = ['date', 'type', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'notes'];
+/** Sessions, then deposits and withdrawals, as CSV for spreadsheets and accountants. */
+export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = []): string {
+  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -99,6 +121,8 @@ export function sessionsCsv(list: Session[]): string {
       [
         new Date(s.startedAt).toISOString().slice(0, 10),
         s.kind,
+        formatOf(s),
+        bankrollOf(s, bankrolls)?.name ?? '',
         s.name,
         s.venue,
         s.currency,
@@ -119,7 +143,21 @@ export function sessionsCsv(list: Session[]): string {
         .map(cell)
         .join(','),
     );
-  return [head.join(','), ...rows].join('\n') + '\n';
+  // Same columns: the type says what the row is, the amount is in profit.
+  const moves = [...transfers]
+    .sort((a, b) => a.at - b.at)
+    .map((x) => {
+      const b = bankrolls.find((r) => r.id === x.bankrollId);
+      const row: (string | number | undefined)[] = head.map(() => '');
+      row[0] = new Date(x.at).toISOString().slice(0, 10);
+      row[1] = x.kind;
+      row[head.indexOf('bankroll')] = b?.name ?? '';
+      row[head.indexOf('currency')] = b?.currency ?? '';
+      row[head.indexOf('profit')] = x.kind === 'deposit' ? Math.abs(x.amount) : -Math.abs(x.amount);
+      row[head.indexOf('notes')] = x.note;
+      return row.map(cell).join(',');
+    });
+  return [head.join(','), ...rows, ...moves].join('\n') + '\n';
 }
 
 /** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */

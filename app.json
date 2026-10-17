@@ -15,10 +15,10 @@
         "applinks:sweatbook.poker"
       ],
       "config": {
-        "usesNonExemptEncryption": false
+        "usesNonExemptEncryption": true
       },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": true
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -171,7 +171,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "O Sweatbook usa o microfone para gravares uma nota de voz a explicar a mão na tua história do Instagram."
+          "microphonePermission": "O Sweatbook usa o microfone para gravares notas de voz sobre as tuas mãos e para as histórias do Instagram."
         }
       ],
       [
@@ -184,6 +184,19 @@
           "android": [
             "com.instagram.android"
           ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF6A3D"
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "enableAndroid": true,
+          "widgets": []
         }
       ]
     ],

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { C, ff } from '@/theme';
+import { ff } from '@/theme';
 
 const HUES = ['#FF6A3D', '#5AA9FF', '#B07CFF', '#4ADE80', '#F5B83D', '#FF8A7A', '#3DD6C6'];
 

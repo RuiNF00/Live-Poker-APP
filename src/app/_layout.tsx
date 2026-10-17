@@ -21,6 +21,7 @@ import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { SessionLockScreen } from '@/lib/lock-screen';
 import { installFetchTimeout } from '@/lib/net';
 import { bootReferrals } from '@/lib/referrals';
 import { StoreProvider } from '@/store/store';
@@ -58,11 +59,13 @@ export default function RootLayout() {
           <StatusBar style="light" />
           <AutoCloudBackup />
           <BackerLiveSync />
+          <SessionLockScreen />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
               headerTintColor: C.text,
-              headerTitleStyle: { fontWeight: '800', fontFamily: ff(800) },
+              headerTitleStyle: { fontWeight: '800', fontFamily: ff(800), fontSize: 17 },
+              headerBackButtonDisplayMode: 'minimal',
               contentStyle: { backgroundColor: C.bg },
               headerShadowVisible: false,
             }}>
