@@ -2987,6 +2987,8 @@ const en: Record<string, string> = {
   'Repor': 'Reset',
   'Aplicar': 'Apply',
   // Mãos partilhadas (friends' hands and new comments).
+  'O que queres saber? (opcional)': 'What do you want to know? (optional)',
+  'Ex.: call ou fold no river?': 'E.g. call or fold on the river?',
   'Bloquear': 'Block',
   'Bloquear {name}?': 'Block {name}?',
   'Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.': "You stop seeing this person's comments on this hand. They aren't told.",

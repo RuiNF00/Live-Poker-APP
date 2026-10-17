@@ -35,7 +35,7 @@ export default function SharedHand() {
   const [err, setErr] = useState(false);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
-  const { hands } = useStore();
+  const { hands, settings } = useStore();
   const mine = !!id && hands.some((h) => h.shareId === id);
   const { friends } = useSharedHands();
   const listed = !!id && friends.some((f) => f.id === id);
@@ -83,6 +83,11 @@ export default function SharedHand() {
       ) : (
         <>
           <HandHeader hand={hand} quiz={q === '1'} />
+          {hand.ask ? (
+            <T v="h3" style={{ paddingHorizontal: 2 }}>
+              “{hand.ask}”
+            </T>
+          ) : null}
           <Replayer
             source="shared"
             hand={hand}
@@ -104,7 +109,7 @@ export default function SharedHand() {
             </Link>
           </View>
           <T v="h2">{t('Comentários')}</T>
-          <CommentsList shareId={id!} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block} />
+          <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block} />
           <Pressable
             disabled={reported}
             hitSlop={8}

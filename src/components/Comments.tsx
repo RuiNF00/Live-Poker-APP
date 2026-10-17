@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -19,6 +20,8 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
  * the conversation at the table: the whole hand first, then each street, with the street the
  * replayer is on marked "you are here". There the player also keeps a private note per street.
  */
+const NAME_KEY = 'rl.commentName.v1';
+
 export function CommentsList({
   shareId,
   comments,
@@ -50,6 +53,13 @@ export function CommentsList({
   onBlock?: (c: Comment) => void;
 }) {
   const [name, setName] = useState(defaultName);
+  // The name used last time on this phone, so a friend's hand doesn't ask for it again.
+  useEffect(() => {
+    if (defaultName) return;
+    AsyncStorage.getItem(NAME_KEY)
+      .then((v) => v && setName((n) => n || v))
+      .catch(() => {});
+  }, [defaultName]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -69,6 +79,7 @@ export function CommentsList({
       const c = await postComment(shareId, { name: name.trim() || t('Anónimo'), text: text.trim(), ...(about ? { street: about } : {}) });
       onPosted({ ...c, street: c.street ?? about ?? null });
       setText('');
+      if (name.trim()) AsyncStorage.setItem(NAME_KEY, name.trim().slice(0, 40)).catch(() => {});
     } catch (e) {
       setErr(e instanceof Error && e.message === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : t('Não deu para enviar. Tenta outra vez.'));
     } finally {

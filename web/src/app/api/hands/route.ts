@@ -35,6 +35,10 @@ export async function POST(req: Request) {
   const hand = { ...(body.hand as Record<string, unknown>) };
   if (typeof hand.notes === 'string' && isOffensive(hand.notes)) hand.notes = '';
   if (typeof hand.title === 'string' && isOffensive(hand.title)) hand.title = '';
+  // "O que queres saber?": one line at the top of the page, through the same filter.
+  const ask = typeof hand.ask === 'string' ? hand.ask.replace(/\s+/g, ' ').trim().slice(0, 140) : '';
+  if (ask && !isOffensive(ask)) hand.ask = ask;
+  else delete hand.ask;
   const { id, editToken } = await getStore().createShare({
     payload: hand,
     title: title && !isOffensive(title) ? title : null,

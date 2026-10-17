@@ -75,6 +75,7 @@ export default async function SharePage({ params, searchParams }: Params & Searc
         hand={quiz ? challengeTeaser(resolved.hand, quiz) : resolved.hand}
         teaser={!!quiz}
         title={share.title}
+        ask={askOf(share.payload)}
         revealAll={share.revealAll}
         quiz={quiz}
         allowComments={share.allowComments}
@@ -87,3 +88,8 @@ export default async function SharePage({ params, searchParams }: Params & Searc
     </>
   );
 }
+
+const askOf = (payload: unknown) => {
+  const a = (payload as { ask?: unknown } | null)?.ask;
+  return typeof a === 'string' && a ? a.slice(0, 140) : null;
+};
