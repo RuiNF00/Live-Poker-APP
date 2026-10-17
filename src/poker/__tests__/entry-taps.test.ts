@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { autoFold, callerCandidates, checkAround, checkDownNext, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
-import { newHand, nextLevel, sameTable } from '../factory';
+import { allInFor, autoFold, callerCandidates, checkAround, checkDownNext, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
 function mk(heroPos: string, heroCards: string[], n = 9, kind: 'mtt' | 'cash' = 'mtt'): Hand {
@@ -139,6 +139,34 @@ class Entry {
     // Heads-up showdown: the picker is already open, two taps.
     this.taps += 2;
     this.hand = { ...this.hand, players: this.hand.players.map((p, i) => (i === this.seat(label) ? { ...p, cards } : p)) };
+  }
+  /** The seat sheet: long-press the seat, open the stack field, type, Confirmar, Guardar. */
+  stack(label: string, chips: number, keys: number) {
+    this.taps += 1 + 1 + keys + 1 + 1;
+    const i = this.seat(label);
+    this.hand = { ...this.hand, players: this.hand.players.map((p, k) => (k === i ? { ...p, stack: chips } : p)) };
+  }
+  /** "All-in" on the keypad (or the "All-in com menos" chip): open, type, one tap. */
+  allIn(to: number, keys: number) {
+    const next = allInFor(this.hand, this.s, to);
+    assert.ok(next);
+    this.taps += 1 + keys + 1;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    this.hand = next;
+    this.autoFrom = undefined;
+    this.settle();
+  }
+  /** Multiway showdown: a tap on the seat, then its two cards. */
+  showsPick(label: string, cards: string[]) {
+    this.taps++;
+    this.shows(label, cards);
+  }
+  /** Straddle: the chip next to the stack (1 tap) or the context sheet (open, chip, close). */
+  straddle(chip: boolean) {
+    this.taps += chip ? 1 : 3;
+    this.done.clear();
+    this.hand = { ...this.hand, game: { ...this.hand.game, straddles: 1, straddleFrom: 'utg' }, actions: [] };
+    this.settle();
   }
   undo() {
     const prev = this.history.pop()!;
@@ -569,4 +597,71 @@ test('mais limps: only after a limp and before any raise', () => {
   e.entered('UTG');
   e.size('2.5x');
   assert.equal(limpedPot(e.hand, e.autoFrom), false, 'after an open the chip gives the seat its turn');
+});
+
+// Round 4: where the taps still go, and the live cases (multiway all-in, straddle, BB ante).
+test('round 4 · multiway all-in with a side pot — 25 taps (was 31)', () => {
+  const run = (now: boolean) => {
+    const e = new Entry('BTN', ['Ah', 'Kh']);
+    e.entered('CO');
+    // CO is all-in for 15 bb (3000); SB calls all-in for 4000; BB folds.
+    if (now) e.allIn(3000, 2);
+    else {
+      e.stack('CO', 3000, 2);
+      e.size('All-in');
+    }
+    e.size('All-in');
+    if (now) {
+      assert.equal(sizePresets(e.hand, e.s).length, 0, 'facing more than it has: the "All-in com menos" chip is the way in');
+      e.allIn(4000, 2);
+      e.act('fold');
+    } else {
+      e.stack('SB', 4000, 2);
+      e.only('SB');
+    }
+    e.board('Kd', '9s', '4c', '2h', '7d');
+    e.showsPick('CO', ['Qs', 'Qd']);
+    if (now) e.shows('SB', ['Jc', 'Tc']);
+    else e.showsPick('SB', ['Jc', 'Tc']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    assert.equal(r.result!.pots.length, 2, 'main pot and a side pot');
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 31);
+  assert.equal(after.taps, 25);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 4 · all-in on the keypad: less than the bet is a call for less, more is a raise', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.allIn(150, 3);
+  assert.equal(e.hand.actions.at(-1)!.kind, 'call', 'less than the big blind: a call for less');
+  assert.equal(e.hand.players[e.seat('CO')].stack, 150);
+  assert.ok(e.s.allIn[e.seat('CO')]);
+});
+
+test('round 4 · UTG straddle in cash: one tap (was 3)', () => {
+  const run = (chip: boolean) => {
+    const e = new Entry('CO', ['Jh', 'Jd'], 'cash');
+    e.straddle(chip);
+    assert.equal(e.s.currentBet, 2 * e.hand.game.bb, 'the straddle is the bet to beat');
+    const open = sizePresets(e.hand, e.s)[0];
+    e.size(open.label.replace(',', '.'));
+    e.only(null);
+    assert.equal(e.save().final.foldWin, true);
+    return e.taps;
+  };
+  assert.equal(run(false), 9);
+  assert.equal(run(true), 7);
+});
+
+test('round 4 · BB ante costs no tap: it is how a new tournament hand starts', () => {
+  const g = defaultGame('mtt');
+  assert.equal(g.anteType, 'bb');
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  assert.equal(e.s.pot, g.ante, 'the big blind posts the ante for the table');
 });

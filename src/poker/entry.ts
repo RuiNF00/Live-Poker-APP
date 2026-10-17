@@ -257,3 +257,20 @@ export function checkDownNext(hand: Hand): HandAction[] {
   if (s.toAct === null || s.needsBoard) return [];
   return checkAround(hand, s);
 }
+
+/**
+ * "All-in" on the keypad: the player to act is all-in for `to` (what they have
+ * in front of them on this street), so their starting stack becomes whatever
+ * makes that everything they had. No trip to the seat sheet first. Less than
+ * the bet is a call for less; more is a bet or a raise.
+ */
+export function allInFor(hand: Hand, s: TableState, to: number): Hand | null {
+  const p = s.toAct;
+  if (p === null) return null;
+  const add = to - s.bets[p];
+  if (add <= 0) return null;
+  const stack = hand.players[p].stack - s.stacks[p] + add;
+  const players = hand.players.map((x, i) => (i === p ? { ...x, stack } : x));
+  const a: HandAction = to <= s.currentBet ? { p, kind: 'call' } : { p, kind: s.currentBet === 0 ? 'bet' : 'raise', to };
+  return { ...hand, players, actions: [...hand.actions, a] };
+}

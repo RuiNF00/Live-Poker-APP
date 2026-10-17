@@ -3145,6 +3145,8 @@ const en: Record<string, string> = {
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'The organiser publishes each tournament\'s starting stack but not its level length, except for a few.',
   'Punta del Este, dezembro 2026': 'Punta del Este, December 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'No exchange rate for {list}: approximate until you are back online.',
+  'All-in com menos': 'All-in for less',
+  'All-in para': 'All-in to',
 };
 
 export default en;
