@@ -36,9 +36,17 @@ export async function loadCloud(): Promise<CloudState | null> {
   }
 }
 
+const listeners = new Set<(c: CloudState | null) => void>();
+/** Called after every change to the saved cloud state (a copy made, failed, turned off). */
+export function onCloudChange(fn: (c: CloudState | null) => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export async function saveCloud(c: CloudState | null): Promise<void> {
   if (c) await AsyncStorage.setItem(KEY, JSON.stringify(c));
   else await AsyncStorage.removeItem(KEY);
+  for (const fn of listeners) fn(c);
 }
 
 export function newCloud(): CloudState {
@@ -51,6 +59,21 @@ export function newCloud(): CloudState {
  * confirmed they deleted things on purpose).
  */
 export async function upload(c: CloudState, data: BackupData, opts: { force?: boolean } = {}): Promise<CloudState> {
+  try {
+    return await put(c, data, opts);
+  } catch (e) {
+    // Remembered for the backup warning (would_shrink is the player's call, not a failure).
+    const msg = (e as Error)?.message;
+    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden'].includes(msg) ? msg : 'network';
+    if (reason !== 'would_shrink') {
+      const now = await loadCloud();
+      if (now && now.id === c.id) await saveCloud({ ...now, failedAt: Date.now(), failure: reason }).catch(() => {});
+    }
+    throw e;
+  }
+}
+
+async function put(c: CloudState, data: BackupData, opts: { force?: boolean }): Promise<CloudState> {
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
   const { auth, enc } = deriveKeys(c.secret);
@@ -66,7 +89,8 @@ export async function upload(c: CloudState, data: BackupData, opts: { force?: bo
   if (res.status === 507) throw new Error('quota');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
-  const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(data) };
+  const { failedAt: _f, failure: _r, ...ok } = c;
+  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data) };
   // A restore with another code may have finished while this was uploading;
   // don't put the old code back.
   const now = await loadCloud();

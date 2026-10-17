@@ -2,20 +2,22 @@
 // restore on a new phone with the code, or turn it off.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
-import React, { useEffect, useRef, useState } from 'react';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
-import { download, formatCode, loadCloud, newCloud, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
-import { autoBackup, countsOf, uploadBlock } from '@/lib/cloud-guard';
+import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
+import { autoBackup, backupHealth, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { C, F, R, S } from '@/theme';
 
-import { Button, Card, Field, Row, T, tap } from './ui';
+import { Banner, Button, Card, Field, Row, T, tap } from './ui';
 
 function note(title: string, body?: string) {
   if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
@@ -39,9 +41,11 @@ export function CloudBackup() {
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [code, setCode] = useState('');
+  const [now] = useState(Date.now);
 
   useEffect(() => {
     loadCloud().then(setCloud);
+    return onCloudChange(setCloud);
   }, []);
 
   const data = () => buildBackup(store);
@@ -120,18 +124,24 @@ export function CloudBackup() {
   if (cloud === undefined) return null;
   // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
   const stalled = !!cloud && !!uploadBlock(countsOf(buildBackup(store)), cloud);
+  const health = backupHealth(cloud, now);
+  const warn = stalled || health.level !== 'ok';
 
   return (
     <Card style={{ gap: S.md }}>
       <Row gap={12}>
-        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: cloud ? C.goodSoft : C.surface3, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={cloud ? 'cloud-done' : 'cloud-outline'} size={19} color={cloud ? C.good : C.textDim} />
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: warn ? C.warnSoft : cloud ? C.goodSoft : C.surface3, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={warn ? 'cloud-offline-outline' : cloud ? 'cloud-done' : 'cloud-outline'} size={19} color={warn ? C.warn : cloud ? C.good : C.textDim} />
         </View>
         <View style={{ flex: 1 }}>
           <T v="h3">{t('Cópia na nuvem')}</T>
           {stalled ? (
             <T v="tiny" color={C.warn}>
               {t('Cópia parada: tens menos do que a nuvem')}
+            </T>
+          ) : health.level !== 'ok' ? (
+            <T v="tiny" color={C.warn}>
+              {healthTitle(health)}
             </T>
           ) : (
             <T v="tiny">{cloud ? (cloud.lastAt ? t('Ligada · última {date}', { date: shortDate(cloud.lastAt) }) : t('Ligada')) : t('Sem conta e sem email')}</T>
@@ -202,4 +212,69 @@ export function AutoCloudBackup() {
     // On launch and on reconnect only (the store is read through the ref).
   }, [ready, online]);
   return null;
+}
+
+function healthTitle(h: Exclude<Health, { level: 'ok' }>): string {
+  if (h.level === 'failed') return t('A última cópia na nuvem falhou');
+  return !Number.isFinite(h.days) ? t('Ainda não há cópia na nuvem') : t('Última cópia na nuvem há {n} dias', { n: h.days });
+}
+
+const SNOOZE_KEY = 'rl.backup.snooze.v1';
+const SNOOZE_MS = 24 * 3600000;
+
+/**
+ * For the hands list: the warning to show, or null. Only when the cloud copy
+ * is on and the last one failed or is a week old; the cross hides it for a day.
+ * Kept current as copies are made or fail.
+ */
+export function useBackupWarning(): { health: Exclude<Health, { level: 'ok' }> | null; snooze: () => void } {
+  const [health, setHealth] = useState<Health | null>(null);
+  const [snoozed, setSnoozed] = useState(true);
+  useEffect(() => {
+    const update = (c: CloudState | null) => setHealth(backupHealth(c, Date.now()));
+    loadCloud().then(update);
+    AsyncStorage.getItem(SNOOZE_KEY)
+      .then((v) => setSnoozed(!!v && Date.now() - Number(v) < SNOOZE_MS))
+      .catch(() => setSnoozed(false));
+    return onCloudChange(update);
+  }, []);
+  const snooze = useCallback(() => {
+    setSnoozed(true);
+    AsyncStorage.setItem(SNOOZE_KEY, String(Date.now())).catch(() => {});
+  }, []);
+  return { health: health && health.level !== 'ok' && !snoozed ? health : null, snooze };
+}
+
+/** Quiet warning card: what is wrong with the cloud copy; a tap («Fazer cópia agora») copies on the spot. */
+export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Health, { level: 'ok' }>; onSnooze: () => void }) {
+  const store = useStore();
+  const [busy, setBusy] = useState(false);
+
+  const copyNow = async () => {
+    const c = await loadCloud();
+    if (!c || busy) return;
+    tap();
+    setBusy(true);
+    try {
+      await upload(c, buildBackup(store));
+    } catch (e) {
+      // Fewer things here than in the cloud: the choice (replace or restore) is in Settings.
+      if ((e as Error)?.message === 'would_shrink') router.push('/settings');
+      else note(t('Não deu para fazer a cópia'), errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Banner
+      tone="warn"
+      icon="cloud-offline-outline"
+      title={healthTitle(health)}
+      // Same shape as the unfinished-hand card: what's wrong, then what a tap does.
+      body={busy ? t('A copiar…') : t('Fazer cópia agora')}
+      onPress={copyNow}
+      dismissLabel={t('Agora não')}
+      onDismiss={onSnooze}
+    />
+  );
 }

@@ -38,3 +38,20 @@ export function autoBackup(c: CloudState | null, data: Counts, now: number): 'sk
   if (!c || (c.lastAt && now - c.lastAt < AUTO_EVERY_MS)) return 'skip';
   return uploadBlock(data, c) ? 'skip' : 'upload';
 }
+
+/** A cloud copy older than this gets a warning (the launch auto-backup runs every 6 hours). */
+export const STALE_DAYS = 7;
+
+export type Health = { level: 'ok' } | { level: 'failed'; reason: string } | { level: 'stale'; days: number };
+
+/**
+ * Is the cloud copy keeping up? Only for players who turned it on: 'failed'
+ * when the last attempt failed after the last copy that worked, 'stale' when
+ * the last good copy is STALE_DAYS old or more.
+ */
+export function backupHealth(c: CloudState | null, now: number): Health {
+  if (!c) return { level: 'ok' };
+  if (c.failedAt && (!c.lastAt || c.failedAt > c.lastAt)) return { level: 'failed', reason: c.failure ?? 'network' };
+  const days = c.lastAt ? Math.floor((now - c.lastAt) / 86400000) : Infinity;
+  return days >= STALE_DAYS ? { level: 'stale', days } : { level: 'ok' };
+}
