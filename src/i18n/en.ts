@@ -1391,6 +1391,7 @@ const en: Record<string, string> = {
   'por partilhar': 'not shared yet',
   '{n} por confirmar': '{n} to confirm',
   'Outro pacote': 'Another package',
+  'Já não há % livre para esta reserva.': 'There is no free % left for this reservation.',
   // Trips and expenses
   '+ Nova': '+ New',
   'Resultados por bankroll, jogo, sala e mês, viagens e todas as sessões': 'Results by bankroll, game, venue and month, trips and every session',

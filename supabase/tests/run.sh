@@ -12,3 +12,4 @@ psql -q -d "$DB" -f tests/referrals_test.sql
 psql -q -d "$DB" -f tests/backups_test.sql
 psql -q -d "$DB" -f tests/live_test.sql
 psql -q -d "$DB" -f tests/profiles_test.sql
+psql -q -d "$DB" -f tests/action_offers_test.sql

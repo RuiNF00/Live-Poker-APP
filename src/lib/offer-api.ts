@@ -25,7 +25,7 @@ export class OfferFailure extends Error {
 }
 
 const fail = (status: number): never => {
-  throw new OfferFailure(status === 422 ? 'offensive' : status === 409 ? 'conflict' : status === 404 ? 'gone' : status === 429 ? 'rate_limited' : 'network');
+  throw new OfferFailure(status === 422 ? 'offensive' : status === 409 ? 'conflict' : status === 404 || status === 403 ? 'gone' : status === 429 ? 'rate_limited' : 'network');
 };
 
 export async function publishOffer(offer: OfferPayload): Promise<{ id: string; token: string; url: string }> {

@@ -160,8 +160,10 @@ export default function ActionOfferScreen() {
         set((x) => ({ ...x, reservations: x.reservations?.map((y) => (y.id === r.id ? { ...y, status } : y)) }));
       }
       applyToSessions();
-    } catch {
-      setError(t('Sem ligação. Tenta outra vez quando tiveres rede.'));
+    } catch (e) {
+      // Confirming one you had declined fails when someone else took that % in the meantime.
+      setError(e instanceof OfferFailure && e.reason === 'conflict' ? t('Já não há % livre para esta reserva.') : t('Sem ligação. Tenta outra vez quando tiveres rede.'));
+      void refresh();
     } finally {
       setBusy(false);
     }
