@@ -2897,6 +2897,17 @@ const en: Record<string, string> = {
   'Partilhar imagem': 'Share image',
   'Partilhar noutra app (X, WhatsApp…)': 'Share to another app (X, WhatsApp…)',
   // Crash reports switch (Definições → Os teus dados).
+  'Fazemos a primeira importação por ti. Só envias se aceitares.': 'We\'ll do your first import for you. Nothing is sent unless you agree.',
+  'Obrigado. Respondemos para o teu email.': 'Thanks. We\'ll reply to your email.',
+  'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'If the file doesn\'t import on its own, we\'ll import it and tell you when it\'s ready.',
+  'Vemos o ficheiro e, se for preciso, fazemos a importação por ti. Respondemos por email em até 2 dias úteis.': 'We\'ll look at the file and, if needed, do the import for you. We reply by email within 2 working days.',
+  'O ficheiro que escolheste, tal como está · {kb} KB': 'The file you picked, as it is · {kb} KB',
+  'Uma nota sobre o que falhou': 'A note on what went wrong',
+  'Versão da app, tipo de telemóvel e as linhas que ficaram de fora': 'App version, phone type and the rows left out',
+  'Só vai este ficheiro': 'Only this file goes',
+  'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'It has the dates, venues and results in it. Nothing else from your Sweatbook goes with it. You send it yourself, from your email app.',
+  'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
+  'Abrir o email': 'Open email',
 };
 
 export default en;

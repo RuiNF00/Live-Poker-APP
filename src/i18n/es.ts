@@ -2891,6 +2891,17 @@ const es: Record<string, string> = {
   'Ver tudo': 'Ver todo',
   'Estou à mesa: registar uma mão já': 'Estoy en la mesa: registrar una mano ya',
   // Crash reports switch (Definições → Os teus dados).
+  'Fazemos a primeira importação por ti. Só envias se aceitares.': 'Hacemos la primera importación por ti. Solo se envía si aceptas.',
+  'Obrigado. Respondemos para o teu email.': 'Gracias. Te respondemos por email.',
+  'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'Si el archivo no entra solo, lo importamos nosotros y te avisamos cuando esté listo.',
+  'Vemos o ficheiro e, se for preciso, fazemos a importação por ti. Respondemos por email em até 2 dias úteis.': 'Miramos el archivo y, si hace falta, hacemos la importación por ti. Respondemos por email en un máximo de 2 días hábiles.',
+  'O ficheiro que escolheste, tal como está · {kb} KB': 'El archivo que elegiste, tal cual · {kb} KB',
+  'Uma nota sobre o que falhou': 'Una nota sobre lo que falló',
+  'Versão da app, tipo de telemóvel e as linhas que ficaram de fora': 'Versión de la app, tipo de móvil y las filas que quedaron fuera',
+  'Só vai este ficheiro': 'Solo va este archivo',
+  'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tiene las fechas, salas y resultados que contiene. Nada de lo que ya tienes en Sweatbook va con él. Lo envías tú, desde tu app de email.',
+  'Aceito enviar este ficheiro ao suporte': 'Acepto enviar este archivo a soporte',
+  'Abrir o email': 'Abrir el email',
 };
 
 export default es;
