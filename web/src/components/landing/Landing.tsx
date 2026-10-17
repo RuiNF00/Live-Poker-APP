@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { brand } from '@/config/brand';
-import { pickLocale } from '@/lib/i18n';
+import { isLocale, LOCALES, pickLocale, type Locale } from '@/lib/i18n';
 import { storeLinks, type Utm } from '@/lib/storeLinks';
 import { Mark, Wordmark } from '@/components/Brand';
 import { landingCopy } from './copy';
@@ -13,6 +13,14 @@ import { Card, PhoneMock, Pos } from './Visuals';
 import '@/app/landing.css';
 
 export type Search = Record<string, string | string[] | undefined>;
+
+/** Each language's own name, for the footer switcher. */
+const LANGUAGE_NAME: Record<Locale, string> = {
+  pt: 'Português (Portugal)',
+  'pt-BR': 'Português (Brasil)',
+  en: 'English',
+  es: 'Español',
+};
 
 /** Carries the visitor's utm_* (Instagram bio, story link) through to the store links. */
 function utmFrom(search: Search): Utm {
@@ -31,7 +39,7 @@ function utmFrom(search: Search): Utm {
 export async function Landing({ search, invite }: { search: Search; invite?: string | null }) {
   const h = await headers();
   const lang = typeof search.lang === 'string' ? search.lang : null;
-  const locale = lang === 'en' || lang === 'pt' ? lang : pickLocale(h.get('accept-language'));
+  const locale = isLocale(lang) ? lang : pickLocale(h.get('accept-language'));
   const c = landingCopy(locale);
   const utm = utmFrom(search);
   if (invite) Object.assign(utm, { utm_source: 'invite', utm_campaign: invite });
@@ -203,7 +211,11 @@ export async function Landing({ search, invite }: { search: Search; invite?: str
         <a href="/privacy">{c.privacy}</a>
         <a href="/terms">{c.terms}</a>
         <a href="/support">{c.support}</a>
-        <a href={`${invite ? `/r/${invite}` : '/'}?lang=${locale === 'pt' ? 'en' : 'pt'}`}>{locale === 'pt' ? 'English' : 'Português'}</a>
+        {LOCALES.filter((l) => l !== locale).map((l) => (
+          <a key={l} href={`${invite ? `/r/${invite}` : '/'}?lang=${l}`} hrefLang={l} lang={l}>
+            {LANGUAGE_NAME[l]}
+          </a>
+        ))}
       </footer>
 
       <StickyCta label={c.ctaFree} note={c.heroNote} stores={stores} />

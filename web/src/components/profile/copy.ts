@@ -1,6 +1,6 @@
 import type { Locale } from '@/lib/i18n';
 
-// Text for public profiles (/u/<handle>), in the site's two languages.
+// Text for public profiles (/u/<handle>), in the site's languages.
 const pt = {
   follow: (h: string) => `Seguir @${h}`,
   followNote: 'Segue na app do Sweatbook. É grátis.',
@@ -55,5 +55,61 @@ const en: typeof pt = {
   metaDescription: (name: string) => `${name}'s live poker hands and sessions on Sweatbook.`,
 };
 
-export const profileCopy = (l: Locale) => (l === 'en' ? en : pt);
+const ptBR: typeof pt = {
+  follow: (h: string) => `Seguir @${h}`,
+  followNote: 'Siga no app do Sweatbook. É grátis.',
+  sessions: 'Sessões',
+  hands: 'Mãos',
+  hours: 'h na mesa',
+  nSessions: (n: number) => (n === 1 ? '1 sessão' : `${n} sessões`),
+  nHands: (n: number) => (n === 1 ? '1 mão' : `${n} mãos`),
+  tournament: 'Torneio',
+  cash: 'Cash',
+  place: (n: number, field?: number) => (field ? `${n}º de ${field}` : `${n}º lugar`),
+  result: 'Resultado',
+  buyIn: 'Buy-in',
+  played: 'Jogadas',
+  handsLogged: (n: number) => (n === 1 ? '1 mão registrada' : `${n} mãos registradas`),
+  challenge: 'Desafio',
+  open: 'Ver mão',
+  empty: 'Ainda não há nada compartilhado neste perfil.',
+  amountsHidden: 'Valores ocultados pelo jogador',
+  report: 'Denunciar perfil',
+  reported: 'Obrigado. Vamos revisar este perfil.',
+  ctaTitle: 'Você também joga live?',
+  ctaBody: 'Registre suas mãos e sessões em segundos, revise no replayer e crie seu perfil.',
+  notFound: 'Perfil não encontrado',
+  metaDescription: (name: string) => `Mãos e sessões de poker ao vivo de ${name} no Sweatbook.`,
+};
+
+const es: typeof pt = {
+  follow: (h: string) => `Seguir a @${h}`,
+  followNote: 'Síguelo en la app de Sweatbook. Es gratis.',
+  sessions: 'Sesiones',
+  hands: 'Manos',
+  hours: 'h en la mesa',
+  nSessions: (n: number) => (n === 1 ? '1 sesión' : `${n} sesiones`),
+  nHands: (n: number) => (n === 1 ? '1 mano' : `${n} manos`),
+  tournament: 'Torneo',
+  cash: 'Cash',
+  place: (n: number, field?: number) => (field ? `${n}.º de ${field}` : `${n}.º puesto`),
+  result: 'Resultado',
+  buyIn: 'Buy-in',
+  played: 'Jugadas',
+  handsLogged: (n: number) => (n === 1 ? '1 mano registrada' : `${n} manos registradas`),
+  challenge: 'Desafío',
+  open: 'Ver mano',
+  empty: 'Aún no hay nada compartido en este perfil.',
+  amountsHidden: 'Cantidades ocultas por el jugador',
+  report: 'Denunciar perfil',
+  reported: 'Gracias. Revisaremos este perfil.',
+  ctaTitle: '¿También juegas live?',
+  ctaBody: 'Registra tus manos y sesiones en segundos, revísalas en el replayer y crea tu perfil.',
+  notFound: 'Perfil no encontrado',
+  metaDescription: (name: string) => `Manos y sesiones de póker live de ${name} en Sweatbook.`,
+};
+
+const copy: Record<Locale, typeof pt> = { pt, 'pt-BR': ptBR, en, es };
+
+export const profileCopy = (l: Locale) => copy[l];
 export type ProfileCopy = typeof pt;

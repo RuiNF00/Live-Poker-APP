@@ -4,7 +4,8 @@
 // seats and bet spots placed by hand per table size (lib/tableLayout.ts, shared with the app),
 // ivory cards, chip stacks and an action badge on each plate.
 
-import { formatAmount, type ActionType, type AmountMode, type Card, type ReplayStep, type SeatState } from '@livepoker/hand-format';
+import type { ActionType, AmountMode, Card, ReplayStep, SeatState } from '@livepoker/hand-format';
+import { formatAmount } from '@/lib/hand-i18n';
 import type { Locale } from '@/lib/i18n';
 import { BOARD_Y, BRAND_Y, dealerSpot, POT_Y, STAGE_RATIO, tableMap } from '@/lib/tableLayout';
 import { ChipStack } from './ChipStack';
