@@ -37,7 +37,7 @@ export function fullDay(ts: number): string {
 }
 
 /** Today, yesterday, the last week as chips, or any date typed. */
-function DayPicker({ value, onChange }: { value: number; onChange: (day: number) => void }) {
+export function DayPicker({ value, onChange }: { value: number; onChange: (day: number) => void }) {
   const [text, setText] = useState('');
   const today = startOfDay(Date.now());
   return (

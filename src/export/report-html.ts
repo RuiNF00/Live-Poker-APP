@@ -108,6 +108,26 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
     </section>`;
 }
 
+function tripsBlock(r: Report): string {
+  if (!r.trips.length) return '';
+  const range = (from: number, to: number) => `${day(from)} – ${day(to)}`;
+  const rows = r.trips
+    .map(({ trip, summary: s }) => {
+      const conv = s.converted ? `<br/><span class="muted">≈ ${esc(signed(s.converted.net, s.converted.currency))}</span>` : '';
+      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span></td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(money(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
+    })
+    .join('');
+  return `
+    <section>
+      <h2>${esc(t('Viagens'))}</h2>
+      <table>
+        <thead><tr><th></th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Póquer'))}</th><th class="n">${esc(t('Despesas'))}</th><th class="n">${esc(t('Líquido'))}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="muted">${esc(t('Despesas de viagem (voos, hotel, comida...) não estão no resultado das sessões acima. Valores convertidos ao câmbio indicado pelo jogador.'))}</p>
+    </section>`;
+}
+
 export function reportHtml(r: Report, opts: { player?: string; now?: number } = {}): string {
   const many = r.currencies.length > 1;
   return `<!doctype html>
@@ -153,6 +173,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number } = 
     <div class="meta">${opts.player ? esc(opts.player) + '<br/>' : ''}${esc(t('Gerado a {date}', { date: day(opts.now ?? Date.now()) }))}</div>
   </header>
   ${r.currencies.length ? r.currencies.map((c) => currencyBlock(c, many)).join('') : `<p>${esc(t('Sem sessões no período'))}</p>`}
+  ${tripsBlock(r)}
   <footer>${esc(t('Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.'))}</footer>
 </body>
 </html>`;
