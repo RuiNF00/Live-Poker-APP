@@ -3020,6 +3020,7 @@ const en: Record<string, string> = {
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e meados de maio.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from late April to mid-May.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em meados de maio.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs in mid-May.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from the last week of May to mid-July, with the Main Event in July.',
+  'Ao comentar aceitas os': 'By commenting you accept the',
 };
 
 export default en;

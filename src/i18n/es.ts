@@ -3014,6 +3014,7 @@ const es: Record<string, string> = {
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e meados de maio.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. Suele ser entre finales de abril y mediados de mayo.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em meados de maio.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. Suele ser a mediados de mayo.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. Suele ir de la última semana de mayo a mediados de julio, con el evento principal en julio.',
+  'Ao comentar aceitas os': 'Al comentar aceptas los',
 };
 
 export default es;

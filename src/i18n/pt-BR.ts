@@ -1389,6 +1389,7 @@ const ptBR: Record<string, string> = {
   'Goiás, maio 2027': 'Goiás, maio de 2027',
   'Estoril, maio 2027': 'Estoril, maio de 2027',
   'Las Vegas, verão 2027': 'Las Vegas, verão de 2027',
+  'Ao comentar aceitas os': 'Ao comentar, você aceita os',
 };
 
 export default ptBR;
