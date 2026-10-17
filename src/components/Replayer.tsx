@@ -362,7 +362,8 @@ export function Replayer({
         ) : null}
       </View>
 
-      {tips && !locked ? <TipBubble onClose={doneTips} /> : null}
+      {/* Not on a preview (the welcome screen's sample has no source): it has no room there and nothing to learn yet. */}
+      {tips && !locked && source ? <TipBubble onClose={doneTips} /> : null}
       <Timeline items={items} current={k} last={last} onPick={go} />
     </View>
   );
