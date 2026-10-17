@@ -155,6 +155,7 @@ export default function SessionScreen() {
                   iconColor={C.accent}
                   title={b.name || t('Torneio')}
                   subtitle={t('Dia {n} · {chips} no saco', { n: dayOf(b), chips: chips(b.bag!.stack) })}
+                  onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: b.id, stack: '1' } })}
                   right={
                     <Button
                       size="sm"
@@ -343,6 +344,12 @@ function Live({ s }: { s: Session }) {
               <T v="label" style={{ flex: 1 }}>
                 Stack
               </T>
+              {mtt ? (
+                // The chip-count post of a festival day: card + text, chips only.
+                <Pressable onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Partilhar stack')} style={{ marginRight: 10 }}>
+                  <Ionicons name="share-outline" size={15} color={C.accent} />
+                </Pressable>
+              ) : null}
               <Ionicons name="pencil" size={13} color={C.accent} />
             </Row>
             <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>

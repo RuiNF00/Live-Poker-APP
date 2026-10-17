@@ -20,16 +20,18 @@ import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, s
 import { shareRef } from '@/lib/referrals';
 import { notice } from '@/lib/notice';
 import { playedMs } from '@/store/session-math';
-import { CARD_STYLES, milestoneFor, sessionStats, type CardStyle } from '@/share/session-card';
+import { CARD_STYLES, milestoneFor, sessionStats, stackPostText, stackStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
 
 const LOOK_NAME: Record<CardStyle, string> = { noite: t('Noite'), brasa: t('Brasa'), sticker: t('Sticker') };
 
 export default function SessionCardScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `stack=1`: a tournament's chip count mid-festival ("Dia 1 ensacado: 85k"), chips only, from the live session.
+  const { id, stack } = useLocalSearchParams<{ id: string; stack?: string }>();
   const { sessions, hands, settings } = useStore();
   const s = sessions.find((x) => x.id === id);
+  const chipCount = stack === '1' && s?.kind === 'mtt';
   const pro = usePro();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -42,8 +44,8 @@ export default function SessionCardScreen() {
   const [sheet, setSheet] = useState(false);
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
 
-  const stats = useMemo(() => (s ? sessionStats(s, hands, hideMoney) : []), [s, hands, hideMoney]);
-  const milestone = useMemo(() => (s ? milestoneFor(s, sessions, hands) : null), [s, sessions, hands]);
+  const stats = useMemo(() => (!s ? [] : chipCount ? stackStats(s) : sessionStats(s, hands, hideMoney)), [s, chipCount, hands, hideMoney]);
+  const milestone = useMemo(() => (s && !chipCount ? milestoneFor(s, sessions, hands) : null), [s, chipCount, sessions, hands]);
   if (!s) return <Empty title={t('Sessão não encontrada')} />;
 
   const pageW = width;
@@ -60,7 +62,7 @@ export default function SessionCardScreen() {
       const node = { current: refs.current[page] };
       const target =
         look === 'sticker' ? await shareSticker(await captureSticker(node, STICKER_W, STICKER_H), link) : await shareStory(await captureStory(node), link);
-      track('story_shared', { target: String(target), kind: 'session', look, money: !hideMoney, milestone: !!(milestone && showMilestone) });
+      track('story_shared', { target: String(target), kind: chipCount ? 'stack' : 'session', look, money: !hideMoney, milestone: !!(milestone && showMilestone) });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
@@ -70,6 +72,7 @@ export default function SessionCardScreen() {
 
   // The post text: time and hands, never the venue or an amount.
   const postText = (link: string) => {
+    if (chipCount) return `${stackPostText(s)}\n${link}`;
     const h = Math.max(1, Math.round(playedMs(s) / 3_600_000));
     const n = hands.filter((x) => x.sessionId === s.id).length;
     return `${n ? t('{h} h ao vivo, {hands} mãos registadas.', { h, hands: n }) : t('{h} h ao vivo.', { h })}\n${link}`;
@@ -86,7 +89,7 @@ export default function SessionCardScreen() {
     try {
       const i = look === 'sticker' ? CARD_STYLES.indexOf('noite') : page;
       await sharePost([await captureStory({ current: refs.current[i] })], postText(await inviteLink(to)), to);
-      track('story_shared', { target: to, kind: 'session', look, money: !hideMoney });
+      track('story_shared', { target: to, kind: chipCount ? 'stack' : 'session', look, money: !hideMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
@@ -101,7 +104,7 @@ export default function SessionCardScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('Partilhar sessão') }} />
+      <Stack.Screen options={{ title: chipCount ? t('Partilhar stack') : t('Partilhar sessão') }} />
       <CardShareSheet
         visible={sheet}
         onClose={() => setSheet(false)}
@@ -162,7 +165,7 @@ export default function SessionCardScreen() {
 
         <View style={{ paddingHorizontal: S.gutter }}>
           <ListGroup>
-            <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Mostra horas, mãos e potes em bb, sem €')} value={hideMoney} onChange={setHideMoney} />
+            {chipCount ? null : <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Mostra horas, mãos e potes em bb, sem €')} value={hideMoney} onChange={setHideMoney} />}
             {milestone ? <ToggleItem icon="trophy-outline" title={t('Mostrar marco')} subtitle={milestone.title} value={showMilestone} onChange={setShowMilestone} /> : null}
             <ToggleItem
               icon="pricetag-outline"

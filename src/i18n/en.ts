@@ -3086,6 +3086,11 @@ const en: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} so far: {amount} in {h} h',
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
+  // Stack card for a festival day (share/session-card.ts).
+  'Partilhar stack': 'Share stack',
+  'No saco': 'Bagged',
+  '{name} · Dia {n} ensacado: {chips}': '{name} · Day {n} bagged: {chips}',
+  '{name} · Dia {n}: {chips} em fichas': '{name} · Day {n}: {chips} in chips',
 };
 
 export default en;

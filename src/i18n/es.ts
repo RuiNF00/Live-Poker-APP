@@ -3080,6 +3080,11 @@ const es: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} hasta ahora: {amount} en {h} h',
   'Começar: {name}': 'Empezar: {name}',
   'Às {time}': 'A las {time}',
+  // Stack card for a festival day (share/session-card.ts).
+  'Partilhar stack': 'Compartir stack',
+  'No saco': 'Embolsado',
+  '{name} · Dia {n} ensacado: {chips}': '{name} · Día {n} embolsado: {chips}',
+  '{name} · Dia {n}: {chips} em fichas': '{name} · Día {n}: {chips} en fichas',
 };
 
 export default es;
