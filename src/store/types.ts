@@ -329,6 +329,9 @@ export interface Settings {
   monthRecap?: boolean;
   /** Amounts and results in notification text (they show on a locked phone). Missing = off. */
   notifyAmounts?: boolean;
+  /** The year notice: the last year it went out, and when the pending one is scheduled. `monthRecap: false` turns it off too. */
+  yearRecapSent?: number;
+  yearRecapAt?: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

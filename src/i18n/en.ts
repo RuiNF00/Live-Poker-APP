@@ -2755,6 +2755,12 @@ const en: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Your rules ask for {need} ({n} buy-ins for {stake}): the balance isn\'t above that.',
   'Podes levantar até {amount} e manter as regras ›': 'You can withdraw up to {amount} and keep your rules ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  'Melhor mês': 'Best month',
+  'Maior downswing': 'Biggest downswing',
+  'Recuperado em {n} dias': 'Won back in {n} days',
+  'Ainda a recuperar': 'Still coming back',
+  'O ano na bankroll': 'The year in your bankroll',
+  'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'The stakes where you won most, your months, the biggest pot and your streak are in Pro.',
   'Posição na mão': 'Position in the hand',
   'Passo {n} de {total}': 'Step {n} of {total}',
   'Esconder nomes': 'Hide names',
@@ -2795,6 +2801,9 @@ const en: Record<string, string> = {
   'Fica perdoado': "It's forgiven",
   'O makeup acaba com o pacote: o próximo começa do zero.': 'The makeup ends with the package: the next one starts from zero.',
   'Passa para um pacote novo': 'Carry to a new package',
+  'O teu {year} no póquer': 'Your {year} in poker',
+  '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h in {n} sessions. Your year in review is ready.',
+  '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h in {n} sessions, {amount}. Your year in review is ready.',
 };
 
 export default en;

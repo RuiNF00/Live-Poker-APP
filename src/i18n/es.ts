@@ -2747,6 +2747,12 @@ const es: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Tus reglas piden {need} ({n} buy-ins para {stake}): el saldo no pasa de eso.',
   'Podes levantar até {amount} e manter as regras ›': 'Puedes retirar hasta {amount} y mantener tus reglas ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  'Melhor mês': 'Mejor mes',
+  'Maior downswing': 'Mayor downswing',
+  'Recuperado em {n} dias': 'Recuperado en {n} días',
+  'Ainda a recuperar': 'Todavía recuperando',
+  'O ano na bankroll': 'El año en tu bankroll',
+  'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'Las stakes donde más ganaste, tus meses, el mayor bote y tu racha están en Pro.',
   // Replayer: scrubber and hidden names
   'Posição na mão': 'Posición en la mano',
   'Passo {n} de {total}': 'Paso {n} de {total}',
@@ -2788,6 +2794,9 @@ const es: Record<string, string> = {
   'Fica perdoado': 'Queda perdonado',
   'O makeup acaba com o pacote: o próximo começa do zero.': 'El makeup termina con el paquete: el siguiente empieza de cero.',
   'Passa para um pacote novo': 'Pasa a un paquete nuevo',
+  'O teu {year} no póquer': 'Tu {year} en el póker',
+  '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h en {n} sesiones. El resumen de tu año está listo.',
+  '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h en {n} sesiones, {amount}. El resumen de tu año está listo.',
 };
 
 export default es;

@@ -19,7 +19,7 @@ import { Logo, Watermark } from './SessionCard';
 import { STORY_H, STORY_W } from './StoryCard';
 
 const INK = C.accentInk;
-const LOOK: Record<YearCardKind, 'noite' | 'brasa'> = { year: 'brasa', best: 'noite', stakes: 'noite', pot: 'noite', streak: 'brasa' };
+const LOOK: Record<YearCardKind, 'noite' | 'brasa'> = { year: 'brasa', best: 'noite', stakes: 'noite', bankroll: 'noite', pot: 'noite', streak: 'brasa' };
 
 const oneDecimal = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
 const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n), cur);
@@ -80,7 +80,7 @@ export function YearCard({ review: r, kind, hideMoney = true, brand = true, ref 
       </View>
 
       <View style={{ position: 'absolute', top: 120, left: 26, right: 26, bottom: 150, justifyContent: 'center' }}>
-        {kind === 'year' ? <YearBody {...p} /> : kind === 'best' ? <BestBody {...p} /> : kind === 'stakes' ? <StakesBody {...p} /> : kind === 'pot' ? <PotBody {...p} /> : <StreakBody {...p} />}
+        {kind === 'year' ? <YearBody {...p} /> : kind === 'best' ? <BestBody {...p} /> : kind === 'stakes' ? <StakesBody {...p} /> : kind === 'bankroll' ? <BankrollBody {...p} /> : kind === 'pot' ? <PotBody {...p} /> : <StreakBody {...p} />}
       </View>
 
       {/* Above Instagram's reply bar */}
@@ -227,6 +227,70 @@ function StakesBody(p: BodyProps) {
           <Kicker dim={dim}>{t('Horas na mesa')}</Kicker>
           <Big color={fg}>{`${Math.round(r.hours)}h`}</Big>
         </View>
+      ) : null}
+    </View>
+  );
+}
+
+const MONTH = (m: number, style: 'long' | 'narrow') => {
+  const n = new Date(2026, m, 1).toLocaleDateString(locale, { month: style });
+  return n.charAt(0).toUpperCase() + n.slice(1);
+};
+const DAY = 86_400_000;
+
+/** The year as a bankroll: twelve months as bars, the best one, and the deepest fall and whether it was won back. */
+function BankrollBody({ r, fg, dim, line, hideMoney }: BodyProps) {
+  const max = Math.max(1, ...r.months.map((m) => Math.abs(m.profit)));
+  const BAR = 54;
+  const d = r.downswing;
+  return (
+    <View style={{ gap: 18 }}>
+      {r.bestMonth ? (
+        <View style={{ gap: 2 }}>
+          <Kicker dim={dim}>{t('Melhor mês')}</Kicker>
+          <Big color={fg} size={56} font={ff(800)}>
+            {MONTH(r.bestMonth.month, 'long')}
+          </Big>
+          <Caption dim={dim}>{hideMoney ? t('{h} h na mesa', { h: Math.round(r.months[r.bestMonth.month].hours) }) : signed(r.bestMonth.profit, r.currency)}</Caption>
+        </View>
+      ) : null}
+      {/* Up and down from a middle line; heights are relative, so they show the shape and never an amount. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {r.months.map((m) => (
+          <View key={m.month} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+            <View style={{ height: BAR * 2 + 1, width: '100%', justifyContent: 'center' }}>
+              <View style={{ position: 'absolute', left: 0, right: 0, top: BAR, height: 1, backgroundColor: line }} />
+              {m.sessions ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: 2,
+                    right: 2,
+                    borderRadius: 3,
+                    height: Math.max(3, (Math.abs(m.profit) / max) * BAR),
+                    backgroundColor: m.profit >= 0 ? C.good : C.bad,
+                    ...(m.profit >= 0 ? { bottom: BAR + 1 } : { top: BAR + 1 }),
+                  }}
+                />
+              ) : null}
+            </View>
+            <Text style={{ fontFamily: ff(800), fontSize: 9, color: m.sessions ? dim : line }}>{MONTH(m.month, 'narrow')}</Text>
+          </View>
+        ))}
+      </View>
+      {d ? (
+        <>
+          <View style={{ height: 1, backgroundColor: line }} />
+          <View style={{ gap: 2 }}>
+            <Kicker dim={dim}>{t('Maior downswing')}</Kicker>
+            <Big color={hideMoney ? fg : C.bad} size={40}>
+              {hideMoney ? (d.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: d.sessions })) : '−' + rawMoney(Math.round(d.depth), r.currency)}
+            </Big>
+            <Caption dim={dim}>
+              {d.recovered ? t('Recuperado em {n} dias', { n: Math.max(1, Math.round((d.recovered - d.to) / DAY)) }) : t('Ainda a recuperar')}
+            </Caption>
+          </View>
+        </>
       ) : null}
     </View>
   );

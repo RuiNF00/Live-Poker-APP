@@ -1241,6 +1241,15 @@ const ptBR: Record<string, string> = {
   'Se outro do grupo cobrar {prize}, recebes {each}.': 'Se outro do grupo cobrar {prize}, você recebe {each}.',
   'Grupo de {n}: não deves nada': 'Grupo de {n}: você não deve nada',
   'Deves ao grupo': 'Você deve ao grupo',
+  'Melhor mês': 'Melhor mês',
+  'Maior downswing': 'Maior downswing',
+  'Recuperado em {n} dias': 'Recuperado em {n} dias',
+  'Ainda a recuperar': 'Ainda recuperando',
+  'O ano na bankroll': 'O ano na bankroll',
+  'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'As stakes onde você mais ganhou, seus meses, o maior pote e sua sequência estão no Pro.',
+  'O teu {year} no póquer': 'Seu {year} no poker',
+  '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h em {n} sessões. O resumo do seu ano está pronto.',
+  '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h em {n} sessões, {amount}. O resumo do seu ano está pronto.',
 };
 
 export default ptBR;
