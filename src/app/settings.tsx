@@ -110,6 +110,7 @@ export default function SettingsScreen() {
           <ListGroup>
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
             <ListItem icon="push-outline" title={busy ? t('A importar…') : t('Importar ficheiro')} subtitle={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
+            <ListItem icon="swap-horizontal-outline" iconColor={C.info} title={t('Importar de outra app')} subtitle={t('Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
             <ListItem icon="grid-outline" title={t('Sessões em CSV')} subtitle={t('Para Excel ou Google Sheets')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={exportCsv} />
           </ListGroup>
         </Section>
