@@ -76,30 +76,30 @@ export const ES: Record<string, ArticleText> = {
   'share-a-hand': {
     slug: 'compartir-una-mano',
     title: 'Compartir una mano',
-    summary: 'Un enlace que tus amigos abren en el navegador, sin instalar nada.',
+    summary: 'Un link que tus amigos abren en el navegador, sin instalar nada.',
     body: [
-      'En la página de la mano, en Compartir, toca Compartir con amigos. Quien abra el enlace ve el replay calle a calle y puede comentar, sin la app.',
+      'En la página de la mano, en Compartir, toca Compartir con amigos. Quien abra el link ve el replay calle a calle y puede comentar, sin la app.',
       {
         list: [
           'Reto · Votación: el replay se detiene antes de tu decisión y cada persona vota antes de ver el resto. Los votos aparecen en la app, en Comentarios.',
           'Story · Instagram: imagen o video para tu Story (ver el artículo sobre Stories).',
-          'Texto · Foro: la mano en texto, con o sin el enlace del replay.',
+          'Texto · Foro: la mano en texto, con o sin el link del replay.',
           'Solver · PokerStars: la mano en formato PokerStars para solvers y trackers.',
         ],
       },
-      'Compartir por enlace es ilimitado, también en el plan gratis. Sin conexión, el enlace queda listo cuando vuelva la señal.',
-      { note: 'Para desactivar un enlace: en la página de la mano, en Comentarios, toca Dejar de compartir. El enlace deja de funcionar y se borran los comentarios; la mano se queda en tu cuaderno.' },
+      'Compartir por link es ilimitado, también en el plan gratis. Sin conexión, el link queda listo cuando vuelva la señal.',
+      { note: 'Para desactivar un link: en la página de la mano, en Comentarios, toca Dejar de compartir. El link deja de funcionar y se borran los comentarios; la mano se queda en tu cuaderno.' },
     ],
   },
   'what-a-link-shows': {
-    slug: 'que-muestra-un-enlace',
-    title: 'Qué muestra un enlace',
+    slug: 'que-muestra-un-link',
+    title: 'Qué muestra un link',
     summary: 'Las cartas, las fichas y tus notas. Los nombres de los demás, no.',
     body: [
-      'Un enlace muestra la mano: las cartas, la acción, las fichas y los stacks, y tu nombre de jugador. Nunca incluye la sesión, la nota de voz, tus carpetas ni tus notas sobre rivales.',
+      'Un link muestra la mano: las cartas, la acción, las fichas y los stacks, y tu nombre de jugador. Nunca incluye la sesión, la nota de voz, tus carpetas ni tus notas sobre rivales.',
       'El resto lo eliges en Ajustes → Manos que compartes:',
       { list: ['Nombres de los rivales: desactivado por defecto, solo se ven las posiciones.', 'Mis notas de la mano: activado por defecto.'] },
-      'Estas opciones cuentan para los enlaces nuevos; los que ya existen se quedan como estaban.',
+      'Estas opciones cuentan para los links nuevos; los que ya existen se quedan como estaban.',
     ],
   },
   'stories-session-card': {
@@ -128,8 +128,8 @@ export const ES: Record<string, ArticleText> = {
     summary: 'Una página tuya con las manos y sesiones que elijas.',
     body: [
       'Ajustes → Herramientas → Perfil público. Elige tu nombre de usuario, el nombre que se muestra y una bio, y toca Crear perfil público. La página queda en sweatbook.poker/u/nombre.',
-      'Solo entran las manos que ya compartiste por enlace y las sesiones terminadas que elijas (hasta 30). Ocultar montos quita resultados y buy-ins.',
-      { note: 'Si cambias el nombre de usuario, el enlace antiguo deja de funcionar. Eliminar perfil quita la página.' },
+      'Solo entran las manos que ya compartiste por link y las sesiones terminadas que elijas (hasta 30). Ocultar montos quita resultados y buy-ins.',
+      { note: 'Si cambias el nombre de usuario, el link antiguo deja de funcionar. Eliminar perfil quita la página.' },
     ],
   },
   staking: {
@@ -145,15 +145,15 @@ export const ES: Record<string, ArticleText> = {
           'En Bankroll → Staking ves el saldo y el makeup de cada backer, y los jugadores a los que respaldas.',
         ],
       },
-      'Para enviar las cuentas, abre al backer y toca Enviar cuentas. El enlace lleva solo la parte de ese backer (hasta 30 sesiones), sin notas, manos ni otros backers, y los números van en el propio enlace: el servidor no los ve.',
-      'Link en directo: en Staking, toca Crear link para esta sesión. Tus backers ven tu stack, el nivel y el resultado actualizarse, sin notas, manos ni nombres.',
+      'Para enviar las cuentas, abre al backer y toca Enviar cuentas. El link lleva solo la parte de ese backer (hasta 30 sesiones), sin notas, manos ni otros backers, y los números van en el propio link: el servidor no los ve.',
+      'Link en vivo: en Staking, toca Crear link para esta sesión. Tus backers ven tu stack, el nivel y el resultado actualizarse, sin notas, manos ni nombres.',
       { note: 'La gestión del staking (saldos, makeup y extractos de los backers) es parte del Pro.' },
     ],
   },
   swaps: {
     slug: 'swaps',
     title: 'Swaps entre jugadores',
-    summary: 'Los dos confirman los términos por enlace; la app hace las cuentas.',
+    summary: 'Los dos confirman los términos por link; la app hace las cuentas.',
     body: [
       {
         steps: [
@@ -164,7 +164,7 @@ export const ES: Record<string, ArticleText> = {
         ],
       },
       'Cuando alguien cobra, toca Cobré y registra el premio. La app indica quién debe cuánto a quién; cuando pagues, regístralo en Pagué. Compartir las cuentas envía el resumen al otro jugador.',
-      'Crear swaps y hacer el ajuste es parte del Pro. Confirmar un swap por enlace siempre es gratis.',
+      'Crear swaps y hacer el ajuste es parte del Pro. Confirmar un swap por link siempre es gratis.',
       { note: 'Solo registro y cuentas: ningún dinero pasa por Sweatbook, los pagos se hacen entre ustedes. Solo para mayores de 18 años.' },
     ],
   },
@@ -219,7 +219,7 @@ export const ES: Record<string, ArticleText> = {
       {
         list: [
           'En el teléfono: manos, sesiones, notas de jugadores, bankroll, staking, ajustes, el bloqueo y las notificaciones.',
-          'En nuestros servidores: la copia en la nube, los enlaces de manos, las páginas en directo, el perfil público y los enlaces de cuentas. Si estás sin conexión, se borran cuando vuelva la señal.',
+          'En nuestros servidores: la copia en la nube, los links de manos, las páginas en vivo, el perfil público y los links de cuentas. Si estás sin conexión, se borran cuando vuelva la señal.',
         ],
       },
       'No se puede deshacer. Si quieres guardar algo, usa antes Exportar todo.',
@@ -234,7 +234,7 @@ export const ES: Record<string, ArticleText> = {
       {
         list: [
           '3 manos nuevas al día (la 4.ª queda guardada como borrador).',
-          'Compartir por enlace sin límite, con replay y votación.',
+          'Compartir por link sin límite, con replay y votación.',
           'Importar de otras apps.',
           'Seguridad: copia en la nube, ocultar importes y bloqueo de la app.',
           'La sesión en la pantalla de bloqueo, la calculadora de odds y el planificador del festival.',
@@ -248,9 +248,9 @@ export const ES: Record<string, ArticleText> = {
   pro: {
     slug: 'sweatbook-pro',
     title: 'Sweatbook Pro: precios y prueba gratis',
-    summary: 'Mensual o anual, con 7 días gratis en el anual.',
+    summary: 'Mensual o anual, con 3 días gratis en el anual.',
     body: [
-      { list: ['Mensual: 29,99 US$ al mes.', 'Anual: 199,99 US$ al año, con 7 días gratis.'] },
+      { list: ['Mensual: 29,99 US$ al mes.', 'Anual: 199,99 US$ al año, con 3 días gratis.'] },
       'El precio en tu moneda es el que muestra la App Store o Google Play. El pago se hace en la tienda y se renueva solo hasta que canceles. Durante la prueba gratis, te avisamos antes del cobro.',
     ],
   },
@@ -282,7 +282,7 @@ export const ES: Record<string, ArticleText> = {
     slug: 'plan-vitalicio',
     title: '¿Hay un plan vitalicio?',
     summary: 'No. Hay plan mensual y anual.',
-    body: ['Por ahora no hay pago único. El plan anual es el más barato por mes y tiene 7 días gratis.', 'El plan gratis no caduca: puedes usarlo siempre.'],
+    body: ['Por ahora no hay pago único. El plan anual es el más barato por mes y tiene 3 días gratis.', 'El plan gratis no caduca: puedes usarlo siempre.'],
   },
   lifetime: {
     slug: 'plan-vitalicio',
@@ -309,7 +309,7 @@ export const ES: Record<string, ArticleText> = {
     body: [
       'Ajustes → Herramientas → Invitar amigos → Compartir invitación.',
       'Cuando tu amigo instala y guarda su primera mano en los 7 días siguientes, los dos ganan 7 días de Pro. Tú lo ganas con hasta 10 amigos al año.',
-      '¿Te llegó un código en vez de un enlace? En Ajustes, toca Tengo un código de invitación y luego Usar (solo en los primeros 7 días después de instalar).',
+      '¿Te llegó un código en vez de un link? En Ajustes, toca Tengo un código de invitación y luego Usar (solo en los primeros 7 días después de instalar).',
     ],
   },
   contact: {

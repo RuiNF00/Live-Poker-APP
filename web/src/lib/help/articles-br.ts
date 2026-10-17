@@ -76,7 +76,7 @@ export const BR: Record<string, ArticleText> = {
     title: 'Compartilhar uma mão',
     summary: 'Um link que os amigos abrem no navegador, sem instalar nada.',
     body: [
-      'Na página da mão, em Compartilhar, toque em Compartilhar com amigos. Quem abrir o link vê o replay rua a rua e pode comentar, sem o app.',
+      'Na página da mão, em Compartilhar, toque em Compartilhar com amigos. Quem abrir o link vê o replay street a street e pode comentar, sem o app.',
       {
         list: [
           'Desafio · Votação: o replay para antes da sua decisão e cada pessoa vota antes de ver o resto. Os votos aparecem no app, em Comentários.',
@@ -244,9 +244,9 @@ export const BR: Record<string, ArticleText> = {
   pro: {
     slug: 'sweatbook-pro',
     title: 'Sweatbook Pro: preços e teste grátis',
-    summary: 'Mensal ou anual, com 7 dias grátis no anual.',
+    summary: 'Mensal ou anual, com 3 dias grátis no anual.',
     body: [
-      { list: ['Mensal: US$ 29,99 por mês.', 'Anual: US$ 199,99 por ano, com 7 dias grátis.'] },
+      { list: ['Mensal: US$ 29,99 por mês.', 'Anual: US$ 199,99 por ano, com 3 dias grátis.'] },
       'O preço na sua moeda é o que aparece na App Store ou no Google Play. O pagamento é feito pela loja e renova sozinho até você cancelar. No teste grátis, avisamos antes da cobrança.',
     ],
   },
@@ -278,7 +278,7 @@ export const BR: Record<string, ArticleText> = {
     slug: 'plano-vitalicio',
     title: 'Existe um plano vitalício?',
     summary: 'Não. Há o mensal e o anual.',
-    body: ['Por enquanto não há pagamento único. O plano anual é o mais barato por mês e tem 7 dias grátis.', 'O plano grátis não expira: você pode usar para sempre.'],
+    body: ['Por enquanto não há pagamento único. O plano anual é o mais barato por mês e tem 3 dias grátis.', 'O plano grátis não expira: você pode usar para sempre.'],
   },
   lifetime: {
     slug: 'plano-vitalicio',
