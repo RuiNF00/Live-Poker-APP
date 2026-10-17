@@ -3111,6 +3111,15 @@ const es: Record<string, string> = {
   'No saco': 'Embolsado',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Día {n} embolsado: {chips}',
   '{name} · Dia {n}: {chips} em fichas': '{name} · Día {n}: {chips} en fichas',
+  // Replayer read aloud (VoiceOver/TalkBack).
+  'Street anterior': 'Street anterior',
+  '{name} no {pos}': '{name} en {pos}',
+  '{who} faz fold': '{who} hace fold',
+  '{who} faz check': '{who} hace check',
+  '{who} paga {amt}': '{who} paga {amt}',
+  '{who} faz bet de {amt}': '{who} hace bet de {amt}',
+  '{who} faz raise para {amt}': '{who} hace raise a {amt}',
+  '{who} vai all-in com {amt}': '{who} va all-in con {amt}',
 };
 
 export default es;

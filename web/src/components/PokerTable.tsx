@@ -4,6 +4,7 @@
 // seats and bet spots placed by hand per table size (lib/tableLayout.ts, shared with the app),
 // ivory cards, chip stacks and an action badge on each plate.
 
+import { spokenBoard, spokenSeat } from '@/lib/spoken';
 import type { ActionType, AmountMode, Card, ReplayStep, SeatState } from '@livepoker/hand-format';
 import { formatAmount } from '@/lib/hand-i18n';
 import type { Locale } from '@/lib/i18n';
@@ -53,11 +54,11 @@ const RUN_MARK: Record<number, string> = { 1: '①', 2: '②' };
 
 /** Ivory card with a serif rank, or the dark back with the brand mark. */
 function TCard({ card, kind, locale }: { card?: Card | null; kind: 'board' | 'seat' | 'hero'; locale: Locale }) {
-  if (!card) return <span className={`rt-card rt-card-${kind} rt-card-back`} aria-label={hiddenCardLabel(locale)} />;
+  if (!card) return <span className={`rt-card rt-card-${kind} rt-card-back`} role="img" aria-label={hiddenCardLabel(locale)} />;
   const rank = card[0] === 'T' ? '10' : card[0];
   const suit = card[1];
   return (
-    <span className={`rt-card rt-card-${kind}`} style={{ color: SUIT_COLORS[suit] }} aria-label={cardLabel(card, locale)}>
+    <span className={`rt-card rt-card-${kind}`} style={{ color: SUIT_COLORS[suit] }} role="img" aria-label={cardLabel(card, locale)}>
       <span className={`rt-rank${rank.length > 1 ? ' rt-rank-10' : ''}`}>{rank}</span>
       <span className="rt-suit">
         <SuitIcon suit={suit} size={100} />
@@ -101,7 +102,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
           <rect x="6.5" y="6.7" width="87" height="108.6" rx="40.5" ry="40.5" fill="none" stroke="rgba(238,242,239,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
         </svg>
 
-        <div className="rt-brand" style={{ top: `${BRAND_Y}%` }}>
+        <div className="rt-brand" style={{ top: `${BRAND_Y}%` }} aria-hidden>
           SWEATBOOK
         </div>
 
@@ -109,7 +110,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
           // Run it twice: both boards, stacked, each tagged with its number.
           <div className="rt-board rt-board-twice" style={{ top: `${BOARD_Y}%` }}>
             {step.runs.map((r, k) => (
-              <div key={k} className="rt-board-run" aria-label={`Board ${k + 1}`}>
+              <div key={k} className="rt-board-run" role="img" aria-label={`Board ${k + 1}. ${spokenBoard(r.board, locale)}`}>
                 <span className="rt-run-tag">{k + 1}</span>
                 {r.board.map((c, i) => (
                   <TCard locale={locale} key={`${i}-${c}`} card={c} kind="board" />
@@ -118,7 +119,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
             ))}
           </div>
         ) : (
-          <div className="rt-board" style={{ top: `${BOARD_Y}%` }}>
+          <div className="rt-board" style={{ top: `${BOARD_Y}%` }} role={step.board.length ? 'img' : undefined} aria-label={step.board.length ? spokenBoard(step.board, locale) : undefined} aria-hidden={step.board.length ? undefined : true}>
             {[0, 1, 2, 3, 4].map((i) =>
               step.board[i] ? <TCard locale={locale} key={`${i}-${step.board[i]}`} card={step.board[i]} kind="board" /> : <span key={i} className="rt-card rt-card-board rt-slot" />,
             )}
@@ -126,7 +127,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
         )}
 
         {pot > 0 && (
-          <div className="rt-pot" style={{ top: `${POT_Y}%` }} aria-label={`${potLabel} ${fmt(pot)}`}>
+          <div className="rt-pot" style={{ top: `${POT_Y}%` }} role="img" aria-label={`${potLabel} ${fmt(pot)}`}>
             {step.pot > 0 && <ChipStack amount={step.pot} size={13} />}
             <span className="rt-pill rt-pill-strong">{fmt(pot)}</span>
           </div>
@@ -134,7 +135,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
 
         {step.seats.map((s) =>
           s.committed > 0 ? (
-            <div key={`b${s.seat}`} className="rt-bet" style={pct(map.bets[slot.get(s.seat)!])}>
+            <div key={`b${s.seat}`} className="rt-bet" style={pct(map.bets[slot.get(s.seat)!])} aria-hidden>
               <ChipStack amount={s.committed} size={11} />
               <span className="rt-pill">{fmt(s.committed)}</span>
             </div>
@@ -142,7 +143,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
         )}
 
         {button && (
-          <span className="rt-dealer" style={pct(dealerSpot(map.seats[slot.get(button.seat)!], map.bets[slot.get(button.seat)!]))}>
+          <span className="rt-dealer" style={pct(dealerSpot(map.seats[slot.get(button.seat)!], map.bets[slot.get(button.seat)!]))} aria-hidden>
             D
           </span>
         )}
@@ -170,6 +171,8 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
               key={s.seat}
               className={`rt-seat${s.isHero ? ' rt-seat-hero' : ''}${acting ? ' rt-seat-acting' : ''}${s.folded ? ' rt-seat-folded' : ''}${win ? ' rt-seat-win' : ''}`}
               style={pct(p)}
+              role="img"
+              aria-label={spokenSeat(s, fmt, locale, win?.amount)}
             >
               <div className="rt-seat-cards">
                 {s.folded ? (

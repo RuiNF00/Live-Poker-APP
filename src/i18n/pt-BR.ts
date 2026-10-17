@@ -1460,6 +1460,8 @@ const ptBR: Record<string, string> = {
   'Partilhar stack': 'Compartilhar stack',
   'No saco': 'Fichas guardadas',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Fim do Dia {n}: {chips}',
+  // Replayer read aloud (VoiceOver/TalkBack).
+  '{name} no {pos}': '{name} no {pos}',
 };
 
 export default ptBR;

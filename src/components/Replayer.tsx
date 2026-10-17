@@ -329,7 +329,7 @@ export function Replayer({
         </Pressable>
         <Ctrl icon="chevron-forward" label={t('Seguinte')} onPress={() => go(k + 1)} />
         <Ctrl icon="play-forward" label={t('Próxima street')} onPress={nextStreet} />
-        <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={nextSpeed} />
+        <Ctrl text={`${SPEEDS[speed]}×`} label={`${t('Velocidade')} ${SPEEDS[speed]}×`} onPress={nextSpeed} />
         <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => {
             setInBB(!inBB);
             onInBB?.(!inBB);
@@ -351,7 +351,7 @@ export function Replayer({
           />
         </View>
         {/* Step counter, like a video's time: the scrubber already says it to screen readers. */}
-        <Text importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ minWidth: 40, textAlign: 'right', color: C.textDim, fontFamily: F.mono, fontSize: 11, fontVariant: ['tabular-nums'] }}>
+        <Text importantForAccessibility="no-hide-descendants" accessibilityElementsHidden maxFontSizeMultiplier={1.3} style={{ minWidth: 40, textAlign: 'right', color: C.textDim, fontFamily: F.mono, fontSize: 11, fontVariant: ['tabular-nums'] }}>
           {k + 1}/{last + 1}
         </Text>
         {named ? (
@@ -547,7 +547,8 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
             disabled={future}
             onPress={() => onPick(it.k)}
             accessibilityRole="button"
-            accessibilityLabel={`${it.label} ${it.detail ?? ''}`}
+            accessibilityLabel={it.spoken}
+            accessibilityState={{ selected: on }}
             style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : idx > at ? 0.55 : 1 }}>
             <View style={{ height: 20, justifyContent: 'center' }}>
               <View
@@ -562,11 +563,11 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                 }}
               />
             </View>
-            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
               {it.label}
             </Text>
             {it.detail ? (
-              <Text numberOfLines={1} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
+              <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
                 {it.detail}
               </Text>
             ) : null}
@@ -598,7 +599,7 @@ function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'
               alignItems: 'center',
               opacity: pressed ? 0.8 : 1,
             })}>
-            <Text style={{ color: o === 'Fold' ? C.text : C.accentInk, fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
+            <Text maxFontSizeMultiplier={1.6} numberOfLines={1} adjustsFontSizeToFit style={{ color: o === 'Fold' ? C.text : C.accentInk, fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
           </Pressable>
         ))}
       </View>
@@ -640,7 +641,7 @@ function Ctrl({
         justifyContent: 'center',
         opacity: pressed ? 0.7 : 1,
       })}>
-      {icon ? <Ionicons name={icon} size={18} color={active ? C.accent : C.text} /> : <Text style={{ color: active ? C.accent : C.text, fontFamily: F.mono, fontSize: 12 }}>{text}</Text>}
+      {icon ? <Ionicons name={icon} size={18} color={active ? C.accent : C.text} /> : <Text maxFontSizeMultiplier={1.5} style={{ color: active ? C.accent : C.text, fontFamily: F.mono, fontSize: 12 }}>{text}</Text>}
     </Pressable>
   );
 }
