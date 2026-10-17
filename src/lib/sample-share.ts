@@ -6,6 +6,7 @@ import { t } from '@/i18n';
 import { shareLink, uploadHand } from '@/lib/share-api';
 import { forumText } from '@/poker/text';
 import type { Hand } from '@/poker/types';
+import { handShareText } from '@/share/share-text';
 
 const KEY = 'sweatbook.sample.share.v1';
 
@@ -21,7 +22,7 @@ export async function shareSampleHand(hand: Hand): Promise<void> {
       id = (await uploadHand(hand, { names: false, notes: true })).id;
       AsyncStorage.setItem(KEY, id).catch(() => {});
     }
-    message = `${t('o que fazias aqui? 👀')}\n${shareLink(id, 'link')}`;
+    message = `${handShareText(undefined, 'link')}\n${shareLink(id, 'link')}`;
   } catch {
     message = forumText(hand, { brand: true, notes: true });
   }

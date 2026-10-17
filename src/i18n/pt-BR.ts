@@ -59,8 +59,6 @@ const ptBR: Record<string, string> = {
   'Tu': 'Você',
   'Notas (o que pensaste, reads, dúvidas…)': 'Notas (o que você pensou, reads, dúvidas…)',
   'Não deu para criar o link agora. Podes partilhar o texto da mão.': 'Não deu para criar o link agora. Você pode compartilhar o texto da mão.',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
-  'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
   'Cola no fórum, no Reddit ou no grupo de WhatsApp.': 'Cole no fórum, no Reddit ou no grupo de WhatsApp.',
   'Leva as mãos todas para o solver': 'Leve todas as mãos para o solver',
   'Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.': 'Com o Pro, você exporta várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.',
@@ -1293,6 +1291,17 @@ const ptBR: Record<string, string> = {
   'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
   // Crash reports switch (Definições → Os teus dados).
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
+  'Não conseguimos preparar a imagem. Tenta outra vez.': 'Não conseguimos preparar a imagem. Tente de novo.',
+  '{h} h ao vivo, {hands} mãos registadas.': '{h} h ao vivo, {hands} mãos registradas.',
+  'O meu {year} no póquer: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Meu {year} no poker: {sessions} sessões, {hours} horas e {hands} mãos registradas.',
+  'Outras apps': 'Outros apps',
+  'WhatsApp, Mensagens, guardar imagem…': 'WhatsApp, Mensagens, salvar imagem…',
+  '{game}: o que fazes aqui? Vota antes de ver o resultado 🗳️': '{game}: o que você faz aqui? Vote antes de ver o resultado 🗳️',
+  'O que fazes aqui? Vota antes de ver o resultado 🗳️': 'O que você faz aqui? Vote antes de ver o resultado 🗳️',
+  '{game}: o que fazias aqui? A mão toda, rua a rua, no link 👀': '{game}: o que você faria aqui? A mão inteira, street a street, no link 👀',
+  'O que fazias aqui? A mão toda, rua a rua, no link 👀': 'O que você faria aqui? A mão inteira, street a street, no link 👀',
+  '{game}: o que fazias aqui? 👀': '{game}: o que você faria aqui? 👀',
+  'O que fazias aqui? 👀': 'O que você faria aqui? 👀',
   'Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.': 'Você paga uma vez. A assinatura não é cancelada nem reembolsada sozinha: você cancela na {store} logo em seguida.',
   '{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.': '{price} por mês durante {n} meses. Depois, {monthly} por mês, até você cancelar.',
   'Cancela quando quiseres na Google Play, em Pagamentos e subscrições.': 'Cancele quando quiser no Google Play, em Pagamentos e assinaturas.',
@@ -1318,6 +1327,8 @@ const ptBR: Record<string, string> = {
   'Só vai este ficheiro': 'Só vai este arquivo',
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
+  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
+  'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
 };
 
 export default ptBR;

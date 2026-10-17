@@ -12,10 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { FestivalSlide, SLIDE_H, SLIDE_W } from '@/components/FestivalCarousel';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureSlide, shareCarousel } from '@/lib/instagram-story';
+import { canShareStory, captureSlide, shareCarousel, sharePost } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { carouselCaption, carouselSlides, eventRows, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
@@ -35,6 +36,7 @@ export default function FestivalCarouselScreen() {
   const [showHand, setShowHand] = useState(true);
   const [brand, setBrand] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const [copied, setCopied] = useState(false);
   const [ref, setRef] = useState('');
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
@@ -78,9 +80,31 @@ export default function FestivalCarouselScreen() {
     }
   };
 
+  // X takes 4 images a post: the closing slide is the one left out (the link is in the text).
+  const postTo = async (to: 'x' | 'any') => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const files: string[] = [];
+      for (let i = 0; i < slides.length; i++) if (to === 'any' || (slides[i] !== 'close' && files.length < 4)) files.push(await captureSlide({ current: refs.current[i] }));
+      const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`;
+      await sharePost(files, carouselCaption(recap, link, { showResult, showMoney }), to);
+      track('story_shared', { target: to, kind: 'festival_carousel', slides: files.length, money: showMoney });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: t('Carrossel do festival') }} />
+      <CardShareSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        instagram={post} instagramTitle={t('Carrossel no Instagram')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} copyTitle={t('Copiar legenda')}
+      />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
           horizontal
@@ -160,7 +184,7 @@ export default function FestivalCarouselScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Button title={busy ? t('A preparar…') : t('Publicar no feed')} icon="logo-instagram" disabled={busy} onPress={post} />
+          <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}

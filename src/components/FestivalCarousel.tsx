@@ -12,7 +12,7 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { locale, t } from '@/i18n';
 import { positions, replay } from '@/poker/engine';
 import { chips, rawMoney } from '@/poker/format';
-import { biLabel, dayKey, tripWeeks, type SlideKind, moneyLabel, resultParts, type EventRow, type FestivalRecap, type RecapStat } from '@/share/festival-card';
+import { biLabel, dayKey, placeLabel, tripWeeks, type SlideKind, moneyLabel, resultParts, type EventRow, type FestivalRecap, type RecapStat } from '@/share/festival-card';
 import { C, F, R, ff, posColor } from '@/theme';
 
 import { dateRange, dayTicks, Logo } from './FestivalCard';
@@ -182,7 +182,7 @@ function EventsSlide({ recap: r, events, showMoney, showResult }: { recap: Festi
           </View>
           {e.finish ? (
             <Text style={{ fontFamily: ff(800), fontSize: 15, color: e.cashed ? C.text : C.textDim }}>
-              {e.field ? `${e.finish}º/${e.field}` : `${e.finish}º`}
+              {placeLabel(e.finish, e.field)}
             </Text>
           ) : null}
           {showResult && (e.bi !== null || showMoney) ? (

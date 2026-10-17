@@ -4,18 +4,21 @@
 
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureSticker, captureStory, shareSticker, shareStory } from '@/lib/instagram-story';
+import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
+import { playedMs } from '@/store/session-math';
 import { CARD_STYLES, milestoneFor, sessionStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -35,6 +38,7 @@ export default function SessionCardScreen() {
   const [brand, setBrand] = useState(true);
   const [showMilestone, setShowMilestone] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
 
   const stats = useMemo(() => (s ? sessionStats(s, hands, hideMoney) : []), [s, hands, hideMoney]);
@@ -63,9 +67,45 @@ export default function SessionCardScreen() {
     }
   };
 
+  // The post text: time and hands, never the venue or an amount.
+  const postText = (link: string) => {
+    const h = Math.max(1, Math.round(playedMs(s) / 3_600_000));
+    const n = hands.filter((x) => x.sessionId === s.id).length;
+    return `${n ? t('{h} h ao vivo, {hands} mãos registadas.', { h, hands: n }) : t('{h} h ao vivo.', { h })}\n${link}`;
+  };
+  const inviteLink = async (to: 'x' | 'any') => {
+    const ref = await shareRef().catch(() => '');
+    return `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`;
+  };
+
+  // X or any other app: the card (the story look, also for the sticker) as a picture, the invite link in the text.
+  const postTo = async (to: 'x' | 'any') => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const i = look === 'sticker' ? CARD_STYLES.indexOf('noite') : page;
+      await sharePost([await captureStory({ current: refs.current[i] })], postText(await inviteLink(to)), to);
+      track('story_shared', { target: to, kind: 'session', look, money: !hideMoney });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    await Clipboard.setStringAsync(postText(await inviteLink('any'))).catch(() => {});
+    Alert.alert(t('Link copiado'));
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: t('Partilhar sessão') }} />
+      <CardShareSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        instagram={post} instagramTitle={look === 'sticker' ? t('Sticker no Instagram') : undefined} x={() => postTo('x')} other={() => postTo('any')} copy={copy}
+      />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
           horizontal
@@ -132,7 +172,7 @@ export default function SessionCardScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} onPress={post} />
+          <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}
