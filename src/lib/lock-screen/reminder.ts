@@ -19,6 +19,7 @@ export const LEVEL_UP_URL = 'sweatbook://session';
 export type N = typeof import('expo-notifications');
 let mod: N | null | undefined;
 
+/** expo-notifications, or null where it can't load (web, tests). Shared with the Pro nudges. */
 export function notifications(): N | null {
   if (mod !== undefined) return mod;
   if (Platform.OS === 'web') return (mod = null);

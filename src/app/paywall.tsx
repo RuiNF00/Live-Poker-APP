@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { notificationsAllowed } from '@/billing/nudges-sync';
 import { usePro } from '@/billing/pro';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { askNotificationPermission } from '@/lib/lock-screen/reminder';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
@@ -23,6 +25,8 @@ export default function Paywall() {
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
   // Set when Pro arrives on this screen (purchase or restore), to say what just unlocked.
   const [welcomed, setWelcomed] = useState(false);
+  // Trial days started here, so the welcome can offer the day-5 reminder it promised.
+  const [started, setStarted] = useState(0);
   const copy = PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic;
 
   const monthly = plans.find((p) => p.id === 'monthly');
@@ -37,8 +41,10 @@ export default function Paywall() {
     setBusy('buy');
     const res = await purchase(sel, reason);
     setBusy(null);
-    if (res === 'ok') setWelcomed(true);
-    else if (res === 'unavailable') Alert.alert(t('Ainda não disponível'), t('As subscrições ainda não estão ativas nesta versão.'));
+    if (res === 'ok') {
+      setWelcomed(true);
+      setStarted(trial);
+    } else if (res === 'unavailable') Alert.alert(t('Ainda não disponível'), t('As subscrições ainda não estão ativas nesta versão.'));
     else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
@@ -53,7 +59,7 @@ export default function Paywall() {
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
   const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[sel].period) }) : '';
 
-  if (isPro) return <Unlocked reason={reason} welcomed={welcomed} onDone={close} />;
+  if (isPro) return <Unlocked reason={reason} welcomed={welcomed} trial={started} onDone={close} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -268,8 +274,11 @@ function Radio({ active }: { active: boolean }) {
 function TrialSteps({ days, after }: { days: number; after: string }) {
   const steps: { icon: IconName; when: string; what: string }[] = [
     { icon: 'lock-open', when: t('Hoje'), what: t('Tudo desbloqueado. 0 a pagar.') },
-    { icon: 'notifications-outline', when: t('Dia {n}', { n: days }), what: t('Começa: {price}', { price: after }) },
-    { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
+    // The day-5 reminder (nudges.ts) keeps this promise.
+    days >= 3
+      ? { icon: 'notifications-outline', when: t('Dia {n}', { n: days - 2 }), what: t('Avisamos-te antes de cobrar.') }
+      : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
+    { icon: 'card-outline', when: t('Dia {n}', { n: days }), what: t('Começa: {price}', { price: after }) },
   ];
   return (
     <View style={{ paddingHorizontal: 4, paddingTop: S.sm, gap: S.md }}>
@@ -290,7 +299,24 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
   );
 }
 
-function Unlocked({ reason, welcomed, onDone }: { reason: PaywallReason; welcomed: boolean; onDone: () => void }) {
+function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; welcomed: boolean; trial: number; onDone: () => void }) {
+  const { refreshNudges } = usePro();
+  // null: still checking or nothing to ask; false: not yet allowed; true: on.
+  const [reminder, setReminder] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (trial < 3) return;
+    let live = true;
+    notificationsAllowed().then((ok) => live && setReminder(ok === null ? null : ok));
+    return () => {
+      live = false;
+    };
+  }, [trial]);
+  const allow = async () => {
+    tap();
+    const ok = await askNotificationPermission();
+    setReminder(ok ? true : null);
+    if (ok) refreshNudges();
+  };
   const line = !welcomed
     ? null
     : reason === 'hands'
@@ -313,7 +339,31 @@ function Unlocked({ reason, welcomed, onDone }: { reason: PaywallReason; welcome
           {line}
         </T>
       ) : null}
-      <Button title={reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
+      {reminder !== null ? <ReminderPreview on={reminder} days={trial - 2} /> : null}
+      {reminder === false ? (
+        <>
+          <Button title={t('Ativar lembrete')} icon="notifications" onPress={allow} style={{ alignSelf: 'stretch' }} />
+          <Button kind="ghost" title={t('Agora não')} onPress={onDone} style={{ alignSelf: 'stretch' }} />
+        </>
+      ) : (
+        <Button title={reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
+      )}
+    </View>
+  );
+}
+
+/** What the day-5 reminder will look like, shown before the system asks for permission. */
+function ReminderPreview({ on, days }: { on: boolean; days: number }) {
+  return (
+    <View style={{ alignSelf: 'stretch', marginTop: S.md, padding: S.md, gap: 4, borderRadius: R.lg, backgroundColor: C.surface, borderWidth: 1, borderColor: on ? C.accentLine : C.border }}>
+      <Row gap={S.sm}>
+        <Ionicons name={on ? 'checkmark-circle' : 'notifications'} size={16} color={C.accent} />
+        <T v="label" color={C.textDim} style={{ flex: 1 }}>
+          {on ? t('Lembrete ativo') : t('Sweatbook · dia {n}', { n: days })}
+        </T>
+      </Row>
+      <T v="h3">{t('Avisamos-te antes de cobrar')}</T>
+      <T v="small">{t('Vês as mãos que registaste e o dia em que o teste acaba.')}</T>
     </View>
   );
 }
