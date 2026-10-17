@@ -18,7 +18,6 @@ import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, capturePost, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
-import { shareRef } from '@/lib/referrals';
 import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { playedMs } from '@/store/session-math';
