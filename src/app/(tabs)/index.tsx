@@ -43,8 +43,10 @@ function dayKey(ts: number) {
   return d.getTime();
 }
 
-// toLocaleDateString is slow on Hermes; a long history has hundreds of days.
+// toLocaleDateString builds a new formatter on every call, which is slow on Hermes
+// and in browsers; a long history has hundreds of days. Two formatters, made once.
 const dayTitles = new Map<number, string>();
+const dayFmt: Partial<Record<'year' | 'other', Intl.DateTimeFormat>> = {};
 function dayTitle(day: number) {
   const today = dayKey(Date.now());
   if (day === today) return t('Hoje');
@@ -53,7 +55,8 @@ function dayTitle(day: number) {
   let s = dayTitles.get(day);
   if (s === undefined) {
     const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
-    s = new Date(day).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) });
+    const k = sameYear ? 'year' : 'other';
+    s = (dayFmt[k] ??= new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) })).format(day);
     dayTitles.set(day, s);
   }
   return s;

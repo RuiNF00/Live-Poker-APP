@@ -8,7 +8,6 @@ import { AppState } from 'react-native';
 
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
-import { eraseLocal, eraseRemote } from '@/lib/erase-all';
 import { useRates } from '@/lib/fx';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
@@ -492,6 +491,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const eraseAll = useCallback(async () => {
+    // Loaded on demand: the delete path pulls in cloud crypto, documents and voice notes.
+    const { eraseLocal, eraseRemote } = await import('@/lib/erase-all');
     await eraseRemote({ hands, sessions: rawSessions });
     if (draftTimer.current) clearTimeout(draftTimer.current);
     draftTimer.current = null;

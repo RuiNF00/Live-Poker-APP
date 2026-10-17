@@ -77,6 +77,8 @@ function defaults(hand: Hand, spot: SizeSpot): number[] {
 export function sizePresets(hand: Hand, s: TableState, memory?: SizeMemory): SizePreset[] {
   const l = legal(s);
   if (!l || (!l.canBet && !l.canRaise)) return [];
+  // Facing the last player's all-in nobody could answer a raise: only Call or Fold.
+  if (!hand.players.some((_, i) => i !== s.toAct && !s.folded[i] && !s.allIn[i])) return [];
   const unit = Math.max(1, Math.round(hand.game.bb / 4));
   const { spot, base, extra } = sizeSpot(hand, s);
   const mults = defaults(hand, spot);

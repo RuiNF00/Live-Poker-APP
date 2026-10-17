@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { TapCounted } from '@/components/TapCount';
 import { useSheetAnimation } from '@/lib/motion';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
@@ -36,6 +37,7 @@ export function ContextSheet({
   const sheetPad = useSheetPad(40);
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
+      <TapCounted style={{ flex: 1 }}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, maxHeight: '88%', borderTopWidth: 1, borderColor: C.border }}>
         <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, gap: S.lg, paddingBottom: sheetPad }} keyboardShouldPersistTaps="handled">
@@ -82,9 +84,9 @@ export function ContextSheet({
               ))}
             </ChipRow>
             <Row gap={10}>
-              <NumField label="SB" value={game.sb} onChange={(sb) => set({ sb })} />
-              <NumField label="BB" value={game.bb} onChange={(bb) => set({ bb })} />
-              <NumField label="Ante" value={game.ante} onChange={(ante) => set({ ante, anteType: ante ? (game.anteType === 'none' ? 'bb' : game.anteType) : 'none' })} />
+              <NumField money={game.kind === 'cash'} label="SB" value={game.sb} onChange={(sb) => set({ sb })} />
+              <NumField money={game.kind === 'cash'} label="BB" value={game.bb} onChange={(bb) => set({ bb })} />
+              <NumField money={game.kind === 'cash'} label="Ante" value={game.ante} onChange={(ante) => set({ ante, anteType: ante ? (game.anteType === 'none' ? 'bb' : game.anteType) : 'none' })} />
             </Row>
             <ChipRow>
               <Chip label="BB ante" active={game.anteType === 'bb'} onPress={() => set({ anteType: 'bb', ante: game.ante || game.bb })} />
@@ -104,7 +106,7 @@ export function ContextSheet({
                 <Chip label={t('Straddle no botão')} active={game.straddleFrom === 'btn' && !!game.straddles} onPress={() => set({ straddles: 1, straddleFrom: 'btn', bombPot: undefined })} />
                 <Chip label="Bomb pot" active={!!game.bombPot} onPress={() => set({ bombPot: game.bombPot || game.bb * 2, straddles: undefined, straddleFrom: undefined })} />
               </ChipRow>
-              {game.bombPot ? <NumField label={t('Bomb pot, cada um')} value={game.bombPot} onChange={(b) => set({ bombPot: b || undefined })} /> : null}
+              {game.bombPot ? <NumField money={game.kind === 'cash'} label={t('Bomb pot, cada um')} value={game.bombPot} onChange={(b) => set({ bombPot: b || undefined })} /> : null}
             </View>
           )}
 
@@ -130,13 +132,14 @@ export function ContextSheet({
               <Row gap={10}>
                 <NumField label={t('Nível')} value={game.level ?? 0} onChange={(level) => set({ level: level || undefined })} />
                 <NumField label={t('Jogadores restantes')} value={game.playersLeft ?? 0} onChange={(p) => set({ playersLeft: p || undefined })} />
-                <NumField label="Buy-in" value={game.buyIn ?? 0} onChange={(b) => set({ buyIn: b || undefined })} />
+                <NumField money label="Buy-in" value={game.buyIn ?? 0} onChange={(b) => set({ buyIn: b || undefined })} />
               </Row>
             </>
           )}
           <Button title={t('Feito')} onPress={onClose} />
         </ScrollView>
       </View>
+      </TapCounted>
     </Modal>
   );
 }

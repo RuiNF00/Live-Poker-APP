@@ -66,6 +66,7 @@ class SupabaseCoach implements CoachStore {
       p_mark: c.mark,
       p_name: c.name,
       p_body: c.body,
+      p_key: c.key ?? null,
     });
     if (error) throw error;
     return (data as CoachComment | null) ?? null;
@@ -94,6 +95,7 @@ class SupabaseCoach implements CoachStore {
       p_step: c.stepIndex,
       p_name: c.name,
       p_body: c.body,
+      p_key: c.key ?? null,
     });
     if (error) throw error;
     return (data as CoachComment | null) ?? null;
@@ -129,6 +131,8 @@ interface LocalLink {
   views: number;
   hands: CoachHandIn[];
   comments: CoachComment[];
+  /** Sender's key -> comment id, for retried posts. */
+  keys?: Record<string, string>;
 }
 
 class LocalCoach implements CoachStore {
@@ -177,10 +181,13 @@ class LocalCoach implements CoachStore {
     });
   }
 
-  private add(l: LocalLink, c: Omit<CoachComment, 'id' | 'createdAt'>): CoachComment | null {
+  private add(l: LocalLink, { key, ...c }: Omit<CoachComment, 'id' | 'createdAt'> & { key?: string | null }): CoachComment | null {
+    const again = key ? l.comments.find((x) => x.id === l.keys?.[`${c.author}:${key}`]) : undefined;
+    if (again) return again;
     if (!l.hands.some((h) => h.id === c.handId) || l.comments.length >= MAX_COMMENTS) return null;
     const out = { ...c, id: randomUUID(), createdAt: new Date().toISOString() };
     l.comments.push(out);
+    if (key) l.keys = { ...l.keys, [`${c.author}:${key}`]: out.id };
     return out;
   }
 

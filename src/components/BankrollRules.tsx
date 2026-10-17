@@ -123,7 +123,7 @@ export function RulesForm({ bankroll, balance, onSave, onRemove }: { bankroll: B
       </Section>
       <Section title={t('Stop-loss')} hint={t('Quando perderes isto, avisamos-te na sessão. 0 desliga.')}>
         <Row>
-          <NumField label={t('Limite ({currency})', { currency: cur })} value={r.stopLoss} onChange={(v) => set({ stopLoss: v })} />
+          <NumField money label={t('Limite ({currency})', { currency: cur })} value={r.stopLoss} onChange={(v) => set({ stopLoss: v })} />
         </Row>
         <Segmented
           options={[
@@ -136,7 +136,7 @@ export function RulesForm({ bankroll, balance, onSave, onRemove }: { bankroll: B
       </Section>
       <Section title={t('Objetivo')} hint={t('O saldo que queres atingir. 0 desliga.')}>
         <Row>
-          <NumField label={t('Saldo ({currency})', { currency: cur })} value={r.target} onChange={(v) => set({ target: v })} />
+          <NumField money label={t('Saldo ({currency})', { currency: cur })} value={r.target} onChange={(v) => set({ target: v })} />
         </Row>
       </Section>
       <Button title={t('Guardar regras')} icon="checkmark" disabled={!(r.cashBuyIns > 0 && r.mttBuyIns > 0)} onPress={() => onSave(r)} />

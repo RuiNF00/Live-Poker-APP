@@ -16,6 +16,20 @@ export interface CreateShareInput {
   revealAll?: boolean;
   quiz?: QuizSpot | null;
   allowComments?: boolean;
+  /** Picked by the app (64 hex) so a retried create returns the same link (migration 340000). */
+  token?: string | null;
+}
+
+/** A create's token that isn't 64 hex. */
+export class BadCreateToken extends Error {}
+/** A retried create for a hand that was taken down since. */
+export class CreateGone extends Error {}
+
+/** The app's own edit token, or null for one picked here. Throws BadCreateToken on anything else. */
+export function createToken(v: unknown): string | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'string' && /^[a-f0-9]{64}$/.test(v)) return v;
+  throw new BadCreateToken();
 }
 
 export interface NewComment {
@@ -93,6 +107,8 @@ export const APP_EVENTS = [
   'notify_permission',
   'replay_opened',
   'review_prompt',
+  'receipt_read',
+  'invite_rewarded',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 
@@ -144,7 +160,9 @@ class SupabaseStore implements ShareStore {
       p_reveal_all: input.revealAll ?? false,
       p_quiz: input.quiz ?? null,
       p_allow_comments: input.allowComments ?? true,
+      p_token: input.token ?? null,
     });
+    if (error?.message === 'gone') throw new CreateGone();
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     return { id: row.id as string, editToken: row.edit_token as string };
@@ -340,9 +358,12 @@ class LocalStore implements ShareStore {
   }
 
   async createShare(input: CreateShareInput) {
-    const id = shortId();
-    const editToken = randomBytes(16).toString('hex');
-    await this.mutate((d) => {
+    const editToken = input.token ?? randomBytes(16).toString('hex');
+    return this.mutate((d) => {
+      // Same token again: the link made the first time.
+      const again = Object.values(d.shares).find((s) => s.editTokenHash === sha256(editToken));
+      if (again) return { id: again.id, editToken };
+      const id = shortId();
       d.shares[id] = {
         id,
         payload: input.payload,
@@ -354,8 +375,8 @@ class LocalStore implements ShareStore {
         createdAt: new Date().toISOString(),
         editTokenHash: sha256(editToken),
       };
+      return { id, editToken };
     });
-    return { id, editToken };
   }
 
   async getShare(id: string) {

@@ -7,10 +7,12 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { QUIET_FROM, QUIET_TO } from '../lib/notify-policy';
+
 import type { Trial } from './nudges';
 
 const DAY = 86_400_000;
-const KEYS = { defer: 'rl.trial.defer.v1', seen: 'rl.trial.seen.v1', last: 'rl.trial.last.v1' };
+const KEYS = { defer: 'rl.trial.defer.v1', seen: 'rl.trial.seen.v1', last: 'rl.trial.last.v1', proEnded: 'rl.pro.ended.v1', proEndSeen: 'rl.pro.endSeen.v1' };
 
 /** "O que fica grátis" still shows if the app is opened up to this long after the trial ended. */
 export const ENDED_DAYS = 14;
@@ -71,3 +73,20 @@ export async function withLastTrial(current: Trial | null): Promise<Trial | null
   }
   return read<Trial>(KEYS.last);
 }
+
+/** The one-time screens wait out the quiet hours (23:00 to 12:00), like notifications do. */
+export const inQuietHours = (hour: number) => hour >= QUIET_FROM || hour < QUIET_TO;
+
+/**
+ * Whether to say, once, that Pro ended (invite days, a cancelled subscription, a refund).
+ * A trial that ran out has its own screen ("O teu trial acabou"), so it isn't said twice (pure, tested).
+ */
+export function proEndNotice(ended: number | null, seen: number | null, lastTrialEnd: number | null, o: { isPro: boolean; now: number }): boolean {
+  if (!ended || o.isPro || seen === ended || o.now - ended > ENDED_DAYS * DAY) return false;
+  return !(lastTrialEnd && lastTrialEnd <= ended && ended - lastTrialEnd <= ENDED_DAYS * DAY);
+}
+
+export const markProEnded = (now = Date.now()) => write(KEYS.proEnded, now);
+export const proEnded = () => read<number>(KEYS.proEnded);
+export const proEndSeen = () => read<number>(KEYS.proEndSeen);
+export const markProEndSeen = (at: number) => write(KEYS.proEndSeen, at);

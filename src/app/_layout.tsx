@@ -11,32 +11,22 @@ import { DarkTheme, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
-import { AutoCloudBackup } from '@/components/CloudBackup';
+import { Deferred } from '@/components/Deferred';
 import { NetStatus } from '@/components/NetStatus';
-import { SettleReminder } from '@/components/staking/SettleReminder';
-import { SwapReminder } from '@/components/swaps/SwapReminder';
-import { SwapSettleReminder } from '@/components/swaps/SwapSettleReminder';
-import { MonthRecapSync } from '@/lib/month-recap';
-import { BackerLiveSync } from '@/components/staking/BackerLive';
-import { TrialFollowUp } from '@/components/TrialFollowUp';
 import { Button, Empty, KeyboardDoneBar } from '@/components/ui';
 import { t } from '@/i18n';
 import { track, watchResume } from '@/lib/events';
-import { SessionLockScreen } from '@/lib/lock-screen';
-import { HomeWidgetSync } from '@/lib/home-widget';
 import { useReduceMotion } from '@/lib/motion';
 import { startCrashReports } from '@/lib/crash-report';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { startCoachSync } from '@/lib/coach-api';
-import { NotifyPolicySync } from '@/lib/notify-gate';
-import { ReviewSync } from '@/lib/review';
 import { bootReferrals } from '@/lib/referrals';
 // Registers the queued share-link sender before the outbox first drains.
 import '@/lib/share-queue';
@@ -49,6 +39,9 @@ import '@/lib/swap-create-queue';
 import '@/lib/public-profile';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
+
+// Reminders, syncs and the lock-screen and widget bridges draw nothing on the first frame: their code loads after it.
+const AfterStart = React.lazy(() => import('@/components/AfterStart'));
 
 const theme = {
   ...DarkTheme,
@@ -85,17 +78,11 @@ export default function RootLayout() {
           <ProProvider>
           <HideSplash />
           <StatusBar style="light" />
-          <AutoCloudBackup />
-          <BackerLiveSync />
-          <SessionLockScreen />
-          <HomeWidgetSync />
-          <SwapReminder />
-          <SwapSettleReminder />
-          <TrialFollowUp />
-          <MonthRecapSync />
-          <SettleReminder />
-          <NotifyPolicySync />
-          <ReviewSync />
+          <Deferred>
+            <Suspense fallback={null}>
+              <AfterStart />
+            </Suspense>
+          </Deferred>
           <KeyboardDoneBar />
           <Stack
             screenOptions={{

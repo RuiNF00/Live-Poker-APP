@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { TapCounted } from '@/components/TapCount';
 import { useSheetAnimation } from '@/lib/motion';
 import { bbs, chips } from '@/poker/format';
 import type { Player } from '@/poker/types';
@@ -73,6 +74,7 @@ export function SeatSheet({
   const quick = [20, 40, 60, 100].map((x) => x * bb);
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
+      <TapCounted style={{ flex: 1 }}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, padding: S.gutter, paddingTop: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
         <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
@@ -151,6 +153,7 @@ export function SeatSheet({
           setPad(false);
         }}
       />
+      </TapCounted>
     </Modal>
   );
 }

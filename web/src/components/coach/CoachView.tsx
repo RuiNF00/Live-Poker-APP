@@ -48,7 +48,8 @@ export function CoachView(props: Props) {
       await fetch(`/api/coach/${token}/comments`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ handId: first.id, stepIndex: null, mark: null, name: readLocal<string>('coachName') || c.coach, body: c.leftNote }),
+        // One leave note per link: the same key every time, so pressing it twice posts it once.
+        body: JSON.stringify({ handId: first.id, stepIndex: null, mark: null, name: readLocal<string>('coachName') || c.coach, body: c.leftNote, key: 'coach-left-note' }),
       }).catch(() => {});
     }
     writeLocal(`coachLeft.${token}`, true);
@@ -141,7 +142,7 @@ export function CoachView(props: Props) {
           index={at}
           total={props.hands.length}
           comments={byHand.get(current.id) ?? []}
-          onAdded={(x) => setComments((cs) => [...cs, x])}
+          onAdded={(x) => setComments((cs) => (cs.some((y) => y.id === x.id) ? cs : [...cs, x]))}
           onClosed={() => setClosed(true)}
           onMove={(d) => pick(Math.max(0, Math.min(props.hands.length - 1, at + d)))}
           locale={locale}
@@ -348,6 +349,8 @@ function HandReview({
   );
 }
 
+const newKey = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `k${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`);
+
 function Composer({
   token,
   handId,
@@ -367,6 +370,8 @@ function Composer({
 }) {
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
+  // One key per comment being written: "Tentar outra vez" after a lost answer doesn't post it twice.
+  const key = useRef(newKey());
   const [mark, setMark] = useState<Mark | null>(null);
   const [whole, setWhole] = useState(false);
   const [state, setState] = useState<'idle' | 'sending' | 'error' | 'limited' | 'offensive'>('idle');
@@ -389,7 +394,7 @@ function Composer({
       const r = await fetch(`/api/coach/${token}/comments`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ handId, stepIndex: pinned ? step : null, mark, name: name.trim(), body: body.trim() }),
+        body: JSON.stringify({ handId, stepIndex: pinned ? step : null, mark, name: name.trim(), body: body.trim(), key: key.current }),
       });
       if (r.status === 429) return setState('limited');
       if (r.status === 404) {
@@ -399,6 +404,7 @@ function Composer({
       if (r.status === 422 && (await r.json().catch(() => null))?.error === 'offensive') return setState('offensive');
       if (!r.ok) return setState('error');
       onAdded((await r.json()).comment);
+      key.current = newKey();
       setBody('');
       setMark(null);
       setState('idle');

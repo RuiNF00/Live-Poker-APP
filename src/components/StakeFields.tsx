@@ -73,7 +73,7 @@ export function StakeFields({ s, onChange, expenses = true }: { s: Session; onCh
       {expenses && (
         <Card>
           <Row gap={S.sm}>
-            <NumField label={t('Despesas ({currency})', { currency: s.currency })} value={s.expenses ?? 0} onChange={(v) => onChange({ expenses: v || undefined })} />
+            <NumField money label={t('Despesas ({currency})', { currency: s.currency })} value={s.expenses ?? 0} onChange={(v) => onChange({ expenses: v || undefined })} />
           </Row>
         </Card>
       )}

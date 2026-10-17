@@ -702,7 +702,7 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
     }),
   );
   const shown = cols.flat().filter((c) => c.r !== undefined).length;
-  const won = cols.flat().filter((c) => c.r !== undefined && c.r >= 0).length;
+  const won = cols.flat().filter((c) => c.r !== undefined && c.r > 0).length;
   const lost = cols.flat().filter((c) => c.r !== undefined && c.r < 0).length;
   return (
     <Section title={t('Calendário')} hint={t('Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.')}>
@@ -724,9 +724,10 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
                   style={{
                     aspectRatio: 1,
                     borderRadius: 3,
-                    // Losing days are outlined, winning days filled: not colour alone.
-                    backgroundColor: c.r === undefined ? (c.future ? 'transparent' : C.surface3) : c.r >= 0 ? C.good : 'transparent',
-                    ...(c.r !== undefined && c.r < 0 ? { borderWidth: 2, borderColor: C.bad } : null),
+                    // Losing days are outlined, winning days filled: not colour alone. Break-even days
+                    // are a neutral outline, neither a win nor an empty day.
+                    backgroundColor: c.r === undefined ? (c.future ? 'transparent' : C.surface3) : c.r > 0 ? C.good : 'transparent',
+                    ...(c.r !== undefined && c.r <= 0 ? { borderWidth: 2, borderColor: c.r < 0 ? C.bad : C.muted } : null),
                     opacity: c.r === undefined ? 1 : 0.5 + 0.5 * Math.min(1, Math.abs(c.r) / max),
                   }}
                 />

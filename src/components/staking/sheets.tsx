@@ -218,7 +218,7 @@ export function PaymentSheet({
 
 function PaymentForm({ backer, balance, currency, onSave }: { backer: Backer; balance: number; currency: string; onSave: (p: BackerPayment) => void }) {
   const [dir, setDir] = useState<'out' | 'in'>(balance >= 0 ? 'out' : 'in');
-  const [amount, setAmount] = useState(Math.round(Math.abs(balance)));
+  const [amount, setAmount] = useState(Math.round(Math.abs(balance) * 100) / 100);
   const [note, setNote] = useState('');
   return (
     <>
@@ -231,7 +231,7 @@ function PaymentForm({ backer, balance, currency, onSave }: { backer: Backer; ba
         onChange={setDir}
       />
       <View style={{ flexDirection: 'row' }}>
-        <NumField label={t('Valor ({currency})', { currency })} value={amount} onChange={setAmount} />
+        <NumField money label={t('Valor ({currency})', { currency })} value={amount} onChange={setAmount} />
       </View>
       {balance ? (
         <T v="small">

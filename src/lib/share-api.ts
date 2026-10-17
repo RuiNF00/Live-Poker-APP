@@ -3,6 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
+import { createKey, forgetCreateKey } from './create-key';
 import { publicHand, type ShareOptions } from '@/poker/privacy';
 import type { Hand, Street } from '@/poker/types';
 import { variant } from '@/i18n';
@@ -51,13 +52,21 @@ export function shareLink(id: string, channel: ShareChannel, opts: { quiz?: bool
 }
 
 export async function uploadHand(hand: Hand, opts?: ShareOptions): Promise<{ id: string; token: string }> {
+  // The link's token is picked here and kept until the answer arrives: sent again after a timeout
+  // (or from the share queue), the server hands back the same link instead of making a second one.
+  const scope = `hand:${hand.id}`;
+  const token = await createKey(scope);
   const res = await fetch(`${API}/api/hands`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ hand: publicHand(hand, opts) }),
+    body: JSON.stringify({ hand: publicHand(hand, opts), token }),
   });
+  // 410: taken down by reports since the first try; the next share is a new link.
+  if (res.status === 410) await forgetCreateKey(scope);
   if (!res.ok) throw new Error('upload ' + res.status);
-  return res.json();
+  const out = (await res.json()) as { id: string; token: string };
+  await forgetCreateKey(scope);
+  return out;
 }
 
 export async function fetchHand(id: string): Promise<Hand> {

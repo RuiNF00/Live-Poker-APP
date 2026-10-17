@@ -14,6 +14,7 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
+import { shareDelay } from '@/lib/friction';
 import { shareRef } from '@/lib/referrals';
 import {
   canMakeVideo,
@@ -174,7 +175,7 @@ export default function StoryScreen() {
         notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
-      if (isNew) pro.record('share');
+      if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
       const ref = await refP;
       const link = shareLink(shareId, 'story', { quiz: false, ref });
       setProgress(withFace ? t('A juntar a tua cara…') : withVoice ? t('A juntar a tua voz…') : t('A montar o vídeo…'));
@@ -218,7 +219,7 @@ export default function StoryScreen() {
         notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
-      if (isNew) pro.record('share');
+      if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
       // Question stories open the challenge view: vote first, result after.
       const ref = await shareRef();
       const link = shareLink(shareId, 'story', { quiz: mode === 'question', ref });
@@ -272,7 +273,7 @@ export default function StoryScreen() {
       notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
       return null;
     }
-    if (isNew) pro.record('share');
+    if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
     const ref = await shareRef();
     return { link: shareLink(shareId, channel, { quiz: mode === 'question', ref }), shareId, ref };
   };
