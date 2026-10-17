@@ -3,13 +3,13 @@
 
 import { Link, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
-import { fetchComments, fetchHand, postComment, type Comment } from '@/lib/share-api';
+import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 import { BRAND, C, R } from '@/theme';
 
@@ -18,6 +18,7 @@ export default function SharedHand() {
   const [hand, setHand] = useState<Hand | null>(null);
   const [err, setErr] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [reported, setReported] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,6 +63,16 @@ export default function SharedHand() {
           </View>
           <T v="h2">Comentários</T>
           <CommentsList shareId={id!} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} />
+          <Pressable
+            disabled={reported}
+            hitSlop={8}
+            style={{ alignSelf: 'center', paddingTop: 8 }}
+            onPress={() => {
+              setReported(true);
+              reportHand(id!, anonId()).catch(() => {});
+            }}>
+            <T v="tiny">{reported ? 'Obrigado, vamos rever esta mão.' : 'Denunciar esta mão'}</T>
+          </Pressable>
         </>
       )}
     </ScrollView>

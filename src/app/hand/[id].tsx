@@ -9,7 +9,7 @@ import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
-import { fetchComments, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
+import { deleteShare, fetchComments, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
 import { C } from '@/theme';
@@ -72,8 +72,29 @@ ${link}`;
     Alert.alert('Texto copiado', 'Cola no WhatsApp, Discord ou onde quiseres.');
   };
 
+  const unshare = () => {
+    const doIt = async () => {
+      if (!hand.shareId || !hand.shareToken) return;
+      try {
+        await deleteShare(hand.shareId, hand.shareToken);
+        saveHand({ ...hand, shareId: undefined, shareToken: undefined });
+        setComments([]);
+      } catch {
+        Alert.alert('Sem ligação', 'Não deu para apagar a partilha agora. Tenta outra vez.');
+      }
+    };
+    if (Platform.OS === 'web') doIt();
+    else
+      Alert.alert('Apagar partilha?', 'O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Apagar', style: 'destructive', onPress: doIt },
+      ]);
+  };
+
   const remove = () => {
     const doIt = () => {
+      // The public link goes with the hand.
+      if (hand.shareId && hand.shareToken) deleteShare(hand.shareId, hand.shareToken).catch(() => {});
       deleteHand(hand.id);
       router.back();
     };
@@ -125,6 +146,13 @@ ${link}`;
               </Pressable>
             </Row>
             <CommentsList shareId={hand.shareId} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} defaultName={settings.nickname} />
+            {hand.shareToken ? (
+              <Pressable onPress={unshare} hitSlop={8} style={{ alignSelf: 'center', paddingTop: 8 }}>
+                <T v="small" color={C.danger}>
+                  Apagar partilha
+                </T>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
