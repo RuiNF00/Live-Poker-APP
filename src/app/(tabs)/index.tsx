@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,12 +22,13 @@ export default function HandsScreen() {
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
 
+  const sorted = useMemo(() => [...hands].sort((a, b) => b.createdAt - a.createdAt), [hands]);
   const rows = useMemo(() => {
     const qq = q.trim().toLowerCase();
-    return [...hands]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || h.tags.includes(tag)) && (!qq || [h.game.name, h.notes, h.title, comboLabel(h.players[h.hero].cards), ...h.players.map((p) => p.name)].join(' ').toLowerCase().includes(qq)));
-  }, [hands, q, tag]);
+    if (!qq && !tag) return sorted;
+    return sorted.filter((h) => (!tag || h.tags.includes(tag)) && (!qq || searchText(h).includes(qq)));
+  }, [sorted, q, tag]);
+  const renderItem = useCallback(({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} />, [settings.inBB]);
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
 
@@ -128,13 +129,30 @@ export default function HandsScreen() {
             <Empty title={t('Nada encontrado')} />
           )
         }
-        renderItem={({ item }) => <HandRow hand={item} inBB={settings.inBB} />}
+        renderItem={renderItem}
+        // Long histories: render a screenful first, keep a small window
+        // mounted and build the rest in idle batches.
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        keyboardShouldPersistTaps="handled"
       />
     </View>
   );
 }
 
-function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
+// Search text per hand, built once per hand version rather than on every keystroke.
+const searchCache = new WeakMap<Hand, string>();
+function searchText(h: Hand): string {
+  let s = searchCache.get(h);
+  if (s === undefined) {
+    s = [h.game.name, h.notes, h.title, comboLabel(h.players[h.hero].cards), ...h.players.map((p) => p.name)].join(' ').toLowerCase();
+    searchCache.set(h, s);
+  }
+  return s;
+}
+
+const HandRow = React.memo(function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
   const r = useMemo(() => replay(hand), [hand]);
   const pos = positions(hand.players.length, hand.button);
   const net = r.result?.resolved ? r.result.net[hand.hero] : undefined;
@@ -182,4 +200,4 @@ function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
       </View>
     </Pressable>
   );
-}
+});
