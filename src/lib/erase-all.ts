@@ -18,7 +18,7 @@ import { notifications } from './lock-screen/reminder';
 import { queueAgreementDelete } from './offer-api';
 import { queueProfileDelete } from './public-profile';
 import { forgetHandShare } from './share-queue';
-import { dropSupportCopies } from './support-mail';
+import { dropSupportCopies } from './support-cache';
 import { dropAllVoiceNotes } from './voice-note';
 
 type Eraser = () => void | Promise<void>;

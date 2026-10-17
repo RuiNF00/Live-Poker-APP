@@ -13,5 +13,3 @@ export async function mailSupport(o: { to: string; subject: string; body: string
   return 'share';
 }
 
-/** Nothing is kept on web: the download is the browser's. */
-export function dropSupportCopies(): void {}

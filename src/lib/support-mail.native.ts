@@ -2,7 +2,7 @@
 // address, subject, a short note and the file attached, and the player sends
 // it (or not). Without a mail account set up, the share sheet instead.
 
-import { Directory, File, Paths } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as MailComposer from 'expo-mail-composer';
 import * as Sharing from 'expo-sharing';
 
@@ -35,14 +35,3 @@ export async function mailSupport(o: { to: string; subject: string; body: string
   return 'share';
 }
 
-/** "Delete all my data": the copies made for support and the files picked for import. */
-export function dropSupportCopies(): void {
-  try {
-    for (const f of new Directory(Paths.cache).list()) if (f instanceof File && f.name.startsWith('sweatbook-importacao-')) f.delete();
-  } catch {}
-  try {
-    // expo-document-picker's copyToCacheDirectory puts picked files here.
-    const d = new Directory(Paths.cache, 'DocumentPicker');
-    if (d.exists) d.delete();
-  } catch {}
-}
