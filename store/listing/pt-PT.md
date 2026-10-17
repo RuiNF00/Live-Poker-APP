@@ -45,7 +45,7 @@ PARA QUEM JOGA LIVE
 • Calculadora de deal para a mesa final (ICM e chip chop)
 • Leituras dos jogadores da tua mesa durante a sessão
 • Sem contas: as tuas mãos ficam no teu telemóvel
-• Cópia de segurança na nuvem opcional, com código de recuperação e sem email
+• Cópia de segurança na nuvem opcional e cifrada, com código de recuperação e sem email
 • Exporta tudo para um ficheiro
 • Disponível em português e inglês
 
