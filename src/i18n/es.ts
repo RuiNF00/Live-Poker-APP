@@ -2368,6 +2368,27 @@ const es: Record<string, string> = {
   'Amostra pequena': 'Muestra pequeña',
   'Amostra pequena: menos de 50 h ou 10 sessões. Por agora é uma pista, não uma conclusão.': 'Muestra pequeña: menos de 50 h o 10 sesiones. Por ahora es una pista, no una conclusión.',
   '{size}, o teu último tamanho': '{size}, tu último tamaño',
+  // Festival settlement per backer (action package screen).
+  '{title}: a tua parte de {pct}': '{title}: tu parte del {pct}',
+  'Prémios da tua parte: {amount}': 'Premios de tu parte: {amount}',
+  'Custo da parte: {amount} (pago)': 'Costo de la parte: {amount} (pagado)',
+  'Custo da parte: {amount} (por pagar)': 'Costo de la parte: {amount} (por pagar)',
+  'Torneios que não joguei: devolvo-te {amount}': 'Torneos que no jugué: te devuelvo {amount}',
+  'Ainda há torneios por jogar: isto pode mudar.': 'Aún quedan torneos por jugar: esto puede cambiar.',
+  'Contas do festival': 'Cuentas del festival',
+  'prémio {amount}': 'premio {amount}',
+  'sem prémio': 'sin premio',
+  'a decorrer': 'en juego',
+  'não joguei': 'no jugado',
+  'por jogar': 'por jugar',
+  'Todos os torneios fechados': 'Todos los torneos terminados',
+  '{n} a decorrer': '{n} en juego',
+  '{n} por jogar': '{n} por jugar',
+  'Prémios da parte': 'Premios de la parte',
+  'Custo da parte (pago)': 'Costo de la parte (pagado)',
+  'Custo da parte (por pagar)': 'Costo de la parte (por pagar)',
+  'Não jogados (devolver)': 'No jugados (devolver)',
+  'Abre as contas com este backer': 'Abre las cuentas con este backer',
 };
 
 export default es;

@@ -13,7 +13,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import type { Backer, Stake, StakePackage } from '@/store/types';
+import { stakeCost, stakePrize } from '@/store/staking';
+import { stakesOf } from '@/store/session-math';
+import type { Backer, Session, Stake, StakePackage } from '@/store/types';
 
 export const MARKUPS = [1, 1.05, 1.1, 1.15, 1.2, 1.3];
 export const PIECES = [1, 2, 5, 10, 20];
@@ -135,15 +137,90 @@ export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: st
   return out;
 }
 
+/** An event of the package with no session a day after it started: not played, so it isn't charged. */
+const MISSED_AFTER = 24 * 3600e3;
+
+function missed(f: Festival, e: FestivalEvent, started: Record<string, string>, now: number): boolean {
+  return !started[e.id] && venueTime(f, e.start) + MISSED_AFTER < now;
+}
+
+/** One backer's piece of one event: its cost at the markup. */
+function eventPiece(o: ActionOffer, e: FestivalEvent, pct: number): number {
+  return (e.buyIn * pct * o.markup) / 100;
+}
+
 /**
  * What a backer still owes for a piece no session carries yet: the events of the
  * package not started, at the piece's cost. Once a session starts, its stake
- * (unpaid until the line is marked paid) carries that event instead.
+ * (unpaid until the line is marked paid) carries that event instead. Events
+ * that went by with no session weren't played and aren't charged.
  */
-export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
+export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, now = Date.now()): number {
   if (line.paid) return 0;
-  return r2(offerEvents(f, o).filter((e) => !started[e.id]).reduce((a, e) => a + (e.buyIn * line.pct * o.markup) / 100, 0));
+  return r2(
+    offerEvents(f, o)
+      .filter((e) => !started[e.id] && !missed(f, e, started, now))
+      .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
+  );
 }
+
+/** A paid piece of events that went by with no session: the player gives that money back. */
+export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, now = Date.now()): number {
+  if (!line.paid) return 0;
+  return r2(
+    offerEvents(f, o)
+      .filter((e) => missed(f, e, started, now))
+      .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
+  );
+}
+
+export type SettlementState = 'cashed' | 'busted' | 'live' | 'upcoming' | 'missed';
+
+export interface SettlementRow {
+  event: FestivalEvent;
+  state: SettlementState;
+  /** The backer's piece of it, at the markup (0 when not played). */
+  cost: number;
+  /** Their share of the prize (ended sessions). */
+  prize: number;
+}
+
+/**
+ * Where one backer stands on the festival: their prize share of each event, what
+ * the piece cost and whether it was paid, refunds for events not played, and
+ * what is left to send. `net` > 0: the player sends it to the backer; < 0: the
+ * backer sends it to the player. Matches what the package adds to their staking
+ * balance (pendingCost, missedRefund and the sessions' stakes).
+ */
+export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, sessions: Session[], now = Date.now()) {
+  const rows: SettlementRow[] = offerEvents(f, o).map((e) => {
+    const s = started[e.id] ? sessions.find((x) => x.id === started[e.id]) : undefined;
+    const x = s && stakesOf(s).find((y) => y.packageId === line.packageId);
+    if (s && x) {
+      const prize = s.endedAt ? stakePrize(s, x) : 0;
+      return { event: e, state: !s.endedAt ? 'live' : prize > 0 ? 'cashed' : 'busted', cost: stakeCost(s, x), prize };
+    }
+    if (missed(f, e, started, now)) return { event: e, state: 'missed', cost: 0, prize: 0 };
+    return { event: e, state: 'upcoming', cost: eventPiece(o, e, line.pct), prize: 0 };
+  });
+  const prizes = r2(rows.reduce((a, r) => a + r.prize, 0));
+  const cost = r2(rows.reduce((a, r) => a + r.cost, 0));
+  const refund = missedRefund(f, o, line, started, now);
+  return {
+    rows,
+    prizes,
+    cost,
+    paid: !!line.paid,
+    refund,
+    net: r2(prizes + refund - (line.paid ? 0 : cost)),
+    /** Every event ended or not played: the numbers won't change. */
+    done: rows.every((r) => r.state === 'cashed' || r.state === 'busted' || r.state === 'missed'),
+    live: rows.filter((r) => r.state === 'live').length,
+    upcoming: rows.filter((r) => r.state === 'upcoming').length,
+  };
+}
+
+export type LineSettlement = ReturnType<typeof lineSettlement>;
 
 /** Packages these offers created: their stakes on a session are replaced, the rest kept. */
 export function offerPackageIds(offers: ActionOffer[]): Set<string> {

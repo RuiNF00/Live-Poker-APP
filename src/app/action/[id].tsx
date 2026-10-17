@@ -11,6 +11,7 @@ import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { markupLabel } from '@/components/staking/sheets';
+import { balanceLabel } from '@/components/staking/use-staking';
 import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -24,6 +25,7 @@ import {
   getOffers,
   lineCost,
   lineRecords,
+  lineSettlement,
   offerEvents,
   offerPackageIds,
   offerTotals,
@@ -33,7 +35,9 @@ import {
   useOffers,
   withOfferStakes,
   type ActionOffer,
+  type LineSettlement,
   type PackageLine,
+  type SettlementState,
 } from '@/store/action-offer';
 import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { uid, useStore } from '@/store/store';
@@ -93,6 +97,32 @@ export default function ActionPackageScreen() {
   // Events the player can add: the ones in their festival plan (Day 2s have no buy-in).
   const candidates = f.events.filter((e) => !e.day2 && (plan.picked.includes(e.id) || o.events.includes(e.id)));
   const nameOf = (l: PackageLine) => backers.find((b) => b.id === l.backerId)?.name ?? t('Backer');
+  // Once the first event is played (or goes by), where each backer stands on the festival.
+  const settled = o.lines.map((l) => ({ l, st: lineSettlement(f, o, l, plan.sessions, sessions) }));
+  const underway = settled.some(({ st }) => st.rows.some((r) => r.state !== 'upcoming'));
+
+  const sendSettlement = async (l: PackageLine, st: LineSettlement) => {
+    tap('medium');
+    const cur = f.currency;
+    const msg = [
+      t('{title}: a tua parte de {pct}', { title, pct: pct(l.pct) }),
+      ...st.rows.map((r) => `${shortDate(venueTime(f, r.event.start))} · ${eventTitle(r.event)}${r.event.flight ? ` · Flight ${r.event.flight}` : ''} · ${rowLabel(r.state, r.prize, cur)}`),
+      '',
+      t('Prémios da tua parte: {amount}', { amount: money(st.prizes, cur) }),
+      st.cost ? (st.paid ? t('Custo da parte: {amount} (pago)', { amount: money(st.cost, cur) }) : t('Custo da parte: {amount} (por pagar)', { amount: money(st.cost, cur) })) : '',
+      st.refund ? t('Torneios que não joguei: devolvo-te {amount}', { amount: money(st.refund, cur) }) : '',
+      Math.abs(st.net) < 0.5
+        ? t('Estamos acertados.')
+        : st.net > 0
+          ? t('Devo-te {amount}.', { amount: money(st.net, cur) })
+          : t('Deves-me {amount}.', { amount: money(-st.net, cur) }),
+      st.done ? '' : t('Ainda há torneios por jogar: isto pode mudar.'),
+    ].filter((x) => x !== '');
+    const text = msg.join('\n');
+    if (Platform.OS === 'web') await Clipboard.setStringAsync(text);
+    else await Share.share({ message: text });
+    track('link_shared', { channel: 'festival_settlement' });
+  };
 
   // The package's stakes on every session already started from its events.
   const applyToSessions = (before: Set<string>) => {
@@ -211,6 +241,16 @@ export default function ActionPackageScreen() {
             <Figure label="Markup" value={'+' + money(tot.premium, f.currency)} color={tot.premium > 0 ? C.good : undefined} />
           </Row>
         </Card>
+
+        {underway ? (
+          <Section title={t('Contas do festival')}>
+            <View style={{ gap: S.sm }}>
+              {settled.map(({ l, st }) => (
+                <SettleCard key={l.id} name={nameOf(l)} st={st} cur={f.currency} onOpen={() => router.push(`/staking/${l.backerId}`)} onSend={() => void sendSettlement(l, st)} />
+              ))}
+            </View>
+          </Section>
+        ) : null}
 
         <Section title={t('Backers ({n})', { n: o.lines.length })}>
           <View style={{ gap: S.sm }}>
@@ -349,6 +389,57 @@ function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: st
         <Button size="md" kind="ghost" style={{ flex: 1 }} title={t('Cancelar')} onPress={onCancel} />
         <Button size="md" style={{ flex: 1.4 }} icon="checkmark" title={t('Registar')} onPress={() => onAdd(name, piece)} disabled={!ok} />
       </Row>
+    </Card>
+  );
+}
+
+/** One event of a backer's piece, in words: "prémio 1 200$", "sem prémio", "a decorrer"... */
+function rowLabel(state: SettlementState, prize: number, cur: string): string {
+  if (state === 'cashed') return t('prémio {amount}', { amount: money(prize, cur) });
+  if (state === 'busted') return t('sem prémio');
+  if (state === 'live') return t('a decorrer');
+  if (state === 'missed') return t('não joguei');
+  return t('por jogar');
+}
+
+function SettleCard({ name, st, cur, onOpen, onSend }: { name: string; st: LineSettlement; cur: string; onOpen: () => void; onSend: () => void }) {
+  const bal = balanceLabel(st.net, cur);
+  const status = st.done
+    ? t('Todos os torneios fechados')
+    : [st.live ? t('{n} a decorrer', { n: st.live }) : '', st.upcoming ? t('{n} por jogar', { n: st.upcoming }) : ''].filter(Boolean).join(' · ');
+  const lines: [string, string][] = [
+    [t('Prémios da parte'), money(st.prizes, cur)],
+    [st.paid ? t('Custo da parte (pago)') : t('Custo da parte (por pagar)'), (st.paid ? '' : '−') + money(st.cost, cur)],
+  ];
+  if (st.refund) lines.push([t('Não jogados (devolver)'), '+' + money(st.refund, cur)]);
+  return (
+    <Card style={{ gap: S.sm }}>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={[name, bal.text, ...lines.map(([k, v]) => `${k} ${v}`), status].filter(Boolean).join(', ')}
+        accessibilityHint={t('Abre as contas com este backer')}
+        style={{ gap: S.sm }}>
+        <Row style={{ alignItems: 'center' }}>
+          <T v="h3" numberOfLines={1} style={{ flex: 1 }}>
+            {name}
+          </T>
+          <T v="mono" color={bal.color} numberOfLines={1}>
+            {bal.text}
+          </T>
+          <Ionicons name="chevron-forward" size={16} color={C.muted} style={{ marginLeft: 4 }} />
+        </Row>
+        {lines.map(([k, v]) => (
+          <Row key={k} style={{ justifyContent: 'space-between' }}>
+            <T v="small">{k}</T>
+            <T v="small" style={{ fontVariant: ['tabular-nums'] }}>
+              {v}
+            </T>
+          </Row>
+        ))}
+        {status ? <T v="tiny">{status}</T> : null}
+      </Pressable>
+      <Button size="sm" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={onSend} />
     </Card>
   );
 }

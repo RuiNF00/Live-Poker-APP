@@ -1030,6 +1030,13 @@ const ptBR: Record<string, string> = {
   'Sabe onde o teu win rate é real': 'Saiba onde seu win rate é real',
   'Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.': 'Intervalo de 95%: com estes resultados, seu win rate verdadeiro quase certamente está aqui dentro. Fica mais estreito com mais horas.',
   '{size}, o teu último tamanho': '{size}, seu último tamanho',
+  // Festival settlement per backer (action package screen).
+  '{title}: a tua parte de {pct}': '{title}: sua parte de {pct}',
+  'Prémios da tua parte: {amount}': 'Prêmios da sua parte: {amount}',
+  'Torneios que não joguei: devolvo-te {amount}': 'Torneios que não joguei: te devolvo {amount}',
+  'prémio {amount}': 'prêmio {amount}',
+  'sem prémio': 'sem prêmio',
+  'Prémios da parte': 'Prêmios da parte',
 };
 
 export default ptBR;

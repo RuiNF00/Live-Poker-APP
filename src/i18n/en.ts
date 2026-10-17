@@ -2393,6 +2393,27 @@ const en: Record<string, string> = {
   'Criar story do festival': 'Create festival story',
   'Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}.': 'Cumulative result chart: {now} over {n} sessions, high {max}.',
   'Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.': 'Drawdown chart: now −{now} below the peak, at most −{max}.',
+  // Festival settlement per backer (action package screen).
+  '{title}: a tua parte de {pct}': '{title}: your {pct} piece',
+  'Prémios da tua parte: {amount}': 'Your share of the prizes: {amount}',
+  'Custo da parte: {amount} (pago)': 'Cost of the piece: {amount} (paid)',
+  'Custo da parte: {amount} (por pagar)': 'Cost of the piece: {amount} (not paid yet)',
+  'Torneios que não joguei: devolvo-te {amount}': "Events I didn't play: I'll give you back {amount}",
+  'Ainda há torneios por jogar: isto pode mudar.': 'There are still events to play: this may change.',
+  'Contas do festival': 'Festival accounts',
+  'prémio {amount}': 'prize {amount}',
+  'sem prémio': 'no prize',
+  'a decorrer': 'in progress',
+  'não joguei': 'not played',
+  'por jogar': 'to play',
+  'Todos os torneios fechados': 'All events finished',
+  '{n} a decorrer': '{n} in progress',
+  '{n} por jogar': '{n} to play',
+  'Prémios da parte': 'Share of prizes',
+  'Custo da parte (pago)': 'Cost of the piece (paid)',
+  'Custo da parte (por pagar)': 'Cost of the piece (not paid)',
+  'Não jogados (devolver)': 'Not played (give back)',
+  'Abre as contas com este backer': 'Opens your accounts with this backer',
 };
 
 export default en;
