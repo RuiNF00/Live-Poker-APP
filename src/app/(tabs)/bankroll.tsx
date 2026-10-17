@@ -11,6 +11,7 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
+import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
@@ -118,6 +119,7 @@ function BankrollTab() {
           </>
         }
         contentStyle={{ gap: S.lg }}>
+        <HomeCurrencyCard hidden={!!settings.hideAmounts} />
         <ChipRow>
           {scopeOptions(bankrolls).map((o) => (
             <Chip key={'bankrollId' in o.scope ? o.scope.bankrollId : 'all' + o.currency} label={o.label} icon={'currency' in o.scope ? 'albums-outline' : undefined} active={sameScope(o.scope, scope)} onPress={() => setScope(o.scope)} />

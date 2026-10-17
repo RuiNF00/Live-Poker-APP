@@ -6,7 +6,9 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
+import { useRates } from '@/lib/fx';
 import { endOfDay, startOfDay } from '@/store/bankroll-math';
+import { rate as fxRate } from '@/store/fx-math';
 import { parseDay } from '@/store/session-math';
 import { EXPENSE_KINDS } from '@/store/trip-math';
 import type { Expense, ExpenseKind, Trip } from '@/store/types';
@@ -51,6 +53,10 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
   const fxCur = x.fx?.currency && x.fx.currency !== x.currency ? x.fx.currency : x.currency === home ? CURRENCIES.find((c) => c !== x.currency)! : home;
   const rate = parseRate(rateText);
   const datesOk = x.to >= x.from;
+  // Today's ECB rate (cached on the phone), offered with one tap; the bank's own rate may differ.
+  const [today] = useState(() => Date.now());
+  const ecb = fxRate(useRates(today), x.currency, fxCur, today);
+  const ecbText = ecb ? ecb.toLocaleString(locale, { maximumFractionDigits: 4 }) : '';
 
   const setDay = (which: 'from' | 'to', v: string) => {
     (which === 'from' ? setFromText : setToText)(v);
@@ -95,6 +101,9 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
             {fxCur}
           </T>
         </Row>
+        {ecb && ecbText !== rateText ? (
+          <Chip icon="sync-outline" label={t('Câmbio do BCE hoje: {rate}', { rate: ecbText })} onPress={() => setRateText(ecbText)} style={{ alignSelf: 'flex-start' }} />
+        ) : null}
       </Section>
       <Button
         title={isNew ? t('Criar viagem') : t('Guardar')}
