@@ -1,0 +1,404 @@
+/* Coach's page (/c/<token>): phone first, replayer + comments side by side on a desktop. */
+
+.cv {
+  --good: #4ade80;
+  --bad: #ff8a7a;
+  --ask: #f5b83d;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+.cv-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -16px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: rgba(12, 19, 17, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.cv-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+.cv-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cv-top {
+  padding: 18px 0 6px;
+}
+.cv-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.cv-top h1 {
+  margin: 6px 0 4px;
+  font-size: clamp(24px, 7vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.cv-meta {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Hand picker: one chip per hand, scrolls sideways on a phone. */
+.cv-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 14px -16px 0;
+  padding: 2px 16px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cv-tabs::-webkit-scrollbar {
+  display: none;
+}
+.cv-tab {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+}
+.cv-tab.on {
+  border-color: rgba(255, 106, 61, 0.6);
+  background: rgba(255, 106, 61, 0.12);
+}
+.cv-tab-n {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--muted);
+}
+.cv-tab.on .cv-tab-n {
+  color: var(--accent);
+}
+.cv-tab-cards {
+  display: inline-flex;
+  gap: 2px;
+}
+.cv-tab-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+
+.cv-grid {
+  display: grid;
+  grid-template-areas: 'main' 'side' 'log';
+  gap: 16px;
+  margin-top: 6px;
+}
+.cv-main {
+  grid-area: main;
+  min-width: 0;
+}
+.cv-side {
+  grid-area: side;
+}
+.cv-grid > .cv-log {
+  grid-area: log;
+  margin-top: 0;
+}
+.cv-hand-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.cv-hand-n {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cv-hand-head h2 {
+  margin: 2px 0;
+  font-size: 19px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.cv-pager {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.cv-pager .ctl {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+}
+.cv-pager .ctl:disabled {
+  opacity: 0.35;
+}
+.cv .notes {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+.cv .replayer .controls .ctl-main {
+  width: 56px;
+  height: 56px;
+  font-size: 16px;
+}
+
+/* Marks: good line, mistake, question. Same colours on the scrubber, the log and the comments. */
+.cv-dot-good,
+.cv-dot.cv-dot-good {
+  background: var(--good) !important;
+}
+.cv-dot-mistake,
+.cv-dot.cv-dot-mistake {
+  background: var(--bad) !important;
+}
+.cv-dot-question,
+.cv-dot.cv-dot-question {
+  background: var(--ask) !important;
+}
+.cv-dot-note,
+.cv-dot.cv-dot-note {
+  background: #7dd3fc !important;
+}
+.cv .scrub-mark {
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+}
+.cv-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.cv-log {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.cv-log .log-item {
+  min-height: 36px;
+  font-size: 14px;
+}
+.cv-log-street {
+  margin-top: 6px;
+  font-size: 11px !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* Composer */
+.cv-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 106, 61, 0.35);
+}
+.cv-compose-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cv-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.cv-seg button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.cv-seg button.on {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+}
+.cv-at {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(125, 211, 252, 0.08);
+  color: #7dd3fc;
+  font-size: 13px;
+  font-weight: 600;
+}
+.cv-marks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.cv-mark-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+.cv-mark-btn.on.cv-mark-good {
+  color: var(--good);
+  border-color: var(--good);
+  background: rgba(74, 222, 128, 0.12);
+}
+.cv-mark-btn.on.cv-mark-mistake {
+  color: var(--bad);
+  border-color: var(--bad);
+  background: rgba(255, 138, 122, 0.12);
+}
+.cv-mark-btn.on.cv-mark-question {
+  color: var(--ask);
+  border-color: var(--ask);
+  background: rgba(245, 184, 61, 0.12);
+}
+
+/* Comments */
+.cv-comments h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 10px;
+  font-size: 16px;
+}
+.cv-comments ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cv-comment {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.cv-comment.player {
+  margin-left: 18px;
+  background: var(--surface-2);
+}
+.cv-comment-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+.cv-mark {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.cv-mark-good:not(.cv-mark-btn) {
+  color: var(--good);
+  background: rgba(74, 222, 128, 0.12);
+}
+.cv-mark-mistake:not(.cv-mark-btn) {
+  color: var(--bad);
+  background: rgba(255, 138, 122, 0.12);
+}
+.cv-mark-question:not(.cv-mark-btn) {
+  color: var(--ask);
+  background: rgba(245, 184, 61, 0.12);
+}
+
+.cv-closed {
+  margin: 16px 0 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 138, 122, 0.1);
+  color: var(--bad);
+  text-align: center;
+}
+.cv-foot {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.cv-foot a {
+  color: var(--muted);
+}
+
+@media (min-width: 980px) {
+  .cv-grid {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    grid-template-areas: 'main side' 'log side';
+    align-items: start;
+    gap: 24px;
+  }
+  .cv-side {
+    grid-row: 1 / span 2;
+    position: sticky;
+    top: 72px;
+    max-height: calc(100dvh - 88px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+}

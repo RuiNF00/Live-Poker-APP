@@ -1,4 +1,4 @@
--- Festival action packages (20261017140000). Run as service_role, like the web server.
+-- Festival action packages (20261017180000). Run as service_role, like the web server.
 \set ON_ERROR_STOP on
 set role service_role;
 

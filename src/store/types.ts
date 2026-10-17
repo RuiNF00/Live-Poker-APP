@@ -51,6 +51,10 @@ export interface Session {
   notes: string;
   /** How it went, tapped when ending: focus, tilt, table. */
   tags?: string[];
+  /** Tournament day this session is on, when past Day 1 (see store/multi-day.ts). */
+  day?: number;
+  /** Set when a tournament day ended with chips in the bag: the session waits for its next day. */
+  bag?: { stack: number; at: number };
   /** Where it was played. Missing = live (the app's home turf). */
   format?: GameFormat;
   /** Bankroll it counts towards. Missing (older data): the first bankroll in its currency. */

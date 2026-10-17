@@ -18,7 +18,7 @@ import {
 
 export * from './offer';
 
-// Festival action packages (/o/<id>). Supabase in production (migration 20261017140000),
+// Festival action packages (/o/<id>). Supabase in production (migration 20261017180000),
 // where reserve_action() checks cap and what is left under a row lock on the offer; a
 // JSON file without it, where the same checks run inside one queued read-modify-write.
 

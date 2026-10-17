@@ -5,7 +5,7 @@
 import { gcm } from '@noble/ciphers/aes';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
-import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
+import { Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
 
 import { ALPHA } from './cloud-code';
 
@@ -58,11 +58,46 @@ interface Sealed {
   c: string;
 }
 
+function envelope(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): string {
+  const env: Sealed = { sweatbook: 'backup', v: 1, alg: 'A256GCM', n: toB64(nonce), c: toB64(gcm(key, nonce).encrypt(zipped)) };
+  return JSON.stringify(env);
+}
+
 /** gzip + AES-GCM, wrapped in JSON (the server only accepts JSON or gzip). */
 export function seal(plain: string, key: Uint8Array, nonce: Uint8Array): string {
-  const c = gcm(key, nonce).encrypt(gzipSync(strToU8(plain)));
-  const env: Sealed = { sweatbook: 'backup', v: 1, alg: 'A256GCM', n: toB64(nonce), c: toB64(c) };
-  return JSON.stringify(env);
+  return envelope(gzipSync(strToU8(plain)), key, nonce);
+}
+
+const SLICE = 32 * 1024;
+const breathe = () => new Promise<void>((r) => setTimeout(r, 0));
+
+/**
+ * Same result as seal, but gzips in 32 KB slices with a pause between them.
+ * gzip is the slow part (about half a second for 2,000 hands without a JIT,
+ * as on Hermes, and more on a cheap phone); in one piece it froze the app
+ * while the automatic backup ran a few seconds after launch.
+ */
+export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
+  const input = strToU8(plain);
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  const gz = new Gzip((chunk) => {
+    parts.push(chunk);
+    size += chunk.length;
+  });
+  for (let i = 0; ; i += SLICE) {
+    const last = i + SLICE >= input.length;
+    gz.push(input.subarray(i, i + SLICE), last);
+    if (last) break;
+    await pause();
+  }
+  const zipped = new Uint8Array(size);
+  let at = 0;
+  for (const p of parts) {
+    zipped.set(p, at);
+    at += p.length;
+  }
+  return envelope(zipped, key, nonce);
 }
 
 /** Opens a sealed backup; plain (older) backups pass through. Throws 'forbidden' on a wrong key. */

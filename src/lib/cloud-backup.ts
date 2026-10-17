@@ -8,7 +8,7 @@ import type { BackupData } from '@/store/backup';
 import { parseBackup } from '@/store/backup';
 import { BRAND } from '@/theme';
 
-import { deriveKeys, seal, unseal } from './backup-crypto';
+import { deriveKeys, sealAsync, unseal } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
@@ -54,11 +54,12 @@ export async function upload(c: CloudState, data: BackupData, opts: { force?: bo
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
   const { auth, enc } = deriveKeys(c.secret);
+  const body = await sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
   const res = await fetch(`${API}/api/backup/${c.id}`, {
     method: 'PUT',
     // Encrypted on the phone; the server only ever sees a key derived from the code.
     headers: { 'content-type': 'application/json', 'x-backup-key': auth },
-    body: seal(JSON.stringify(data), enc, Crypto.getRandomBytes(12)),
+    body,
     signal: longSignal(),
   });
   if (res.status === 413) throw new Error('too_big');
