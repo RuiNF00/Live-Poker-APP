@@ -8,11 +8,12 @@ import * as Clipboard from 'expo-clipboard';
 
 import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
+import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { money, shortDate } from '@/poker/format';
-import { useStore } from '@/store/store';
+import { uid, useStore } from '@/store/store';
 import type { BackerLedgerRow } from '@/store/staking';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -29,6 +30,7 @@ export default function BackerScreen() {
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
   const [paying, setPaying] = useState(false);
+  const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
   const backer = backers.find((b) => b.id === id);
   const l = backer ? ledgers.get(backer.id) : undefined;
   const cur = settings.currency;
@@ -52,7 +54,25 @@ export default function BackerScreen() {
     const s: Session = r.session;
     const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? { ...x, unpaid: !x.unpaid || undefined } : x));
     saveSession({ ...s, stakes });
+    tap('medium');
+    setPiece(null);
   };
+
+  const square = Math.abs(l.balance) < 0.5;
+  // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
+  const markPaid = () =>
+    confirm(
+      t('Marcar como pago?'),
+      l.balance > 0
+        ? t('Pagaste {amount} a {name} e ficam acertados.', { amount: money(l.balance, cur), name: backer.name })
+        : t('{name} pagou-te {amount} e ficam acertados.', { amount: money(-l.balance, cur), name: backer.name }),
+      () => {
+        const now = Date.now();
+        savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now });
+        tap('medium');
+      },
+      t('Marcar como pago'),
+    );
 
   const shareSummary = async () => {
     tap('medium');
@@ -73,8 +93,19 @@ export default function BackerScreen() {
     ].filter((x) => x !== '');
     const msg = lines.join('\n');
     if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
-    else await Share.share({ message: msg });
+    else {
+      const r = await Share.share({ message: msg });
+      if (r.action === Share.dismissedAction) return;
+    }
+    // Keep a record of when they were sent the statement and what it said.
+    saveBacker({ ...backer, reminders: [...(backer.reminders ?? []), { at: Date.now(), balance: l.balance }].slice(-20) });
   };
+
+  type Hist = { kind: 'pay'; at: number; p: (typeof pays)[number] } | { kind: 'sent'; at: number; balance: number };
+  const history: Hist[] = [
+    ...pays.map((p) => ({ kind: 'pay' as const, at: p.at, p })),
+    ...(backer.reminders ?? []).map((r) => ({ kind: 'sent' as const, at: r.at, balance: r.balance })),
+  ].sort((a, b) => b.at - a.at);
 
   return (
     <>
@@ -98,9 +129,18 @@ export default function BackerScreen() {
           ) : null}
           <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
             <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={shareSummary} />
-            <Button size="md" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={() => setPaying(true)} />
+            {square ? (
+              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={() => setPaying(true)} />
+            ) : (
+              <Button size="md" style={{ flex: 1 }} icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={markPaid} />
+            )}
           </Row>
+          {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={() => setPaying(true)} />}
         </Card>
+
+        <Section title={t('Como chegámos aqui')}>
+          <SettlementCard l={l} name={backer.name} currency={cur} />
+        </Section>
 
         <StatGrid cols={3}>
           <Stat label={t('Investido')} value={money(l.invested, cur)} />
@@ -148,7 +188,7 @@ export default function BackerScreen() {
           )}
         </Section>
 
-        <Section title={t('Sessões')} hint={l.rows.some((r) => r.stake.unpaid) ? t('Toca numa sessão por pagar quando o backer pagar a parte dele.') : undefined}>
+        <Section title={t('Sessões')} hint={t('Toca numa sessão para ver as contas passo a passo.')}>
           {l.rows.length === 0 ? (
             <Card tone="inset">
               <T v="small">{t('Ainda sem sessões. Na sessão, em Staking, vende uma parte a {name}.', { name: backer.name })}</T>
@@ -172,12 +212,7 @@ export default function BackerScreen() {
                       </Row>
                     }
                     right={s.endedAt ? <Amount value={net} text={money(net, cur)} style={{ fontSize: 14 }} /> : undefined}
-                    chevron={false}
-                    onPress={
-                      r.stake.unpaid
-                        ? () => confirm(t('Já pagou?'), t('{name} pagou {amount} por esta parte.', { name: backer.name, amount: money(r.cost, cur) }), () => togglePaid(r), t('Pagou'))
-                        : undefined
-                    }
+                    onPress={() => setPiece(r)}
                   />
                 );
               })}
@@ -185,21 +220,32 @@ export default function BackerScreen() {
           )}
         </Section>
 
-        {pays.length > 0 && (
-          <Section title={t('Pagamentos')} hint={t('Toca num pagamento para o apagar.')}>
+        {history.length > 0 && (
+          <Section title={t('Histórico')} hint={pays.length ? t('Toca num pagamento para o apagar.') : undefined}>
             <ListGroup>
-              {pays.map((p) => (
-                <ListItem
-                  key={p.id}
-                  icon={p.amount > 0 ? 'arrow-up-outline' : 'arrow-down-outline'}
-                  iconColor={p.amount > 0 ? C.warn : C.good}
-                  title={p.amount > 0 ? t('Pagaste') : t('Recebeste')}
-                  subtitle={[shortDate(p.at), p.note].filter(Boolean).join(' · ')}
-                  value={money(Math.abs(p.amount), cur)}
-                  chevron={false}
-                  onPress={() => confirm(t('Apagar pagamento?'), money(Math.abs(p.amount), cur), () => deletePayment(p.id), t('Apagar'))}
-                />
-              ))}
+              {history.map((h) =>
+                h.kind === 'pay' ? (
+                  <ListItem
+                    key={h.p.id}
+                    icon={h.p.amount > 0 ? 'arrow-up-outline' : 'arrow-down-outline'}
+                    iconColor={h.p.amount > 0 ? C.warn : C.good}
+                    title={h.p.amount > 0 ? t('Pagaste') : t('Recebeste')}
+                    subtitle={[shortDate(h.p.at), h.p.note].filter(Boolean).join(' · ')}
+                    value={money(Math.abs(h.p.amount), cur)}
+                    chevron={false}
+                    onPress={() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), cur), () => deletePayment(h.p.id), t('Apagar'))}
+                  />
+                ) : (
+                  <ListItem
+                    key={'r' + h.at}
+                    icon="paper-plane-outline"
+                    iconColor={C.info}
+                    title={t('Contas enviadas')}
+                    subtitle={[shortDate(h.at), balanceLabel(h.balance, cur).text].join(' · ')}
+                    chevron={false}
+                  />
+                ),
+              )}
             </ListGroup>
           </Section>
         )}
@@ -237,6 +283,14 @@ export default function BackerScreen() {
                 }, t('Apagar'))
             : undefined
         }
+      />
+      <PieceSheet
+        row={piece}
+        name={backer.name}
+        pkgName={pkgName(piece?.stake.packageId)}
+        currency={cur}
+        onClose={() => setPiece(null)}
+        onTogglePaid={togglePaid}
       />
       <PaymentSheet
         backer={paying ? backer : null}

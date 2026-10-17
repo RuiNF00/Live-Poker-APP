@@ -96,6 +96,8 @@ export interface Backer {
   id: string;
   name: string;
   note: string;
+  /** Each time you sent them their statement, with the balance it showed (newest last). */
+  reminders?: { at: number; balance: number }[];
   createdAt: number;
   updatedAt?: number;
 }

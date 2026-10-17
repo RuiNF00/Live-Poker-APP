@@ -100,6 +100,10 @@ export interface BackerLedgerRow {
   stake: Stake;
   /** Their money in. */
   cost: number;
+  /** Their share of the prize, before your cut. 0 while it runs. */
+  prize: number;
+  /** Your makeup cut out of that share. */
+  cut: number;
   /** What they get back from this session (prize share, less your makeup cut). 0 while it runs. */
   owed: number;
 }
@@ -110,6 +114,12 @@ export interface BackerLedger {
   invested: number;
   /** Their result: owed minus invested, ended sessions only. */
   result: number;
+  /** Their prize shares, before your cut (ended sessions). */
+  prizes: number;
+  /** Your makeup cuts out of those prizes. */
+  cut: number;
+  /** What they get back: prizes minus cut. */
+  owed: number;
   /** Pieces they haven't paid for yet. */
   unpaid: number;
   /** Net of payments (positive: you paid them). */
@@ -135,15 +145,17 @@ export function backerLedger(
     for (const x of stakesOf(s)) {
       if (x.backerId !== backerId) continue;
       const pkg = x.packageId ? pkgOf.get(x.packageId) : undefined;
-      let owed = s.endedAt ? stakePrize(s, x) : 0;
+      const prize = s.endedAt ? stakePrize(s, x) : 0;
       // In a makeup deal your cut comes out of what they get back.
-      if (s.endedAt && pkg?.kind === 'makeup') owed -= (pk.byPackage.get(`${pkg.id}:${s.id}`) ?? 0) * (pieceOf(s, x) / packagePiece(s, pkg.id));
-      rows.push({ session: s, stake: x, cost: stakeCost(s, x), owed });
+      const cut = s.endedAt && pkg?.kind === 'makeup' ? (pk.byPackage.get(`${pkg.id}:${s.id}`) ?? 0) * (pieceOf(s, x) / packagePiece(s, pkg.id)) : 0;
+      rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut });
     }
   rows.sort((a, b) => byEnd(b.session, a.session));
   const done = rows.filter((r) => r.session.endedAt);
   const invested = rows.reduce((a, r) => a + r.cost, 0);
-  const owed = done.reduce((a, r) => a + r.owed, 0);
+  const prizes = done.reduce((a, r) => a + r.prize, 0);
+  const cut = done.reduce((a, r) => a + r.cut, 0);
+  const owed = prizes - cut;
   const unpaid = rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + r.cost, 0);
   const paid = payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0);
   const makeup = packages.filter((p) => p.backerId === backerId && !p.closedAt).reduce((a, p) => a + (pk.states.get(p.id)?.makeup ?? 0), 0);
@@ -151,6 +163,9 @@ export function backerLedger(
     rows,
     invested,
     result: owed - done.reduce((a, r) => a + r.cost, 0),
+    prizes,
+    cut,
+    owed,
     unpaid,
     paid,
     balance: owed - unpaid - paid,
@@ -177,4 +192,27 @@ export function withCuts(sessions: Session[], packages: StakePackage[]): Session
     const v = c && Math.abs(c) >= 0.005 ? Math.round(c * 100) / 100 : undefined;
     return (s.makeupCut ?? undefined) === v ? s : { ...s, makeupCut: v };
   });
+}
+
+/**
+ * One backer's piece of one session, as the steps a backer can check by hand:
+ * the session, their share and markup, your makeup cut, what they get back.
+ * Numbers only; the screen supplies the words.
+ */
+export function pieceSteps(r: BackerLedgerRow) {
+  const s = r.session;
+  const buyIns = cost(s);
+  return {
+    buyIns,
+    prizeTotal: s.cashOut || 0,
+    piece: pieceOf(s, r.stake),
+    markup: r.stake.markup || 1,
+    cost: r.cost,
+    prize: r.prize,
+    cut: r.cut,
+    owed: r.owed,
+    net: r.owed - r.cost,
+    /** What this piece adds to the balance: what they get back, less what they haven't paid. */
+    balance: r.owed - (r.stake.unpaid ? r.cost : 0),
+  };
 }
