@@ -593,6 +593,7 @@ const en: Record<string, string> = {
   'Votação': 'Poll',
   'Atualizar': 'Refresh',
   'Os teus amigos veem o replay no browser e comentam, mesmo sem a app.': 'Friends watch the replay in their browser and comment, no app needed.',
+  'Stack': 'Stack',
 };
 
 export default en;
