@@ -36,7 +36,7 @@ export function usedKeys(): Map<string, string> {
 // Words and verb forms that only European Portuguese uses. A pt-PT string with
 // any of them reads wrong in Brazil, so pt-BR.ts must have its own text for it.
 const PT_PT_ONLY =
-  /(?<!\p{L})(tu|teu|tua|teus|tuas|ti|contigo|ecrã|ecrãs|telemóve(l|is)|regist(ar|a|as|o|os|ad[ao]s?|ei|aste)|partilh\w*|ficheiros?|definições|utilizador\w*|palavra-passe|equipa|guard(ar|a|as|ei|aste)|descarreg\w*|câmara|secção|póquer|percentage(m|ns)|prémios?|facto|contactos?|estás|podes|queres|tens|vês|fazes|sabes|consegues|precisas|escolhe|toca|tenta|carrega|vais|jogaste|ganhaste|perdeste|percebes)(?!\p{L})/iu;
+  /(?<!\p{L})(tu|teu|tua|teus|tuas|ti|contigo|ecrã|ecrãs|telemóve(l|is)|regist(ar|a|as|o|os|ad[ao]s?|ei|aste)|partilh\w*|ficheiros?|definições|utilizador\w*|palavra-passe|equipa|guard(ar|a|as|ei|aste)|descarreg\w*|câmara|secção|póquer|percentage(m|ns)|prémios?|facto|contactos?|estás|podes|queres|tens|vês|fazes|sabes|consegues|precisas|escolhe|toca|tenta|carrega|vais|jogaste|ganhaste|perdeste|percebes|ganhas|perdes|jogas|pára|\w+aste|deves|registou|decorrer|cobr\w*)(?!\p{L})/iu;
 const PT_PT_PROGRESSIVE = /\ba \w+[aei]r…/i; // "A guardar…" is "Salvando…" in Brazil
 
 export function needsBrazilianText(key: string): boolean {
@@ -62,7 +62,8 @@ export function check(): Report {
   const tables = { en, es, 'pt-BR': ptBR } as const;
   const report = {} as Report;
   for (const [name, table] of Object.entries(tables) as [keyof Report, Record<string, string>][]) {
-    const missing = [...all].filter((k) => !(k in table) && (name !== 'pt-BR' || needsBrazilianText(k)));
+    // pt-BR falls back to the pt-PT text, so a key with a store-banned word needs its own pt-BR text too.
+    const missing = [...all].filter((k) => !(k in table) && (name !== 'pt-BR' || needsBrazilianText(k) || BANNED['pt-BR'].test(k)));
     const bad = Object.entries(table).filter(([k, v]) => placeholders(k) !== placeholders(v)).map(([k]) => k);
     const banned = Object.entries(table).filter(([, v]) => BANNED[name].test(v)).map(([k, v]) => `${k} → ${v}`);
     report[name] = { missing: missing.map((k) => (used.has(k) ? `${used.get(k)}: ${k}` : k)), placeholders: bad, banned };
