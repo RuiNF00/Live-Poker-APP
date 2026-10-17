@@ -9,6 +9,7 @@ import { bbs, chips } from '@/poker/format';
 import { C, F, R, S } from '@/theme';
 
 import { Button, Row, Segmented, T, tap } from './ui';
+import { useSheetAnimation } from '@/lib/motion';
 
 export function AmountPad({
   visible,
@@ -32,6 +33,7 @@ export function AmountPad({
   onClose: () => void;
   onDone: (chips: number) => void;
 }) {
+  const sheetAnim = useSheetAnimation();
   const [txt, setTxt] = useState('');
   const [inBB, setInBB] = useState(!!initialInBB);
   const raw = parseFloat(txt.replace(',', '.').replace(/k$/i, '')) || 0;
@@ -48,7 +50,7 @@ export function AmountPad({
   const tooLow = min !== undefined && value < min;
   const capped = max !== undefined ? Math.min(value, max) : value;
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: 34, gap: S.md }}>
         <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -4 }} />

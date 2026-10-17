@@ -70,7 +70,7 @@ export default function SessionSummary() {
 
       <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
         <Tile label={t('Horas')} value={duration(playedMs(s))} />
-        <Tile label={t('Mãos')} value={String(mine.length)} />
+        <Tile label={s.handsDealt ? t('Mãos jogadas') : t('Mãos guardadas')} value={String(s.handsDealt ?? mine.length)} />
         <Tile label={t('Maior pote')} value={biggest ? bbs(biggest.bb, 1) : '—'} />
       </Row>
 

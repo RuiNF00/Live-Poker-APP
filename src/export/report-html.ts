@@ -86,7 +86,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
             n: c.cash.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: c.cash.sessions }),
             h: hours(c.cash.hours),
             p: signed(c.cash.profit, cur),
-            m: c.mtt.sessions === 1 ? t('1 entrada') : t('{n} entradas', { n: c.mtt.sessions }),
+            m: c.mtt.entries === 1 ? t('1 entrada') : t('{n} entradas', { n: c.mtt.entries }),
             b: rawMoney(Math.round(c.mtt.buyIns), cur),
             c: c.mtt.cashes === 1 ? t('1 prémio') : t('{n} prémios', { n: c.mtt.cashes }),
             q: signed(c.mtt.profit, cur),
@@ -246,7 +246,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number; tax
   ${r.currencies.length ? r.currencies.map((c) => currencyBlock(c, many)).join('') : `<p>${esc(t('Sem sessões no período'))}</p>`}
   ${tripsBlock(r)}
   ${opts.tax ? taxBlock(opts.tax) : ''}
-  <footer>${esc(t('Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.'))}</footer>
+  <footer>${esc(t('Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.'))}</footer>
 </body>
 </html>`;
 }

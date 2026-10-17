@@ -74,6 +74,7 @@ export const PRO_ONLY = {
   downswingRead: true,
   /** Win rate by game, stake, venue and weekday, and how many hours until it is known. The headline win rate stays free. */
   winrateDetail: true,
+  monthCompare: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -149,6 +150,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   winrateDetail: {
     title: t('Sabe onde o teu win rate é real'),
     body: t('Por jogo, stake, sala e dia, com a margem de erro de cada um.'),
+  },
+  monthCompare: {
+    title: t('Este mês foi melhor?'),
+    body: t('Compara cada mês com os anteriores e vê onde ganhaste.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
