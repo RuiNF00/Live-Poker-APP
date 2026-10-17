@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { brand } from '@/config/brand';
 import { Mark, Wordmark } from '@/components/Brand';
+import { LIVE_FEATURES } from '@/lib/help/articles';
 import './press.css';
 
 // Press kit: sweatbook.poker/press. In English, the language journalists in the poker press write in.
@@ -34,7 +35,9 @@ const FEATURES: [string, string][] = [
   ['A replayer for every street', 'Watch the hand back with stacks, pot and position, step by step.'],
   ['A link your friends can open', 'Share the hand as a link. Friends replay it and vote on the decision in the browser, no app needed.'],
   ['Session and bankroll in one place', 'Clock, level, stack and notes during the session; results, trips and expenses after it.'],
-  ['Backer and swap accounts', 'Record the action you sold, makeup and swaps agreed with other players. Records and accounts only: no money moves through the app.'],
+  LIVE_FEATURES.swaps
+    ? ['Backer and swap accounts', 'Record the action you sold, makeup and swaps agreed with other players. Records and accounts only: no money moves through the app.']
+    : ['Backer accounts', 'Record the action you sold, makeup and a statement for each backer. Records and accounts only: no money moves through the app.'],
   ['Privacy built in', 'Hide the amounts with one tap, lock the app with Face ID and export or erase everything.'],
 ];
 
@@ -105,7 +108,7 @@ export default function PressPage() {
           </p>
           <p>
             It is built for the player who travels to festivals: one place for the session clock, the hands, the trip expenses, the
-            backers and the swaps, with the amounts hidden whenever the phone is on the table.
+            backers{LIVE_FEATURES.swaps ? ' and the swaps' : ''}, with the amounts hidden whenever the phone is on the table.
           </p>
         </section>
 
