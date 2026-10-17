@@ -124,3 +124,10 @@ test('run it twice: each board with the half it paid', () => {
   const txt = forumText(h);
   assert.ok(txt.endsWith('BB shows Kh Kc\nRun it twice\n1st run: 2c 7d 9s Jh 3c · Hero wins 500.5 bb\n2nd run: Ks 4h 8d Qc 5s · BB wins 500 bb'), txt);
 });
+
+test('a cash hand never shows a tournament level left over from the defaults', () => {
+  const h = mk();
+  h.game = { ...h.game, level: 1, stage: 'early', playersLeft: 58 };
+  const head = forumText(h).split('\n')[0];
+  assert.doesNotMatch(head, /Level|left|Early/);
+});

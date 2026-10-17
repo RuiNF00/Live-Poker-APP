@@ -5,11 +5,12 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, formatPrice, FREE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, formatPrice, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { track } from '@/lib/events';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
@@ -18,7 +19,7 @@ export default function Paywall() {
   // Small phones (SE, mini): drop the hero icon so the plans show without scrolling.
   const compact = useWindowDimensions().height < 760;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
-  const { plans, purchase, restore, isPro } = usePro();
+  const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig } = usePro();
   const { hands } = useStore();
   const [sel, setSel] = useState<PlanId>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
@@ -26,7 +27,9 @@ export default function Paywall() {
   const [welcomed, setWelcomed] = useState(false);
   // Trial days started here, so the welcome can offer the day-5 reminder it promised.
   const [started, setStarted] = useState(0);
-  const copy = PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic;
+  // The offering can replace the headline for an A/B test; the offer itself never changes.
+  const copy = { ...(PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic), ...paywallConfig.copy[reason] };
+  const table = paywallConfig.layout === 'table';
 
   const monthly = plans.find((p) => p.id === 'monthly');
   const annual = plans.find((p) => p.id === 'annual');
@@ -35,6 +38,10 @@ export default function Paywall() {
   const trial = chosen?.trialDays ?? 0;
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  const dismiss = () => {
+    track('paywall_closed', { reason, plan: sel, offering: paywallConfig.offering, layout: paywallConfig.layout });
+    close();
+  };
 
   const onBuy = async () => {
     setBusy('buy');
@@ -43,7 +50,7 @@ export default function Paywall() {
     if (res === 'ok') {
       setWelcomed(true);
       setStarted(trial);
-    } else if (res === 'unavailable') Alert.alert(t('Ainda não disponível'), t('As subscrições ainda não estão ativas nesta versão.'));
+    } else if (res === 'unavailable') Alert.alert(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
     else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
@@ -63,7 +70,7 @@ export default function Paywall() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: compact ? S.lg : S.xl }}>
-        <IconButton name="close" label={t('Fechar')} onPress={close} />
+        <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
         <View style={{ gap: S.md }}>
           {compact ? null : (
@@ -76,8 +83,10 @@ export default function Paywall() {
           {hands.length >= 3 && reason !== 'welcome' ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
+        {table && !compact ? <FreeVsPro /> : null}
+
         {/* Small phones skip the feature list so both plans fit above the footer. */}
-        <View style={{ gap: S.sm, display: compact ? 'none' : 'flex' }}>
+        <View style={{ gap: S.sm, display: compact || table ? 'none' : 'flex' }}>
           {featuresFor(reason).map(({ feature: f, highlight }) => (
             <Row key={f.key} gap={S.md} style={{ minHeight: 40 }}>
               <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
@@ -91,7 +100,14 @@ export default function Paywall() {
           ))}
         </View>
 
-        {plans.length === 0 ? (
+        {plans.length === 0 && plansFailed ? (
+          <View style={{ alignItems: 'center', gap: S.md, paddingVertical: S.lg }}>
+            <T v="callout" style={{ textAlign: 'center' }}>
+              {t('Não deu para ligar à {store}. Tenta outra vez.', { store })}
+            </T>
+            <Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={reloadPlans} />
+          </View>
+        ) : plans.length === 0 ? (
           <ActivityIndicator color={C.accent} />
         ) : (
           <View style={{ gap: S.sm + 2 }}>
@@ -164,7 +180,7 @@ export default function Paywall() {
                 {t('Convidar um amigo')}
               </T>
             </Pressable>
-            <Pressable onPress={close} hitSlop={8}>
+            <Pressable onPress={dismiss} hitSlop={8}>
               <T v="small" color={C.muted}>
                 {t('Agora não')}
               </T>
@@ -267,6 +283,40 @@ function PlanCard({
         </>
       )}
     </Pressable>
+  );
+}
+
+/** The "table" layout: what stays free and what Pro adds, side by side. */
+function FreeVsPro() {
+  const cell = (v: string | boolean, pro: boolean) =>
+    typeof v === 'boolean' ? (
+      <Ionicons name={v ? 'checkmark' : 'remove'} size={18} color={v ? (pro ? C.accent : C.text) : C.muted} accessibilityLabel={v ? t('Sim') : t('Não')} />
+    ) : (
+      <T v="mono" color={pro ? C.accent : C.text}>
+        {v}
+      </T>
+    );
+  return (
+    <View style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
+      <Row style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: C.surface2 }}>
+        <View style={{ flex: 1 }} />
+        <T v="label" style={{ width: 56, textAlign: 'center' }}>
+          {t('Grátis')}
+        </T>
+        <T v="label" color={C.accent} style={{ width: 56, textAlign: 'center' }}>
+          Pro
+        </T>
+      </Row>
+      {freeVsPro().map((r, i) => (
+        <Row key={r.label} style={{ paddingHorizontal: S.md, minHeight: 44, borderTopWidth: i ? 1 : 0, borderTopColor: C.border }}>
+          <T v="body" style={{ flex: 1 }}>
+            {t(r.label)}
+          </T>
+          <View style={{ width: 56, alignItems: 'center' }}>{cell(r.free, false)}</View>
+          <View style={{ width: 56, alignItems: 'center' }}>{cell(r.pro, true)}</View>
+        </Row>
+      ))}
+    </View>
   );
 }
 

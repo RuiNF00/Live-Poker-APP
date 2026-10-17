@@ -5,6 +5,7 @@
 // Only what a backer needs goes out: no notes, no table roster, no backer names
 // or amounts, no hands, and the venue only when the player chooses to show it.
 
+import { dayOf, isBagged } from '@/store/multi-day';
 import { cost, isPaused, playedMs, soldShare } from '@/store/session-math';
 import type { Session } from '@/store/types';
 import { BRAND } from '@/theme';
@@ -41,6 +42,10 @@ export interface LiveSnapshot {
   /** % of the action sold, so backers see the size of the whole package. */
   sold: number;
   hands: number;
+  /** Day of a multi-day tournament, 1-based. */
+  day: number;
+  /** The day ended with chips in the bag: `stack` is the bagged stack, not a result. */
+  bagged: boolean;
   updatedAt: number;
 }
 
@@ -76,6 +81,8 @@ export function liveSnapshot(s: Session, player: string, hands: number, now = Da
     stage: s.stage ?? null,
     sold: Math.round(soldShare(s) * 1000) / 10,
     hands,
+    day: dayOf(s),
+    bagged: isBagged(s),
     updatedAt: now,
   };
 }

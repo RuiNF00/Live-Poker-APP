@@ -37,7 +37,21 @@ test('csv quotes and computes profit', () => {
   assert.equal(lines.length, 2);
   // Local date and start time, ..., hours, hands (none counted), ..., expenses, tips, profit.
   // Midnight UTC is the 30th west of Greenwich: the date is local.
-  assert.match(lines[1], /^2026-(09-30|10-01),\d\d:\d\d,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,,200,1,0,200,450,0,,0,0,250,,,,,,,$/);
+  assert.match(lines[1], /^2026-(09-30|10-01),\d\d:\d\d,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,,200,1,0,200,450,0,,0,0,250,,,,,,,,,,$/);
+});
+
+test('csv says the day a multi-day tournament reached and the bagged stack', () => {
+  const s = sess({ kind: 'mtt', name: 'Main Event', day: 2, bag: { stack: 154000, at: 1 } });
+  const [head, row] = sessionsCsv([s]).trim().split('\n');
+  const cols = head.split(',');
+  const cells = row.split(',');
+  assert.equal(cells[cols.indexOf('mtt_day')], '2');
+  assert.equal(cells[cols.indexOf('bagged_stack')], '154000');
+});
+
+test('importSummary also counts staking packages, payments and players you back', () => {
+  const s = importSummary({ hands: 0, sessions: 0, players: 0, packages: 2, payments: 1, backing: 1 });
+  assert.ok(s.includes('2 pacotes de staking · 1 pagamento a backers · 1 jogador que apoias'), s);
 });
 
 test('importSummary mentions bankrolls and transfers only when some came in', () => {

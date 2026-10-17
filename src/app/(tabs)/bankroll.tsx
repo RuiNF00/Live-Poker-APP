@@ -12,8 +12,10 @@ import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
+import { useSwaps } from '@/store/swaps-store';
 import { Insights } from '@/components/Insights';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
+import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -40,6 +42,7 @@ import {
   type Scope,
   type SessionFilter,
 } from '@/store/bankroll-math';
+import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
 import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
@@ -159,6 +162,8 @@ function BankrollTab() {
 
         {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} /> : null}
 
+        <MoreTools />
+
         {/* Filters only once there is something to filter. */}
         {scoped.some((x) => x.endedAt) || nFilters ? (
           <View style={{ gap: S.sm }}>
@@ -197,9 +202,7 @@ function BankrollTab() {
           </View>
         ) : null}
 
-        <StakingEntry />
-        <TripsEntry />
-        <SwapsEntry />
+        <YearReviewEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (
@@ -279,16 +282,33 @@ function BankrollTab() {
                 </T>
               </Card>
             ) : null}
-            <Card onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })} style={{ gap: S.xs }} accessibilityLabel={t('Calculadora de variância')}>
-              <Row>
-                <Ionicons name="pulse" size={18} color={C.accent} />
-                <T v="h3" style={{ flex: 1 }}>
-                  {t('Calculadora de variância')}
-                </T>
-                <Ionicons name="chevron-forward" size={17} color={C.muted} />
-              </Row>
-              <T v="small">{t('Quanto podes ganhar ou perder nas próximas horas ou torneios, com o teu win rate e desvio padrão.')}</T>
-            </Card>
+            <ListGroup>
+              <ListItem
+                icon="trending-down"
+                iconColor={C.bad}
+                title={t('Downswings')}
+                subtitle={dd.max ? t('Agora: {now} · maior: −{max}', { now: dd.current ? '−' + fmt(dd.current, cur) : t('no pico'), max: fmt(dd.max, cur) }) : t('A tua maior queda e se é normal')}
+                onPress={() => router.push({ pathname: '/downswing', params: { currency: cur } })}
+              />
+              <ListItem
+                icon="pulse-outline"
+                iconColor={C.accent}
+                title={t('Diário mental')}
+                subtitle={(() => {
+                  const n = list.filter((x) => x.mind).length;
+                  const top = isPro && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
+                  return top ? top.title : n ? t('{n} check-ins · só tu vês', { n }) : t('Sono, foco e tilt: o que mexem no teu resultado');
+                })()}
+                onPress={() => router.push({ pathname: '/mind', params: { currency: cur } })}
+              />
+              <ListItem
+                icon="stats-chart-outline"
+                iconColor={C.info}
+                title={t('Calculadora de variância')}
+                subtitle={t('Quanto podes ganhar ou perder nas próximas horas ou torneios')}
+                onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })}
+              />
+            </ListGroup>
           </>
         )}
         {history.length ? (
@@ -673,5 +693,36 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
         </View>
       )}
     </View>
+  );
+}
+
+/**
+ * Staking, trips and swaps stay one tap away without crowding a bankroll
+ * that doesn't use them: a tool shows on its own once it has something in
+ * it, and the rest wait behind one "Mais ferramentas" row.
+ */
+function MoreTools() {
+  const { backers, trips } = useStore();
+  const { swaps } = useSwaps();
+  const [open, setOpen] = useState(false);
+  const tools = [
+    { key: 'staking', used: backers.length > 0, el: <StakingEntry key="staking" />, name: 'Staking' },
+    { key: 'trips', used: trips.length > 0, el: <TripsEntry key="trips" />, name: t('viagens') },
+    { key: 'swaps', used: swaps.length > 0, el: <SwapsEntry key="swaps" />, name: 'swaps' },
+  ];
+  const idle = tools.filter((x) => !x.used);
+  return (
+    <>
+      {tools.filter((x) => x.used).map((x) => x.el)}
+      {idle.length ? (
+        open ? (
+          idle.map((x) => x.el)
+        ) : (
+          <ListGroup>
+            <ListItem icon="grid-outline" title={t('Mais ferramentas')} subtitle={idle.map((x) => x.name).join(', ').replace(/^./, (c) => c.toUpperCase())} onPress={() => setOpen(true)} />
+          </ListGroup>
+        )
+      ) : null}
+    </>
   );
 }
