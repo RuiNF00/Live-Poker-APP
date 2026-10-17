@@ -14,7 +14,7 @@
 Log a hand in seconds between levels, then replay it street by street. Share it with a link and get feedback from your friends.
 
 **Keywords** (100 bytes, comma-separated, no spaces):
-poker,hand,history,replayer,tournament,live,cash,bankroll,session,holdem,mtt,notes,tracker,study
+poker,hand,replayer,tournament,live,cash,bankroll,session,holdem,mtt,staking,backer,tracker,stakes
 
 **Description** (4000):
 

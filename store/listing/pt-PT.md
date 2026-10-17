@@ -14,7 +14,7 @@
 Regista uma mão em segundos entre dois níveis e revê-a com o replayer. Partilha com um link e recebe a opinião dos teus amigos.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
-poker,póquer,mãos,replayer,torneio,live,cash,bankroll,sessões,holdem,mtt,notas,estatísticas
+poker,póquer,mãos,replayer,torneio,live,cash,bankroll,sessões,holdem,mtt,staking,backers,notas
 
 **Descrição** (4000):
 

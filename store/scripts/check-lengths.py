@@ -4,6 +4,8 @@
 Run after fill.sh so the real app name is counted:
     python3 store/scripts/check-lengths.py store/out/listing/*.md
 """
+import glob
+import os
 import re
 import sys
 
@@ -57,4 +59,6 @@ def main(paths):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    # No arguments: check the filled listings, so a bare run never passes vacuously.
+    default = sorted(glob.glob(os.path.join(os.path.dirname(__file__), "..", "out", "listing", "*.md")))
+    main(sys.argv[1:] or default)
