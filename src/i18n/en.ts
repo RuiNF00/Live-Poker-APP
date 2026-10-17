@@ -541,7 +541,6 @@ const en: Record<string, string> = {
   'Conta quando o amigo guarda a primeira mão nos 7 dias depois de instalar.': 'Counts when your friend saves a first hand within 7 days of installing.',
   'Mãos sem limite, bankroll completo e stories com voz. {days} dias grátis.': 'Unlimited hands, full bankroll and voice stories. {days} days free.',
   'Mãos sem limite, bankroll completo e stories com voz.': 'Unlimited hands, full bankroll and voice stories.',
-  'Valores em big blinds': 'Amounts in big blinds',
   'Nas mãos, em vez de fichas': 'In hands, instead of chips',
   'Mãos que partilhas': 'Hands you share',
   'Nomes dos adversários': 'Opponents\' names',
