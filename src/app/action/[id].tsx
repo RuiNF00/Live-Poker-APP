@@ -251,7 +251,9 @@ export default function ActionPackageScreen() {
           <T v="small">
             {o.lines.length === 0
               ? t('Regista cada backer com quem combinaste uma parte. As sessões destes torneios ficam com a parte de cada um.')
-              : t('Vendida a {n} backers por {price}. Pões {out} do teu bolso.', { n: o.lines.length, price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })}
+              : o.lines.length === 1
+                ? t('Vendida a 1 backer por {price}. Pões {out} do teu bolso.', { price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })
+                : t('Vendida a {n} backers por {price}. Pões {out} do teu bolso.', { n: o.lines.length, price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })}
           </T>
           <Row style={{ marginTop: S.xs, paddingTop: S.md, borderTopWidth: 1, borderTopColor: C.border }}>
             <Figure label={t('Buy-ins')} value={money(tot.buyIns, f.currency)} />

@@ -1223,7 +1223,7 @@ const es: Record<string, string> = {
   'Ex.: Série de outubro, festival de verão': 'Ej.: Serie de octubre, festival de verano',
   'Ação com markup': 'Acción con markup',
   'Com makeup': 'Con makeup',
-  'O backer paga a parte dele dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.': 'El backer paga su parte de los buy-ins. Las pérdidas se acumulan (makeup) y solo ganas tu parte de la ganancia cuando el paquete esté por encima de cero.',
+  'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.': 'El backer paga su parte de los buy-ins. Las pérdidas se acumulan (makeup) y solo ganas tu parte de la ganancia cuando el paquete esté por encima de cero.',
   'O backer compra a mesma percentagem de cada torneio do pacote, ao markup combinado. Cada torneio acerta-se sozinho.': 'El backer toma el mismo porcentaje de cada torneo del paquete, al markup acordado. Cada torneo se liquida por separado.',
   'Parte do backer nos buy-ins': 'Parte del backer en los buy-ins',
   'Ação vendida em cada torneio': 'Acción vendida en cada torneo',
@@ -2395,6 +2395,7 @@ const es: Record<string, string> = {
   'Não joguei': 'No jugué',
   'à espera': 'en espera',
   '{n} à espera de resposta': '{n} esperando tu respuesta',
+  'Vendida a 1 backer por {price}. Pões {out} do teu bolso.': 'Vendida a 1 backer por {price}. Pones {out} de tu bolsillo.',
 };
 
 export default es;
