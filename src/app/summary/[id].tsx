@@ -5,6 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
+import { SessionEndPro } from '@/components/SessionEndPro';
 import { Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
@@ -72,6 +73,8 @@ export default function SessionSummary() {
         <Tile label={s.handsDealt ? t('Mãos jogadas') : t('Mãos guardadas')} value={String(s.handsDealt ?? mine.length)} />
         <Tile label={t('Maior pote')} value={biggest ? bbs(biggest.bb, 1) : '—'} />
       </Row>
+
+      <SessionEndPro sessionId={s.id} profit={p} hours={playedMs(s) / 3_600_000} game={s.kind} currency={s.currency} hideMoney={hideMoney} />
 
       {best ? (
         <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/hand/[id]', params: { id: best.hand.id } })}>

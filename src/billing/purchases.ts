@@ -6,7 +6,7 @@
 import { Linking, Platform } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
-import { currencyAfter, decimalComma, lang } from '../i18n';
+import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
@@ -113,7 +113,7 @@ export async function getPaywallConfig(): Promise<PaywallConfig> {
   if (!LIVE) return DEFAULT_PAYWALL;
   try {
     const cur = (await (await rc()).getOfferings()).current;
-    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang === 'pt' ? 'pt' : 'en') : DEFAULT_PAYWALL;
+    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, variant === 'pt-PT' ? 'pt' : variant) : DEFAULT_PAYWALL;
   } catch {
     return DEFAULT_PAYWALL;
   }

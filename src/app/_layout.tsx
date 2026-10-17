@@ -23,9 +23,10 @@ import { SettleReminder } from '@/components/staking/SettleReminder';
 import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { MonthRecapSync } from '@/lib/month-recap';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
+import { TrialFollowUp } from '@/components/TrialFollowUp';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
-import { track } from '@/lib/events';
+import { track, watchResume } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
 import { HomeWidgetSync } from '@/lib/home-widget';
 import { useReduceMotion } from '@/lib/motion';
@@ -67,6 +68,7 @@ export default function RootLayout() {
   useEffect(() => {
     track('app_open');
     bootReferrals().catch(() => {});
+    return watchResume();
   }, []);
   if (!loaded && !error) return null;
   return (
@@ -81,6 +83,7 @@ export default function RootLayout() {
           <SessionLockScreen />
           <HomeWidgetSync />
           <SwapReminder />
+          <TrialFollowUp />
           <MonthRecapSync />
           <SettleReminder />
           <Stack
@@ -99,6 +102,7 @@ export default function RootLayout() {
             <Stack.Screen name="hand/[id]" options={{ title: t('Mão') }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="trial" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="welcome" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="year" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
