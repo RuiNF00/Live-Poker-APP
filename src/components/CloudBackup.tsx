@@ -88,7 +88,11 @@ export function CloudBackup() {
   };
   const turnOff = () => {
     const doIt = async () => {
-      if (cloud) await removeRemote(cloud);
+      try {
+        if (cloud) await removeRemote(cloud);
+      } catch (e) {
+        return note(t('Não deu para desligar'), errText(e));
+      }
       await saveCloud(null);
       setCloud(null);
     };

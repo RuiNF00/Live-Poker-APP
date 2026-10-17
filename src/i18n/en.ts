@@ -353,6 +353,7 @@ const en: Record<string, string> = {
   'O código tem 26 letras e números, como aparece no outro telemóvel.': 'The code has 26 letters and numbers, as shown on your other phone.',
   'Cópia recuperada': 'Backup restored',
   'Não deu para recuperar': "Couldn't restore",
+  'Não deu para desligar': "Couldn't turn it off",
   'Desligar a cópia na nuvem?': 'Turn off cloud backup?',
   'A cópia é apagada do servidor. As mãos ficam neste telemóvel.': 'The backup is deleted from the server. Your hands stay on this phone.',
   'Desligar': 'Turn off',
