@@ -419,7 +419,12 @@ function Live({ s }: { s: Session }) {
         {!ending ? (
           <View style={{ gap: S.sm }}>
             {mtt ? <Button title={t('Ensacar fichas (fim do dia {n})', { n: dayOf(s) })} kind="secondary" size="md" icon="bag-handle-outline" onPress={() => setPad('bag')} /> : null}
-            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => {
+                // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
+                if (!mtt) setFinish((f) => ({ ...f, cashOut: s.stack }));
+                setEnding(true);
+              }}
+            />
           </View>
         ) : (
           <Section title={t('Terminar sessão')}>

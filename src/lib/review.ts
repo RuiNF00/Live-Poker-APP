@@ -81,9 +81,15 @@ export async function maybeAskForReview(moment: ReviewMoment): Promise<boolean> 
   }
 }
 
+/**
+ * The store page, from `ios.appStoreUrl` / `android.playStoreUrl` in app.json.
+ * Null until the store page exists, and Settings hides "Avaliar" until then.
+ */
+export const storeReviewUrl = (): string | null => storeReview()?.storeUrl() ?? null;
+
 /** "Avaliar a Sweatbook": the store's write-a-review page. */
 export async function openStoreReviewPage() {
-  const url = storeReview()?.storeUrl();
+  const url = storeReviewUrl();
   if (!url) return;
   await Linking.openURL(Platform.OS === 'ios' ? `${url}${url.includes('?') ? '&' : '?'}action=write-review` : url).catch(() => {});
 }

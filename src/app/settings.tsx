@@ -20,7 +20,7 @@ import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i1
 import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
-import { openStoreReviewPage } from '@/lib/review';
+import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
@@ -254,8 +254,9 @@ export default function SettingsScreen() {
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
-            {Platform.OS !== 'web' ? (
-              // The store's own page, never the in-app prompt: a button must always do something.
+            {storeReviewUrl() ? (
+              // The store's own page, never the in-app prompt: a button must always do something,
+              // so it only shows once app.json has the store URL.
               <ListItem icon="star-outline" title={t('Avaliar a Sweatbook')} subtitle={t('Na {store}', { store: Platform.OS === 'ios' ? 'App Store' : 'Google Play' })} onPress={() => openStoreReviewPage()} />
             ) : null}
           </ListGroup>
