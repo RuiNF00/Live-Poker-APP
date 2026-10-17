@@ -229,9 +229,11 @@ export function useOnboarding() {
  */
 export function useWelcomeOffer(handsSaved: number) {
   const { isPro, trialDays, paywall } = usePro();
+  // At the table the offer waits: a live session gets it once it is closed (TrialFollowUp).
+  const atTable = !!useStore().activeSession;
   useFocusEffect(
     useCallback(() => {
-      if (isPro || handsSaved < 1 || trialDays < 1) return;
+      if (isPro || atTable || handsSaved < 1 || trialDays < 1) return;
       let live = true;
       // Let the screen settle after coming back before sliding the offer up.
       const timer = setTimeout(async () => {
@@ -245,6 +247,6 @@ export function useWelcomeOffer(handsSaved: number) {
         live = false;
         clearTimeout(timer);
       };
-    }, [isPro, handsSaved, trialDays, paywall]),
+    }, [isPro, atTable, handsSaved, trialDays, paywall]),
   );
 }
