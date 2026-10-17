@@ -10,6 +10,7 @@ import { Button, Card, Chip, ChipRow, Pill, Row, T, tap, ToggleItem } from '@/co
 import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
+import { createKey, forgetCreateKey } from '@/lib/create-key';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive } from '@/lib/live-link';
 import { shareRef } from '@/lib/referrals';
@@ -52,8 +53,11 @@ export function BackerLiveCard({ s }: { s: Session }) {
     setBusy(true);
     try {
       const n = hands.filter((h) => h.sessionId === s.id).length;
-      const live = await createLive(liveSnapshot(s, settings.nickname, n));
+      // Same token until it works: a tap after a timeout gets the link the first tap made.
+      const scope = `live:${s.id}`;
+      const live = await createLive(liveSnapshot(s, settings.nickname, n), await createKey(scope));
       saveSession({ ...latest.current, live });
+      await forgetCreateKey(scope);
       await shareLink(s, live.id);
     } catch {
       note(t('Sem ligação'), t('Não deu para criar o link. Tenta outra vez quando tiveres rede.'));

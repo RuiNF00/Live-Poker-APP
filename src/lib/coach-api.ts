@@ -269,7 +269,7 @@ registerSender('coach-reply', async (p) => {
   const r = await fetch(`${API}/api/coach/${x.token}/replies`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-owner-token': x.ownerToken },
-    body: JSON.stringify({ handId: x.handId, stepIndex: x.stepIndex, name: x.name, body: x.body }),
+    body: JSON.stringify({ handId: x.handId, stepIndex: x.stepIndex, name: x.name, body: x.body, key: x.localId }),
   });
   const out = outcomeOf(r.status);
   if (out === 'retry') return out;

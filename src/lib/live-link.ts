@@ -97,11 +97,13 @@ export function liveUrl(id: string): string {
   return `${BRAND.webUrl}/live/${id}`;
 }
 
-export async function createLive(snap: LiveSnapshot): Promise<{ id: string; token: string }> {
+/** `token`: the edit token the app picked for this link (create-key.ts). Sent again after a lost
+ *  answer, the server returns the link it already made instead of a second one. */
+export async function createLive(snap: LiveSnapshot, token?: string): Promise<{ id: string; token: string }> {
   const res = await fetch(`${API}/api/live`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ snapshot: snap }),
+    body: JSON.stringify({ snapshot: snap, token }),
   });
   if (!res.ok) throw new Error('live ' + res.status);
   const j = await res.json();
