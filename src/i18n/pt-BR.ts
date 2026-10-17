@@ -1552,6 +1552,7 @@ const ptBR: Record<string, string> = {
   '{day} às {time}, pronto a começar com um toque': '{day} às {time}, pronto para começar com um toque',
   '{day} de cada semana, pronto a começar com um toque': '{day} de toda semana, pronto para começar com um toque',
   'Começa às': 'Começa às',
+  'Custo da parte: {cost} · markup {markup}': 'Custo da parte: {cost} · markup {markup}',
 };
 
 export default ptBR;

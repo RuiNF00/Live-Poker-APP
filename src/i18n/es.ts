@@ -1533,7 +1533,6 @@ const es: Record<string, string> = {
   'Mudar os torneios ou o markup pede a cada backer que confirme outra vez.': 'Cambiar los torneos o el markup pide a cada backer que confirme de nuevo.',
   'Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.': 'Los pagos se hacen fuera de la app; aquí solo los registras. Cada link es privado y muestra solo la parte de ese backer.',
   '% de cada torneio': '% de cada torneo',
-  'Custo da parte: {cost}': 'Costo de la parte: {cost}',
   'Registar': 'Registrar',
   'Mais': 'Más',
   'Menos': 'Menos',
@@ -3213,6 +3212,7 @@ const es: Record<string, string> = {
   '{day} às {time}, pronto a começar com um toque': '{day} a las {time}, listo para empezar con un toque',
   '{day} de cada semana, pronto a começar com um toque': 'Cada {day}, listo para empezar con un toque',
   'Começa às': 'Empieza a las',
+  'Custo da parte: {cost} · markup {markup}': 'Costo de la parte: {cost} · markup {markup}',
 };
 
 export default es;
