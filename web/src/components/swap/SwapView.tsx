@@ -16,7 +16,8 @@ import '@/app/landing.css';
 import '@/components/live/live.css';
 import './swap.css';
 
-const POLL_MS = 30000;
+// While the page is open: a result the other side adds shows up within seconds.
+const POLL_MS = 10000;
 const other = (s: Side): Side => (s === 'a' ? 'b' : 'a');
 
 /** `accounts`: the creator has Pro, so everyone sees who owes whom. Otherwise only the results. */
@@ -121,13 +122,15 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
   const bal = swapBalance(t, swap.entries);
   const results = swap.entries.filter((e) => e.kind === 'result');
-  const payments = swap.entries.filter((e) => e.kind === 'payment');
+  const payments = swap.entries.filter((e) => e.kind !== 'result');
   const confirmed = !!swap.confirmedAt;
   const creditor: Side | null = Math.abs(bal.net) < 0.005 ? null : bal.net > 0 ? 'a' : 'b';
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'swap', utm_campaign: id }, invite);
   const privateLink = token && you ? `${window.location.origin}/swap/${id}#k=${token}` : '';
   // What I owe, when the accounts are open to me: one tap records the payment.
   const owe = accounts && you && !left && creditor && creditor !== you ? Math.round(Math.abs(bal.net) * 100) / 100 : 0;
+  // And the other way: what they owe me, marked as received when it arrives.
+  const owed = accounts && you && !left && creditor === you ? Math.round(Math.abs(bal.net) * 100) / 100 : 0;
 
   return (
     <main className="live">
@@ -198,6 +201,14 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
               <p className="sw-hint">{c.paidNowHint}</p>
             </>
           ) : null}
+          {owed ? (
+            <>
+              <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: { ...payment(owed), kind: 'received' } }) })}>
+                {c.receivedNow(money(owed))}
+              </button>
+              <p className="sw-hint">{c.paidNowHint}</p>
+            </>
+          ) : null}
         </section>
       ) : null}
 
@@ -227,7 +238,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
           <p className="live-label">{c.payments}</p>
           {payments.map((e) => (
             <EntryRow key={e.id} e={e} mine={e.side === you} c={c} onRemove={() => send(`/api/swaps/${id}/entries/${e.id}`, { method: 'DELETE' })} busy={busy}>
-              <p className="sw-row-title">{c.paidTo(names[e.side], names[other(e.side)])}</p>
+              <p className="sw-row-title">{e.kind === 'received' ? c.receivedFrom(names[e.side], names[other(e.side)]) : c.paidTo(names[e.side], names[other(e.side)])}</p>
               <p className="sw-row-sub">
                 {money(e.amount)} · {when(e.at)}
               </p>

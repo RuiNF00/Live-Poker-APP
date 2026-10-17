@@ -88,12 +88,15 @@ export function parseGroup(x: unknown, namesIn: unknown): { terms: GroupTerms; n
 export function parseGroupEntry(x: unknown): Omit<GroupEntry, 'id' | 'seat' | 'at'> | 'offensive' | null {
   const e = parseEntry(x);
   if (!e || e === 'offensive') return e;
-  if (e.kind === 'payment') {
+  // Groups settle seat to seat with payments only.
+  const kind = e.kind;
+  if (kind === 'received') return null;
+  if (kind === 'payment') {
     const to = num((x as Record<string, unknown>).to, 0, GROUP_MAX - 1);
     if (to === null || !Number.isInteger(to)) return null;
-    return { ...e, to };
+    return { ...e, kind, to };
   }
-  return e;
+  return { ...e, kind };
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;

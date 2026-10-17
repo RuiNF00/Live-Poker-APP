@@ -23,7 +23,8 @@ import { GROUP_MIN, groupFromRemote, groupNet, groupReady, groupWaitingOn, minTr
 import { addGroupPrize, leaveGroupEverywhere, releaseSeatHere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
 import { C, S } from '@/theme';
 
-const POLL_MS = 30000;
+// While the screen is open: what the others add shows up within seconds.
+const POLL_MS = 10000;
 const HEX = /^[a-f0-9]{32,128}$/;
 
 export default function GroupSwapScreen() {

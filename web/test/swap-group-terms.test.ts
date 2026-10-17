@@ -55,3 +55,9 @@ describe('to the cent', () => {
     expect(minTransfers(new Map([[0, 0.004], [1, -0.004]]))).toEqual([]);
   });
 });
+
+describe('received in a group', () => {
+  it('is refused: groups settle seat to seat with payments', () => {
+    expect(parseGroupEntry({ cid: 'r1', kind: 'received', amount: 10, to: 1 })).toBeNull();
+  });
+});

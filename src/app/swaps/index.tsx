@@ -17,7 +17,7 @@ import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { assignGroups, groupLedger, groupNet, groupReady, HALF_CENT, minTransfers, type SwapGroup } from '@/store/swap-groups';
 import { syncAllGroups, useGroups } from '@/store/swap-groups-store';
-import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
+import { assignSwaps, other, settled, settleGroups, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 import { useLocked } from '@/components/ProGate';
@@ -44,6 +44,8 @@ function SwapsScreen() {
   const locked = useLocked('swaps');
   const totals = locked ? [] : [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= HALF_CENT);
   const any = swaps.length + groups.length + waiting.length > 0;
+  // Several open swaps with the same player: one payment settles them all.
+  const settles = locked ? [] : settleGroups(swaps);
   const newGroup = () => router.push('/swaps/group-new');
 
   return (
@@ -140,6 +142,26 @@ function SwapsScreen() {
               </Section>
             ) : null}
 
+            {settles.length ? (
+              <Section title={t('Acertar contas')}>
+                <ListGroup>
+                  {settles.map((g) => (
+                    <ListItem
+                      key={g.name + g.currency}
+                      left={<Avatar name={g.name} />}
+                      title={t('Acertar contas com {name}', { name: g.name })}
+                      subtitle={
+                        (g.swaps.length === 1 ? t('1 swap') : t('{n} swaps', { n: g.swaps.length })) +
+                        ' · ' +
+                        (Math.abs(g.net) < HALF_CENT ? t('uma coisa paga a outra') : g.net > 0 ? t('deve-te {amount}', { amount: money(g.net, g.currency) }) : t('deves {amount}', { amount: money(-g.net, g.currency) }))
+                      }
+                      onPress={() => router.push({ pathname: '/swaps/settle', params: { name: g.name, cur: g.currency } })}
+                      chevron
+                    />
+                  ))}
+                </ListGroup>
+              </Section>
+            ) : null}
             {active.length || activeGroups.length || waiting.length ? (
               <Section title={t('Ativos')}>
                 <ListGroup>

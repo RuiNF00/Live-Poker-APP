@@ -6,14 +6,14 @@ import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
 import { profit } from '../session-math';
 import type { Session } from '../types';
-import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, settleGroups, settleNet, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
   a: { name: 'Rui', pct: 5 }, b: { name: 'João', pct: 3 }, note: '', createdAt: 1,
 };
 let n = 0;
-const e = (side: 'a' | 'b', kind: 'result' | 'payment', amount: number, over: Partial<SwapEntry> = {}): SwapEntry => ({ id: `e${++n}`, cid: `c${n}`, side, kind, amount, event: '', finish: null, at: n, ...over });
+const e = (side: 'a' | 'b', kind: SwapEntry['kind'], amount: number, over: Partial<SwapEntry> = {}): SwapEntry => ({ id: `e${++n}`, cid: `c${n}`, side, kind, amount, event: '', finish: null, at: n, ...over });
 const swap = (over: Partial<Swap> = {}): Swap => ({ id: 's1', token: 'tok', side: 'a', terms, entries: [], confirmedAt: 10, createdAt: 1, updatedAt: 1, ...over });
 
 test('each side owes its own % of its own prizes, netted', () => {
@@ -227,4 +227,51 @@ test('a swap is settled only at 0,00: 0,40 and 0,01 are still owed', () => {
   assert.equal(Math.abs(owes1.balance), 0.01);
   assert.equal(settled(owes1), false);
   assert.equal(settled(swapLedger(swap({ entries: [e('a', 'result', 8), e('a', 'payment', 0.4)] }))), true);
+});
+
+test('received: my note that they paid me lowers what they owe, never what I owe', () => {
+  // João (b, 3%) cashes 100k: owes Rui 3,000. Rui marks 1,000 received.
+  const l = swapLedger(swap({ entries: [e('b', 'result', 100000), e('a', 'received', 1000)] }));
+  assert.equal(l.theyPaid, 1000);
+  assert.equal(l.iPaid, 0);
+  assert.equal(l.balance, 2000);
+  // João sees the same from his side.
+  assert.equal(swapLedger(swap({ side: 'b', entries: [e('b', 'result', 100000), e('a', 'received', 1000)] })).balance, -2000);
+});
+
+test('settling several swaps with one player: one net, every swap at 0,00', () => {
+  const t2 = { ...terms, a: { name: 'Rui', pct: 10 }, b: { name: 'João', pct: 10 } };
+  // Swap 1: João owes me 300. Swap 2: I owe him 100.40. Swap 3: square. Swap 4: another player.
+  const s1 = swap({ id: '1', terms: t2, entries: [e('b', 'result', 3000)] });
+  const s2 = swap({ id: '2', terms: t2, entries: [e('a', 'result', 1004)] });
+  const s3 = swap({ id: '3', terms: t2, entries: [] });
+  const s4 = swap({ id: '4', terms: { ...t2, b: { name: 'Ana', pct: 10 } }, entries: [e('b', 'result', 500)] });
+  // He confirmed with a slightly different spelling: still the same player.
+  const s5 = swap({ id: '5', terms: { ...t2, currency: '€' }, confirmedName: 'joão ', entries: [e('b', 'result', 10)] });
+  const groups = settleGroups([s1, s2, s3, s4, s5]);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].swaps.map((s) => s.id), ['1', '2']);
+  assert.equal(groups[0].net, 199.6);
+  const steps = settleSteps(groups[0].swaps);
+  assert.deepEqual(steps, [
+    { id: '1', kind: 'received', amount: 300 },
+    { id: '2', kind: 'payment', amount: 100.4 },
+  ]);
+  // Recording them closes both swaps.
+  const done = groups[0].swaps.map((s) => ({ ...s, entries: [...s.entries, ...steps.filter((x) => x.id === s.id).map((x) => e('a', x.kind, x.amount))] }));
+  assert.ok(done.every((s) => settled(swapLedger(s))));
+  assert.equal(settleNet(done), 0);
+});
+
+test('settle-up leaves out swaps that are read-only, unconfirmed, archived or waiting to send', () => {
+  const owed = [e('b', 'result', 1000)];
+  const list = [
+    swap({ id: '1', entries: owed }),
+    swap({ id: '2', entries: owed, left: 'b' }),
+    swap({ id: '3', entries: owed, archived: true }),
+    swap({ id: '4', entries: owed, confirmedAt: undefined }),
+    swap({ id: '5', entries: [...owed, e('a', 'payment', 1, { pending: true })] }),
+    swap({ id: '6', entries: owed, gone: true }),
+  ];
+  assert.equal(settleGroups(list).length, 0);
 });

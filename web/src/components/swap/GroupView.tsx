@@ -16,7 +16,8 @@ import '@/app/landing.css';
 import '@/components/live/live.css';
 import './swap.css';
 
-const POLL_MS = 30000;
+// While the page is open: a result someone adds shows up within seconds.
+const POLL_MS = 10000;
 
 /**
  * /swap/g/<id>: a group swap. With the group's invite (in the link's fragment) a player picks

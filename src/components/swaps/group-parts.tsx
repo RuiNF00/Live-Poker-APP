@@ -13,6 +13,7 @@ import { groupLedger, groupNet, groupOwedOn, groupShareOf, HALF_CENT, minTransfe
 import { C, S } from '@/theme';
 
 import { pctLabel, signed } from './parts';
+import { ReadPrizeButton } from './ReadPrize';
 
 /** "-" (a player who left) reads as "Saiu"; my own seat reads as "Tu". */
 export function seatLabel(g: SwapGroup, seat: number): string {
@@ -197,6 +198,17 @@ function GroupEntryForm({ g, kind: k0, onSave }: { g: SwapGroup; kind: 'result' 
             ))}
           </ChipRow>
         </Section>
+      ) : null}
+      {kind === 'result' ? (
+        <ReadPrizeButton
+          currency={cur}
+          onRead={(p) => {
+            setAmount(String(p.amount));
+            if (p.finish) setFinish(String(p.finish));
+            if (p.event && !event.trim()) setEvent(p.event);
+            setSessionId(undefined);
+          }}
+        />
       ) : null}
       {kind === 'result' ? <Field label={t('Evento')} value={event} onChangeText={setEvent} placeholder={t('Ex.: Evento #12, $5k PLO')} maxLength={80} /> : null}
       <Row gap={S.md} style={{ alignItems: 'flex-start' }}>

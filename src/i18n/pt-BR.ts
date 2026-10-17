@@ -1582,6 +1582,16 @@ const ptBR: Record<string, string> = {
   'Termina a {date}': 'Termina em {date}',
   'Renova a {date}': 'Renova em {date}',
   'Verifica a rede e tenta outra vez daqui a pouco.': 'Verifique a conexão e tente de novo daqui a pouco.',
+  // Swaps: settling up with one player, received payments, payout slips.
+  'deves {amount}': 'você deve {amount}',
+  'Cada swap fica a 0,00: onde deves fica o teu pagamento, onde te devem fica que recebeste. {name} vê o mesmo em cada swap.': 'Cada swap fica em 0,00: onde você deve fica o seu pagamento, onde te devem fica que você recebeu. {name} vê o mesmo em cada swap.',
+  'Ler o recibo do prémio': 'Ler o recibo do prêmio',
+  'Escreve o prémio à mão.': 'Digite o prêmio à mão.',
+  'Este swap é em {b}. Escreve o prémio à mão.': 'Este swap é em {b}. Digite o prêmio à mão.',
+  '{name} registou que recebeu {amount} teus.': '{name} registrou que recebeu {amount} seus.',
+  '{name} recebeu o teu pagamento': '{name} recebeu o seu pagamento',
+  '{name} deve-te {amount} neste momento. Regista o que recebeste e o swap fica acertado dos dois lados.': '{name} te deve {amount} agora. Registre o que você recebeu e o swap fica acertado para os dois.',
+  'Regista o que {name} te pagou.': 'Registre o que {name} te pagou.',
 };
 
 export default ptBR;

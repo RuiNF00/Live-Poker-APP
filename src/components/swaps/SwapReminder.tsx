@@ -271,7 +271,9 @@ async function notify(sw: Swap, news: SwapEntry[], amounts: boolean) {
     const lines = !amounts ? [t('Há novidades no swap. Toca para veres as contas.')] : news.map((e) =>
       e.kind === 'payment'
         ? t('{name} registou um pagamento de {amount}.', { name, amount: money(e.amount, cur) })
-        : e.amount > 0
+        : e.kind === 'received'
+          ? t('{name} registou que recebeu {amount} teus.', { name, amount: money(e.amount, cur) })
+          : e.amount > 0
           ? t('{name} cobrou {amount}: deve-te {owed}.', { name, amount: money(e.amount, cur), owed: money(owedOn(sw.terms, e), cur) })
           : t('{name} não cobrou no {event}.', { name, event: e.event || sw.terms.title }),
     );
