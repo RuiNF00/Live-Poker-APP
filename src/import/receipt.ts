@@ -48,14 +48,14 @@ const MONTHS: Record<string, number> = {
   jan: 0, ene: 0, feb: 1, fev: 1, mar: 2, apr: 3, abr: 3, may: 4, mai: 4, jun: 5, jul: 6, aug: 7, ago: 7, sep: 8, set: 8, oct: 9, out: 9, nov: 10, dec: 11, dez: 11, dic: 11,
 };
 
-function currencyOf(text: string): string | undefined {
+export function currencyOf(text: string): string | undefined {
   for (const [re, v] of SYMBOLS) if (re.test(text)) return v;
   const code = text.match(/\b(EUR|USD|GBP|BRL|MXN|AUD|CAD|CHF|ARS|CLP|COP|PEN|JPY|KRW|PHP|SGD|ZAR)\b/);
   return code ? BY_CODE.get(code[1]) : undefined;
 }
 
 /** Every amount on a line, in order ("$2,500 + $200" → [2500, 200]). */
-function amounts(line: string): number[] {
+export function amounts(line: string): number[] {
   const out: number[] = [];
   // Times, dates and "#12" are not amounts.
   const clean = line.replace(/\b\d{1,2}:\d{2}\b/g, ' ').replace(/\b\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4}\b/g, ' ').replace(/#\s*\d+/g, ' ');
@@ -105,7 +105,7 @@ function dateOf(text: string, usFirst: boolean): { t: number; hasTime: boolean }
   return { t: at.getTime(), hasTime: !!tm };
 }
 
-function eventName(lines: string[]): string | undefined {
+export function eventName(lines: string[]): string | undefined {
   const cands = lines.filter((l) => EVENT.test(l) && !GENERIC.test(l) && !BUYIN.test(l) && !FEE.test(l) && !TOTAL.test(l) && !TABLE.test(l) && !SEAT.test(l) && /[a-z]/i.test(l));
   // "Event #5" beats a line that only says "Tournament".
   const best = cands.find((l) => /#\s*\d|event|evento/i.test(l)) ?? cands[0];

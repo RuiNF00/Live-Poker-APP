@@ -23,7 +23,8 @@ import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type Remo
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
-const POLL_MS = 30000;
+// While the screen is open: what the other player adds shows up within seconds.
+const POLL_MS = 10000;
 
 export default function SwapScreen() {
   const { id, k, r, pay } = useLocalSearchParams<{ id: string; k?: string; r?: string; pay?: string }>();
@@ -147,7 +148,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   const locked = useLocked('swaps') && !s.accounts;
   // From the "falta acertar" reminder: straight to the payment, the amount owed already in.
   // (A moment after the screen lands: a sheet opened mid-push is lost on iOS.)
-  const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
+  const [sheet, setSheet] = useState<SwapEntry['kind'] | null>(null);
   const canPay = !!s.confirmedAt && !s.gone && !s.left;
   useEffect(() => {
     if (!pay || !canPay) return;
@@ -160,7 +161,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   const l = swapLedger(s);
   const cur = s.terms.currency;
   const pending = s.entries.some((e) => e.pending);
-  useSettledReview(!pending && s.entries.some((e) => e.kind === 'payment') && settled(l));
+  useSettledReview(!pending && s.entries.some((e) => e.kind !== 'result') && settled(l));
 
   const sync = useCallback(() => syncSwap(s.id).then((ok) => setOffline(!ok)), [s.id]);
   useEffect(() => {
@@ -204,7 +205,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   }
 
   const results = s.entries.filter((e) => e.kind === 'result').sort((a, b) => b.at - a.at);
-  const payments = s.entries.filter((e) => e.kind === 'payment').sort((a, b) => b.at - a.at);
+  const payments = s.entries.filter((e) => e.kind !== 'result').sort((a, b) => b.at - a.at);
 
   return (
     <>
@@ -238,7 +239,11 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
         {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
             <Button lines={2} title={t('Cobrei')} icon="trophy-outline" style={PAIR} onPress={() => setSheet('result')} />
-            <Button lines={2} title={!locked && l.balance < -HALF_CENT ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('payment')} />
+            {!locked && l.balance > HALF_CENT ? (
+              <Button lines={2} title={t('Recebi')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('received')} />
+            ) : (
+              <Button lines={2} title={!locked && l.balance < -HALF_CENT ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('payment')} />
+            )}
           </Row>
         ) : null}
 
@@ -334,7 +339,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
           />
         </View>
       </Screen>
-      <EntrySheet swap={sheet ? s : null} kind={sheet ?? 'result'} owe={locked ? 0 : Math.max(0, -l.balance)} onClose={() => setSheet(null)} onSave={save} />
+      <EntrySheet swap={sheet ? s : null} kind={sheet ?? 'result'} owe={locked ? 0 : Math.max(0, -l.balance)} owed={locked ? 0 : Math.max(0, l.balance)} onClose={() => setSheet(null)} onSave={save} />
     </>
   );
 }

@@ -1590,6 +1590,16 @@ const ptBR: Record<string, string> = {
   'Cola o link do convite: tu e o teu amigo recebem 50% no primeiro mês do Pro com a tua primeira mão.': 'Cole o link do convite: você e seu amigo recebem 50% no primeiro mês do Pro com a sua primeira mão.',
   'Convite ativado. Guarda a tua primeira mão e recebem os dois 50% no primeiro mês do Pro.': 'Convite ativado. Salve sua primeira mão e vocês dois recebem 50% no primeiro mês do Pro.',
   'Convite ativado. Guarda uma mão e recebem os dois 50% no primeiro mês do Pro.': 'Convite ativado. Salve uma mão e vocês dois recebem 50% no primeiro mês do Pro.',
+  // Swaps: settling up with one player, received payments, payout slips.
+  'deves {amount}': 'você deve {amount}',
+  'Cada swap fica a 0,00: onde deves fica o teu pagamento, onde te devem fica que recebeste. {name} vê o mesmo em cada swap.': 'Cada swap fica em 0,00: onde você deve fica o seu pagamento, onde te devem fica que você recebeu. {name} vê o mesmo em cada swap.',
+  'Ler o recibo do prémio': 'Ler o recibo do prêmio',
+  'Escreve o prémio à mão.': 'Digite o prêmio à mão.',
+  'Este swap é em {b}. Escreve o prémio à mão.': 'Este swap é em {b}. Digite o prêmio à mão.',
+  '{name} registou que recebeu {amount} teus.': '{name} registrou que recebeu {amount} seus.',
+  '{name} recebeu o teu pagamento': '{name} recebeu o seu pagamento',
+  '{name} deve-te {amount} neste momento. Regista o que recebeste e o swap fica acertado dos dois lados.': '{name} te deve {amount} agora. Registre o que você recebeu e o swap fica acertado para os dois.',
+  'Regista o que {name} te pagou.': 'Registre o que {name} te pagou.',
 };
 
 export default ptBR;

@@ -7,6 +7,7 @@ import { View } from 'react-native';
 
 import { ProRow } from '@/components/ProGate';
 import { Sheet } from '@/components/staking/sheets';
+import { ReadPrizeButton } from '@/components/swaps/ReadPrize';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
 import { maybeAskForReview } from '@/lib/review';
@@ -140,7 +141,16 @@ export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: Sw
   const mine = e.side === swap.side;
   const cur = swap.terms.currency;
   const who = mine ? t('Tu') : names[e.side];
-  const title = e.kind === 'result' ? e.event || swap.terms.title : mine ? t('Pagaste a {name}', { name: names[other(e.side)] }) : t('{name} pagou-te', { name: names[e.side] });
+  const title =
+    e.kind === 'result'
+      ? e.event || swap.terms.title
+      : e.kind === 'received'
+        ? mine
+          ? t('Recebeste de {name}', { name: names[other(e.side)] })
+          : t('{name} recebeu o teu pagamento', { name: names[e.side] })
+        : mine
+          ? t('Pagaste a {name}', { name: names[other(e.side)] })
+          : t('{name} pagou-te', { name: names[e.side] });
   const sub =
     e.kind === 'result'
       ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}º lugar', { n: e.finish }) : '']
@@ -167,7 +177,7 @@ export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: Sw
             {mine ? t('deves') : t('deve-te')}
           </T>
         ) : null}
-        <T v="mono" color={e.kind === 'payment' ? C.textDim : mine ? C.warn : C.good}>
+        <T v="mono" color={e.kind !== 'result' ? C.textDim : mine ? C.warn : C.good}>
           {!owe ? '—' : money(owe, cur)}
         </T>
       </View>
@@ -184,30 +194,36 @@ export function EntrySheet({
   swap,
   kind,
   owe,
+  owed = 0,
   onClose,
   onSave,
 }: {
   swap: Swap | null;
-  kind: 'result' | 'payment';
+  kind: EntryKind;
   owe: number;
+  /** What they owe me (0 when unknown): "Recebi" starts at it. */
+  owed?: number;
   onClose: () => void;
   onSave: (e: EntryDraft) => void;
 }) {
   return (
-    <Sheet visible={!!swap} title={kind === 'result' ? t('Cobrei um prémio') : t('Fiz um pagamento')} onClose={onClose}>
-      {swap ? <EntryForm key={swap.id + kind} swap={swap} kind={kind} owe={owe} onSave={onSave} /> : null}
+    <Sheet visible={!!swap} title={kind === 'result' ? t('Cobrei um prémio') : kind === 'received' ? t('Recebi um pagamento') : t('Fiz um pagamento')} onClose={onClose}>
+      {swap ? <EntryForm key={swap.id + kind} swap={swap} kind={kind} owe={owe} owed={owed} onSave={onSave} /> : null}
     </Sheet>
   );
 }
 
+type EntryKind = SwapEntry['kind'];
+
 const num = (s: string) => Number(s.replace(/\s/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
 
-function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result' | 'payment'; owe: number; onSave: (e: EntryDraft) => void }) {
+function EntryForm({ swap, kind: k0, owe, owed, onSave }: { swap: Swap; kind: EntryKind; owe: number; owed: number; onSave: (e: EntryDraft) => void }) {
   const { sessions } = useStore();
   const cur = swap.terms.currency;
   const [kind, setKind] = useState(k0);
   const [event, setEvent] = useState(swap.terms.scope === 'event' ? swap.terms.title : '');
-  const [amount, setAmount] = useState(k0 === 'payment' && owe > 0 ? String(Math.round(owe * 100) / 100) : '');
+  const startAt = (k: EntryKind) => (k === 'payment' && owe > 0 ? String(Math.round(owe * 100) / 100) : k === 'received' && owed > 0 ? String(Math.round(owed * 100) / 100) : '');
+  const [amount, setAmount] = useState(startAt(k0));
   const [finish, setFinish] = useState('');
   const [sessionId, setSessionId] = useState<string | undefined>();
   const names = swapNames(swap);
@@ -224,13 +240,15 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
     <>
       <Segmented
         options={[
-          { key: 'result', label: t('Prémio') },
-          { key: 'payment', label: t('Pagamento') },
+          { key: 'result' as const, label: t('Prémio') },
+          { key: 'payment' as const, label: t('Paguei') },
+          // Only when they owe me: marking what I got is how I close my side.
+          ...(owed > 0 || k0 === 'received' ? [{ key: 'received' as const, label: t('Recebi') }] : []),
         ]}
         value={kind}
         onChange={(v) => {
           setKind(v);
-          if (v === 'payment' && !amount && owe > 0) setAmount(String(Math.round(owe * 100) / 100));
+          if (v !== 'result') setAmount(startAt(v));
         }}
       />
       {kind === 'result' && cashes.length ? (
@@ -253,16 +271,27 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
           </ChipRow>
         </Section>
       ) : null}
+      {kind === 'result' ? (
+        <ReadPrizeButton
+          currency={cur}
+          onRead={(p) => {
+            setAmount(String(p.amount));
+            if (p.finish) setFinish(String(p.finish));
+            if (p.event && !event.trim()) setEvent(p.event);
+            setSessionId(undefined);
+          }}
+        />
+      ) : null}
       {kind === 'result' ? <Field label={t('Evento')} value={event} onChangeText={setEvent} placeholder={t('Ex.: Evento #12, $5k PLO')} maxLength={80} /> : null}
       <Row gap={S.md} style={{ alignItems: 'flex-start' }}>
         <Field
-          label={kind === 'result' ? t('Prémio total ({cur})', { cur }) : t('Valor pago ({cur})', { cur })}
+          label={kind === 'result' ? t('Prémio total ({cur})', { cur }) : kind === 'received' ? t('Valor recebido ({cur})', { cur }) : t('Valor pago ({cur})', { cur })}
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
           placeholder="0"
           style={{ flex: 1 }}
-          autoFocus={kind === 'payment' ? !amount : swap.terms.scope === 'event'}
+          autoFocus={kind !== 'result' ? !amount : swap.terms.scope === 'event'}
         />
         {kind === 'result' ? <Field label={t('Lugar')} value={finish} onChangeText={(v) => setFinish(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="—" style={{ width: 96 }} /> : null}
       </Row>
@@ -274,9 +303,13 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
                 ? t('Sem prémio: fica registado e ninguém deve nada por ele.')
                 : t('Deves {amount} a {name} ({pct} de {prize}).', { amount: money(preview, cur), name: them, pct: pctLabel(swap.terms[swap.side].pct), prize: money(value, cur) })
               : t('Regista só os teus prémios; {name} regista os seus.', { name: them })
-            : owe > 0
-              ? t('Deves {amount} a {name} neste momento.', { amount: money(owe, cur), name: them })
-              : t('Regista o que pagaste a {name}; o que ele te paga regista ele.', { name: them })}
+            : kind === 'received'
+              ? owed > 0
+                ? t('{name} deve-te {amount} neste momento. Regista o que recebeste e o swap fica acertado dos dois lados.', { amount: money(owed, cur), name: them })
+                : t('Regista o que {name} te pagou.', { name: them })
+              : owe > 0
+                ? t('Deves {amount} a {name} neste momento.', { amount: money(owe, cur), name: them })
+                : t('Regista o que pagaste a {name}; o que ele te paga regista ele.', { name: them })}
         </T>
       </Card>
       <Button lines={2}

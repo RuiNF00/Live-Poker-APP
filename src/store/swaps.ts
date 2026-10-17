@@ -31,7 +31,8 @@ export interface SwapEntry {
   /** This phone's id for it, so a resend after no signal never adds it twice. */
   cid: string;
   side: SwapSide;
-  kind: 'result' | 'payment';
+  /** received: the other side paid me. Recorded by who got it, so it only ever lowers what they owe. */
+  kind: 'result' | 'payment' | 'received';
   event: string;
   /** Results: the whole prize. Payments: what was paid to the other side. */
   amount: number;
@@ -151,7 +152,8 @@ export function swapLedger(s: Pick<Swap, 'terms' | 'entries' | 'side'>): SwapLed
         theyOwe += o;
         theirPrizes += e.amount;
       }
-    } else if (mine) iPaid += e.amount;
+    } else if (mine === (e.kind === 'payment')) iPaid += e.amount;
+    // Their payment, or my note that they paid me.
     else theyPaid += e.amount;
   }
   return {
@@ -401,4 +403,60 @@ export function swapsToSettle(swaps: Swap[], groups: SwapGroup[]): ToSettle[] {
     out.push({ id: g.id, group: true, place: g.terms.venue || g.terms.title, name: g.terms.title, pay: mine.some((x) => x.from === g.seat), closedAt: lastResult(g.entries) });
   }
   return out.sort((a, b) => b.closedAt - a.closedAt);
+}
+
+/** One swap's part in settling up with a player: the entry that brings it to 0,00. */
+export interface SettleStep {
+  id: string;
+  kind: 'payment' | 'received';
+  amount: number;
+}
+
+export interface SettleGroup {
+  /** The other player as I see them, and the currency: one settle-up per pair. */
+  name: string;
+  currency: string;
+  swaps: Swap[];
+  /** Positive: they pay me. Negative: I pay them. Over every swap in the group. */
+  net: number;
+}
+
+const nameKey = (n: string) => n.trim().toLocaleLowerCase();
+
+/**
+ * Open swaps with the same player in the same currency, where something is still owed: several
+ * of them can be settled with one payment. Only groups of two or more (one swap has its own buttons).
+ */
+export function settleGroups(list: Swap[]): SettleGroup[] {
+  const by = new Map<string, SettleGroup>();
+  for (const s of list) {
+    if (!s.confirmedAt || s.archived || s.gone || s.left) continue;
+    const name = swapNames(s)[other(s.side)];
+    if (s.terms[other(s.side)].name === '-' || s.entries.some((e) => e.pending)) continue;
+    if (settled(swapLedger(s))) continue;
+    const k = nameKey(name) + '\u0000' + s.terms.currency;
+    const g = by.get(k) ?? { name, currency: s.terms.currency, swaps: [], net: 0 };
+    g.swaps.push(s);
+    by.set(k, g);
+  }
+  return [...by.values()]
+    .filter((g) => g.swaps.length >= 2)
+    .map((g) => ({ ...g, net: settleNet(g.swaps) }));
+}
+
+/** What changes hands once the chosen swaps are settled. Positive: they pay me. */
+export const settleNet = (list: Swap[]) => r2(list.reduce((n, s) => n + swapLedger(s).balance, 0));
+
+/**
+ * The entries that close each swap: where I owe, my payment; where they owe, that I received it.
+ * Every swap ends at 0,00 and only the net changes hands. Both kinds are mine to record.
+ */
+export function settleSteps(list: Swap[]): SettleStep[] {
+  const out: SettleStep[] = [];
+  for (const s of list) {
+    const b = swapLedger(s).balance;
+    if (Math.abs(b) < HALF_CENT) continue;
+    out.push({ id: s.id, kind: b > 0 ? 'received' : 'payment', amount: r2(Math.abs(b)) });
+  }
+  return out;
 }

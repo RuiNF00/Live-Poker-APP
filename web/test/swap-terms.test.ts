@@ -82,3 +82,25 @@ describe('swapBalance', () => {
     expect(b.net).toBe(500);
   });
 });
+
+describe('received (the creditor marks what the other side paid)', () => {
+  const terms = { a: { name: 'Rui', pct: 10 }, b: { name: 'Tiago', pct: 10 } };
+  it('parses like a payment', () => {
+    expect(parseEntry({ cid: 'r1', kind: 'received', amount: 120.456 })).toEqual({ cid: 'r1', kind: 'received', event: '', amount: 120.46, finish: null });
+    expect(parseEntry({ cid: 'r1', kind: 'received', amount: 0 })).toBeNull();
+  });
+  it('counts as paid by the other side', () => {
+    // Tiago won 1000 (owes Rui 100); Rui records he got 60 of it.
+    const b = swapBalance(terms, [
+      { side: 'b', kind: 'result', amount: 1000 },
+      { side: 'a', kind: 'received', amount: 60 },
+    ]);
+    expect(b).toMatchObject({ bOwes: 100, bPaid: 60, aPaid: 0, net: 40 });
+    const done = swapBalance(terms, [
+      { side: 'b', kind: 'result', amount: 1000 },
+      { side: 'a', kind: 'received', amount: 60 },
+      { side: 'b', kind: 'payment', amount: 40 },
+    ]);
+    expect(done.net).toBe(0);
+  });
+});

@@ -28,7 +28,8 @@ export interface SwapEntry {
   /** Client id, so a retry from a phone with bad signal never adds it twice. */
   cid: string;
   side: Side;
-  kind: 'result' | 'payment';
+  /** received: the other side paid me (recorded by who got it, so it only ever lowers what I'm owed). */
+  kind: 'result' | 'payment' | 'received';
   /** Results: which event of the series. */
   event: string;
   /** Results: the whole prize. Payments: the amount paid to the other side. */
@@ -96,10 +97,10 @@ export function parseTerms(x: unknown): SwapTerms | 'offensive' | null {
 export function parseEntry(x: unknown): Omit<SwapEntry, 'id' | 'side' | 'at'> | 'offensive' | null {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
   const o = x as Record<string, unknown>;
-  if (o.kind !== 'result' && o.kind !== 'payment') return null;
+  if (o.kind !== 'result' && o.kind !== 'payment' && o.kind !== 'received') return null;
   const cid = str(o.cid, 40);
   // A prize of 0 is a bust worth recording; a payment of 0 is nothing.
-  const amount = num(o.amount, o.kind === 'payment' ? 0.01 : 0, MAX_MONEY);
+  const amount = num(o.amount, o.kind === 'result' ? 0 : 0.01, MAX_MONEY);
   if (!cid || amount === null) return null;
   const event = o.kind === 'result' ? str(o.event, 80) : '';
   if (event && isOffensive(event)) return 'offensive';
@@ -134,7 +135,8 @@ export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<Swa
     if (e.kind === 'result') {
       if (e.side === 'a') aOwes += (terms.a.pct / 100) * e.amount;
       else bOwes += (terms.b.pct / 100) * e.amount;
-    } else if (e.side === 'a') aPaid += e.amount;
+    } else if ((e.side === 'a') === (e.kind === 'payment')) aPaid += e.amount;
+    // A payment by b, or a's own note that b paid them.
     else bPaid += e.amount;
   }
   const r = (n: number) => Math.round(n * 100) / 100;
