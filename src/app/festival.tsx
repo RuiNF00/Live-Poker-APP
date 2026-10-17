@@ -30,6 +30,7 @@ import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
 import { C, R, S } from '@/theme';
+import { reduceMotion } from '@/lib/motion';
 
 type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix' | EventKind;
 const LATE_REG_HOURS = [2, 3, 4, 5, 6, 8];
@@ -103,7 +104,7 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
     const y = Object.assign(focusAt.current, p);
     if (y.done || y.day < 0 || y.row < 0) return;
     y.done = true;
-    scroll.current?.scrollTo({ y: y.day + y.row, animated: true });
+    scroll.current?.scrollTo({ y: y.day + y.row, animated: !reduceMotion() });
   };
 
   return (
