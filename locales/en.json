@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSMicrophoneUsageDescription": "Sweatbook uses the microphone to record a voice note explaining your hand for your Instagram story."
+  }
+}
