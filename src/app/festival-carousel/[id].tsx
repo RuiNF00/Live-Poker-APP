@@ -83,13 +83,13 @@ export default function FestivalCarouselScreen() {
   };
 
   // X takes 4 images a post: the closing slide is the one left out (the link is in the text).
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
       const files: string[] = [];
       for (let i = 0; i < slides.length; i++) if (to === 'any' || (slides[i] !== 'close' && files.length < 4)) files.push(await captureSlide({ current: refs.current[i] }));
-      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`, variant);
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=festival`, variant);
       await sharePost(files, carouselCaption(recap, link, { showResult, showMoney }), to);
       track('story_shared', { target: to, kind: 'festival_carousel', slides: files.length, money: showMoney });
     } catch {
@@ -105,7 +105,7 @@ export default function FestivalCarouselScreen() {
       <CardShareSheet
         visible={sheet}
         onClose={() => setSheet(false)}
-        instagram={post} instagramTitle={t('Carrossel no Instagram')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} copyTitle={t('Copiar legenda')}
+        instagram={post} instagramTitle={t('Carrossel no Instagram')} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} copyTitle={t('Copiar legenda')}
       />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView

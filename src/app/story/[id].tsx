@@ -266,7 +266,7 @@ export default function StoryScreen() {
 
   // X: the card as a picture, the hand's replay link in the post text (a still; the video goes through "Criar vídeo da mão").
   // The hand's public link, made once (it counts as the free plan's daily share).
-  const linkFor = async (channel: 'x' | 'link'): Promise<{ link: string; shareId: string; ref: string } | null> => {
+  const linkFor = async (channel: 'x' | 'whatsapp' | 'link'): Promise<{ link: string; shareId: string; ref: string } | null> => {
     const isNew = !hand.shareId;
     if (isNew && !pro.canShare()) {
       pro.paywall('shares');
@@ -286,11 +286,11 @@ export default function StoryScreen() {
   const postText = (link: string) => `${comment.trim() || handShareText(hand.game.name, mode === 'question' ? 'challenge' : 'link')}\n${link}`;
 
   // X or any other app: the card as a picture, the replay link in the text.
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
-      const l = await linkFor(to === 'x' ? 'x' : 'link');
+      const l = await linkFor(to === 'any' ? 'link' : to);
       if (!l) return;
       await sharePost([await captureAs('preview', 'post')], postText(l.link), to);
       track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
@@ -338,7 +338,7 @@ export default function StoryScreen() {
 
   return (
     <>
-      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
