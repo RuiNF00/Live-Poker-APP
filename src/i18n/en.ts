@@ -669,6 +669,9 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Grátis hoje': 'Free today',
+  'Semanas': 'Weeks',
+  'Próximo: {step}': 'Next: {step}',
   'Versão {v}': 'Version {v}',
   'Este ecrã não existe': 'This screen does not exist',
   'O link pode ser antigo. As tuas mãos e sessões estão todas no sítio.': 'The link may be old. Your hands and sessions are all where you left them.',
