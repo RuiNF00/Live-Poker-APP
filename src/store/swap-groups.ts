@@ -61,6 +61,8 @@ export interface SwapGroup {
   seats: GroupSeat[];
   entries: GroupEntry[];
   gone?: boolean;
+  /** The creator freed my seat: gone for me, kept here as the record. */
+  removed?: boolean;
   archived?: boolean;
   syncedAt?: number;
   /** This phone only: which of my sessions each of my prizes came from (entry cid → session id). */

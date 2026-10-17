@@ -15,6 +15,7 @@ import { usePro } from '@/billing/pro';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
+import { noteReviewBlocker } from '@/lib/review';
 import { C, S } from '@/theme';
 
 type Reason = 'notPlaying' | 'bankroll' | 'feature';
@@ -38,6 +39,7 @@ export default function TrialNotice() {
 
   useEffect(() => {
     track('cancel_flow', { step: ended ? 'trial_ended' : 'open', source: 'trial' });
+    void noteReviewBlocker('cancel');
   }, [ended]);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));

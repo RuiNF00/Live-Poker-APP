@@ -6,6 +6,7 @@
 // src/i18n/__tests__ and scripts/i18n-missing.ts list what is missing.
 
 import { localeFormat, type LocaleFormat } from '../../packages/hand-format/src/money';
+import { getTable, loadTables } from './tables';
 
 
 /** The language family, for grammar and formatting branches. */
@@ -78,17 +79,11 @@ export { localeFormat, type LocaleFormat };
 export const FORMAT: LocaleFormat = localeFormat(variant, detected.tag);
 export const { locale, decimalComma, currencyAfter } = FORMAT;
 
-type Table = Record<string, string>;
-const TABLES: Partial<Record<Variant, Table>> = {};
+// Phones evaluate only the active language's table; the web downloads only it (tables.web.ts).
+const table = getTable;
 
-// Only the tables a language needs are evaluated: ~0.5 MB of strings stays
-// untouched at launch. Metro still bundles them; they just never run.
-/* eslint-disable @typescript-eslint/no-require-imports */
-function table(v: 'pt-BR' | 'en' | 'es'): Table {
-  return (TABLES[v] ??=
-    v === 'pt-BR' ? require('./pt-BR').default : v === 'es' ? require('./es').default : require('./en').default);
-}
-/* eslint-enable @typescript-eslint/no-require-imports */
+/** Resolves once the active language's strings are loaded (at once on phones). */
+export const i18nReady: Promise<void> = loadTables(variant);
 
 /** The text for one language, with each language's fallback. Exported for the tests. */
 export function translate(v: Variant, pt: string): string {

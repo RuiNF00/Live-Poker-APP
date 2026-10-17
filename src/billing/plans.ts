@@ -77,6 +77,8 @@ export const PRO_ONLY = {
   winrateDetail: true,
   monthCompare: true,
   moveUpPlan: true,
+  /** Drawing villain's range on the 13×13 grid in the replayer. Equity against the range read from the preflop raises stays free. */
+  villainRange: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -156,6 +158,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   monthCompare: {
     title: t('Este mês foi melhor?'),
     body: t('Compara cada mês com os anteriores e vê onde ganhaste.'),
+  },
+  villainRange: {
+    title: t('Desenha a range do vilão'),
+    body: t('Escolhe as mãos dele na grelha e vê a tua equity contra elas.'),
   },
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),

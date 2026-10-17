@@ -149,7 +149,7 @@ function NewSwap() {
           </ChipRow>
         </Section>
         {!same ? (
-          <Section title={t('{name} dá', { name })}>
+          <Section title={them.trim() ? t('{name} dá', { name }) : t('O outro jogador dá')}>
             <ChipRow>
               {PCTS.map((p) => (
                 <Chip key={p} big label={pctLabel(p)} active={theirPct === p} onPress={() => setTheirPct(p)} />
@@ -216,7 +216,9 @@ function NewSwap() {
 
         <Card tone="inset" style={{ gap: S.xs }}>
           <T v="small">
-            {t('Se cobrares {prize}, pagas {mine} a {name}.', { prize: money(example, currency), mine: money((pct / 100) * example, currency), name })}
+            {them.trim()
+              ? t('Se cobrares {prize}, pagas {mine} a {name}.', { prize: money(example, currency), mine: money((pct / 100) * example, currency), name })
+              : t('Se cobrares {prize}, pagas {mine} ao outro jogador.', { prize: money(example, currency), mine: money((pct / 100) * example, currency) })}
           </T>
           <T v="small">
             {t('Se {name} cobrar {prize}, recebes {theirs}.', { prize: money(example, currency), theirs: money((pB / 100) * example, currency), name })}
@@ -227,8 +229,8 @@ function NewSwap() {
           <Button title={busy ? t('A criar…') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
-              {t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name })}{' '}
-              {t('Envia o link só a {name}: quem o abrir primeiro pode confirmar.', { name })}
+              {them.trim() ? t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name }) : t('O outro jogador confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.')}{' '}
+              {them.trim() ? t('Envia o link só a {name}: quem o abrir primeiro pode confirmar.', { name }) : t('Envia o link só ao outro jogador: quem o abrir primeiro pode confirmar.')}
             </T>
           </Row>
         </View>

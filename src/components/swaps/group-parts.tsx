@@ -18,7 +18,7 @@ import { pctLabel, signed } from './parts';
 export function seatLabel(g: SwapGroup, seat: number): string {
   if (seat === g.seat) return t('Tu');
   const n = seatName(g, seat);
-  return n === '-' ? t('Saiu') : n;
+  return n === '-' ? t('Jogador que saiu') : n;
 }
 
 /** One number and a sentence: what the group owes me, or what I owe. */

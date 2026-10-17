@@ -4,18 +4,19 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { Button, Chip, Empty, IconButton, Row, T, tap } from '@/components/ui';
 import { YearCard } from '@/components/YearCard';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
-import { canShareImage, shareImage } from '@/lib/share-image';
+import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { countInSlices } from '@/lib/idle-count';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
@@ -43,6 +44,7 @@ export default function YearScreen() {
   const [hideMoney, setHideMoney] = useState(true);
   const [brand, setBrand] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const pager = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
 
@@ -88,19 +90,35 @@ export default function YearScreen() {
     }
   };
 
-  // X, WhatsApp and the rest: the same card through the share sheet, the link copied.
-  const postElsewhere = async () => {
+  // Time and volume only; the result stays on the card if the player shows it there.
+  const postText = async (to: 'x' | 'any') => {
+    const ref = await shareRef().catch(() => '');
+    const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=year`;
+    const line = t('O meu {year} no póquer: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
+      year,
+      sessions: review.sessions,
+      hours: Math.round(review.hours),
+      hands: review.hands,
+    });
+    return `${line}\n${link}`;
+  };
+
+  const postTo = async (to: 'x' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
-      const ref = await shareRef().catch(() => '');
-      await shareImage(await captureStory({ current: refs.current[page] }), `${BRAND.webUrl}/r/${ref}?utm_source=share&utm_medium=image&utm_campaign=year`);
-      track('story_shared', { target: 'sheet', kind: 'year', card: kind, money: !hideMoney });
+      await sharePost([await captureStory({ current: refs.current[page] })], await postText(to), to);
+      track('story_shared', { target: to, kind: 'year', card: kind, money: !hideMoney });
     } catch {
-      // closed the sheet
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
+  };
+
+  const copy = async () => {
+    await Clipboard.setStringAsync(await postText('any')).catch(() => {});
+    Alert.alert(t('Link copiado'));
   };
 
   if (review.sessions < YEAR_MIN_SESSIONS) {
@@ -120,6 +138,7 @@ export default function YearScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bgDeep, paddingTop: insets.top + S.xs }}>
       <Stack.Screen options={{ headerShown: false }} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
 
       {/* Story-style progress, one segment per card */}
       <Row gap={4} style={{ paddingHorizontal: S.gutter, paddingTop: S.xs }}>
@@ -153,9 +172,12 @@ export default function YearScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        onMomentumScrollEnd={(e) => {
+        // onScroll, not onMomentumScrollEnd: the dots follow the swipe, and the web never fires momentum events.
+        scrollEventThrottle={32}
+        onScroll={(e) => {
           const p = Math.round(e.nativeEvent.contentOffset.x / width);
-          if (p !== page) tap('select');
+          if (p === page) return;
+          tap('select');
           setPage(p);
         }}>
         {cards.map((k, i) => {
@@ -200,10 +222,7 @@ export default function YearScreen() {
               <Button kind="secondary" icon="play-outline" title={t('Ver a mão')} style={{ flex: 1 }} onPress={() => router.push(`/hand/${review.pot!.hand.id}`)} />
             ) : null}
             {canShareStory ? (
-              <>
-                <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 2 }} onPress={post} />
-                {canShareImage ? <IconButton name="share-outline" label={t('Partilhar noutra app (X, WhatsApp…)')} onPress={postElsewhere} /> : null}
-              </>
+              <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} style={{ flex: 2 }} onPress={() => setSheet(true)} />
             ) : (
               <T v="small" style={{ flex: 2, textAlign: 'center' }}>
                 {t('Abre a app no telemóvel para publicar no Instagram.')}

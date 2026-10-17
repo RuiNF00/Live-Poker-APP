@@ -18,6 +18,7 @@ import { notifications } from './lock-screen/reminder';
 import { queueAgreementDelete } from './offer-api';
 import { queueProfileDelete } from './public-profile';
 import { forgetHandShare } from './share-queue';
+import { dropSupportCopies } from './support-cache';
 import { dropAllVoiceNotes } from './voice-note';
 
 type Eraser = () => void | Promise<void>;
@@ -57,6 +58,8 @@ export async function eraseLocal() {
   // Files next to the data: receipt and tax-form photos, voice notes on hands.
   dropAllDocs();
   dropAllVoiceNotes();
+  // Import files picked from the phone and copies made for support.
+  dropSupportCopies();
   // Festival and level reminders, trial nudges: the Pro nudges are planned again from the empty data.
   await notifications()?.cancelAllScheduledNotificationsAsync().catch(() => {});
 }

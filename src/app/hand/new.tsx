@@ -38,7 +38,7 @@ import { addSeat, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, r
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
-import { opponentStats } from '@/store/queries';
+import { opponentStats, sessionsSeen } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { BRAND, C, R, S, SHADOW, ff, posColor } from '@/theme';
 
@@ -278,6 +278,7 @@ export default function NewHand() {
   };
 
   const reads = useMemo(() => opponentStats(hands, store.players), [hands, store.players]);
+  const seen = useMemo(() => sessionsSeen(hands, store.players), [hands, store.players]);
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
@@ -405,7 +406,7 @@ export default function NewHand() {
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
-              <Pressable onPress={() => setSeatEdit(hand.hero)} hitSlop={8}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={8}>
                 <T v="small">
                   {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
                 </T>
@@ -684,6 +685,7 @@ export default function NewHand() {
         bb={hand.game.bb}
         known={store.players}
         stats={reads}
+        seen={seen}
         onClose={() => setSeatEdit(null)}
         reseat={
           seatEdit === null || seatEdit === hand.hero || hand.actions.length

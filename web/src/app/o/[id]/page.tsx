@@ -7,6 +7,7 @@ import { loadOffer as loadOfferById } from '@/lib/offers-store';
 import { normalizeCode } from '@/lib/refcode';
 import { OfferView } from '@/components/offer/OfferView';
 import { offerCopy } from '@/components/offer/copy';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -33,5 +34,10 @@ export default async function OfferPage({ params, searchParams }: Params & Searc
   if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
-  return <OfferView id={id} locale={locale} agreement={rec.offer} initialConfirmedAt={rec.confirmedAt} invite={invite} />;
+  return (
+    <>
+      <OfferView id={id} locale={locale} agreement={rec.offer} initialConfirmedAt={rec.confirmedAt} invite={invite} />
+      <PageFooter locale={locale} page={`o/${id}`} />
+    </>
+  );
 }

@@ -6,7 +6,7 @@ import { t } from '@/i18n';
 import { CURRENCY_INFO } from '@/store/currencies';
 import type { Bankroll, Session, SessionDoc } from '@/store/types';
 
-import { parseNum } from './convert';
+import { parseNum } from './num';
 
 export interface ReceiptGuess {
   name?: string;

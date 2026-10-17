@@ -44,7 +44,7 @@ export function DataRecovery() {
         </View>
         <View style={{ flex: 1 }}>
           <T v="h3">{t('Dados guardados à parte')}</T>
-          <T v="tiny">{t('{n} registo(s) não abriram nesta versão', { n: quarantine.length })}</T>
+          <T v="tiny">{(quarantine.length === 1 ? t('1 registo não abriu nesta versão') : t('{n} registos não abriram nesta versão', { n: quarantine.length }))}</T>
         </View>
       </Row>
       <T v="small">{t('Estão guardados neste telemóvel (e na cópia na nuvem, se a tiveres) e voltam sozinhos quando uma versão nova os conseguir ler. Para ajudarmos já, envia o ficheiro por email para {email}. Leva só esses registos.', { email: SUPPORT_EMAIL })}</T>

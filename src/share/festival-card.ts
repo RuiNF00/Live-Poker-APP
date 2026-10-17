@@ -122,6 +122,10 @@ export function festivalRecap(trip: Trip, sessions: Session[], hands: Hand[]): F
   };
 }
 
+/** "14º" ("14.º" in Spanish). */
+const ordinal = (n: number) => t('{n}º', { n });
+export const placeLabel = (finish: number, field?: number) => (field ? `${ordinal(finish)}/${field}` : ordinal(finish));
+
 const one = (n: number) => {
   const r = Math.round(n * 10) / 10;
   const v = Math.abs(r) >= 100 ? String(Math.round(r)) : String(r);
@@ -152,7 +156,7 @@ export function recapStats(r: FestivalRecap): RecapStat[] {
     { key: 'days', label: t('Dias de jogo'), value: String(r.days) },
     r.events ? { key: 'events', label: r.events === 1 ? t('Evento') : t('Eventos'), value: String(r.events) } : null,
     r.events ? { key: 'cashes', label: t('Prémios'), value: `${r.cashes}/${r.events}`, tone: r.cashes ? 'good' : undefined } : null,
-    r.best ? { key: 'place', label: t('Melhor lugar'), value: r.best.field ? `${r.best.finish}º/${r.best.field}` : `${r.best.finish}º` } : null,
+    r.best ? { key: 'place', label: t('Melhor lugar'), value: placeLabel(r.best.finish, r.best.field) } : null,
     r.cashSessions ? { key: 'cash', label: t('Sessões de cash'), value: String(r.cashSessions) } : null,
   ];
   return all.filter((x): x is RecapStat => !!x).slice(0, 4);
@@ -211,12 +215,12 @@ export function carouselCaption(r: FestivalRecap, link: string, opts: { showResu
   const bits: string[] = [];
   if (r.events) bits.push(r.events === 1 ? t('1 evento') : t('{n} eventos', { n: r.events }));
   if (r.events) bits.push(t('{c}/{n} nos prémios', { c: r.cashes, n: r.events }));
-  if (r.best) bits.push(t('melhor lugar {p}', { p: r.best.field ? `${r.best.finish}º/${r.best.field}` : `${r.best.finish}º` }));
+  if (r.best) bits.push(t('melhor lugar {p}', { p: placeLabel(r.best.finish, r.best.field) }));
   bits.push(r.days === 1 ? t('1 dia de jogo') : t('{n} dias de jogo', { n: r.days }));
   const lines = [`${r.title}: ${bits.join(', ')}.`];
   if (opts.showResult && r.result) lines.push(t('Resultado: {v}', { v: resultLabel(r.result) + (opts.showMoney ? ` (${moneyLabel(r)})` : '') }));
   else if (opts.showResult && opts.showMoney) lines.push(t('Resultado: {v}', { v: moneyLabel(r) }));
-  lines.push('', t('Registo as mãos e as sessões ao vivo com a Sweatbook: {link}', { link }));
+  lines.push(t('Registo as mãos e as sessões ao vivo com a Sweatbook: {link}', { link }));
   return lines.join('\n');
 }
 

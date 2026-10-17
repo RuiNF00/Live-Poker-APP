@@ -76,7 +76,8 @@ export default function DownswingScreen() {
               <Stat label={t('Queda')} sub={inBi(big.depth) || undefined} value={'−' + fmt(big.depth)} tone="bad" />
               <Stat label={t('Duração')} sub={t('Do pico ao fundo')} value={big.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: big.sessions })} />
               <Stat label={t('Começou')} sub={t('No pico')} value={date(big.from)} />
-              <Stat label={t('Recuperado')} sub={big.recovered ? t('Em {n} dias', { n: Math.max(1, Math.round((big.recovered - big.from) / DAY)) }) : t('Ainda não')} value={big.recovered ? date(big.recovered) : '—'} tone={big.recovered ? 'good' : 'bad'} />
+              {/* Counted from the bottom, like the year card: how long it took to climb back. */}
+              <Stat label={t('Recuperado')} sub={big.recovered ? t('Em {n} dias', { n: Math.max(1, Math.round((big.recovered - big.to) / DAY)) }) : t('Ainda não')} value={big.recovered ? date(big.recovered) : '—'} tone={big.recovered ? 'good' : 'bad'} />
             </StatGrid>
             {bi > 0 ? <T v="tiny">{t('Buy-in: o valor de entrada mais habitual nas tuas sessões, {amount}.', { amount: fmt(bi) })}</T> : null}
           </Section>

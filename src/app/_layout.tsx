@@ -131,6 +131,7 @@ export default function RootLayout() {
             <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
             <Stack.Screen name="coach/new" options={{ title: t('Enviar ao coach'), presentation: 'modal' }} />
             <Stack.Screen name="pack/index" options={{ title: t('Links de várias mãos') }} />
+            <Stack.Screen name="shared-hands" options={{ title: t('Mãos partilhadas') }} />
             <Stack.Screen name="pack/new" options={{ title: t('Partilhar num só link'), presentation: 'modal' }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
             <Stack.Screen name="export" options={{ title: t('Exportar') }} />

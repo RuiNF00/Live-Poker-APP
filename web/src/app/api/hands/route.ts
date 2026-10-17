@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isOffensive } from '@/lib/moderation';
 import { brand } from '@/config/brand';
 import { getStore } from '@/lib/store';
 import { parseQuiz, resolveHand } from '@/lib/hand';
@@ -27,9 +28,15 @@ export async function POST(req: Request) {
 
   const appTitle = (body.hand as { title?: unknown }).title;
   const rawTitle = typeof body.title === 'string' ? body.title : typeof appTitle === 'string' ? appTitle : '';
+  // Public text passes the same filter as comments. An offensive title or note is left out rather
+  // than failing the share: the hand itself still goes up.
+  const title = rawTitle.trim().slice(0, 120);
+  const hand = { ...(body.hand as Record<string, unknown>) };
+  if (typeof hand.notes === 'string' && isOffensive(hand.notes)) hand.notes = '';
+  if (typeof hand.title === 'string' && isOffensive(hand.title)) hand.title = '';
   const { id, editToken } = await getStore().createShare({
-    payload: body.hand,
-    title: rawTitle.trim().slice(0, 120) || null,
+    payload: hand,
+    title: title && !isOffensive(title) ? title : null,
     revealAll: body.revealAll === true,
     quiz,
     allowComments: body.allowComments !== false,

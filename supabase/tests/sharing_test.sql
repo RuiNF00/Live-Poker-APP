@@ -100,3 +100,21 @@ set role service_role;
 select purge_old_app_events() = 1 as purged_old_event;
 reset role;
 select count(*) = 2 as recent_events_kept from app_events;
+
+-- The owner removes a comment and blocks its author on that hand; counts for the app's list.
+set role service_role;
+select id as bshare, edit_token as btoken from create_shared_hand('{"version":1,"game":"NLHE"}'::jsonb, 'Bloqueio', false, null) \gset
+select id as troll_c from add_hand_comment(:'bshare', 'Troll', 'lixo', null, 'keyT') \gset
+select count(*) = 1 from add_hand_comment(:'bshare', 'Troll', 'mais lixo', null, 'keyT');
+select count(*) = 1 from add_hand_comment(:'bshare', 'Ana', 'Bom fold', null, 'keyA');
+select comments = 3 as counted_before_block from hand_comment_counts(array[:'bshare', 'nope']);
+select block_hand_commenter(:'troll_c', 'wrong-token') = false as block_needs_token;
+select block_hand_commenter(:'troll_c', :'btoken') as owner_blocks;
+select count(*) = 1 and min(author_name) = 'Ana' as blocked_author_hidden from list_hand_comments(:'bshare');
+select comments = 1 as counted_after_block from hand_comment_counts(array[:'bshare']);
+\set ON_ERROR_STOP off
+select add_hand_comment(:'bshare', 'Troll', 'voltei', null, 'keyT');
+\set ON_ERROR_STOP on
+select count(*) = 1 as blocked_author_refused from list_hand_comments(:'bshare');
+select count(*) = 1 as others_still_comment from add_hand_comment(:'bshare', 'Rui', 'Obrigado', null, 'keyR');
+reset role;

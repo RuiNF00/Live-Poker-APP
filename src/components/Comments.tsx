@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
@@ -6,7 +7,7 @@ import { t } from '@/i18n';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
-import { C, F, R, S } from '@/theme';
+import { BRAND, C, F, R, S } from '@/theme';
 
 import { Avatar } from './Avatar';
 import { Button, Card, Field, Row, T } from './ui';
@@ -28,6 +29,7 @@ export function CommentsList({
   onJumpStreet,
   notes,
   onNote,
+  onRemove,
 }: {
   shareId: string;
   comments: Comment[];
@@ -41,6 +43,8 @@ export function CommentsList({
   /** Private notes per street (never shared). */
   notes?: Partial<Record<Street, string>>;
   onNote?: (s: Street, text: string) => void;
+  /** Given on the owner's own hand: each comment offers "Apagar" instead of "Denunciar". */
+  onRemove?: (c: Comment) => void;
 }) {
   const [name, setName] = useState(defaultName);
   const [text, setText] = useState('');
@@ -122,6 +126,18 @@ export function CommentsList({
                     </T>
                   </Row>
                   <T v="body">{c.text}</T>
+                  {onRemove ? (
+                    <Pressable
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('Apagar comentário de')} ${c.name}`}
+                      onPress={() => onRemove(c)}
+                      style={{ alignSelf: 'flex-end', minHeight: 24, justifyContent: 'center' }}>
+                      <T v="tiny" color={C.muted}>
+                        {t('Apagar')}
+                      </T>
+                    </Pressable>
+                  ) : (
                   <Pressable
                     disabled={reported.has(c.id)}
                     hitSlop={10}
@@ -133,6 +149,7 @@ export function CommentsList({
                       {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
                     </T>
                   </Pressable>
+                  )}
                 </View>
               </Row>
             ))}
@@ -156,6 +173,12 @@ export function CommentsList({
           </T>
         ) : null}
         <Button size="md" icon="send" title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
+        <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>
+          {t('Ao comentar aceitas os')}{' '}
+          <T v="tiny" color={C.accent} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`).catch(() => {})}>
+            {t('Termos')}
+          </T>
+        </T>
       </Card>
     </View>
   );

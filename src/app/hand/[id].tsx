@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
@@ -13,13 +13,16 @@ import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
+import { ShareSheet } from '@/components/ShareSheet';
 import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
-import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
+import { markCommentsSeen } from '@/lib/friend-hands';
+import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
@@ -38,6 +41,7 @@ export default function HandScreen() {
   const sample = useMemo(() => (isSample ? sampleHand('sample') : undefined), [isSample]);
   const hand = sample ?? hands.find((h) => h.id === id);
   const [busy, setBusy] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   // A link made without signal waits here and lands on the hand when the network is back.
   const shareWaiting = useQueuedShare(isSample ? undefined : hand, saveHand);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -45,7 +49,13 @@ export default function HandScreen() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const loadComments = useCallback(() => {
     if (!hand?.shareId) return;
-    fetchComments(hand.shareId).then(setComments).catch(() => {});
+    const sid = hand.shareId;
+    fetchComments(sid)
+      .then((c) => {
+        setComments(c);
+        markCommentsSeen(sid, c.length);
+      })
+      .catch(() => {});
     fetchVotes(hand.shareId).then(setVotes).catch(() => {});
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
@@ -122,7 +132,7 @@ export default function HandScreen() {
     }
   };
 
-  const share = async (quiz = false) => {
+  const share = async (quiz = false, to?: 'x') => {
     tap('medium');
     const isNew = !hand.shareId;
     if (isNew && !pro.canShare()) {
@@ -133,15 +143,26 @@ export default function HandScreen() {
     if (!shareId) return;
     if (isNew) pro.record('share');
     const ref = await shareRef();
-    const link = shareLink(shareId, quiz ? 'challenge' : 'link', { quiz, ref });
-    track('link_shared', { channel: quiz ? 'challenge' : 'link', share_id: shareId, ref });
+    const channel = to ?? (quiz ? 'challenge' : 'link');
+    const link = shareLink(shareId, channel, { quiz, ref });
+    track('link_shared', { channel, share_id: shareId, ref });
     const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
-    const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}
+    const head = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}`;
+    const msg = `${head}
 ${link}`;
+    if (to === 'x') {
+      // Straight to a new post on X (the app if installed, else the browser); the link shows the replay card.
+      await Linking.openURL(`https://x.com/intent/post?text=${encodeURIComponent(head)}&url=${encodeURIComponent(link)}`).catch(() => Share.share({ message: msg }));
+      return;
+    }
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));
-    } else await Share.share({ message: msg });
+    } else {
+      const res = await Share.share({ message: msg });
+      // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
+      if (res.action === Share.sharedAction && hands.filter((h) => h.shareId || h.id === hand.id).length >= 3) maybeAskForReview('share3');
+    }
   };
 
   // Standard hand history for TwoPlusTwo, Reddit or a WhatsApp group: positions, stacks in bb, every street.
@@ -196,6 +217,42 @@ ${link}`;
     ]);
   };
 
+  const removeOne = (c: Comment) => {
+    const doIt = async (block: boolean) => {
+      if (!hand.shareId || !hand.shareToken) return;
+      try {
+        await removeComment(hand.shareId, hand.shareToken, c.id, block);
+        if (block) loadComments();
+        else setComments((x) => x.filter((y) => y.id !== c.id));
+      } catch {
+        Alert.alert(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
+      }
+    };
+    if (Platform.OS === 'web') doIt(false);
+    else
+      Alert.alert(t('Apagar comentário?'), t('Bloquear impede esta pessoa de voltar a comentar nesta mão.'), [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Apagar'), style: 'destructive', onPress: () => doIt(false) },
+        { text: t('Apagar e bloquear'), style: 'destructive', onPress: () => doIt(true) },
+      ]);
+  };
+
+  const copyLink = async () => {
+    const isNew = !hand.shareId;
+    if (isNew && !pro.canShare()) {
+      pro.paywall('shares');
+      return;
+    }
+    const shareId = await ensureId();
+    if (!shareId) return;
+    if (isNew) pro.record('share');
+    const ref = await shareRef();
+    await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));
+    track('link_shared', { channel: 'copy', share_id: shareId, ref });
+    tap('success');
+    Alert.alert(t('Link copiado'));
+  };
+
   const unshare = () => {
     const doIt = async () => {
       if (!hand.shareId || !hand.shareToken) return;
@@ -248,6 +305,7 @@ ${link}`;
         <View style={{ paddingHorizontal: 4 }}>
           <HandHeader hand={hand} inBB={settings.inBB} />
         </View>
+        <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} />
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} source="own" initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
@@ -255,15 +313,6 @@ ${link}`;
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
 
-        <Section title={t('Partilhar')}>
-          <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : shareWaiting ? t('Link à espera de rede') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />
-          <Row gap={S.sm}>
-            <ShareTile icon="help-circle-outline" label={t('Desafio')} sub={t('Votação')} disabled={busy} onPress={() => share(true)} />
-            <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })} />
-            <ShareTile icon="copy-outline" label={t('Texto')} sub={t('Fórum')} disabled={busy} onPress={askCopyText} />
-            <ShareTile icon="analytics-outline" label="Solver" sub="GTO Wizard" onPress={() => openInGtoWizard([hand])} onLongPress={exportSolver} />
-          </Row>
-        </Section>
 
         {hand.shareId ? (
           <Section title={t('Comentários')} action={t('Atualizar')} onAction={loadComments}>
@@ -271,13 +320,20 @@ ${link}`;
             <CommentsList
               shareId={hand.shareId}
               comments={comments}
-              onPosted={(c) => setComments((x) => [...x, c])}
+              onPosted={(c) =>
+                setComments((x) => {
+                  // Your own reply isn't news to you.
+                  if (hand?.shareId) markCommentsSeen(hand.shareId, x.length + 1);
+                  return [...x, c];
+                })
+              }
               defaultName={settings.nickname}
               streets={streets}
               street={street}
               onJumpStreet={jumpStreet}
               notes={hand.streetNotes}
               onNote={saveNote}
+              onRemove={hand.shareToken ? removeOne : undefined}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>
@@ -292,6 +348,29 @@ ${link}`;
           </>
         )}
       </ScrollView>
+      <ShareSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        groups={[
+          {
+            options: [
+              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id } }) },
+              { icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
+              { icon: 'share-outline', label: t('Outras apps'), sub: t('WhatsApp, Mensagens, Telegram…'), onPress: () => share() },
+              { icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
+            ],
+          },
+          {
+            title: t('Mais'),
+            options: [
+              { icon: 'help-circle-outline', label: t('Desafio'), sub: t('Os amigos votam antes de ver o resultado'), onPress: () => share(true) },
+              { icon: 'copy-outline', label: t('Texto para fórum'), sub: t('TwoPlusTwo, Reddit, grupos'), onPress: askCopyText },
+              { icon: 'analytics-outline', label: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard([hand]) },
+              { icon: 'document-text-outline', label: t('Exportar para solver'), sub: t('Formato PokerStars'), onPress: exportSolver },
+            ],
+          },
+        ]}
+      />
     </>
   );
 }

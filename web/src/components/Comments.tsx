@@ -82,6 +82,8 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
           name: name.trim(),
           text: body.trim(),
           stepIndex: attach && currentStep > 0 ? currentStep : null,
+          // So the player who shared can block this browser (only a hash is kept).
+          authorId: voterId(),
         }),
       });
       if (res.status === 429) return setState('limited');
@@ -179,6 +181,13 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
         <button className="btn btn-primary" disabled={state === 'sending'}>
           {state === 'sending' ? d.sending : d.send}
         </button>
+        <p className="comment-terms">
+          {d.commentTerms}{' '}
+          <a href={d.termsHref} target="_blank" rel="noopener">
+            {d.commentTermsLink}
+          </a>
+          .
+        </p>
         {state === 'error' && <p className="error">{d.commentError}</p>}
         {state === 'limited' && <p className="error">{d.rateLimited}</p>}
         {state === 'offensive' && <p className="error">{d.offensive}</p>}

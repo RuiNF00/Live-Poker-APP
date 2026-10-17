@@ -44,14 +44,20 @@ export function numberTag(l: Locale): string {
 const MONEY_VARIANT: Record<Locale, MoneyVariant> = { pt: 'pt-PT', 'pt-BR': 'pt-BR', en: 'en', es: 'es' };
 const moneyFormats = new Map<Locale, LocaleFormat>();
 
+/** The app's number rules for a page language (decimal comma, grouping, money layout). */
+export function numberFormat(l: Locale): LocaleFormat {
+  let f = moneyFormats.get(l);
+  if (!f) moneyFormats.set(l, (f = localeFormat(MONEY_VARIANT[l])));
+  return f;
+}
+
 /**
  * Money exactly as the app writes it (same rules, packages/hand-format/src/money.ts): "2500€" and
  * "12,50€" in pt-PT, "R$ 2.500" in pt-BR, "2500 €" in Spain, "$2,500" in English. `signed` adds a
  * "+" to gains; losses always carry "−".
  */
 export function formatMoney(n: number, currency: string, l: Locale, signed = false): string {
-  let f = moneyFormats.get(l);
-  if (!f) moneyFormats.set(l, (f = localeFormat(MONEY_VARIANT[l])));
+  const f = numberFormat(l);
   const s = moneyIn(f, n, currency);
   return signed && n > 0 && s !== moneyIn(f, 0, currency) ? `+${s}` : s;
 }
@@ -116,6 +122,9 @@ const pt = {
   noStreetComments: 'Ainda nada sobre esta rua. Comenta em baixo.',
   send: 'Comentar',
   sending: 'A enviar…',
+  commentTerms: 'Ao comentar aceitas os',
+  commentTermsLink: 'Termos',
+  termsHref: '/terms#pt',
   commentError: 'Não foi possível enviar. Tenta outra vez.',
   rateLimited: 'Muitos comentários seguidos. Espera um minuto.',
   offensive: 'O comentário tem linguagem ofensiva. Reescreve-o, por favor.',
@@ -200,6 +209,9 @@ const en: Dict = {
   noStreetComments: 'Nothing on this street yet. Comment below.',
   send: 'Comment',
   sending: 'Sending…',
+  commentTerms: 'By commenting you accept the',
+  commentTermsLink: 'Terms',
+  termsHref: '/terms',
   commentError: 'Could not send. Try again.',
   rateLimited: 'Too many comments in a row. Wait a minute.',
   offensive: 'This comment contains offensive language. Please rewrite it.',
@@ -282,6 +294,9 @@ const ptBR: Dict = {
   noStreetComments: 'Nada sobre esta street ainda. Comente abaixo.',
   send: 'Comentar',
   sending: 'Enviando…',
+  commentTerms: 'Ao comentar você aceita os',
+  commentTermsLink: 'Termos',
+  termsHref: '/terms#pt',
   commentError: 'Não foi possível enviar. Tente de novo.',
   rateLimited: 'Muitos comentários seguidos. Espere um minuto.',
   offensive: 'O comentário tem linguagem ofensiva. Reescreva, por favor.',
@@ -364,6 +379,9 @@ const es: Dict = {
   noStreetComments: 'Aún nada sobre esta calle. Comenta abajo.',
   send: 'Comentar',
   sending: 'Enviando…',
+  commentTerms: 'Al comentar aceptas los',
+  commentTermsLink: 'Términos',
+  termsHref: '/terms',
   commentError: 'No se pudo enviar. Inténtalo de nuevo.',
   rateLimited: 'Demasiados comentarios seguidos. Espera un minuto.',
   offensive: 'El comentario tiene lenguaje ofensivo. Reescríbelo, por favor.',

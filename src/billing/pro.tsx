@@ -18,6 +18,7 @@ import * as store from './purchases';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { activateInvite, claimState } from '@/lib/referrals';
+import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
 import { useStore } from '@/store/store';
 
 const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcome.v1' };
@@ -102,6 +103,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const paywall = useCallback((reason: PaywallReason = 'generic') => {
     if (reason === 'hands' || reason === 'handsLive' || reason === 'shares') track('limit_hit', { reason });
     track('paywall_shown', { reason, trial: trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout });
+    void noteReviewBlocker('paywall');
     router.push({ pathname: '/paywall', params: { reason } });
   }, [trialDays, paywallConfig]);
 
@@ -110,8 +112,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       const plan = plans.find((p) => p.id === id);
       if (!plan) return 'unavailable' as const;
       const res = await store.buy(plan);
+      if (res === 'error') noteVisibleError();
       if (res === 'ok') {
         setPro(true);
+        void noteReviewBlocker('bought');
         const props = { plan: id, reason, trial: plan.trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout };
         // A hand waiting as a draft when buying: usually the one the free limit held back.
         track('purchase', { ...props, drafts: draftWaiting ? 1 : 0 });
