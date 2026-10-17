@@ -35,7 +35,8 @@ export function comebackSeen(s: ComebackState, now: number): ComebackState {
 
 export type NudgeId = 'trial-recap' | 'trial-end' | 'comeback';
 /** Android channels: billing ones always go out during a trial; tips are the optional reminders. */
-export const NUDGE_CHANNEL: Record<NudgeId, 'billing' | 'tips'> = { 'trial-recap': 'billing', 'trial-end': 'billing', comeback: 'tips' };
+/** Notification kind (lib/notify-policy): only the notice before a charge is 'billing', which can't be switched off. */
+export const NUDGE_KIND: Record<NudgeId, 'billing' | 'tips'> = { 'trial-recap': 'tips', 'trial-end': 'billing', comeback: 'tips' };
 /** 'trial-day5' is the old id, still cancelled so a reminder planned by an older version never fires. */
 export const NUDGE_IDS: (NudgeId | 'trial-day5')[] = ['trial-recap', 'trial-end', 'comeback', 'trial-day5'];
 

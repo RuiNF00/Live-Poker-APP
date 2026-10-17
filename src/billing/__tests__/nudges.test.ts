@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, planNudges, recapAt, type NudgeInput } from '../nudges';
+import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, NUDGE_KIND, planNudges, recapAt, type NudgeInput } from '../nudges';
 
 const DAY = 86_400_000;
 // A 3-day trial started at a live session on Saturday evening.
@@ -86,4 +86,8 @@ test('in-app charge notice: same window as the notification, only without notifi
   assert.equal(chargeNoticeDue(trial, at, true), false);
   assert.equal(chargeNoticeDue({ ...trial, willRenew: false }, at, false), false);
   assert.equal(chargeNoticeDue(trial, trial.end + 1, false), false);
+});
+
+test('only the notice before a charge is billing (always on); the rest are switchable tips', () => {
+  assert.deepEqual(NUDGE_KIND, { 'trial-recap': 'tips', 'trial-end': 'billing', comeback: 'tips' });
 });
