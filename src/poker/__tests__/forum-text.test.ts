@@ -89,7 +89,7 @@ test('tournament header and all-in run-out', () => {
     board: ['2c', '7d', '9s', 'Th', '3c'],
   });
   const txt = forumText(h);
-  assert.match(txt.split('\n')[0], /^NL Hold'em · Tournament · Main Event · 1.?000\/2.?000 \(2.?000 BB ante\) · Level 12 · Bubble · 87 left · 2-handed$/);
+  assert.match(txt.split('\n')[0], /^NL Hold'em · Tournament · Main Event · 1000\/2000 \(2000 BB ante\) · Level 12 · Bubble · 87 left · 2-handed$/);
   assert.ok(txt.includes('Hero raises to 20 bb all-in, BB calls 19 bb'), txt);
   assert.ok(txt.includes('Flop (41 bb): 2c 7d 9s'), txt);
   assert.ok(txt.includes('River (41 bb): 3c'), txt);

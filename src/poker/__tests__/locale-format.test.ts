@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { localeFormat } from '../../i18n';
+import { storedCurrency } from '../../store/currencies';
 import { bbs, chips, moneyIn, rawCompactMoney } from '../format';
 
 // U+00A0, so "R$" never wraps away from its amount.
@@ -50,4 +51,12 @@ test('compact money keeps the currency where the language puts it', () => {
   assert.equal(rawCompactMoney(2500, '€'), '2500€');
   assert.equal(rawCompactMoney(12500, '€'), '12,5k€');
   assert.equal(rawCompactMoney(-2500000, '$'), '−2,5M$');
+});
+
+test('a fresh install takes the currency of the phone region', () => {
+  assert.equal(storedCurrency('BRL'), 'R$');
+  assert.equal(storedCurrency('usd'), '$');
+  assert.equal(storedCurrency('MXN'), 'MXN');
+  assert.equal(storedCurrency('XYZ'), undefined);
+  assert.equal(storedCurrency(null), undefined);
 });

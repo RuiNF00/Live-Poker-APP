@@ -34,7 +34,7 @@ function Bar({ s }: { s: Session }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t('Sessão em curso · {time}', { time: duration(playedMs(s, now)) })}
+      accessibilityLabel={paused ? t('Sessão em pausa · {time}', { time: duration(playedMs(s, now)) }) : t('Sessão em curso · {time}', { time: duration(playedMs(s, now)) })}
       onPress={() => {
         tap();
         router.navigate('/session');

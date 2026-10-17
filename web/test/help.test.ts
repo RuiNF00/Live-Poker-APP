@@ -52,8 +52,39 @@ describe('store pages', () => {
     expect(to['/suporte']).toBe('/support?lang=pt');
     expect(to['/pt-br/suporte']).toBe('/support?lang=pt-BR');
     expect(to['/es/soporte']).toBe('/support?lang=es');
-    expect(to['/pt-br/apagar-conta']).toBe('/apagar-conta?lang=pt-BR');
-    expect(to['/es/eliminar-cuenta']).toBe('/apagar-conta?lang=es');
+    expect(to['/apagar-conta']).toBe('/delete-account?lang=pt');
+    expect(to['/pt-br/apagar-conta']).toBe('/delete-account?lang=pt-BR');
+    expect(to['/es/eliminar-cuenta']).toBe('/delete-account?lang=es');
     expect(redirects.every((r) => !r.permanent)).toBe(true);
+  });
+});
+
+describe('web text in four languages', () => {
+  /** Every key path of a copy object, so a string missing in one language shows up. */
+  const shape = (o: unknown, at = ''): string[] =>
+    o && typeof o === 'object' && !Array.isArray(o) ? Object.entries(o).flatMap(([k, v]) => shape(v, `${at}.${k}`)) : [`${at}:${Array.isArray(o) ? `[${o.length}]` : typeof o}`];
+
+  it('has the same text, key for key, in pt, pt-BR, es and en', async () => {
+    const { helpCopy } = await import('../src/components/help/copy');
+    const { SUPPORT_COPY } = await import('../src/components/help/support-copy');
+    const { DELETE_COPY } = await import('../src/components/help/delete-copy');
+    for (const [name, copy] of Object.entries({ helpCopy, SUPPORT_COPY, DELETE_COPY })) {
+      expect(Object.keys(copy).sort(), name).toEqual([...HELP_LOCALES].sort());
+      const pt = shape(copy.pt);
+      for (const l of HELP_LOCALES) expect(shape(copy[l]), `${name}.${l}`).toEqual(pt);
+    }
+  });
+});
+
+describe('html lang of language-specific pages', () => {
+  it('comes from the route, then from ?lang=, else the browser decides', async () => {
+    const { pageLang } = await import('../src/lib/page-lang');
+    expect(pageLang('/es/ayuda', null)).toBe('es');
+    expect(pageLang('/help/cancel-pro', 'pt')).toBe('en');
+    expect(pageLang('/pt-br/ajuda/x', null)).toBe('pt-BR');
+    expect(pageLang('/ajuda', null)).toBe('pt-PT');
+    expect(pageLang('/support', 'pt-BR')).toBe('pt-BR');
+    expect(pageLang('/delete-account', 'es')).toBe('es');
+    expect(pageLang('/support', null)).toBeNull();
   });
 });

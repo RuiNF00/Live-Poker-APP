@@ -23,7 +23,7 @@ const MARK: Record<Mark, { label: string; color: string }> = {
 export function CoachThread({ hand, name }: { hand: Hand; name: string }) {
   const coach = useCoach();
   const items = useMemo(() => commentsForHand(coach, hand.id), [coach, hand.id]);
-  const label = useMemo(() => stepLabeller(hand, lang === 'pt' ? 'pt' : 'en'), [hand]);
+  const label = useMemo(() => stepLabeller(hand, lang), [hand]);
   // Unread comments keep their "Novo" tag while the screen is up; they count as read once the player leaves.
   const fresh = useMemo(() => {
     const seen = new Set(coach.seen);

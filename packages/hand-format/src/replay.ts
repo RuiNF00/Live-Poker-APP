@@ -1,5 +1,5 @@
 import { bestHand, categoryLabel, type HandValue } from './evaluate';
-import type { Action, ActionType, Card, HandRecord, Player, Street } from './types';
+import type { Action, ActionType, Card, HandRecord, Locale, Player, Street } from './types';
 import { STREETS } from './types';
 
 export interface SeatState {
@@ -102,7 +102,7 @@ function cloneSeats(seats: SeatState[]): SeatState[] {
 export interface BuildOptions {
   /** Reveal every known hole card from the start (owner view). Default: hero only until showdown. */
   revealAll?: boolean;
-  locale?: 'pt' | 'en';
+  locale?: Locale;
 }
 
 export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplayStep[] {

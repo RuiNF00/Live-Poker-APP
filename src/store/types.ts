@@ -3,6 +3,8 @@ import type { Tourney } from '@/poker/tourney';
 import type { SizeMemory } from '@/poker/entry';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
+import { deviceCurrency } from './currencies';
+
 export interface Session {
   id: string;
   kind: GameKind;
@@ -307,6 +309,8 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Mental journal: ask how you arrive and how you leave. Missing = yes. */
+  mindAsk?: boolean;
   /** Home-screen widget: show this week's result. Off by default: a home screen is seen by whoever sits next to you. */
   widgetResult?: boolean;
   /** Rates typed for currencies the ECB doesn't publish (ARS, CLP...): ISO code → units per 1 EUR. */
@@ -327,7 +331,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   inBB: false,
-  currency: '€',
+  currency: deviceCurrency(),
   nickname: '',
   defaultTableSize: 9,
   onboarded: false,

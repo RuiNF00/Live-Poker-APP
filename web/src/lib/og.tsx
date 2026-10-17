@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { buildReplay, formatChips, type Card, type HandRecord } from '@livepoker/hand-format';
+import { buildReplay, formatChips, stakesText, type Card, type HandRecord } from '@livepoker/hand-format';
 import { brand } from '@/config/brand';
 import { heroLastSpot, resolveHand } from '@/lib/hand';
 import type { QuizSpot, SharedHand } from '@/lib/types';
@@ -121,7 +121,7 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean):
   const shown = quiz ? Math.min(board.length, BOARD_AT[quiz.street]) : board.length;
   const slots = quiz ? Math.max(board.length, shown) : board.length;
   const stakes = hand
-    ? `${formatChips(hand.blinds.sb)}/${formatChips(hand.blinds.bb)}${hand.blinds.ante ? ` (${formatChips(hand.blinds.ante)})` : ''}`
+    ? stakesText(hand.blinds)
     : '';
   const wordmark = /^(.*?)(book)$/i.exec(brand.name);
   const where = hand?.tournament?.name || hand?.location || (hand?.format === 'cash' ? 'Cash game' : '');

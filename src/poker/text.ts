@@ -1,6 +1,5 @@
 import { positions, replay, straddleSeats, totalPot, type LastAction } from './engine';
 import { runWinnings } from './pokerstars';
-import { chips } from './format';
 import type { AnteType, Hand, Street } from './types';
 
 // Forum hand history (TwoPlusTwo, Reddit r/poker, WhatsApp groups): the
@@ -12,9 +11,17 @@ const STAGE_EN: Record<string, string> = { early: 'Early', mid: 'Middle stages',
 const ANTE_EN: Record<AnteType, string> = { bb: 'BB ante', btn: 'button ante', all: 'ante', none: '' };
 const STREET_EN: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 
+/** 1500 → "1500", 12500 → "12.5k", whatever the phone's language: forums are read in English. */
+function plain(n: number) {
+  const a = Math.abs(n);
+  const short = (x: number, d: number) => String(Math.round(x * 10 ** d) / 10 ** d);
+  const s = a < 10000 ? String(Math.round(a)) : a < 1e6 ? short(a / 1000, a < 100000 ? 1 : 0) + 'k' : short(a / 1e6, 2) + 'M';
+  return (n < 0 ? '-' : '') + s;
+}
+
 /** 135 chips at 2 bb → "67.5 bb". Always a decimal point: forums are read in English. */
 function inBB(n: number, bb: number) {
-  if (!bb) return chips(n);
+  if (!bb) return plain(n);
   const v = Math.round((n / bb) * 10) / 10;
   return `${Number.isInteger(v) ? v : v.toFixed(1)} bb`;
 }
@@ -52,10 +59,10 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
   const who = (i: number) => (i === hand.hero ? 'Hero' : pos[i]);
   const out: string[] = [];
 
-  const ante = !g.bombPot && g.ante > 0 && g.anteType !== 'none' ? ` (${chips(g.ante)} ${ANTE_EN[g.anteType]})` : '';
+  const ante = !g.bombPot && g.ante > 0 && g.anteType !== 'none' ? ` (${plain(g.ante)} ${ANTE_EN[g.anteType]})` : '';
   // Live extras that change the pot before anyone acts.
   const straddles = straddleSeats(hand)
-    .map(([i, amt], j) => `${pos[i]}${i === hand.hero ? ' (Hero)' : ''} ${j ? 're-straddle' : 'straddle'} ${chips(amt)}`)
+    .map(([i, amt], j) => `${pos[i]}${i === hand.hero ? ' (Hero)' : ''} ${j ? 're-straddle' : 'straddle'} ${plain(amt)}`)
     .join(', ');
   const bomb = g.bombPot ? `Bomb pot: ${inBB(g.bombPot, bb)} each, starts on the flop` : '';
   out.push(
@@ -63,7 +70,7 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
       "NL Hold'em",
       g.kind === 'mtt' ? 'Tournament' : 'Cash',
       g.name,
-      `${chips(g.sb)}/${chips(bb)}${ante}`,
+      `${plain(g.sb)}/${plain(bb)}${ante}`,
       straddles,
       bomb,
       g.kind === 'mtt' && g.level ? `Level ${g.level}` : '',

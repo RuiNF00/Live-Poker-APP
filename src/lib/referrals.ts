@@ -9,10 +9,11 @@ import { Platform } from 'react-native';
 import { appUserId } from '@/billing/purchases';
 import { BRAND } from '@/theme';
 
+import { onEraseAll } from './erase-all';
 import { installId, refCode, setRefCode, track } from './events';
 import { createInviteReward, type Activation, type ClaimState } from './invite-reward';
 import { isOnline } from './online';
-import { queue, registerSender } from './sync';
+import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1' };
@@ -178,3 +179,18 @@ export async function shareRef(): Promise<string> {
   await Promise.race([ensureRegistered(), new Promise((r) => setTimeout(r, 2500))]);
   return refCode();
 }
+
+// "Delete all my data": the server forgets this install's code, RevenueCat id and invites.
+// The claim state stays on the phone (erase-core), so erasing never claims a reward again.
+// Once gone, the code is registered again before the next shared link.
+registerSender('invite-erase', async () => {
+  const res = await fetch(`${API}/api/referrals/erase`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ installId: await installId() }),
+  });
+  if (res.ok) await AsyncStorage.removeItem(K.registered).catch(() => {});
+  return outcomeOf(res.status);
+});
+
+onEraseAll(() => queue('invite-erase', {}, 'erase'));

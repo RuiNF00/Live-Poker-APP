@@ -99,9 +99,9 @@ export function localeFormat(v: MoneyVariant, tag?: string): LocaleFormat {
 }
 
 /**
- * Money as one language writes it: "370€" and "1234,50€" in Portugal, "R$ 1.234,50"
- * in Brazil, "1234,50 €" in Spain, "$1,234.50" in English and Mexico. Whole amounts
- * stay short; cents always show two digits, never a bare JS decimal point.
+ * Money as one language writes it: "370€" and "12,50€" in Portugal, "R$ 1.235" in
+ * Brazil, "12.345 €" in Spain, "$1,235" in English and Mexico. From 1000 up amounts are
+ * whole; below, cents show two digits when there are any, never a bare JS decimal point.
  */
 export function moneyIn(
   f: LocaleFormat,

@@ -11,12 +11,14 @@ import type { Session } from '@/store/types';
 
 import { lockSupported, saveLock } from './app-lock';
 import { loadCloud, queueCloudDelete, rememberedCode, saveCloud } from './cloud-backup';
+import { dropAllDocs } from './docs';
 import { keysToErase } from './erase-core';
 import { queueLiveDelete } from './live-cleanup';
 import { notifications } from './lock-screen/reminder';
 import { queueAgreementDelete } from './offer-api';
 import { queueProfileDelete } from './public-profile';
 import { forgetHandShare } from './share-queue';
+import { dropAllVoiceNotes } from './voice-note';
 
 type Eraser = () => void | Promise<void>;
 const erasers = new Set<Eraser>();
@@ -52,6 +54,9 @@ export async function eraseLocal() {
   const keys = keysToErase(await AsyncStorage.getAllKeys().catch(() => [] as readonly string[]));
   if (keys.length) await AsyncStorage.multiRemove(keys).catch(() => {});
   if (lockSupported) await saveLock(null).catch(() => {});
+  // Files next to the data: receipt and tax-form photos, voice notes on hands.
+  dropAllDocs();
+  dropAllVoiceNotes();
   // Festival and level reminders, trial nudges: the Pro nudges are planned again from the empty data.
   await notifications()?.cancelAllScheduledNotificationsAsync().catch(() => {});
 }
