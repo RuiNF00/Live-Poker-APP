@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { evaluate } from '../evaluator';
-import { positions, replay, legal, buttonForHeroPosition } from '../engine';
+import { positions, replay, legal, buttonForHeroPosition, splitPot } from '../engine';
 import type { Hand } from '../types';
 
 function mk(over: Partial<Hand> = {}): Hand {
@@ -97,4 +97,12 @@ test('evaluator ranks', () => {
   assert.ok(sf.score > quads.score);
   assert.equal(wheel.name, 'Sequência');
   assert.ok(wheel.score > trips.score);
+});
+
+test('splitPot: whole chips, or cents when the pot has cents; never more than the pot', () => {
+  assert.deepEqual(splitPot(101, 2), [51, 50]);
+  assert.deepEqual(splitPot(3.25, 2), [1.63, 1.62]);
+  assert.deepEqual(splitPot(1.5, 2), [0.75, 0.75]);
+  assert.deepEqual(splitPot(10, 3), [4, 3, 3]);
+  assert.equal(splitPot(0.07, 3).reduce((a, b) => a + b, 0).toFixed(2), '0.07');
 });
