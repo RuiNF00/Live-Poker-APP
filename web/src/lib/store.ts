@@ -31,6 +31,8 @@ export interface ShareStore {
   addComment(id: string, c: NewComment): Promise<HandComment | null>;
   /** Returns false when the comment does not exist. Hidden after 3 distinct reports. */
   reportComment(commentId: string, reporterId: string): Promise<boolean>;
+  /** Returns false when the hand does not exist. Taken down after 5 distinct reports. */
+  reportHand(id: string, reporterId: string, reason: string | null): Promise<boolean>;
   vote(id: string, voterId: string, choice: VoteChoice): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
 }
@@ -139,6 +141,12 @@ class SupabaseStore implements ShareStore {
     return !!data;
   }
 
+  async reportHand(id: string, reporterId: string, reason: string | null) {
+    const { data, error } = await this.db.rpc('report_shared_hand', { p_hand_id: id, p_reporter_id: reporterId, p_reason: reason });
+    if (error) throw error;
+    return !!data;
+  }
+
   async vote(id: string, voterId: string, choice: VoteChoice) {
     const { error } = await this.db.rpc('cast_hand_vote', { p_hand_id: id, p_voter_id: voterId, p_choice: choice });
     if (error) throw error;
@@ -160,6 +168,7 @@ interface LocalData {
   comments: Record<string, HandComment[]>;
   votes: Record<string, Record<string, VoteChoice>>;
   reports?: Record<string, string[]>;
+  handReports?: Record<string, string[]>;
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -269,9 +278,19 @@ class LocalStore implements ShareStore {
     });
   }
 
+  async reportHand(id: string, reporterId: string) {
+    return this.mutate((d) => {
+      if (!d.shares[id]) return false;
+      const list = ((d.handReports ??= {})[id] ??= []);
+      if (!list.includes(reporterId)) list.push(reporterId);
+      if (list.length >= 5) delete d.shares[id];
+      return true;
+    });
+  }
+
   async vote(id: string, voterId: string, choice: VoteChoice) {
     await this.mutate((d) => {
-      if (!d.shares[id]?.quiz) return;
+      if (!d.shares[id]) return;
       (d.votes[id] ??= {})[voterId] = choice;
     });
   }

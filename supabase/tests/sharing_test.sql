@@ -36,6 +36,9 @@ select count(*) = 1 as visible_after_two_reports from hand_comments where id = :
 select report_hand_comment(:'comment_id', gen_random_uuid());
 select count(*) = 0 as hidden_after_three_reports from hand_comments where id = :'comment_id';
 
+select report_shared_hand(:'share_id', gen_random_uuid(), 'spam') as hand_reported;
+select count(*) = 1 as hand_live_after_one_report from shared_hands where id = :'share_id';
+
 select record_hand_view(:'share_id');
 select view_count = 1 as view_counted from shared_hands where id = :'share_id';
 

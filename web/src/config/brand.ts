@@ -6,7 +6,7 @@ export const brand = {
     pt: 'Regista as tuas mãos live em segundos.',
     en: 'Log your live hands in seconds.',
   },
-  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'https://sweatbook.poker').replace(/\/$/, ''),
+  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'https://sweatbook.vercel.app').replace(/\/$/, ''),
   appStoreUrl: process.env.NEXT_PUBLIC_APP_STORE_URL || '',
   playStoreUrl: process.env.NEXT_PUBLIC_PLAY_STORE_URL || '',
   appScheme: process.env.NEXT_PUBLIC_APP_SCHEME || 'sweatbook',

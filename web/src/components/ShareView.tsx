@@ -18,7 +18,7 @@ import { PlayingCard } from './PlayingCard';
 import { Comments } from './Comments';
 import { Quiz } from './Quiz';
 import { AppCta } from './AppCta';
-import { readLocal, writeLocal } from '@/lib/local';
+import { readLocal, voterId, writeLocal } from '@/lib/local';
 
 interface Props {
   shareId: string;
@@ -49,6 +49,8 @@ export function ShareView(props: Props) {
     [steps, quiz],
   );
   const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>('pending');
+  // Until the friend has voted, nothing may give the answer away: notes, tags, later actions, comments.
+  const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
 
   useEffect(() => {
     const saved = readLocal<AmountMode>('amountMode');
@@ -124,7 +126,7 @@ export function ShareView(props: Props) {
 
   return (
     <main className="page">
-      <Header {...props} />
+      <Header {...props} spoilers={!quizHidesSpoilers} />
 
       <section className="replayer" aria-label="Replayer">
         <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
@@ -212,9 +214,26 @@ export function ShareView(props: Props) {
         <ShareButtons url={props.shareUrl} locale={locale} title={props.title} />
       </div>
 
-      <ActionLog steps={steps} index={index} bb={bb} mode={mode} locale={locale} onPick={(i) => { setPlaying(false); goTo(i); }} />
+      <ActionLog
+        steps={quizHidesSpoilers ? steps.slice(0, quizStep) : steps}
+        index={index}
+        bb={bb}
+        mode={mode}
+        locale={locale}
+        onPick={(i) => {
+          setPlaying(false);
+          goTo(i);
+        }}
+      />
 
-      {props.allowComments && (
+      {props.allowComments && quizHidesSpoilers && (
+        <section className="comments" id="comments">
+          <h2 className="section-title">{d.comments}</h2>
+          <p className="muted">{d.voteToSeeComments}</p>
+        </section>
+      )}
+
+      {props.allowComments && !quizHidesSpoilers && (
         <Comments
           shareId={props.shareId}
           comments={comments}
@@ -232,12 +251,14 @@ export function ShareView(props: Props) {
         />
       )}
 
+      <ReportHand shareId={props.shareId} locale={locale} />
+
       <AppCta locale={locale} shareId={props.shareId} />
     </main>
   );
 }
 
-function Header({ hand, title, locale, viewCount }: Props) {
+function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers: boolean }) {
   const d = t(locale);
   const tour = hand.tournament;
   const stakes = `${formatAmount(hand.blinds.sb, hand.blinds.bb)}/${formatAmount(hand.blinds.bb, hand.blinds.bb)}${
@@ -264,7 +285,7 @@ function Header({ hand, title, locale, viewCount }: Props) {
       </div>
       <h1 className="hand-title">{title || (hand.game === 'PLO' ? 'PLO' : "Hold'em")}</h1>
       <div className="hand-meta">{meta.join(' · ')}</div>
-      {!!hand.tags?.length && (
+      {spoilers && !!hand.tags?.length && (
         <div className="tags">
           {hand.tags.map((tag) => (
             <span key={tag} className="tag">
@@ -273,7 +294,7 @@ function Header({ hand, title, locale, viewCount }: Props) {
           ))}
         </div>
       )}
-      {hand.notes && (
+      {spoilers && hand.notes && (
         <blockquote className="notes">
           <span className="notes-label">{d.notes}</span>
           {hand.notes}
@@ -307,6 +328,32 @@ function ShareButtons({ url, locale, title }: { url: string; locale: Locale; tit
       >
         {copied ? d.copied : d.copyLink}
       </button>
+    </div>
+  );
+}
+
+function ReportHand({ shareId, locale }: { shareId: string; locale: Locale }) {
+  const d = t(locale);
+  const [done, setDone] = useState(false);
+  return (
+    <div className="report-hand">
+      {done ? (
+        <span>{d.reported}</span>
+      ) : (
+        <button
+          className="report"
+          onClick={() => {
+            setDone(true);
+            fetch(`/api/hands/${shareId}/report`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ reporterId: voterId() }),
+            }).catch(() => {});
+          }}
+        >
+          {d.reportHand}
+        </button>
+      )}
     </div>
   );
 }

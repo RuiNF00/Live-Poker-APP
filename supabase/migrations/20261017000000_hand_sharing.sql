@@ -147,7 +147,8 @@ end $$;
 create or replace function public.cast_hand_vote(p_hand_id text, p_voter_id uuid, p_choice text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  if not exists (select 1 from public.shared_hands h where h.id = p_hand_id and h.deleted_at is null and h.quiz is not null) then
+  -- Any live hand can be voted on: the app's challenge links (?q=1) pick the spot client-side.
+  if not exists (select 1 from public.shared_hands h where h.id = p_hand_id and h.deleted_at is null) then
     return;
   end if;
   insert into public.hand_votes (hand_id, voter_id, choice)

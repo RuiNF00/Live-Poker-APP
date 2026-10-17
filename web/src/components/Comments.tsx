@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { describeStep, streetLabel, type AmountMode, type ReplayStep } from '@livepoker/hand-format';
 import { t, type Dict, type Locale } from '@/lib/i18n';
 import type { HandComment } from '@/lib/types';
+import { voteFromComment } from '@/lib/hand';
 import { readLocal, voterId, writeLocal } from '@/lib/local';
 
 interface Props {
@@ -26,8 +27,10 @@ function ago(ms: number, d: Dict) {
   return d.daysAgo(Math.floor(min / 1440));
 }
 
-export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, mode, locale, onJump }: Props) {
+export function Comments({ shareId, comments: all, onAdded, steps, currentStep, bb, mode, locale, onJump }: Props) {
   const d = t(locale);
+  // Challenge votes posted by the app as "🗳️ <choice>" comments are counted in the quiz, not listed.
+  const comments = all.filter((c) => !voteFromComment(c.text));
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
   const [attach, setAttach] = useState(true);

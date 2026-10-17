@@ -23,9 +23,11 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `DELETE /api/hands/<id>` com header `x-edit-token: <token>` | `{ deleted }` |
 | `GET /api/hands/<id>/comments` | `{ comments: [{ id, name, text, createdAt (ms), stepIndex }] }` |
 | `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
-| `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` |
+| `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
+| `POST /api/hands/<id>/report` `{ reporterId (uuid), reason? }` | `{ reported }` (5 denúncias tiram a mão do ar) |
+| `POST /api/hands/<id>/comments/<commentId>/report` `{ reporterId }` | `{ reported }` (3 denúncias escondem o comentário) |
 
-`quiz.action` é o índice em `hand.actions` da decisão do herói que os amigos têm de adivinhar ("O que fazias aqui?").
+Links de desafio: `/h/<id>?q=1` pára na última ação do herói e pergunta "O que fazias aqui?". Até a pessoa votar, a página esconde notas, tags, ações seguintes e comentários. `quiz: { action: n }` no upload fixa outro ponto.
 
 O motor de replay, o avaliador e o conversor do `Hand` da app estão em `packages/hand-format`.
 
@@ -33,7 +35,7 @@ O motor de replay, o avaliador e o conversor do `Hand` da app estão em `package
 
 1. Supabase: criar projeto, correr `supabase/migrations/*.sql` (SQL editor ou `supabase db push`).
 2. Vercel: importar o repositório com **Root Directory = `web`**.
-3. Variáveis (ver `web/.env.example`, inclui `APPLE_TEAM_ID` e `ANDROID_CERT_SHA256` para os links abrirem a app): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (por defeito `https://sweatbook.poker`), e quando existirem `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_PLAY_STORE_URL`.
+3. Variáveis (ver `web/.env.example`, inclui `APPLE_TEAM_ID` e `ANDROID_CERT_SHA256` para os links abrirem a app): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (por defeito `https://sweatbook.vercel.app`), e quando existirem `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_PLAY_STORE_URL`.
 
 ## Testes
 

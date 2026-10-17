@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { handTitle } from '@livepoker/hand-format';
-import { resolveHand } from '@/lib/hand';
+import { heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
 import { pickLocale, t } from '@/lib/i18n';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
@@ -31,8 +31,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function SharePage({ params }: Params) {
+export default async function SharePage({ params, searchParams }: Params & { searchParams: Promise<{ q?: string }> }) {
   const { id } = await params;
+  const { q } = await searchParams;
   const share = await loadShare(id);
   if (!share) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
@@ -54,7 +55,7 @@ export default async function SharePage({ params }: Params) {
       hand={resolved.hand}
       title={share.title}
       revealAll={share.revealAll}
-      quiz={share.quiz}
+      quiz={share.quiz ?? (q === '1' ? heroLastSpot(resolved, share.payload) : null)}
       allowComments={share.allowComments}
       initialComments={comments}
       viewCount={share.viewCount}
