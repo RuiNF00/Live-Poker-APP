@@ -10,7 +10,7 @@ import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
-import { autoBackup, backupHealth, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
+import { autoBackup, backupHealth, cloudAhead, countsOf, type Health } from '@/lib/cloud-guard';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary, type BackupData } from '@/store/backup';
@@ -155,7 +155,7 @@ export function CloudBackup() {
 
   if (cloud === undefined) return null;
   // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
-  const stalled = !!cloud && !!uploadBlock(countsOf(buildBackup(store)), cloud);
+  const stalled = !!cloud && cloudAhead(countsOf(buildBackup(store)), cloud);
   const health = backupHealth(cloud, now);
   const warn = stalled || health.level !== 'ok';
 

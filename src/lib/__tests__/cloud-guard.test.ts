@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, backupHealth, countsOf, uploadBlock } from '../cloud-guard';
+import { autoBackup, backupHealth, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -69,4 +69,11 @@ test('backup health: warns when the last copy failed or is a week old, never whe
   assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - day, failedAt: now - 1000, failure: 'quota' }, now), { level: 'failed', reason: 'quota' });
   // A copy that worked after the failure clears it.
   assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 1000, failedAt: now - day, failure: 'network' }, now), { level: 'ok' });
+});
+
+test('"Cópia parada" only when the cloud holds a copy: not on the first backup of an empty phone', () => {
+  assert.equal(cloudAhead({}, code), false); // just turned on, nothing to copy yet
+  assert.equal(uploadBlock({}, code), 'would_shrink'); // and still nothing is uploaded
+  assert.equal(cloudAhead({}, { ...code, lastAt: 1, counts: { hands: 3 } }), true); // restore not loaded yet
+  assert.equal(cloudAhead({ hands: 3 }, { ...code, lastAt: 1, counts: { hands: 3 } }), false);
 });
