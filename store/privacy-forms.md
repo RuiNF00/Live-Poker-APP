@@ -13,6 +13,7 @@ Data not linked to you:
 | User Content → Other User Content (shared hands, comments) | App Functionality |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
+| Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -46,8 +47,9 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 | App activity → Other user-generated content (shared hands, comments) | Yes | Yes (only when the user shares or comments) | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID) | No | App functionality |
+| Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
 
-Processed ephemerally: No.
+Processed ephemerally: No, except audio (Yes).
 
 ## Google Play: App content declarations
 
