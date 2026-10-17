@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { normalizeCode } from '@/lib/refcode';
 import { after } from 'next/server';
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { cache } from 'react';
 import { handTitle } from '@livepoker/hand-format';
 import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
@@ -25,7 +25,17 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   const c = previewCopy(locale);
   const share = await loadShare(id);
   const hand = share && resolveHand(share.payload)?.hand;
-  if (!share || !hand) return { title: c.notFound, robots: { index: false } };
+  if (!share || !hand) {
+    // Deleted or never existed: still a branded card in the sharer's language, never a bare link.
+    const site = { url: '/opengraph-image', width: 1200, height: 630, alt: brand.name };
+    return {
+      title: c.notFound,
+      description: c.goneBody,
+      robots: { index: false },
+      openGraph: { title: c.notFound, description: c.goneBody, type: 'website', siteName: brand.name, locale: ogLocale(locale), images: [site] },
+      twitter: { card: 'summary_large_image', title: c.notFound, description: c.goneBody, images: [site.url] },
+    };
+  }
   const challenge = q === '1' || !!share.quiz;
   const title = challenge ? c.challengeTitle(share.title || handTitle(hand)) : share.title || handTitle(hand);
   const where = hand.tournament?.name || hand.location;
@@ -49,8 +59,19 @@ export default async function SharePage({ params, searchParams }: Params & Searc
   // Invite code of the player who shared (the app appends ?r=<code> to its share links).
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   const share = await loadShare(id);
-  if (!share) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
+  if (!share) {
+    const c = previewCopy(locale);
+    return (
+      <main className="page page-center">
+        <h1 className="hand-title">{c.notFound}</h1>
+        <p className="muted">{c.goneBody}</p>
+        <Link className="btn btn-primary" href="/">
+          {brand.name}
+        </Link>
+      </main>
+    );
+  }
   const store = getStore();
   after(() => store.recordView(id).catch(() => {}));
 
