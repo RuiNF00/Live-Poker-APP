@@ -3184,6 +3184,7 @@ const es: Record<string, string> = {
   'Registo do {event} fecha às {time}': 'El registro de {event} cierra a las {time}',
   'Ainda dá para entrar. Toca para começar a sessão.': 'Todavía puedes entrar. Toca para empezar la sesión.',
   'Avisamos-te {n} min antes de fechar.': 'Te avisamos {n} min antes del cierre.',
+  'Hora oficial': 'Hora oficial',
 };
 
 export default es;

@@ -27,6 +27,8 @@ export interface FestivalEvent {
   /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
   stack?: number;
   levelMinutes?: number;
+  /** Registration closes this many minutes after the start, when the organiser publishes it. */
+  lateRegMin?: number;
 }
 
 export interface Festival {

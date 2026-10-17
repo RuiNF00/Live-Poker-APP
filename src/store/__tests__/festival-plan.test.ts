@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { buyInCaps, clashes, entryBuyIn, isKind, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -261,4 +261,17 @@ test('clashes: overlapping planned events warn on both rows; flights of one tour
   assert.equal(clashes(LV, { ...EMPTY_PLAN, picked: ['10-1A', '10-1B'] }).size, 0);
   // Events on different days don't clash.
   assert.equal(clashes(LV, { ...EMPTY_PLAN, picked: ['85-1A', '10-1A'] }).size, 0);
+});
+
+test('late reg: the organiser\'s close time sets the reminder until the player picks their own', () => {
+  const base = F.events.find((e) => e.id === '12-A')!;
+  const G = { ...F, events: F.events.map((e) => (e.id === '12-A' ? { ...e, lateRegMin: 330 } : e)) };
+  const start = venueTime(F, base.start);
+  const late = (p: typeof EMPTY_PLAN) => planReminders(G, p, 0).find((x) => x.id.endsWith('12-A:late'))!.at;
+  const plan = { ...EMPTY_PLAN, picked: ['12-A'] };
+  assert.equal(lateRegOf(plan, G.events.find((e) => e.id === '12-A')!), 330);
+  assert.equal(late(plan), start + (330 - 20) * 60_000);
+  assert.equal(late({ ...plan, lateReg: { '12-A': 120 } }), start + (120 - 20) * 60_000);
+  // No official time and none picked: no late reminder.
+  assert.ok(!planReminders(F, plan, 0).some((x) => x.id.endsWith(':late')));
 });
