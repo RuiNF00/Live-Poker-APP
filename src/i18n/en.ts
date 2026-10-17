@@ -3215,6 +3215,9 @@ const en: Record<string, string> = {
   'Dia {n} a {date}: lembrar-me': 'Day {n} on {date}: remind me',
   'Avisamos-te {n} min antes.': "We'll remind you {n} min before.",
   'Avisamos-te antes do Dia {n}': "We'll remind you before Day {n}",
+  'Acabar': 'Finish',
+  'Falta 1 mão por completar': '1 more hand to finish',
+  'Faltam {n} mãos por completar': '{n} more hands to finish',
 };
 
 export default en;

@@ -33,7 +33,7 @@ import { t } from '@/i18n';
 import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
-import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
+import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
 import { addSeat, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
@@ -271,6 +271,8 @@ export default function NewHand() {
       return { ...p, playerId: note.id };
     });
     const final = { ...hand, players, updatedAt: Date.now() };
+    const before = isEdit ? store.hands.find((h) => h.id === final.id) : undefined;
+    const justFinished = !!before && !isComplete(before) && isComplete(final);
     store.saveHand(final);
     tap('success');
     // Keep the session's live table state in sync, so the next hand is pre-filled.
@@ -297,7 +299,8 @@ export default function NewHand() {
       store.setDraft(null);
       pro.record('hand');
     }
-    router.replace({ pathname: '/hand/[id]', params: { id: final.id } });
+    // Finishing a half-saved hand: the detail screen offers the next one.
+    router.replace({ pathname: '/hand/[id]', params: justFinished ? { id: final.id, f: '1' } : { id: final.id } });
   };
 
   const voice = useVoiceCapture(async (recording) => {
