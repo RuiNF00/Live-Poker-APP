@@ -2919,6 +2919,8 @@ const es: Record<string, string> = {
   'Ver tudo': 'Ver todo',
   'Estou à mesa: registar uma mão já': 'Estoy en la mesa: registrar una mano ya',
   // Crash reports switch (Definições → Os teus dados).
+  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'reto: ¿qué haces aquí? Vota antes de ver el resultado 🗳️',
+  'o que fazias aqui? 👀': '¿qué harías aquí? 👀',
   'Fazemos a primeira importação por ti. Só envias se aceitares.': 'Hacemos la primera importación por ti. Solo se envía si aceptas.',
   'Obrigado. Respondemos para o teu email.': 'Gracias. Te respondemos por email.',
   'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'Si el archivo no entra solo, lo importamos nosotros y te avisamos cuando esté listo.',
@@ -2931,8 +2933,6 @@ const es: Record<string, string> = {
   'Aceito enviar este ficheiro ao suporte': 'Acepto enviar este archivo a soporte',
   'Abrir o email': 'Abrir el email',
   'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Mi {month} en vivo: {sessions} sesiones, {hours} horas y {hands} manos registradas.',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'reto: ¿qué haces aquí? Vota antes de ver el resultado 🗳️',
-  'o que fazias aqui? 👀': '¿qué harías aquí? 👀',
 };
 
 export default es;

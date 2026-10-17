@@ -2925,6 +2925,8 @@ const en: Record<string, string> = {
   'Apagar e bloquear': 'Delete and block',
   'Não deu para apagar o comentário agora. Tenta outra vez.': 'Couldn\'t delete the comment right now. Try again.',
   // Crash reports switch (Definições → Os teus dados).
+  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
+  'o que fazias aqui? 👀': 'what would you do here? 👀',
   'Fazemos a primeira importação por ti. Só envias se aceitares.': 'We\'ll do your first import for you. Nothing is sent unless you agree.',
   'Obrigado. Respondemos para o teu email.': 'Thanks. We\'ll reply to your email.',
   'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'If the file doesn\'t import on its own, we\'ll import it and tell you when it\'s ready.',
@@ -2937,8 +2939,6 @@ const en: Record<string, string> = {
   'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
   'Abrir o email': 'Open email',
   'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'My {month} live: {sessions} sessions, {hours} hours and {hands} hands logged.',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
-  'o que fazias aqui? 👀': 'what would you do here? 👀',
 };
 
 export default en;
