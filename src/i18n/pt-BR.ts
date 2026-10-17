@@ -270,6 +270,8 @@ const ptBR: Record<string, string> = {
   'Não encontrámos nenhuma cópia com esse código.': 'Não encontramos nenhum backup com esse código.',
   'Este código não dá acesso a esta cópia.': 'Este código não dá acesso a este backup.',
   'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.': 'O backup passou do limite da nuvem. O último que coube continua lá; exporte para um arquivo para guardar tudo.',
+  'Guarda uma cópia na nuvem': 'Guarde um backup na nuvem',
+  'Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.': 'Se você trocar ou perder o celular, não perde nada. Sem conta nem e-mail.',
   'Juntámos o que o outro telemóvel copiou': 'Juntamos o que o outro celular copiou',
   'A cópia passou o limite: exporta para guardar tudo': 'O backup passou do limite: exporte para guardar tudo',
   'Na tua mesa': 'Na sua mesa',

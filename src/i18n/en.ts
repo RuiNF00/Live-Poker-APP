@@ -589,6 +589,8 @@ const en: Record<string, string> = {
   'Não encontrámos nenhuma cópia com esse código.': 'We found no backup with that code.',
   'Este código não dá acesso a esta cópia.': "This code doesn't open this backup.",
   'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.': 'The backup is over the cloud limit. The last one that fit is still there; export to a file to keep everything.',
+  'Guarda uma cópia na nuvem': 'Keep a copy in the cloud',
+  'Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.': 'If you switch or lose your phone, you lose nothing. No account or email.',
   'Juntámos o que o outro telemóvel copiou': 'Added what your other phone backed up',
   'A cópia passou o limite: exporta para guardar tudo': 'The backup is over the limit: export to keep everything',
   'Calculadora de deal (ICM)': 'Deal calculator (ICM)',

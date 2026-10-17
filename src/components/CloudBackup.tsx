@@ -76,6 +76,26 @@ const joinRemote = (importData: ImportData) => (remote: BackupData) => {
   if (Object.values(n).some((v) => v > 0)) note(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
 };
 
+function confirmTurnOn(onYes: () => void) {
+  ask(
+    t('Antes de ativar'),
+    t('Vais receber um código. É a única chave da tua cópia: sem ele, ninguém (nem nós) a consegue abrir. Guarda-o fora deste telemóvel.'),
+    t('Ativar'),
+    onYes,
+  );
+}
+
+/** A new random code: there is no server copy to protect yet. Says so when it fails. */
+async function activate(data: BackupData): Promise<CloudState> {
+  tap('medium');
+  try {
+    return await upload(newCloud(), data, { force: true });
+  } catch (e) {
+    note(t('Não deu para ativar'), errText(e));
+    throw e;
+  }
+}
+
 /** The share sheet with the code: Notes, Passwords, a password manager, a message to yourself. */
 function shareCode(c: CloudState) {
   Share.share({ message: t('Código da cópia Sweatbook: {code}', { code: formatCode(c) }) }).catch(() => {});
@@ -98,24 +118,16 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   const data = () => buildBackup(store);
 
   const turnOn = () =>
-    ask(
-      t('Antes de ativar'),
-      t('Vais receber um código. É a única chave da tua cópia: sem ele, ninguém (nem nós) a consegue abrir. Guarda-o fora deste telemóvel.'),
-      t('Ativar'),
-      activate,
-    );
-  const activate = async () => {
-    tap('medium');
-    setBusy(true);
-    try {
-      // A new random code: there is no server copy to protect yet.
-      setCloud(await upload(newCloud(), data(), { force: true }));
-    } catch (e) {
-      note(t('Não deu para ativar'), errText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+    confirmTurnOn(async () => {
+      setBusy(true);
+      try {
+        setCloud(await activate(data()));
+      } catch {
+        // Already said.
+      } finally {
+        setBusy(false);
+      }
+    });
   const backupNow = async (force = false) => {
     if (!cloud) return;
     tap();
@@ -336,6 +348,56 @@ export function AutoCloudBackup() {
 function healthTitle(h: Exclude<Health, { level: 'ok' }>): string {
   if (h.level === 'failed') return h.reason === 'too_big' ? t('A cópia passou o limite: exporta para guardar tudo') : t('A última cópia na nuvem falhou');
   return !Number.isFinite(h.days) ? t('Ainda não há cópia na nuvem') : t('Última cópia na nuvem há {n} dias', { n: h.days });
+}
+
+const SUGGEST_KEY = 'rl.cloud.suggest.v1';
+
+/**
+ * Once, after the first saved hand or closed session, for players without a
+ * cloud copy: one card in the home chain. Never turns it on by itself; gone
+ * for good once tapped or dismissed (or once the copy is on).
+ */
+export function useBackupSuggestion(due: boolean): { show: boolean; dismiss: () => void } {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!due) return;
+    let live = true;
+    Promise.all([loadCloud(), AsyncStorage.getItem(SUGGEST_KEY).catch(() => '1')]).then(([c, seen]) => live && setShow(!c && !seen));
+    const off = onCloudChange((c) => c && setShow(false));
+    return () => {
+      live = false;
+      off();
+    };
+  }, [due]);
+  const dismiss = useCallback(() => {
+    setShow(false);
+    AsyncStorage.setItem(SUGGEST_KEY, '1').catch(() => {});
+  }, []);
+  return { show, dismiss };
+}
+
+/** «Ativar» asks first (the code is the only key), turns it on, then opens Settings with the code to keep. */
+export function BackupSuggestion({ onDone }: { onDone: () => void }) {
+  const store = useStore();
+  return (
+    <Banner
+      icon="cloud-upload-outline"
+      title={t('Guarda uma cópia na nuvem')}
+      body={t('Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.')}
+      action={t('Ativar')}
+      onPress={() =>
+        confirmTurnOn(async () => {
+          onDone();
+          await activate(buildBackup(store)).then(
+            () => router.push('/settings'),
+            () => {},
+          );
+        })
+      }
+      dismissLabel={t('Agora não')}
+      onDismiss={onDone}
+    />
+  );
 }
 
 const SNOOZE_KEY = 'rl.backup.snooze.v1';
