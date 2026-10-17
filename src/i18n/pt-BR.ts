@@ -1065,6 +1065,14 @@ const ptBR: Record<string, string> = {
   'Já mudaste de app': 'Você já trocou de app',
   'Mudar de app em 1 minuto': 'Troque de app em 1 minuto',
   'Já uso outra app: mudar em 1 minuto': 'Já uso outro app: trocar em 1 minuto',
+  'Não conseguimos preparar o carrossel. Tenta outra vez.': 'Não conseguimos preparar o carrossel. Tente de novo.',
+  'O Instagram não aceita a legenda de outra app: fica copiada, é só colar.': 'O Instagram não aceita a legenda de outro app: ela fica copiada, é só colar.',
+  'Desliza': 'Deslize',
+  '{c} de {n} nos prémios': '{c} de {n} nos prêmios',
+  'As tuas mãos e sessões ao vivo, revistas em 30 segundos.': 'Suas mãos e sessões ao vivo, revistas em 30 segundos.',
+  'Partilhar carrossel': 'Compartilhar carrossel',
+  '{c}/{n} nos prémios': '{c}/{n} nos prêmios',
+  'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'Registro minhas mãos e sessões ao vivo com o Sweatbook: {link}',
 };
 
 export default ptBR;

@@ -185,3 +185,25 @@ export async function shareStory(file: string, link: string, kind: 'image' | 'vi
   );
   return 'sheet';
 }
+
+/** One 4:5 feed slide (the festival carousel), at 1080×1350. */
+export async function captureSlide(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1350, result: 'tmpfile' });
+}
+
+/**
+ * A feed carousel: every slide goes to the share sheet at once, where Instagram
+ * (Feed) picks them up as one post and "Save images" keeps them in Photos.
+ * Instagram doesn't take a caption from another app, so it's copied for the
+ * player to paste. In Expo Go (no react-native-share) the slides go one by one.
+ */
+export async function shareCarousel(files: string[], caption: string): Promise<StoryTarget> {
+  await Clipboard.setStringAsync(caption).catch(() => {});
+  const Share = nativeShare();
+  if (Share) {
+    await Share.open({ urls: files, type: 'image/png', failOnCancel: false, title: t('Partilhar carrossel') });
+    return 'sheet';
+  }
+  for (const f of files) await Sharing.shareAsync(f, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('Partilhar carrossel') });
+  return 'sheet';
+}
