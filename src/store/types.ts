@@ -292,6 +292,8 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Home-screen widget: show this week's result. Off by default: a home screen is seen by whoever sits next to you. */
+  widgetResult?: boolean;
   /** Rates typed for currencies the ECB doesn't publish (ARS, CLP...): ISO code → units per 1 EUR. */
   fxManual?: Record<string, number>;
   /** Count swaps in results (Session.swapNet). Missing = yes. */

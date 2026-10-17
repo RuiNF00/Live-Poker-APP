@@ -1850,6 +1850,8 @@ const en: Record<string, string> = {
   'Stakes': 'Stakes',
   'Torneio a decorrer': 'Tournament running',
   'Sessão a decorrer': 'Session running',
+  'Mostrar o resultado no widget': 'Show the result on the widget',
+  'Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.': "Off, the widget shows ••• instead of the week's result. Your home screen is seen at the table.",
   'Exemplo': 'Example',
   'Top {n}': 'Top {n}',
   'Cash 1/2 a 2/5': 'Cash 1/2 to 2/5',

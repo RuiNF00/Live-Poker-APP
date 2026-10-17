@@ -90,3 +90,8 @@ test('privacy mode: a cash stack is money and shows •••, tournament chips 
   assert.notEqual(mttP.stack, '•••');
   assert.notEqual(liveProps(mk({ kind: 'cash', stack: 2400 }), 60 * MIN).stack, '•••');
 });
+
+test('privacy mode: the session name (often the venue) gives way to the game', () => {
+  assert.equal(liveProps(mk({ kind: 'cash', name: 'Casino X 2/5' }), 60 * MIN).title, 'Casino X 2/5');
+  assert.equal(liveProps(mk({ kind: 'cash', name: 'Casino X 2/5' }), 60 * MIN, true).title, 'Cash game');
+});
