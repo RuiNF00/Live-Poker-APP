@@ -45,6 +45,7 @@ import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, week
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { reduceMotion, useSheetAnimation } from '@/lib/motion';
+import { crashProbe } from '@/lib/crash-probe';
 
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
@@ -112,6 +113,7 @@ function stackQuick(s: Session): { label: string; value: number }[] {
 }
 
 export default function SessionScreen() {
+  crashProbe('session');
   const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);

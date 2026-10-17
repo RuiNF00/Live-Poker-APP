@@ -7,23 +7,23 @@ import {
 } from '@expo-google-fonts/hanken-grotesk';
 import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
-import { DarkTheme, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
+import { DarkTheme, router, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import React, { Suspense, useEffect } from 'react';
-import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
 import { Deferred } from '@/components/Deferred';
 import { NetStatus } from '@/components/NetStatus';
-import { Button, Empty, KeyboardDoneBar } from '@/components/ui';
+import { CrashScreen, ScreenBoundary } from '@/components/ScreenError';
+import { KeyboardDoneBar } from '@/components/ui';
 import { t } from '@/i18n';
 import { track, watchResume } from '@/lib/events';
 import { useReduceMotion } from '@/lib/motion';
-import { startCrashReports } from '@/lib/crash-report';
+import { reportCaught, startCrashReports } from '@/lib/crash-report';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { startCoachSync } from '@/lib/coach-api';
@@ -85,6 +85,10 @@ export default function RootLayout() {
           </Deferred>
           <KeyboardDoneBar />
           <Stack
+            // Each screen catches its own render errors: «Algo correu mal · Voltar», the rest of the app stays.
+            screenLayout={({ children, navigation }) => (
+              <ScreenBoundary onBack={() => (navigation.canGoBack() ? navigation.goBack() : router.replace('/'))}>{children}</ScreenBoundary>
+            )}
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
               headerTintColor: C.text,
@@ -148,21 +152,15 @@ function HideSplash() {
 }
 
 /**
- * A screen that crashes while rendering shows this instead of closing the
- * app. Hands are already on disk; "Tentar de novo" re-renders.
+ * Last resort, for an error outside any screen (the layout itself). Screens
+ * have their own boundary (ScreenBoundary). Hands are already on disk;
+ * "Tentar de novo" re-renders.
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   useEffect(() => {
     console.error('[app] render error', error);
+    reportCaught(error);
     SplashScreen.hideAsync().catch(() => {});
   }, [error]);
-  return (
-    <View style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center' }}>
-      <Empty
-        title={t('Algo correu mal neste ecrã')}
-        body={t('As tuas mãos estão guardadas no telemóvel. Tenta de novo; se voltar a acontecer, fecha e abre a app.')}
-        action={<Button title={t('Tentar de novo')} onPress={retry} style={{ alignSelf: 'stretch', marginTop: 8 }} />}
-      />
-    </View>
-  );
+  return <CrashScreen onRetry={retry} />;
 }

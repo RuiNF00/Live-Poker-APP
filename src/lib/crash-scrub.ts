@@ -8,6 +8,10 @@ const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 // 9+ digits with optional separators and a leading +: phone numbers, never a stack line number.
 const PHONE = /\+?\d[\d\s().-]{7,}\d/g;
 const LONG = 200;
+// Cards (Ah, KdQs, T♠): a hand in an error message ("bad action for AhKd") is poker the player didn't share.
+const CARDS = /(?<![A-Za-z0-9])(?:[2-9TJQKA][shdc♠♥♦♣]){1,7}(?![A-Za-z0-9])/g;
+// Money: a number next to a currency sign or code (€1.250, $ 500, 30,50 EUR, R$ 99).
+const MONEY = /(?:R\$|US\$|[€$£¥₹])\s?\d[\d.,]*|\b\d[\d.,]*\s?(?:€|EUR|USD|BRL|GBP|MXN|ARS)\b/g;
 
 /** Tags a report may carry; anything else is dropped (never install id, RevenueCat id, names or amounts). */
 export const TAGS = ['channel', 'platform', 'locale', 'pro', 'live_session'] as const;
@@ -18,7 +22,7 @@ const URL_IN_TEXT = /\b(?:https?|sweatbook|exp):\/\/[^\s"'<>)]+/gi;
 export function scrubString(s: string): string {
   if (s.length > LONG) return `[${s.length} chars removed]`;
   // URLs first: fetch errors quote the whole link, token included.
-  return s.replace(URL_IN_TEXT, stripUrl).replace(EMAIL, '[email]').replace(PHONE, '[number]');
+  return s.replace(URL_IN_TEXT, stripUrl).replace(EMAIL, '[email]').replace(PHONE, '[number]').replace(MONEY, '[amount]').replace(CARDS, '[cards]');
 }
 
 /**
@@ -34,12 +38,17 @@ export function stripUrl(u: string): string {
   return (m[1] ?? '') + path.join('/');
 }
 
-function deep(x: unknown, depth = 0): unknown {
+// Keys whose values are a person's words or a secret, however short ("Rui", a 20-character note): dropped, not filtered.
+const SECRET_KEY = /^(name|names|note|notes|nickname|token|code|edit|.*token|.*_name)$/i;
+// The SDK's own descriptions of the phone and the app (os.name "iOS", app.app_name): kept, values still filtered.
+const SDK_CONTEXTS = ['os', 'app', 'runtime', 'culture'];
+
+function deep(x: unknown, depth = 0, dropKeys = true): unknown {
   if (typeof x === 'string') return scrubString(x);
   if (depth > 8 || x == null || typeof x !== 'object') return x;
-  if (Array.isArray(x)) return x.map((v) => deep(v, depth + 1));
+  if (Array.isArray(x)) return x.map((v) => deep(v, depth + 1, dropKeys));
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(x)) out[k] = deep(v, depth + 1);
+  for (const [k, v] of Object.entries(x)) if (!dropKeys || !SECRET_KEY.test(k)) out[k] = deep(v, depth + 1, dropKeys);
   return out;
 }
 
@@ -71,6 +80,14 @@ export function scrubEvent<E extends object>(event: E): E {
       delete d.id;
       c.device = d;
     }
+    // iOS puts a fixed per-phone hash here: an install id the privacy forms don't allow.
+    if (c.app && typeof c.app === 'object') {
+      const a = { ...(c.app as Obj) };
+      delete a.device_app_hash;
+      c.app = a;
+    }
+    // Any other context (React's component stack, app, os) goes through the same string filter.
+    for (const k of Object.keys(c)) if (k !== 'device') c[k] = deep(c[k], 0, !SDK_CONTEXTS.includes(k));
     e.contexts = c;
   }
   if (e.tags && typeof e.tags === 'object') {
@@ -78,12 +95,25 @@ export function scrubEvent<E extends object>(event: E): E {
   }
   if (e.message != null) e.message = deep(e.message);
   if (e.extra != null) e.extra = deep(e.extra);
+  if (e.logentry != null) e.logentry = deep(e.logentry);
   if (e.exception && typeof e.exception === 'object') {
     const ex = e.exception as { values?: Obj[] };
-    e.exception = { ...ex, values: ex.values?.map((v) => ({ ...v, value: typeof v.value === 'string' ? scrubString(v.value) : v.value })) };
+    e.exception = { ...ex, values: ex.values?.map((v) => ({ ...v, value: typeof v.value === 'string' ? scrubString(v.value) : v.value, stacktrace: noVars(v.stacktrace) })) };
+  }
+  if (e.threads && typeof e.threads === 'object') {
+    const th = e.threads as { values?: Obj[] };
+    e.threads = { ...th, values: th.values?.map((v) => ({ ...v, stacktrace: noVars(v.stacktrace) })) };
   }
   if (Array.isArray(e.breadcrumbs)) e.breadcrumbs = (e.breadcrumbs as Obj[]).map((x) => scrubBreadcrumb(x)).filter(Boolean);
   return e as unknown as E;
+}
+
+/** Stack frames keep file, function and line; local variables (a hand, a session) never leave. */
+function noVars(st: unknown): unknown {
+  if (!st || typeof st !== 'object') return st;
+  const frames = (st as { frames?: Obj[] }).frames;
+  if (!Array.isArray(frames)) return st;
+  return { ...(st as Obj), frames: frames.map(({ vars: _v, ...f }) => f) };
 }
 
 /**

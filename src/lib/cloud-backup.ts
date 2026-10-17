@@ -137,6 +137,8 @@ export async function upload(c: CloudState, data: BackupData, opts: UploadOpts =
       setWaiting(true);
       throw e;
     }
+    // It reached the server: no longer waiting on the network; the card shows the real reason.
+    setWaiting(false);
     // Remembered for the backup warning (would_shrink is the player's call, not a failure).
     const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden'].includes(msg) ? msg : 'network';
     if (reason !== 'would_shrink') {

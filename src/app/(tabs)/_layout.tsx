@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ScreenBoundary } from '@/components/ScreenError';
 import { SessionMiniBar } from '@/components/SessionMiniBar';
 import { FitText, setHaptics, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -56,6 +57,8 @@ export default function TabsLayout() {
   const bottom = Math.max(insets.bottom, 10);
   return (
     <Tabs
+      // A tab that throws shows «Algo correu mal» in place; Voltar goes to Início.
+      screenLayout={({ children, navigation }) => <ScreenBoundary onBack={() => navigation.navigate('index')}>{children}</ScreenBoundary>}
       tabBar={(props) => (
         <>
           <SessionMiniBar hidden={props.state.routes[props.state.index]?.name === 'session'} />

@@ -73,6 +73,15 @@ export function setCrashTag(key: CrashTag, value: string | boolean): void {
   sentry?.setTag(key, String(value));
 }
 
+/** A render error a screen's boundary caught (the app stayed open): reported like a crash, scrubbed the same way. */
+export function reportCaught(error: unknown): void {
+  try {
+    sentry?.captureException(error);
+  } catch {
+    // Never let a report break the error screen.
+  }
+}
+
 /** The Settings switch. Off takes effect at once; on from the next launch. */
 export async function setCrashReports(on: boolean): Promise<void> {
   try {
