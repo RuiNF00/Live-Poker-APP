@@ -10,7 +10,7 @@ import { clearOffers, storedOffers } from '@/store/action-offer';
 import type { Session } from '@/store/types';
 
 import { lockSupported, saveLock } from './app-lock';
-import { loadCloud, queueCloudDelete, saveCloud } from './cloud-backup';
+import { loadCloud, queueCloudDelete, rememberedCode, saveCloud } from './cloud-backup';
 import { keysToErase } from './erase-core';
 import { queueLiveDelete } from './live-cleanup';
 import { notifications } from './lock-screen/reminder';
@@ -38,11 +38,11 @@ export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'sha
   // numbers in the URL fragment, so there's nothing of them on the server to delete.)
   for (const o of await storedOffers()) for (const l of o.lines) if (l.remote) queueAgreementDelete(l.remote);
   await clearOffers();
-  const cloud = await loadCloud();
-  if (cloud) {
-    queueCloudDelete(cloud);
-    await saveCloud(null).catch(() => {});
-  }
+  // After a reinstall the only trace of the cloud copy may be the code in the keychain.
+  const cloud = (await loadCloud()) ?? (await rememberedCode());
+  if (cloud) queueCloudDelete(cloud);
+  // Also forgets the code kept in the keychain (it outlives reinstalling the app).
+  await saveCloud(null).catch(() => {});
   await queueProfileDelete().catch(() => {});
   for (const fn of erasers) await Promise.resolve(fn()).catch(() => {});
 }
