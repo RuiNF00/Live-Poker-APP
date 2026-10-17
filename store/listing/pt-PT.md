@@ -56,8 +56,7 @@ PARA QUEM JOGA LIVE
 • Calculadora de variância para cash e torneios
 • Regulares com tipo, leitura e quantas vezes os viste
 • Sem contas: as tuas mãos ficam no teu telemóvel
-• Cópia de segurança na nuvem opcional e cifrada, com código de recuperação e sem email
-• Exporta tudo para um ficheiro
+• Cópia cifrada na nuvem, opcional, com código de recuperação e sem email
 • Em português (de Portugal e do Brasil), inglês e espanhol
 
 SWEATBOOK PRO
