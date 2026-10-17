@@ -2306,6 +2306,7 @@ const es: Record<string, string> = {
   'Flights 2A e 2BC do Super Main Event tratados como Dia 2 (sem novo buy-in).': 'Los flights 2A y 2BC del Super Main Event cuentan como Día 2 (sin nuevo buy-in).',
   'A parte dele sai das sessões deste pacote e o link deixa de funcionar.': 'Su parte sale de las sesiones de este paquete y el link deja de funcionar.',
   'Ex.: Baha Mar, Nassau': 'Ej.: Baha Mar, Nassau',
+  'Dias de jogo': 'Días de juego',
 };
 
 export default es;
