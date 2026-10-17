@@ -107,8 +107,8 @@ export default function PressPage() {
             opinion you trust.
           </p>
           <p>
-            It is built for the player who travels to festivals: one place for the session clock, the hands, the trip expenses, the
-            backers{LIVE_FEATURES.swaps ? ' and the swaps' : ''}, with the amounts hidden whenever the phone is on the table.
+            It is built for the player who travels to festivals: one place for the session clock, the hands, the trip expenses
+            {LIVE_FEATURES.swaps ? ', the backers and the swaps' : ' and the backers'}, with the amounts hidden whenever the phone is on the table.
           </p>
         </section>
 
