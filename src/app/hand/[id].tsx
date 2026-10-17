@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
@@ -22,6 +22,7 @@ import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { markCommentsSeen } from '@/lib/friend-hands';
+import { streetOfNew } from '@/lib/friend-hands-core';
 import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
@@ -35,7 +36,8 @@ import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
 
 export default function HandScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
+  const { id, c: fresh } = useLocalSearchParams<{ id: string; c?: string }>();
   const { hands, saveHand, deleteHand, settings } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
@@ -67,6 +69,14 @@ export default function HandScreen() {
   const [street, setStreet] = useState<Street>('preflop');
   const [seek, setSeek] = useState<{ street: Street; n: number }>();
   const jumpStreet = (st: Street) => setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }));
+  // Opened from "Mãos partilhadas" with new comments: once, on the street of the newest one.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current || !comments.length) return;
+    opened.current = true;
+    const st = streetOfNew(comments, Number(fresh));
+    if (st) setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }));
+  }, [comments, fresh]);
   const streets = useMemo(() => {
     if (!hand) return [];
     const seen = new Set(replay(hand).steps.map((s) => s.street));

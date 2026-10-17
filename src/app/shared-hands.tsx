@@ -55,7 +55,7 @@ export default function SharedHands() {
                   when={f.openedAt}
                   count={counts[f.id]}
                   fresh={fresh[f.id]}
-                  onPress={() => router.push({ pathname: '/h/[id]', params: { id: f.id } })}
+                  onPress={() => router.push({ pathname: '/h/[id]', params: { id: f.id, ...(fresh[f.id] ? { c: String(fresh[f.id]) } : {}) } })}
                 />
               </View>
             ))}
@@ -74,7 +74,7 @@ export default function SharedHands() {
                   when={h.createdAt}
                   count={counts[h.shareId!]}
                   fresh={fresh[h.shareId!]}
-                  onPress={() => router.push({ pathname: '/hand/[id]', params: { id: h.id } })}
+                  onPress={() => router.push({ pathname: '/hand/[id]', params: { id: h.id, ...(fresh[h.shareId!] ? { c: String(fresh[h.shareId!]) } : {}) } })}
                 />
               </View>
             ))}

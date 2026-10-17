@@ -2,7 +2,7 @@
 // the link (no app needed); in the app, the same link opens here too.
 
 import { Link, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { CommentsList } from '@/components/Comments';
@@ -12,17 +12,19 @@ import { Button, confirmAction, Empty, Row, T, Wordmark } from '@/components/ui'
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
+import { streetOfNew } from '@/lib/friend-hands-core';
 import { blockCommenter, forgetFriendHand, hideFriendHand, markCommentsSeen, rememberFriendHand, useBlocked, useSharedHands } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import { comboLabel } from '@/poker/cards';
 import { blindsLabel } from '@/poker/format';
-import type { Hand } from '@/poker/types';
+import type { Hand, Street } from '@/poker/types';
 import { useStore } from '@/store/store';
 import { BRAND, C, R } from '@/theme';
 
 export default function SharedHand() {
-  const { id, q, r, utm_source, utm_medium } = useLocalSearchParams<{ id: string; q?: string; r?: string; utm_source?: string; utm_medium?: string }>();
+  // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
+  const { id, q, r, c: fresh, utm_source, utm_medium } = useLocalSearchParams<{ id: string; q?: string; r?: string; c?: string; utm_source?: string; utm_medium?: string }>();
   // A friend's link opened in the app: credit the sharer and the channel.
   useEffect(() => {
     if (id) noteSource(linkSource('hand', { r: r ? String(r) : undefined }));
@@ -58,6 +60,14 @@ export default function SharedHand() {
   useEffect(() => {
     if (id && comments) markCommentsSeen(id, comments.length);
   }, [id, comments]);
+  const [seek, setSeek] = useState<{ street: Street; n: number }>();
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current || !comments?.length || !hand) return;
+    opened.current = true;
+    const st = streetOfNew(comments, Number(fresh));
+    if (st) setSeek({ street: st, n: 1 });
+  }, [comments, fresh, hand]);
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 60, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
@@ -83,7 +93,8 @@ export default function SharedHand() {
           <Replayer
             source="shared"
             hand={hand}
-            autoPlay
+            autoPlay={!seek}
+            seek={seek}
             quiz={q === '1'}
             onVote={(choice) =>
               postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
