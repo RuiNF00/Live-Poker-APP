@@ -301,6 +301,8 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
 /** Splits the pot into main/side pots by investment and awards each to the best eligible hand. */
 export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number) {
   const levels = [...new Set(seats.map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
+  // Only dead money in the pot (a bomb pot checked down): one pot for everyone still in.
+  if (!levels.length) levels.push(0);
   const won = new Map<number, number>();
   // Antes are dead money and belong to the main pot.
   let dead = totalPot - seats.reduce((n, s) => n + s.invested, 0);
