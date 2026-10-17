@@ -8,7 +8,7 @@ import { AppState } from 'react-native';
 
 import { BRAND } from '@/theme';
 
-import { isOnline, observeFetch, onReconnect, probeWhileOffline, subscribeOnline } from './online';
+import { isOnline, observeFetch, onReconnect, probeWhileOffline, reportNetwork, subscribeOnline } from './online';
 import { createOutbox, type Outcome, type Sender } from './outbox';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -72,6 +72,9 @@ export function startSync() {
   subscribeOnline((ok) => {
     if (!ok) probeWhileOffline(API);
   });
+  // On the web the browser says when the network is back: queued work goes out then, not at the
+  // next probe. It's a hint; a request that still fails marks us offline again.
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') window.addEventListener('online', () => reportNetwork(true));
   // First try a few seconds after launch, out of the way of startup.
   setTimeout(() => drainSoon(true), 5000);
 }
