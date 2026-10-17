@@ -277,7 +277,7 @@ a {
   transform: translateY(-50%);
   text-align: center;
   color: rgba(245, 237, 216, 0.16);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
   font-size: calc(var(--k) * 13);
   letter-spacing: calc(var(--k) * 7);
 }
@@ -306,8 +306,7 @@ a {
   background: #f6f0e1;
   border: 1px solid rgba(0, 0, 0, 0.25);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
   animation: deal 0.22s ease-out;
 }
@@ -404,8 +403,7 @@ a {
   background: #f4efe1;
   border: 1px solid #b9af92;
   color: #3b3424;
-  font-family: Georgia, serif;
-  font-weight: 700;
+  font-weight: 800;
   font-size: calc(var(--k) * 10);
   display: flex;
   align-items: center;
@@ -424,9 +422,10 @@ a {
 
 .rt-seat-cards {
   --cw: 26;
+  --tuck: 0.12;
   position: absolute;
   left: 0;
-  bottom: calc(var(--ph) / 2 - var(--k) * var(--cw) * 1.39 * 0.3);
+  bottom: calc(var(--ph) / 2 - var(--k) * var(--cw) * 1.39 * var(--tuck));
   transform: translateX(-50%);
   display: flex;
   align-items: flex-end;
@@ -435,6 +434,7 @@ a {
 
 .rt-seat-hero .rt-seat-cards {
   --cw: 40;
+  --tuck: 0.3;
 }
 
 .rt-seat-cards .rt-card:nth-child(n + 2) {
@@ -450,8 +450,8 @@ a {
 }
 
 .rt-fold {
-  margin-bottom: calc(var(--k) * var(--cw) * 1.39 * 0.3 + 2px);
-  color: #ef4444;
+  margin-bottom: calc(var(--k) * var(--cw) * 1.39 * var(--tuck) + 2px);
+  color: #7f8d87;
   font-weight: 800;
   font-size: calc(var(--k) * 11);
   letter-spacing: 1px;
@@ -466,7 +466,7 @@ a {
   border-radius: calc(var(--k) * 8);
   background: #0e0d0b;
   border: 1px solid rgba(245, 237, 216, 0.14);
-  padding: 0 calc(var(--k) * 5);
+  padding: 0 calc(var(--k) * 4);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -490,7 +490,7 @@ a {
 }
 
 .rt-seat-folded .rt-plate {
-  opacity: 0.4;
+  opacity: 0.45;
 }
 
 .rt-plate-top {
@@ -507,13 +507,9 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #efe7d2;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: calc(var(--k) * 11);
-}
-
-.rt-seat-hero .rt-name {
-  color: #f5c27a;
+  color: #f1f4f2;
+  font-weight: 600;
+  font-size: calc(var(--k) * 10.5);
 }
 
 .rt-pos {
@@ -534,7 +530,7 @@ a {
 }
 
 .rt-stack-allin {
-  color: #f87171;
+  color: #ff5a5f;
 }
 
 .rt-badge {
