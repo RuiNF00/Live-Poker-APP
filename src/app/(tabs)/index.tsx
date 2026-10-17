@@ -51,7 +51,7 @@ const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
-  const { handsLeft, trialDays, paywall } = usePro();
+  const { handsLeft, trialDays, paywall, isPro } = usePro();
   useWelcomeOffer(hands.length);
   useOnboarding();
   const [q, setQ] = useState('');
@@ -220,7 +220,7 @@ export default function HandsScreen() {
           <T v="h3" numberOfLines={1} style={{ flex: 1 }} accessibilityLiveRegion="polite">
             {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
           </T>
-          <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => exportSolver(hands.filter((h) => picked.has(h.id)))} />
+          <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton

@@ -182,8 +182,8 @@ export function curve(list: Session[], currency?: string): { t: number; v: numbe
   return [{ t: done[0]?.startedAt ?? Date.now(), v: 0 }, ...done.map((s) => ({ t: s.endedAt!, v: (acc += profit(s)) }))];
 }
 
-/** dd/mm or dd/mm/yyyy (also with - or .), not in the future. */
-export function parseDay(v: string, now = Date.now()): number | null {
+/** dd/mm or dd/mm/yyyy (also with - or .), not in the future unless `future` (a trip being planned). */
+export function parseDay(v: string, now = Date.now(), future = false): number | null {
   const m = v.trim().match(/^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?$/);
   if (!m) return null;
   const [dd, mm] = [Number(m[1]), Number(m[2])];
@@ -191,6 +191,7 @@ export function parseDay(v: string, now = Date.now()): number | null {
   if (yy < 100) yy += 2000;
   const d = new Date(yy, mm - 1, dd);
   if (d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+  if (future) return d.getTime();
   if (!m[3] && d.getTime() > now) d.setFullYear(yy - 1);
   return d.getTime() > now ? null : d.getTime();
 }

@@ -63,7 +63,8 @@ export function pct(x: number, digits = 0): string {
 
 export function blindsLabel(hand: Pick<Hand, 'game'>): string {
   const g = hand.game;
-  const base = `${chips(g.sb)}/${chips(g.bb)}`;
+  if (g.bombPot) return `${chips(g.sb)}/${chips(g.bb)} · bomb ${chips(g.bombPot)}`;
+  const base = `${chips(g.sb)}/${chips(g.bb)}` + (g.straddles ? `/${chips(g.bb * 2 ** (g.straddleFrom === 'btn' ? 1 : g.straddles))}` : '');
   if (g.ante > 0 && g.anteType !== 'none') return `${base} (${chips(g.ante)})`;
   return base;
 }
