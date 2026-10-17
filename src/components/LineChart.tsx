@@ -7,8 +7,9 @@ import { C } from '@/theme';
 /**
  * Minimal area/line chart for profit curves and stack graphs. With `peaks`
  * (the running high), the fall below each peak is shaded: the drawdowns.
+ * `label` is what a screen reader says for it: one sentence on the curve.
  */
-export function LineChart({ values, height = 140, zeroLine = true, peaks }: { values: number[]; height?: number; zeroLine?: boolean; peaks?: number[] }) {
+export function LineChart({ values, height = 140, zeroLine = true, peaks, label }: { values: number[]; height?: number; zeroLine?: boolean; peaks?: number[]; label?: string }) {
   const [w, setW] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width);
   const pts = values.length === 1 ? [values[0], values[0]] : values;
@@ -26,7 +27,7 @@ export function LineChart({ values, height = 140, zeroLine = true, peaks }: { va
   // Peak line forward, curve back: the area between them is time spent below a high.
   const under = pk ? `${pd} ${[...pts].reverse().map((v, k) => `L${x(pts.length - 1 - k).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} Z` : '';
   return (
-    <View onLayout={onLayout} style={{ height }}>
+    <View onLayout={onLayout} style={{ height }} accessible={!!label} accessibilityRole={label ? 'image' : undefined} accessibilityLabel={label}>
       {w > 0 && (
         <Svg width={w} height={height}>
           <Defs>

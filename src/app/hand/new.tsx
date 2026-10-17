@@ -12,7 +12,6 @@
 //    to be completed after the session.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -32,7 +31,7 @@ import { t } from '@/i18n';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
+import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
 import { addSeat, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
@@ -159,6 +158,13 @@ export default function NewHand() {
   const act = (kind: HandAction['kind'], to?: number) => {
     if (s.toAct === null) return;
     tap();
+    // The size becomes next hand's one-tap chip for the same spot.
+    const m = to !== undefined ? sizeToRemember(hand, s, to) : null;
+    if (m) {
+      const kindKey = hand.game.kind;
+      const mem = settings.sizes?.[kindKey];
+      if (mem?.[m.spot] !== m.mult) store.setSettings({ sizes: { ...settings.sizes, [kindKey]: { ...mem, [m.spot]: m.mult } } });
+    }
     pushActions([{ p: s.toAct, kind, to }]);
   };
 
@@ -214,7 +220,7 @@ export default function NewHand() {
     });
     const final = { ...hand, players, updatedAt: Date.now() };
     store.saveHand(final);
-    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    tap('success');
     // Keep the session's live table state in sync, so the next hand is pre-filled.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
     if (sess && !isEdit) {
@@ -256,7 +262,7 @@ export default function NewHand() {
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
-  const presets = phase === 'action' ? sizePresets(hand, s) : [];
+  const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
   const callers = phase === 'action' ? callerCandidates(hand, s) : [];
   const checks = phase === 'action' ? checkAround(hand, s) : [];
@@ -450,6 +456,8 @@ export default function NewHand() {
                   {presets.map((p) => (
                     <Pressable
                       key={p.label}
+                      accessibilityRole="button"
+                      accessibilityLabel={p.last ? t('{size}, o teu último tamanho', { size: p.label }) : p.label}
                       onPress={() => act(l.canBet ? 'bet' : 'raise', p.to)}
                       style={({ pressed }) => ({
                         flex: 1,
@@ -459,8 +467,8 @@ export default function NewHand() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: p.allIn ? C.dangerSoft : C.warnSoft,
-                        borderWidth: 1,
-                        borderColor: p.allIn ? C.danger : C.warn + '66',
+                        borderWidth: p.last ? 2 : 1,
+                        borderColor: p.allIn ? C.danger : p.last ? C.warn : C.warn + '66',
                         opacity: pressed ? 0.7 : 1,
                       })}>
                       <T v="body" numberOfLines={1} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
