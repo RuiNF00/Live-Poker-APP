@@ -2,27 +2,30 @@
 // context before saving or sharing, and open the paywall when they can't.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
 import * as store from './purchases';
 import { track } from '@/lib/events';
-import { activateInvite } from '@/lib/referrals';
+import { activateInvite, claimState } from '@/lib/referrals';
 
-const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1' };
+const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcome.v1' };
 
 interface ProValue {
   isPro: boolean;
   plans: store.StorePlan[];
   /** Free hands left today; null when unlimited (Pro or no limit). */
   handsLeft: number | null;
+  /** Free trial days this player can still start on the annual plan (0 = none). */
+  trialDays: number;
   canSaveHand: () => boolean;
   canShare: () => boolean;
   record: (kind: UsageKind) => void;
   paywall: (reason?: PaywallReason) => void;
-  purchase: (plan: PlanId) => Promise<store.BuyResult>;
+  purchase: (plan: PlanId, reason?: PaywallReason) => Promise<store.BuyResult>;
   restore: () => Promise<boolean>;
 }
 
@@ -32,6 +35,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [isPro, setIsPro] = useState(false);
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
+  const trialDays = plans.find((p) => p.id === 'annual')?.trialDays ?? 0;
 
   const setPro = useCallback((v: boolean) => {
     setIsPro(v);
@@ -71,18 +75,18 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   const paywall = useCallback((reason: PaywallReason = 'generic') => {
     if (reason === 'hands' || reason === 'shares') track('limit_hit', { reason });
-    track('paywall_shown', { reason });
+    track('paywall_shown', { reason, trial: trialDays });
     router.push({ pathname: '/paywall', params: { reason } });
-  }, []);
+  }, [trialDays]);
 
   const purchase = useCallback(
-    async (id: PlanId) => {
+    async (id: PlanId, reason: PaywallReason = 'generic') => {
       const plan = plans.find((p) => p.id === id);
       if (!plan) return 'unavailable' as const;
       const res = await store.buy(plan);
       if (res === 'ok') {
         setPro(true);
-        track('purchase', { plan: id });
+        track('purchase', { plan: id, reason, trial: plan.trialDays });
       }
       return res;
     },
@@ -98,8 +102,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const handsLeft = isPro ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
 
   const value = useMemo(
-    () => ({ isPro, plans, handsLeft, canSaveHand, canShare, record, paywall, purchase, restore }),
-    [isPro, plans, handsLeft, canSaveHand, canShare, record, paywall, purchase, restore],
+    () => ({ isPro, plans, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore }),
+    [isPro, plans, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -108,4 +112,30 @@ export function usePro(): ProValue {
   const v = useContext(Ctx);
   if (!v) throw new Error('usePro outside ProProvider');
   return v;
+}
+
+/**
+ * The one unprompted trial offer: on the hands list, after the player saved a
+ * first hand and came back from its replay. See shouldOfferWelcome.
+ */
+export function useWelcomeOffer(handsSaved: number) {
+  const { isPro, trialDays, paywall } = usePro();
+  useFocusEffect(
+    useCallback(() => {
+      if (isPro || handsSaved < 1 || trialDays < 1) return;
+      let live = true;
+      // Let the screen settle after coming back before sliding the offer up.
+      const timer = setTimeout(async () => {
+        const [shown, claim] = await Promise.all([AsyncStorage.getItem(KEYS.welcome).catch(() => null), claimState()]);
+        const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
+        if (!live || !shouldOfferWelcome({ isPro, handsSaved, shown: shown === '1', trialDays, invited })) return;
+        await AsyncStorage.setItem(KEYS.welcome, '1').catch(() => {});
+        if (live) paywall('welcome');
+      }, 700);
+      return () => {
+        live = false;
+        clearTimeout(timer);
+      };
+    }, [isPro, handsSaved, trialDays, paywall]),
+  );
 }

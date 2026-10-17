@@ -23,6 +23,8 @@ export interface StorePlan {
   id: PlanId;
   priceString: string;
   price: number;
+  /** ISO currency of the store price, so derived prices (per month) match it. */
+  currency: string;
   /** Free trial days this player can still get (0 if none or already used). */
   trialDays: number;
   pkg?: PurchasesPackage;
@@ -52,7 +54,7 @@ function usd(n: number) {
 }
 
 function fallbackPlans(): StorePlan[] {
-  return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), trialDays: PLANS[id].trialDays }));
+  return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), currency: 'USD', trialDays: PLANS[id].trialDays }));
 }
 
 export async function getPlans(): Promise<StorePlan[]> {
@@ -63,7 +65,7 @@ export async function getPlans(): Promise<StorePlan[]> {
     const plans: StorePlan[] = [];
     for (const id of Object.keys(PRODUCTS) as PlanId[]) {
       const pkg = pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id]) || p.packageType === (id === 'monthly' ? 'MONTHLY' : 'ANNUAL'));
-      if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: pkg.product.priceString, trialDays: trialDays(pkg) });
+      if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: pkg.product.priceString, currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
     }
     if (Platform.OS === 'ios' && plans.length) {
       // iOS lists the intro offer even to players who already used it, so ask.

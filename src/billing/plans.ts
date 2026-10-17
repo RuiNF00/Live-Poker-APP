@@ -43,13 +43,13 @@ export const FREE = {
   bankrollFilters: false,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'generic';
+export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
-    title: t('Já guardaste as tuas 3 mãos de hoje'),
-    body: t('Esta mão fica guardada como rascunho. Com Pro guardas todas as mãos da sessão, sem limite.'),
+    title: t('Esta mão não se perde'),
+    body: t('Já guardaste as 3 mãos grátis de hoje, por isso fica como rascunho. Com Pro guardas todas as mãos da sessão, sem contar.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
@@ -63,20 +63,42 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Stories com a tua voz'),
     body: t('Explica a mão com a tua voz e partilha no Instagram em vídeo, sem a marca Sweatbook.'),
   },
+  welcome: {
+    title: t('A tua primeira mão já está no caderno'),
+    body: t('Numa sessão ao vivo jogas dezenas de mãos que vale a pena rever. Com Pro guardas todas, sem limite diário.'),
+  },
   generic: {
     title: 'Sweatbook Pro',
-    body: t('Tudo o que precisas para estudar as mãos que jogas ao vivo.'),
+    body: t('Regista todas as mãos que jogas ao vivo e percebe onde ganhas e onde perdes dinheiro.'),
   },
 };
 
-export const PRO_FEATURES: { icon: string; title: string; body: string }[] = [
-  { icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Guarda todas as mãos da sessão, não só 3 por dia.') },
-  { icon: 'logo-instagram', title: t('Stories com a tua voz'), body: t('Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.') },
-  { icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros por período, resultados por sala e jogo, export CSV.') },
+export type FeatureKey = 'hands' | 'story' | 'stats';
+
+export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
+  { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Guarda todas as mãos da sessão, não só 3 por dia.') },
+  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros por período, resultados por sala e jogo, export CSV.') },
+  { key: 'story', icon: 'logo-instagram', title: t('Stories com a tua voz'), body: t('Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.') },
 ];
+
+/** Features in paywall order: the one the player just reached for comes first. */
+export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATURES)[number]; highlight: boolean }[] {
+  const key: FeatureKey | null = reason === 'hands' || reason === 'welcome' ? 'hands' : reason === 'stats' || reason === 'story' ? reason : null;
+  const first = PRO_FEATURES.filter((f) => f.key === key);
+  return [...first, ...PRO_FEATURES.filter((f) => f.key !== key)].map((feature) => ({ feature, highlight: feature.key === key }));
+}
 
 export function perMonth(annualPrice: number): number {
   return Math.round((annualPrice / 12) * 100) / 100;
+}
+
+/** Price in the store's own currency, for numbers we derive (per month, a year of monthly). */
+export function formatPrice(n: number, currency: string, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n);
+  } catch {
+    return `${n.toFixed(2)} ${currency}`;
+  }
 }
 
 export function annualSavingPct(monthly: number, annual: number): number {

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePro } from '@/billing/pro';
+import { usePro, useWelcomeOffer } from '@/billing/pro';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Chip, Empty, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
@@ -18,7 +18,8 @@ import { C, R, ff } from '@/theme';
 export default function HandsScreen() {
   const insets = useSafeAreaInsets();
   const { hands, activeSession, settings, draft, setDraft } = useStore();
-  const { handsLeft, paywall } = usePro();
+  const { handsLeft, trialDays, paywall } = usePro();
+  useWelcomeOffer(hands.length);
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
 
@@ -57,7 +58,7 @@ export default function HandsScreen() {
                   {handsLeft === 0 ? t('Já usaste as mãos grátis de hoje') : handsLeft === 1 ? t('1 mão grátis hoje') : t('{n} mãos grátis hoje', { n: handsLeft })}
                 </T>
                 <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>
-                  {t('Pro sem limites')}
+                  {handsLeft === 0 && trialDays ? t('{days} dias grátis', { days: trialDays }) : t('Pro sem limites')}
                 </T>
               </Pressable>
             ) : null}
