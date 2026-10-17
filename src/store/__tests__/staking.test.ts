@@ -140,6 +140,16 @@ test('live snapshot: only what backers need, clock changes are not an update', (
   assert.notEqual(snapshotKey(a), snapshotKey(liveSnapshot({ ...s, stack: 1 }, 'Rui', 3, 10_000)));
 });
 
+test('the live link says when a tournament day is bagged, and which day', () => {
+  const s = mk({ day: 1, endedAt: 9_000, bag: { stack: 72_500, at: 9_000 }, stack: 72_500 });
+  const a = liveSnapshot(s, 'Rui', 0, 10_000);
+  assert.equal(a.bagged, true);
+  assert.equal(a.day, 1);
+  assert.equal(a.stack, 72_500);
+  const d2 = liveSnapshot(mk({ day: 2, endedAt: undefined }), 'Rui', 0, 10_000);
+  assert.deepEqual([d2.bagged, d2.day], [false, 2]);
+});
+
 // QA: home currency €, a backing on $ sessions showed "Deves 14 508€".
 const fxTable = { '2026-12-03': { USD: 1.1 }, '2026-10-17': { USD: 1.25 } };
 const usd = (over: Partial<Session> = {}) =>

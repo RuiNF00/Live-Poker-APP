@@ -32,6 +32,10 @@ export interface LiveSnapshot {
   stage: string | null;
   sold: number;
   hands: number;
+  /** Day of a multi-day tournament, 1-based (1 from older apps). */
+  day: number;
+  /** Ended the day with chips in the bag: `stack` is what's bagged, there is no result yet. */
+  bagged: boolean;
   updatedAt: number;
   /** Set when the page holds the result back (see holdResult): when it will show. Never sent by the app. */
   heldUntil?: number;
@@ -82,8 +86,12 @@ export function parseSnapshot(x: unknown): LiveSnapshot | 'offensive' | null {
     stage: typeof o.stage === 'string' && STAGES.includes(o.stage) ? o.stage : null,
     sold: num(o.sold, 0, 100) ?? 0,
     hands: num(o.hands, 0, 1e6) ?? 0,
+    day: num(o.day, 1, 30) ?? 1,
+    bagged: false,
     updatedAt: num(o.updatedAt, 1) ?? Date.now(),
   };
+  // Only a day that has ended can be in the bag.
+  snap.bagged = o.bagged === true && snap.endedAt !== null && snap.kind === 'mtt';
   if ([snap.player, snap.name, snap.venue].some((s) => s && isOffensive(s))) return 'offensive';
   return snap;
 }
@@ -97,6 +105,7 @@ export const RESULT_DELAY_MS = 3600_000;
  * would otherwise know who just won how much, and where.
  */
 export function holdResult(s: LiveSnapshot, now = Date.now()): LiveSnapshot {
-  if (!s.endedAt || now - s.endedAt >= RESULT_DELAY_MS) return s;
+  // A bagged day has no result to hold: the stack is what backers want to see.
+  if (!s.endedAt || s.bagged || now - s.endedAt >= RESULT_DELAY_MS) return s;
   return { ...s, cashOut: 0, finish: null, field: null, heldUntil: s.endedAt + RESULT_DELAY_MS };
 }
