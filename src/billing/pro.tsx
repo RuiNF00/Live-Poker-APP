@@ -14,6 +14,7 @@ import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
 import * as store from './purchases';
+import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { activateInvite, claimState } from '@/lib/referrals';
 import { useStore } from '@/store/store';
@@ -132,6 +133,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   // Trial and come-back notifications follow the data: re-planned when it
   // changes and each time the app comes back to the front.
   const { hands, sessions, activeSession } = useStore();
+  useEffect(() => setLiveSession(!!activeSession), [activeSession]);
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
   useEffect(() => {

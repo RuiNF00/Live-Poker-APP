@@ -205,7 +205,9 @@ export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
 
 /** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
 export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
-  if (!LIVE || !LIFETIME.enabled) return null;
+  if (!LIFETIME.enabled) return null;
+  // Expo Go / dev checkout (demo store): a stand-in so the cancel flow can be tried. Never in a store build.
+  if (!LIVE) return __DEV__ ? { priceString: usd(LIFETIME.usd), buy: async () => 'ok' as const } : null;
   try {
     const P = await rc();
     const cur = (await P.getOfferings()).current;

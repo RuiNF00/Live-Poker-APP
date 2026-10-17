@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { bigWin, pickMoment, viewed, VIEWS_MIN } from '../moments';
+import { bigWin, pickMoment, reviewAfterBust, viewed, VIEWS_MIN } from '../moments';
 import type { Session } from '@/store/types';
 
 const DAY = 86_400_000;
@@ -40,4 +40,13 @@ test('a dismissed moment stays gone; the next one shows', () => {
   assert.equal(pickMoment([win, views], [])?.kind, 'bigWin');
   assert.equal(pickMoment([win, views], [win!.key])?.kind, 'views');
   assert.equal(pickMoment([win, views], [win!.key, views!.key]), null);
+});
+
+test('after a losing session with hands, offer to review them; not after a win or with no hands', () => {
+  const lost = s('l', NOW - 3_600_000, 1000, 0);
+  const m = reviewAfterBust([lost], [{ id: 'b', sessionId: 'l', createdAt: 2 }, { id: 'a', sessionId: 'l', createdAt: 1 }, { id: 'x', createdAt: 0 }], NOW);
+  assert.deepEqual(m, { kind: 'review', key: 'review:l', sessionId: 'l', hands: 2, firstHandId: 'a' });
+  assert.equal(reviewAfterBust([lost], [], NOW), null);
+  assert.equal(reviewAfterBust([s('w', NOW - 3_600_000, 100, 500)], [{ id: 'a', sessionId: 'w', createdAt: 1 }], NOW), null);
+  assert.equal(reviewAfterBust([s('o', NOW - 2 * DAY, 1000, 0)], [{ id: 'a', sessionId: 'o', createdAt: 1 }], NOW), null);
 });

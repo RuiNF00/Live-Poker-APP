@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { bigWin, pickMoment, viewed, type Moment } from '@/billing/moments';
+import { bigWin, pickMoment, reviewAfterBust, viewed, type Moment } from '@/billing/moments';
 import { usePro } from '@/billing/pro';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -65,8 +66,10 @@ export function useProMoment() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPro, saved === null, sharedIds, now]);
 
-  if (isPro || !saved) return null;
-  const m = pickMoment([bigWin(sessions, now), viewed(saved.counts)], saved.dismissed);
+  if (!saved) return null;
+  // Reviewing after a bust helps everyone; the Pro offers only show on the free plan.
+  const review = reviewAfterBust(sessions, hands, now);
+  const m = pickMoment(isPro ? [review] : [bigWin(sessions, now), review, viewed(saved.counts)], saved.dismissed);
   if (!m) return null;
 
   const dismiss = (x: Moment) => {
@@ -77,17 +80,29 @@ export function useProMoment() {
   const open = () => {
     tap();
     dismiss(m);
-    paywall(m.kind);
+    if (m.kind === 'review') router.push({ pathname: '/hand/[id]', params: { id: m.firstHandId } });
+    else paywall(m.kind);
   };
   return { m, open, dismiss: () => dismiss(m) };
 }
 
 export function ProMoment({ state }: { state: NonNullable<ReturnType<typeof useProMoment>> }) {
   const { m, open, dismiss } = state;
-  const icon = m.kind === 'views' ? 'eye' : 'trophy';
+  const icon = m.kind === 'views' ? 'eye' : m.kind === 'review' ? 'play-circle' : 'trophy';
   const title =
-    m.kind === 'views' ? t('A tua mão foi vista {n} vezes', { n: m.views }) : t('A tua melhor sessão: {amount}', { amount: '+' + money(m.profit, m.currency) });
-  const body = m.kind === 'views' ? t('Com Pro, guardas e partilhas todas as mãos da sessão.') : t('Vê em que salas, jogos e stakes ganhas mais.');
+    m.kind === 'views'
+      ? t('A tua mão foi vista {n} vezes', { n: m.views })
+      : m.kind === 'review'
+        ? t('Rever as mãos de hoje')
+        : t('A tua melhor sessão: {amount}', { amount: '+' + money(m.profit, m.currency) });
+  const body =
+    m.kind === 'views'
+      ? t('Com Pro, guardas e partilhas todas as mãos da sessão.')
+      : m.kind === 'review'
+        ? m.hands === 1
+          ? t('1 mão desta sessão, rua a rua, enquanto está fresca.')
+          : t('{n} mãos desta sessão, rua a rua, enquanto estão frescas.', { n: m.hands })
+        : t('Vê em que salas, jogos e stakes ganhas mais.');
 
   return (
     <Card tone="raised" style={{ gap: S.sm }}>
@@ -99,7 +114,7 @@ export function ProMoment({ state }: { state: NonNullable<ReturnType<typeof useP
           <T v="h3">{title}</T>
           <T v="small">{body}</T>
           <T v="small" color={C.accent} style={{ paddingTop: 4 }}>
-            {t('Ver Pro')} ›
+            {m.kind === 'review' ? t('Rever') : t('Ver Pro')} ›
           </T>
         </Pressable>
         <Pressable onPress={dismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Esconder')}>

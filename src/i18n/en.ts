@@ -2085,6 +2085,19 @@ const en: Record<string, string> = {
   'A tua melhor sessão: {amount}': 'Your best session: {amount}',
   'Vê em que salas, jogos e stakes ganhas mais.': 'See which rooms, games and stakes you win most at.',
   'Torneios por buy-in, festival e jogo': 'Tournaments by buy-in, festival and game',
+  'Rever as mãos de hoje': "Review today's hands",
+  '1 mão desta sessão, rua a rua, enquanto está fresca.': '1 hand from this session, street by street, while it is fresh.',
+  '{n} mãos desta sessão, rua a rua, enquanto estão frescas.': '{n} hands from this session, street by street, while they are fresh.',
+  'Mãos para o solver': 'Hands to the solver',
+  'Várias de uma vez': 'Many at once',
+  'Revisão com coach': 'Review with a coach',
+  'Pastas e mãos sem limite': 'Unlimited folders and hands',
+  'Staking': 'Staking',
+  'Backers, makeup, acertos': 'Backers, makeup, settling up',
+  'Quem deve a quem': 'Who owes whom',
+  'Relatório do ano': 'Yearly report',
+  'Por país, com imposto': 'By country, with tax',
+  'Ao câmbio de cada dia': "At each day's rate",
 };
 
 export default en;

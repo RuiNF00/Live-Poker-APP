@@ -13,7 +13,8 @@ export const WIN_DAYS = 3;
 
 export type Moment =
   | { kind: 'views'; key: string; handId: string; views: number }
-  | { kind: 'bigWin'; key: string; sessionId: string; profit: number; currency: string };
+  | { kind: 'bigWin'; key: string; sessionId: string; profit: number; currency: string }
+  | { kind: 'review'; key: string; sessionId: string; hands: number; firstHandId: string };
 
 /**
  * The most recent finished session, if it's a win and the best so far in its
@@ -29,6 +30,20 @@ export function bigWin(sessions: Session[], now: number): Moment | null {
   const others = done.filter((s) => s !== last && s.currency === last.currency);
   if (others.some((s) => profit(s) >= p)) return null;
   return { kind: 'bigWin', key: `win:${last.id}`, sessionId: last.id, profit: p, currency: last.currency };
+}
+
+/**
+ * After a losing session (a bust), the useful thing is the hands: offer to
+ * review the ones saved in it. About studying, never about the money.
+ */
+export function reviewAfterBust(sessions: Session[], hands: { id: string; sessionId?: string; createdAt: number }[], now: number): Moment | null {
+  const done = sessions.filter((s) => s.endedAt);
+  if (!done.length) return null;
+  const last = done.reduce((a, b) => ((b.endedAt ?? 0) > (a.endedAt ?? 0) ? b : a));
+  if (now - (last.endedAt ?? 0) > DAY || profit(last) >= 0) return null;
+  const mine = hands.filter((h) => h.sessionId === last.id).sort((a, b) => a.createdAt - b.createdAt);
+  if (!mine.length) return null;
+  return { kind: 'review', key: `review:${last.id}`, sessionId: last.id, hands: mine.length, firstHandId: mine[0].id };
 }
 
 /** The shared hand with the most views, once it passes VIEWS_MIN. */
