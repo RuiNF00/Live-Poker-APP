@@ -103,6 +103,11 @@ export async function reportHand(id: string, reporterId: string, reason?: string
   });
 }
 
+/** Flags one comment for review, like the site's "Denunciar" under each comment (3 reporters hide it). */
+export async function reportComment(shareId: string, commentId: string): Promise<void> {
+  await fetch(`${API}/api/hands/${encodeURIComponent(shareId)}/comments/${encodeURIComponent(commentId)}/report`, { method: 'POST' });
+}
+
 /** Random v4 UUID from the platform's secure RNG (install ids double as credentials). */
 export function anonId(): string {
   return Crypto.randomUUID();

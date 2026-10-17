@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { limited } from '@/lib/abuse';
+import { isOffensive } from '@/lib/moderation';
 import { coachStore, MAX_COMMENT_BYTES, OWNER_RE, parseComment, TOKEN_RE, tooBig } from '@/lib/coach';
 import { coachCors } from '../../cors';
 
@@ -18,6 +19,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (await limited(req, 'coach-reply', 120, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: coachCors });
   const c = parseComment(await req.json().catch(() => null), false);
   if (!c) return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: coachCors });
+  if (isOffensive(c.name) || isOffensive(c.body)) return NextResponse.json({ error: 'offensive' }, { status: 422, headers: coachCors });
   const comment = await coachStore().reply(token, owner, c);
   if (!comment) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: coachCors });
   return NextResponse.json({ comment }, { status: 201, headers: coachCors });

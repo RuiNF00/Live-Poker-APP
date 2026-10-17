@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View } from 'react-native';
+import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
+import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -55,10 +56,14 @@ function dayTitle(day: number) {
 
 // Defined once: an inline component here is a new type on every render, so
 // React unmounted and remounted every separator each time the list rendered.
+const NARROW = Dimensions.get('window').width < 380;
 const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
+  const narrow = useWindowDimensions().width < 380;
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
+  // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
+  const backup = useBackupWarning();
   const { handsLeft, trialDays, paywall, isPro } = usePro();
   useWelcomeOffer(hands.length);
   useOnboarding();
@@ -152,7 +157,8 @@ export default function HandsScreen() {
           <SafeTop>
             <View style={{ gap: S.md, marginBottom: S.sm }}>
               <ScreenHeader
-                title={<Wordmark size={30} />}
+                // Four header buttons leave ~140 pt on a 360-wide phone: the wordmark steps down to fit.
+                title={<Wordmark size={narrow ? 25 : 30} />}
                 right={
                   <>
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
@@ -196,7 +202,9 @@ export default function HandsScreen() {
                     setDiscarded(null);
                   }}
                 />
-              ) : narrowed ? null : checklist ? (
+              ) : narrowed ? null : backup.health ? (
+                <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+              ) : checklist ? (
                 <StartChecklist state={checklist} />
               ) : moment ? (
                 <ProMoment state={moment} />
@@ -526,7 +534,8 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
   const { net, done } = rowSummary(hand);
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   // Next to a full board only two tags fit on the line at 390 pt.
-  const maxTags = hand.board.length > 3 || !done ? 2 : 3;
+  // A 360-wide phone fits a full board and one tag (plus the +n) on the line.
+  const maxTags = (hand.board.length > 3 || !done ? 2 : 3) - (NARROW ? 1 : 0);
   const hero = hand.players[hand.hero];
   return (
     <Pressable

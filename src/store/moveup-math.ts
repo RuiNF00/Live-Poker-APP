@@ -110,3 +110,36 @@ export function shotState(plan: ShotPlan, sessions: Session[]): ShotState {
   const lostBuyIns = Math.max(0, -net) / buyIn(plan);
   return { plan, net, lostBuyIns, left: Math.max(0, plan.stopAfter - lostBuyIns), over: lostBuyIns >= plan.stopAfter, sessions: at.length };
 }
+
+/** The tournament buy-in the player usually plays: the median entry of the last 90 days (else ever); null without tournaments. */
+export function usualMttBuyIn(sessions: Session[], now = Date.now()): number | null {
+  const mtt = sessions.filter((s) => s.endedAt && s.kind === 'mtt' && s.buyIn > 0);
+  const recent = mtt.filter((s) => s.startedAt >= now - 90 * DAY);
+  const b = (recent.length ? recent : mtt).map((s) => s.buyIn).sort((x, y) => x - y);
+  return b.length ? b[Math.floor((b.length - 1) / 2)] : null;
+}
+
+export interface Keep {
+  /** What the player's own rules ask the bankroll to hold for the game they play. */
+  need: number;
+  /** What can come out and still leave `need` (0 when already at or under it). */
+  free: number;
+  /** The game that sets `need`: the cash stake, or the usual tournament buy-in. */
+  basis: { kind: 'cash'; stake: Stake; buyIns: number } | { kind: 'mtt'; buyIn: number; buyIns: number };
+}
+
+/**
+ * "Quanto posso levantar?": the balance above what the rules want for the
+ * stake the player plays now (cash) and their usual tournament buy-in, the
+ * bigger of the two. Null when they've played neither.
+ */
+export function withdrawable(balance: number, sessions: Session[], r: Pick<BankrollRules, 'cashBuyIns' | 'mttBuyIns'>, now = Date.now()): Keep | null {
+  const stake = currentStake(sessions, now);
+  const mtt = usualMttBuyIn(sessions, now);
+  const cashNeed = stake ? buyIn(stake) * r.cashBuyIns : -1;
+  const mttNeed = mtt !== null ? mtt * r.mttBuyIns : -1;
+  if (cashNeed < 0 && mttNeed < 0) return null;
+  const basis: Keep['basis'] = cashNeed >= mttNeed ? { kind: 'cash', stake: stake!, buyIns: r.cashBuyIns } : { kind: 'mtt', buyIn: mtt!, buyIns: r.mttBuyIns };
+  const need = Math.max(cashNeed, mttNeed);
+  return { need, free: Math.max(0, Math.floor(balance - need)), basis };
+}

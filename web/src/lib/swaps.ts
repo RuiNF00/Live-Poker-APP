@@ -24,6 +24,8 @@ export interface SwapStore {
   addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   remove(id: string, token: string): Promise<boolean>;
+  /** "Delete all my data": this side leaves; the other keeps a read-only record. */
+  leave(id: string, token: string): Promise<boolean>;
   purge(): Promise<void>;
 }
 
@@ -35,6 +37,7 @@ interface Row {
   entries: SwapEntry[];
   created_at: string;
   updated_at: string;
+  left_side?: Side | null;
 }
 
 class SupabaseSwaps implements SwapStore {
@@ -52,7 +55,7 @@ class SupabaseSwaps implements SwapStore {
     if (error) throw error;
     const r = (data as Row[] | null)?.[0];
     return r
-      ? { id: r.id, terms: r.terms, confirmedAt: r.confirmed_at, confirmedName: r.confirmed_name, entries: r.entries ?? [], createdAt: r.created_at, updatedAt: r.updated_at }
+      ? { id: r.id, terms: r.terms, confirmedAt: r.confirmed_at, confirmedName: r.confirmed_name, entries: r.entries ?? [], createdAt: r.created_at, updatedAt: r.updated_at, leftSide: r.left_side ?? null }
       : null;
   }
 
@@ -82,6 +85,12 @@ class SupabaseSwaps implements SwapStore {
 
   async remove(id: string, token: string) {
     const { data, error } = await this.db.rpc('delete_swap', { p_id: id, p_token: token });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async leave(id: string, token: string) {
+    const { data, error } = await this.db.rpc('leave_swap', { p_id: id, p_token: token });
     if (error) throw error;
     return !!data;
   }
@@ -161,7 +170,7 @@ class LocalSwaps implements SwapStore {
     return this.mutate((d) => {
       const r = d[id];
       const side = this.sideOf(r, token);
-      if (!r || !side || !r.confirmedAt) return false;
+      if (!r || !side || !r.confirmedAt || r.leftSide) return false;
       if (r.entries.some((x) => x.side === side && x.cid === e.cid)) return true;
       r.entries.push({ ...e, id: randomBytes(6).toString('hex'), side, at: Date.now() });
       r.updatedAt = new Date().toISOString();
@@ -185,6 +194,29 @@ class LocalSwaps implements SwapStore {
     return this.mutate((d) => {
       if (!this.sideOf(d[id], token)) return false;
       delete d[id];
+      return true;
+    });
+  }
+
+  async leave(id: string, token: string) {
+    return this.mutate((d) => {
+      const r = d[id];
+      const side = this.sideOf(r, token);
+      if (!r || !side) return false;
+      if (!r.confirmedAt || r.leftSide) {
+        delete d[id];
+        return true;
+      }
+      const dead = sha256(randomBytes(32).toString('hex'));
+      d[id] = {
+        ...r,
+        leftSide: side,
+        terms: { ...r.terms, [side]: { ...r.terms[side], name: '-' } },
+        confirmedName: side === 'b' ? '-' : r.confirmedName,
+        aHash: side === 'a' ? dead : r.aHash,
+        bHash: side === 'b' ? dead : r.bHash,
+        updatedAt: new Date().toISOString(),
+      };
       return true;
     });
   }

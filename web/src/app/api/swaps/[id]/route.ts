@@ -16,10 +16,14 @@ export async function GET(req: Request, { params }: Ctx) {
   return swapResponse(id, tokenOf(req));
 }
 
-/** DELETE with either side's token: gone for both (each phone keeps its own copy). */
+/**
+ * DELETE with either side's token: gone for both (each phone keeps its own copy).
+ * `?leave=1` ("Delete all my data"): only this side goes; the other keeps a read-only record.
+ */
 export async function DELETE(req: Request, { params }: Ctx) {
   const { id } = await params;
   const token = tokenOf(req);
-  const ok = !!token && validId(id) && (await swapStore().remove(id, token));
+  const leave = new URL(req.url).searchParams.get('leave') === '1';
+  const ok = !!token && validId(id) && (await (leave ? swapStore().leave(id, token) : swapStore().remove(id, token)));
   return NextResponse.json({ deleted: ok }, { status: ok ? 200 : 404, headers: swapCors });
 }

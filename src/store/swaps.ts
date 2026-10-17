@@ -4,6 +4,9 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
+import { assignGroups, groupLedger, groupReady, type SwapGroup } from './swap-groups';
+import { t } from '@/i18n';
+
 import type { Session } from './types';
 
 export type SwapSide = 'a' | 'b';
@@ -49,6 +52,8 @@ export interface RemoteSwap {
   code: string | null;
   you: SwapSide | null;
   updatedAt: string;
+  /** The side that erased their data: read-only from then on. */
+  leftSide?: SwapSide | null;
 }
 
 /** The phone's copy. */
@@ -66,11 +71,23 @@ export interface Swap {
   gone?: boolean;
   /** Settled and put away. */
   archived?: boolean;
+  /** The other player erased their data: kept here read-only, amounts as they were. */
+  left?: SwapSide;
   syncedAt?: number;
   /** This phone only: which of my sessions each of my prizes came from (entry cid → session id). */
   links?: Record<string, string>;
+  /** This phone only: send my result when a tournament of this swap ends, without asking. */
+  autoShare?: boolean;
   createdAt: number;
   updatedAt: number;
+}
+
+/** One event, my result in and theirs not yet: the side the swap waits on (null when nobody). */
+export function waitingOn(s: Swap): SwapSide | null {
+  if (s.terms.scope !== 'event' || !s.confirmedAt || s.left || s.gone) return null;
+  const has = (side: SwapSide) => s.entries.some((e) => e.side === side && e.kind === 'result');
+  const them = other(s.side);
+  return has(s.side) && !has(them) ? them : null;
 }
 
 /** Server ids (short_id(), as web/src/lib/swaps.ts validId) and side tokens (64 hex). Checked
@@ -82,7 +99,9 @@ export const other = (s: SwapSide): SwapSide => (s === 'a' ? 'b' : 'a');
 
 /** Names as both players see them: the confirmed name wins over what the proposer typed. */
 export function swapNames(s: Pick<Swap, 'terms' | 'confirmedName'>): Record<SwapSide, string> {
-  return { a: s.terms.a.name, b: s.confirmedName || s.terms.b.name };
+  // "-": that player erased their data.
+  const n = (x: string) => (x === '-' ? t('o outro jogador') : x);
+  return { a: n(s.terms.a.name), b: n(s.confirmedName || s.terms.b.name) };
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -156,7 +175,8 @@ export function swapsTotal(list: Swap[]): SwapsTotal {
   let open = 0;
   let pending = 0;
   for (const s of list) {
-    if (s.archived) continue;
+    // Archived, or deleted by the other player: out of the header totals.
+    if (s.archived || s.gone) continue;
     if (!s.confirmedAt) {
       if (!s.gone) pending++;
       continue;
@@ -176,12 +196,20 @@ export function swapsTotal(list: Swap[]): SwapsTotal {
 export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): Swap {
   const onServer = new Set(remote.entries.filter((e) => e.side === local.side).map((e) => e.cid));
   const stillPending = local.entries.filter((e) => e.pending && !onServer.has(e.cid));
+  // A player who erased their data has their name scrubbed on the server; the copy on this
+  // phone already knew it and keeps it (a restored phone shows "o outro jogador").
+  const keep = (x: string, mine: string | undefined) => (x === '-' && mine && mine !== '-' ? mine : x);
+  const terms = remote.leftSide
+    ? { ...remote.terms, a: { ...remote.terms.a, name: keep(remote.terms.a.name, local.terms.a.name) }, b: { ...remote.terms.b, name: keep(remote.terms.b.name, local.terms.b.name) } }
+    : remote.terms;
+  const confirmedName = remote.confirmedName ?? undefined;
   return {
     ...local,
-    terms: remote.terms,
+    terms,
     confirmedAt: remote.confirmedAt ? Date.parse(remote.confirmedAt) : undefined,
-    confirmedName: remote.confirmedName ?? undefined,
+    confirmedName: remote.leftSide && confirmedName ? keep(confirmedName, local.confirmedName) : confirmedName,
     code: remote.code ?? undefined,
+    left: remote.leftSide ?? undefined,
     entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
     gone: false,
     syncedAt: now,
@@ -268,9 +296,10 @@ export function assignSwaps(sessions: Session[], swaps: Swap[]): SwapAssignment 
 }
 
 /** The sessions with Session.swapNet filled in (read by profit()). Unchanged sessions keep their identity. */
-export function withSwaps(sessions: Session[], swaps: Swap[]): Session[] {
-  if (!swaps.length && !sessions.some((s) => s.swapNet)) return sessions;
+export function withSwaps(sessions: Session[], swaps: Swap[], groups: SwapGroup[] = []): Session[] {
+  if (!swaps.length && !groups.length && !sessions.some((s) => s.swapNet)) return sessions;
   const { bySession } = assignSwaps(sessions, swaps);
+  for (const [id, v] of assignGroups(sessions, groups).bySession) bySession.set(id, (bySession.get(id) ?? 0) + v);
   return sessions.map((s) => {
     const n = bySession.get(s.id);
     const v = n && Math.abs(n) >= 0.005 ? Math.round(n * 100) / 100 : undefined;
@@ -301,4 +330,11 @@ export function newFromOther(before: Swap | undefined, after: Swap): SwapEntry[]
   if (!before) return [];
   const seen = new Set(before.entries.map((e) => e.side + e.id));
   return after.entries.filter((e) => e.side !== after.side && !seen.has(e.side + e.id));
+}
+
+/** Swaps and groups where money is still owed either way ("Delete all my data" warns about them). */
+export function unsettledSwaps(swaps: Swap[], groups: SwapGroup[]): number {
+  const pairs = swaps.filter((s) => s.confirmedAt && !s.gone && !s.archived && !s.left && !settled(swapLedger(s))).length;
+  const grps = groups.filter((g) => groupReady(g) && !g.gone && !g.archived && Math.abs(groupLedger(g).balance) >= 0.5).length;
+  return pairs + grps;
 }

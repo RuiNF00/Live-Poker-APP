@@ -7,9 +7,6 @@
 
 import { localeFormat, type LocaleFormat } from '../../packages/hand-format/src/money';
 
-import en from './en';
-import es from './es';
-import ptBR from './pt-BR';
 
 /** The language family, for grammar and formatting branches. */
 export type Lang = 'pt' | 'en' | 'es';
@@ -81,14 +78,24 @@ export { localeFormat, type LocaleFormat };
 export const FORMAT: LocaleFormat = localeFormat(variant, detected.tag);
 export const { locale, decimalComma, currencyAfter } = FORMAT;
 
-const TABLE: Record<Variant, Record<string, string> | null> = { 'pt-PT': null, 'pt-BR': ptBR, en, es };
+type Table = Record<string, string>;
+const TABLES: Partial<Record<Variant, Table>> = {};
+
+// Only the tables a language needs are evaluated: ~0.5 MB of strings stays
+// untouched at launch. Metro still bundles them; they just never run.
+/* eslint-disable @typescript-eslint/no-require-imports */
+function table(v: 'pt-BR' | 'en' | 'es'): Table {
+  return (TABLES[v] ??=
+    v === 'pt-BR' ? require('./pt-BR').default : v === 'es' ? require('./es').default : require('./en').default);
+}
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 /** The text for one language, with each language's fallback. Exported for the tests. */
 export function translate(v: Variant, pt: string): string {
   if (v === 'pt-PT') return pt;
-  if (v === 'pt-BR') return ptBR[pt] ?? pt;
-  if (v === 'es') return es[pt] ?? en[pt] ?? pt;
-  return TABLE[v]?.[pt] ?? pt;
+  if (v === 'pt-BR') return table('pt-BR')[pt] ?? pt;
+  if (v === 'es') return table('es')[pt] ?? table('en')[pt] ?? pt;
+  return table('en')[pt] ?? pt;
 }
 
 export function t(pt: string, vars?: Record<string, string | number>): string {

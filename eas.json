@@ -48,7 +48,21 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker"
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker",
+        "EXPO_PUBLIC_BUILD_CHANNEL": "testflight"
+      },
+      "environment": "production"
+    },
+    "play-test": {
+      "extends": "production",
+      "autoIncrement": true,
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker",
+        "EXPO_PUBLIC_BUILD_CHANNEL": "play-test"
       },
       "environment": "production"
     }
@@ -64,6 +78,13 @@
     },
     "testflight": {
       "ios": {}
+    },
+    "play-test": {
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
     }
   }
 }

@@ -11,11 +11,11 @@ export function OPTIONS() {
   return new NextResponse(null, { headers: cors });
 }
 
-/** Keeps props small and flat: at most 12 keys, short strings, numbers and booleans only. */
+/** Keeps props small and flat: at most 16 keys, short strings, numbers and booleans only. */
 function cleanProps(raw: unknown): AppEvent['props'] {
   const out: AppEvent['props'] = {};
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
-  for (const [k, v] of Object.entries(raw).slice(0, 12)) {
+  for (const [k, v] of Object.entries(raw).slice(0, 16)) {
     if (!/^[a-zA-Z0-9_]{1,40}$/.test(k)) continue;
     if (typeof v === 'string') out[k] = v.slice(0, 120);
     else if ((typeof v === 'number' && Number.isFinite(v)) || typeof v === 'boolean') out[k] = v;

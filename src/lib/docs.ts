@@ -15,6 +15,10 @@ export async function pickDoc(_source: DocSource, id: string): Promise<{ file: s
   return { file: id, name: a.name };
 }
 
+export function docUri(file: string): string {
+  return urls.get(file) ?? '';
+}
+
 export function docExists(file: string): boolean {
   return urls.has(file);
 }
@@ -28,4 +32,10 @@ export function dropDoc(file: string) {
   const u = urls.get(file);
   if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
   urls.delete(file);
+}
+
+/** "Delete all my data": forget this tab's attachments. */
+export function dropAllDocs(): void {
+  for (const u of urls.values()) if (u.startsWith('blob:')) URL.revokeObjectURL(u);
+  urls.clear();
 }

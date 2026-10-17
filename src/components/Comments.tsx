@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
-import { postComment, type Comment } from '@/lib/share-api';
+import { postComment, reportComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
 import { C, F, R, S } from '@/theme';
@@ -47,6 +47,11 @@ export function CommentsList({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [onStreet, setOnStreet] = useState(true);
+  const [reported, setReported] = useState<Set<string>>(() => new Set());
+  const report = (id: string) => {
+    setReported((r) => new Set(r).add(id));
+    reportComment(shareId, id).catch(() => {});
+  };
   const grouped = !!streets && streets.length > 0;
   const about = grouped && onStreet && street ? street : undefined;
   const send = async () => {
@@ -117,6 +122,17 @@ export function CommentsList({
                     </T>
                   </Row>
                   <T v="body">{c.text}</T>
+                  <Pressable
+                    disabled={reported.has(c.id)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={reported.has(c.id) ? t('Comentário denunciado') : `${t('Denunciar comentário de')} ${c.name}`}
+                    onPress={() => report(c.id)}
+                    style={{ alignSelf: 'flex-end', minHeight: 24, justifyContent: 'center' }}>
+                    <T v="tiny" color={C.muted}>
+                      {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
+                    </T>
+                  </Pressable>
                 </View>
               </Row>
             ))}

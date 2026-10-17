@@ -8,6 +8,8 @@ import { amount, decimal } from '@/poker/format';
 import { equityVsRange, rangePctForRaises, topRange } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
+import { motionTimeline, type MotionAnim } from './timeline';
+
 export type BadgeKind = ActionKind | 'allin';
 
 export interface RpSeat {
@@ -86,6 +88,8 @@ export interface RpView {
   /** Heads-up with villain's cards unknown: hero's equity against a range read from villain's preflop raises. */
   rangeEq: { equity: number; pct: number } | null;
   end: boolean;
+  /** A still frame `at` ms into this step's animations (Story/reel capture). */
+  motion?: { anims: MotionAnim[]; at: number };
 }
 
 export const STREET_LABEL: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
@@ -144,7 +148,7 @@ function cachedRangeEquity(hero: CardCode[], board: CardCode[], pct: number) {
 }
 
 /** The view at step `k` of the replay. `reveal` shows every known hand. */
-export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; reveal: boolean; atEnd: boolean }): RpView {
+export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; reveal: boolean; atEnd: boolean; at?: number }): RpView {
   const step: Step = r.steps[k];
   const st = step.state;
   const pos = positions(hand.players.length, hand.button);
@@ -345,6 +349,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     info,
     rangeEq,
     end: !!result,
+    ...(opts.at != null ? { motion: { anims: motionTimeline(hand, r)[k]?.anims ?? [], at: opts.at } } : {}),
   };
 }
 

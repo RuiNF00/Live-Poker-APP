@@ -6,6 +6,7 @@
 import { Platform } from 'react-native';
 
 import { t } from '@/i18n';
+import { KINDS } from '@/lib/notify-policy';
 import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -45,7 +46,16 @@ export function setup(n: N) {
       handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
     });
     if (Platform.OS === 'android') {
-      await n.setNotificationChannelAsync(CHANNEL, { name: t('Níveis e intervalos'), importance: n.AndroidImportance.HIGH, vibrationPattern: [0, 250, 150, 250] });
+      // Every channel in one place (lib/notify-policy), so Settings and the system list match.
+      for (const k of KINDS) {
+        const importance = k.importance === 'high' ? n.AndroidImportance.HIGH : k.importance === 'low' ? n.AndroidImportance.LOW : n.AndroidImportance.DEFAULT;
+        await n.setNotificationChannelAsync(k.channel, {
+          name: t(k.name),
+          importance,
+          ...(k.channel === CHANNEL ? { vibrationPattern: [0, 250, 150, 250] } : null),
+          ...(k.private ? { lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE } : null),
+        });
+      }
       // The running session: quiet, and on a locked phone only "Sweatbook" with the contents hidden (no stack, no blinds).
       await n.setNotificationChannelAsync(SESSION_CHANNEL, { name: t('Sessão a decorrer'), importance: n.AndroidImportance.LOW, lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE });
     }
@@ -57,6 +67,33 @@ export function setup(n: N) {
 export async function notificationChannels(): Promise<void> {
   const n = notifications();
   if (n) await setup(n);
+}
+
+/**
+ * Android 12+ may refuse exact alarms (14+ does by default): the level and
+ * break reminders then go out as inexact alarms, which a phone lying still can
+ * hold back a few minutes. True where that can't happen.
+ */
+export async function exactAlarmsAllowed(): Promise<boolean> {
+  const n = notifications();
+  if (!n || Platform.OS !== 'android') return true;
+  try {
+    return (await n.getExactAlarmPermissionsAsync()).granted;
+  } catch {
+    return true;
+  }
+}
+
+/** Opens the system screen for exact alarms; true once allowed. Never USE_EXACT_ALARM: that one is only for alarm-clock apps. */
+export async function askExactAlarms(): Promise<boolean> {
+  const n = notifications();
+  if (!n || Platform.OS !== 'android') return true;
+  try {
+    return (await n.requestExactAlarmPermissionsAsync()).granted;
+  } catch {
+    // SCHEDULE_EXACT_ALARM not declared in this build: reminders stay inexact.
+    return false;
+  }
 }
 
 /** Ask once, when the player shows they want reminders. True when allowed. */
