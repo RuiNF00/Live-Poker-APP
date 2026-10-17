@@ -29,6 +29,7 @@ import {
   sharePost,
   shareStory,
   shareVideo,
+  storyGoesToInstagram,
   type FaceClip,
 } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
@@ -92,6 +93,13 @@ export default function StoryScreen() {
   const withFace = video && !!face && !faceLocked;
   const withVoice = !!voice && pro.isPro && !withFace;
   const direct = withVoice || to === 'instagram';
+  // Whether the Instagram button opens Instagram's editor (where the Poll sticker goes) rather than the system sheet.
+  const [igDirect, setIgDirect] = useState(false);
+  useEffect(() => {
+    storyGoesToInstagram()
+      .then(setIgDirect)
+      .catch(() => {});
+  }, []);
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
@@ -217,10 +225,13 @@ export default function StoryScreen() {
       // Question stories open the challenge view: vote first, result after.
       const ref = await shareRef();
       const link = shareLink(shareId, 'story', { quiz: mode === 'question', ref });
+      // The empty Poll space only when Instagram's own editor opens; the system sheet gets the options drawn.
+      const pollRoom = mode === 'question' && (await storyGoesToInstagram());
+      const as = pollRoom ? 'instagram' : 'post';
       let target;
       if (withVoice && voice) {
         // Capture with the waveform slot empty; the server animates it over the voice.
-        const frame = await captureAs('slot');
+        const frame = await captureAs('slot', as);
         let video: string | null = null;
         try {
           video = await renderVoiceStory(frame, voice, voiceSlotPx());
@@ -233,12 +244,12 @@ export default function StoryScreen() {
           );
           if (!goOn) return;
         }
-        target = video ? await shareStory(video, link, 'video') : await shareStory(await captureAs(null), link);
+        target = video ? await shareStory(video, link, 'video') : await shareStory(await captureAs(null, as), link);
       } else {
-        target = await shareStory(await captureAs('preview'), link);
+        target = await shareStory(await captureAs('preview', as), link);
       }
       track('story_shared', { target: String(target), voice: !!voice, share_id: shareId, ref, question: mode === 'question' });
-      if (mode === 'question')
+      if (pollRoom && target === 'instagram')
         notice(
           t('Junta a sondagem'),
           t('No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.', {
@@ -341,7 +352,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : 'hint'} face={withFace ? faceView : null} />
+                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
               </View>
             </View>
           </View>

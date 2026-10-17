@@ -107,6 +107,11 @@ async function instagramInstalled(): Promise<boolean> {
 
 export type StoryTarget = 'instagram' | 'sheet';
 
+/** Whether shareStory opens Instagram's story editor itself (not the system sheet). */
+export async function storyGoesToInstagram(): Promise<boolean> {
+  return !!nativeShare() && !!META_APP_ID && (await instagramInstalled());
+}
+
 /**
  * Voice story: the server (web/src/app/api/story-video) lays the voice note over
  * the frame and draws a live waveform in `slot`. Returns a local MP4.
