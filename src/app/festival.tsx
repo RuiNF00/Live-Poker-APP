@@ -7,14 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { askNotificationPermission } from '@/lib/lock-screen/reminder';
-import { eventDay, eventTitle, venueTime, WSOP_PARADISE_2026, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, eventTitle, venueTime, BAHAMAS_DEC_2026, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, planTotals, togglePicked, updatePlan, useFestivalPlan, type FestivalPlan } from '@/store/festival-plan';
@@ -43,7 +43,7 @@ function dayLabel(day: string) {
 }
 
 export default function FestivalScreen() {
-  const f = WSOP_PARADISE_2026;
+  const f = BAHAMAS_DEC_2026;
   const plan = useFestivalPlan(f.id);
   const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
@@ -91,9 +91,23 @@ export default function FestivalScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: f.name }} />
+      <Stack.Screen options={{ title: t('Festival') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <View style={{ gap: 4 }}>
+          <Row gap={8}>
+            <TextInput
+              value={plan.name ?? t(f.name)}
+              onChangeText={(name) => updatePlan(f.id, (p) => ({ ...p, name }))}
+              onBlur={() => updatePlan(f.id, (p) => ({ ...p, name: p.name?.trim() || undefined }))}
+              placeholder={t(f.name)}
+              placeholderTextColor={C.textDim}
+              accessibilityLabel={t('Nome do festival')}
+              returnKeyType="done"
+              maxLength={60}
+              style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
+            />
+            <Ionicons name="pencil" size={16} color={C.textDim} />
+          </Row>
           <T v="label">{`${f.venue} · ${f.city}`}</T>
           <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T>
         </View>
@@ -153,7 +167,7 @@ export default function FestivalScreen() {
         <View style={{ gap: 6, paddingHorizontal: 4 }}>
           <Pressable onPress={() => void WebBrowser.openBrowserAsync(f.source.url).catch(() => {})} hitSlop={8} accessibilityRole="link">
             <T v="tiny" color={C.textDim}>
-              {t('Fonte: {source}, verificado a {date}', { source: f.source.label, date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+              {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
               <T v="tiny" color={C.accent}>{'  ' + t('Abrir')}</T>
             </T>
           </Pressable>
