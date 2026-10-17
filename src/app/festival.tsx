@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { ActionOffers } from '@/components/staking/ActionOffers';
 import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -18,6 +19,7 @@ import { eventDay, eventTitle, venueTime, BAHAMAS_DEC_2026, type Festival, type 
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type FestivalPlan } from '@/store/festival-plan';
+import { stakesFor, getOffers } from '@/store/action-offer';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
@@ -119,6 +121,8 @@ export default function FestivalScreen() {
         </View>
 
         <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} />
+
+        <ActionOffers f={f} picked={plan.picked} />
 
         <ChipRow>
           {(
@@ -332,6 +336,8 @@ function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bank
     venue: `${f.venue}, ${f.city.split(',')[0]}`,
     buyIn: e.buyIn,
     bankrollId,
+    // Backers who bought a piece of this event through an action package.
+    stakes: stakesFor(getOffers(), f.id, e.id),
     startedAt: now,
     stackLog: [{ t: now, stack: base.stack, level: base.level }],
   };
