@@ -5,7 +5,7 @@
 // a view over several bankrolls only ever joins bankrolls in the same one.
 
 import { t } from '@/i18n';
-import { rawMoney } from '@/poker/format';
+import { decimal, rawMoney } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 
 import { byCurrency, profit } from './session-math';
@@ -200,7 +200,12 @@ export function stakeKey(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'buyIn'>): stri
 }
 
 export function stakeLabel(key: string, currency: string): string {
-  if (key.startsWith('c:')) return key.slice(2);
+  if (key.startsWith('c:')) {
+    // Blinds with cents (imported) read as money does: 0,25/0,50. Whole blinds stay 1/2.
+    const [sb, bb] = key.slice(2).split('/').map(Number);
+    const cents = [sb, bb].some((x) => Math.abs(x - Math.round(x)) > 1e-9);
+    return cents ? `${decimal(sb, 2)}/${decimal(bb, 2)}` : key.slice(2);
+  }
   const i = Number(key.slice(2));
   if (i === 0) return `≤${rawMoney(BANDS[0], currency)}`;
   if (i >= BANDS.length) return `>${rawMoney(BANDS[BANDS.length - 1], currency)}`;

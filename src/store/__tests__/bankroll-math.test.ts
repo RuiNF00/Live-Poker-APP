@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { decimalComma } from '../../i18n';
+
 import {
   activeFilters,
   applyFilter,
@@ -16,6 +18,7 @@ import {
   sessionsIn,
   sortBankrolls,
   stakeKey,
+  stakeLabel,
   stakeOptions,
 } from '../bankroll-math';
 import { breakdown, curve, totals } from '../session-math';
@@ -159,4 +162,10 @@ test('bankrollsBack: a restore on a fresh phone counts the backup\'s Principal t
   const tx = [{ id: 't', bankrollId: fresh[0].id, kind: 'deposit' as const, amount: 1, at: 1, note: '' }];
   assert.equal(bankrollsBack(backup, { bankrolls: fresh, sessions: [], transfers: tx }), 1);
   assert.equal(bankrollsBack([], { bankrolls: fresh, sessions: [], transfers: [] }), 0);
+});
+
+test('stakeLabel: blinds with cents read as money, whole blinds stay plain', () => {
+  const sep = decimalComma ? ',' : '.';
+  assert.equal(stakeLabel(stakeKey({ kind: 'cash', sb: 0.25, bb: 0.5, buyIn: 50 }), '€'), `0${sep}25/0${sep}50`);
+  assert.equal(stakeLabel(stakeKey({ kind: 'cash', sb: 1, bb: 2, buyIn: 200 }), '€'), '1/2');
 });
