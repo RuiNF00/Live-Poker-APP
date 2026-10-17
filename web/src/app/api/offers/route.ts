@@ -12,9 +12,9 @@ export function OPTIONS() {
 }
 
 /**
- * Shares a festival action package. Called by the app (src/store/action-offer.ts):
- * POST { offer } -> 201 { id, token, url }. The app keeps `token` to edit it, read the
- * reservations and confirm or decline them.
+ * Records a festival action agreement for one backer. Called by the app (src/lib/offer-api.ts):
+ * POST { offer } -> 201 { id, token, url }. The app keeps `token` to edit or delete it;
+ * the url goes privately to that backer, who confirms the agreed piece there.
  */
 export async function POST(req: Request) {
   if (await limited(req, 'offer-create', 20, 3600)) {
