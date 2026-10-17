@@ -82,6 +82,7 @@ describe('html lang of language-specific pages', () => {
     expect(pageLang('/es/ayuda', null)).toBe('es');
     expect(pageLang('/help/cancel-pro', 'pt')).toBe('en');
     expect(pageLang('/pt-br/ajuda/x', null)).toBe('pt-BR');
+    expect(pageLang('/press', 'pt')).toBe('en');
     expect(pageLang('/ajuda', null)).toBe('pt-PT');
     expect(pageLang('/support', 'pt-BR')).toBe('pt-BR');
     expect(pageLang('/delete-account', 'es')).toBe('es');
