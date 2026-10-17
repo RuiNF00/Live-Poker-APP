@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { replay } from '@/poker/engine';
+import type { Hand } from '@/poker/types';
 import { sampleHand } from '@/poker/sample';
 
 import { timeline, viewAt } from '../model';
@@ -56,4 +57,52 @@ test('run it twice: both boards at the end, each winner tagged with their board'
   assert.match(end.narration, /^Board 1: Hero .*1001.* · Board 2: .*1001/);
   // Before the end only the first board shows.
   assert.equal(viewAt(hand, r, r.steps.length - 1, opts).board2, null);
+});
+
+/** 6-max 1/2, button on seat 0 (hero): SB 1, BB 2, UTG 3, HJ 4, CO 5. */
+const spot = (actions: Hand['actions'], hero = 0, stacks = [200, 200, 200, 200, 200, 200]): Hand => ({
+  v: 1,
+  id: 'spot',
+  createdAt: 0,
+  updatedAt: 0,
+  game: { kind: 'cash', name: '1/2', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€' },
+  players: stacks.map((stack, i) => ({ name: i === hero ? 'Hero' : '', stack, cards: i === hero ? ['Ah', 'Kd'] : undefined })),
+  button: 0,
+  hero,
+  actions,
+  board: [],
+  tags: [],
+  notes: '',
+});
+const lastView = (h: Hand) => {
+  const r = replay(h);
+  return viewAt(h, r, r.steps.length - 1, opts);
+};
+
+test('folded to hero: an open-or-fold spot, no price and no opponent', () => {
+  const v = lastView(spot([{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }]));
+  assert.equal(v.facing, null);
+  assert.equal(v.decision, 'Abrir ou foldar');
+});
+
+test('limpers in front: a limped-pot decision, still no pot odds', () => {
+  const v = lastView(spot([{ p: 3, kind: 'call' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'call' }]));
+  assert.equal(v.facing, null);
+  assert.equal(v.decision, 'Pote com limps');
+});
+
+test('facing a raise: the raiser, pot odds and MDF', () => {
+  const v = lastView(spot([{ p: 3, kind: 'fold' }, { p: 4, kind: 'raise', to: 6 }, { p: 5, kind: 'fold' }]));
+  assert.ok(v.facing);
+  assert.equal(v.decision, null);
+  assert.equal(v.facing!.villain, 4);
+  // Pot 1 + 2 + 6 = 9, call 6: 6 / 15.
+  assert.ok(Math.abs(v.facing!.potOdds - 0.4) < 1e-9);
+});
+
+test('a shove bigger than hero: pot odds against the effective bet', () => {
+  // HJ shoves 500 into hero's 100: only 100 of it can be called.
+  const v = lastView(spot([{ p: 3, kind: 'fold' }, { p: 4, kind: 'raise', to: 500 }, { p: 5, kind: 'fold' }], 0, [100, 200, 200, 200, 500, 200]));
+  // Pot that counts 1 + 2 + 100 = 103, call 100.
+  assert.ok(Math.abs(v.facing!.potOdds - 100 / 203) < 1e-9);
 });

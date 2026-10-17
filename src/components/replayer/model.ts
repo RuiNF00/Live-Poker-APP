@@ -42,6 +42,12 @@ export interface RpFacing {
   toCall: string;
   potOdds: number;
   mdf: number;
+  /** Raw numbers for the ICM panel: chips to call, everything in the middle, villain, chips behind and in front of each seat. */
+  call: number;
+  potAll: number;
+  villain: number | null;
+  stacks: number[];
+  bets: number[];
 }
 
 export interface RpView {
@@ -55,6 +61,8 @@ export interface RpView {
   narration: string;
   /** Set when hero is the one to act facing a bet. */
   facing: RpFacing | null;
+  /** Hero to act with no bet to face: "Abrir ou foldar", "Pote com limps", "Passar ou apostar". */
+  decision: string | null;
   /** Pot / effective stack summary line. */
   info: string;
   /** Heads-up with villain's cards unknown: hero's equity against a range read from villain's preflop raises. */
@@ -225,14 +233,34 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   let facing: RpFacing | null = null;
   if (!result && st.toAct === hand.hero) {
     const toCall = Math.min(Math.max(0, st.currentBet - st.bets[hand.hero]), st.stacks[hand.hero]);
-    if (toCall > 0) {
-      const aggressor = st.lastAggressor ?? st.last?.p ?? null;
+    // Only a bet or raise has a price: blinds, straddles and limps don't (that's an open or iso spot).
+    if (toCall > 0 && st.raises > 0 && st.lastAggressor != null) {
+      const aggressor = st.lastAggressor;
+      const reach = st.bets[hand.hero] + st.stacks[hand.hero];
+      const potEff = potAll - Math.max(0, st.currentBet - reach);
       facing = {
         vs: aggressor != null ? displayName(hand, aggressor, pos) : '',
         toCall: fmt(toCall),
-        potOdds: toCall / (potAll + toCall),
-        mdf: Math.max(0, Math.min(1, (potAll - toCall) / potAll)),
+        // Against the effective bet: what villain put in beyond what hero can match goes back to them.
+        potOdds: toCall / (potEff + toCall),
+        mdf: Math.max(0, Math.min(1, (potEff - toCall) / potEff)),
+        call: toCall,
+        potAll,
+        villain: aggressor,
+        stacks: st.stacks.slice(),
+        bets: st.bets.slice(),
       };
+    }
+  }
+
+  // Hero to act with no bet to face: say what the decision is instead of a price.
+  let decision: string | null = null;
+  if (!result && !facing && st.toAct === hand.hero) {
+    if (st.street !== 'preflop') decision = t('Passar ou apostar');
+    else {
+      let limps = 0;
+      for (let j = 1; j <= k; j++) if (r.steps[j].state.street === 'preflop' && r.steps[j].state.last?.kind === 'call') limps++;
+      decision = limps ? t('Pote com limps') : t('Abrir ou foldar');
     }
   }
 
@@ -258,6 +286,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     potLabel: fmt(result ? pot : st.pot),
     narration,
     facing,
+    decision,
     info,
     rangeEq,
     end: !!result,

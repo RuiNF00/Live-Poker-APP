@@ -10,6 +10,7 @@ import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
 import { timeline, viewAt, type TimelineItem } from './replayer/model';
+import { IcmPanel } from './replayer/IcmPanel';
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { tap } from './ui';
 
@@ -160,6 +161,7 @@ export function Replayer({
           <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>{note}</Text>
         </View>
       ) : null}
+      {hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
       {answered ? (
         <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
           {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}
@@ -243,7 +245,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
         borderRadius: R.md,
         backgroundColor: '#0E0D0B',
         borderWidth: 1,
-        borderColor: f ? 'rgba(255,106,61,0.45)' : C.border,
+        borderColor: f || view.decision ? 'rgba(255,106,61,0.45)' : C.border,
         paddingHorizontal: 12,
         paddingVertical: 7,
         flexDirection: 'row',
@@ -265,6 +267,17 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
+        </>
+      ) : view.decision ? (
+        <>
+          <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
+            {t('HERO A DECIDIR')}
+            <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> · {view.decision}</Text>
+          </Text>
+          <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
+            {view.info}
+          </Text>
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
         </>
       ) : (
         <>
