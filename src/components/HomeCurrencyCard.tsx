@@ -4,6 +4,8 @@
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { usePro } from '@/billing/pro';
+import { useLocked } from '@/components/ProGate';
 import { locale, t } from '@/i18n';
 import { useRates } from '@/lib/fx';
 import { money } from '@/poker/format';
@@ -20,6 +22,8 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
   const [pick, setPick] = useState(false);
   const [typing, setTyping] = useState(false);
   const manual = useMemo(() => settings.fxManual ?? {}, [settings.fxManual]);
+  const locked = useLocked('homeTotal');
+  const { paywall } = usePro();
   const home = settings.currency;
   const currencies = useMemo(() => new Set([...sessions.filter((s) => s.endedAt).map((s) => s.currency), ...transfers.map((x) => bankrolls.find((b) => b.id === x.bankrollId)?.currency ?? home)]), [sessions, transfers, bankrolls, home]);
   const foreign = currencies.size > 1 || (currencies.size === 1 && !currencies.has(home));
@@ -29,10 +33,21 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
     const ts = [...sessions.filter((s) => s.currency !== home).map((s) => s.startedAt), ...transfers.map((x) => x.at)];
     return ts.length ? Math.min(...ts) : null;
   }, [foreign, sessions, transfers, home]);
-  const rates = useRates(since);
+  // Locked: no rates to fetch.
+  const rates = useRates(locked ? null : since);
   const [year] = useState(() => new Date().getFullYear());
   const h = useMemo(() => homeTotals({ sessions, transfers, bankrolls }, home, rates, { from: new Date(year, 0, 1).getTime() }, undefined, manual), [sessions, transfers, bankrolls, home, rates, year, manual]);
   if (!foreign) return null;
+  if (locked)
+    return (
+      <Card tone="inset" style={{ gap: S.xs }}>
+        <T v="label">{t('Património · tudo em {cur}', { cur: home })}</T>
+        <T v="monoL" color={C.muted}>
+          •••
+        </T>
+        <Button kind="secondary" size="sm" icon="lock-closed" title={t('Juntar as moedas com Pro')} onPress={() => paywall('homeTotal')} style={{ alignSelf: 'flex-start' }} />
+      </Card>
+    );
 
   const latest = latestDay(rates);
   const show = (n: number, signed = false) => (hidden ? '•••' : (signed && n > 0 ? '+' : '') + money(Math.round(n), home));

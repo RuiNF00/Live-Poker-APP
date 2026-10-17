@@ -14,8 +14,9 @@ import { useStore } from '@/store/store';
 import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
+import { withPro } from '@/components/ProGate';
 
-export default function SwapsScreen() {
+function SwapsScreen() {
   const { swaps, ready } = useSwaps();
   const { sessions, settings, setSettings } = useStore();
   const include = settings.includeSwaps !== false;
@@ -168,3 +169,4 @@ function SwapRow({ s }: { s: Swap }) {
   );
 }
 
+export default withPro('swaps', t('Swaps'), SwapsScreen);
