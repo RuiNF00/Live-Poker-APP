@@ -625,6 +625,7 @@ const ptBR: Record<string, string> = {
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Tudo salvo no celular. Envia quando houver sinal.',
   '1 por confirmar': '1 a confirmar',
+  'A mesma percentagem': 'A mesma porcentagem',
   'Ainda ninguém cobrou': 'Ninguém ganhou prêmio ainda',
   'Ao confirmar, os termos e a hora ficam fixados. Nenhum dos dois os pode mudar depois.': 'Ao confirmar, os termos e a hora ficam fixados. Nenhum dos dois pode mudá-los depois.',
   'Apagado do servidor': 'Excluído do servidor',
