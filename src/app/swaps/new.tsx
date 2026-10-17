@@ -3,20 +3,21 @@
 // player confirms; nothing counts until they do.
 
 import { router, Stack, useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
+import { useSwapSuggestions } from '@/components/swaps/suggest';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
 import { createSwap, SwapError, swapUrl } from '@/lib/swap-api';
 import { money } from '@/poker/format';
-import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore } from '@/store/store';
 import { fromRemote, swapNames, type SwapTerms } from '@/store/swaps';
 import { saveSwap, useSwaps } from '@/store/swaps-store';
@@ -25,20 +26,23 @@ import { C, S } from '@/theme';
 const PCTS = [1, 2, 3, 5, 7.5, 10];
 
 function NewSwap() {
-  const { settings, sessions, activeSession, setSettings } = useStore();
+  const { settings, activeSession, setSettings } = useStore();
   const { swaps } = useSwaps();
   const live = activeSession?.kind === 'mtt' ? activeSession : null;
+  const all = useSwapSuggestions();
   const [me, setMe] = useState(settings.nickname);
   const [them, setThem] = useState('');
   const [pct, setPct] = useState(5);
   const [same, setSame] = useState(true);
   const [theirPct, setTheirPct] = useState(5);
-  const [scope, setScope] = useState<'event' | 'series'>(live ? 'event' : 'series');
+  const [scope, setScope] = useState<'event' | 'series'>(live || all.some((o) => o.from === 'plan') ? 'event' : 'series');
   const [title, setTitle] = useState(live?.name ?? '');
   const [venue, setVenue] = useState(live?.venue ?? '');
   const [currency, setCurrency] = useState(live?.currency ?? (CURRENCIES.includes(settings.currency) ? settings.currency : '$'));
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  // No signal: everything typed stays, and the swap is created by itself when the signal is back.
+  const [waiting, setWaiting] = useState(false);
 
   // Each visit starts fresh: leaving with Voltar drops the draft (going to the background keeps it).
   useFocusEffect(
@@ -50,6 +54,7 @@ function NewSwap() {
         setTheirPct(5);
         setNote('');
         setBusy(false);
+        setWaiting(false);
       },
       [],
     ),
@@ -69,20 +74,20 @@ function NewSwap() {
     return out.slice(0, 6);
   }, [swaps]);
 
-  // What you might be swapping for: the tournament you're in, festivals, recent events.
-  const festivals = useFestivals();
-  const [today] = useState(() => dayKey(Date.now()));
-  const suggestions = useMemo(() => {
-    const out: { title: string; venue: string; currency: string; scope: 'event' | 'series' }[] = [];
-    if (live?.name) out.push({ title: live.name, venue: live.venue, currency: live.currency, scope: 'event' });
-    // The next few festivals, not the whole calendar.
-    for (const f of festivals.filter((x) => notOver(x, today)).slice(0, 3)) out.push({ title: t(f.name), venue: f.venue, currency: f.currency, scope: 'series' });
-    for (const s of sessions) {
-      if (out.length >= 6) break;
-      if (s.kind === 'mtt' && s.name && !out.some((o) => o.title === s.name)) out.push({ title: s.name, venue: s.venue, currency: s.currency, scope: 'event' });
-    }
-    return out.filter((o) => o.scope === scope);
-  }, [live, sessions, scope, festivals, today]);
+  const suggestions = all.filter((o) => o.scope === scope);
+
+  // A repeat swap is one tap: picking someone brings back the terms of your last swap with them.
+  const pickPerson = (p: string) => {
+    setThem(p);
+    const last = swaps.find((x) => swapNames(x)[x.side === 'a' ? 'b' : 'a'].toLowerCase() === p.toLowerCase());
+    if (!last) return;
+    const mine = last.terms[last.side].pct;
+    const theirs = last.terms[last.side === 'a' ? 'b' : 'a'].pct;
+    setPct(mine);
+    setSame(mine === theirs);
+    setTheirPct(theirs);
+    if (!live && CURRENCIES.includes(last.terms.currency)) setCurrency(last.terms.currency);
+  };
 
   const pB = same ? pct : theirPct;
   const ok = me.trim() && them.trim() && title.trim() && !busy;
@@ -118,6 +123,11 @@ function NewSwap() {
       else await Share.share({ message: msg });
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
+      setBusy(false);
+      if (code === 'offline') {
+        setWaiting(true);
+        return;
+      }
       Alert.alert(
         t('Não foi possível criar o swap'),
         code === 'offensive' ? t('Um dos nomes não é permitido.') : code === 'rate_limited' ? t('Demasiados swaps seguidos. Tenta daqui a pouco.') : t('Precisa de rede para criar o link. Tenta de novo quando tiveres sinal.'),
@@ -125,6 +135,18 @@ function NewSwap() {
       setBusy(false);
     }
   }
+
+  const createRef = useRef(create);
+  useEffect(() => {
+    createRef.current = create;
+  });
+  useEffect(() => {
+    if (!waiting) return;
+    return onReconnect(() => {
+      setWaiting(false);
+      void createRef.current();
+    });
+  }, [waiting]);
 
   return (
     <>
@@ -135,7 +157,7 @@ function NewSwap() {
           {people.length ? (
             <ChipRow>
               {people.map((p) => (
-                <Chip key={p} label={p} icon="person-outline" active={them === p} onPress={() => setThem(p)} />
+                <Chip key={p} label={p} icon="person-outline" active={them === p} onPress={() => pickPerson(p)} />
               ))}
             </ChipRow>
           ) : null}
@@ -226,7 +248,7 @@ function NewSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button lines={2} title={busy ? t('A criar…') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
+          <Button lines={2} title={busy ? t('A criar…') : waiting ? t('Sem rede: cria quando houver sinal') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
               {them.trim() ? t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name }) : t('O outro jogador confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.')}{' '}

@@ -176,3 +176,12 @@ export function useFestivalPlan(festivalId: string): FestivalPlan {
     () => getPlan(festivalId),
   );
 }
+
+/** Every festival's plan, for screens that look across festivals (swap suggestions). */
+export function usePlans(): Record<string, FestivalPlan> {
+  return useSyncExternalStore(
+    subscribe,
+    () => plans,
+    () => plans,
+  );
+}

@@ -176,7 +176,8 @@ export interface SwapsTotal {
 }
 
 /** All swaps at a glance, kept apart by currency (a $ swap and a € swap don't add up). */
-export function swapsTotal(list: Swap[]): SwapsTotal {
+/** Header totals across pair swaps and, when given, groups (what the group owes me, or I owe it). */
+export function swapsTotal(list: Swap[], groups: SwapGroup[] = []): SwapsTotal {
   const byCurrency = new Map<string, { owedToMe: number; iOwe: number; net: number }>();
   let open = 0;
   let pending = 0;
@@ -194,6 +195,20 @@ export function swapsTotal(list: Swap[]): SwapsTotal {
     else cur.iOwe = r2(cur.iOwe - l.balance);
     cur.net = r2(cur.owedToMe - cur.iOwe);
     byCurrency.set(s.terms.currency, cur);
+  }
+  for (const g of groups) {
+    if (g.archived || g.gone) continue;
+    if (!groupReady(g)) {
+      pending++;
+      continue;
+    }
+    open++;
+    const b = groupLedger(g).balance;
+    const cur = byCurrency.get(g.terms.currency) ?? { owedToMe: 0, iOwe: 0, net: 0 };
+    if (b > 0) cur.owedToMe = r2(cur.owedToMe + b);
+    else cur.iOwe = r2(cur.iOwe - b);
+    cur.net = r2(cur.owedToMe - cur.iOwe);
+    byCurrency.set(g.terms.currency, cur);
   }
   return { byCurrency, open, pending };
 }
@@ -314,7 +329,10 @@ export function withSwaps(sessions: Session[], swaps: Swap[], groups: SwapGroup[
   });
 }
 
-const sameName = (a: string, b: string) => !!a.trim() && a.trim().toLowerCase() === b.trim().toLowerCase();
+// A session started from the festival plan is named per flight ("#12 $5k PLO · Flight A"); a swap
+// for the event covers every flight.
+const eventKey = (x: string) => x.trim().toLowerCase().replace(/\s*·\s*flight\s+\w+$/, '');
+const sameName = (a: string, b: string) => !!eventKey(a) && eventKey(a) === eventKey(b);
 
 /**
  * The swaps a tournament I just finished belongs to, still waiting for my result from it:

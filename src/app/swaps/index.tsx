@@ -7,12 +7,13 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { seatLabel } from '@/components/swaps/group-parts';
 import { AccountsLocked, PAIR, pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
-import { assignGroups, groupLedger, groupReady, type SwapGroup } from '@/store/swap-groups';
+import { assignGroups, groupLedger, groupNet, groupReady, minTransfers, type SwapGroup } from '@/store/swap-groups';
 import { syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
@@ -32,19 +33,7 @@ function SwapsScreen() {
       syncAllGroups();
     }, []),
   );
-  const tot = swapsTotal(swaps);
-  // Groups add to the same per-currency totals: what the group owes me, or what I owe it.
-  for (const g of groups) {
-    if (g.archived || g.gone || !groupReady(g)) continue;
-    tot.open++;
-    const b = groupLedger(g).balance;
-    const cur = tot.byCurrency.get(g.terms.currency) ?? { owedToMe: 0, iOwe: 0, net: 0 };
-    if (b > 0) cur.owedToMe += b;
-    else cur.iOwe -= b;
-    cur.net = Math.round((cur.owedToMe - cur.iOwe) * 100) / 100;
-    tot.byCurrency.set(g.terms.currency, cur);
-  }
-  tot.pending += groups.filter((g) => !g.archived && !g.gone && !groupReady(g)).length;
+  const tot = swapsTotal(swaps, groups);
   const active = swaps.filter((s) => !s.archived && !s.gone);
   const past = swaps.filter((s) => s.archived || s.gone);
   const activeGroups = groups.filter((g) => !g.archived && !g.gone);
@@ -227,6 +216,12 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
   const cur = g.terms.currency;
   const square = Math.abs(l.balance) < 0.5;
   const missing = g.seats.filter((s) => !s.confirmedAt).length;
+  // Who pays whom, right in the list: no need to open the group to settle up.
+  const mine = ready && !locked && !square && !g.gone && !g.archived ? minTransfers(groupNet(g)).filter((x) => x.from === g.seat || x.to === g.seat) : [];
+  const settle = mine
+    .slice(0, 2)
+    .map((x) => (x.from === g.seat ? t('Pagas {amount} a {to}', { amount: money(x.amount, cur), to: seatLabel(g, x.to) }) : t('{from} paga-te {amount}', { from: seatLabel(g, x.from), amount: money(x.amount, cur) })))
+    .join(' · ');
   const right = !ready ? (
     <Pill label={g.gone ? t('Apagado') : t('Faltam {n}', { n: missing })} color={g.gone ? C.muted : C.warn} />
   ) : locked ? (
@@ -253,8 +248,8 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
       }
       title={g.terms.title}
       subtitle={
-        <T v="small" numberOfLines={1}>
-          {t('{n} jogadores · {pct} cada', { n: g.seats.length, pct: pctLabel(g.terms.pct) })}
+        <T v="small" numberOfLines={2}>
+          {settle || t('{n} jogadores · {pct} cada', { n: g.seats.length, pct: pctLabel(g.terms.pct) })}
         </T>
       }
       right={right}
