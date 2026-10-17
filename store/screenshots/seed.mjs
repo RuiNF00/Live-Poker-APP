@@ -3,6 +3,11 @@ const base = (o) => ({ v: 1, createdAt: o.t, updatedAt: o.t, notes: '', ...o });
 const P = (n, s, c) => (c ? { name: n, stack: s, cards: c } : { name: n, stack: s });
 const g = (name, sb, bb, stage, level, left) => ({ kind: 'mtt', name, sb, bb, ante: bb, anteType: 'bb', currency: '$', stage, level, playersLeft: left });
 export const hands = [
+  base({ id: 'h7', t: now - 3*DAY - 2*3600000, game: g('$50K Super High Roller', 1500, 3000, 'ft', 20, 6),
+    players: [P('',120000),P('',150000),P('',95000),P('Hero',210000,['Jc','Jd']),P('Reg alemão',260000,['Ad','Kh']),P('',180000)],
+    button: 4, hero: 3, actions: [{p:1,kind:'fold'},{p:2,kind:'fold'},{p:3,kind:'raise',to:6600},{p:4,kind:'raise',to:21000},{p:5,kind:'fold'},{p:0,kind:'fold'},{p:3,kind:'raise',to:210000},{p:4,kind:'call'}],
+    board: ['As','9c','4d','7s','2h'], board2: ['Js','6d','3c','Tc','5h'], tags: ['Mesa final','Run it twice'], notes: '' }),
+
   base({ id: 'h1', t: now - 20*60000, game: g('$25K High Roller', 1000, 2000, 'bubble', 14, 58),
     players: [P('Hero',64000,['Ah','Qh']),P('',51000),P('Boné azul',120000,['Kc','Kd']),P('',38000),P('',72000),P('',45000),P('Reg alemão',88000),P('',30000),P('',96000)],
     button: 0, hero: 0, actions: [{p:3,kind:'fold'},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:6,kind:'raise',to:4400},{p:7,kind:'fold'},{p:8,kind:'fold'},{p:0,kind:'raise',to:12000},{p:1,kind:'fold'},{p:2,kind:'raise',to:30000},{p:6,kind:'fold'},{p:0,kind:'raise',to:64000},{p:2,kind:'call'}],
