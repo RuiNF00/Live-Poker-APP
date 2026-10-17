@@ -16,6 +16,7 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
+import { AppLock } from '@/components/AppLock';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
@@ -97,6 +98,7 @@ export default function RootLayout() {
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
           <NetStatus />
+          <AppLock />
           </ProProvider>
         </StoreProvider>
       </ThemeProvider>

@@ -8,9 +8,11 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { AppLockSetting } from '@/components/AppLockSetting';
 import { CloudBackup } from '@/components/CloudBackup';
 import { Button, Card, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
+import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
@@ -93,6 +95,13 @@ export default function SettingsScreen() {
           <ListGroup>
             <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={t('Desligado, aparecem como posições. As tuas alcunhas nunca saem do telemóvel.')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
             <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Privacidade')}>
+          <ListGroup>
+            <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
+            {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>
 
