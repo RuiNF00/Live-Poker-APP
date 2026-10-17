@@ -22,3 +22,12 @@ Free Pro only, never tied to cash or results. 5–10 players and stable managers
 
 ## Beta testers' codes (programa-beta.md)
 The beta plan gives each tester 1 year of Pro on launch day. That is a separate batch from the Bahamas 3-month codes. Apple subscription offer codes allow free durations up to 1 year, so a "Free, 1 year" code on `sweatbook_pro_annual` works. On Google Play, check the longest free period the promo-code form allows on the day; if it is shorter than a year, use the longest allowed and tell the testers. The 3-day trial on the annual plan (Rui, 17 Oct) doesn't affect codes.
+
+## Batches (17 Oct)
+| Batch | For | Apple (created by the store thread via the ASC API) | Google Play (Rui, step 34) |
+|---|---|---|---|
+| Bahamas | 5 to 10 trusted players | 10 codes, 3 months free on `sweatbook_pro_annual` | 10 codes, 3 months |
+| Creators | about 20 creators (marketing/criadores.md, strategy §6.2 item 5) | 20 codes, 3 months free | 20 codes, 3 months |
+| Beta testers | each tester, on launch day (programa-beta.md) | one per iPhone tester, 1 year free | one per Android tester, longest free period allowed (up to 1 year) |
+
+All batches are free Pro only, never tied to money or a contest, and nobody is contacted until Rui decides. One code per person; keep the CSVs in `Projetos-Claude/sweatbook-chaves/`, never in the repo or the chat.
