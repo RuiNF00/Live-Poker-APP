@@ -62,3 +62,10 @@ select * from app_event_daily;
 reset role;
 select count(*) = 2 as only_valid_events_stored from app_events;
 select sum(events) = 2 and sum(installs) = 2 as daily_view_counts from app_event_daily;
+
+-- Retention: events older than 12 months are purged
+insert into app_events (event, install_id, platform, created_at) values ('app_open', gen_random_uuid(), 'ios', now() - interval '13 months');
+set role anon;
+select purge_old_app_events() = 1 as purged_old_event;
+reset role;
+select count(*) = 2 as recent_events_kept from app_events;

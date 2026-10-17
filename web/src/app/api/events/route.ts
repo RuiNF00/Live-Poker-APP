@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { APP_EVENTS, getStore, type AppEvent } from '@/lib/store';
 import { clientIp, rateLimited } from '@/lib/ratelimit';
 import { cors } from '@/lib/cors';
@@ -42,6 +42,8 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ error: 'invalid_event' }, { status: 422, headers: cors });
   }
+  // Retention backstop for databases without pg_cron (see migration 20261017030000).
+  if (Math.random() < 0.005) after(() => getStore().purgeOldEvents().catch(() => {}));
   try {
     await getStore().logEvent({ event, installId, platform, props: cleanProps(body?.props) });
   } catch {
