@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { chipChop, icm, icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix, tablePaidPlaces } from '../icm';
+import { chipChop, icm, icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix, tablePaidPlaces, toCents } from '../icm';
 
 const close = (a: number[], b: number[], eps = 0.01) => a.forEach((x, i) => assert.ok(Math.abs(x - b[i]) < eps, `${x} vs ${b[i]}`));
 
@@ -78,4 +78,14 @@ test('table paid places from players left of the field', () => {
   // Missing or impossible numbers keep the fallback.
   assert.equal(tablePaidPlaces(9, 0, 300, 8), 8);
   assert.equal(tablePaidPlaces(9, 100, 50, 8), 8);
+});
+
+test('a deal to the cent adds up to the prizes, the odd cent to the first player', () => {
+  const pool = [5000, 3000, 2000];
+  const even = [1e6, 1e6, 1e6];
+  assert.deepEqual(toCents(icm(even, pool)), [3333.34, 3333.33, 3333.33]);
+  assert.deepEqual(toCents(chipChop(even, pool)), [3333.34, 3333.33, 3333.33]);
+  const odd = toCents(icm([1_234_567, 765_433, 321_000], [12_345.67, 7_000, 3_500]));
+  assert.equal(Math.round(odd.reduce((a, b) => a + b, 0) * 100), 2_284_567);
+  assert.deepEqual(toCents([333.3333, 333.3333, 333.3333], 0), [334, 333, 333]);
 });
