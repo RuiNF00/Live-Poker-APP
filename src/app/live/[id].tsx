@@ -96,7 +96,8 @@ function LiveBody({ s, updatedAt, now, insetBottom }: { s: LiveSnapshot; updated
   // The app sends the time played when it last saved; the clock keeps running here.
   const played = s.playedMs + (ended || s.paused || stale ? 0 : Math.max(0, now - s.updatedAt));
   const first = s.stackLog[0]?.stack ?? s.stack;
-  const delta = s.stack - first;
+  // Cash: against what went in, so a rebuy doesn't read as a win.
+  const delta = mtt ? s.stack - first : s.stack - s.invested;
   const bb = s.bb ? Math.round((s.stack / s.bb) * 10) / 10 : null;
   const result = s.cashOut - s.invested;
   const m = (n: number) => money(n, s.currency);
