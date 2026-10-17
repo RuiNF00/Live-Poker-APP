@@ -1178,6 +1178,7 @@ const ptBR: Record<string, string> = {
   'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'Depois deste saque você fica abaixo das suas regras ({n} buy-ins para {stake}).',
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Suas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.',
   'Podes levantar até {amount} e manter as regras ›': 'Você pode sacar até {amount} e manter as regras ›',
+  '{amount} ≈ {home}': '{amount} ≈ {home}',
 };
 
 export default ptBR;

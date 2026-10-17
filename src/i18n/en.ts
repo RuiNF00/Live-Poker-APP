@@ -2716,6 +2716,7 @@ const en: Record<string, string> = {
   'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'After this withdrawal you\'ll be below your rules ({n} buy-ins for {stake}).',
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Your rules ask for {need} ({n} buy-ins for {stake}): the balance isn\'t above that.',
   'Podes levantar até {amount} e manter as regras ›': 'You can withdraw up to {amount} and keep your rules ›',
+  '{amount} ≈ {home}': '{amount} ≈ {home}',
 };
 
 export default en;
