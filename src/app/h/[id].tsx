@@ -53,6 +53,7 @@ export default function SharedHand() {
         <>
           <HandHeader hand={hand} quiz={q === '1'} />
           <Replayer
+            source="shared"
             hand={hand}
             autoPlay
             quiz={q === '1'}

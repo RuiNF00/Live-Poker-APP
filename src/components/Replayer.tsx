@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { track } from '@/lib/events';
 import { legal, raiseName, replay } from '@/poker/engine';
 import { pct } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
@@ -20,6 +21,8 @@ import { tap } from './ui';
 const SPEEDS = [1, 1.5, 2, 0.5];
 const TIPS_KEY = 'sweatbook.replayer.tips.v1';
 const NAMES_KEY = 'sweatbook.replayer.hideNames.v1';
+/** Hands whose replay was already counted this app session (replay_opened fires once per hand). */
+const counted = new Set<string>();
 
 /**
  * Hand replayer, built for a phone held upright. Visual and interaction base:
@@ -36,8 +39,11 @@ export function Replayer({
   onStreet,
   seek,
   streetNotes,
+  source,
 }: {
   hand: Hand;
+  /** Where the hand came from, for the replay_opened event. Previews (welcome) pass nothing and aren't counted. */
+  source?: 'own' | 'sample' | 'shared';
   initialInBB?: boolean;
   autoPlay?: boolean;
   /** Kept for callers; the timeline replaces the old action list. */
@@ -53,6 +59,12 @@ export function Replayer({
   streetNotes?: Partial<Record<Street, string>>;
 }) {
   const r = useMemo(() => replay(hand), [hand]);
+  useEffect(() => {
+    const key = `${source}:${hand.id}`;
+    if (!source || counted.has(key)) return;
+    counted.add(key);
+    track('replay_opened', { source });
+  }, [source, hand.id]);
   const steps = r.steps;
   const quizAt = useMemo(() => {
     if (!quiz) return -1;
