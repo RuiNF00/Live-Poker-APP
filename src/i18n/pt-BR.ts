@@ -1454,9 +1454,9 @@ const ptBR: Record<string, string> = {
   'Câmara frontal, até 30 s, com a tua voz. Fica só neste vídeo.': 'Câmera frontal, até 30 s, com a sua voz. Só vai neste vídeo.',
   'Tirar a cara': 'Tirar o rosto',
   'A tua cara no vídeo da mão': 'Seu rosto no vídeo da mão',
-  'Explica a mão a falar, com a tua cara num canto.': 'Explique a mão falando, com seu rosto num canto.',
+  'Explica a mão a falar, com a tua cara num canto.': 'Explique a mão falando, com seu rosto em um canto.',
   'Vídeo com a tua cara': 'Vídeo com seu rosto',
-  'A explicar a mão, num canto': 'Explicando a mão, num canto',
+  'A explicar a mão, num canto': 'Explicando a mão, em um canto',
 };
 
 export default ptBR;
