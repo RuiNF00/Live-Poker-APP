@@ -4,6 +4,7 @@
 // added across currencies. Pure, so it can be tested.
 
 import type { Hand } from '@/poker/types';
+import { downswings, type Downswing } from '@/store/results-math';
 import { mainCurrency, playedMs, profit } from '@/store/session-math';
 import { weekStart, type Pause } from '@/store/streak';
 import type { Session } from '@/store/types';
@@ -57,6 +58,12 @@ export interface YearReview {
   weeksLogged: number;
   /** One entry per week of the year (weeks starting in it), true when something was logged. */
   weekMap: boolean[];
+  /** January to December in the main currency (months without play at 0). */
+  months: { month: number; profit: number; hours: number; sessions: number }[];
+  /** The month that won most; null when none won. */
+  bestMonth: { month: number; profit: number } | null;
+  /** The year's deepest fall from a high (sessions of this year only), and when it was won back. */
+  downswing: Downswing | null;
 }
 
 export const yearOf = (ms: number) => new Date(ms).getFullYear();
@@ -172,6 +179,16 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
     if (bb > 0 && (!pot || bb > pot.bb)) pot = { hand: h, bb };
   }
 
+  const months = Array.from({ length: 12 }, (_, month) => ({ month, profit: 0, hours: 0, sessions: 0 }));
+  for (const s of main) {
+    const m = months[new Date(s.startedAt).getMonth()];
+    m.profit += profit(s);
+    m.hours += hoursOf(s);
+    m.sessions++;
+  }
+  const top = [...months].sort((a, b) => b.profit - a.profit)[0];
+  const ds = downswings(main, currency).biggest;
+
   const run = longestRun(activity, pauses, year);
   return {
     year,
@@ -193,16 +210,21 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
     streak: run.streak,
     weeksLogged: run.weeks,
     weekMap: run.map,
+    months,
+    bestMonth: top.sessions && top.profit > 0 ? { month: top.month, profit: top.profit } : null,
+    downswing: ds && ds.depth > 0 ? ds : null,
   };
 }
 
-export type YearCardKind = 'year' | 'best' | 'stakes' | 'pot' | 'streak';
+export type YearCardKind = 'year' | 'best' | 'stakes' | 'bankroll' | 'pot' | 'streak';
 
 /** Cards in order; the first two are free. A card with nothing real to show is left out. */
 export function yearCards(r: YearReview): YearCardKind[] {
   const out: YearCardKind[] = ['year'];
   if (r.best || r.score) out.push('best');
   if (r.bestStake || r.hourly !== null) out.push('stakes');
+  // The year as a bankroll: months and the deepest fall. Needs at least two months played.
+  if (r.months.filter((m) => m.sessions).length >= 2 && (r.bestMonth || r.downswing)) out.push('bankroll');
   if (r.pot) out.push('pot');
   if (r.weeksLogged) out.push('streak');
   return out;

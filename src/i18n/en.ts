@@ -2520,6 +2520,12 @@ const en: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Your rules ask for {need} ({n} buy-ins for {stake}): the balance isn\'t above that.',
   'Podes levantar até {amount} e manter as regras ›': 'You can withdraw up to {amount} and keep your rules ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  'Melhor mês': 'Best month',
+  'Maior downswing': 'Biggest downswing',
+  'Recuperado em {n} dias': 'Won back in {n} days',
+  'Ainda a recuperar': 'Still coming back',
+  'O ano na bankroll': 'The year in your bankroll',
+  'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'The stakes where you won most, your months, the biggest pot and your streak are in Pro.',
 };
 
 export default en;

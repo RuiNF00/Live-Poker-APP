@@ -1106,6 +1106,12 @@ const ptBR: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Suas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.',
   'Podes levantar até {amount} e manter as regras ›': 'Você pode sacar até {amount} e manter as regras ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  'Melhor mês': 'Melhor mês',
+  'Maior downswing': 'Maior downswing',
+  'Recuperado em {n} dias': 'Recuperado em {n} dias',
+  'Ainda a recuperar': 'Ainda recuperando',
+  'O ano na bankroll': 'O ano na bankroll',
+  'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'As stakes onde você mais ganhou, seus meses, o maior pote e sua sequência estão no Pro.',
 };
 
 export default ptBR;
