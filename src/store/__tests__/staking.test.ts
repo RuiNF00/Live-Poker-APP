@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, packageStates, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { backerLedger, closePackage, packageStates, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -186,4 +186,28 @@ test("backers in different currencies add up in the home one at today's rate, or
   assert.equal(tot.oweTo, 2);
   const split = stakingTotals([a, b], '€', {}, {}, now);
   assert.deepEqual(split.split?.map((x) => x.currency).sort(), ['$', '€']);
+});
+
+test('closing with makeup: forgive it, or carry it to a new package where it is won back first', () => {
+  const p = pkg();
+  const stake = { backerId: 'b1', packageId: 'p1', share: 100, markup: 1 };
+  const bust = mk({ cashOut: 0, stakes: [stake] }); // makeup 100
+  assert.equal(packageStates([bust], [p]).states.get('p1')!.makeup, 100);
+  const forgiven = closePackage(p, 100, false, 'p2', 5);
+  assert.equal(forgiven.closed.closedAt, 5);
+  assert.equal(forgiven.next, null);
+  const { closed, next } = closePackage(p, 100, true, 'p2', 5);
+  assert.deepEqual([closed.closedAt, next!.id, next!.makeupIn, next!.playerCut, next!.share], [5, 'p2', 100, 50, 100]);
+  // In the new package a 250 win first pays back the 100 carried: cut on 150 only.
+  const win = mk({ buyIn: 100, cashOut: 350, stakes: [{ ...stake, packageId: 'p2' }] }); // +250
+  const st = packageStates([win], [next!]).states.get('p2')!;
+  assert.equal(st.cut, 75);
+  assert.equal(st.net, 250);
+  assert.equal(st.makeup, 0);
+  // A loss on top of it: carried 100 + 100 = 200 makeup.
+  const loss = mk({ cashOut: 0, stakes: [{ ...stake, packageId: 'p2' }] });
+  assert.equal(packageStates([loss], [next!]).states.get('p2')!.makeup, 200);
+  // Nothing to carry, or an action package: no new package.
+  assert.equal(closePackage(p, 0, true, 'p2').next, null);
+  assert.equal(closePackage({ ...p, kind: 'action' }, 100, true, 'p2').next, null);
 });

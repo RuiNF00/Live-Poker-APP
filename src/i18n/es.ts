@@ -2604,6 +2604,12 @@ const es: Record<string, string> = {
   'Swaps e staking': 'Swaps y staking',
   'fez fold': 'foldeó',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} a {to}; el máximo fue {max}.',
+  'Abre um pacote novo com as mesmas condições, que começa com este makeup por recuperar.': 'Abre un paquete nuevo con las mismas condiciones, que empieza con este makeup por recuperar.',
+  'Ainda há {amount} de makeup': 'Aún hay {amount} de makeup',
+  'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Acuerda con el backer qué pasa con el makeup cuando el paquete se cierra.',
+  'Fica perdoado': 'Queda perdonado',
+  'O makeup acaba com o pacote: o próximo começa do zero.': 'El makeup termina con el paquete: el siguiente empieza de cero.',
+  'Passa para um pacote novo': 'Pasa a un paquete nuevo',
 };
 
 export default es;

@@ -2617,6 +2617,12 @@ const en: Record<string, string> = {
   'O torneio acabou. Regista o resultado para fechar as contas.': 'The event is over. Log the result to close the accounts.',
   'Acerto: {title}': 'Settle up: {title}',
   'Swaps e staking': 'Swaps and staking',
+  'Abre um pacote novo com as mesmas condições, que começa com este makeup por recuperar.': 'Opens a new package on the same terms, starting with this makeup to win back.',
+  'Ainda há {amount} de makeup': "There's still {amount} of makeup",
+  'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Agree with the backer what happens to the makeup when the package closes.',
+  'Fica perdoado': "It's forgiven",
+  'O makeup acaba com o pacote: o próximo começa do zero.': 'The makeup ends with the package: the next one starts from zero.',
+  'Passa para um pacote novo': 'Carry to a new package',
 };
 
 export default en;

@@ -1134,6 +1134,7 @@ const ptBR: Record<string, string> = {
   'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
   'fez fold': 'deu fold',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
+  'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Combine com o backer o que acontece com o makeup quando o pacote fecha.',
 };
 
 export default ptBR;
