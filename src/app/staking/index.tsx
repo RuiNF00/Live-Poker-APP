@@ -62,11 +62,11 @@ function StakingScreen() {
                       accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? parts(l, cur) : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
-                          <T v="small" numberOfLines={1}>
+                          <T v="small" numberOfLines={2}>
                             {[n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l?.makeup ? t('makeup {amount}', { amount: money(l.makeup, cur) }) : ''].filter(Boolean).join(' · ')}
                           </T>
                           {l && parts(l, cur) ? (
-                            <T v="tiny" numberOfLines={1}>
+                            <T v="tiny" numberOfLines={2}>
                               {parts(l, cur)}
                             </T>
                           ) : null}

@@ -60,7 +60,7 @@ function BackerScreen() {
 
   // "O ano com {backer}": every package of the year, in the deal's currency.
   const years = ledgerYears(l);
-  const yr = years.length ? yearStatement(l, year && years.includes(year) ? year : years[0], packages, pk, (s) => (s.currency && s.currency !== cur ? (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1) : 1)) : null;
+  const yr = years.length ? yearStatement(l, year && years.includes(year) ? year : years[0], packages, pk, (s) => (s.currency && s.currency !== cur ? (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1) : 1), (m, c) => m * (rate(fx.table, c, cur, l.rows[0]?.session.startedAt ?? 0, fx.manual) ?? 1)) : null;
 
   const togglePaid = (r: BackerLedgerRow) => {
     const s: Session = r.session;
@@ -194,7 +194,7 @@ function BackerScreen() {
                     iconColor={p.closedAt ? C.muted : C.accent}
                     title={
                       <Row gap={S.sm}>
-                        <T v="body" numberOfLines={1} style={{ flexShrink: 1 }}>
+                        <T v="body" numberOfLines={2} style={{ flexShrink: 1 }}>
                           {p.name}
                         </T>
                         {p.closedAt ? <Pill label={t('Fechado')} /> : null}
@@ -204,11 +204,17 @@ function BackerScreen() {
                     right={
                       // A closed package's makeup was forgiven or carried to the next one: only open ones show it.
                       st?.makeup && !p.closedAt ? (
-                        <T v="mono" color={C.warn} style={{ fontSize: 14 }}>
-                          {t('makeup {amount}', { amount: money(st.makeup, cur) })}
-                        </T>
+                        // Stacked, so a long package name keeps the width (360 pt, Spanish, larger text).
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <T v="tiny" color={C.warn}>
+                            Makeup
+                          </T>
+                          <T v="mono" color={C.warn} style={{ fontSize: 14 }}>
+                            {money(st.makeup, st.currency || cur)}
+                          </T>
+                        </View>
                       ) : st && st.sessions - st.live > 0 ? (
-                        <Amount value={st.net} text={money(st.net, cur)} style={{ fontSize: 14 }} />
+                        <Amount value={st.net} text={money(st.net, st.currency || cur)} style={{ fontSize: 14 }} />
                       ) : undefined
                     }
                     onPress={() => setPkg(p)}
@@ -338,11 +344,11 @@ function BackerScreen() {
       />
       <PackageSheet
         pkg={pkg}
-        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, cur) : null}
+        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {
           if (carry) {
-            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'));
+            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
             savePackage(closed);
             if (next) savePackage(next);
           } else savePackage(p);

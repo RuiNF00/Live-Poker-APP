@@ -20,6 +20,10 @@ export function stakePrize(s: Session, x: Stake): number {
 
 export interface PackageState {
   pkg: StakePackage;
+  /** What the amounts below are in: the package's currency, or its first session's. */
+  currency: string;
+  /** Sessions in another currency left out of the makeup for want of a rate (offline, never fetched). */
+  unconverted: number;
   sessions: number;
   /** Sessions still running in this package. */
   live: number;
@@ -48,7 +52,13 @@ export interface PackageResult {
   byPackage: Map<string, number>;
 }
 
-export function packageStates(sessions: Session[], packages: StakePackage[]): PackageResult {
+/** Rates for sessions in another currency than their package's. Without them those sessions stay out of the makeup. */
+export interface PackageFx {
+  table: RateTable;
+  manual?: ManualRates;
+}
+
+export function packageStates(sessions: Session[], packages: StakePackage[], fx: PackageFx = { table: {} }): PackageResult {
   const states = new Map<string, PackageState>();
   const cuts: Cuts = new Map();
   const byPackage = new Map<string, number>();
@@ -63,21 +73,32 @@ export function packageStates(sessions: Session[], packages: StakePackage[]): Pa
   for (const pkg of packages) {
     // A session with two pieces in the same package counts as one combined piece.
     const rows = merge(byPkg.get(pkg.id) ?? []).sort((a, b) => byEnd(a.s, b.s));
-    const st: PackageState = { pkg, sessions: rows.length, live: 0, invested: 0, net: 0, makeup: 0, cut: 0 };
+    // One currency per package: each session's money is converted to it at that day's rate,
+    // and your cut converted back to the session's currency (never added across currencies).
+    const currency = pkg.currency || rows.find((r) => r.s.currency)?.s.currency || '';
+    const k = (s: Session) => (!s.currency || !currency || s.currency === currency ? 1 : rate(fx.table, s.currency, currency, s.startedAt, fx.manual));
+    const st: PackageState = { pkg, currency, unconverted: 0, sessions: rows.length, live: 0, invested: 0, net: 0, makeup: 0, cut: 0 };
     // Makeup carried over from the previous package is won back first, like this package's own losses.
     const carried = pkg.kind === 'makeup' ? Math.max(0, pkg.makeupIn ?? 0) : 0;
     let cum = -carried;
     for (const { s, x } of rows) {
-      st.invested += stakeCost(s, x);
+      const r = k(s);
+      if (r === null) {
+        st.unconverted++;
+        if (!s.endedAt) st.live++;
+        continue;
+      }
+      st.invested += stakeCost(s, x) * r;
       if (!s.endedAt) {
         st.live++;
         continue;
       }
-      const net = stakePrize(s, x) - stakeCost(s, x);
+      const net = (stakePrize(s, x) - stakeCost(s, x)) * r;
       if (pkg.kind === 'makeup') {
         const c = (pkg.playerCut / 100) * (Math.max(0, cum + net) - Math.max(0, cum));
-        cuts.set(s.id, (cuts.get(s.id) ?? 0) + c);
-        byPackage.set(`${pkg.id}:${s.id}`, c);
+        // Per session in the session's own currency, like the rest of its money.
+        cuts.set(s.id, (cuts.get(s.id) ?? 0) + c / r);
+        byPackage.set(`${pkg.id}:${s.id}`, c / r);
         st.cut += c;
       }
       cum += net;
@@ -108,7 +129,8 @@ function nextName(name: string): string {
   return m ? `${m[1]} (${Number(m[2]) + 1})` : `${name} (2)`;
 }
 
-export function closePackage(p: StakePackage, makeup: number, carry: boolean, newId: string, now = Date.now()): { closed: StakePackage; next: StakePackage | null } {
+/** `currency`: what `makeup` is in (the package state's), so the new package counts it in the same one. */
+export function closePackage(p: StakePackage, makeup: number, carry: boolean, newId: string, now = Date.now(), currency?: string): { closed: StakePackage; next: StakePackage | null } {
   const closed = { ...p, closedAt: now };
   if (!carry || p.kind !== 'makeup' || makeup < 0.5) return { closed, next: null };
   const next: StakePackage = {
@@ -121,6 +143,7 @@ export function closePackage(p: StakePackage, makeup: number, carry: boolean, ne
     markup: p.markup,
     playerCut: p.playerCut,
     makeupIn: Math.round(makeup * 100) / 100,
+    ...(currency || p.currency ? { currency: currency || p.currency } : {}),
     createdAt: now,
   };
   return { closed, next };
@@ -207,7 +230,17 @@ export function backerLedger(
   const owed = prizes - cut;
   const unpaid = rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + r.cost * k(r), 0);
   const paid = payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0);
-  const makeup = packages.filter((p) => p.backerId === backerId && !p.closedAt).reduce((a, p) => a + (pk.states.get(p.id)?.makeup ?? 0), 0);
+  // Each package's makeup is in its own currency: converted to the deal's at today's rate.
+  const makeup = packages
+    .filter((p) => p.backerId === backerId && !p.closedAt)
+    .reduce((a, p) => {
+      const st = pk.states.get(p.id);
+      if (!st?.makeup) return a;
+      if (!st.currency || st.currency === currency) return a + st.makeup;
+      const x = rate(fx.table, st.currency, currency, Date.now(), fx.manual);
+      if (x === null) missing.add(st.currency);
+      return a + st.makeup * (x ?? 1);
+    }, 0);
   return {
     rows,
     currency,
@@ -262,7 +295,15 @@ export function ledgerYears(l: BackerLedger): number[] {
  * they got back, their result and the makeup left. Sessions count in the year they
  * started. `k` converts a session's money to the ledger's currency.
  */
-export function yearStatement(l: BackerLedger, year: number, packages: StakePackage[], pk: PackageResult, k: (s: Session) => number = () => 1) {
+export function yearStatement(
+  l: BackerLedger,
+  year: number,
+  packages: StakePackage[],
+  pk: PackageResult,
+  k: (s: Session) => number = () => 1,
+  /** A package's makeup (in its own currency) in the ledger's. */
+  km: (amount: number, currency: string) => number = (a) => a,
+) {
   const pkgOf = new Map(packages.map((p) => [p.id, p]));
   const by = new Map<string, YearPackage>();
   for (const r of l.rows) {
@@ -271,7 +312,7 @@ export function yearStatement(l: BackerLedger, year: number, packages: StakePack
     const id = r.stake.packageId && pkgOf.has(r.stake.packageId) ? r.stake.packageId : null;
     const key = id ?? '';
     const p = id ? pkgOf.get(id)! : null;
-    const y = by.get(key) ?? { id, name: p?.name ?? '', sessions: 0, cost: 0, prizes: 0, net: 0, makeup: p && !p.closedAt ? (pk.states.get(p.id)?.makeup ?? 0) : 0 };
+    const y = by.get(key) ?? { id, name: p?.name ?? '', sessions: 0, cost: 0, prizes: 0, net: 0, makeup: p && !p.closedAt ? makeupOf(pk, p.id, l.currency, km) : 0 };
     const x = k(s);
     y.sessions++;
     y.cost += r.cost * x;
@@ -297,6 +338,12 @@ export function yearStatement(l: BackerLedger, year: number, packages: StakePack
 }
 
 export type YearStatement = ReturnType<typeof yearStatement>;
+
+function makeupOf(pk: PackageResult, id: string, currency: string, km: (amount: number, currency: string) => number): number {
+  const st = pk.states.get(id);
+  if (!st?.makeup) return 0;
+  return !st.currency || st.currency === currency ? st.makeup : km(st.makeup, st.currency);
+}
 
 /**
  * Where you stand with every backer, for the headline. Each balance stays in its
@@ -352,9 +399,9 @@ function packagePiece(s: Session, pkgId: string): number {
  * The sessions with each one's makeup cut filled in (Session.makeupCut, read by profit()).
  * Sessions whose cut is unchanged keep their identity, so nothing re-renders for nothing.
  */
-export function withCuts(sessions: Session[], packages: StakePackage[]): Session[] {
+export function withCuts(sessions: Session[], packages: StakePackage[], fx?: PackageFx): Session[] {
   if (!packages.length && !sessions.some((s) => s.makeupCut)) return sessions;
-  const { cuts } = packageStates(sessions, packages);
+  const { cuts } = packageStates(sessions, packages, fx);
   return sessions.map((s) => {
     const c = cuts.get(s.id);
     const v = c && Math.abs(c) >= 0.005 ? Math.round(c * 100) / 100 : undefined;
