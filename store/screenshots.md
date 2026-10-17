@@ -45,7 +45,7 @@ cd store/screenshots && npm i playwright && node render.mjs http://localhost:417
 
 A frame can list `hide` strings: web-only hints ("Open the app on your phone to post to Instagram") that the phone never shows are hidden before the shot.
 
-Coordinator rule (17 Oct): a frame that opens the hand search must hide the chip row under the box ("Ganhei / Perdi", es "Gané / Perdí", en "Won / Lost"); a frame of the festival session end must hide or crop the amount on "Re-entrar · {valor}". The current 10 frames show neither (frame 4 is the hand list with search closed).
+Coordinator rule (17 Oct): a frame that opens the hand search must hide the chip row under the box ("Ganhei / Perdi", es "Gané / Perdí", en "Won / Lost"); a frame of the festival session end must hide or crop the amount on "Re-entrar · {valor}". Frame 4 uses `drop` for the chips; frame 5 shows "Re-entry" with no amount. A frame can also list `strip` strings, cut out of a text line: frame 9 strips " · sweatbook.poker" from the card footer until the domain is decided. Frame 6 keeps its "Ver com Pro" tile: it is a real Pro lock and the description lists what is Pro.
 
 ## Feature graphic (Play)
 

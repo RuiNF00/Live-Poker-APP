@@ -61,6 +61,13 @@ async function capture(locale) {
         }
       }, txt);
     }
+    // Text to cut out of a line without hiding the rest (e.g. a share domain that isn't decided yet).
+    for (const txt of f.strip ?? []) {
+      await page.evaluate((txt) => {
+        const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes(txt)) n.nodeValue = n.nodeValue.replace(txt, '');
+      }, txt);
+    }
     shots.push((await page.screenshot()).toString('base64'));
   }
   await ctx.close();
