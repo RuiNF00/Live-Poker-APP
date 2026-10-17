@@ -25,7 +25,7 @@
 <tr><td>Hands, sessions, tournaments, tags and notes you enter</td><td>This is the app's core function</td><td>Only on your device. We never receive it.</td></tr>
 <tr><td>Hands you choose to share (cards, actions, stacks, any title or text you add)</td><td>To show them to anyone who opens the share link</td><td>Our backend (Supabase, EU region), publicly readable by anyone with the link</td></tr>
 <tr><td>Comments and votes on shared hands (a display name the commenter types, the comment text, a random browser ID)</td><td>To let friends give feedback on a hand</td><td>Our backend; comments are public to anyone with the link</td></tr>
-<tr><td>Purchases (if you subscribe)</td><td>To unlock paid features</td><td>Handled by Apple or Google; we only receive whether your subscription is active</td></tr>
+<tr><td>Purchases (if you subscribe)</td><td>To unlock paid features</td><td>Processed by Apple or Google. Our subscription service, RevenueCat, receives the purchase receipt and a random app user ID (not your name or email) to tell the app whether Pro is active</td></tr>
 </table>
 
 <p>We do not collect your name, email, location, contacts, photos, or advertising identifiers. We do not use analytics or advertising services, we do not sell data, and we do not track you across other apps or websites. Like any web server, our hosting providers process IP addresses briefly to deliver pages and protect against abuse; we do not store them with your data.</p>
@@ -47,7 +47,7 @@
 <p>You can ask us to access, correct or delete data about you, and object to or restrict its processing, by emailing <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> with the link to the hand or comment concerned. See also <a href="delete-account.html">deleting your data</a>. You may complain to the Portuguese data protection authority (CNPD, <a href="https://www.cnpd.pt">cnpd.pt</a>) or the authority where you live.</p>
 
 <h2>Service providers</h2>
-<p>We use Supabase (database for shared hands) and Vercel (hosting of share pages). They process data only on our behalf. Some providers may transfer data outside the EU under the European Commission's Standard Contractual Clauses. Payments are processed by Apple or Google under their own privacy policies.</p>
+<p>We use Supabase (database for shared hands), Vercel (hosting of share pages) and RevenueCat (subscription status). They process data only on our behalf. Some providers may transfer data outside the EU under the European Commission's Standard Contractual Clauses. Payments are processed by Apple or Google under their own privacy policies.</p>
 
 <h2>Children</h2>
 <p>The app is not intended for anyone under 18, and we do not knowingly collect data from children.</p>
@@ -72,7 +72,7 @@
 <tr><td>Mãos, sessões, torneios, tags e notas que introduzes</td><td>É a função principal da app</td><td>Só no teu dispositivo. Nunca os recebemos.</td></tr>
 <tr><td>Mãos que decides partilhar (cartas, ações, stacks, título ou texto que acrescentes)</td><td>Para as mostrar a quem abrir o link</td><td>No nosso backend (Supabase, região UE), visíveis a qualquer pessoa com o link</td></tr>
 <tr><td>Comentários e votos em mãos partilhadas (nome escolhido por quem comenta, texto, ID aleatório do browser)</td><td>Para os amigos darem opinião sobre a mão</td><td>No nosso backend; os comentários são públicos para quem tem o link</td></tr>
-<tr><td>Compras (se subscreveres)</td><td>Para desbloquear funcionalidades pagas</td><td>Tratadas pela Apple ou pela Google; só recebemos se a subscrição está ativa</td></tr>
+<tr><td>Compras (se subscreveres)</td><td>Para desbloquear funcionalidades pagas</td><td>Processadas pela Apple ou pela Google. O nosso serviço de subscrições, a RevenueCat, recebe o recibo da compra e um ID aleatório da app (não o teu nome nem email) para indicar à app se o Pro está ativo</td></tr>
 </table>
 
 <p>Não recolhemos o teu nome, email, localização, contactos, fotos nem identificadores de publicidade. Não usamos serviços de estatísticas nem de publicidade, não vendemos dados e não te seguimos noutras apps ou sites. Como qualquer servidor web, os nossos fornecedores de alojamento tratam endereços IP por breves instantes para entregar as páginas e prevenir abusos; não os guardamos junto dos teus dados.</p>
@@ -94,7 +94,7 @@
 <p>Podes pedir acesso, correção ou eliminação de dados sobre ti, e opor-te ou limitar o seu tratamento, por email para <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>, com o link da mão ou do comentário em causa. Vê também <a href="delete-account.html">apagar os teus dados</a>. Podes apresentar queixa à CNPD (<a href="https://www.cnpd.pt">cnpd.pt</a>).</p>
 
 <h2>Fornecedores</h2>
-<p>Usamos a Supabase (base de dados das mãos partilhadas) e a Vercel (alojamento das páginas de partilha). Tratam os dados apenas em nosso nome. Alguns fornecedores podem transferir dados para fora da UE ao abrigo das Cláusulas Contratuais-Tipo da Comissão Europeia. Os pagamentos são tratados pela Apple ou pela Google, ao abrigo das respetivas políticas de privacidade.</p>
+<p>Usamos a Supabase (base de dados das mãos partilhadas), a Vercel (alojamento das páginas de partilha) e a RevenueCat (estado da subscrição). Tratam os dados apenas em nosso nome. Alguns fornecedores podem transferir dados para fora da UE ao abrigo das Cláusulas Contratuais-Tipo da Comissão Europeia. Os pagamentos são tratados pela Apple ou pela Google, ao abrigo das respetivas políticas de privacidade.</p>
 
 <h2>Menores</h2>
 <p>A app não se destina a menores de 18 anos e não recolhemos intencionalmente dados de menores.</p>

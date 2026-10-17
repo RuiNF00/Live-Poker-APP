@@ -43,10 +43,14 @@ PARA QUEM JOGA LIVE
 • Organiza por torneio, sessão e data
 • Sem contas: as tuas mãos ficam no teu telemóvel
 
+SWEATBOOK PRO
+Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas e os filtros de bankroll de 30 e 90 dias. Subscrição mensal ou anual, com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
+
 {{APP_NAME}} é uma ferramenta de registo e estudo. Não permite apostar nem jogar a dinheiro.
 
 Suporte: {{SUPPORT_EMAIL}}
 Privacidade: https://{{WEB_DOMAIN}}/privacy
+Termos de utilização: https://{{WEB_DOMAIN}}/terms
 
 **Novidades da versão 1.0**: Primeira versão. Regista mãos de póquer live em segundos, revê-as no replayer e partilha-as com um link.
 
