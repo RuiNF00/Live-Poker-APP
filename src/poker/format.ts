@@ -28,7 +28,10 @@ export function amount(n: number, hand: Pick<Hand, 'game'>, inBB: boolean): stri
 export function money(n: number, currency = '€'): string {
   const sign = n < 0 ? '−' : '';
   const a = Math.abs(n);
-  const s = a >= 1000 ? Math.round(a).toLocaleString(locale) : trim(a, 2);
+  const cents = Math.round(a * 100);
+  // Whole amounts stay short ("370€"); cents always show two digits in the
+  // player's locale ("370,50€"), never a bare JS decimal point.
+  const s = a >= 1000 ? Math.round(a).toLocaleString(locale) : cents % 100 === 0 ? String(cents / 100) : (cents / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return lang === 'pt' ? `${sign}${s}${currency}` : `${sign}${currency}${s}`;
 }
 

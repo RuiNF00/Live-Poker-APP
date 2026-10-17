@@ -57,3 +57,10 @@ test('parseDay reads dd/mm[/yyyy] and refuses the future', () => {
   assert.equal(parseDay('1/1/2030', now), null);
   assert.equal(parseDay('ontem', now), null);
 });
+
+test('money shows cents with two digits in pt-PT', async () => {
+  const { money } = await import('../../poker/format');
+  assert.equal(money(370.5, '€'), '370,50€');
+  assert.equal(money(-12.25, '€'), '−12,25€');
+  assert.equal(money(370, '€'), '370€');
+});
