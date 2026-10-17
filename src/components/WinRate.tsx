@@ -8,9 +8,10 @@ import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
-import type { WinRate } from '@/store/winrate-math';
+import { SMALL, type WinRate } from '@/store/winrate-math';
 import { C, R, S } from '@/theme';
 
+import { SmallSample } from './SmallSample';
 import { Card, Row, T } from './ui';
 
 export const signed = (n: number, fmt: (n: number) => string) => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n));
@@ -39,22 +40,22 @@ export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: stri
           t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
         ].join(' · ')}
       </T>
-      {w.small ? <SmallSample /> : null}
+      {w.small ? <WinRateSample w={w} /> : null}
       <T v="tiny">{t('Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.')}</T>
     </Card>
   );
 }
 
-/** Low-sample note, shown wherever a number rests on few hours. */
-export function SmallSample({ compact }: { compact?: boolean }) {
-  return (
-    <Row gap={6}>
-      <Ionicons name="alert-circle-outline" size={14} color={C.warn} />
-      <T v="tiny" color={C.warn} style={{ flex: 1 }}>
-        {compact ? t('Amostra pequena') : t('Amostra pequena: menos de 50 h ou 10 sessões. Por agora é uma pista, não uma conclusão.')}
-      </T>
-    </Row>
-  );
+/** The shared low-sample note or pill, on whichever falls short: sessions first, then hours. */
+export function WinRateSample({ w, pill }: { w: WinRate; pill?: boolean }) {
+  const variant = pill ? 'pill' : 'note';
+  const el =
+    w.sessions < SMALL.sessions ? (
+      <SmallSample n={w.sessions} min={SMALL.sessions} variant={variant} unit={t('sessões')} />
+    ) : (
+      <SmallSample n={Math.floor(w.hours)} min={SMALL.hours} variant={variant} unit="h" />
+    );
+  return pill ? <View style={{ alignSelf: 'flex-start' }}>{el}</View> : el;
 }
 
 /**

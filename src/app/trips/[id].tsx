@@ -85,7 +85,7 @@ export default function TripScreen() {
             </T>
             {s.converted ? <T v="mono" color={C.textDim}>{`≈ ${signed(s.converted.net, s.converted.currency)}`}</T> : null}
             <T v="small">
-              {[s.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: s.sessions }), `${Math.round(s.hours)} h`, s.days === 1 ? t('1 dia') : t('{n} dias', { n: s.days })].join(' · ')}
+              {[s.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: s.sessions }), `${Math.round(s.hours)} h`, s.days === 1 ? t('1 dia de viagem') : t('{n} dias de viagem', { n: s.days })].join(' · ')}
             </T>
           </View>
           <Divider />
