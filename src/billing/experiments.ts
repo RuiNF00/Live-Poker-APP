@@ -15,24 +15,31 @@ export interface PaywallConfig {
   layout: PaywallLayout;
   /** Headline overrides per trigger, already in the player's language. */
   copy: Partial<Record<PaywallReason, { title?: string; body?: string }>>;
+  /** Players who play a few sessions a month can start the trial at their next live session instead (trial-moments.ts). */
+  defer: boolean;
 }
 
-export const DEFAULT_PAYWALL: PaywallConfig = { offering: 'default', layout: 'list', copy: {} };
+export const DEFAULT_PAYWALL: PaywallConfig = { offering: 'default', layout: 'list', copy: {}, defer: false };
 
 const LIMITS = { title: 60, body: 120 };
 
-function text(v: unknown, lang: 'pt' | 'en', max: number): string | undefined {
+/** The text in the player's language; pt-BR falls back to pt, so a test reaches Brazil before its own copy is written. */
+function text(v: unknown, lang: string, max: number): string | undefined {
   if (!v || typeof v !== 'object') return undefined;
-  const s = (v as Record<string, unknown>)[lang];
-  return typeof s === 'string' && s.trim() && s.length <= max ? s.trim() : undefined;
+  const all = v as Record<string, unknown>;
+  for (const l of lang === 'pt-BR' ? ['pt-BR', 'pt'] : [lang]) {
+    const s = all[l];
+    if (typeof s === 'string' && s.trim() && s.length <= max) return s.trim();
+  }
+  return undefined;
 }
 
 /**
  * Reads offering metadata such as
- * `{ "layout": "table", "copy": { "generic": { "title": { "pt": "…", "en": "…" } } } }`.
+ * `{ "layout": "table", "defer": true, "copy": { "generic": { "title": { "pt": "…", "pt-BR": "…", "es": "…", "en": "…" } } } }`.
  * Anything missing, misspelt or too long falls back to the app's own copy.
  */
-export function parsePaywallConfig(offering: string, metadata: Record<string, unknown> | null | undefined, lang: 'pt' | 'en'): PaywallConfig {
+export function parsePaywallConfig(offering: string, metadata: Record<string, unknown> | null | undefined, lang: string): PaywallConfig {
   const m = metadata ?? {};
   const layout = LAYOUTS.includes(m.layout as PaywallLayout) ? (m.layout as PaywallLayout) : 'list';
   const copy: PaywallConfig['copy'] = {};
@@ -44,5 +51,5 @@ export function parsePaywallConfig(offering: string, metadata: Record<string, un
       if (title || body) copy[reason as PaywallReason] = { ...(title ? { title } : {}), ...(body ? { body } : {}) };
     }
   }
-  return { offering: offering || 'default', layout, copy };
+  return { offering: offering || 'default', layout, copy, defer: m.defer === true };
 }

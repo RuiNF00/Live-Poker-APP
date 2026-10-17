@@ -92,7 +92,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -123,6 +123,14 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   downswingRead: {
     title: t('Azar ou sinal?'),
     body: t('Vê se o teu downswing é normal para os teus resultados.'),
+  },
+  sessionStart: {
+    title: t('Começa o teu Pro com esta sessão'),
+    body: t('Os dias grátis contam a partir de hoje, à mesa.'),
+  },
+  sessionEnd: {
+    title: t('Cada sessão, toda revista'),
+    body: t('Mãos sem limite, e em que sala e stake ganhas mais.'),
   },
   handsLive: {
     title: t('A sessão continua'),
@@ -190,6 +198,8 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   hands: 'hands',
   handsLive: 'hands',
+  sessionStart: 'hands',
+  sessionEnd: 'hands',
   welcome: 'hands',
   views: 'hands',
   stats: 'stats',

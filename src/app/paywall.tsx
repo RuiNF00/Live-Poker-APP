@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
@@ -6,7 +7,9 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { ONBOARDING_KEY, type Answers } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
+import { deferTrial } from '@/billing/trial-moments';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -38,6 +41,19 @@ export default function Paywall() {
   const trial = chosen?.trialDays ?? 0;
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  // A few sessions a month: the trial can wait for the next live session (offering metadata "defer").
+  const [few, setFew] = useState(false);
+  useEffect(() => {
+    if (reason !== 'plan' || !paywallConfig.defer) return;
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setFew(!!v && (JSON.parse(v) as Partial<Answers>).volume === 'few'))
+      .catch(() => {});
+  }, [reason, paywallConfig.defer]);
+  const later = () => {
+    void deferTrial();
+    track('onboarding_step', { step: 'defer', defer: true, offering: paywallConfig.offering });
+    close();
+  };
   const dismiss = () => {
     track('paywall_closed', { reason, plan: sel, offering: paywallConfig.offering, layout: paywallConfig.layout });
     close();
@@ -146,6 +162,13 @@ export default function Paywall() {
             onPress={onBuy}
           />
         )}
+        {few && trial ? (
+          <Pressable onPress={later} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+              {t('Prefiro começar na próxima sessão')}
+            </T>
+          </Pressable>
+        ) : null}
         {compact ? null : (
           <Row gap={6} style={{ justifyContent: 'center' }}>
             <Ionicons name="shield-checkmark" size={14} color={C.good} />
