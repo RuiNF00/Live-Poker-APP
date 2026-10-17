@@ -2406,7 +2406,7 @@ const es: Record<string, string> = {
   'Onde ganhaste este mês': 'Dónde ganaste este mes',
   'Vê as salas e stakes deste mês': 'Mira las salas y stakes de este mes',
   'Aviso no dia 1': 'Aviso el día 1',
-  'Permite as notificações da Sweatbook nas definições do telemóvel para receberes o aviso.': 'Permite las notificaciones de Sweatbook en los ajustes del móvil para recibir el aviso.',
+  'Permite as notificações da Sweatbook nas definições do telemóvel para receberes o aviso.': 'Permite las notificaciones de Sweatbook en los ajustes del teléfono para recibir el aviso.',
   'No dia 1 às {hour}:00, por exemplo: «{example}»': 'El día 1 a las {hour}:00, por ejemplo: «{example}»',
   'O primeiro mês com sessões nos últimos seis: o próximo já tem com que comparar.': 'El primer mes con sesiones de los últimos seis: el próximo ya tendrá con qué comparar.',
   'O melhor mês dos últimos {n} com sessões.': 'El mejor mes de los últimos {n} con sesiones.',
