@@ -82,9 +82,9 @@ export function ContextSheet({
               ))}
             </ChipRow>
             <Row gap={10}>
-              <NumField label="SB" value={game.sb} onChange={(sb) => set({ sb })} />
-              <NumField label="BB" value={game.bb} onChange={(bb) => set({ bb })} />
-              <NumField label="Ante" value={game.ante} onChange={(ante) => set({ ante, anteType: ante ? (game.anteType === 'none' ? 'bb' : game.anteType) : 'none' })} />
+              <NumField money={game.kind === 'cash'} label="SB" value={game.sb} onChange={(sb) => set({ sb })} />
+              <NumField money={game.kind === 'cash'} label="BB" value={game.bb} onChange={(bb) => set({ bb })} />
+              <NumField money={game.kind === 'cash'} label="Ante" value={game.ante} onChange={(ante) => set({ ante, anteType: ante ? (game.anteType === 'none' ? 'bb' : game.anteType) : 'none' })} />
             </Row>
             <ChipRow>
               <Chip label="BB ante" active={game.anteType === 'bb'} onPress={() => set({ anteType: 'bb', ante: game.ante || game.bb })} />
@@ -104,7 +104,7 @@ export function ContextSheet({
                 <Chip label={t('Straddle no botão')} active={game.straddleFrom === 'btn' && !!game.straddles} onPress={() => set({ straddles: 1, straddleFrom: 'btn', bombPot: undefined })} />
                 <Chip label="Bomb pot" active={!!game.bombPot} onPress={() => set({ bombPot: game.bombPot || game.bb * 2, straddles: undefined, straddleFrom: undefined })} />
               </ChipRow>
-              {game.bombPot ? <NumField label={t('Bomb pot, cada um')} value={game.bombPot} onChange={(b) => set({ bombPot: b || undefined })} /> : null}
+              {game.bombPot ? <NumField money={game.kind === 'cash'} label={t('Bomb pot, cada um')} value={game.bombPot} onChange={(b) => set({ bombPot: b || undefined })} /> : null}
             </View>
           )}
 
