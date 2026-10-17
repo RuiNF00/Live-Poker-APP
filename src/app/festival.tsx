@@ -28,11 +28,6 @@ import { C, R, S } from '@/theme';
 type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix';
 const LATE_REG_HOURS = [2, 3, 4, 5, 6, 8];
 
-/** "$26,000": the way the organiser prints it. */
-function price(n: number, cur: string) {
-  return cur + Math.round(n).toLocaleString('en-US');
-}
-
 /** $50M, $2.5M, $750k. */
 function short(n: number, cur: string) {
   if (n >= 1e6) return `${cur}${+(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}M`;
@@ -243,12 +238,12 @@ function Summary({
       <Row style={{ alignItems: 'flex-end' }}>
         <View style={{ flex: 1, gap: 2 }}>
           <T v="label">{t('Buy-ins planeados')}</T>
-          <T v="monoL">{price(tot.buyIns, f.currency)}</T>
+          <T v="monoL">{money(tot.buyIns, f.currency)}</T>
           <T v="small">{tot.entries === 1 ? t('1 entrada') : t('{n} entradas', { n: tot.entries })}</T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 2 }}>
           <T v="label">{bankrollName}</T>
-          <T v="mono">{sameCurrency ? price(balance, bankrollCurrency) : money(balance, bankrollCurrency)}</T>
+          <T v="mono">{money(balance, bankrollCurrency)}</T>
           {share != null ? (
             <T v="monoS" color={tone}>
               {t('{pct}% da banca', { pct: Math.round(share * 100) })}
@@ -318,7 +313,7 @@ function EventRow({
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
           <T v="mono" color={e.day2 ? C.muted : C.text}>
-            {e.day2 ? '—' : price(e.buyIn, f.currency)}
+            {e.day2 ? '—' : money(e.buyIn, f.currency)}
           </T>
           <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />
         </View>

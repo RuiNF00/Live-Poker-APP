@@ -3,7 +3,7 @@
 // against the average, the pay jumps ahead, and the final-table deal. All of it
 // lives on the session (Session.tourney), so it works offline.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';

@@ -148,7 +148,23 @@ export default function SessionScreen() {
       </Screen>
       {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
       <View style={styles.thumbBar}>
-        <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+        {/* A bagged day waiting comes first: one tap on the big button must not buy in a second time. */}
+        {bagged[0] ? (
+          <>
+            <Button title={t('Nova sessão')} kind="secondary" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+            <Button
+              title={t('Dia {n}', { n: dayOf(bagged[0]) + 1 }) + ' · ' + (bagged[0].name || t('Torneio'))}
+              icon="play"
+              onPress={() => {
+                tap('success');
+                saveSession(resumeDay(bagged[0]));
+              }}
+              style={{ flex: 1.6 }}
+            />
+          </>
+        ) : (
+          <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+        )}
       </View>
     </View>
   );
