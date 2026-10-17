@@ -6,7 +6,7 @@ import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
 import { profit } from '../session-math';
 import type { Session } from '../types';
-import { assignSwaps, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { assignSwaps, newFromOther, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -120,4 +120,34 @@ test('a saved link wins over matching, unconfirmed swaps count for nothing, and 
   assert.equal(lone.unassigned.length, 1);
   const list = [a];
   assert.equal(withSwaps(list, []), list);
+});
+
+test('a finished tournament asks for my result only in the swaps it belongs to, once', () => {
+  const D = 86400000;
+  const t0 = 100 * D;
+  const series = swap({ id: 'ser', terms: { ...terms, createdAt: t0 } });
+  const event = swap({ id: 'ev', terms: { ...terms, scope: 'event', title: '$10k Main Event', createdAt: t0 } });
+  const euros = swap({ id: 'eur', terms: { ...terms, currency: '€', createdAt: t0 } });
+  const pending = swap({ id: 'pen', confirmedAt: undefined, terms: { ...terms, createdAt: t0 } });
+  const all = [series, event, euros, pending];
+  const main = sess({ id: 'm', kind: 'mtt', name: '$10k main event', currency: '$', startedAt: t0 + D, endedAt: t0 + 2 * D, cashOut: 50000 });
+  assert.deepEqual(swapsForSession(all, main).map((s) => s.id), ['ser', 'ev']);
+  const side = sess({ id: 'x', kind: 'mtt', name: '$1k Turbo', currency: '$', startedAt: t0 + D, endedAt: t0 + D + 5000 });
+  assert.deepEqual(swapsForSession(all, side).map((s) => s.id), ['ser']);
+  // Played before the swap began, cash games and live sessions never ask.
+  assert.deepEqual(swapsForSession(all, { ...main, startedAt: t0 - 3 * D }).map((s) => s.id), []);
+  assert.deepEqual(swapsForSession(all, { ...main, kind: 'cash' }), []);
+  assert.deepEqual(swapsForSession(all, { ...main, endedAt: undefined }), []);
+  // Once my result from that session is in, it stops asking.
+  const done = { ...series, entries: [e('a', 'result', 0, { cid: 'k1' })], links: { k1: 'm' } };
+  assert.deepEqual(swapsForSession([done], main), []);
+  // Their entries don't count as mine.
+  assert.equal(swapsForSession([{ ...series, entries: [e('b', 'result', 50000, { event: '$10k main event' })] }], main).length, 1);
+});
+
+test("only the other player's new entries are news", () => {
+  const before = swap({ entries: [e('b', 'result', 100, { id: 'old' })] });
+  const after = { ...before, entries: [...before.entries, e('b', 'result', 5000, { id: 'new' }), e('a', 'payment', 50, { id: 'mine' })] };
+  assert.deepEqual(newFromOther(before, after).map((x) => x.id), ['new']);
+  assert.deepEqual(newFromOther(undefined, after), []);
 });
