@@ -42,6 +42,12 @@ async function capture(locale) {
     await page.evaluate(() => localStorage.removeItem('rl.draft.v1')).catch(() => {});
     await page.goto(appUrl + f.route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
+    // Web-only hints (e.g. "open the app on your phone to post") don't exist on the phone; hide them.
+    for (const txt of f.hide ?? []) {
+      await page.evaluate((txt) => {
+        for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent.includes(txt)) el.style.visibility = 'hidden';
+      }, txt);
+    }
     shots.push((await page.screenshot()).toString('base64'));
   }
   await ctx.close();
