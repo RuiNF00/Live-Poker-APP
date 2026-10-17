@@ -121,9 +121,15 @@ export function LiveView({
           {s.cashOut || !mtt ? <p className="live-big">{money(s.cashOut)}</p> : null}
           {s.finish ? <p className="live-place">{c.place(s.finish, s.field)}</p> : null}
           <p className={`live-delta ${result >= 0 ? 'up' : 'down'}`}>
-            {c.result} {result > 0 ? '+' : ''}
+            {mtt ? c.resultTournament : c.resultSession} {result > 0 ? '+' : ''}
             {money(result)}
           </p>
+          {/* The result above is the whole session's; backers own only their piece of the prize. */}
+          {s.sold && s.cashOut ? (
+            <p className="live-delta">
+              {c.backersShare(s.sold)} {money((s.sold / 100) * s.cashOut)}
+            </p>
+          ) : null}
         </section>
       ) : (
         <section className="live-card live-stack">
