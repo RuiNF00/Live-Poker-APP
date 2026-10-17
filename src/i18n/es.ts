@@ -3062,6 +3062,7 @@ const es: Record<string, string> = {
   'Uma estimativa no replayer, a partir de quantos jogadores restam': 'Una estimación en el replayer, a partir de cuántos jugadores quedan',
   'estimativa': 'estimación',
   'Estimativa: conta só com os stacks desta mesa e paga cerca de 15% do field. Serve de referência, não de resposta certa.': 'Estimación: cuenta solo los stacks de esta mesa y paga cerca del 15% del field. Sirve de referencia, no de respuesta exacta.',
+  'Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.': 'Este archivo es XML. Exporta las sesiones en CSV en la otra app y elige ese archivo.',
 };
 
 export default es;

@@ -1411,6 +1411,7 @@ const ptBR: Record<string, string> = {
   "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
   'Toca duas vezes para avançar.': 'Toque duas vezes para avançar.',
   'tu': 'você',
+  'Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.': 'Este arquivo é XML. Exporte as sessões em CSV no outro app e escolha esse arquivo.',
 };
 
 export default ptBR;

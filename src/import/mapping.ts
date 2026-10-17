@@ -45,9 +45,9 @@ export type SourceId = 'pbt' | 'pokerbase' | 'pokeranalytics' | 'sweatbook' | 'g
 
 // Exact header names, after norm(). Order matters: the first match wins.
 const SYN: Record<Field, string[]> = {
-  start: ['starttime', 'startdate', 'startdatetime', 'start', 'started', 'startedat', 'begin', 'inicio', 'datainicio', 'datadeinicio', 'debut', 'beginn', 'date', 'data', 'datetime', 'day', 'dia', 'fecha', 'datum', 'sessiondate'],
+  start: ['starttime', 'startdate', 'startdatetime', 'start', 'started', 'startedat', 'begin', 'inicio', 'datainicio', 'datadeinicio', 'debut', 'datedebut', 'datededebut', 'fechainicio', 'fechadeinicio', 'beginn', 'date', 'data', 'datetime', 'day', 'dia', 'fecha', 'datum', 'sessiondate'],
   time: ['time', 'hora', 'horainicio', 'heure', 'uhrzeit', 'starthour'],
-  end: ['endtime', 'enddate', 'enddatetime', 'end', 'ended', 'endedat', 'finished', 'fim', 'datafim', 'horafim', 'fin', 'ende'],
+  end: ['endtime', 'enddate', 'enddatetime', 'end', 'ended', 'endedat', 'finished', 'fim', 'datafim', 'datadefim', 'horafim', 'fin', 'datefin', 'datedefin', 'fechafin', 'fechadefin', 'ende'],
   hours: ['hours', 'hoursplayed', 'playinghours', 'horas', 'duration', 'duracao', 'duracion', 'duree', 'dauer', 'length', 'timeplayed'],
   minutes: ['playingminutes', 'minutes', 'minutesplayed', 'minutos', 'mins', 'durationminutes'],
   breakMinutes: ['breakminutes', 'breaks', 'break', 'pausa', 'pausas'],
@@ -65,7 +65,7 @@ const SYN: Record<Field, string[]> = {
   rebuyCost: ['rebuycosts', 'rebuycost', 'rebuyamount', 'rebuystotal', 'rebuy', 'recompras'],
   addOn: ['addoncosts', 'addoncost', 'addon', 'addons'],
   cashOut: ['cashout', 'cashedout', 'winnings', 'prize', 'prizemoney', 'payout', 'won', 'return', 'premio', 'ganhos', 'ganancias', 'gains', 'gewinn', 'saida'],
-  profit: ['netprofit', 'profit', 'net', 'netresult', 'result', 'results', 'profitloss', 'pl', 'winloss', 'amount', 'lucro', 'resultado', 'ganancia', 'benefice', 'netto'],
+  profit: ['netprofit', 'profit', 'net', 'netresult', 'result', 'results', 'profitloss', 'pl', 'winloss', 'amount', 'lucro', 'resultado', 'ganancia', 'benefice', 'resultat', 'netto'],
   expenses: ['expenses', 'expense', 'despesas', 'gastos', 'frais', 'ausgaben'],
   tips: ['tips', 'tip', 'dealertips', 'tokes', 'toke', 'gorjetas', 'gorjeta', 'propinas', 'pourboires', 'trinkgeld'],
   handsDealt: ['hands', 'handsdealt', 'handsplayed', 'numhands', 'maos', 'maosjogadas', 'manos', 'mains', 'hande'],

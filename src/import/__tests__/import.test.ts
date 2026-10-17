@@ -172,3 +172,25 @@ test('Sweatbook CSV with deposits and withdrawals comes back whole', () => {
   assert.equal(r.sessions[0].format, 'online');
   assert.deepEqual(r.moves.map((m) => [m.kind, m.amount]), [['deposit', 1000], ['withdrawal', 250]]);
 });
+
+test('Poker Analytics exports in French and Spanish: localized headers, 20h00, venue in "Lugar"', () => {
+  const fr = run('Date de début;Date de fin;Type;Jeu;Lieu;Devise;Buy-in;Gains;Résultat\n17/10/2026 20h00;18/10/2026 01h30;Cash game;NLHE;Casino Barrière;EUR;200,00;455,00;255,00\n19/10/2026 18:00;19/10/2026 23:00;Tournoi;NLHE;Casino Barrière;EUR;150,00;0,00;-150,00\n');
+  assert.deepEqual(fr.sessions.map(profit), [255, -150]);
+  assert.deepEqual(fr.sessions.map((s) => s.kind), ['cash', 'mtt']);
+  assert.equal(playedMs(fr.sessions[0]) / 3600000, 5.5);
+  const es = run('Fecha inicio;Fecha fin;Tipo;Juego;Lugar;Moneda;Entrada;Ganancias;Resultado\n17/10/2026 20:00;18/10/2026 01:30;Cash;NLHE;Casino Madrid;EUR;200;455;255\n');
+  assert.equal(es.sessions[0].venue, 'Casino Madrid');
+  assert.equal(es.sessions[0].finish, undefined);
+  // In Portuguese "Lugar" is still the finishing place.
+  const pt = run('Data;Tipo;Local;Buy-in;Prémio;Lugar\n03/04/2025;Torneio;Casino Póvoa;100;400;3\n');
+  assert.equal(pt.sessions[0].finish, 3);
+  assert.equal(pt.sessions[0].venue, 'Casino Póvoa');
+});
+
+test('game types, dates and durations as other trackers write them', () => {
+  const r = run('Start,Type,Profit,Duration\n"Sat, Oct 17 2026",Sit and Go,100,1d 2h\n"17 de octubre de 2026 20:00",Freeroll,0,5h30\n');
+  assert.deepEqual(r.sessions.map((s) => s.kind), ['mtt', 'mtt']);
+  assert.equal(playedMs(r.sessions[0]) / 3600000, 26);
+  assert.equal(new Date(r.sessions[1].startedAt).getHours(), 20);
+  assert.equal(parseDate('Oct. 17, 2026', 'dmy')?.t, new Date(2026, 9, 17).getTime());
+});
