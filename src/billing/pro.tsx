@@ -8,6 +8,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
 import * as store from './purchases';
+import { track } from '@/lib/events';
 
 const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1' };
 
@@ -51,6 +52,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [setPro]);
 
   const record = useCallback((kind: UsageKind) => {
+    track(kind === 'hand' ? 'hand_saved' : 'share_created');
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
       AsyncStorage.setItem(KEYS.usage, JSON.stringify(next)).catch(() => {});
@@ -62,6 +64,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const canShare = useCallback(() => canUse(usage, 'share', FREE.sharesPerDay, isPro), [usage, isPro]);
 
   const paywall = useCallback((reason: PaywallReason = 'generic') => {
+    if (reason === 'hands' || reason === 'shares') track('limit_hit', { reason });
+    track('paywall_shown', { reason });
     router.push({ pathname: '/paywall', params: { reason } });
   }, []);
 
@@ -70,7 +74,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       const plan = plans.find((p) => p.id === id);
       if (!plan) return 'unavailable' as const;
       const res = await store.buy(plan);
-      if (res === 'ok') setPro(true);
+      if (res === 'ok') {
+        setPro(true);
+        track('purchase', { plan: id });
+      }
       return res;
     },
     [plans, setPro],

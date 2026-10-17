@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
 import { t } from '@/i18n';
+import { track } from '@/lib/events';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 
@@ -36,6 +37,7 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   });
+  useEffect(() => track('app_open'), []);
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
