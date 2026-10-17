@@ -3,7 +3,9 @@ import { expiryFrom, OWNER_RE, parseComment, stripPrivate, TOKEN_RE } from '../s
 
 describe('coach links', () => {
   it('keeps a well-formed comment and drops the rest', () => {
-    expect(parseComment({ handId: 'h1', stepIndex: 4, mark: 'mistake', name: ' Ana ', body: ' Fold. ', extra: 1 })).toEqual({ handId: 'h1', stepIndex: 4, mark: 'mistake', name: 'Ana', body: 'Fold.' });
+    expect(parseComment({ handId: 'h1', stepIndex: 4, mark: 'mistake', name: ' Ana ', body: ' Fold. ', extra: 1 })).toEqual({ handId: 'h1', stepIndex: 4, mark: 'mistake', name: 'Ana', body: 'Fold.', key: null });
+    expect(parseComment({ handId: 'h1', name: 'Ana', body: 'x', key: 'local-abc123' })?.key).toBe('local-abc123');
+    expect(parseComment({ handId: 'h1', name: 'Ana', body: 'x', key: 'bad key!' })?.key).toBeNull();
     expect(parseComment({ handId: 'h1', stepIndex: -1, mark: 'great', name: 'Ana', body: 'x' })).toMatchObject({ stepIndex: null, mark: null });
     expect(parseComment({ handId: '../h1', name: 'Ana', body: 'x' })).toBeNull();
     expect(parseComment({ handId: 'h1', name: '', body: 'x' })).toBeNull();

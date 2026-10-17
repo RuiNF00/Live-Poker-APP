@@ -30,7 +30,11 @@ export interface NewCoachComment {
   mark: Mark | null;
   name: string;
   body: string;
+  /** The sender's own id for this comment, so a retried post returns it instead of a copy. */
+  key?: string | null;
 }
+
+export const KEY_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 export const MAX_HANDS = 50;
 /** 128 random bits in hex: the link's only secret. */
@@ -50,7 +54,8 @@ export function parseComment(x: unknown, withMark = true): NewCoachComment | nul
   if (!handId || !name || !body) return null;
   const step = typeof o.stepIndex === 'number' && Number.isInteger(o.stepIndex) && o.stepIndex >= 0 && o.stepIndex <= 1000 ? o.stepIndex : null;
   const mark = withMark && MARKS.includes(o.mark as Mark) ? (o.mark as Mark) : null;
-  return { handId, stepIndex: step, mark, name, body };
+  const key = typeof o.key === 'string' && KEY_RE.test(o.key) ? o.key : null;
+  return { handId, stepIndex: step, mark, name, body, key };
 }
 
 /** Days until the link closes: 1 to 365, or null for no expiry. */

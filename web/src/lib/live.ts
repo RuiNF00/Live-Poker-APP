@@ -22,7 +22,8 @@ export interface LiveRecord {
 }
 
 export interface LiveStore {
-  create(s: LiveSnapshot): Promise<{ id: string; editToken: string }>;
+  /** `token`: the app's own (64 hex), so a retried create returns the same link. */
+  create(s: LiveSnapshot, token?: string | null): Promise<{ id: string; editToken: string }>;
   get(id: string): Promise<LiveRecord | null>;
   /** False with a wrong token or a link that is gone. */
   update(id: string, editToken: string, s: LiveSnapshot): Promise<boolean>;
@@ -43,8 +44,8 @@ interface Row {
 class SupabaseLive implements LiveStore {
   constructor(private db: SupabaseClient) {}
 
-  async create(s: LiveSnapshot) {
-    const { data, error } = await this.db.rpc('create_live_session', { p_payload: s });
+  async create(s: LiveSnapshot, token?: string | null) {
+    const { data, error } = await this.db.rpc('create_live_session', { p_payload: s, p_token: token ?? null });
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     return { id: row.id as string, editToken: row.edit_token as string };
@@ -105,14 +106,16 @@ class LocalLive implements LiveStore {
     return run;
   }
 
-  async create(s: LiveSnapshot) {
-    const id = shortId();
-    const editToken = randomBytes(32).toString('hex');
+  async create(s: LiveSnapshot, token?: string | null) {
+    const editToken = token ?? randomBytes(32).toString('hex');
     const now = new Date().toISOString();
-    await this.mutate((d) => {
+    return this.mutate((d) => {
+      const again = Object.values(d).find((r) => r.editTokenHash === sha256(editToken));
+      if (again) return { id: again.id, editToken };
+      const id = shortId();
       d[id] = { id, snapshot: s, viewCount: 0, createdAt: now, updatedAt: now, editTokenHash: sha256(editToken) };
+      return { id, editToken };
     });
-    return { id, editToken };
   }
 
   async get(id: string) {
