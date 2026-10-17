@@ -1802,6 +1802,7 @@ const en: Record<string, string> = {
   'Vês quantos faltam para o dinheiro e para o próximo salto.': 'See how many to the money and to the next pay jump.',
   'vs média': 'vs average',
   'Indicar': 'Set',
+  'Estrutura, relógio sincronizado, prémios e deal': 'Structure, synced clock, payouts and deal',
 };
 
 export default en;
