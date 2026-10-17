@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { actionLabel, formatAmount, type AmountMode, type ReplayStep } from '@livepoker/hand-format';
 import { t, type Locale } from '@/lib/i18n';
 import type { VoteChoice } from '@/lib/types';
@@ -19,11 +19,21 @@ interface Props {
 export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
   const d = t(locale);
   const facing = step.facing ?? 0;
-  const choices: VoteChoice[] = facing > 0 ? ['fold', 'call', 'raise', 'allin'] : ['check', 'bet', 'allin'];
   const actor = step.seats.find((s) => s.seat === step.actingSeat);
+  // `step` is the hero's real action: undo what it paid to get the stack the friend decides with.
+  const behind = actor ? actor.stack + (step.action?.paid ?? 0) : 0;
+  // Short of a call there is no raise to make: calling is already all-in.
+  const choices: VoteChoice[] =
+    facing > 0 ? (behind && behind <= facing ? ['fold', 'allin'] : ['fold', 'call', 'raise', 'allin']) : ['check', 'bet', 'allin'];
   const [counts, setCounts] = useState<Partial<Record<VoteChoice, number>> | null>(null);
   const [mine, setMine] = useState<VoteChoice | null>(null);
   const [busy, setBusy] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  // On a phone the question sits under the table: bring the choices on screen.
+  useEffect(() => {
+    const t = setTimeout(() => box.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 350);
+    return () => clearTimeout(t);
+  }, []);
 
   const vote = async (choice: VoteChoice) => {
     if (busy) return;
@@ -49,11 +59,13 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
   const played = step.action?.type;
 
   return (
-    <div className="quiz" role="dialog" aria-label={d.quizTitle}>
+    <div className="quiz" role="dialog" aria-label={d.quizTitle} ref={box}>
       <div className="quiz-card">
         <div className="quiz-title">{d.quizTitle}</div>
         <div className="quiz-sub">
           {actor?.name}
+          {actor && actor.name !== actor.position && ` (${actor.position})`}
+          {actor && ` · ${formatAmount(behind, bb, mode, locale)}`}
           {facing > 0 && (
             <>
               {' · '}
@@ -75,7 +87,10 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
                 disabled={!!counts}
               >
                 {counts && <span className="quiz-bar" style={{ width: `${pct}%` }} />}
-                <span className="quiz-label">{actionLabel(c, locale)}</span>
+                <span className="quiz-label">
+                  {actionLabel(c, locale)}
+                  {c === 'call' && facing > 0 && <span className="quiz-amt"> {formatAmount(Math.min(facing, behind || facing), bb, mode, locale)}</span>}
+                </span>
                 {counts && <span className="quiz-pct">{pct}%</span>}
               </button>
             );
@@ -84,7 +99,12 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
         {counts ? (
           <>
             <div className="quiz-foot">
-              {d.quizThanks} {total} {d.quizVotes}.
+              {played && mine ? (
+                <strong className="quiz-verdict">{(mine === played ? d.quizSame : d.quizDiff)(actionLabel(played, locale))}</strong>
+              ) : (
+                d.quizThanks
+              )}{' '}
+              {total} {total === 1 ? d.quizVote : d.quizVotes}.
             </div>
             <button className="btn btn-primary quiz-go" onClick={onDone}>
               {d.quizContinue}

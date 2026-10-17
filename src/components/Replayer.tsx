@@ -3,28 +3,34 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
-import { legal, positions, raiseName, replay, totalPot, type Step } from '@/poker/engine';
-import { amount } from '@/poker/format';
-import type { Hand, Street } from '@/poker/types';
-import { actionColor, actionLabel, displayName, narrate, seatViews } from '@/poker/view';
-import { BRAND, C, R, ff } from '@/theme';
+import { legal, raiseName, replay } from '@/poker/engine';
+import type { Hand } from '@/poker/types';
+import { C, F, R, ff } from '@/theme';
 
-import { Table } from './Table';
-import { Chip, Row, T, tap } from './ui';
+import { timeline, viewAt, type TimelineItem } from './replayer/model';
+import { ReplayerTable } from './replayer/ReplayerTable';
+import { tap } from './ui';
 
-const STREET_PT: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
+const SPEEDS = [1, 1.5, 2, 0.5];
+const BASE_MS = 1100;
 
+/**
+ * Hand replayer, built for a phone held upright. Visual and interaction base:
+ * the stats-app replayer (charcoal felt, ivory cards, chip stacks, a badge per
+ * player, a "hero facing" bar with pot odds, and a tappable action timeline).
+ * Tap the right of the table to step forward, the left to step back.
+ */
 export function Replayer({
   hand,
-  initialInBB = false,
+  initialInBB = true,
   autoPlay = false,
-  compact = false,
   quiz = false,
   onVote,
 }: {
   hand: Hand;
   initialInBB?: boolean;
   autoPlay?: boolean;
+  /** Kept for callers; the timeline replaces the old action list. */
   compact?: boolean;
   /** Stop before hero's last decision and ask "what do you do?". */
   quiz?: boolean;
@@ -40,13 +46,13 @@ export function Replayer({
   const [answered, setAnswered] = useState<string | null>(null);
   const locked = quizAt > 0 && !answered;
   const last = locked ? quizAt - 1 : steps.length - 1;
-  // A challenge opens straight on hero's decision: friends shouldn't sit through the folds.
+  // A challenge opens straight on hero's decision; a saved hand opens on its result.
   const start = locked || !autoPlay ? last : 0;
   const [i, setI] = useState(start);
   const [playing, setPlaying] = useState(autoPlay && !locked);
   const [inBB, setInBB] = useState(initialInBB);
-  const [revealAll, setRevealAll] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [reveal, setReveal] = useState(false);
+  const [speed, setSpeed] = useState(0);
 
   useEffect(() => {
     setI(start);
@@ -54,67 +60,39 @@ export function Replayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand, autoPlay]);
 
+  const k = Math.min(i, last);
+  const atEnd = !locked && k >= steps.length - 1;
+
+  // Playback stops by itself at the last step it may show.
+  const running = playing && k < last;
   useEffect(() => {
-    if (!playing) return;
-    timer.current = setInterval(() => {
-      setI((x) => {
-        if (x >= last) {
-          setPlaying(false);
-          return x;
-        }
-        return x + 1;
-      });
-    }, 1100);
-    return () => {
-      if (timer.current) clearInterval(timer.current);
-    };
-  }, [playing, last]);
+    if (!running) return;
+    // A new street gets a beat longer, like a dealer burning and turning.
+    const pause = steps[k + 1]?.kind === 'board' ? 1.4 : 1;
+    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), (BASE_MS * pause) / SPEEDS[speed]);
+    return () => clearTimeout(id);
+  }, [running, k, last, steps, speed]);
 
-  const step: Step = steps[Math.min(i, last)];
-  const st = step.state;
-  const atEnd = !locked && i >= last;
-  const isShowdown = step.kind === 'showdown';
-  const result = atEnd ? r.result : null;
-  const views = seatViews(hand, st, { inBB, reveal: isShowdown || (revealAll && !locked), result, hideActing: !(locked && i === last) });
-  if (result) {
-    views.forEach((v, k) => {
-      v.stack = amount(st.stacks[k] + result.won[k], hand, inBB);
-      v.allIn = false;
-    });
-  }
-  const board = hand.board.slice(0, st.boardCount);
-  const potNow = atEnd && result ? result.pots.reduce((a, p) => a + p.amount, 0) : totalPot(st);
-  const pos = positions(hand.players.length, hand.button);
+  const view = useMemo(() => viewAt(hand, r, k, { inBB, reveal: reveal && !locked, atEnd }), [hand, r, k, inBB, reveal, locked, atEnd]);
+  const items = useMemo(() => timeline(hand, r, inBB), [hand, r, inBB]);
 
-  const streetStart = (s: Street) => steps.findIndex((x) => x.street === s && (x.kind === 'board' || (s === 'preflop' && x.kind === 'start')));
-  const go = (k: number) => {
+  const go = (to: number) => {
     tap('select');
     setPlaying(false);
-    setI(Math.max(0, Math.min(last, k)));
+    setI(Math.max(0, Math.min(last, to)));
+  };
+  const nextStreet = () => {
+    const n = steps.findIndex((s, j) => j > k && (s.kind === 'board' || s.kind === 'showdown'));
+    go(n < 0 ? last : n);
   };
 
-  const narration = step.kind === 'start' ? 'Blinds' : step.kind === 'board' ? STREET_PT[step.street] : isShowdown ? 'Showdown' : narrate(st.last, hand, inBB);
-
-  // Action log grouped by street.
-  const log = steps
-    .map((x, k) => ({ x, k }))
-    .filter(({ x }) => x.kind === 'action' && x.state.last);
-
   return (
-    <View style={{ gap: 10 }}>
-      <Table
-        seats={views}
-        hero={hand.hero}
-        button={hand.button}
-        board={board}
-        pot={potNow > 0 ? amount(potNow, hand, inBB) : undefined}
-        narration={narration}
-        watermark={BRAND.name}
-      />
+    <View style={{ gap: 8 }}>
+      <ReplayerTable view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
 
-      {locked && i === last && (
+      {locked && k === last ? (
         <QuizPanel
-          state={st}
+          state={steps[k].state}
           onPick={(c) => {
             tap('medium');
             setAnswered(c);
@@ -122,125 +100,232 @@ export function Replayer({
             setPlaying(true);
           }}
         />
+      ) : (
+        <InfoBar view={view} />
       )}
       {answered ? (
-        <T v="small" style={{ textAlign: 'center' }}>
-          {t('Tu escolheste')} <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>{answered}</T>. {t('Vê o que aconteceu ↓')}
-        </T>
+        <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
+          {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}
+        </Text>
       ) : null}
 
-      {/* progress */}
-      <View style={{ height: 4, backgroundColor: C.surface3, borderRadius: 2, overflow: 'hidden' }}>
-        <View style={{ width: `${last ? (i / last) * 100 : 100}%`, height: 4, backgroundColor: C.accent }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Ctrl icon="play-skip-back" label={t('Início')} onPress={() => go(0)} />
+        <Ctrl icon="chevron-back" label={t('Anterior')} onPress={() => go(k - 1)} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={running ? t('Pausa') : t('Reproduzir')}
+          onPress={() => {
+            tap();
+            if (k >= last) {
+              setI(0);
+              setPlaying(true);
+            } else setPlaying(!running);
+          }}
+          style={({ pressed }) => ({
+            flex: 1.3,
+            height: 46,
+            borderRadius: R.md,
+            backgroundColor: 'rgba(255,106,61,0.16)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,106,61,0.6)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.75 : 1,
+          })}>
+          <Ionicons name={running ? 'pause' : atEnd ? 'refresh' : 'play'} size={22} color={C.accent} />
+        </Pressable>
+        <Ctrl icon="chevron-forward" label={t('Seguinte')} onPress={() => go(k + 1)} />
+        <Ctrl icon="play-forward" label={t('Próxima street')} onPress={nextStreet} />
+        <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={() => setSpeed((s) => (s + 1) % SPEEDS.length)} />
+        <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => setInBB((b) => !b)} />
+        <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} onPress={() => setReveal((x) => !x)} />
       </View>
 
-      <Row style={{ justifyContent: 'space-between' }}>
-        <Row gap={4}>
-          <Ctrl icon="play-skip-back" onPress={() => go(0)} />
-          <Ctrl icon="chevron-back" onPress={() => go(i - 1)} />
-          <Pressable
-            onPress={() => {
-              tap();
-              if (atEnd) setI(0);
-              setPlaying((p) => !p);
-            }}
-            style={{ width: 52, height: 44, borderRadius: 22, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name={playing ? 'pause' : 'play'} size={22} color={C.accentInk} />
-          </Pressable>
-          <Ctrl icon="chevron-forward" onPress={() => go(i + 1)} />
-          <Ctrl icon="play-skip-forward" onPress={() => go(last)} />
-        </Row>
-        <Row gap={6}>
-          <Ctrl icon={revealAll ? 'eye' : 'eye-off'} onPress={() => setRevealAll((x) => !x)} active={revealAll} />
-          <Pressable
-            onPress={() => setInBB((b) => !b)}
-            style={{ height: 36, paddingHorizontal: 10, borderRadius: 18, backgroundColor: inBB ? C.accentSoft : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: inBB ? C.accent : C.textDim, fontWeight: '800', fontFamily: ff(800), fontSize: 12 }}>BB</Text>
-          </Pressable>
-        </Row>
-      </Row>
+      <Timeline items={items} current={k} last={last} onPick={go} />
+    </View>
+  );
+}
 
-      <Row gap={6}>
-        {(['preflop', 'flop', 'turn', 'river'] as Street[]).map((s) => {
-          const k = streetStart(s);
-          return <Chip key={s} label={STREET_PT[s]} active={step.street === s} onPress={k >= 0 ? () => go(k) : undefined} style={{ opacity: k >= 0 ? 1 : 0.35 }} />;
-        })}
-      </Row>
-
-      {!compact && !locked && (
-        <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 2 }} nestedScrollEnabled>
-          {log.map(({ x, k }, idx) => {
-            const a = x.state.last!;
-            const prevStreet = idx > 0 ? streetOfAction(log[idx - 1].x) : null;
-            const thisStreet = streetOfAction(x);
-            return (
-              <React.Fragment key={k}>
-                {thisStreet !== prevStreet && (
-                  <T v="label" style={{ marginTop: 8, marginBottom: 2 }}>
-                    {STREET_PT[thisStreet]}
-                    {thisStreet !== 'preflop' ? '  ' + boardFor(hand, thisStreet) : ''}
-                  </T>
-                )}
-                <Pressable
-                  onPress={() => go(k)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5, paddingHorizontal: 8, borderRadius: R.sm, backgroundColor: k === i ? C.surface3 : 'transparent' }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: actionColor(a) }} />
-                  <T v="small" style={{ color: a.p === hand.hero ? C.accent : C.text, fontWeight: '700', fontFamily: ff(700), width: 92 }} numberOfLines={1}>
-                    {displayName(hand, a.p, pos)}
-                  </T>
-                  <T v="small" style={{ flex: 1 }}>
-                    {actionLabel(a, hand, inBB).toLowerCase()}
-                  </T>
-                </Pressable>
-              </React.Fragment>
-            );
-          })}
-        </ScrollView>
+/** "Hero facing" bar when hero has a decision (pot odds, MDF), otherwise pot and stacks. */
+function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
+  const f = view.facing;
+  return (
+    <View
+      style={{
+        minHeight: 36,
+        borderRadius: R.md,
+        backgroundColor: '#0E0D0B',
+        borderWidth: 1,
+        borderColor: f ? 'rgba(255,106,61,0.45)' : C.border,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'baseline',
+        columnGap: 12,
+        rowGap: 2,
+      }}>
+      {f ? (
+        <>
+          <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
+            {t('HERO A DECIDIR')}
+            {f.vs ? <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> vs {f.vs}</Text> : null}
+          </Text>
+          <Stat label="Call" value={f.toCall} color={C.good} />
+          <Stat label={t('Pot odds')} value={`${(f.potOdds * 100).toFixed(1)}%`} color={C.info} />
+          <Stat label="MDF" value={`${Math.round(f.mdf * 100)}%`} color="#A78BFA" />
+        </>
+      ) : (
+        <>
+          <Text numberOfLines={1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
+            {view.narration}
+          </Text>
+          <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
+            {view.info}
+          </Text>
+        </>
       )}
     </View>
   );
 }
 
-function streetOfAction(step: Step): Street {
-  return step.actStreet ?? step.street;
+function Stat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
+      {label} <Text style={{ color, fontFamily: F.mono, fontSize: 13 }}>{value}</Text>
+    </Text>
+  );
 }
 
-function boardFor(hand: Hand, s: Street) {
-  const n = s === 'flop' ? 3 : s === 'turn' ? 4 : 5;
-  const cards = hand.board.slice(s === 'flop' ? 0 : n - 1, n);
-  return cards.map((c) => c[0] + ({ s: '♠', h: '♥', d: '♦', c: '♣' } as Record<string, string>)[c[1]]).join(' ');
+const DOT: Record<TimelineItem['color'], string> = {
+  hero: C.accent,
+  aggr: '#F39C12',
+  passive: '#2ECC71',
+  fold: '#6B7280',
+  street: '#F5EDD8',
+};
+const ITEM_W = 62;
+
+/** Every action as a dot on a line, streets as diamonds: tap any of them to jump there. */
+function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; current: number; last: number; onPick: (k: number) => void }) {
+  const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const [w, setW] = useState(0);
+  const at = Math.max(
+    0,
+    items.reduce((best, it, idx) => (it.k <= current ? idx : best), 0),
+  );
+  useEffect(() => {
+    if (w) ref.current?.scrollTo({ x: Math.max(0, at * ITEM_W - w / 2 + ITEM_W / 2), animated: true });
+  }, [at, w]);
+  return (
+    <ScrollView
+      ref={ref}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+      contentContainerStyle={{ paddingVertical: 4 }}>
+      <View style={{ position: 'absolute', left: ITEM_W / 2, right: ITEM_W / 2, top: 4 + 9, height: 2, backgroundColor: C.surface3 }} />
+      <View style={{ position: 'absolute', left: ITEM_W / 2, width: at * ITEM_W, top: 4 + 9, height: 2, backgroundColor: 'rgba(255,106,61,0.6)' }} />
+      {items.map((it, idx) => {
+        const future = it.k > last;
+        const on = idx === at;
+        const street = it.kind !== 'action';
+        return (
+          <Pressable
+            key={it.k + it.kind}
+            disabled={future}
+            onPress={() => onPick(it.k)}
+            accessibilityRole="button"
+            accessibilityLabel={`${it.label} ${it.detail ?? ''}`}
+            style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : idx > at ? 0.55 : 1 }}>
+            <View style={{ height: 20, justifyContent: 'center' }}>
+              <View
+                style={{
+                  width: street ? 11 : on ? 14 : 9,
+                  height: street ? 11 : on ? 14 : 9,
+                  borderRadius: street ? 2 : 7,
+                  transform: street ? [{ rotate: '45deg' }] : undefined,
+                  backgroundColor: street ? (on ? C.accent : '#2A2620') : DOT[it.color],
+                  borderWidth: on ? 2 : street ? 1 : 0,
+                  borderColor: on ? '#FFF' : '#7A7260',
+                }}
+              />
+            </View>
+            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street ? 0.8 : 0 }}>
+              {it.label}
+            </Text>
+            {it.detail ? (
+              <Text numberOfLines={1} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
+                {it.detail}
+              </Text>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
 }
 
-function QuizPanel({ state, onPick }: { state: Step['state']; onPick: (c: string) => void }) {
+function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'][number]['state']; onPick: (c: string) => void }) {
   const l = legal(state);
   if (!l) return null;
   const opts = [l.canCall ? 'Fold' : null, l.canCheck ? 'Check' : 'Call', l.canBet || l.canRaise ? raiseName(state) : null].filter(Boolean) as string[];
   return (
-    <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.4)' }}>
-      <T v="h2" style={{ textAlign: 'center' }}>
-        {t('O que fazes aqui?')}
-      </T>
-      <Row gap={8}>
+    <View style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
+      <Text style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
         {opts.map((o) => (
           <Pressable
             key={o}
             onPress={() => onPick(o)}
-            style={({ pressed }) => ({ flex: 1, paddingVertical: 14, borderRadius: R.md, backgroundColor: o === 'Fold' ? C.surface3 : C.accent, alignItems: 'center', opacity: pressed ? 0.8 : 1 })}>
-            <Text style={{ color: o === 'Fold' ? C.text : C.accentInk, fontWeight: '800', fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
+            style={({ pressed }) => ({
+              flex: 1,
+              paddingVertical: 14,
+              borderRadius: R.md,
+              backgroundColor: o === 'Fold' ? C.surface3 : C.accent,
+              alignItems: 'center',
+              opacity: pressed ? 0.8 : 1,
+            })}>
+            <Text style={{ color: o === 'Fold' ? C.text : C.accentInk, fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
           </Pressable>
         ))}
-      </Row>
+      </View>
     </View>
   );
 }
 
-function Ctrl({ icon, onPress, active }: { icon: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; active?: boolean }) {
+function Ctrl({
+  icon,
+  text,
+  label,
+  onPress,
+  active,
+}: {
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
+  text?: string;
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+}) {
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: active ? C.accentSoft : C.surface2, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}>
-      <Ionicons name={icon} size={18} color={active ? C.accent : C.text} />
+      hitSlop={4}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        flex: 1,
+        height: 46,
+        borderRadius: R.md,
+        backgroundColor: active ? C.accentSoft : '#141210',
+        borderWidth: 1,
+        borderColor: active ? 'rgba(255,106,61,0.45)' : '#2A2620',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: pressed ? 0.7 : 1,
+      })}>
+      {icon ? <Ionicons name={icon} size={18} color={active ? C.accent : C.text} /> : <Text style={{ color: active ? C.accent : C.text, fontFamily: F.mono, fontSize: 12 }}>{text}</Text>}
     </Pressable>
   );
 }
