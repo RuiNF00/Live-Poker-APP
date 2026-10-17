@@ -2816,6 +2816,8 @@ const en: Record<string, string> = {
   'Texto para fórum': 'Text for forums',
   'TwoPlusTwo, Reddit, grupos': 'TwoPlusTwo, Reddit, groups',
   'Formato PokerStars': 'PokerStars format',
+  'Visto em 1 sessão': 'Seen in 1 session',
+  'Visto em {n} sessões': 'Seen in {n} sessions',
   'Publicar no X': 'Post on X',
   "Ver contas": "See the balance",
   "Quanto acertas com cada backer, já calculado. Com o Pro.": "How you settle up with each backer, worked out for you. With Pro.",
