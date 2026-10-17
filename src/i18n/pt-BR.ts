@@ -1169,6 +1169,15 @@ const ptBR: Record<string, string> = {
   "dos prémios do outro jogador": "dos prêmios do outro jogador",
   "Deves {mine} dos teus prémios · {name} deve {theirs} dos seus": "Você deve {mine} dos seus prêmios · {name} deve {theirs} dos próprios",
   "Regista só os teus prémios; {name} regista os seus.": "Registre só os seus prêmios; {name} registra os próprios.",
+  'Cash: {h} h': 'Cash: {h} h',
+  'horas de cash': 'horas de cash',
+  'BB/h cash': 'BB/h cash',
+  'torneios de {amount}': 'torneios de {amount}',
+  'Levantar {amount}': 'Sacar {amount}',
+  'Podes levantar até {amount} e manter as tuas regras ({n} buy-ins para {stake}).': 'Você pode sacar até {amount} e manter suas regras ({n} buy-ins para {stake}).',
+  'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'Depois deste saque você fica abaixo das suas regras ({n} buy-ins para {stake}).',
+  'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Suas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.',
+  'Podes levantar até {amount} e manter as regras ›': 'Você pode sacar até {amount} e manter as regras ›',
 };
 
 export default ptBR;

@@ -8,7 +8,7 @@ import { View } from 'react-native';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { balanceOf, bankrollOf, sessionsIn } from '@/store/bankroll-math';
-import { buyIn, shotState } from '@/store/moveup-math';
+import { buyIn, shotState, withdrawable } from '@/store/moveup-math';
 import { aboveRules, allowedStakes, DEFAULT_RULES, goalReachedLive, stopLoss, targetProgress } from '@/store/rules-math';
 import { useStore } from '@/store/store';
 import type { Bankroll, BankrollRules, Session } from '@/store/types';
@@ -27,14 +27,14 @@ function Bar({ value, color }: { value: number; color: string }) {
 }
 
 /** On Bankroll, for one bankroll: what its rules allow today. */
-export function RulesCard({ bankroll, sessions, balance, hidden, onEdit, onMoveUp }: { bankroll: Bankroll; sessions: Session[]; balance: number; hidden: boolean; onEdit: () => void; onMoveUp?: () => void }) {
+export function RulesCard({ bankroll, sessions, balance, hidden, onEdit, onMoveUp, onWithdraw }: { bankroll: Bankroll; sessions: Session[]; balance: number; hidden: boolean; onEdit: () => void; onMoveUp?: () => void; onWithdraw?: (amount: number) => void }) {
   const cur = bankroll.currency;
   const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), cur));
   const r = bankroll.rules;
   const [now] = useState(() => Date.now());
   const info = useMemo(() => {
     if (!r) return null;
-    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY, fmt), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance) };
+    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY, fmt), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance), keep: withdrawable(balance, sessions, r, now) };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt changes with `hidden` and the currency only
   }, [r, sessions, balance, now, hidden, cur]);
 
@@ -49,7 +49,7 @@ export function RulesCard({ bankroll, sessions, balance, hidden, onEdit, onMoveU
       </Card>
     );
   }
-  const { a, over, sl, goal } = info;
+  const { a, over, sl, goal, keep } = info;
   return (
     <Section title={t('Regras de bankroll')}>
       <Card style={{ gap: S.md }}>
@@ -80,6 +80,11 @@ export function RulesCard({ bankroll, sessions, balance, hidden, onEdit, onMoveU
           ) : (
             <T v="small">{t('Stop-loss de {limit} por sessão: avisamos-te durante a sessão.', { limit: fmt(r.stopLoss) })}</T>
           )
+        ) : null}
+        {onWithdraw && keep && keep.free > 0 ? (
+          <T v="small" color={C.accent} onPress={() => onWithdraw(keep.free)} accessibilityRole="link">
+            {t('Podes levantar até {amount} e manter as regras ›', { amount: fmt(keep.free) })}
+          </T>
         ) : null}
         {onMoveUp ? (
           <T v="small" color={C.accent} onPress={onMoveUp} accessibilityRole="link">

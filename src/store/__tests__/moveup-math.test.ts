@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buyInsForRisk, currentStake, moveUp, nextStake, riskOfRuin, shotState } from '../moveup-math';
+import { buyInsForRisk, currentStake, moveUp, nextStake, riskOfRuin, shotState, usualMttBuyIn, withdrawable } from '../moveup-math';
 import type { Session, ShotPlan } from '../types';
 
 const H = 3600000;
@@ -70,4 +70,28 @@ test('a shot: 5 buy-ins at 5/10, back to 2/5 after losing 2', () => {
   const up = shotState(plan, [cash(8, 5, 2500, 5, 10)]);
   assert.equal(up.lostBuyIns, 0);
   assert.equal(up.left, 2);
+});
+
+function mtt(daysAgo: number, buyIn: number): Session {
+  return { ...cash(daysAgo, 6, -buyIn), kind: 'mtt', buyIn, cashOut: 0, sb: 0, bb: 0 };
+}
+
+test('how much can come out and still keep the rules', () => {
+  const rules = { cashBuyIns: 30, mttBuyIns: 100 };
+  // 2/5 at 30 buy-ins wants 15 000; 21 000 leaves 6 000 free.
+  const k = withdrawable(21000, [cash(5, 6, 100)], rules, NOW)!;
+  assert.equal(k.need, 15000);
+  assert.equal(k.free, 6000);
+  assert.deepEqual(k.basis, { kind: 'cash', stake: { sb: 2, bb: 5 }, buyIns: 30 });
+  // At or under the rule: nothing free, never negative.
+  assert.equal(withdrawable(12000, [cash(5, 6, 100)], rules, NOW)!.free, 0);
+  // Tournaments: median buy-in 250 × 100 = 25 000 beats the cash need.
+  const list = [cash(5, 6, 100), mtt(3, 200), mtt(4, 250), mtt(6, 1100)];
+  assert.equal(usualMttBuyIn(list, NOW), 250);
+  const m = withdrawable(30000, list, rules, NOW)!;
+  assert.equal(m.need, 25000);
+  assert.equal(m.free, 5000);
+  assert.deepEqual(m.basis, { kind: 'mtt', buyIn: 250, buyIns: 100 });
+  // Nothing played: no answer.
+  assert.equal(withdrawable(30000, [], rules, NOW), null);
 });

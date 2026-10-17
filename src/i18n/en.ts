@@ -2707,6 +2707,15 @@ const en: Record<string, string> = {
   'Swaps e staking': 'Swaps and staking',
   "Ver contas": "See the balance",
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Who owes whom and how much, worked out for you. With Pro.",
+  'Cash: {h} h': 'Cash: {h} h',
+  'horas de cash': 'cash hours',
+  'BB/h cash': 'Cash BB/h',
+  'torneios de {amount}': '{amount} tournaments',
+  'Levantar {amount}': 'Withdraw {amount}',
+  'Podes levantar até {amount} e manter as tuas regras ({n} buy-ins para {stake}).': 'You can withdraw up to {amount} and keep your rules ({n} buy-ins for {stake}).',
+  'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'After this withdrawal you\'ll be below your rules ({n} buy-ins for {stake}).',
+  'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Your rules ask for {need} ({n} buy-ins for {stake}): the balance isn\'t above that.',
+  'Podes levantar até {amount} e manter as regras ›': 'You can withdraw up to {amount} and keep your rules ›',
 };
 
 export default en;
