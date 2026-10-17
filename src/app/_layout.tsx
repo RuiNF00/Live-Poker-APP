@@ -80,6 +80,7 @@ export default function RootLayout() {
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
+            <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
           </ProProvider>
         </StoreProvider>

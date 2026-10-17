@@ -24,12 +24,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const s = rec.snapshot;
   const title = c.metaTitle(s.player, s.name || (s.kind === 'mtt' ? c.tournament : c.cash));
   const description = [s.venue, c.metaDescription].filter(Boolean).join(' · ');
+  // Versioned by the last update, so WhatsApp doesn't keep showing an old stack forever.
+  const image = { url: `/live/${id}/og?v=${Date.parse(rec.updatedAt) || 0}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,
     robots: { index: false },
-    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/live/${id}`, siteName: brand.name },
-    twitter: { card: 'summary', title, description },
+    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/live/${id}`, siteName: brand.name, images: [image] },
+    twitter: { card: 'summary_large_image', title, description, images: [image.url] },
   };
 }
 
