@@ -798,6 +798,7 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
         placeholderTextColor={C.muted}
         selectionColor={C.accent}
         {...rest}
+        accessibilityLabel={rest.accessibilityLabel ?? label ?? rest.placeholder}
         onFocus={(e) => {
           setFocus(true);
           rest.onFocus?.(e);
