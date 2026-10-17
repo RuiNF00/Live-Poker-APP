@@ -55,8 +55,8 @@ export default function SharedHands() {
       <Empty
         icon="chatbubbles-outline"
         title={t('Ainda sem mãos partilhadas')}
-        body={t('Partilha uma mão e os comentários dos teus amigos aparecem aqui. As mãos que eles te mandarem também.')}
-        action={<Button title={t('Ir para as mãos')} kind="secondary" size="md" onPress={() => router.navigate('/')} />}
+        body={t('Partilha uma mão e os comentários aparecem aqui.')}
+        action={<Button title={t('Ir para as mãos')} onPress={() => router.navigate('/')} />}
       />
     );
 

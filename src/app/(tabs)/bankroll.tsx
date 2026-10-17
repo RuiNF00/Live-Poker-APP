@@ -208,9 +208,9 @@ function BankrollTab() {
         {fresh ? (
           // A new player's one next step sits right under the balance, not below rules and tools.
           <Empty
-            icon="stats-chart"
+            compact
             title={t('Ainda sem sessões')}
-            body={t('Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.')}
+            body={t('O lucro e o €/hora aparecem aqui.')}
             action={
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
                 <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />

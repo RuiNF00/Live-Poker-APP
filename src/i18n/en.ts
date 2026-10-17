@@ -3191,6 +3191,10 @@ const en: Record<string, string> = {
   'Hora oficial': 'Official time',
   'Punta Cana, janeiro 2027': 'Punta Cana, January 2027',
   'República Dominicana': 'Dominican Republic',
+  'O lucro e o €/hora aparecem aqui.': 'Profit and €/hour show up here.',
+  'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Only dates published by organisers. Yours missing? Add it.',
+  'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Agree a percentage with another player. The app works out who owes whom.',
+  'Partilha uma mão e os comentários aparecem aqui.': 'Share a hand and the comments show up here.',
 };
 
 export default en;

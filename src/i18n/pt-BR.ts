@@ -1523,6 +1523,10 @@ const ptBR: Record<string, string> = {
   'Hora oficial': 'Horário oficial',
   'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
   'República Dominicana': 'República Dominicana',
+  'O lucro e o €/hora aparecem aqui.': 'O lucro e o €/hora aparecem aqui.',
+  'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Só datas publicadas pelos organizadores. Falta o seu? Adicione.',
+  'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Combine uma porcentagem com outro jogador. O app diz quem deve a quem.',
+  'Partilha uma mão e os comentários aparecem aqui.': 'Compartilhe uma mão e os comentários aparecem aqui.',
 };
 
 export default ptBR;
