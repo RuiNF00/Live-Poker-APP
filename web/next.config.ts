@@ -39,15 +39,15 @@ const nextConfig: NextConfig = {
       { source: '/suporte', ...to('/support', 'pt') },
       { source: '/pt-br/suporte', ...to('/support', 'pt-BR') },
       { source: '/es/soporte', ...to('/support', 'es') },
-      { source: '/pt-br/apagar-conta', ...to('/apagar-conta', 'pt-BR') },
-      { source: '/es/eliminar-cuenta', ...to('/apagar-conta', 'es') },
-      { source: '/delete-data', ...to('/apagar-conta', 'en') },
+      { source: '/apagar-conta', ...to('/delete-account', 'pt') },
+      { source: '/pt-br/apagar-conta', ...to('/delete-account', 'pt-BR') },
+      { source: '/es/eliminar-cuenta', ...to('/delete-account', 'es') },
     ];
   },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
-  // /support is a page of its own (src/app/support), opened by the app with topic, version and OS.
+  // /support and /delete-account are pages of their own (src/app), in the four help languages.
   async rewrites() {
-    return ['privacy', 'terms', 'delete-account'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
+    return ['privacy', 'terms'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
   },
 };
 
