@@ -7,6 +7,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
+import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
@@ -100,8 +101,9 @@ function NewGroupSwap() {
     tap('medium');
     const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: Date.now() };
     try {
-      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others]);
-      saveGroup(groupFromRemote(group, token, 0, invite));
+      const rc = await appUserId();
+      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others], rc);
+      saveGroup({ ...groupFromRemote(group, token, 0, invite), ownerRc: rc });
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');
       const url = groupUrl(group.id, invite, ref);

@@ -688,6 +688,13 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Estou à mesa: registar uma mão já': 'At the table: log a hand now',
+  'Enviar feedback': 'Send feedback',
+  'O que corre mal, o que falta ou o que mudavas': 'What goes wrong, what\'s missing or what you\'d change',
+  'Avaliar a Sweatbook': 'Rate Sweatbook',
+  'Na {store}': 'On the {store}',
+  'Novo na versão {v}': 'New in version {v}',
+  'Ver tudo': 'See all',
   'Avisamos-te quando o coach comentar': 'We\'ll tell you when your coach comments',
   'Quando o nível sobe e o intervalo acaba': 'When the level goes up and the break ends',
   '30 min antes e quando o late reg fecha': '30 min before, and when late reg closes',
@@ -2801,6 +2808,7 @@ const en: Record<string, string> = {
   'Fotografar a folha da estrutura: disponível na versão da loja': 'Photograph the structure sheet: available in the store version',
   'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'We couldn\'t read the levels in this photo. Try with more light and the sheet straight, or paste the text.',
   "Ver contas": "See the balance",
+  "Quanto acertas com cada backer, já calculado. Com o Pro.": "How you settle up with each backer, worked out for you. With Pro.",
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Who owes whom and how much, worked out for you. With Pro.",
   "À espera do resultado de {name}": "Waiting for {name}'s result",
   "Enviar o meu resultado sozinho": "Send my result automatically",
@@ -2809,6 +2817,7 @@ const en: Record<string, string> = {
   "Enviado sozinho: cobraste {amount}.": "Sent automatically: you cashed {amount}.",
   "Enviado sozinho: não cobraste.": "Sent automatically: you didn't cash.",
   "Para desligar, abre o swap.": "To turn it off, open the swap.",
+  "Há novidades no swap. Toca para veres as contas.": "News in the swap. Tap to see the balance.",
   'Cash: {h} h': 'Cash: {h} h',
   'horas de cash': 'cash hours',
   'BB/h cash': 'Cash BB/h',
@@ -2892,6 +2901,7 @@ const en: Record<string, string> = {
   'Bloquear impede esta pessoa de voltar a comentar nesta mão.': 'Blocking stops this person from commenting on this hand again.',
   'Apagar e bloquear': 'Delete and block',
   'Não deu para apagar o comentário agora. Tenta outra vez.': 'Couldn\'t delete the comment right now. Try again.',
+  // Crash reports switch (Definições → Os teus dados).
 };
 
 export default en;

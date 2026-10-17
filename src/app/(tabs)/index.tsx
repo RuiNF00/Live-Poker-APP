@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
+import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -65,6 +66,8 @@ export default function HandsScreen() {
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
   const backup = useBackupWarning();
+  // After an update: one card with the first thing that's new.
+  const news = useWhatsNewCard();
   const { handsLeft, trialDays, paywall, isPro } = usePro();
   useWelcomeOffer(hands.length);
   useOnboarding();
@@ -208,6 +211,8 @@ export default function HandsScreen() {
                 <ChargeNotice end={chargeEnd} />
               ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+              ) : news.item ? (
+                <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : checklist ? (
                 <StartChecklist state={checklist} />
               ) : moment ? (

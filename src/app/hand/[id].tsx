@@ -16,6 +16,7 @@ import { ReviewCard } from '@/components/ReviewCard';
 import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
@@ -141,7 +142,11 @@ ${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));
-    } else await Share.share({ message: msg });
+    } else {
+      const res = await Share.share({ message: msg });
+      // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
+      if (res.action === Share.sharedAction && hands.filter((h) => h.shareId || h.id === hand.id).length >= 3) maybeAskForReview('share3');
+    }
   };
 
   // Standard hand history for TwoPlusTwo, Reddit or a WhatsApp group: positions, stacks in bb, every street.

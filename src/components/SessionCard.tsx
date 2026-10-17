@@ -29,8 +29,8 @@ export function Logo({ size, color, cut }: { size: number; color: string; cut: s
         <Path d="M32 12.5 L44.73 25.27 A18 18 0 1 1 19.27 25.27 Z" fill={color} />
         <Path d="M24 36 H40 M24 42 H40 M24 48 H34" stroke={cut} strokeWidth={3.2} strokeLinecap="round" />
       </Svg>
-      <Text style={{ fontFamily: ff(800), fontWeight: '800', fontSize: size, color: color === C.accent ? C.text : color, letterSpacing: -0.3 }}>
-        Sweat<Text style={{ color }}>book</Text>
+      <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: size, color: color === C.accent ? C.text : color, letterSpacing: -0.3 }}>
+        Sweat<Text allowFontScaling={false} style={{ color }}>book</Text>
       </Text>
     </View>
   );
@@ -40,10 +40,10 @@ export function Logo({ size, color, cut }: { size: number; color: string; cut: s
 export function Watermark({ color, dim }: { color: string; dim: string }) {
   return (
     <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text style={{ fontFamily: ff(700), fontSize: 11, color: dim, letterSpacing: 0.4 }}>
-        {t('Feito com')} <Text style={{ fontFamily: ff(800), color }}>Sweatbook</Text>
+      <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 11, color: dim, letterSpacing: 0.4 }}>
+        {t('Feito com')} <Text allowFontScaling={false} style={{ fontFamily: ff(800), color }}>Sweatbook</Text>
       </Text>
-      <Text style={{ fontFamily: ff(700), fontSize: 10, color: dim, letterSpacing: 0.6 }}>{linkHost}</Text>
+      <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 10, color: dim, letterSpacing: 0.6 }}>{linkHost}</Text>
     </View>
   );
 }
@@ -102,14 +102,14 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true,
       {/* Below Instagram's profile bar */}
       <View style={{ position: 'absolute', top: 70, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {brand ? <Logo size={14} color={accent ? INK : C.accent} cut={accent ? C.accent : C.bg} /> : <View />}
-        <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{shortDate(s.startedAt).toUpperCase()}</Text>
+        <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{shortDate(s.startedAt).toUpperCase()}</Text>
       </View>
 
       <View style={{ position: 'absolute', top: 118, left: 26, right: 26, gap: 6 }}>
-        <Text numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>
+        <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>
           {(s.venue || (s.kind === 'mtt' ? t('Torneio') : 'Cash')).toUpperCase()}
         </Text>
-        <Text numberOfLines={2} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: 26, lineHeight: 30, color: fg, letterSpacing: -0.6 }}>
+        <Text allowFontScaling={false} numberOfLines={2} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: 26, lineHeight: 30, color: fg, letterSpacing: -0.6 }}>
           {title}
         </Text>
       </View>
@@ -129,7 +129,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true,
             <Svg width={14} height={14} viewBox="0 0 24 24">
               <Path d="M7 4h10v3a5 5 0 0 1-10 0V4Zm-3 1h3v2a3 3 0 0 1-3-2Zm16 0h-3v2a3 3 0 0 0 3-2ZM10 13h4v3h3v3H7v-3h3v-3Z" fill={accent ? C.accent : INK} />
             </Svg>
-            <Text style={{ fontFamily: ff(800), fontSize: 12, color: accent ? C.accent : INK }}>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 12, color: accent ? C.accent : INK }}>
               {milestone!.title}
               {milestone!.detail && !(milestone!.money && hideMoney) ? ' · ' + milestone!.detail : ''}
             </Text>
@@ -141,8 +141,8 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true,
       <View style={{ position: 'absolute', top: 268, left: 26, right: 26, gap: 20 }}>
         {lead ? (
           <View style={{ gap: 2 }}>
-            <Text style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>{lead.label.toUpperCase()}</Text>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: numFont(lead), fontSize: 64, lineHeight: 72, color: toneColor(lead.tone, accent, fg), letterSpacing: -2 }}>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>{lead.label.toUpperCase()}</Text>
+            <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: numFont(lead), fontSize: 64, lineHeight: 72, color: toneColor(lead.tone, accent, fg), letterSpacing: -2 }}>
               {lead.value}
             </Text>
           </View>
@@ -151,8 +151,8 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true,
         <View style={{ flexDirection: 'row', gap: 16 }}>
           {rest.map((x) => (
             <View key={x.key} style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{x.label.toUpperCase()}</Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontFamily: numFont(x), fontSize: 30, lineHeight: 36, color: toneColor(x.tone, accent, fg) }}>
+              <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{x.label.toUpperCase()}</Text>
+              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontFamily: numFont(x), fontSize: 30, lineHeight: 36, color: toneColor(x.tone, accent, fg) }}>
                 {x.value}
               </Text>
             </View>
@@ -183,7 +183,7 @@ function SessionSticker({ session: s, stats, brand = true, ref }: SessionCardPro
           justifyContent: 'space-between',
         }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
             {title}
           </Text>
           {brand ? <Logo size={11} color={C.accent} cut={C.bg} /> : null}
@@ -191,16 +191,16 @@ function SessionSticker({ session: s, stats, brand = true, ref }: SessionCardPro
         <View style={{ flexDirection: 'row', gap: 12 }}>
           {stats.map((x) => (
             <View key={x.key} style={{ flex: 1, gap: 2 }}>
-              <Text numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 9, letterSpacing: 1.2, color: C.textDim }}>
+              <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 9, letterSpacing: 1.2, color: C.textDim }}>
                 {x.label.toUpperCase()}
               </Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: numFont(x), fontSize: 20, color: toneColor(x.tone, false, C.text) }}>
+              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: numFont(x), fontSize: 20, color: toneColor(x.tone, false, C.text) }}>
                 {x.value}
               </Text>
             </View>
           ))}
         </View>
-        <Text style={{ fontFamily: ff(700), fontSize: 10, color: C.textDim }}>
+        <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 10, color: C.textDim }}>
           {[s.venue, shortDate(s.startedAt)].filter(Boolean).join(' · ')}
           {brand ? '  ·  ' + linkHost : ''}
         </Text>

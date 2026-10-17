@@ -13,7 +13,7 @@ export function groupUrl(id: string, invite: string, ref?: string): string {
   return `${BRAND.webUrl}/swap/g/${id}${ref ? `?r=${encodeURIComponent(ref)}` : ''}#i=${invite}`;
 }
 
-type Reply = { group?: RemoteGroup; token?: string; invite?: string; id?: string };
+type Reply = { group?: RemoteGroup; token?: string; invite?: string; id?: string; accounts?: boolean };
 
 async function call(path: string, init: RequestInit & { token?: string } = {}): Promise<Reply> {
   const { token, ...rest } = init;
@@ -23,11 +23,13 @@ async function call(path: string, init: RequestInit & { token?: string } = {}): 
   });
   const j = (await res.json().catch(() => ({}))) as Reply & { error?: string };
   if (!res.ok) throw new SwapError(j.error ?? 'http_' + res.status, res.status);
+  if (j.group && typeof j.accounts === 'boolean') j.group = { ...j.group, accounts: j.accounts };
   return j;
 }
 
-export async function createGroup(terms: GroupTerms, names: string[]): Promise<{ group: RemoteGroup; token: string; invite: string }> {
-  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, names }) });
+/** `rcUserId`: my RevenueCat id, so the group's accounts follow my Pro for everyone in it. */
+export async function createGroup(terms: GroupTerms, names: string[], rcUserId?: string): Promise<{ group: RemoteGroup; token: string; invite: string }> {
+  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, names, rcUserId }) });
   if (!j.group || !j.token || !j.invite) throw new SwapError('bad_response', 500);
   return { group: j.group, token: j.token, invite: j.invite };
 }
@@ -61,6 +63,11 @@ export async function removeGroupEntry(id: string, token: string, entryId: strin
 }
 
 /** The creator deletes it for everyone; anyone else leaves it. A missing group counts as done. */
+/** The creator's RevenueCat id changed (a reinstall or a restore): the new one replaces it. */
+export async function setGroupOwnerRc(id: string, token: string, rcUserId: string): Promise<void> {
+  await call(`/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: JSON.stringify({ rcUserId }) });
+}
+
 export async function leaveGroup(id: string, token: string): Promise<void> {
   try {
     await call(`/${encodeURIComponent(id)}`, { method: 'DELETE', token });

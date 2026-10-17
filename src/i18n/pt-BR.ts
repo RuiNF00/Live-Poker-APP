@@ -1241,6 +1241,7 @@ const ptBR: Record<string, string> = {
   "Enviado sozinho: cobraste {amount}.": "Enviado automaticamente: você ganhou {amount} de prêmio.",
   "Enviado sozinho: não cobraste.": "Enviado automaticamente: você não ganhou prêmio.",
   "Para desligar, abre o swap.": "Para desligar, abra o swap.",
+  "Há novidades no swap. Toca para veres as contas.": "Tem novidades no swap. Toque para ver as contas.",
   'Cash: {h} h': 'Cash: {h} h',
   'horas de cash': 'horas de cash',
   'BB/h cash': 'BB/h cash',
@@ -1260,8 +1261,8 @@ const ptBR: Record<string, string> = {
   '{c}/{n} nos prémios': '{c}/{n} nos prêmios',
   'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'Registro minhas mãos e sessões ao vivo com o Sweatbook: {link}',
   'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Combine com o backer o que acontece com o makeup quando o pacote fecha.',
-  'Se cobrares {prize}, pagas {each} a cada um ({total} no total).': 'Se você cobrar {prize}, paga {each} a cada um ({total} no total).',
-  'Se outro do grupo cobrar {prize}, recebes {each}.': 'Se outro do grupo cobrar {prize}, você recebe {each}.',
+  'Se cobrares {prize}, pagas {each} a cada um ({total} no total).': 'Se você ganhar {prize}, paga {each} a cada um ({total} no total).',
+  'Se outro do grupo cobrar {prize}, recebes {each}.': 'Se outra pessoa do grupo ganhar {prize}, você recebe {each}.',
   'Grupo de {n}: não deves nada': 'Grupo de {n}: você não deve nada',
   'Deves ao grupo': 'Você deve ao grupo',
   'Melhor mês': 'Melhor mês',
@@ -1300,6 +1301,10 @@ const ptBR: Record<string, string> = {
   'Bloquear impede esta pessoa de voltar a comentar nesta mão.': 'Bloquear impede essa pessoa de comentar de novo nesta mão.',
   'Apagar e bloquear': 'Excluir e bloquear',
   'Não deu para apagar o comentário agora. Tenta outra vez.': 'Não deu para excluir o comentário agora. Tente de novo.',
+  'O que corre mal, o que falta ou o que mudavas': 'O que dá errado, o que falta ou o que você mudaria',
+  'Estou à mesa: registar uma mão já': 'Estou na mesa: registrar uma mão agora',
+  // Crash reports switch (Definições → Os teus dados).
+  "Quanto acertas com cada backer, já calculado. Com o Pro.": "Quanto você acerta com cada backer, já calculado. Com o Pro.",
 };
 
 export default ptBR;

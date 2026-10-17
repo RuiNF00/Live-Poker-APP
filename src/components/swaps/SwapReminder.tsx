@@ -13,6 +13,7 @@ import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { notifications, setup } from '@/lib/lock-screen/reminder';
+import { notifyAmountsOn, notifyOrHold } from '@/lib/notify-gate';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -32,7 +33,13 @@ const SYNC_EVERY = 2 * 60000;
 
 export function SwapReminder() {
   const { sessions } = useStore();
-  const locked = useLocked('swaps');
+  const noPro = useLocked('swaps');
+  // The accounts are open when I have Pro or the swap's creator does.
+  const locked = (x: { accounts?: boolean }) => noPro && !x.accounts;
+  const noProRef = useRef(noPro);
+  useEffect(() => {
+    noProRef.current = noPro;
+  }, [noPro]);
   const { ready, swaps } = useSwaps();
   const { ready: gReady, groups } = useGroups();
   const [asked, setAsked] = useState<string[] | null>(null);
@@ -62,8 +69,10 @@ export function SwapReminder() {
     return () => sub.remove();
   }, [live]);
 
-  useEffect(() => onSwapNews((s, news) => void notify(s, news)), []);
-  useEffect(() => onGroupNews((g, news) => void notifyGroup(g, news)), []);
+  // Amounts only when allowed on the lock screen and the accounts are open to me.
+  const amounts = (x: { accounts?: boolean }) => notifyAmountsOn() && !(noProRef.current && !x.accounts);
+  useEffect(() => onSwapNews((s, news) => void notify(s, news, amounts(s))), []);
+  useEffect(() => onGroupNews((g, news) => void notifyGroup(g, news, amounts(g))), []);
 
   // The tournament to ask about: finished recently, in a swap, not asked before. Shown a
   // moment later, so the end-of-session screen lands first.
@@ -141,7 +150,7 @@ export function SwapReminder() {
                       {pctLabel(sw.terms[sw.side].pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {locked ? t('Swap com {name}', { name }) : owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
+                      {locked(sw) ? t('Swap com {name}', { name }) : owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
                     </T>
                   </Row>
                 );
@@ -154,7 +163,7 @@ export function SwapReminder() {
                       {pctLabel(g.terms.pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {locked
+                      {locked(g)
                         ? t('Swap de grupo · {title}', { title: g.terms.title })
                         : owe > 0
                         ? t('Grupo de {n}: pagas {each} a cada um ({amount})', { n: g.seats.length, each: money(groupShareOf(g, prize), s.currency), amount: money(owe, s.currency) })
@@ -185,9 +194,10 @@ export function SwapReminder() {
                 {t('Para desligar, abre o swap.')}
               </T>
             ) : null}
-            {locked ? <AccountsLocked /> : null}
-            {!locked && shown.swaps.map((sw0) => {
+            {[...shown.swaps, ...shown.groups].some((x) => locked(x)) ? <AccountsLocked /> : null}
+            {shown.swaps.map((sw0) => {
               const sw = getSwap(sw0.id) ?? sw0;
+              if (locked(sw)) return null;
               const name = swapNames(sw)[other(sw.side)];
               return (
                 <View key={sw.id} style={{ gap: S.sm }}>
@@ -201,8 +211,9 @@ export function SwapReminder() {
                 </View>
               );
             })}
-            {!locked && shown.groups.map((g0) => {
+            {shown.groups.map((g0) => {
               const g = getGroup(g0.id) ?? g0;
+              if (locked(g)) return null;
               return (
                 <View key={g.id} style={{ gap: S.sm }}>
                   <T v="label">{t('Swap de grupo · {title}', { title: g.terms.title })}</T>
@@ -232,8 +243,24 @@ export function SwapReminder() {
   );
 }
 
+const HOUR = 3600000;
+const lastPosted = new Map<string, number>();
+
+/**
+ * Posts on the "money" channel: off in Settings drops it, a live session holds it for the end,
+ * and each swap gets at most one an hour (design/notificacoes.md).
+ */
+function postMoney(n: NonNullable<ReturnType<typeof notifications>>, id: string, title: string, body: string, url: string) {
+  const last = lastPosted.get(id);
+  if (last && Date.now() - last < HOUR) return;
+  notifyOrHold('money', () => {
+    lastPosted.set(id, Date.now());
+    n.scheduleNotificationAsync({ identifier: `swap-${id}`, content: { title, body, data: { url }, sound: true }, trigger: { channelId: 'money' } }).catch((e) => console.warn('[swaps] notify', e));
+  });
+}
+
 /** What their new entries mean for me, as one notification per swap (only if already allowed). */
-async function notify(sw: Swap, news: SwapEntry[]) {
+async function notify(sw: Swap, news: SwapEntry[], amounts: boolean) {
   const n = notifications();
   if (!n) return;
   try {
@@ -241,7 +268,7 @@ async function notify(sw: Swap, news: SwapEntry[]) {
     await setup(n);
     const name = swapNames(sw)[other(sw.side)];
     const cur = sw.terms.currency;
-    const lines = news.map((e) =>
+    const lines = !amounts ? [t('Há novidades no swap. Toca para veres as contas.')] : news.map((e) =>
       e.kind === 'payment'
         ? t('{name} registou um pagamento de {amount}.', { name, amount: money(e.amount, cur) })
         : e.amount > 0
@@ -250,33 +277,27 @@ async function notify(sw: Swap, news: SwapEntry[]) {
     );
     const waiting = sw.terms.scope === 'event' && news.some((e) => e.kind === 'result') && !sw.entries.some((e) => e.side === sw.side && e.kind === 'result');
     if (waiting) lines.push(t('E tu, como acabaste?'));
-    await n.scheduleNotificationAsync({
-      content: { title: t('Swap com {name}', { name }), body: lines.join(' '), data: { url: `sweatbook://swap/${sw.id}` }, sound: true },
-      trigger: null,
-    });
+    postMoney(n, sw.id, t('Swap com {name}', { name }), lines.join(' '), `sweatbook://swap/${sw.id}`);
   } catch (e) {
     console.warn('[swaps] notify', e);
   }
 }
 
 /** What other players' new group entries mean for me (only if notifications are already allowed). */
-async function notifyGroup(g: SwapGroup, news: GroupEntry[]) {
+async function notifyGroup(g: SwapGroup, news: GroupEntry[], amounts: boolean) {
   const n = notifications();
   if (!n) return;
   try {
     if (!(await n.getPermissionsAsync()).granted) return;
     await setup(n);
     const cur = g.terms.currency;
-    const lines = news.map((e) => {
+    const lines = !amounts ? [t('Há novidades no swap. Toca para veres as contas.')] : news.map((e) => {
       const name = seatLabel(g, e.seat);
       if (e.kind === 'payment') return t('{name} pagou {amount} a {to}.', { name, amount: money(e.amount, cur), to: e.to === undefined ? '?' : seatLabel(g, e.to) });
       return e.amount > 0 ? t('{name} cobrou {amount}: a tua parte é {owed}.', { name, amount: money(e.amount, cur), owed: money(groupShareOf(g, e.amount), cur) }) : t('{name} não cobrou no {event}.', { name, event: e.event || g.terms.title });
     });
     if (g.terms.scope === 'event' && news.some((e) => e.kind === 'result') && !g.entries.some((e) => e.seat === g.seat && e.kind === 'result')) lines.push(t('E tu, como acabaste?'));
-    await n.scheduleNotificationAsync({
-      content: { title: t('Swap de grupo · {title}', { title: g.terms.title }), body: lines.join(' '), data: { url: `sweatbook://swap/g/${g.id}` }, sound: true },
-      trigger: null,
-    });
+    postMoney(n, `g-${g.id}`, t('Swap de grupo · {title}', { title: g.terms.title }), lines.join(' '), `sweatbook://swap/g/${g.id}`);
   } catch (e) {
     console.warn('[swaps] notify group', e);
   }

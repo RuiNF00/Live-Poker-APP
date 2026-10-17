@@ -5,15 +5,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-import { t } from '@/i18n';
 import { notifications, setup } from '@/lib/lock-screen/reminder';
 
 import { festivalOn } from '@/lib/attribution';
+import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
+import { kindInfo } from '@/lib/notify-policy';
 
-import { comebackSeen, NUDGE_CHANNEL, NUDGE_IDS, planNudges, type ComebackState, type NudgeInput, type Trial } from './nudges';
+import { comebackSeen, NUDGE_KIND, NUDGE_IDS, planNudges, type ComebackState, type NudgeInput, type Trial } from './nudges';
 import { getTrial } from './purchases';
 
-const CHANNELS = { billing: 'billing', tips: 'tips' } as const;
 const COMEBACK = 'rl.comeback.v1';
 const LOCAL_TRIAL = 'rl.trial.v1';
 /** Opened when a nudge is tapped: the hands list. */
@@ -60,25 +60,23 @@ async function sync(input: Omit<NudgeInput, 'trial' | 'store'>): Promise<void> {
   const n = notifications();
   if (!n) return;
   try {
+    // The channels come from lib/notify-policy (setup); the old single 'pro' channel goes.
     await setup(n);
-    if (Platform.OS === 'android')
-      channel ??= Promise.all([
-        n.setNotificationChannelAsync(CHANNELS.billing, { name: t('Subscrição'), importance: n.AndroidImportance.DEFAULT }),
-        n.setNotificationChannelAsync(CHANNELS.tips, { name: t('Lembretes'), importance: n.AndroidImportance.LOW }),
-        n.deleteNotificationChannelAsync('pro').catch(() => {}),
-      ]);
+    if (Platform.OS === 'android') channel ??= n.deleteNotificationChannelAsync('pro').catch(() => {});
     await channel;
     await Promise.all(NUDGE_IDS.map((id) => n.cancelScheduledNotificationAsync(`sweatbook-${id}`)));
     if (!(await n.getPermissionsAsync()).granted) return;
     const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
     const trial = input.isPro ? await currentTrial() : null;
     const comeback = comebackSeen(await readComeback(), input.now);
-    const planned = planNudges({ ...input, trial, store, comeback, festivalAt: (ts) => festivalOn(ts) });
+    // Reminders the player switched off are not planned; the notice before a charge always is.
+    const planned = planNudges({ ...input, trial, store, comeback, festivalAt: (ts) => festivalOn(ts) }).filter((x) => notifyKindOn(NUDGE_KIND[x.id]));
     for (const x of planned) {
+      const kind = NUDGE_KIND[x.id];
       await n.scheduleNotificationAsync({
         identifier: `sweatbook-${x.id}`,
         content: { title: x.title, body: x.body, data: { url: URL } },
-        trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: x.at, channelId: CHANNELS[NUDGE_CHANNEL[x.id]] },
+        trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: notifyAt(kind, x.at), channelId: kindInfo(kind).channel },
       });
     }
     await AsyncStorage.setItem(COMEBACK, JSON.stringify({ ...comeback, planned: planned.find((x) => x.id === 'comeback')?.at })).catch(() => {});

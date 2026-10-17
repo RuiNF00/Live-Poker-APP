@@ -6,7 +6,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
-import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, SwapError } from '@/lib/swap-api';
+import { appUserId } from '@/billing/purchases';
+import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOwnerRc, SwapError } from '@/lib/swap-api';
 
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { mergeRemote, mergeSwaps, newFromOther, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
@@ -117,6 +118,14 @@ export async function syncSwap(id: string): Promise<boolean> {
       }
     }
     s = getSwap(id)!;
+    if (s.side === 'a' && !s.left) {
+      // The accounts follow the creator's Pro: keep the server's copy of my id current.
+      const rc = await appUserId();
+      if (rc && rc !== s.ownerRc) {
+        await setSwapOwnerRc(id, s.token, rc).then(() => saveSwap({ ...getSwap(id)!, ownerRc: rc }), () => {});
+        s = getSwap(id)!;
+      }
+    }
     const remote = await fetchSwap(id, s.token);
     if (!remote) saveSwap({ ...s, gone: true, entries: s.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
     else applyRemote(id, remote);

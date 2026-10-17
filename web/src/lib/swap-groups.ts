@@ -25,6 +25,9 @@ export interface GroupStore {
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   /** Seat 0 deletes it for everyone; any other seat leaves (name "-", token dead). */
   leave(id: string, token: string): Promise<boolean>;
+  /** The creator's RevenueCat id (seat 0 only; replaces the last one). Never in a read of the group. */
+  setOwnerRc(id: string, token: string, rc: string): Promise<boolean>;
+  ownerRc(id: string): Promise<string | null>;
   purge(): Promise<void>;
 }
 
@@ -84,13 +87,25 @@ class SupabaseGroups implements GroupStore {
     return !!data;
   }
 
+  async setOwnerRc(id: string, token: string, rc: string) {
+    const { data, error } = await this.db.rpc('set_swap_group_owner_rc', { p_id: id, p_token: token, p_rc: rc });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async ownerRc(id: string) {
+    const { data, error } = await this.db.rpc('swap_group_owner_rc_of', { p_id: id });
+    if (error) throw error;
+    return typeof data === 'string' && data ? data : null;
+  }
+
   async purge() {
     await this.db.rpc('purge_swap_groups');
   }
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-type LocalRow = GroupRecord & { inviteHash: string; hashes: (string | null)[] };
+type LocalRow = GroupRecord & { inviteHash: string; hashes: (string | null)[]; ownerRc?: string };
 
 class LocalGroups implements GroupStore {
   private file = path.join(process.cwd(), '.data', 'swap-groups.json');
@@ -140,7 +155,7 @@ class LocalGroups implements GroupStore {
   async get(id: string) {
     const r = (await this.read())[id];
     if (!r) return null;
-    const { inviteHash: _i, hashes: _h, ...rec } = r;
+    const { inviteHash: _i, hashes: _h, ownerRc: _o, ...rec } = r;
     return rec;
   }
 
@@ -201,6 +216,19 @@ class LocalGroups implements GroupStore {
       }
       return true;
     });
+  }
+
+  async setOwnerRc(id: string, token: string, rc: string) {
+    return this.mutate((d) => {
+      const r = d[id];
+      if (this.seatOf(r, token) !== 0 || !rc || rc.length > 100) return false;
+      r.ownerRc = rc;
+      return true;
+    });
+  }
+
+  async ownerRc(id: string) {
+    return (await this.read())[id]?.ownerRc ?? null;
   }
 
   async purge() {

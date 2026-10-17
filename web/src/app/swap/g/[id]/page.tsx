@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { brand } from '@/config/brand';
 import { pickLocale } from '@/lib/i18n';
+import { groupCreatorPro } from '@/lib/swap-pro';
 import { normalizeCode } from '@/lib/refcode';
 import { loadGroup as loadGroupById, publicGroup } from '@/lib/swap-groups';
 import { GroupView } from '@/components/swap/GroupView';
@@ -37,5 +38,7 @@ export default async function GroupSwapPage({ params, searchParams }: Params & S
   if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
-  return <GroupView locale={locale} initial={publicGroup(rec, null)} invite={invite} />;
+  // Who pays whom shows only when the group's creator has Pro; otherwise just the results.
+  const accounts = await groupCreatorPro(id);
+  return <GroupView locale={locale} initial={publicGroup(rec, null)} accounts={accounts} invite={invite} />;
 }

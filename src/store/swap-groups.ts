@@ -46,6 +46,8 @@ export interface RemoteGroup {
   entries: GroupEntry[];
   you: number | null;
   updatedAt: string;
+  /** Only to a player in it: the creator has Pro, so the accounts are open to everyone. */
+  accounts?: boolean;
 }
 
 /** The phone's copy. */
@@ -65,6 +67,10 @@ export interface SwapGroup {
   links?: Record<string, string>;
   /** This phone only: send my result when a tournament of this group ends, without asking. */
   autoShare?: boolean;
+  /** The creator has Pro (from the server): who pays whom is open to everyone, Pro or not. */
+  accounts?: boolean;
+  /** Seat 0 only: the RevenueCat id last sent as the creator's, to send it again when it changes. */
+  ownerRc?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -165,6 +171,7 @@ export function mergeRemoteGroup(local: SwapGroup, remote: RemoteGroup, now = Da
     terms: remote.terms,
     seats: remote.seats.map((s) => ({ seat: s.seat, name: s.name, confirmedAt: s.confirmedAt ? Date.parse(s.confirmedAt) : undefined })),
     entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
+    accounts: remote.accounts ?? local.accounts,
     gone: false,
     syncedAt: now,
     updatedAt: now,

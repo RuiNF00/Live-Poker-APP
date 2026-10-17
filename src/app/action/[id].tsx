@@ -181,6 +181,7 @@ export default function ActionPackageScreen() {
     // The first backer: offer the reminder that closes the accounts after each event (only asks once allowed or refused).
     if (!o.lines.length)
       void askNotify({
+        where: 'staking',
         title: t('Avisamos-te no dia a seguir a cada torneio para fechares as contas'),
         preview: { title: t('Acerto com {name}', { name: r.backer.name }), body: t('O torneio acabou. Regista o resultado para fechar as contas.') },
       });
@@ -281,9 +282,20 @@ export default function ActionPackageScreen() {
                   <Button size="md" kind="secondary" title={t('Não joguei')} onPress={() => notPlayed(e)} />
                 </Card>
               ))}
-              {settled.map(({ l, st }) => (
-                <SettleCard key={l.id} name={nameOf(l)} st={st} cur={f.currency} onOpen={() => router.push(`/staking/${l.backerId}`)} onSend={() => void sendSettlement(l, st)} />
-              ))}
+              {/* Settling up is Pro (PRO_ONLY.staking): the "Não jogaste?" answers stay free. */}
+              {!settled.length ? null : pro.isPro ? (
+                settled.map(({ l, st }) => (
+                  <SettleCard key={l.id} name={nameOf(l)} st={st} cur={f.currency} onOpen={() => router.push(`/staking/${l.backerId}`)} onSend={() => void sendSettlement(l, st)} />
+                ))
+              ) : (
+                <Card onPress={() => pro.paywall('staking')} accessibilityLabel={t('Ver contas')} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                  <Ionicons name="lock-closed" size={20} color={C.accent} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T v="h3">{t('Ver contas')}</T>
+                    <T v="small">{t('Quanto acertas com cada backer, já calculado. Com o Pro.')}</T>
+                  </View>
+                </Card>
+              )}
             </View>
           </Section>
         ) : null}

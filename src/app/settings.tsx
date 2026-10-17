@@ -19,6 +19,7 @@ import { Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Ro
 import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
+import { openStoreReviewPage } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
@@ -234,13 +235,17 @@ export default function SettingsScreen() {
 
         <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
           <ListGroup>
-            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => mailSupport('suggestion')} />
+            <ListItem icon="chatbubble-ellipses-outline" title={t('Enviar feedback')} subtitle={t('O que corre mal, o que falta ou o que mudavas')} onPress={() => mailSupport('suggestion')} />
             <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => mailSupport('bug')} />
             <ListItem icon="book-outline" title={t('Ajuda')} subtitle={t('Respostas às dúvidas mais comuns')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/${HELP_PATH[variant]}`)} />
             <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => mailSupport('support')} />
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
+            {Platform.OS !== 'web' ? (
+              // The store's own page, never the in-app prompt: a button must always do something.
+              <ListItem icon="star-outline" title={t('Avaliar a Sweatbook')} subtitle={t('Na {store}', { store: Platform.OS === 'ios' ? 'App Store' : 'Google Play' })} onPress={() => openStoreReviewPage()} />
+            ) : null}
           </ListGroup>
         </Section>
 

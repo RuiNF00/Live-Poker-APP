@@ -33,13 +33,15 @@ async function call(path: string, init: RequestInit & { token?: string } = {}): 
     ...rest,
     headers: { 'content-type': 'application/json', ...(token ? { 'x-edit-token': token } : {}) },
   });
-  const j = (await res.json().catch(() => ({}))) as { swap?: RemoteSwap; token?: string; id?: string; error?: string };
+  const j = (await res.json().catch(() => ({}))) as { swap?: RemoteSwap; token?: string; id?: string; error?: string; accounts?: boolean };
   if (!res.ok) throw new SwapError(j.error ?? 'http_' + res.status, res.status);
+  if (j.swap && typeof j.accounts === 'boolean') j.swap = { ...j.swap, accounts: j.accounts };
   return j;
 }
 
-export async function createSwap(terms: SwapTerms): Promise<{ swap: RemoteSwap; token: string }> {
-  const j = await call('', { method: 'POST', body: JSON.stringify({ terms }) });
+/** `rcUserId`: my RevenueCat id, so the swap's accounts follow my Pro for both players. */
+export async function createSwap(terms: SwapTerms, rcUserId?: string): Promise<{ swap: RemoteSwap; token: string }> {
+  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, rcUserId }) });
   if (!j.swap || !j.token) throw new SwapError('bad_response', 500);
   return { swap: j.swap, token: j.token };
 }
@@ -70,6 +72,11 @@ export async function removeSwapEntry(id: string, token: string, entryId: string
   const j = await call(`/${encodeURIComponent(id)}/entries/${encodeURIComponent(entryId)}`, { method: 'DELETE', token });
   if (!j.swap) throw new SwapError('bad_response', 500);
   return j.swap;
+}
+
+/** The creator's RevenueCat id changed (a reinstall or a restore): the new one replaces it. */
+export async function setSwapOwnerRc(id: string, token: string, rcUserId: string): Promise<void> {
+  await call(`/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: JSON.stringify({ rcUserId }) });
 }
 
 /** `leave` ("Delete all my data"): only my side goes; the other player keeps a read-only record. */
