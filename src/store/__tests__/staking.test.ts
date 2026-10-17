@@ -188,6 +188,15 @@ test("backers in different currencies add up in the home one at today's rate, or
   assert.deepEqual(split.split?.map((x) => x.currency).sort(), ['$', '€']);
 });
 
+test('a balance in cents still counts: 0,40 owed is not settled, half a cent of rounding is', () => {
+  const owe = { ...backerLedger('x', [], [], []), currency: '€', balance: 0.4 };
+  const dust = { ...backerLedger('y', [], [], []), currency: '€', balance: -0.004 };
+  const tot = stakingTotals([owe, dust], '€', {}, {});
+  assert.equal(tot.oweTo, 1);
+  assert.equal(tot.owedBy, 0);
+  assert.equal(Math.round(tot.owe * 100), 40);
+});
+
 test('closing with makeup: forgive it, or carry it to a new package where it is won back first', () => {
   const p = pkg();
   const stake = { backerId: 'b1', packageId: 'p1', share: 100, markup: 1 };

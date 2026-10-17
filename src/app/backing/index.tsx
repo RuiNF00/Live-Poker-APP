@@ -37,19 +37,19 @@ export default function BackingScreen() {
             {[...totals.entries()].map(([cur, x]) => {
               const net = x.owed - x.owe;
               const lab = backedLabel(net, cur);
-              const extra = [x.makeup >= 0.5 ? t('makeup {amount}', { amount: money(x.makeup, cur) }) : '', x.live ? (x.live === 1 ? t('1 sessão a decorrer') : t('{n} sessões a decorrer', { n: x.live })) : '']
+              const extra = [x.makeup >= 0.01 ? t('makeup {amount}', { amount: money(x.makeup, cur) }) : '', x.live ? (x.live === 1 ? t('1 sessão a decorrer') : t('{n} sessões a decorrer', { n: x.live })) : '']
                 .filter(Boolean)
                 .join(' · ');
               return (
                 <Card key={cur} tone="raised" style={{ gap: S.xs, paddingVertical: S.xl }}>
-                  <T v="label">{Math.abs(net) < 0.5 ? t('Estás acertado com os jogadores') : net > 0 ? t('No total, os jogadores devem-te') : t('No total, deves aos jogadores')}</T>
-                  {Math.abs(net) < 0.5 ? null : (
+                  <T v="label">{Math.abs(net) < 0.01 ? t('Estás acertado com os jogadores') : net > 0 ? t('No total, os jogadores devem-te') : t('No total, deves aos jogadores')}</T>
+                  {Math.abs(net) < 0.01 ? null : (
                     <T v="monoXL" color={lab.color} numberOfLines={1} adjustsFontSizeToFit>
                       {money(Math.abs(net), cur)}
                     </T>
                   )}
                   {extra ? (
-                    <T v="small" color={x.makeup >= 0.5 ? C.warn : undefined}>
+                    <T v="small" color={x.makeup >= 0.01 ? C.warn : undefined}>
                       {extra}
                     </T>
                   ) : null}
@@ -100,15 +100,15 @@ export default function BackingScreen() {
                       key={st.id}
                       left={<Avatar name={st.pl || '?'} />}
                       title={st.pl || t('Jogador')}
-                      accessibilityLabel={[st.pl || t('Jogador'), lab.text, st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), unpaid >= 0.5 ? t('Ainda não pagaste {amount}', { amount: money(unpaid, st.cur) }) : ''].filter(Boolean).join(', ')}
+                      accessibilityLabel={[st.pl || t('Jogador'), lab.text, st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), unpaid >= 0.01 ? t('Ainda não pagaste {amount}', { amount: money(unpaid, st.cur) }) : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
                           <T v="small" numberOfLines={1}>
-                            {[st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), open ? t('{n} em aberto', { n: open }) : '', st.mk >= 0.5 ? t('makeup {amount}', { amount: money(st.mk, st.cur) }) : '']
+                            {[st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), open ? t('{n} em aberto', { n: open }) : '', st.mk >= 0.01 ? t('makeup {amount}', { amount: money(st.mk, st.cur) }) : '']
                               .filter(Boolean)
                               .join(' · ')}
                           </T>
-                          {unpaid >= 0.5 ? (
+                          {unpaid >= 0.01 ? (
                             <T v="tiny" numberOfLines={1}>
                               {t('Ainda não pagaste {amount}', { amount: money(unpaid, st.cur) })}
                             </T>

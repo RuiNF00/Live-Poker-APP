@@ -132,7 +132,7 @@ function nextName(name: string): string {
 /** `currency`: what `makeup` is in (the package state's), so the new package counts it in the same one. */
 export function closePackage(p: StakePackage, makeup: number, carry: boolean, newId: string, now = Date.now(), currency?: string): { closed: StakePackage; next: StakePackage | null } {
   const closed = { ...p, closedAt: now };
-  if (!carry || p.kind !== 'makeup' || makeup < 0.5) return { closed, next: null };
+  if (!carry || p.kind !== 'makeup' || makeup < 0.01) return { closed, next: null };
   const next: StakePackage = {
     id: newId,
     backerId: p.backerId,
@@ -360,10 +360,10 @@ export function stakingTotals(ledgers: BackerLedger[], home: string, table: Rate
     acc.owe += Math.max(0, l.balance);
     acc.owed += Math.max(0, -l.balance);
     per.set(c, acc);
-    if (l.balance >= 0.5) oweTo++;
-    if (l.balance <= -0.5) owedBy++;
+    if (l.balance >= 0.01) oweTo++;
+    if (l.balance <= -0.01) owedBy++;
   }
-  const byCurrency = [...per.entries()].map(([currency, acc]) => ({ currency, ...acc })).filter((x) => x.owe >= 0.5 || x.owed >= 0.5);
+  const byCurrency = [...per.entries()].map(([currency, acc]) => ({ currency, ...acc })).filter((x) => x.owe >= 0.01 || x.owed >= 0.01);
   const cur = byCurrency.length === 1 ? byCurrency[0].currency : home;
   let owe = 0;
   let owed = 0;

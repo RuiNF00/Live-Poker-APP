@@ -71,7 +71,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
       </main>
     );
 
-  const square = Math.abs(st.bal) < 0.5;
+  const square = Math.abs(st.bal) < 0.01;
   // At the top: the session being played now, else the next event they have a piece of.
   const now = st.rows.find((r) => !r.e);
   const owed = money(Math.abs(st.bal), st.cur);
@@ -131,7 +131,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
       <section className="live-grid">
         <Tile label={c.invested} value={money(st.inv, st.cur)} />
         <Tile label={c.result} value={(st.res > 0 ? '+' : '') + money(st.res, st.cur)} tone={st.res > 0 ? 'up' : st.res < 0 ? 'down' : undefined} />
-        {st.mk >= 0.5 ? <Tile label={c.makeup} value={money(st.mk, st.cur)} tone="warn" /> : null}
+        {st.mk >= 0.01 ? <Tile label={c.makeup} value={money(st.mk, st.cur)} tone="warn" /> : null}
       </section>
 
       {st.yr ? (
@@ -146,7 +146,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
                   <p className="bk-name">{row.n || c.outside}</p>
                   <p className="bk-sub">
                     {c.yearSub(row.s, money(row.c, st.cur), money(row.o, st.cur))}
-                    {row.mk >= 0.5 ? <span className="bk-pill bk-warn">{`${c.makeup} ${money(row.mk, st.cur)}`}</span> : null}
+                    {row.mk >= 0.01 ? <span className="bk-pill bk-warn">{`${c.makeup} ${money(row.mk, st.cur)}`}</span> : null}
                   </p>
                 </div>
                 <div className="bk-right">

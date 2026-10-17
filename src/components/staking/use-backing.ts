@@ -51,7 +51,7 @@ export function useLiveSnapshots(ids: string[]): Map<string, LiveSnapshot> {
 
 /** From the backer's side: positive balance means the player owes you. */
 export function backedLabel(bal: number, cur: string): { text: string; short: string; color: string } {
-  if (Math.abs(bal) < 0.5) return { text: t('Acertado'), short: '', color: C.muted };
+  if (Math.abs(bal) < 0.01) return { text: t('Acertado'), short: '', color: C.muted };
   return bal > 0
     ? { text: t('Deve-te {amount}', { amount: money(bal, cur) }), short: t('deve-te'), color: C.good }
     : { text: t('Deves {amount}', { amount: money(-bal, cur) }), short: t('deves'), color: C.warn };
