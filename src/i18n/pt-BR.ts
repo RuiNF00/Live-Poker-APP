@@ -1237,6 +1237,10 @@ const ptBR: Record<string, string> = {
   '{c}/{n} nos prémios': '{c}/{n} nos prêmios',
   'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'Registro minhas mãos e sessões ao vivo com o Sweatbook: {link}',
   'Combina com o backer o que acontece ao makeup quando o pacote fecha.': 'Combine com o backer o que acontece com o makeup quando o pacote fecha.',
+  'Se cobrares {prize}, pagas {each} a cada um ({total} no total).': 'Se você cobrar {prize}, paga {each} a cada um ({total} no total).',
+  'Se outro do grupo cobrar {prize}, recebes {each}.': 'Se outro do grupo cobrar {prize}, você recebe {each}.',
+  'Grupo de {n}: não deves nada': 'Grupo de {n}: você não deve nada',
+  'Deves ao grupo': 'Você deve ao grupo',
 };
 
 export default ptBR;
