@@ -3086,6 +3086,7 @@ const en: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} so far: {amount} in {h} h',
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
+  'Próxima mão': 'Next hand',
 };
 
 export default en;
