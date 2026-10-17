@@ -1265,6 +1265,15 @@ const ptBR: Record<string, string> = {
   '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h em {n} sessões. O resumo do seu ano está pronto.',
   '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h em {n} sessões, {amount}. O resumo do seu ano está pronto.',
   'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'Sem tempo? Posição e cartas já bastam: toque em «Salvar agora» e complete depois.',
+  'Quando o coach comenta as tuas mãos': 'Quando o coach comenta suas mãos',
+  'No dia 1, se jogaste nesse mês': 'No dia 1, se você jogou naquele mês',
+  'Lembretes para registar': 'Lembretes para registrar',
+  'Se passares uns dias sem registar': 'Se passar uns dias sem registrar',
+  'Notificações desligadas no telemóvel': 'Notificações desativadas no celular',
+  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Ative nas configurações do sistema para receber os avisos que escolher aqui.',
+  'Abrir definições': 'Abrir configurações',
+  'Aparecem no ecrã bloqueado.': 'Aparecem na tela de bloqueio.',
+  'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Você pode escolher quais nas Configurações da Sweatbook.',
 };
 
 export default ptBR;

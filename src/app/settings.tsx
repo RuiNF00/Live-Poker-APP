@@ -25,6 +25,7 @@ import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
 import { DataRecovery } from '@/components/DataRecovery';
+import { NotificationSettings } from '@/components/NotificationSettings';
 
 
 function note(title: string, body?: string) {
@@ -183,6 +184,8 @@ export default function SettingsScreen() {
             {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>
+
+        <NotificationSettings />
 
         <Section title={t('Cópia de segurança')} hint={t('Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.')}>
           <CloudBackup />

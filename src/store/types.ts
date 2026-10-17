@@ -332,6 +332,10 @@ export interface Settings {
   /** The year notice: the last year it went out, and when the pending one is scheduled. `monthRecap: false` turns it off too. */
   yearRecapSent?: number;
   yearRecapAt?: number;
+  /** Settings › Notificações: a kind turned off (lib/notify-policy). Missing = on. */
+  notify?: Partial<Record<import('@/lib/notify-policy').NotifyKind, boolean>>;
+  /** Hold what isn't the session's until the session ends or pauses. Missing = yes. */
+  notifyHoldInSession?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
