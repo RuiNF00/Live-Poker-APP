@@ -10,7 +10,7 @@ import type { CurrencyReport, Report } from './report';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
-const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 const hours = (h: number) => h.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + money(Math.round(n * 100) / 100, cur);
 const cls = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
@@ -67,13 +67,13 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const split =
     c.cash.sessions && c.mtt.sessions
       ? `<p class="muted">${esc(
-          t('Cash: {n} sessões, {h} h, {p}. Torneios: {m} entradas, {b} em buy-ins, {c} prémios, {q}.', {
-            n: c.cash.sessions,
+          t('Cash: {n}, {h} h, {p}. Torneios: {m}, {b} em buy-ins, {c}, {q}.', {
+            n: c.cash.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: c.cash.sessions }),
             h: hours(c.cash.hours),
             p: signed(c.cash.profit, cur),
-            m: c.mtt.sessions,
+            m: c.mtt.sessions === 1 ? t('1 entrada') : t('{n} entradas', { n: c.mtt.sessions }),
             b: money(Math.round(c.mtt.buyIns), cur),
-            c: c.mtt.cashes,
+            c: c.mtt.cashes === 1 ? t('1 prémio') : t('{n} prémios', { n: c.mtt.cashes }),
             q: signed(c.mtt.profit, cur),
           }),
         )}</p>`
