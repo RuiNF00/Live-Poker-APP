@@ -27,10 +27,13 @@ function trim(n: number, digits: number) {
 }
 
 /** 950 → "950", 12500 → "12.5k", 1250000 → "1.25M". */
+const hasCents = (a: number) => Math.abs(a - Math.round(a)) > 1e-9;
+
 export function chips(n: number): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10000) return sign + numFmt().format(Math.round(a)).replace(/\s/g, ' ');
+  // Cent games (0,25/0,50): a chop of 1,25 pays 0,63 and 0,62, not "1" and "1".
+  if (a < 10000) return sign + (hasCents(a) ? numFmt(2).format(a) : numFmt().format(Math.round(a))).replace(/\s/g, ' ');
   if (a < 1e6) return sign + trim(a / 1000, a < 100000 ? 1 : 0) + 'k';
   return sign + trim(a / 1e6, 2) + 'M';
 }

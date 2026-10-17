@@ -9,10 +9,14 @@ export type AmountMode = 'chips' | 'bb';
  */
 const NUMBER_TAG: Record<Locale, string> = { pt: 'pt-PT', 'pt-BR': 'pt-BR', en: 'en-US', es: 'es-ES' };
 
+const hasCents = (a: number) => Math.abs(a - Math.round(a)) > 1e-9;
+
 export function formatChips(n: number, locale: Locale = 'pt'): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10_000) return sign + Math.round(a).toLocaleString(NUMBER_TAG[locale] ?? 'en-US').replace(/\s/g, ' ');
+  // Cent games (0.25/0.50): a chop of 1.25 pays 0.63 and 0.62, not "1" and "1".
+  const tag = NUMBER_TAG[locale] ?? 'en-US';
+  if (a < 10_000) return sign + (hasCents(a) ? a.toLocaleString(tag, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(a).toLocaleString(tag)).replace(/\s/g, ' ');
   if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0) + 'k';
   return sign + fixed(a / 1_000_000, 2) + 'M';
 }
