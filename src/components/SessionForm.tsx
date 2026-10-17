@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
@@ -50,6 +50,7 @@ export function SessionForm({
   onSubmit,
   submitLabel,
   bankrolls = [],
+  submitRef,
 }: {
   initial: Session;
   past?: boolean;
@@ -59,6 +60,8 @@ export function SessionForm({
   recentVenues: string[];
   onSubmit: (s: Session) => void;
   submitLabel: string;
+  /** The caller draws the submit button (a bar pinned above the tab bar) and calls this; the form then leaves it out. */
+  submitRef?: React.RefObject<(() => void) | null>;
 }) {
   const [s, setS] = useState<Session>(initial);
   const initHours = initial.endedAt ? Math.max(1, Math.round(playedMs(initial) / 3600000)) : 4;
@@ -71,6 +74,18 @@ export function SessionForm({
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
   const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId });
   const online = s.format === 'online';
+  const submit = () => {
+    if (past) {
+      // Unchanged date and duration keep the original times (and breaks).
+      if (initial.endedAt && day === initDay && hours === initHours) return onSubmit(s);
+      const today = dayStart(Date.now());
+      const end = day >= today ? Date.now() : day + 23 * 3600000;
+      onSubmit({ ...s, startedAt: end - hours * 3600000, endedAt: end, breaks: [], stackLog: [] });
+    } else onSubmit({ ...s, startedAt: Date.now(), stackLog: [{ t: Date.now(), stack: s.stack, level: s.level }] });
+  };
+  useEffect(() => {
+    if (submitRef) submitRef.current = submit;
+  });
   return (
     <View style={{ gap: S.lg }}>
       <Segmented
@@ -188,19 +203,7 @@ export function SessionForm({
         </>
       )}
       <StakeFields s={s} onChange={set} expenses={!!past} />
-      <Button
-        title={submitLabel}
-        icon={past ? 'checkmark' : 'play'}
-        onPress={() => {
-          if (past) {
-            // Unchanged date and duration keep the original times (and breaks).
-            if (initial.endedAt && day === initDay && hours === initHours) return onSubmit(s);
-            const today = dayStart(Date.now());
-            const end = day >= today ? Date.now() : day + 23 * 3600000;
-            onSubmit({ ...s, startedAt: end - hours * 3600000, endedAt: end, breaks: [], stackLog: [] });
-          } else onSubmit({ ...s, startedAt: Date.now(), stackLog: [{ t: Date.now(), stack: s.stack, level: s.level }] });
-        }}
-      />
+      {submitRef ? null : <Button title={submitLabel} icon={past ? 'checkmark' : 'play'} onPress={submit} />}
     </View>
   );
 }
