@@ -2952,6 +2952,8 @@ const en: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'It has the dates, venues and results in it. Nothing else from your Sweatbook goes with it. You send it yourself, from your email app.',
   'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
   'Abrir o email': 'Open email',
+  'Torneios mais caros': 'Pricier tournaments',
+  'Torneios mais baratos': 'Cheaper tournaments',
   'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
   'o que fazias aqui? 👀': 'what would you do here? 👀',
   'Desenha a range do vilão': 'Draw villain\'s range',
@@ -3027,8 +3029,6 @@ const en: Record<string, string> = {
   'Ao comentar aceitas os': 'By commenting you accept the',
   'Próximo: {name}': 'Next: {name}',
   'Voos, hotel e resultado líquido': 'Flights, hotel and net result',
-  'Torneios mais caros': 'Pricier tournaments',
-  'Torneios mais baratos': 'Cheaper tournaments',
 };
 
 export default en;

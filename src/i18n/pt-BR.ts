@@ -1340,6 +1340,8 @@ const ptBR: Record<string, string> = {
   'Só vai este ficheiro': 'Só vai este arquivo',
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
+  'Torneios mais caros': 'Torneios mais caros',
+  'Torneios mais baratos': 'Torneios mais baratos',
   'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
   'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
   'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Escolha as mãos dele na grade e veja sua equity contra elas.',
@@ -1394,8 +1396,6 @@ const ptBR: Record<string, string> = {
   'Estoril, maio 2027': 'Estoril, maio de 2027',
   'Las Vegas, verão 2027': 'Las Vegas, verão de 2027',
   'Ao comentar aceitas os': 'Ao comentar, você aceita os',
-  'Torneios mais caros': 'Torneios mais caros',
-  'Torneios mais baratos': 'Torneios mais baratos',
 };
 
 export default ptBR;
