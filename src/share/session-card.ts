@@ -84,7 +84,8 @@ export function stackStats(s: Session, now = Date.now()): CardStat[] {
     { key: 'day', label: t('Dia'), value: String(dayOf(s)) },
     !bagged && s.bb ? { key: 'bb', label: 'BB', value: bbs(stack, s.bb) } : null,
     !bagged && s.level ? { key: 'level', label: t('Nível'), value: String(s.level) } : null,
-    ms > 60_000 ? { key: 'hours', label: t('A jogar'), value: duration(ms) } : null,
+    // A bagged day is over: the time is what was played, not a clock still running.
+    ms > 60_000 ? { key: 'hours', label: bagged ? t('Jogado') : t('A jogar'), value: duration(ms) } : null,
   ];
   return all.filter((x): x is CardStat => !!x).slice(0, 3);
 }

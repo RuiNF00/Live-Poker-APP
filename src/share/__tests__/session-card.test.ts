@@ -60,6 +60,7 @@ test('stack card: chips, day and bb while playing; the bag once the day is over;
   assert.equal(stackStats(live, now)[0].value, '85k');
   const bagged = mk({ stack: 91000, day: 1, bag: { stack: 91000, at: 4 * H } });
   assert.deepEqual(stackStats(bagged, 5 * H).map((x) => x.key), ['stack', 'day', 'hours']);
+  assert.equal(stackStats(bagged, 5 * H)[2].label, 'Jogado');
   const text = stackPostText(bagged);
   assert.ok(text.includes('Main') && text.includes('91k'));
   assert.ok(!text.includes('€') && !text.includes('Estoril'));

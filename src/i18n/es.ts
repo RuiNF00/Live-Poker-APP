@@ -819,6 +819,7 @@ const es: Record<string, string> = {
   'Relógio, stack e blinds num só sítio.': 'Reloj, stack y ciegas en un solo lugar.',
   'Cada mão que registares já vem com o torneio, as blinds e o teu stack.': 'Cada mano que registres ya viene con el torneo, las ciegas y tu stack.',
   'Em pausa': 'En pausa',
+  'Jogado': 'Jugado',
   'A jogar': 'Jugando',
   'Começou às {time} · {n}': 'Empezó a las {time} · {n}',
   'Atualizar stack': 'Actualizar stack',
