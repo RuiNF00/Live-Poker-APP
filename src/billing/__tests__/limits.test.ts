@@ -80,6 +80,15 @@ test('derived prices keep the store currency', async () => {
   assert.match(formatPrice(359.88, 'USD', 'en-GB'), /US\$359\.88|\$359\.88/);
 });
 
+test('per-month price is written like the store price next to it', async () => {
+  const { priceLike } = await import('../plans');
+  assert.equal(priceLike('$199.99', 16.67, 'USD', 'en-GB'), '$16.67');
+  assert.equal(priceLike('199,99\u00a0US$', 16.67, 'USD', 'pt-PT'), '16,67\u00a0US$');
+  assert.equal(priceLike('R$ 1.099,90', 91.66, 'BRL', 'pt-BR'), 'R$ 91,66');
+  assert.equal(priceLike('¥30,000', 2500, 'JPY', 'ja-JP'), '¥2500');
+  assert.match(priceLike('free', 16.67, 'EUR', 'pt-PT'), /16,67\s€/);
+});
+
 test('turning the clock back does not free up today\'s hands', () => {
   const full = [day(20), day(20, 1), day(20, 2)].map((t) => ({ kind: 'hand' as const, t }));
   // Same day, clock set back to the morning.

@@ -312,6 +312,20 @@ export function formatPrice(n: number, currency: string, locale: string): string
   }
 }
 
+/**
+ * A derived amount (the annual plan per month) written exactly like the store's own price
+ * string: same symbol, side and decimal mark. Two prices on one screen never disagree
+ * ("$199.99" next to "US$16.67"). Falls back to Intl when the string has no number.
+ */
+export function priceLike(priceString: string, n: number, currency: string, locale: string): string {
+  const num = priceString.match(/\d(?:[\d.,\s\u00a0\u202f']*\d)?/)?.[0];
+  if (!num) return formatPrice(n, currency, locale);
+  const dec = /[.,](\d{1,2})$/.exec(num);
+  const digits = dec ? dec[1].length : 0;
+  const amount = n.toFixed(digits);
+  return priceString.replace(num, dec && num[num.length - digits - 1] === ',' ? amount.replace('.', ',') : amount);
+}
+
 export function annualSavingPct(monthly: number, annual: number): number {
   return Math.round((1 - annual / (monthly * 12)) * 100);
 }

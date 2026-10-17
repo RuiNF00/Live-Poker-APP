@@ -6,7 +6,7 @@ import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
-import { annualSavingPct, formatPrice, perMonth, RETENTION } from '@/billing/plans';
+import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } from '@/billing/purchases';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
@@ -175,7 +175,7 @@ export default function Cancel() {
                   {toAnnual ? (
                     <OfferCard
                       icon="calendar"
-                      title={t('Anual: {price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
+                      title={t('Anual: {price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
                       body={t('{price} por ano, −{pct}% face ao mensal.', { price: annual.priceString, pct: monthly ? annualSavingPct(monthly.price, annual.price) : 0 })}>
                       <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual'), 'annual')} />
                     </OfferCard>
