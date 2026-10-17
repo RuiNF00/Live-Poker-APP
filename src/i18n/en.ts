@@ -2752,6 +2752,11 @@ const en: Record<string, string> = {
   '{n} dias de jogo': '{n} days played',
   'Resultado: {v}': 'Result: {v}',
   'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'I log my live hands and sessions with Sweatbook: {link}',
+  // Reporting one comment
+  'Denunciar': 'Report',
+  'Denunciado. Obrigado.': 'Reported. Thank you.',
+  'Denunciar comentário de': 'Report comment by',
+  'Comentário denunciado': 'Comment reported',
 };
 
 export default en;
