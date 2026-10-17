@@ -51,7 +51,7 @@ function group(list: Session[], key: (s: Session) => string): Breakdown[] {
   for (const s of list) {
     const k = key(s);
     if (!k) continue;
-    const b = m.get(k) ?? { key: k, sessions: 0, profit: 0, hours: 0, hourly: 0 };
+    const b = m.get(k) ?? { key: k, sessions: 0, profit: 0, hours: 0, hourly: 0, mtts: 0, roi: null };
     b.sessions++;
     b.profit += profit(s);
     b.hours += playedMs(s) / 3600000;
