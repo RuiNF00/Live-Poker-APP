@@ -234,6 +234,50 @@ export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, s
 
 export type LineSettlement = ReturnType<typeof lineSettlement>;
 
+/** "Acerto com {backer}": when to remind the player to answer for an event with no session. */
+export interface SettleReminder {
+  offerId: string;
+  eventId: string;
+  at: number;
+}
+
+/** Local 13:00 (device time) on or after `t`: outside the quiet hours (23:00-12:00). */
+function nextOnePm(t: number): number {
+  const d = new Date(t);
+  d.setHours(13, 0, 0, 0);
+  if (d.getTime() < t) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+/**
+ * The settlement reminders to schedule: per package, the next event with no
+ * session and no answer, at 13:00 once it can be asked about (an overdue one
+ * not reminded yet: the next 13:00). `sent` holds when each was scheduled
+ * (`offerId:eventId`): one gone by is never repeated. One a day at most.
+ */
+export function settleReminders(
+  items: { f: Festival; o: ActionOffer; started: Record<string, string> }[],
+  now = Date.now(),
+  sent: Record<string, number> = {},
+): SettleReminder[] {
+  const next: SettleReminder[] = [];
+  for (const { f, o, started } of items) {
+    if (!o.lines.length) continue;
+    const e = offerEvents(f, o).find((x) => !started[x.id] && !o.skipped?.includes(x.id) && !(sent[`${o.id}:${x.id}`] <= now));
+    if (e) next.push({ offerId: o.id, eventId: e.id, at: nextOnePm(Math.max(venueTime(f, e.start) + ASK_AFTER, now)) });
+  }
+  const days = new Set<string>();
+  return next
+    .sort((a, b) => a.at - b.at)
+    .filter((r) => {
+      const d = new Date(r.at);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (days.has(key)) return false;
+      days.add(key);
+      return true;
+    });
+}
+
 /** Packages these offers created: their stakes on a session are replaced, the rest kept. */
 export function offerPackageIds(offers: ActionOffer[]): Set<string> {
   return new Set(offers.flatMap((o) => o.lines.map((l) => l.packageId)));

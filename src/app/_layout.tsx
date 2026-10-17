@@ -19,6 +19,7 @@ import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
+import { SettleReminder } from '@/components/staking/SettleReminder';
 import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { Button, Empty } from '@/components/ui';
@@ -77,6 +78,7 @@ export default function RootLayout() {
           <SessionLockScreen />
           <HomeWidgetSync />
           <SwapReminder />
+          <SettleReminder />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },

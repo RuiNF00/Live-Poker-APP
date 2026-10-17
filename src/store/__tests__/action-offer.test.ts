@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
+import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, settleReminders, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import type { Session } from '../types';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
@@ -126,4 +126,28 @@ test("festival settlement: the backer's prizes, less a piece not paid, plus refu
   // A session still running.
   const c = lineSettlement(F, o, line, { '2': 's1' }, [session('s1', null, stake(false))], BEFORE);
   assert.deepEqual([c.live, c.upcoming, c.net], [1, 1, -9120]);
+});
+
+test('settlement reminders: the next unanswered event per package at 13:00, one a day at most', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 };
+  const o = pkg([line]);
+  const r = settleReminders([{ f: F, o, started: {} }], BEFORE);
+  assert.equal(r.length, 1);
+  assert.equal(r[0].eventId, '2');
+  const at = new Date(r[0].at);
+  assert.deepEqual([at.getHours(), at.getMinutes()], [13, 0]);
+  // A day after event 2's start at the earliest.
+  assert.ok(r[0].at >= venueTime(F, offerEvents(F, o)[0].start) + 24 * 3600e3);
+  // Event 2 played: event 3 is next. Answered, or no backers: nothing.
+  assert.equal(settleReminders([{ f: F, o, started: { '2': 's1' } }], BEFORE)[0].eventId, '3');
+  assert.deepEqual(settleReminders([{ f: F, o: { ...o, skipped: ['2', '3'] }, started: {} }], BEFORE), []);
+  assert.deepEqual(settleReminders([{ f: F, o: pkg([]), started: {} }], BEFORE), []);
+  // Two packages due the same day: one reminder.
+  assert.equal(settleReminders([{ f: F, o, started: {} }, { f: F, o: { ...o, id: 'o2' }, started: {} }], BEFORE).length, 1);
+  // Overdue and never reminded: the next 13:00. Once reminded and gone by: not repeated.
+  const late = settleReminders([{ f: F, o, started: {} }], AFTER);
+  assert.equal(late[0].eventId, '2');
+  assert.ok(late[0].at > AFTER && late[0].at - AFTER <= 24 * 3600e3);
+  const sent = { 'o1:2': AFTER - 1, 'o1:3': AFTER - 1 };
+  assert.deepEqual(settleReminders([{ f: F, o, started: {} }], AFTER, sent), []);
 });

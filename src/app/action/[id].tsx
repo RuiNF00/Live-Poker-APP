@@ -11,6 +11,7 @@ import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { Sheet } from '@/components/BankrollSheets';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { markupLabel } from '@/components/staking/sheets';
 import { balanceLabel } from '@/components/staking/use-staking';
@@ -61,6 +62,7 @@ export default function ActionPackageScreen() {
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [logging, setLogging] = useState<FestivalEvent | null>(null);
+  const [softAsk, askNotify] = useNotifySoftAsk();
 
   // Confirmations come from the links: check the ones still waiting whenever the screen shows.
   const waiting = (o?.lines ?? []).filter((l) => l.remote && !l.confirmedAt).map((l) => `${l.id}:${l.remote!.id}`).join(',');
@@ -176,6 +178,12 @@ export default function ActionPackageScreen() {
     updateOffer(o.id, (x) => ({ ...x, lines: [...x.lines, r.line] }));
     applyToSessions(before);
     setAdding(false);
+    // The first backer: offer the reminder that closes the accounts after each event (only asks once allowed or refused).
+    if (!o.lines.length)
+      void askNotify({
+        title: t('Avisamos-te no dia a seguir a cada torneio para fechares as contas'),
+        preview: { title: t('Acerto com {name}', { name: r.backer.name }), body: t('O torneio acabou. Regista o resultado para fechar as contas.') },
+      });
   };
 
   const removeLine = (l: PackageLine) => {
@@ -384,6 +392,7 @@ export default function ActionPackageScreen() {
         </T>
       </Screen>
 
+      {softAsk}
       <Sheet visible={!!logging} title={t('Sessão passada')} onClose={() => setLogging(null)}>
         {logging ? (
           <SessionForm

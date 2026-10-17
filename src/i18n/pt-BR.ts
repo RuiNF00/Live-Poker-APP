@@ -1043,6 +1043,8 @@ const ptBR: Record<string, string> = {
   'à espera': 'esperando',
   '{n} à espera de resposta': '{n} esperando resposta',
   'Vendida a 1 backer por {price}. Pões {out} do teu bolso.': 'Vendida a 1 backer por {price}. Você coloca {out} do seu bolso.',
+  'Avisamos-te no dia a seguir a cada torneio para fechares as contas': 'Avisamos você no dia seguinte a cada torneio para fechar as contas',
+  'O torneio acabou. Regista o resultado para fechar as contas.': 'O torneio acabou. Registre o resultado para fechar as contas.',
 };
 
 export default ptBR;

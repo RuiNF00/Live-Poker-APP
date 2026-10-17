@@ -2421,6 +2421,11 @@ const en: Record<string, string> = {
   'à espera': 'waiting',
   '{n} à espera de resposta': '{n} waiting for your answer',
   'Vendida a 1 backer por {price}. Pões {out} do teu bolso.': 'Sold to 1 backer for {price}. You put in {out} yourself.',
+  'Acerto com {name}': 'Settle up with {name}',
+  'Avisamos-te no dia a seguir a cada torneio para fechares as contas': "We'll remind you the day after each event to close the accounts",
+  'O torneio acabou. Regista o resultado para fechar as contas.': 'The event is over. Log the result to close the accounts.',
+  'Acerto: {title}': 'Settle up: {title}',
+  'Swaps e staking': 'Swaps and staking',
 };
 
 export default en;
