@@ -72,6 +72,8 @@ export const PRO_ONLY = {
   insights: true,
   /** "É normal?" on Downswings: the read on the player's own variance. The downswing numbers and chart stay free. */
   downswingRead: true,
+  /** Win rate by game, stake, venue and weekday, and how many hours until it is known. The headline win rate stays free. */
+  winrateDetail: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -123,6 +125,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   downswingRead: {
     title: t('Azar ou sinal?'),
     body: t('Vê se o teu downswing é normal para os teus resultados.'),
+  },
+  winrateDetail: {
+    title: t('Sabe onde o teu win rate é real'),
+    body: t('Por jogo, stake, sala e dia, com a margem de erro de cada um.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),

@@ -17,6 +17,7 @@ import { Insights } from '@/components/Insights';
 import { useLocked } from '@/components/ProGate';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
 import { YearReviewEntry } from '@/components/YearReviewEntry';
+import { WinRateCard } from '@/components/WinRate';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -48,6 +49,7 @@ import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/sto
 import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
+import { cashDone, winRate } from '@/store/winrate-math';
 import type { Bankroll, Session, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
 
@@ -92,6 +94,7 @@ function BankrollTab() {
   const list = useMemo(() => applyFilter(scoped, filter), [scoped, filter]);
   const bal = balanceOf(scope, sessions, transfers, bankrolls);
   const tot = totals(list, cur);
+  const wr = useMemo(() => winRate(cashDone(list, cur)), [list, cur]);
   const verdictNow = verdict(list, cur, (n) => fmt(n, cur));
   const pts = curve(list, cur).map((p) => p.v);
   const dd = drawdown(pts);
@@ -267,6 +270,7 @@ function BankrollTab() {
               <Stat label={t('Melhor')} sub={t('Melhor sessão')} value={fmt(tot.best, cur)} tone="good" />
               <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
             </StatGrid>
+            {wr ? <WinRateCard w={wr} cur={cur} hidden={hidden} onPress={() => router.push({ pathname: '/winrate', params: { currency: cur } })} /> : null}
             <Calendar list={list} cur={cur} />
             <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
             <Breakdowns list={list} cur={cur} />
@@ -285,6 +289,7 @@ function BankrollTab() {
               </Card>
             ) : null}
             <ListGroup>
+              {tot.itm !== null ? <ListItem icon="trophy-outline" iconColor={C.accent} title={t('Torneios')} subtitle={t('ROI por buy-in, festival e jogo, e o teu currículo')} onPress={() => router.push('/tournament-stats')} /> : null}
               <ListItem
                 icon="trending-down"
                 iconColor={C.bad}
@@ -680,7 +685,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
         <View style={{ paddingHorizontal: S.lg, paddingBottom: S.md, gap: S.md }}>
           <T v="small">
             {s.entries} × {fmt(s.buyIn, s.currency)}
-            {s.addOn ? ` + add-on ${fmt(s.addOn, s.currency)}` : ''} → {fmt(s.cashOut, s.currency)}
+            {s.addOn ? ` + ${s.kind === 'mtt' ? 'add-on' : 'top-up'} ${fmt(s.addOn, s.currency)}` : ''} → {fmt(s.cashOut, s.currency)}
             {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: dec(s.staking.markup), owed: fmt(owedToBackers(s), s.currency) }) : ''}
             {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: fmt(s.makeupCut, s.currency) }) : ''}
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: fmt(s.expenses, s.currency) }) : ''}
