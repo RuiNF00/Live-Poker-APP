@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { t } from '@/i18n';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -166,7 +167,7 @@ export function SheetHeader({ title, onClose, right, closeLabel }: { title: stri
           {title}
         </T>
         {right}
-        <IconButton name="close" onPress={onClose} label={closeLabel ?? 'Fechar'} />
+        <IconButton name="close" onPress={onClose} label={closeLabel ?? t('Fechar')} />
       </Row>
     </View>
   );
@@ -780,7 +781,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         style={{ flex: 1, color: C.text, fontSize: 16, fontFamily: F.regular, paddingVertical: 0 }}
       />
       {value ? (
-        <Pressable onPress={() => onChange('')} hitSlop={10} accessibilityLabel="Limpar">
+        <Pressable onPress={() => onChange('')} hitSlop={10} accessibilityLabel={t('Limpar')}>
           <Ionicons name="close-circle" size={18} color={C.muted} />
         </Pressable>
       ) : null}
@@ -837,7 +838,7 @@ export function Banner({
           </T>
         ) : null}
         {onDismiss ? (
-          <Pressable onPress={onDismiss} hitSlop={12} accessibilityLabel={dismissLabel ?? 'Fechar'}>
+          <Pressable onPress={onDismiss} hitSlop={12} accessibilityLabel={dismissLabel ?? t('Fechar')}>
             <Ionicons name="close" size={18} color={C.muted} />
           </Pressable>
         ) : onPress && !action ? (
