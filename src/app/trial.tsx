@@ -21,7 +21,7 @@ type Reason = 'notPlaying' | 'bankroll' | 'feature';
 
 const REASONS: { key: Reason; icon: IconName; label: string }[] = [
   { key: 'notPlaying', icon: 'pause-circle-outline', label: 'Não estou a jogar live agora' },
-  { key: 'bankroll', icon: 'wallet-outline', label: 'Não cabe no bankroll' },
+  { key: 'bankroll', icon: 'wallet-outline', label: 'Não cabe no meu bankroll agora' },
   { key: 'feature', icon: 'construct-outline', label: 'Falta-me uma funcionalidade' },
 ];
 

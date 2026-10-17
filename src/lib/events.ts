@@ -5,7 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-import { attribution } from './attribution';
+import { attribution, profile } from './attribution';
 import { anonId } from './share-api';
 import { outcomeOf, queue, registerSender } from './sync';
 import { BRAND } from '@/theme';
@@ -90,6 +90,8 @@ export async function setRefCode(code: string): Promise<void> {
 
 /** Events that carry where the install came from and what was going on (attribution.ts). */
 const ATTRIBUTED: FunnelEvent[] = ['app_open', 'hand_saved', 'trial_start'];
+/** Paywall events that carry the onboarding answers, to split the funnel by player type. */
+const PROFILED: FunnelEvent[] = ['paywall_shown', 'paywall_closed', 'trial_start', 'purchase'];
 
 export function track(event: FunnelEvent, props?: Record<string, string | number | boolean>) {
   if (__DEV__) return;
@@ -103,6 +105,7 @@ export function track(event: FunnelEvent, props?: Record<string, string | number
         if (first) await new Promise((r) => setTimeout(r, 2000));
         all = { ...props, ...(await attribution()), ...(first ? { first: true } : {}) };
       }
+      if (PROFILED.includes(event)) all = { ...all, ...(await profile()) };
       queue('event', { event, installId: id, platform: Platform.OS, props: all });
     })
     .catch(() => {});

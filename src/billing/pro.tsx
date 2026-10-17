@@ -58,6 +58,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
   }, []);
   const [paywallConfig, setPaywallConfig] = useState<PaywallConfig>(DEFAULT_PAYWALL);
+  const draftWaiting = !!useStore().draft;
   const trialDays = plans.find((p) => p.id === 'annual')?.trialDays ?? 0;
 
   const setPro = useCallback((v: boolean) => {
@@ -111,7 +112,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       if (res === 'ok') {
         setPro(true);
         const props = { plan: id, reason, trial: plan.trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout };
-        track('purchase', props);
+        // A hand waiting as a draft when buying: usually the one the free limit held back.
+        track('purchase', { ...props, drafts: draftWaiting ? 1 : 0 });
         if (plan.trialDays) {
           track('trial_start', props);
           void rememberTrial(plan.trialDays);
@@ -119,7 +121,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       }
       return res;
     },
-    [plans, setPro, paywallConfig],
+    [plans, setPro, paywallConfig, draftWaiting],
   );
 
   const restore = useCallback(async () => {
