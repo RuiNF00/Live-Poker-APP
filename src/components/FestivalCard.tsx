@@ -339,7 +339,7 @@ export function FestivalCard({
                   numberOfLines={1}
                   style={{ fontFamily: F.mono, fontSize: 16, color: dim }}
                 >
-                  {moneyLabel(r)}
+                  {t('{v} no póquer', { v: moneyLabel(r) })}
                 </Text>
               ) : null}
             </View>

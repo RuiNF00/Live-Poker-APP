@@ -41,7 +41,8 @@ export interface FestivalRecap {
   best: { finish: number; field?: number } | null;
   /** Result in buy-ins (any tournament) or big blinds (cash only); null when it can't be worked out. */
   result: { value: number; unit: 'bi' | 'bb' } | null;
-  /** Poker result in the trip's currency (sessions in a currency with no rate left out). */
+  /** Poker result in the trip's currency (sessions in a currency with no rate left out). Trip
+   *  expenses (flight, hotel) are not in it: the card is about the poker, like the buy-ins. */
   money: number;
   currency: string;
   bestHand: BestHand | null;

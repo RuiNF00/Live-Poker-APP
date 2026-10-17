@@ -2325,7 +2325,6 @@ const en: Record<string, string> = {
   'Mostrar resultado': 'Show result',
   'Em big blinds': 'In big blinds',
   'Em buy-ins, sem valores': 'In buy-ins, no amounts',
-  'Junta o resultado em {c}': 'Adds the result in {c}',
   'Melhor mão': 'Best hand',
   'O link da story abre o replay': 'The story link opens the replay',
   'Partilhar resumo do festival': 'Share festival recap',
@@ -2334,6 +2333,8 @@ const en: Record<string, string> = {
   'Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.': 'Get a story of your days, events and best hand. No amounts unless you want to show them.',
   'Criar story do festival': 'Create festival story',
   'Dias de jogo': 'Days played',
+  '{v} no póquer': '{v} at the tables',
+  'Junta o resultado do póquer em {c}, sem as despesas da viagem': 'Adds the poker result in {c}, before trip expenses',
 };
 
 export default en;
