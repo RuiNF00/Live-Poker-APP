@@ -304,7 +304,7 @@ async function notifyGroup(g: SwapGroup, news: GroupEntry[], amounts: boolean) {
 }
 
 /** My result in each swap and group of this tournament: the prize, the event and the place, nothing else. */
-async function record(s: Session, swaps: Swap[], groups: SwapGroup[]) {
+export async function record(s: Session, swaps: Swap[], groups: SwapGroup[]) {
   for (const sw of swaps) {
     await addEntry(sw.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || sw.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
   }

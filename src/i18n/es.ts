@@ -3229,6 +3229,7 @@ const es: Record<string, string> = {
   'Ganhei': 'Gané',
   'Perdi': 'Perdí',
   'Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.': 'Cada cuadrado es un día: verde relleno ganaste, contorno rojo perdiste. Más intenso, más dinero.',
+  'Enviar o meu resultado para o swap': 'Enviar mi resultado al swap',
 };
 
 export default es;

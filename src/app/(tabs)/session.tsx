@@ -19,6 +19,7 @@ import { blankSession, firstSession, SessionForm } from '@/components/SessionFor
 import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
+import { useSwapEnd } from '@/components/swaps/SwapEndRow';
 import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
@@ -337,6 +338,7 @@ function Live({ s }: { s: Session }) {
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
+  const swapEnd = useSwapEnd(s);
   const [more, setMore] = useState(false);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const scrollToEnd = useRef(false);
@@ -375,6 +377,7 @@ function Live({ s }: { s: Session }) {
       breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
     };
     saveSession(ended);
+    swapEnd.send(ended);
     // No money in events: kind, hands saved in it and a duration bucket.
     const h = playedMs(s, now) / 3_600_000;
     track('session_closed', { kind: s.kind, hands: hands.filter((x) => x.sessionId === s.id).length, minutes_bucket: h < 1 ? '<1h' : h < 3 ? '1-3h' : h < 6 ? '3-6h' : '6h+' });
@@ -638,6 +641,7 @@ function Live({ s }: { s: Session }) {
                     onNext={(e) => startEvent(after.f, e, close())}
                   />
                 ) : null}
+                {mtt ? swapEnd.row : null}
                 <Row gap={S.sm}>
                   <Button kind="ghost" size="md" title={t('Voltar')} style={{ flex: 1 }} onPress={() => setEnding(false)} />
                   <Button

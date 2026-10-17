@@ -1564,6 +1564,7 @@ const ptBR: Record<string, string> = {
   'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Combine uma porcentagem com outro jogador. O app diz quem deve a quem.',
   'Partilha uma mão e os comentários aparecem aqui.': 'Compartilhe uma mão e os comentários aparecem aqui.',
   'Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.': 'Cada quadrado é um dia: verde cheio você ganhou, contorno vermelho você perdeu. Mais forte, mais dinheiro.',
+  'Enviar o meu resultado para o swap': 'Enviar meu resultado para o swap',
 };
 
 export default ptBR;
