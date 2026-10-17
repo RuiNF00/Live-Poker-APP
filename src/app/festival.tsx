@@ -19,7 +19,7 @@ import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import { money, rawCompactMoney } from '@/poker/format';
+import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
@@ -322,7 +322,7 @@ function EventRow({
             {eventTitle(e)}
           </T>
           <T v="small">
-            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? `${chips(e.stack)} · ${e.levelMinutes} min` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>

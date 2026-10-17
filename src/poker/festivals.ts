@@ -20,6 +20,9 @@ export interface FestivalEvent {
   guarantee: number;
   /** Local wall-clock start at the venue, 'YYYY-MM-DDTHH:MM'. */
   start: string;
+  /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
+  stack?: number;
+  levelMinutes?: number;
 }
 
 export interface Festival {
@@ -108,6 +111,53 @@ export const BAHAMAS_DEC_2026: Festival = {
 const lv = (...a: Parameters<typeof ev>): FestivalEvent => ({ ...ev(...a), unnumbered: true });
 
 /**
+ * Starting stack and level length per tournament (`number` below), from the
+ * organiser's schedule PDF:
+ * https://cdn.wynnresorts.com/image/upload/v1757097329/visitwynn_pdfs_files/Poker/WPT/WPT_World_Championship_Schedule.pdf
+ * Turbo flights run a faster structure the PDF doesn't give, and a Day 2 is a restart: neither gets one.
+ */
+const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
+  1: [30000, 30],
+  2: [40000, 40],
+  3: [40000, 40],
+  4: [40000, 40],
+  5: [40000, 40],
+  6: [30000, 30],
+  7: [40000, 40],
+  8: [30000, 30],
+  9: [30000, 30],
+  10: [100000, 60],
+  11: [40000, 40],
+  12: [40000, 40],
+  13: [40000, 40],
+  14: [40000, 40],
+  15: [30000, 20],
+  16: [30000, 30],
+  17: [30000, 30],
+  18: [30000, 20],
+  19: [40000, 40],
+  20: [100000, 30],
+  21: [40000, 40],
+  22: [40000, 40],
+  23: [40000, 40],
+  24: [200000, 40],
+  25: [40000, 40],
+  26: [100000, 30],
+  27: [30000, 20],
+  28: [50000, 60],
+  29: [40000, 40],
+  30: [100000, 30],
+  31: [30000, 30],
+  32: [40000, 40],
+  33: [100000, 30],
+  34: [30000, 30],
+};
+const lvStructure = (e: FestivalEvent): FestivalEvent => {
+  const x = e.day2 || e.flight?.includes('Turbo') ? undefined : LV_STRUCTURE[e.number];
+  return x ? { ...e, stack: x[0], levelMinutes: x[1] } : e;
+};
+
+/**
  * The Wynn Las Vegas festival, 27 Nov – 21 Dec 2026, events of $1,000 and up
  * (no satellites). Source: the organiser's schedule page, read on 2026-10-17
  * (two separate reads, same rows); the same schedule is linked as a PDF from
@@ -181,7 +231,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(33, 'NLH 8-Max', 'NLH', 10500, 0, '2026-12-20T13:00'),
     lv(29, 'NLH Mystery Bounty', 'NLH', 1600, 1_000_000, '2026-12-20T19:00', '1D Turbo'),
     lv(34, "No Limit Hold'em", 'NLH', 1100, 100_000, '2026-12-21T12:00'),
-  ],
+  ].map(lvStructure),
 };
 
 /**
