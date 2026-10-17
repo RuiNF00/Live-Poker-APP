@@ -6,25 +6,13 @@ import React, { useEffect, useState } from 'react';
 import { Animated, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { BRAND, C, F, ff } from '@/theme';
+import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, BRAND_Y, dealerSpot, POT_Y, scaleFor, SIZE, STAGE_RATIO, tableMap } from './layout';
 import type { BadgeKind, RpSeat, RpView } from './model';
 import { RpCard, SERIF } from './RpCard';
 
-export const POS_COLOR: Record<string, { bg: string; fg: string }> = {
-  BTN: { bg: '#C8A84E', fg: '#111' },
-  CO: { bg: '#3B82F6', fg: '#fff' },
-  HJ: { bg: '#8B5CF6', fg: '#fff' },
-  LJ: { bg: '#A855F7', fg: '#fff' },
-  MP: { bg: '#A855F7', fg: '#fff' },
-  UTG: { bg: '#EF4444', fg: '#fff' },
-  'UTG+1': { bg: '#F87171', fg: '#fff' },
-  'UTG+2': { bg: '#FB923C', fg: '#fff' },
-  SB: { bg: '#6B7280', fg: '#fff' },
-  BB: { bg: '#6B7280', fg: '#fff' },
-};
 
 export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
   fold: { bg: '#3A3A42', fg: '#CCC' },
@@ -67,6 +55,7 @@ export function ReplayerTable({
 
   const onLayout = (e: LayoutChangeEvent) => setW(Math.round(e.nativeEvent.layout.width));
 
+  const bestEquity = Math.max(-1, ...view.seats.map((s) => s.equity ?? -1));
   const boardW = SIZE.boardCardW * k;
   const boardH = SIZE.boardCardH * k;
 
@@ -167,7 +156,7 @@ export function ReplayerTable({
 
           {/* seats */}
           {view.seats.map((s) => (
-            <Seat key={'s' + s.i} seat={s} x={(map.seats[vis(s.i)].x / 100) * w} y={(map.seats[vis(s.i)].y / 100) * h} k={k} />
+            <Seat key={'s' + s.i} seat={s} x={(map.seats[vis(s.i)].x / 100) * w} y={(map.seats[vis(s.i)].y / 100) * h} k={k} bestEquity={bestEquity} />
           ))}
         </Pressable>
       )}
@@ -181,10 +170,10 @@ function Felt({ w, h }: { w: number; h: number }) {
     <Svg width={w} height={h} style={{ position: 'absolute' }}>
       <Defs>
         <RadialGradient id="felt" cx="50%" cy="42%" rx="62%" ry="58%">
-          <Stop offset="0%" stopColor="#1C211E" />
-          <Stop offset="45%" stopColor="#121614" />
-          <Stop offset="80%" stopColor="#0A0C0B" />
-          <Stop offset="100%" stopColor="#060706" />
+          <Stop offset="0%" stopColor="#183A30" />
+          <Stop offset="45%" stopColor="#11261F" />
+          <Stop offset="80%" stopColor="#0A1713" />
+          <Stop offset="100%" stopColor="#060D0B" />
         </RadialGradient>
       </Defs>
       <Rect x={w * 0.035} y={h * 0.03} width={w * 0.93} height={h * 0.94} rx={r} fill="url(#felt)" stroke="rgba(255,106,61,0.45)" strokeWidth={1.2} />
@@ -212,12 +201,12 @@ function Pill({ text, k, strong }: { text: string; k: number; strong?: boolean }
   );
 }
 
-function Seat({ seat: s, x, y, k }: { seat: RpSeat; x: number; y: number; k: number }) {
+function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: number; k: number; bestEquity: number }) {
   const pw = SIZE.plateW * k;
   const ph = SIZE.plateH * k;
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
   const ch = (s.hero ? SIZE.heroCardH : SIZE.seatCardH) * k;
-  const pos = POS_COLOR[s.pos] ?? { bg: '#4B5563', fg: '#fff' };
+  const pos = { bg: posColor(s.pos), fg: '#0C1311' };
   const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (s.handName ? ` · ${s.handName}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label: s.badge.label } : null;
   const border = s.won ? C.good : s.acting ? C.accent : s.hero ? 'rgba(245,237,216,0.55)' : 'rgba(245,237,216,0.14)';
 
@@ -294,7 +283,24 @@ function Seat({ seat: s, x, y, k }: { seat: RpSeat; x: number; y: number; k: num
           </Text>
         </View>
       ) : null}
+
+      {s.equity != null ? (
+        <View
+          style={{
+            position: 'absolute',
+            ...(s.hero ? { right: pw + 4, top: ch * 0.7 + ph / 2 - 8 * k } : { top: ch * 0.7 + ph - 7 * k }),
+            backgroundColor: s.equity >= bestEquity ? C.good : 'rgba(14,12,10,0.92)',
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: s.equity >= bestEquity ? C.good : 'rgba(245,237,216,0.25)',
+            paddingHorizontal: 4 * k,
+            zIndex: 3,
+          }}>
+          <Text allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
+            {Math.round(s.equity * 100)}%
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
-
