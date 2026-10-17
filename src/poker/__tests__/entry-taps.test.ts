@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTo } from '../entry';
-import { newHand, nextLevel } from '../factory';
+import { newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
 function mk(heroPos: string, heroCards: string[], n = 9): Hand {
@@ -298,4 +298,19 @@ test('the next hand at the same table keeps the villains in their seats', () => 
   last.players = last.players.map((p, i) => (i === 3 ? { ...p, name: 'Zé' } : p));
   assert.equal(newHand({ id: 'n', last }).players[3].name, 'Zé');
   assert.equal(newHand({ id: 'n', last: { ...last, createdAt: Date.now() - 8 * 3600_000 } }).players[3].name, '', 'a different day starts empty');
+});
+
+test('the next hand at the same table skips the position tap: the typical hand takes 10', () => {
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.size('⅓');
+  e.act('fold');
+  e.save();
+  const last = { ...e.hand, createdAt: Date.now() };
+  assert.ok(sameTable(last), 'hand/new.tsx opens with the position already chosen');
+  const next = newHand({ id: 'n', last });
+  assert.equal(positions(next.players.length, next.button)[next.hero], 'HJ', 'the button moved, hero is one seat earlier');
+  assert.equal(e.taps - 1, 10);
 });

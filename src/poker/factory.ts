@@ -1,7 +1,7 @@
 import type { Session } from '@/store/types';
 
 import { replay } from './engine';
-import type { GameInfo, Hand } from './types';
+import type { GameInfo, Hand, Player } from './types';
 
 export const MTT_LEVELS: [number, number][] = [
   [100, 200], [150, 300], [200, 400], [250, 500], [300, 600], [400, 800], [500, 1000], [600, 1200],
@@ -21,6 +21,23 @@ export function defaultGame(kind: 'mtt' | 'cash', currency = '€'): GameInfo {
 /** Hands this close together are taken to be at the same table. */
 const SAME_TABLE_MS = 6 * 3600 * 1000;
 
+/**
+ * The last hand was at this same table: same session (or, outside a session,
+ * a few hours ago) and hero in seat 0. Its players, stacks and button carry over.
+ */
+export function sameTable(last: Hand | null | undefined, session?: Session | null): last is Hand {
+  if (!last || last.hero !== 0) return false;
+  if (session) return last.sessionId === session.id;
+  return !last.sessionId && Date.now() - last.createdAt < SAME_TABLE_MS;
+}
+
+/** Everyone's stack once the hand is over (or as it stands, if it wasn't finished). */
+export function endStacks(hand: Hand): number[] {
+  const r = replay(hand);
+  const s = r.final;
+  return hand.players.map((_, i) => s.stacks[i] + (r.result ? r.result.won[i] : s.bets[i]));
+}
+
 export function newHand(opts: {
   id: string;
   session?: Session | null;
@@ -33,6 +50,7 @@ export function newHand(opts: {
   let n: number;
   let stack: number;
   let names: string[] = [];
+  const carry = sameTable(last, session);
   if (session) {
     game = {
       kind: session.kind,
@@ -59,14 +77,22 @@ export function newHand(opts: {
     const s = r.final;
     const end = s.stacks[last.hero] + (r.result ? r.result.won[last.hero] : s.bets[last.hero]);
     stack = end > 0 ? end : last.players[last.hero].stack;
-    // Same table a moment ago: the villains are still in their seats.
-    if (last.hero === 0 && Date.now() - last.createdAt < SAME_TABLE_MS) names = last.players.map((p) => p.name);
   } else {
     game = defaultGame('mtt', opts.currency);
     n = opts.tableSize ?? 9;
     stack = game.bb * 100;
   }
   n = Math.max(2, Math.min(10, n));
+  const fresh = stack || game.bb * 100;
+  let players: Player[] = Array.from({ length: n }, (_, i) => ({ name: i === 0 ? 'Hero' : names[i] ?? '', stack: fresh }));
+  let button = 0;
+  if (carry) {
+    // Same table: everyone stays in their seat with the stack they ended on,
+    // a busted seat gets a new player, and the button moves one seat on.
+    const ends = endStacks(last);
+    players = last.players.map((p, i) => (ends[i] > 0 ? { name: p.name, stack: ends[i], ...(p.playerId ? { playerId: p.playerId } : {}) } : { name: '', stack: i === 0 ? fresh : p.stack }));
+    button = (last.button + 1) % last.players.length;
+  }
   const now = Date.now();
   return {
     v: 1,
@@ -75,11 +101,8 @@ export function newHand(opts: {
     updatedAt: now,
     sessionId: session?.id,
     game,
-    players: Array.from({ length: n }, (_, i) => ({
-      name: i === 0 ? 'Hero' : names[i] ?? '',
-      stack: stack || game.bb * 100,
-    })),
-    button: 0,
+    players,
+    button,
     hero: 0,
     actions: [],
     board: [],
@@ -92,6 +115,33 @@ export function newHand(opts: {
 export function resizeTable(hand: Hand, n: number): Hand {
   const players = Array.from({ length: n }, (_, i) => hand.players[i] ?? { name: '', stack: hand.players[hand.hero].stack });
   return { ...hand, players, button: Math.min(hand.button, n - 1), actions: [], winners: undefined };
+}
+
+/** Someone left: their seat goes, everyone else keeps their place and the button stays on the same player. */
+export function removeSeat(hand: Hand, i: number): Hand {
+  const n = hand.players.length;
+  if (n <= 2 || i === hand.hero) return hand;
+  const players = hand.players.filter((_, k) => k !== i);
+  const shift = (k: number) => (k > i ? k - 1 : k);
+  const button = i === hand.button ? shift((i - 1 + n) % n) : shift(hand.button);
+  return { ...hand, players, hero: shift(hand.hero), button, actions: [], board: [], winners: undefined };
+}
+
+/** Someone sat down to the left of seat i, with a fresh stack. */
+export function addSeat(hand: Hand, i: number, stack: number): Hand {
+  const n = hand.players.length;
+  if (n >= 10) return hand;
+  const players = [...hand.players.slice(0, i + 1), { name: '', stack }, ...hand.players.slice(i + 1)];
+  const shift = (k: number) => (k > i ? k + 1 : k);
+  return { ...hand, players, hero: shift(hand.hero), button: shift(hand.button), actions: [], board: [], winners: undefined };
+}
+
+/** Two players changed seats (or one moved to the other's seat). */
+export function swapSeats(hand: Hand, a: number, b: number): Hand {
+  if (a === b || a === hand.hero || b === hand.hero) return hand;
+  const players = [...hand.players];
+  [players[a], players[b]] = [players[b], players[a]];
+  return { ...hand, players, actions: [], board: [], winners: undefined };
 }
 
 /** New blinds before any action: keep stacks at the same depth in big blinds. */
