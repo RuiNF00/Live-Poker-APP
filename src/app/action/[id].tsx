@@ -3,7 +3,7 @@
 // private link per backer to confirm their piece. Nothing is sold or paid here:
 // payments happen outside the app and the player only logs them.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';

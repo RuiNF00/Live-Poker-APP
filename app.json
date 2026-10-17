@@ -248,7 +248,16 @@
           ]
         }
       ],
-      "expo-background-task"
+      "expo-background-task",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": [
+            "pt",
+            "en"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
