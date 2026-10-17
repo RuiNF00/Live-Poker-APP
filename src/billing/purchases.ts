@@ -194,8 +194,11 @@ export async function redeemCode(): Promise<void> {
 
 /** The cancel-flow discount on the monthly plan, when it exists in the store. */
 export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
-  const pkg = plans.find((p) => p.id === 'monthly')?.pkg;
-  if (!LIVE || !pkg) return null;
+  const monthly = plans.find((p) => p.id === 'monthly');
+  // Demo store (dev builds and web): same shape as the lifetime one, so the cancel flow can be walked end to end.
+  if (!LIVE) return __DEV__ && monthly ? { priceString: usd(Math.round(monthly.price * (100 - RETENTION.discount.pct)) / 100), buy: async () => 'ok' as const } : null;
+  const pkg = monthly?.pkg;
+  if (!pkg) return null;
   try {
     if (Platform.OS === 'ios') {
       const d = pkg.product.discounts?.find((x) => x.identifier === RETENTION.discount.ios);

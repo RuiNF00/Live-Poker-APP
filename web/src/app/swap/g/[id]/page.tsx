@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { brand } from '@/config/brand';
-import { pickLocale } from '@/lib/i18n';
+import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { groupCreatorPro } from '@/lib/swap-pro';
 import { normalizeCode } from '@/lib/refcode';
 import { loadGroup as loadGroupById, publicGroup } from '@/lib/swap-groups';
@@ -15,10 +15,11 @@ type SearchParams = { searchParams: Promise<Record<string, string | string[] | u
 
 const loadGroup = cache(loadGroupById);
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params & SearchParams): Promise<Metadata> {
   const { id } = await params;
   const rec = await loadGroup(id);
-  const c = swapCopy(pickLocale((await headers()).get('accept-language')));
+  const locale = previewLocale((await searchParams).lang, (await headers()).get('accept-language'));
+  const c = swapCopy(locale);
   if (!rec) return { title: c.notFound, robots: { index: false }, referrer: 'no-referrer' };
   const title = c.groupMetaTitle(rec.terms.title, rec.seats.length);
   // No names or amounts in the preview: the chat it lands in is the whole group, maybe more.
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: c.groupMetaDescription,
     robots: { index: false },
     referrer: 'no-referrer',
-    openGraph: { title, description: c.groupMetaDescription, type: 'website', url: `${brand.siteUrl}/swap/g/${id}`, siteName: brand.name },
+    openGraph: { title, description: c.groupMetaDescription, type: 'website', url: `${brand.siteUrl}/swap/g/${id}`, siteName: brand.name, locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] },
   };
 }
 

@@ -76,7 +76,9 @@ export function buildReplay(hand: HandRecord, opts: Omit<BuildOptions, 'locale'>
 export function formatChips(n: number, l: Locale): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10_000) return sign + Math.round(a).toLocaleString(numberTag(l)).replace(/\s/g, ' ');
+  // Cent games (0.25/0.50): a chop of 1.25 pays 0.63 and 0.62, not "1" and "1".
+  if (a < 10_000)
+    return sign + (Math.abs(a - Math.round(a)) > 1e-9 ? a.toLocaleString(numberTag(l), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(a).toLocaleString(numberTag(l))).replace(/\s/g, ' ');
   if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0, l) + 'k';
   return sign + fixed(a / 1_000_000, 2, l) + 'M';
 }

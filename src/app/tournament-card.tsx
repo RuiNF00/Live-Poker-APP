@@ -10,7 +10,8 @@ import { usePro } from '@/billing/pro';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { TourneyCard } from '@/components/TourneyCard';
 import { Button, Empty, ListGroup, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
 import { notice } from '@/lib/notice';
@@ -44,7 +45,7 @@ export default function TournamentCardScreen() {
     setBusy(true);
     try {
       const code = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${code}?utm_source=instagram&utm_medium=story&utm_campaign=tourney_cv`;
+      const link = withLang(`${BRAND.webUrl}/r/${code}?utm_source=instagram&utm_medium=story&utm_campaign=tourney_cv`, variant);
       const target = await shareStory(await captureStory(ref), link);
       track('story_shared', { target: String(target), kind: 'tourney_cv', money: !hideMoney });
     } catch {

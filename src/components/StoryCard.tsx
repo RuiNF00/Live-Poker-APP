@@ -22,6 +22,8 @@ import { STREET_LABEL, viewAt } from './replayer/model';
 
 export const STORY_W = 360;
 export const STORY_H = 640;
+/** A feed post (X, or another app) at 4:5, so X shows it whole in the timeline: 1080×1350 exported. */
+export const POST_H = 450;
 
 /** Where the voice chip sits, in story points. The waveform slot inside it is
  * left empty on the captured frame and drawn by the server while the voice plays. */

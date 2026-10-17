@@ -5,6 +5,7 @@
 // still shows up there as "Stories"). Pro players can add their voice: the
 // story then goes out as a video rendered by the share server.
 
+import { requestRecordingPermissionsAsync } from 'expo-audio';
 import * as Clipboard from 'expo-clipboard';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
@@ -62,8 +63,10 @@ export interface FaceClip {
 }
 
 /** Records the player talking (front camera, up to 30 s). Null if they cancel or say no to the camera. */
-export async function recordFace(): Promise<FaceClip | null> {
-  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
+/** The front-camera clip; 'denied' when the camera or the microphone is off for the app (the screen offers Settings). */
+export async function recordFace(): Promise<FaceClip | 'denied' | null> {
+  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return 'denied';
+  if (!(await requestRecordingPermissionsAsync()).granted) return 'denied';
   const r = await ImagePicker.launchCameraAsync({
     mediaTypes: ['videos'],
     cameraType: ImagePicker.CameraType.front,
@@ -94,6 +97,11 @@ export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: 
 
 export async function captureStory(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
   return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
+}
+
+/** A card drawn at 360×450 (POST_H), exported 1080×1350 for a post on X or another app. */
+export async function capturePost(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1350, result: 'tmpfile' });
 }
 
 async function instagramInstalled(): Promise<boolean> {

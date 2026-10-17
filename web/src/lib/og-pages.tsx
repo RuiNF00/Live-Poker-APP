@@ -183,14 +183,15 @@ export function siteOgImage() {
 }
 
 /** An invite (/r/<code>): the same for every code, so it caches like a static file. */
-export function inviteOgImage(days: number) {
+export function inviteOgImage(days: number, c: { eyebrow: string; title: string; days: string }) {
+  const [line1, line2] = c.days.split('\n');
   return render(
     <Frame>
       <div style={{ display: 'flex', flexDirection: 'column', width: 720, justifyContent: 'space-between' }}>
         <Logo />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
-          <Eyebrow label="Convite" />
-          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>Um amigo convidou-te para o Sweatbook</div>
+          <Eyebrow label={c.eyebrow} />
+          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>{c.title}</div>
         </div>
         <div
           style={{
@@ -206,8 +207,8 @@ export function inviteOgImage(days: number) {
         >
           <div style={{ display: 'flex', fontSize: 64, fontWeight: 800, color: K.accent, letterSpacing: -2 }}>+{days}</div>
           <div style={{ display: 'flex', flexDirection: 'column', fontSize: 28, fontWeight: 500, color: K.dim, lineHeight: 1.2 }}>
-            <span>dias de Pro</span>
-            <span>para cada um</span>
+            <span>{line1}</span>
+            {line2 ? <span>{line2}</span> : null}
           </div>
         </div>
       </div>
@@ -251,54 +252,42 @@ export function liveOgImage(s: LiveSnapshot | null, locale: Locale = 'pt') {
   // Ended: a tournament shows the place (or the bust), a cash game only that it ended.
   const bigLabel = ended ? (mtt ? (s.finish ? c.result : c.busted) : c.ended) : c.stack;
   const big = ended ? (mtt && s.finish ? c.place(s.finish, s.field) : '—') : n(s.stack);
+  // Everything that matters sits in the middle third, so a square crop (WhatsApp's and iMessage's
+  // small thumbnail) still shows the stack; the logo and the state pill are the only things at the edges.
   return render(
     <Frame>
-      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo />
           <Eyebrow
             label={ended ? c.ended : bagged ? `${c.bagged} · ${c.day(s.day)}` : s.paused ? c.paused : c.live}
             color={ended ? K.muted : bagged || s.paused ? K.warn : K.good}
           />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', fontSize: 58, fontWeight: 800, letterSpacing: -2, lineHeight: 1.05, maxWidth: 1056 }}>{title.slice(0, 48)}</div>
-          {sub ? <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{sub.slice(0, 70)}</div> : null}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, maxWidth: 1000 }}>
+          <div style={{ display: 'flex', fontSize: 40, fontWeight: 800, letterSpacing: -1, lineHeight: 1.1, textAlign: 'center' }}>{title.slice(0, 40)}</div>
+          {sub ? <div style={{ display: 'flex', fontSize: 26, fontWeight: 500, color: K.dim }}>{sub.slice(0, 50)}</div> : null}
+          <div style={{ display: 'flex', marginTop: 18, fontSize: 22, fontWeight: 800, letterSpacing: 2, color: K.muted, textTransform: 'uppercase' }}>{bigLabel}</div>
+          <div style={{ display: 'flex', fontSize: 132, fontWeight: 800, letterSpacing: -4, lineHeight: 1 }}>{big}</div>
+          {!ended && (bb !== null || delta) ? (
+            <div style={{ display: 'flex', gap: 22, marginTop: 8, fontSize: 32, fontWeight: 700, color: K.dim }}>
+              {bb !== null ? <span>{n(bb)} BB</span> : null}
+              {delta ? (
+                <span style={{ color: delta > 0 ? K.good : K.bad }}>
+                  {delta > 0 ? '+' : '−'}
+                  {n(Math.abs(delta))}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28 }}>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              padding: '22px 30px',
-              borderRadius: 22,
-              background: K.surface,
-              border: `2px solid ${K.border}`,
-              minWidth: 420,
-            }}
-          >
-            <div style={{ display: 'flex', fontSize: 22, fontWeight: 800, letterSpacing: 2, color: K.muted, textTransform: 'uppercase' }}>{bigLabel}</div>
-            <div style={{ display: 'flex', fontSize: 84, fontWeight: 800, letterSpacing: -3, lineHeight: 1.05 }}>{big}</div>
-            {!ended ? (
-              <div style={{ display: 'flex', gap: 18, fontSize: 26, fontWeight: 500, color: K.dim }}>
-                {bb !== null ? <span>{n(bb)} BB</span> : null}
-                {delta ? (
-                  <span style={{ color: delta > 0 ? K.good : K.bad, marginLeft: 18 }}>
-                    {delta > 0 ? '+' : '−'}
-                    {n(Math.abs(delta))}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {tiles.map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', gap: 14, alignItems: 'baseline' }}>
-                <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1.5, color: K.muted, textTransform: 'uppercase' }}>{k}</span>
-                <span style={{ fontSize: 32, fontWeight: 800 }}>{v}</span>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: 'flex', gap: 36, justifyContent: 'center' }}>
+          {tiles.map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
+              <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1.5, color: K.muted, textTransform: 'uppercase' }}>{k}</span>
+              <span style={{ fontSize: 30, fontWeight: 800 }}>{v}</span>
+            </div>
+          ))}
         </div>
       </div>
     </Frame>,

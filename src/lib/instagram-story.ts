@@ -22,7 +22,7 @@ export interface FaceClip {
 
 export function dropLocal(_uri: string | null | undefined): void {}
 
-export async function recordFace(): Promise<FaceClip | null> {
+export async function recordFace(): Promise<FaceClip | 'denied' | null> {
   throw new Error('The face camera needs the iOS app');
 }
 
@@ -35,6 +35,10 @@ export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: 
 
 export async function captureStory(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
   throw new Error('Story capture needs the iOS or Android app');
+}
+
+export async function capturePost(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  throw new Error('Post capture needs the iOS or Android app');
 }
 
 export type StoryTarget = 'instagram' | 'sheet';

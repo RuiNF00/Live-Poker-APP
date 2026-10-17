@@ -26,8 +26,15 @@ export interface FestivalPlan {
 
 export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} };
 
-/** Minutes before the start, and before late reg closes, that the reminders fire. */
+/** When late reg closes, in minutes after the start: the player's own time, else the organiser's. */
+export function lateRegOf(plan: FestivalPlan, e: FestivalEvent): number | undefined {
+  return plan.lateReg[e.id] ?? e.lateRegMin;
+}
+
+/** Minutes before the start that the first reminder fires. */
 export const REMIND_BEFORE_MIN = 30;
+/** Minutes before late reg closes: late enough to still be on time, early enough to get to the cage. */
+export const LATE_REMIND_BEFORE_MIN = 20;
 
 /** The festival with the player's added tournaments in its schedule, by start. Safe to call twice. */
 export function withPlanEvents(f: Festival, plan: FestivalPlan): Festival {
@@ -61,6 +68,56 @@ export function removeOwnEvent(p: FestivalPlan, id: string): FestivalPlan {
 export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   const set = new Set(plan.picked);
   return withPlanEvents(f, plan).events.filter((e) => set.has(e.id));
+}
+
+/** When a session started for this event runs its level clock from: the published start, or now when that's past. */
+export function levelStart(f: Festival, e: FestivalEvent, now = Date.now()): number | undefined {
+  return e.levelMinutes ? Math.max(now, venueTime(f, e.start)) : undefined;
+}
+
+/** Schedule filters beyond the game: satellites, fast and deep structures, by the event's name or flight. */
+export type EventKind = 'sat' | 'turbo' | 'deep';
+const KIND_RE: Record<EventKind, RegExp> = { sat: /sat[eé]l[ií]te|satellite/i, turbo: /turbo|hyper/i, deep: /deep|monster/i };
+
+export function isKind(e: FestivalEvent, k: EventKind): boolean {
+  return KIND_RE[k].test(`${e.name} ${e.flight ?? ''}`);
+}
+
+/** What entering costs: a Day 2 counts its Day 1's buy-in, so a buy-in filter keeps the whole tournament. */
+export function entryBuyIn(f: Festival, e: FestivalEvent): number {
+  if (!e.day2) return e.buyIn;
+  return f.events.find((x) => x.number === e.number && !x.day2)?.buyIn ?? 0;
+}
+
+/** Up to three "até X" buy-in caps that split the schedule: its quartiles, below the dearest event. */
+export function buyInCaps(f: Festival): number[] {
+  const all = [...new Set(f.events.filter((e) => !e.day2 && e.buyIn > 0).map((e) => e.buyIn))].sort((a, b) => a - b);
+  if (all.length < 4) return [];
+  return [...new Set([0.25, 0.5, 0.75].map((q) => all[Math.floor((all.length - 1) * q)]))];
+}
+
+/** How long a planned row keeps the player busy: a Day 2 the whole day, a flight until its late reg closes. */
+const DAY2_BUSY_MIN = 10 * 60;
+
+/**
+ * Planned events that overlap another planned event, each with the first one it
+ * runs into. Flights of the same tournament are alternatives, not a clash.
+ */
+export function clashes(f: Festival, plan: FestivalPlan): Map<string, FestivalEvent> {
+  const list = planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start));
+  const busy = (e: FestivalEvent) => venueTime(f, e.start) + (e.day2 ? DAY2_BUSY_MIN : lateRegOf(plan, e) || LATE_DEFAULT_MIN) * 60_000;
+  const out = new Map<string, FestivalEvent>();
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i];
+      const b = list[j];
+      if (venueTime(f, b.start) >= busy(a)) break;
+      if (a.number === b.number && !a.own && !b.own) continue;
+      if (!out.has(a.id)) out.set(a.id, b);
+      if (!out.has(b.id)) out.set(b.id, a);
+    }
+  }
+  return out;
 }
 
 /** What the festival is called on screen: the player's name for it, else the shipped one. */
@@ -119,7 +176,7 @@ export const LATE_DEFAULT_MIN = 4 * 60;
 export function plannedNow(f: Festival, plan: FestivalPlan, sessions: Session[], now = Date.now()): { e: FestivalEvent; start: number; action: EventAction } | null {
   for (const e of planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))) {
     const start = venueTime(f, e.start);
-    if (now < start - 2 * 3_600_000 || now > start + (plan.lateReg[e.id] || LATE_DEFAULT_MIN) * 60_000) continue;
+    if (now < start - 2 * 3_600_000 || now > start + (lateRegOf(plan, e) || LATE_DEFAULT_MIN) * 60_000) continue;
     const action = eventAction(f, plan, sessions, e);
     if (action && action.kind !== 'view') return { e, start, action };
   }
@@ -144,6 +201,12 @@ export interface PlanReminder {
   body: string;
 }
 
+/** Venue wall-clock HH:MM of an instant. */
+export function venueHm(f: Festival, ms: number): string {
+  const x = new Date(ms + f.utcOffset * 60_000);
+  return `${String(x.getUTCHours()).padStart(2, '0')}:${String(x.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 /** Reminders still ahead of `now`: before each planned start, and before late reg closes where the player set it. */
 export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now()): PlanReminder[] {
   const out: PlanReminder[] = [];
@@ -158,14 +221,16 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
       title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }),
       body: name,
     });
-    const late = plan.lateReg[e.id];
+    // Day 2 has no registration to miss.
+    const late = e.day2 ? 0 : lateRegOf(plan, e);
     if (late) {
+      const closes = start + late * 60_000;
       out.push({
         id: `${f.id}:${e.id}:late`,
         url,
-        at: start + (late - REMIND_BEFORE_MIN) * 60_000,
-        title: t('Late reg fecha daqui a {n} min', { n: REMIND_BEFORE_MIN }),
-        body: name,
+        at: closes - LATE_REMIND_BEFORE_MIN * 60_000,
+        title: t('Registo do {event} fecha às {time}', { event: name, time: venueHm(f, closes) }),
+        body: t('Ainda dá para entrar. Toca para começar a sessão.'),
       });
     }
   }

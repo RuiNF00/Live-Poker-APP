@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -146,10 +146,6 @@ export default function StoryScreen() {
   const postVideo = async () => {
     tap('medium');
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     setBusy(true);
     try {
       let shareId: string;
@@ -208,10 +204,6 @@ export default function StoryScreen() {
     tap('medium');
     // A story creates the hand's public link, so it counts as the free plan's daily share.
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     setBusy(true);
     try {
       let shareId: string;
@@ -268,10 +260,6 @@ export default function StoryScreen() {
   // The hand's public link, made once (it counts as the free plan's daily share).
   const linkFor = async (channel: 'x' | 'link'): Promise<{ link: string; shareId: string; ref: string } | null> => {
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return null;
-    }
     let shareId: string;
     try {
       shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
@@ -306,11 +294,18 @@ export default function StoryScreen() {
       pro.paywall('faceVideo');
       return;
     }
-    let clip: FaceClip | null = null;
+    let clip: FaceClip | 'denied' | null = null;
     try {
       clip = await recordFace();
     } catch {
       notice(t('Não deu'), t('Não conseguimos abrir a câmara. Tenta outra vez.'));
+      return;
+    }
+    if (clip === 'denied') {
+      Alert.alert(t('Sem acesso à câmara ou ao microfone'), t('Liga-os nas Definições para gravares a tua cara.'), [
+        { text: t('Agora não'), style: 'cancel' },
+        { text: t('Abrir Definições'), onPress: () => Linking.openSettings().catch(() => {}) },
+      ]);
       return;
     }
     if (!clip) return;
@@ -374,7 +369,9 @@ export default function StoryScreen() {
             {video
               ? t('A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.')
               : mode === 'question'
-                ? t('Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.')
+                ? direct && igDirect
+                  ? t('Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.')
+                  : t('Pára antes da tua decisão, para quem vê votar no link.')
                 : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 

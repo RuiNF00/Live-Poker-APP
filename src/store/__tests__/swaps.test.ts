@@ -6,7 +6,7 @@ import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
 import { profit } from '../session-math';
 import type { Session } from '../types';
-import { assignSwaps, newFromOther, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -189,4 +189,32 @@ test('one event waits on the other side once my result is in', async () => {
   assert.equal(waitingOn(swap({ terms: ev, entries: [e('a', 'result', 0), e('b', 'result', 5000)] })), null);
   assert.equal(waitingOn(swap({ entries: [e('a', 'result', 0)] })), null, 'a series never waits');
   assert.equal(waitingOn(swap({ terms: ev, entries: [e('a', 'result', 0)], left: 'b' })), null);
+});
+
+test('a one-event swap is "falta acertar" once both results are in and money is owed', () => {
+  const ev = { ...terms, scope: 'event' as const, title: 'Main Event', venue: 'Lisboa' };
+  // Only my result: still waiting, nothing to settle yet.
+  assert.deepEqual(swapsToSettle([swap({ terms: ev, entries: [e('a', 'result', 0)] })], []), []);
+  const both = swap({ terms: ev, entries: [e('a', 'result', 0), e('b', 'result', 100000, { at: 500 })] });
+  assert.deepEqual(swapsToSettle([both], []), [{ id: 's1', group: false, place: 'Lisboa', name: 'João', pay: false, closedAt: 500 }]);
+  // From the other phone the same swap is mine to pay.
+  assert.equal(swapsToSettle([{ ...both, side: 'b' }], [])[0].pay, true);
+  // Paid, busted both, archived, or a whole series: nothing.
+  assert.deepEqual(swapsToSettle([swap({ terms: ev, entries: [...both.entries, e('b', 'payment', 3000)] })], []), []);
+  assert.deepEqual(swapsToSettle([swap({ terms: ev, entries: [e('a', 'result', 0), e('b', 'result', 0)] })], []), []);
+  assert.deepEqual(swapsToSettle([{ ...both, archived: true }], []), []);
+  assert.deepEqual(swapsToSettle([{ ...both, terms }], []), []);
+});
+
+test('a group is "falta acertar" for me only when a transfer involves me', () => {
+  const seats = [0, 1, 2].map((seat) => ({ seat, name: ['Rui', 'Ana', 'Zé'][seat], confirmedAt: 1 }));
+  const r = (seat: number, amount: number, at = 1) => ({ id: `g${seat}`, cid: `g${seat}`, seat, kind: 'result' as const, event: '', amount, finish: null, at });
+  const g = {
+    id: 'g1', token: 'tok', seat: 0, seats, createdAt: 1, updatedAt: 1,
+    terms: { v: 1 as const, scope: 'event' as const, title: 'Main Event', venue: '', currency: '€', pct: 5, note: '', createdAt: 1 },
+    entries: [r(0, 0), r(1, 10000, 900), r(2, 0)],
+  };
+  assert.deepEqual(swapsToSettle([], [g]), [{ id: 'g1', group: true, place: 'Main Event', name: 'Main Event', pay: false, closedAt: 900 }]);
+  assert.equal(swapsToSettle([], [{ ...g, seat: 1 }])[0].pay, true);
+  assert.deepEqual(swapsToSettle([], [{ ...g, entries: [r(0, 0), r(1, 10000)] }]), []);
 });

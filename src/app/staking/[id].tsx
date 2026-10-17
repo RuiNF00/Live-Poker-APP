@@ -11,13 +11,14 @@ import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, Pay
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
-import { money, shortDate } from '@/poker/format';
+import { money, num, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
 import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
@@ -105,7 +106,7 @@ function BackerScreen() {
       ...l.rows
         .filter((r) => r.session.endedAt)
         .slice(0, 12)
-        .map((r) => `${shortDate(r.session.startedAt)} · ${r.session.name || t('Sessão')} · ${r.stake.share}% → ${money(r.owed - r.cost, r.session.currency || cur)}`),
+        .map((r) => `${shortDate(r.session.startedAt)} · ${r.session.name || t('Sessão')} · ${num(r.stake.share)}% → ${money(r.owed - r.cost, r.session.currency || cur)}`),
       '',
       t('Resultado: {amount}', { amount: money(l.result, cur) }),
       l.makeup ? t('Makeup: {amount}', { amount: money(l.makeup, cur) }) : '',
@@ -120,7 +121,7 @@ function BackerScreen() {
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
     const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined, l);
-    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
+    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: withLang(statementUrl(st, ref), variant) })].join('\n');
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       notice(t('Texto copiado'));
@@ -293,7 +294,7 @@ function BackerScreen() {
                     subtitle={
                       <Row gap={6} style={{ flexWrap: 'wrap' }}>
                         <T v="small">
-                          {[shortDate(s.startedAt), `${r.stake.share}%`, r.stake.markup !== 1 ? markupLabel(r.stake.markup) : '', pkgName(r.stake.packageId) ?? ''].filter(Boolean).join(' · ')}
+                          {[shortDate(s.startedAt), `${num(r.stake.share)}%`, r.stake.markup !== 1 ? markupLabel(r.stake.markup) : '', pkgName(r.stake.packageId) ?? ''].filter(Boolean).join(' · ')}
                         </T>
                         {!s.endedAt ? <Pill label={t('A decorrer')} color={C.good} icon="ellipse" /> : null}
                         {r.stake.unpaid ? <Pill label={t('Por pagar {amount}', { amount: money(r.cost, s.currency || cur) })} color={C.warn} /> : null}

@@ -7,9 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
 import { SharedHandsCard } from '@/components/SharedHandsCard';
+import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettleReminder';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
-import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
+import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, useSheetPad, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
@@ -65,6 +66,7 @@ const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
   const narrow = useWindowDimensions().width < 380;
+  const sheetPad = useSheetPad(S.xxl);
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
   const backup = useBackupWarning();
@@ -79,6 +81,7 @@ export default function HandsScreen() {
   const [filtering, setFiltering] = useState(false);
   const coach = useCoach();
   const shared = useSharedHands();
+  const settle = useSwapSettleCard();
   const unread = useMemo(() => unreadByHand(coach), [coach]);
   const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
   const [searching, setSearching] = useState(false);
@@ -172,11 +175,19 @@ export default function HandsScreen() {
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
                     {hands.length > 1 ? <IconButton name={activeFilters(filter) || filter.sort !== 'recent' ? 'options' : 'options-outline'} label={t('Filtrar mãos')} onPress={() => setFiltering(true)} /> : null}
                     <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
-                    <IconButton name="settings-outline" label={t('Definições')} onPress={() => router.push('/settings')} />
+                    {/* New comments also show here, so they aren't lost when another card wins the one-card slot below. */}
+                    <IconButton
+                      name="settings-outline"
+                      label={shared.newTotal ? `${t('Definições')}, ${shared.newTotal === 1 ? t('1 comentário novo') : t('{n} comentários novos', { n: shared.newTotal })}` : t('Definições')}
+                      badge={shared.newTotal > 0}
+                      onPress={() => router.push('/settings')}
+                    />
                   </>
                 }
               />
-              {/* One summary row, then at most one context card, so a returning player still sees four hands. */}
+              {/* One summary row, then at most one context card, so a returning player still sees four hands.
+                  At the table only what's about the play (a hand to finish, a charge coming): news, the start
+                  checklist and Pro moments wait until the session ends. */}
               {!searching ? (
                 <HomeSummary
                   sessions={sessions}
@@ -214,13 +225,15 @@ export default function HandsScreen() {
                 <ChargeNotice end={chargeEnd} />
               ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+              ) : !activeSession && settle ? (
+                <SwapSettleCard {...settle} />
               ) : !activeSession && shared.newTotal > 0 ? (
                 <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
-              ) : news.item ? (
+              ) : !activeSession && news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
-              ) : checklist ? (
+              ) : !activeSession && checklist ? (
                 <StartChecklist state={checklist} />
-              ) : moment ? (
+              ) : !activeSession && moment ? (
                 <ProMoment state={moment} />
               ) : incomplete > 0 && tag !== INCOMPLETE ? (
                 <Banner
@@ -355,7 +368,7 @@ export default function HandsScreen() {
       <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
       <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={picked.size === 1 ? t('Tag para 1 mão') : t('Tag para {n} mãos', { n: picked.size })} onClose={() => setTagging(false)} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
               {DEFAULT_TAGS.map((tg) => {
@@ -628,6 +641,7 @@ const TO_REVIEW = '__review';
 /** "Guardar em pasta": private study folders, toggled on every picked hand. */
 function FolderSheet({ visible, onClose, folders, list, save }: { visible: boolean; onClose: () => void; folders: string[]; list: Hand[]; save: (h: Hand) => void }) {
   const [name, setName] = useState('');
+  const sheetPad = useSheetPad(S.xxl);
   const toggle = (f: string, on: boolean) => list.forEach((h) => save(fileInFolder(h, f, on)));
   const create = () => {
     const f = name.trim();
@@ -640,7 +654,7 @@ function FolderSheet({ visible, onClose, folders, list, save }: { visible: boole
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={list.length === 1 ? t('Guardar 1 mão em') : t('Guardar {n} mãos em', { n: list.length })} onClose={onClose} />
             {folders.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>

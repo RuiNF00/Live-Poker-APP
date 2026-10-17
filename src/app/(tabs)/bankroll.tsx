@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { FREE } from '@/billing/plans';
@@ -16,6 +16,7 @@ import { useSwaps } from '@/store/swaps-store';
 import { Insights } from '@/components/Insights';
 import { useLocked } from '@/components/ProGate';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
+import { useAfterFirstFrame } from '@/components/Deferred';
 import { usePaged } from '@/components/ShowMore';
 import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { WinRateCard } from '@/components/WinRate';
@@ -47,7 +48,7 @@ import {
 } from '@/store/bankroll-math';
 import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
-import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
+import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
@@ -63,6 +64,7 @@ function useFmt() {
   return (n: number, currency: string) => (hidden ? '•••' : money(n, currency));
 }
 
+const NONE: Session[] = [];
 export default function BankrollScreen() {
   const { settings: st0 } = useStore();
   return (
@@ -97,27 +99,30 @@ function BankrollTab() {
   const list = useMemo(() => applyFilter(scoped, filter), [scoped, filter]);
   // Years of sessions: everything below is worked out once per change of data or filter, not on every tap.
   const bal = useMemo(() => balanceOf(scope, sessions, transfers, bankrolls), [scope, sessions, transfers, bankrolls]);
-  const tot = useMemo(() => totals(list, cur), [list, cur]);
-  const wr = useMemo(() => winRate(cashDone(list, cur)), [list, cur]);
+  // The balance on the first frame; the stats, charts and history right after it.
+  const full = useAfterFirstFrame();
+  const stats = full ? list : NONE;
+  const tot = useMemo(() => totals(stats, cur), [stats, cur]);
+  const wr = useMemo(() => winRate(cashDone(stats, cur)), [stats, cur]);
   // Same as the month screen it opens: every session in this currency, no filters.
   const lastMonth = useMemo(() => {
-    const mine = sessions.filter((s) => s.currency === cur);
+    const mine = full ? sessions.filter((s) => s.currency === cur) : NONE;
     const k = defaultMonth(mine);
     return k ? monthRecap(mine, k, cur) : null;
-  }, [sessions, cur]);
+  }, [full, sessions, cur]);
   // "How is this month going?" one tap from the balance, without scrolling to the recap row.
   const [monthNow] = useState(() => monthKey(Date.now()));
   // Every session in the bankroll's currency, no filters: the same month the link opens.
   const thisMonth = useMemo(() => monthRecap(sessions, monthNow, cur), [sessions, monthNow, cur]);
   const hidden = !!settings.hideAmounts;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt only changes with `hidden`
-  const verdictNow = useMemo(() => verdict(list, cur, (n) => fmt(n, cur)), [list, cur, hidden]);
-  const pts = useMemo(() => curve(list, cur).map((p) => p.v), [list, cur]);
+  const verdictNow = useMemo(() => verdict(stats, cur, (n) => fmt(n, cur)), [stats, cur, hidden]);
+  const pts = useMemo(() => curve(stats, cur).map((p) => p.v), [stats, cur]);
   const dd = useMemo(() => drawdown(pts), [pts]);
-  const last5 = useMemo(() => lastResults(list, 5), [list]);
-  const first = useMemo(() => list.filter((s) => s.endedAt).reduce((a, s) => Math.min(a, s.startedAt), Infinity), [list]);
+  const last5 = useMemo(() => lastResults(stats, 5), [stats]);
+  const first = useMemo(() => stats.filter((s) => s.endedAt).reduce((a, s) => Math.min(a, s.startedAt), Infinity), [stats]);
   const onlyResults = game !== 'all' || format !== 'all' || stakes.length > 0;
-  const history = useMemo(() => ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range))), [list, onlyResults, scopedTx, range]);
+  const history = useMemo(() => (full ? ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range))) : []), [full, list, onlyResults, scopedTx, range]);
   const { shown: shownHistory, more: moreHistory } = usePaged(history);
   const nFilters = activeFilters(filter);
   // Nothing played yet in this bankroll: one next action, near the top.
@@ -128,6 +133,11 @@ function BankrollTab() {
   const pct = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
   const signedMoney = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : '') + fmt(n, cur));
   const pastBankroll = single ?? scopeBankrolls[0] ?? defaultBankroll;
+  const saveRef = useRef<(() => void) | null>(null);
+  const newPast = (): Session => {
+    const last = lastPlayed(pastBankroll.currency, sessions);
+    return { ...blankSession(last.kind ?? 'mtt', pastBankroll.currency, settings.defaultTableSize), ...last, bankrollId: pastBankroll.id };
+  };
   // What each bankroll's own rules let come out (a new withdrawal only).
   const keepFor = (id: string) => {
     const b = bankrolls.find((x) => x.id === id);
@@ -212,204 +222,216 @@ function BankrollTab() {
 
         {single && !(fresh && !bal.deposits) ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} onWithdraw={withdraw} /> : null}
 
-        <MoreTools />
-
-        {/* Filters only once there is something to filter. */}
-        {scoped.some((x) => x.endedAt) || nFilters ? (
-          <View style={{ gap: S.sm }}>
-            <Segmented
-              options={[
-                { key: 'all', label: t('Tudo') },
-                { key: 'mtt', label: t('Torneios') },
-                { key: 'cash', label: 'Cash' },
-              ]}
-              value={game}
-              onChange={setGame}
-            />
-            <Segmented
-              size="sm"
-              options={[
-                { key: 'all', label: t('Live e online') },
-                { key: 'live', label: 'Live' },
-                { key: 'online', label: 'Online' },
-              ]}
-              value={format}
-              onChange={setFormat}
-            />
-            <ChipRow>
-              {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
-              <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
-              {PRESETS.map((o) => (
-                <Chip
-                  key={o.key}
-                  label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
-                  icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
-                  active={preset === o.key}
-                  onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
-                />
-              ))}
-            </ChipRow>
-          </View>
-        ) : null}
-
-        <YearReviewEntry />
-
-        {tot.sessions === 0 ? (
-          nFilters ? (
-            <Empty icon="funnel-outline" title={t('Nada com estes filtros')} body={t('Nenhuma sessão terminada encaixa no que escolheste.')} action={<Button title={t('Limpar filtros')} kind="secondary" size="md" onPress={clearFilters} />} />
-          ) : (
-            fresh ? null : <Empty icon="stats-chart" title={t('Nada neste bankroll')} />
-          )
-        ) : (
+        {full ? (
           <>
-            <Card style={{ gap: S.sm, paddingBottom: S.md }}>
-              <Row>
-                <T v="label" style={{ flex: 1 }} numberOfLines={2}>
-                  {t('Resultado de póquer') + ' · ' + (preset === 'all' ? t('Tudo') : rangeLabel(preset, custom)).toLowerCase()}
-                </T>
-                <Dots results={last5} />
-              </Row>
-              <T v="monoL" color={tot.profit >= 0 ? C.good : C.bad} numberOfLines={1} adjustsFontSizeToFit>
-                {hidden ? '•••' : signedMoney(tot.profit)}
-              </T>
-              <T v={verdictNow.ready ? 'body' : 'small'} color={verdictNow.tone === 'good' ? C.good : verdictNow.tone === 'bad' ? C.bad : verdictNow.ready ? C.text : C.muted}>
-                {verdictNow.text}
-              </T>
-              <T v="small">
-                {[
-                  tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions }),
-                  t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
-                  tot.hours >= 0.25 ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
-                  first ? t('desde {date}', { date: shortDate(first) }) : '',
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </T>
-              <View style={{ marginTop: S.sm, marginHorizontal: -S.xs }}>
-                <LineChart
-                  values={pts}
-                  height={120}
-                  peaks={dd.peaks}
-                  label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)), drop: dd.max ? (hidden ? '•••' : '−' + fmt(dd.max, cur)) : '—' })}
-                />
-              </View>
-              <Row gap={S.sm}>
-                <Mini label={t('Pico')} value={fmt(dd.peak, cur)} />
-                <Mini label={t('Maior queda')} value={dd.max ? '−' + fmt(dd.max, cur) : '—'} color={dd.max ? C.bad : undefined} />
-                <Mini label={t('Abaixo do pico')} value={dd.current ? '−' + fmt(dd.current, cur) : t('No pico')} color={dd.current ? C.bad : C.good} />
-              </Row>
-              <T v="tiny">{t('Pico: o teu melhor resultado acumulado. Maior queda: o máximo que já desceste a partir de um pico.')}</T>
-            </Card>
-            <StatGrid cols={2}>
-              <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={tot.hours >= 0.25 ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
-              {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
-              {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
-              <Stat label={t('Buy-ins')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
-              {tot.tips ? <Stat label={t('Gorjetas')} sub={t('Já descontadas')} value={fmt(tot.tips, cur)} /> : null}
-              {tot.handsPerHour !== null ? <Stat label={t('Mãos por hora')} sub={t('Onde as contaste')} value={Math.round(tot.handsPerHour).toLocaleString(locale)} /> : null}
-              <Stat label={t('Melhor')} sub={t('Melhor sessão')} value={fmt(tot.best, cur)} tone="good" />
-              <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
-            </StatGrid>
-            {wr ? <WinRateCard w={wr} cur={cur} hidden={hidden} onPress={() => router.push({ pathname: '/winrate', params: { currency: cur } })} /> : null}
-            <Calendar list={list} cur={cur} />
-            <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
-            <Breakdowns list={list} cur={cur} />
-            {!isPro ? (
-              <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
+          <MoreTools />
+
+          {/* Filters only once there is something to filter. */}
+          {scoped.some((x) => x.endedAt) || nFilters ? (
+            <View style={{ gap: S.sm }}>
+              <Segmented
+                options={[
+                  { key: 'all', label: t('Tudo') },
+                  { key: 'mtt', label: t('Torneios') },
+                  { key: 'cash', label: 'Cash' },
+                ]}
+                value={game}
+                onChange={setGame}
+              />
+              <Segmented
+                size="sm"
+                options={[
+                  { key: 'all', label: t('Live e online') },
+                  { key: 'live', label: 'Live' },
+                  { key: 'online', label: 'Online' },
+                ]}
+                value={format}
+                onChange={setFormat}
+              />
+              <ChipRow>
+                {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
+                <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
+                {PRESETS.map((o) => (
+                  <Chip
+                    key={o.key}
+                    label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
+                    icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
+                    active={preset === o.key}
+                    onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
+                  />
+                ))}
+              </ChipRow>
+            </View>
+          ) : null}
+
+          <YearReviewEntry />
+
+          {tot.sessions === 0 ? (
+            nFilters ? (
+              <Empty icon="funnel-outline" title={t('Nada com estes filtros')} body={t('Nenhuma sessão terminada encaixa no que escolheste.')} action={<Button title={t('Limpar filtros')} kind="secondary" size="md" onPress={clearFilters} />} />
+            ) : (
+              fresh ? null : <Empty icon="stats-chart" title={t('Nada neste bankroll')} />
+            )
+          ) : (
+            <>
+              <Card style={{ gap: S.sm, paddingBottom: S.md }}>
                 <Row>
-                  <Ionicons name="sparkles" size={18} color={C.accent} />
-                  <T v="h3" style={{ flex: 1 }}>
-                    {t('Onde é que ganhas mais?')}
+                  <T v="label" style={{ flex: 1 }} numberOfLines={2}>
+                    {t('Resultado de póquer') + ' · ' + (preset === 'all' ? t('Tudo') : rangeLabel(preset, custom)).toLowerCase()}
                   </T>
+                  <Dots results={last5} />
                 </Row>
-                <T v="small">{t('Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.')}</T>
-                <T v="h3" color={C.accent}>
-                  {t('Experimentar Pro')} ›
+                <T v="monoL" color={tot.profit >= 0 ? C.good : C.bad} numberOfLines={1} adjustsFontSizeToFit>
+                  {hidden ? '•••' : signedMoney(tot.profit)}
                 </T>
+                <T v={verdictNow.ready ? 'body' : 'small'} color={verdictNow.tone === 'good' ? C.good : verdictNow.tone === 'bad' ? C.bad : verdictNow.ready ? C.text : C.muted}>
+                  {verdictNow.text}
+                </T>
+                <T v="small">
+                  {[
+                    tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions }),
+                    t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
+                    tot.hours >= 0.25 ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
+                    first ? t('desde {date}', { date: shortDate(first) }) : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </T>
+                <View style={{ marginTop: S.sm, marginHorizontal: -S.xs }}>
+                  <LineChart
+                    values={pts}
+                    height={120}
+                    peaks={dd.peaks}
+                    label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)), drop: dd.max ? (hidden ? '•••' : '−' + fmt(dd.max, cur)) : '—' })}
+                  />
+                </View>
+                <Row gap={S.sm}>
+                  <Mini label={t('Pico')} value={fmt(dd.peak, cur)} />
+                  <Mini label={t('Maior queda')} value={dd.max ? '−' + fmt(dd.max, cur) : '—'} color={dd.max ? C.bad : undefined} />
+                  <Mini label={t('Abaixo do pico')} value={dd.current ? '−' + fmt(dd.current, cur) : t('No pico')} color={dd.current ? C.bad : C.good} />
+                </Row>
+                <T v="tiny">{t('Pico: o teu melhor resultado acumulado. Maior queda: o máximo que já desceste a partir de um pico.')}</T>
               </Card>
-            ) : null}
-            <ListGroup>
-              {tot.itm !== null ? <ListItem icon="trophy-outline" iconColor={C.accent} title={t('Torneios')} subtitle={t('ROI por buy-in, festival e jogo, e o teu currículo')} onPress={() => router.push('/tournament-stats')} /> : null}
-              {lastMonth?.sessions ? (
-                <ListItem
-                  icon="calendar-outline"
-                  iconColor={C.accent}
-                  title={t('Resumo do mês')}
-                  subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: Math.round(lastMonth.hours) })}
-                  onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key, c: cur } })}
-                />
+              <StatGrid cols={2}>
+                <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={tot.hours >= 0.25 ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
+                {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
+                {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
+                <Stat label={t('Buy-ins')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
+                {tot.tips ? <Stat label={t('Gorjetas')} sub={t('Já descontadas')} value={fmt(tot.tips, cur)} /> : null}
+                {tot.handsPerHour !== null ? <Stat label={t('Mãos por hora')} sub={t('Onde as contaste')} value={Math.round(tot.handsPerHour).toLocaleString(locale)} /> : null}
+                <Stat label={t('Melhor')} sub={t('Melhor sessão')} value={fmt(tot.best, cur)} tone="good" />
+                <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
+              </StatGrid>
+              {wr ? <WinRateCard w={wr} cur={cur} hidden={hidden} onPress={() => router.push({ pathname: '/winrate', params: { currency: cur } })} /> : null}
+              <Calendar list={list} cur={cur} />
+              <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
+              <Breakdowns list={list} cur={cur} />
+              {!isPro ? (
+                <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
+                  <Row>
+                    <Ionicons name="sparkles" size={18} color={C.accent} />
+                    <T v="h3" style={{ flex: 1 }}>
+                      {t('Onde é que ganhas mais?')}
+                    </T>
+                  </Row>
+                  <T v="small">{t('Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.')}</T>
+                  <T v="h3" color={C.accent}>
+                    {t('Experimentar Pro')} ›
+                  </T>
+                </Card>
               ) : null}
-              {tot.sessions && list.some((x) => x.kind === 'cash') ? (
+              <ListGroup>
+                {tot.itm !== null ? <ListItem icon="trophy-outline" iconColor={C.accent} title={t('Torneios')} subtitle={t('ROI por buy-in, festival e jogo, e o teu currículo')} onPress={() => router.push('/tournament-stats')} /> : null}
+                {lastMonth?.sessions ? (
+                  <ListItem
+                    icon="calendar-outline"
+                    iconColor={C.accent}
+                    title={t('Resumo do mês')}
+                    subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: Math.round(lastMonth.hours) })}
+                    onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key, c: cur } })}
+                  />
+                ) : null}
+                {tot.sessions && list.some((x) => x.kind === 'cash') ? (
+                  <ListItem
+                    icon="layers-outline"
+                    iconColor={C.accent}
+                    title={t('Posso subir de stake?')}
+                    subtitle={t('Buy-ins para a tua stake e para a de cima')}
+                    onPress={() => router.push({ pathname: '/moveup', params: { bankroll: pastBankroll.id } })}
+                  />
+                ) : null}
                 <ListItem
-                  icon="layers-outline"
-                  iconColor={C.accent}
-                  title={t('Posso subir de stake?')}
-                  subtitle={t('Buy-ins para a tua stake e para a de cima')}
-                  onPress={() => router.push({ pathname: '/moveup', params: { bankroll: pastBankroll.id } })}
+                  icon="trending-down"
+                  iconColor={C.bad}
+                  title={t('Downswings')}
+                  subtitle={dd.max ? t('Agora: {now} · maior: −{max}', { now: dd.current ? '−' + fmt(dd.current, cur) : t('no pico'), max: fmt(dd.max, cur) }) : t('A tua maior queda e se é normal')}
+                  onPress={() => router.push({ pathname: '/downswing', params: { currency: cur } })}
                 />
-              ) : null}
-              <ListItem
-                icon="trending-down"
-                iconColor={C.bad}
-                title={t('Downswings')}
-                subtitle={dd.max ? t('Agora: {now} · maior: −{max}', { now: dd.current ? '−' + fmt(dd.current, cur) : t('no pico'), max: fmt(dd.max, cur) }) : t('A tua maior queda e se é normal')}
-                onPress={() => router.push({ pathname: '/downswing', params: { currency: cur } })}
-              />
-              <ListItem
-                icon="pulse-outline"
-                iconColor={C.accent}
-                title={t('Diário mental')}
-                subtitle={(() => {
-                  const n = list.filter((x) => x.mind).length;
-                  const top = !insightsLocked && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
-                  return top ? top.title : n ? t('{n} check-ins · só tu vês', { n }) : t('Sono, foco e tilt: o que mexem no teu resultado');
-                })()}
-                onPress={() => router.push({ pathname: '/mind', params: { currency: cur } })}
-              />
-              <ListItem
-                icon="stats-chart-outline"
-                iconColor={C.info}
-                title={t('Calculadora de variância')}
-                subtitle={t('Quanto podes ganhar ou perder nas próximas horas ou torneios')}
-                onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })}
-              />
-            </ListGroup>
+                <ListItem
+                  icon="pulse-outline"
+                  iconColor={C.accent}
+                  title={t('Diário mental')}
+                  subtitle={(() => {
+                    const n = list.filter((x) => x.mind).length;
+                    const top = !insightsLocked && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
+                    return top ? top.title : n ? t('{n} check-ins · só tu vês', { n }) : t('Sono, foco e tilt: o que mexem no teu resultado');
+                  })()}
+                  onPress={() => router.push({ pathname: '/mind', params: { currency: cur } })}
+                />
+                <ListItem
+                  icon="stats-chart-outline"
+                  iconColor={C.info}
+                  title={t('Calculadora de variância')}
+                  subtitle={t('Quanto podes ganhar ou perder nas próximas horas ou torneios')}
+                  onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })}
+                />
+              </ListGroup>
+            </>
+          )}
+          {history.length ? (
+            <Section title={t('Histórico')}>
+              <ListGroup>
+                {shownHistory.map((e) =>
+                  'session' in e ? (
+                    <SessionRow
+                      key={e.session.id}
+                      s={e.session}
+                      bankroll={single ? undefined : bankrollOf(e.session, bankrolls)?.name}
+                      onDelete={() => confirmAction(t('Apagar esta sessão?'), e.session.name || '', t('Apagar'), () => deleteSession(e.session.id))}
+                      onEdit={() => setSheet({ type: 'session', s: e.session })}
+                    />
+                  ) : (
+                    <TransferRow
+                      key={e.transfer.id}
+                      x={e.transfer}
+                      bankroll={single ? undefined : bankrolls.find((b) => b.id === e.transfer.bankrollId)?.name}
+                      onPress={() => setSheet({ type: 'transfer', x: e.transfer, isNew: false })}
+                    />
+                  ),
+                )}
+              </ListGroup>
+              {moreHistory}
+            </Section>
+          ) : null}
           </>
+        ) : (
+          <View style={{ height: 900 }} />
         )}
-        {history.length ? (
-          <Section title={t('Histórico')}>
-            <ListGroup>
-              {shownHistory.map((e) =>
-                'session' in e ? (
-                  <SessionRow
-                    key={e.session.id}
-                    s={e.session}
-                    bankroll={single ? undefined : bankrollOf(e.session, bankrolls)?.name}
-                    onDelete={() => confirmAction(t('Apagar esta sessão?'), e.session.name || '', t('Apagar'), () => deleteSession(e.session.id))}
-                    onEdit={() => setSheet({ type: 'session', s: e.session })}
-                  />
-                ) : (
-                  <TransferRow
-                    key={e.transfer.id}
-                    x={e.transfer}
-                    bankroll={single ? undefined : bankrolls.find((b) => b.id === e.transfer.bankrollId)?.name}
-                    onPress={() => setSheet({ type: 'transfer', x: e.transfer, isNew: false })}
-                  />
-                ),
-              )}
-            </ListGroup>
-            {moreHistory}
-          </Section>
-        ) : null}
       </Screen>
 
-      <Sheet visible={sheet?.type === 'session'} title={sheet?.type === 'session' && sheet.s !== 'new' ? t('Editar sessão') : t('Sessão passada')} onClose={() => setSheet(null)}>
+      <Sheet
+        visible={sheet?.type === 'session'}
+        title={sheet?.type === 'session' && sheet.s !== 'new' ? t('Editar sessão') : t('Sessão passada')}
+        onClose={() => setSheet(null)}
+        footer={<Button title={t('Guardar sessão')} icon="checkmark" onPress={() => saveRef.current?.()} />}>
         {sheet?.type === 'session' ? (
           <SessionForm
             key={sheet.s === 'new' ? 'new' : sheet.s.id}
             past
             bankrolls={bankrolls}
-            initial={sheet.s === 'new' ? { ...blankSession('mtt', pastBankroll.currency, settings.defaultTableSize), bankrollId: pastBankroll.id } : sheet.s}
+            // A new one starts as the last game played in this bankroll's currency: the result is what's left to type.
+            initial={sheet.s === 'new' ? newPast() : sheet.s}
+            submitRef={saveRef}
             recentNames={[...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8)}
             recentVenues={[...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8)}
             submitLabel={t('Guardar sessão')}

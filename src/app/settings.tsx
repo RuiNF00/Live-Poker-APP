@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePro } from '@/billing/pro';
+import { LOCAL_PRO, usePro } from '@/billing/pro';
 import { manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
@@ -23,7 +23,7 @@ import { saveTextFile } from '@/lib/files';
 import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
-import { buildBackup } from '@/store/backup';
+import { buildBackup, sessionsCsv } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
@@ -90,6 +90,15 @@ export default function SettingsScreen() {
     tap();
     try {
       await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup(store)), 'application/json');
+    } catch {
+      note(t('Não deu para exportar'), t('Tenta outra vez.'));
+    }
+  };
+  // Every session and bankroll move in the CSV the import screen reads back: free, it's the player's data.
+  const exportCsv = async () => {
+    tap();
+    try {
+      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(store.sessions, store.bankrolls, store.transfers), 'text/csv');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }
@@ -185,6 +194,7 @@ export default function SettingsScreen() {
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
             {/* One way in: the import screen reads Sweatbook copies and other apps' files alike. */}
             <ListItem icon="push-outline" title={t('Importar')} subtitle={t('Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV')} onPress={() => router.push('/import')} />
+            <ListItem icon="grid-outline" title={t('Exportar sessões em CSV')} subtitle={t('Todas, para o Excel ou para importar outra vez')} onPress={exportCsv} />
             <ListItem icon="document-text-outline" title={t('Relatório PDF e CSV')} subtitle={t('Por ano ou datas: sessões, mãos, resultados')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={() => router.push('/export')} />
           </ListGroup>
         </Section>
@@ -197,7 +207,7 @@ export default function SettingsScreen() {
               iconColor={C.accent}
               title={t('Mãos partilhadas')}
               subtitle={t('As mãos dos teus amigos e os comentários nas tuas')}
-              right={shared.newTotal ? <Badge solid color={C.accent} label={String(shared.newTotal)} /> : undefined}
+              right={shared.newTotal ? <Badge solid color={C.accent} label={shared.newTotal === 1 ? t('1 novo') : t('{n} novos', { n: shared.newTotal })} /> : undefined}
               onPress={() => router.push('/shared-hands')}
             />
             <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
@@ -215,7 +225,7 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               onPress={() => (pro.isPro ? router.push('/cancel') : manageSubscription())}
             />
             <ListItem
