@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, packageStates, pieceSteps, withCuts } from '../staking';
+import { backerLedger, packageStates, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -138,4 +138,42 @@ test('live snapshot: only what backers need, clock changes are not an update', (
   assert.equal(liveSnapshot({ ...s, live: { id: 'x', token: 'y', showVenue: true } }, 'Rui', 3).venue, s.venue);
   assert.equal(snapshotKey(a), snapshotKey(liveSnapshot(s, 'Rui', 3, 99_000)));
   assert.notEqual(snapshotKey(a), snapshotKey(liveSnapshot({ ...s, stack: 1 }, 'Rui', 3, 10_000)));
+});
+
+// QA: home currency €, a backing on $ sessions showed "Deves 14 508€".
+const fxTable = { '2026-12-03': { USD: 1.1 }, '2026-10-17': { USD: 1.25 } };
+const usd = (over: Partial<Session> = {}) =>
+  mk({ currency: '$', startedAt: Date.UTC(2026, 11, 3), endedAt: Date.UTC(2026, 11, 4), stakes: [{ backerId: 'b1', share: 50, markup: 1 }], ...over });
+
+test('a $ deal stays in $ when the home currency is €', () => {
+  const l = backerLedger('b1', [usd({ buyIn: 1000, cashOut: 30016 })], [], [], undefined, { table: fxTable, fallback: '€' });
+  assert.equal(l.currency, '$');
+  assert.equal(Math.round(l.balance), 15008);
+  const tot = stakingTotals([l], '€', fxTable, Date.UTC(2026, 9, 17));
+  assert.equal(tot.currency, '$');
+  assert.equal(Math.round(tot.owe), 15008);
+  assert.equal(tot.approx, false);
+});
+
+test("sessions in another currency count at their day's rate in the deal's currency", () => {
+  const eur = usd({ currency: '€', buyIn: 100 });
+  const l = backerLedger('b1', [usd({ buyIn: 1000 }), eur], [], [], undefined, { table: fxTable, fallback: '€' });
+  assert.equal(l.currency, '$');
+  // 500$ + 50€ × 1.1
+  assert.equal(Math.round(l.invested * 100) / 100, 555);
+  const none = backerLedger('b1', [usd({ buyIn: 1000 }), eur], [], [], undefined, { table: {}, fallback: '€' });
+  assert.deepEqual(none.missing, ['€']);
+});
+
+test("backers in different currencies add up in the home one at today's rate, or stay split without a rate", () => {
+  const a = { ...backerLedger('x', [], [], []), currency: '$', balance: 1250 };
+  const b = { ...backerLedger('x', [], [], []), currency: '€', balance: 100 };
+  const now = Date.UTC(2026, 9, 17);
+  const tot = stakingTotals([a, b], '€', fxTable, now);
+  assert.equal(tot.currency, '€');
+  assert.equal(Math.round(tot.owe), 1100);
+  assert.equal(tot.approx, true);
+  assert.equal(tot.oweTo, 2);
+  const split = stakingTotals([a, b], '€', {}, now);
+  assert.deepEqual(split.split?.map((x) => x.currency).sort(), ['$', '€']);
 });

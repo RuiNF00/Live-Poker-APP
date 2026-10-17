@@ -2,6 +2,7 @@
 // the balance between you. Pure, so it can be tested; screens call these with
 // the store's lists.
 
+import { rate, type RateTable } from './fx-math';
 import { cost, pieceOf, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
@@ -110,6 +111,13 @@ export interface BackerLedgerRow {
 
 export interface BackerLedger {
   rows: BackerLedgerRow[];
+  /**
+   * The currency the deal is kept in: the one most of their money went in at.
+   * Rows keep their session's currency; every total below is in this one.
+   */
+  currency: string;
+  /** Session currencies with no rate to convert them: counted as if they were `currency`. */
+  missing: string[];
   /** Their money in, over every session. */
   invested: number;
   /** Their result: owed minus invested, ended sessions only. */
@@ -138,6 +146,7 @@ export function backerLedger(
   packages: StakePackage[],
   payments: BackerPayment[],
   pk = packageStates(sessions, packages),
+  fx: { table: RateTable; fallback: string } = { table: {}, fallback: '' },
 ): BackerLedger {
   const pkgOf = new Map(packages.map((p) => [p.id, p]));
   const rows: BackerLedgerRow[] = [];
@@ -151,18 +160,30 @@ export function backerLedger(
       rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut });
     }
   rows.sort((a, b) => byEnd(b.session, a.session));
+  const currency = dealCurrency(rows) ?? fx.fallback;
+  // Each session's money in the deal's currency, at that day's rate.
+  const missing = new Set<string>();
+  const k = (r: BackerLedgerRow) => {
+    const c = r.session.currency;
+    if (!c || c === currency) return 1;
+    const x = rate(fx.table, c, currency, r.session.startedAt);
+    if (x === null) missing.add(c);
+    return x ?? 1;
+  };
   const done = rows.filter((r) => r.session.endedAt);
-  const invested = rows.reduce((a, r) => a + r.cost, 0);
-  const prizes = done.reduce((a, r) => a + r.prize, 0);
-  const cut = done.reduce((a, r) => a + r.cut, 0);
+  const invested = rows.reduce((a, r) => a + r.cost * k(r), 0);
+  const prizes = done.reduce((a, r) => a + r.prize * k(r), 0);
+  const cut = done.reduce((a, r) => a + r.cut * k(r), 0);
   const owed = prizes - cut;
-  const unpaid = rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + r.cost, 0);
+  const unpaid = rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + r.cost * k(r), 0);
   const paid = payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0);
   const makeup = packages.filter((p) => p.backerId === backerId && !p.closedAt).reduce((a, p) => a + (pk.states.get(p.id)?.makeup ?? 0), 0);
   return {
     rows,
+    currency,
+    missing: [...missing],
     invested,
-    result: owed - done.reduce((a, r) => a + r.cost, 0),
+    result: owed - done.reduce((a, r) => a + r.cost * k(r), 0),
     prizes,
     cut,
     owed,
@@ -173,6 +194,62 @@ export function backerLedger(
     live: rows.length - done.length,
   };
 }
+
+/** The currency most of the backer's money went in at (ties: the newest session's). Undefined with no sessions. */
+function dealCurrency(rows: BackerLedgerRow[]): string | undefined {
+  const by = new Map<string, number>();
+  for (const r of rows) if (r.session.currency) by.set(r.session.currency, (by.get(r.session.currency) ?? 0) + r.cost);
+  let best: string | undefined;
+  for (const r of rows) {
+    const c = r.session.currency;
+    if (c && (best === undefined || (by.get(c) ?? 0) > (by.get(best) ?? 0))) best = c;
+  }
+  return best;
+}
+
+/**
+ * Where you stand with every backer, for the headline. Each balance stays in its
+ * deal's currency; with more than one currency, the totals are also given in
+ * `home` at today's rate (`approx`), or per currency when a rate is missing.
+ */
+export function stakingTotals(ledgers: BackerLedger[], home: string, table: RateTable, now = Date.now()) {
+  const per = new Map<string, { owe: number; owed: number }>();
+  let oweTo = 0;
+  let owedBy = 0;
+  for (const l of ledgers) {
+    const c = l.currency || home;
+    const acc = per.get(c) ?? { owe: 0, owed: 0 };
+    acc.owe += Math.max(0, l.balance);
+    acc.owed += Math.max(0, -l.balance);
+    per.set(c, acc);
+    if (l.balance >= 0.5) oweTo++;
+    if (l.balance <= -0.5) owedBy++;
+  }
+  const byCurrency = [...per.entries()].map(([currency, acc]) => ({ currency, ...acc })).filter((x) => x.owe >= 0.5 || x.owed >= 0.5);
+  const cur = byCurrency.length === 1 ? byCurrency[0].currency : home;
+  let owe = 0;
+  let owed = 0;
+  let convertible = true;
+  for (const x of byCurrency) {
+    const r = rate(table, x.currency, cur, now);
+    if (r === null) convertible = false;
+    owe += x.owe * (r ?? 1);
+    owed += x.owed * (r ?? 1);
+  }
+  return {
+    currency: cur,
+    owe,
+    owed,
+    oweTo,
+    owedBy,
+    /** Totals converted from other currencies at today's rate. */
+    approx: convertible && byCurrency.some((x) => x.currency !== cur),
+    /** Set when the currencies can't be added up: show these instead of one number. */
+    split: convertible ? null : byCurrency,
+  };
+}
+
+export type StakingTotals = ReturnType<typeof stakingTotals>;
 
 /** A session's pieces in one package (normally one): the cut is split between them. */
 function packagePiece(s: Session, pkgId: string): number {

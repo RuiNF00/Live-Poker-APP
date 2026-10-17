@@ -1177,6 +1177,7 @@ const en: Record<string, string> = {
   'No total, deves aos backers': 'Overall, you owe your backers',
   'No total, os backers devem-te': 'Overall, your backers owe you',
   'deves {amount} a 1 backer': 'you owe 1 backer {amount}',
+  'Em {currency} ao câmbio de hoje. Cada backer fica na moeda das sessões dele.': "In {currency} at today's rate. Each backer stays in their sessions' currency.",
   'deves {amount} a {n} backers': 'you owe {n} backers {amount}',
   '1 deve-te {amount}': '1 owes you {amount}',
   '{n} devem-te {amount}': '{n} owe you {amount}',
