@@ -342,6 +342,7 @@ const en: Record<string, string> = {
   'Restaurar compras': 'Restore purchases',
   'Termos': 'Terms',
   'Privacidade': 'Privacy',
+  'Sem compromisso. Cancela quando quiseres.': 'No commitment. Cancel anytime.',
   'Primeira semana': 'First week',
   'Esconder': 'Hide',
   'Guarda 3 mãos': 'Save 3 hands',
