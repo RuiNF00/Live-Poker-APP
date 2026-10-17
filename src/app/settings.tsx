@@ -133,7 +133,7 @@ export default function SettingsScreen() {
 
         <T v="h2">{t('Conta')}</T>
         <Panel style={{ gap: 0, padding: 0 }}>
-          {!pro.isPro ? <Item icon="flash-outline" label={t('Ver o Sweatbook Pro')} onPress={() => pro.paywall('generic')} /> : null}
+          {!pro.isPro ? <Item icon="flash-outline" label={pro.trialDays ? t('Experimentar o Pro {days} dias grátis', { days: pro.trialDays }) : t('Ver o Sweatbook Pro')} onPress={() => pro.paywall('generic')} /> : null}
           <Item
             icon="refresh-outline"
             label={t('Restaurar compras')}

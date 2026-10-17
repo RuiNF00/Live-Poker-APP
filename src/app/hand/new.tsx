@@ -3,7 +3,10 @@
 // closes, showdown, tags. Every step is one tap where possible:
 //  - one tap per card (full-deck grid),
 //  - one tap per action, with sizes as presets (2.2x, 33%, pote…),
+//  - preflop, folds up to hero are automatic (again after each opponent who
+//    comes in); whoever else came in is one tap on "alguém entrou?",
 //  - "salta para" chips fold/check everyone in between in one tap,
+//  - "só X paga" / "todos fold" / "todos check" close a street in one tap,
 //  - context (tournament, blinds, table) carries over from the session.
 
 import { Ionicons } from '@expo/vector-icons';
@@ -23,8 +26,8 @@ import { Button, Chip, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { callerCandidates, onlyCaller, sizePresets, skipTargets, skipTo } from '@/poker/entry';
-import { newHand, rescaleStacks, resizeTable } from '@/poker/factory';
+import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
+import { newHand, nextLevel, rescaleStacks, resizeTable } from '@/poker/factory';
 import { amount, blindsLabel, chips } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
@@ -36,6 +39,8 @@ const STREET_PT = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 
 interface Draft {
   hand: Hand;
   posChosen: boolean;
+  /** Set when the last step was automatic folds: the first of those actions. */
+  autoFrom?: number;
 }
 
 export default function NewHand() {
@@ -57,7 +62,8 @@ export default function NewHand() {
   const [seatEdit, setSeatEdit] = useState<number | null>(null);
   const [pad, setPad] = useState(false);
   const [inBB, setInBB] = useState(settings.inBB);
-  const [showdownFor, setShowdownFor] = useState<number | null>(null);
+  // undefined: the picker opens by itself for the only opponent left; null: closed.
+  const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
 
   const hand = draft.hand;
   const n = hand.players.length;
@@ -71,9 +77,9 @@ export default function NewHand() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand]);
 
-  const update = (h: Hand, posChosen = draft.posChosen) => {
+  const update = (h: Hand, posChosen = draft.posChosen, autoFrom?: number) => {
     setHistory((x) => [...x.slice(-60), draft]);
-    setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen });
+    setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen, autoFrom });
   };
   const undo = () => {
     tap();
@@ -93,18 +99,28 @@ export default function NewHand() {
   else if (r.result && !s.foldWin) phase = 'showdown';
   else phase = 'done';
 
-  // Most hands fold to hero: do that automatically once per position. Undo
-  // brings back the seats before hero if someone did enter the pot.
-  const autoFolded = useRef('');
+  // Most hands fold to hero: do that automatically, at the start and after each
+  // opponent who comes in before hero. Once per state, so undo or a rewind
+  // never folds the same seats again. A reopened draft or an edited hand keeps
+  // what was entered: none of its states folds again, even after undo.
+  const autoDone = useRef(new Set<string>(hand.actions.length ? Array.from({ length: hand.actions.length + 1 }, (_, k) => `${hand.id}:${hand.button}:${k}`) : []));
   useEffect(() => {
-    const key = `${hand.id}:${hand.button}`;
-    if (phase !== 'action' || hand.actions.length || s.street !== 'preflop' || s.toAct === hand.hero || autoFolded.current === key) return;
-    autoFolded.current = key;
-    const acts = skipTo(hand, s, hand.hero);
-    if (acts.length) pushActions(acts);
+    const key = `${hand.id}:${hand.button}:${hand.actions.length}`;
+    if (phase !== 'action' || autoDone.current.has(key)) return;
+    const acts = autoFold(hand, s);
+    if (!acts.length) return;
+    autoDone.current.add(key);
+    update({ ...hand, actions: [...hand.actions, ...acts] }, draft.posChosen, hand.actions.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, hand.actions.length, hand.button]);
-  const autoFoldCount = autoFolded.current === `${hand.id}:${hand.button}` && hand.actions.length && hand.actions.every((a) => a.kind === 'fold' && a.p !== hand.hero) ? hand.actions.length : 0;
+  const autoSeats = draft.autoFrom !== undefined && phase === 'action' ? hand.actions.slice(draft.autoFrom).map((a) => a.p) : [];
+  const rewind = (seat: number) => {
+    if (draft.autoFrom === undefined) return;
+    const actions = rewindTo(hand, draft.autoFrom, seat);
+    if (!actions) return;
+    tap();
+    update({ ...hand, actions });
+  };
 
   const setPlayer = (i: number, p: Player) => {
     const players = hand.players.map((x, k) => (k === i ? p : x));
@@ -119,6 +135,7 @@ export default function NewHand() {
   };
   const setHeroPos = (label: string) => {
     const button = buttonForHeroPosition(n, hand.hero, label);
+    autoDone.current.clear();
     update({ ...hand, button, actions: [] }, true);
   };
   const pushActions = (acts: HandAction[]) => update({ ...hand, actions: [...hand.actions, ...acts] });
@@ -195,6 +212,11 @@ export default function NewHand() {
   const presets = phase === 'action' ? sizePresets(hand, s) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
   const callers = phase === 'action' ? callerCandidates(hand, s) : [];
+  const checks = phase === 'action' ? checkAround(hand, s) : [];
+  const levelUp = phase === 'hero' ? nextLevel(hand.game) : null;
+  // Heads-up showdown: the picker for the opponent's cards is already open.
+  const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
+  const sdSeat = showdownFor !== undefined ? showdownFor : liveVillains.length === 1 && (hand.players[liveVillains[0]].cards?.length ?? 0) < 2 ? liveVillains[0] : null;
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
   return (
@@ -254,6 +276,19 @@ export default function NewHand() {
               </Row>
               <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
             </View>
+            {levelUp && (
+              <Pressable
+                onPress={() => {
+                  tap();
+                  update(hand.sessionId ? { ...hand, game: levelUp } : rescaleStacks(hand, levelUp));
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, padding: 12, borderRadius: R.md }}>
+                <Ionicons name="trending-up" size={16} color={C.accent} />
+                <T v="small" style={{ flex: 1 }}>
+                  {t('Subiram as blinds? Toca para {blinds}', { blinds: blindsLabel({ ...hand, game: levelUp }) })}
+                </T>
+              </Pressable>
+            )}
             <Pressable onPress={() => setSeatEdit(hand.hero)} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: C.surface, padding: 12, borderRadius: R.md }}>
               <T v="small">{t('O teu stack (toca num lugar para mudar nome ou stack)')}</T>
               <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
@@ -270,12 +305,18 @@ export default function NewHand() {
               </T>
               {l.toCall > 0 ? <T v="small">{t('para pagar {amount}', { amount: amount(l.toCall, hand, inBB) })}</T> : null}
             </Row>
-            {autoFoldCount > 0 && l.p === hand.hero && (
-              <Pressable onPress={undo} hitSlop={6}>
+            {autoSeats.length > 0 && (
+              <View style={{ gap: 6 }}>
                 <T v="small">
-                  {t('Fold de todos até ti')} · <T v="small" color={C.accent}>{t('alguém entrou antes? Desfaz')}</T>
+                  {l.p === hand.hero ? t('Fold de todos até ti') : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })} ·{' '}
+                  <T v="small" color={C.accent}>{t('alguém entrou? Toca no lugar')}</T>
                 </T>
-              </Pressable>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                  {autoSeats.map((i) => (
+                    <Chip key={i} label={pos[i] + (hand.players[i].name ? ` · ${hand.players[i].name}` : '')} onPress={() => rewind(i)} />
+                  ))}
+                </ScrollView>
+              </View>
             )}
             {callers.length > 0 && (
               <View style={{ gap: 6 }}>
@@ -293,7 +334,10 @@ export default function NewHand() {
                 <Button title="Fold" kind="secondary" style={{ flex: 1 }} onPress={() => act('fold')} />
               ) : null}
               {l.canCheck ? (
-                <Button title="Check" kind="secondary" style={{ flex: 1 }} onPress={() => act('check')} />
+                <>
+                  <Button title="Check" kind="secondary" style={{ flex: 1 }} onPress={() => act('check')} />
+                  {checks.length > 0 ? <Button title={t('Todos check')} kind="secondary" style={{ flex: 1 }} onPress={() => { tap(); pushActions(checks); }} /> : null}
+                </>
               ) : (
                 <Button title={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} style={{ flex: 1.4 }} onPress={() => act('call')} />
               )}
@@ -378,24 +422,24 @@ export default function NewHand() {
                       <Chip
                         key={i}
                         big
-                        active={showdownFor === i}
+                        active={sdSeat === i}
                         label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
-                        onPress={() => setShowdownFor(showdownFor === i ? null : i)}
+                        onPress={() => setShowdownFor(sdSeat === i ? null : i)}
                       />
                     ),
                   )}
                 </Row>
-                {showdownFor !== null && (
+                {sdSeat !== null && (
                   <CardPicker
-                    used={usedCards(hand, hand.players[showdownFor].cards ?? [])}
-                    selected={hand.players[showdownFor].cards ?? []}
+                    used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
+                    selected={hand.players[sdSeat].cards ?? []}
                     onPick={(c) => {
-                      const p = hand.players[showdownFor];
+                      const p = hand.players[sdSeat];
                       let cards = [...(p.cards ?? [])];
                       if (cards.includes(c)) cards = cards.filter((x) => x !== c);
                       else if (cards.length < 2) cards.push(c);
                       else cards = [cards[1], c];
-                      setPlayer(showdownFor, { ...p, cards });
+                      setPlayer(sdSeat, { ...p, cards });
                       if (cards.length === 2) setShowdownFor(null);
                     }}
                   />
@@ -444,7 +488,7 @@ export default function NewHand() {
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.md, padding: 12, gap: 4, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
             <T v="h2">{t('Primeira mão? É rápido:')}</T>
             <T v="small" style={{ color: C.text, lineHeight: 19 }}>
-              {t('1. Toca na tua posição e nas tuas duas cartas.\n2. Os folds até ti são automáticos. Depois do teu raise, usa "Só X paga".\n3. Escolhe o flop e continua. Podes guardar a meio e completar depois.')}
+              {t('1. Toca na tua posição e nas tuas duas cartas.\n2. Os folds até ti são automáticos: se alguém entrou, toca no lugar dele. Depois da tua ação, usa "Só X paga".\n3. Escolhe o flop e continua. Podes guardar a meio e completar depois.')}
             </T>
           </View>
         )}

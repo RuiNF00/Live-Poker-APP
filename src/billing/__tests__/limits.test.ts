@@ -50,3 +50,29 @@ test('annual price math', () => {
   assert.equal(perMonth(PLANS.annual.price), 16.67);
   assert.equal(annualSavingPct(PLANS.monthly.price, PLANS.annual.price), 44);
 });
+
+test('welcome offer: once, after the first hand, only with a trial to give', async () => {
+  const { shouldOfferWelcome } = await import('../offers');
+  const base = { isPro: false, handsSaved: 1, shown: false, trialDays: 7, invited: false };
+  assert.equal(shouldOfferWelcome(base), true);
+  assert.equal(shouldOfferWelcome({ ...base, handsSaved: 0 }), false);
+  assert.equal(shouldOfferWelcome({ ...base, shown: true }), false);
+  assert.equal(shouldOfferWelcome({ ...base, isPro: true }), false);
+  assert.equal(shouldOfferWelcome({ ...base, trialDays: 0 }), false);
+  assert.equal(shouldOfferWelcome({ ...base, invited: true }), false);
+});
+
+test('paywall leads with the feature the player reached for', async () => {
+  const { featuresFor, PRO_FEATURES } = await import('../plans');
+  assert.equal(featuresFor('story')[0].feature.key, 'story');
+  assert.equal(featuresFor('story')[0].highlight, true);
+  assert.equal(featuresFor('welcome')[0].feature.key, 'hands');
+  assert.equal(featuresFor('generic').filter((f) => f.highlight).length, 0);
+  for (const r of ['hands', 'stats', 'story', 'welcome', 'generic', 'shares'] as const) assert.equal(featuresFor(r).length, PRO_FEATURES.length);
+});
+
+test('derived prices keep the store currency', async () => {
+  const { formatPrice } = await import('../plans');
+  assert.match(formatPrice(16.67, 'EUR', 'pt-PT'), /16,67\s€/);
+  assert.match(formatPrice(359.88, 'USD', 'en-GB'), /US\$359\.88|\$359\.88/);
+});
