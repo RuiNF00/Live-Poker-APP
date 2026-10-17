@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
+import { linkSource, noteSource } from '@/lib/attribution';
 import { claimInvite, type ClaimResult } from '@/lib/referrals';
 import { C, S } from '@/theme';
 
@@ -22,12 +23,15 @@ const COPY: Partial<Record<ClaimResult, string>> = {
 };
 
 export default function InviteLanding() {
-  const { code } = useLocalSearchParams<{ code: string }>();
+  const { code, utm_campaign } = useLocalSearchParams<{ code: string; utm_campaign?: string }>();
   const insets = useSafeAreaInsets();
   const [res, setRes] = useState<ClaimResult | null>(null);
   useEffect(() => {
-    if (code) claimInvite(String(code), 'link').then(setRes);
-  }, [code]);
+    if (!code) return;
+    const campaign = utm_campaign ? String(utm_campaign) : undefined;
+    noteSource(linkSource('invite', { utm_campaign: campaign }), campaign);
+    claimInvite(String(code), 'link').then(setRes);
+  }, [code, utm_campaign]);
   const msg = res ? COPY[res] : null;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: S.xl, paddingTop: insets.top + 48, paddingBottom: insets.bottom + S.xl, gap: S.lg }}>

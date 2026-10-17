@@ -11,6 +11,8 @@ export interface CloudState {
   /** Last upload that failed, and why ('network', 'quota'…); cleared by the next one that works. */
   failedAt?: number;
   failure?: string;
+  /** The player said they keep the code somewhere (or typed it to restore). Until then Settings reminds them. */
+  saved?: boolean;
 }
 
 /** XXXXX-XXXXX-XXXXXXXXXXXXXXXX */

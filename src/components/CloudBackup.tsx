@@ -6,14 +6,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, View } from 'react-native';
+import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { t } from '@/i18n';
-import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
+import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, backupHealth, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
-import { buildBackup, importSummary } from '@/store/backup';
+import { buildBackup, importSummary, type BackupData } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { C, F, R, S } from '@/theme';
 
@@ -35,6 +35,40 @@ const ERR: Record<string, string> = {
 };
 const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
 
+/** Yes/no before something the player should read first. */
+function ask(title: string, body: string, yes: string, onYes: () => void, no = t('Cancelar')) {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n\n${body}`)) onYes();
+    return;
+  }
+  Alert.alert(title, body, [
+    { text: no, style: 'cancel' },
+    { text: yes, onPress: onYes },
+  ]);
+}
+
+/**
+ * Brings the cloud copy in (newer copy of each item wins, nothing local is
+ * deleted) and makes this phone keep it up to date from now on.
+ */
+async function restoreFrom(c: CloudState, importData: (b: BackupData) => Parameters<typeof importSummary>[0]): Promise<CloudState> {
+  const remote = await download(c);
+  const n = importData(remote);
+  // It was just downloaded, so the launch auto-backup has nothing new to send,
+  // and no upload may send less than it holds (counts), even if the app is
+  // closed before the restored hands reach the phone's storage. Whoever has
+  // the code to restore has it saved somewhere.
+  const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(remote), saved: true };
+  await saveCloud(next);
+  note(t('Cópia recuperada'), importSummary(n));
+  return next;
+}
+
+/** The share sheet with the code: Notes, Passwords, a password manager, a message to yourself. */
+function shareCode(c: CloudState) {
+  Share.share({ message: t('Código da cópia Sweatbook: {code}', { code: formatCode(c) }) }).catch(() => {});
+}
+
 export function CloudBackup() {
   const store = useStore();
   const [cloud, setCloud] = useState<CloudState | null | undefined>(undefined);
@@ -50,7 +84,14 @@ export function CloudBackup() {
 
   const data = () => buildBackup(store);
 
-  const turnOn = async () => {
+  const turnOn = () =>
+    ask(
+      t('Antes de ativar'),
+      t('Vais receber um código. É a única chave da tua cópia: sem ele, ninguém (nem nós) a consegue abrir. Guarda-o fora deste telemóvel.'),
+      t('Ativar'),
+      activate,
+    );
+  const activate = async () => {
     tap('medium');
     setBusy(true);
     try {
@@ -85,18 +126,9 @@ export function CloudBackup() {
     tap('medium');
     setBusy(true);
     try {
-      const remote = await download(c);
-      const n = store.importData(remote);
-      // From now on this phone keeps the same cloud copy up to date. It was
-      // just downloaded, so the launch auto-backup has nothing new to send,
-      // and no upload may send less than it holds (counts), even if the app
-      // is closed before the restored hands reach the phone's storage.
-      const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(remote) };
-      await saveCloud(next);
-      setCloud(next);
+      setCloud(await restoreFrom(c, store.importData));
       setRestoring(false);
       setCode('');
-      note(t('Cópia recuperada'), importSummary(n));
     } catch (e) {
       note(t('Não deu para recuperar'), errText(e));
     } finally {
@@ -164,6 +196,18 @@ export function CloudBackup() {
             <Ionicons name="copy-outline" size={18} color={C.accent} />
           </Pressable>
           <T v="small">{t('Guarda este código: é a única chave da tua cópia. Num telemóvel novo, usa «Recuperar com código».')}</T>
+          {cloud.saved ? null : (
+            // Until the player says the code is kept somewhere else, the card keeps asking.
+            <View style={{ gap: S.sm, padding: 12, borderRadius: R.md, backgroundColor: C.warnSoft }}>
+              <T v="small" color={C.warn}>
+                {t('Ainda não guardaste o código fora deste telemóvel. Sem ele, ninguém (nem nós) consegue abrir a cópia.')}
+              </T>
+              <Row gap={S.sm}>
+                <Button size="sm" icon="share-outline" title={t('Guardar código')} style={{ flex: 1 }} onPress={() => shareCode(cloud)} />
+                <Button size="sm" kind="ghost" title={t('Já guardei')} onPress={() => saveCloud({ ...cloud, saved: true })} />
+              </Row>
+            </View>
+          )}
           <Row gap={S.sm}>
             <Button size="sm" kind="secondary" icon="refresh" title={busy ? t('A copiar…') : t('Copiar agora')} style={{ flex: 1 }} disabled={busy} onPress={() => backupNow()} />
             <Button size="sm" kind="ghost" title={t('Desligar')} onPress={turnOff} />
@@ -171,7 +215,7 @@ export function CloudBackup() {
         </>
       ) : (
         <>
-          <T v="small">{t('Recebes um código e as mãos, sessões e notas ficam guardadas. Se perderes o telemóvel, não perdes nada.')}</T>
+          <T v="small">{t('Recebes um código e as mãos, sessões e notas ficam guardadas. Se perderes o telemóvel, não perdes nada, desde que guardes o código. Sem ele, ninguém (nem nós) consegue abrir a cópia.')}</T>
           <Button size="md" icon="cloud-upload-outline" title={busy ? t('A ativar…') : t('Ativar cópia na nuvem')} disabled={busy} onPress={turnOn} />
         </>
       )}
@@ -190,7 +234,9 @@ export function CloudBackup() {
   );
 }
 
-/** Keeps the cloud copy fresh: once the store is loaded, at most every 6 hours. */
+const OFFER_KEY = 'rl.cloud.offer.v1';
+
+/** Keeps the cloud copy fresh: once the store is loaded, at most every 6 hours. Offers the copy back after a reinstall. */
 export function AutoCloudBackup() {
   const store = useStore();
   const { ready } = store;
@@ -200,6 +246,28 @@ export function AutoCloudBackup() {
   latest.current = store;
   // Also when the signal comes back: a backup due while offline goes out then.
   const online = useOnline();
+  const empty = ready && store.hands.length === 0 && store.sessions.length === 0;
+  useEffect(() => {
+    // App deleted and installed again: the keychain still has the code. Offer
+    // the copy back once, before the player starts over on an empty app.
+    if (!empty || !online) return;
+    let live = true;
+    (async () => {
+      const c = await rememberedCode();
+      if (!live || !c || (await AsyncStorage.getItem(OFFER_KEY).catch(() => null))) return;
+      await AsyncStorage.setItem(OFFER_KEY, '1').catch(() => {});
+      ask(
+        t('Encontrámos a tua cópia na nuvem'),
+        t('Este telemóvel guardou o código da tua cópia. Recuperar as mãos, sessões e notas?'),
+        t('Recuperar'),
+        () => restoreFrom(c, latest.current.importData).catch((e) => note(t('Não deu para recuperar'), errText(e))),
+        t('Agora não'),
+      );
+    })();
+    return () => {
+      live = false;
+    };
+  }, [empty, online]);
   useEffect(() => {
     if (!ready || !online) return;
     const id = setTimeout(async () => {

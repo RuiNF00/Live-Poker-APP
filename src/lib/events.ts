@@ -5,6 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+import { attribution } from './attribution';
 import { anonId } from './share-api';
 import { outcomeOf, queue, registerSender } from './sync';
 import { BRAND } from '@/theme';
@@ -48,11 +49,15 @@ function keychain(): Keychain | null {
 const KEYCHAIN_KEY = 'sweatbook.install.v1';
 
 let install: Promise<string> | null = null;
+/** Set when this launch created the install id: the very first open. */
+let firstOpen = false;
 export function installId(): Promise<string> {
   install ??= (async () => {
     const kc = keychain();
     const kept = kc ? await kc.getItemAsync(KEYCHAIN_KEY).catch(() => null) : null;
-    const id = kept || (await AsyncStorage.getItem(KEY).catch(() => null)) || anonId();
+    const had = kept || (await AsyncStorage.getItem(KEY).catch(() => null));
+    firstOpen = !had;
+    const id = had || anonId();
     await AsyncStorage.setItem(KEY, id).catch(() => {});
     if (kc && kept !== id) await kc.setItemAsync(KEYCHAIN_KEY, id).catch(() => {});
     return id;
@@ -84,11 +89,23 @@ export async function setRefCode(code: string): Promise<void> {
   await AsyncStorage.setItem(REF_KEY, code).catch(() => {});
 }
 
+/** Events that carry where the install came from and what was going on (attribution.ts). */
+const ATTRIBUTED: FunnelEvent[] = ['app_open', 'hand_saved', 'trial_start'];
+
 export function track(event: FunnelEvent, props?: Record<string, string | number | boolean>) {
   if (__DEV__) return;
   // Queued on the phone and sent when there's signal: card rooms often have none.
   installId()
-    .then((id) => queue('event', { event, installId: id, platform: Platform.OS, props }))
+    .then(async (id) => {
+      let all = props;
+      if (ATTRIBUTED.includes(event)) {
+        const first = event === 'app_open' && firstOpen;
+        // First open from a link: give the link screen a moment to note its source.
+        if (first) await new Promise((r) => setTimeout(r, 2000));
+        all = { ...props, ...(await attribution()), ...(first ? { first: true } : {}) };
+      }
+      queue('event', { event, installId: id, platform: Platform.OS, props: all });
+    })
     .catch(() => {});
 }
 
