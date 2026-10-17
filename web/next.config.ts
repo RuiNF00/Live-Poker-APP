@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@livepoker/hand-format'],
   turbopack: { root: repoRoot },
   outputFileTracingRoot: repoRoot,
+  // Voice stories run ffmpeg as a child process; ship its binary with that route.
+  serverExternalPackages: ['ffmpeg-static'],
+  outputFileTracingIncludes: { '/api/story-video': ['./node_modules/ffmpeg-static/ffmpeg'] },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
   async rewrites() {
     return ['privacy', 'terms', 'support', 'delete-account'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));

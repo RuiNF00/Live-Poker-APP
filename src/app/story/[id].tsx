@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { STORY_H, STORY_W, StoryCard } from '@/components/StoryCard';
+import { usePro } from '@/billing/pro';
+import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, Empty, Row, T, tap } from '@/components/ui';
-import { canShareStory, captureStory, ensureShareLink, shareStory } from '@/lib/instagram-story';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { canShareStory, captureStory, ensureShareLink, renderVoiceStory, shareStory } from '@/lib/instagram-story';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
 import { useStore } from '@/store/store';
@@ -25,6 +27,13 @@ export default function StoryScreen() {
   const [mode, setMode] = useState<StoryMode>(ask ? 'question' : 'result');
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
+  const pro = usePro();
+  const [brand, setBrand] = useState(true);
+  const [voice, setVoice] = useState<string | null>(null);
+  // What the voice chip shows: sample bars on screen, an empty slot while capturing for the video.
+  const [chip, setChip] = useState<'preview' | 'slot' | null>('preview');
+  const onVoice = useCallback((uri: string | null) => setVoice(uri), []);
+  const withVoice = !!voice && pro.isPro;
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
   const moment = useMemo(() => (hand ? storyMoment(hand, mode, settings.inBB) : null), [hand, mode, settings.inBB]);
@@ -34,8 +43,24 @@ export default function StoryScreen() {
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
   const noteHint = hand.notes.trim().split(/(?<=[.?!])\s/)[0]?.slice(0, MAX_COMMENT);
 
+  const captureAs = async (c: 'slot' | null) => {
+    setChip(c);
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      return await captureStory(card);
+    } finally {
+      setChip('preview');
+    }
+  };
+
   const post = async () => {
     tap('medium');
+    // A story creates the hand's public link, so it counts as the free plan's daily share.
+    const isNew = !hand.shareId;
+    if (isNew && !pro.canShare()) {
+      pro.paywall('shares');
+      return;
+    }
     setBusy(true);
     try {
       let link: string;
@@ -45,8 +70,29 @@ export default function StoryScreen() {
         Alert.alert('Sem ligação', 'Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.');
         return;
       }
-      const file = await captureStory(card);
-      const target = await shareStory(file, link);
+      if (isNew) pro.record('share');
+      // Question stories open the challenge view: vote first, result after.
+      if (mode === 'question') link += '?q=1';
+      let target;
+      if (withVoice && voice) {
+        // Capture with the waveform slot empty; the server animates it over the voice.
+        const frame = await captureAs('slot');
+        let video: string | null = null;
+        try {
+          video = await renderVoiceStory(frame, voice, voiceSlotPx());
+        } catch {
+          const goOn = await new Promise<boolean>((resolve) =>
+            Alert.alert('Não deu para juntar a voz', 'Podes publicar a história sem voz ou tentar daqui a pouco.', [
+              { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Sem voz', onPress: () => resolve(true) },
+            ]),
+          );
+          if (!goOn) return;
+        }
+        target = video ? await shareStory(video, link, 'video') : await shareStory(await captureAs(null), link);
+      } else {
+        target = await shareStory(await captureStory(card), link);
+      }
       if (target === 'sheet') Alert.alert('Link copiado', 'No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.');
     } catch {
       Alert.alert('Não deu', 'Não conseguimos abrir o Instagram. Tenta outra vez.');
@@ -77,7 +123,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={hand} moment={moment} comment={comment} inBB={settings.inBB} />
+                <StoryCard ref={card} hand={hand} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} />
               </View>
             </View>
           </View>
@@ -85,12 +131,20 @@ export default function StoryScreen() {
           <Row gap={8} style={{ justifyContent: 'center' }}>
             <Chip label="Pergunta" active={mode === 'question'} onPress={() => ask && setMode('question')} style={!ask ? { opacity: 0.4 } : null} />
             <Chip label="Resultado" active={mode === 'result'} onPress={() => setMode('result')} />
+            <Chip
+              label={pro.isPro ? 'Com marca' : 'Com marca · Pro'}
+              active={brand || !pro.isPro}
+              color={C.textDim}
+              onPress={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+            />
           </Row>
           <T v="tiny" style={{ textAlign: 'center', marginTop: -6 }}>
             {mode === 'question'
               ? 'Pára antes da tua decisão e esconde o resultado. Quem quiser saber tem de abrir o link.'
               : 'Mostra a mão até ao fim, com as cartas e quem ganhou.'}
           </T>
+
+          {canShareStory ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
 
           <View style={{ gap: 8 }}>
             <T v="label">O teu comentário</T>
@@ -124,7 +178,7 @@ export default function StoryScreen() {
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg }}>
           {canShareStory ? (
             <Button
-              title={busy ? 'A preparar…' : 'Partilhar no Instagram'}
+              title={busy ? (withVoice ? 'A juntar a tua voz…' : 'A preparar…') : 'Partilhar no Instagram'}
               icon={<Ionicons name="logo-instagram" size={19} color={C.accentInk} />}
               disabled={busy}
               onPress={post}
