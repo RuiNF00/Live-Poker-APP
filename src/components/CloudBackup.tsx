@@ -4,17 +4,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary } from '@/store/backup';
 import { useStore } from '@/store/store';
-import { C, F, R } from '@/theme';
+import { C, F, R, S } from '@/theme';
 
-import { inputStyle } from './entry/ContextSheet';
-import { Button, Panel, Row, T, tap } from './ui';
+import { Button, Card, Field, Row, T, tap } from './ui';
 
 function note(title: string, body?: string) {
   if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
@@ -109,56 +108,55 @@ export function CloudBackup() {
   if (cloud === undefined) return null;
 
   return (
-    <Panel style={{ gap: 10 }}>
-      <Row gap={8}>
-        <Ionicons name="cloud-done-outline" size={20} color={cloud ? C.good : C.textDim} />
-        <T v="h2" style={{ flex: 1 }}>
-          {t('Cópia na nuvem')}
-        </T>
-        {cloud?.lastAt ? <T v="tiny">{t('última {date}', { date: shortDate(cloud.lastAt) })}</T> : null}
+    <Card style={{ gap: S.md }}>
+      <Row gap={12}>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: cloud ? C.goodSoft : C.surface3, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={cloud ? 'cloud-done' : 'cloud-outline'} size={19} color={cloud ? C.good : C.textDim} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <T v="h3">{t('Cópia na nuvem')}</T>
+          <T v="tiny">{cloud ? (cloud.lastAt ? t('Ligada · última {date}', { date: shortDate(cloud.lastAt) }) : t('Ligada')) : t('Sem conta e sem email')}</T>
+        </View>
       </Row>
       {cloud ? (
         <>
-          <T v="small">{t('Guarda este código. Num telemóvel novo, abre Definições › Recuperar com código. É a única chave da tua cópia.')}</T>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('Copiar código')}
             onPress={async () => {
               await Clipboard.setStringAsync(formatCode(cloud));
               note(t('Código copiado'));
             }}
-            style={{ backgroundColor: C.bg, borderRadius: R.md, borderWidth: 1, borderColor: C.borderStrong, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            style={({ pressed }) => ({ backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.borderStrong, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>
             <T selectable style={{ flex: 1, fontFamily: F.mono, fontSize: 15, letterSpacing: 1, color: C.text }}>
               {formatCode(cloud)}
             </T>
-            <Ionicons name="copy-outline" size={18} color={C.textDim} />
+            <Ionicons name="copy-outline" size={18} color={C.accent} />
           </Pressable>
-          <T v="tiny">{t('A cópia atualiza-se sozinha quando abres a app. Usa o código num telemóvel de cada vez: o último a copiar substitui a cópia.')}</T>
-          <Row gap={8}>
-            <Button small title={busy ? t('A copiar…') : t('Fazer cópia agora')} style={{ flex: 1 }} disabled={busy} onPress={backupNow} />
-            <Button small kind="ghost" title={t('Desligar')} onPress={turnOff} />
+          <T v="small">{t('Guarda este código: é a única chave da tua cópia. Num telemóvel novo, usa «Recuperar com código».')}</T>
+          <Row gap={S.sm}>
+            <Button size="sm" kind="secondary" icon="refresh" title={busy ? t('A copiar…') : t('Copiar agora')} style={{ flex: 1 }} disabled={busy} onPress={backupNow} />
+            <Button size="sm" kind="ghost" title={t('Desligar')} onPress={turnOff} />
           </Row>
         </>
       ) : (
         <>
-          <T v="small">{t('Sem conta e sem email: recebes um código e as tuas mãos, sessões e notas ficam guardadas no nosso servidor.')}</T>
-          <Button small title={busy ? t('A ativar…') : t('Ativar cópia na nuvem')} disabled={busy} onPress={turnOn} />
+          <T v="small">{t('Recebes um código e as mãos, sessões e notas ficam guardadas. Se perderes o telemóvel, não perdes nada.')}</T>
+          <Button size="md" icon="cloud-upload-outline" title={busy ? t('A ativar…') : t('Ativar cópia na nuvem')} disabled={busy} onPress={turnOn} />
         </>
       )}
       {restoring ? (
-        <View style={{ gap: 8 }}>
-          <TextInput value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} placeholder="XXXXX-XXXXX-XXXXXXXXXXXXXXXX" placeholderTextColor={C.muted} style={[inputStyle, { fontFamily: F.mono }]} />
-          <Row gap={8}>
-            <Button small title={busy ? t('A recuperar…') : t('Recuperar')} style={{ flex: 1 }} disabled={busy} onPress={restore} />
-            <Button small kind="ghost" title={t('Cancelar')} onPress={() => setRestoring(false)} />
+        <View style={{ gap: S.sm }}>
+          <Field value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} placeholder="XXXXX-XXXXX-XXXXXXXXXXXXXXXX" inputStyle={{ fontFamily: F.mono }} />
+          <Row gap={S.sm}>
+            <Button size="sm" title={busy ? t('A recuperar…') : t('Recuperar')} style={{ flex: 1 }} disabled={busy} onPress={restore} />
+            <Button size="sm" kind="ghost" title={t('Cancelar')} onPress={() => setRestoring(false)} />
           </Row>
         </View>
       ) : (
-        <Pressable onPress={() => setRestoring(true)} hitSlop={6}>
-          <T v="small" color={C.accent}>
-            {t('Recuperar com código')}
-          </T>
-        </Pressable>
+        <Button size="sm" kind="plain" icon="key-outline" title={t('Recuperar com código')} style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }} onPress={() => setRestoring(true)} />
       )}
-    </Panel>
+    </Card>
   );
 }
 

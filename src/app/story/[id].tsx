@@ -1,12 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
-import { Button, Chip, Empty, Row, T, tap } from '@/components/ui';
+import { Button, Chip, ChipRow, Empty, Field, ListGroup, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -17,7 +16,7 @@ import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
 import { useStore } from '@/store/store';
-import { C, F, R } from '@/theme';
+import { C, R, S } from '@/theme';
 
 const MAX_COMMENT = 140;
 const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?'), t('Hero call ou spew?'), t('Cooler ou erro meu?')];
@@ -114,7 +113,7 @@ export default function StoryScreen() {
     <>
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center' }}>
             <View
               style={{
@@ -137,58 +136,44 @@ export default function StoryScreen() {
             </View>
           </View>
 
-          <Row gap={8} style={{ justifyContent: 'center' }}>
-            <Chip label={t('Pergunta')} active={mode === 'question'} onPress={() => ask && setMode('question')} style={!ask ? { opacity: 0.4 } : null} />
-            <Chip label={t('Resultado')} active={mode === 'result'} onPress={() => setMode('result')} />
-            <Chip
-              label={pro.isPro ? t('Com marca') : t('Com marca') + ' · Pro'}
-              active={brand || !pro.isPro}
-              color={C.textDim}
-              onPress={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
-            />
-          </Row>
-          <T v="tiny" style={{ textAlign: 'center', marginTop: -6 }}>
-            {mode === 'question'
-              ? t('Pára antes da tua decisão e esconde o resultado. Quem quiser saber tem de abrir o link.')
-              : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
+          <Segmented
+            options={[
+              { key: 'question', label: t('Pergunta') },
+              { key: 'result', label: t('Resultado') },
+            ]}
+            value={mode}
+            onChange={(m) => (m === 'question' && !ask ? undefined : setMode(m))}
+          />
+          <T v="small" style={{ textAlign: 'center', marginTop: -4 }}>
+            {mode === 'question' ? t('Pára antes da tua decisão e esconde o resultado.') : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 
           {canShareStory ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
 
-          <View style={{ gap: 8 }}>
-            <T v="label">{t('O teu comentário')}</T>
-            <TextInput
-              value={comment}
-              onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))}
-              placeholder={t('Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?')}
-              placeholderTextColor={C.muted}
-              multiline
-              style={{
-                backgroundColor: C.surface,
-                borderRadius: R.md,
-                borderWidth: 1,
-                borderColor: C.border,
-                color: C.text,
-                fontFamily: F.medium,
-                fontSize: 16,
-                minHeight: 64,
-                padding: 12,
-                textAlignVertical: 'top',
-              }}
-            />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
-              {noteHint ? <Chip label={t('Usar as notas')} onPress={() => setComment(noteHint)} /> : null}
+          <View style={{ gap: S.sm }}>
+            <Field label={t('O teu comentário')} value={comment} onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))} placeholder={t('Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?')} multiline inputStyle={{ minHeight: 72 }} />
+            <ChipRow>
+              {noteHint ? <Chip label={t('Usar as notas')} icon="document-text-outline" onPress={() => setComment(noteHint)} /> : null}
               {PROMPTS.map((p) => (
                 <Chip key={p} label={p} onPress={() => setComment(p)} />
               ))}
-            </ScrollView>
+            </ChipRow>
           </View>
+          <ListGroup>
+            <ToggleItem
+              icon="pricetag-outline"
+              title={t('Com marca Sweatbook')}
+              subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')}
+              value={brand || !pro.isPro}
+              onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+            />
+          </ListGroup>
         </ScrollView>
-        <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg }}>
+        <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
           {canShareStory ? (
             <Button
               title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : t('Partilhar no Instagram')}
-              icon={<Ionicons name="logo-instagram" size={19} color={C.accentInk} />}
+              icon="logo-instagram"
               disabled={busy}
               onPress={post}
             />
