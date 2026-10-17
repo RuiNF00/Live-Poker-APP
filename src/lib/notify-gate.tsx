@@ -35,6 +35,9 @@ export function notifyOrHold(kind: NotifyKind, post: () => void): 'sent' | 'held
   return 'sent';
 }
 
+/** Amounts may show in a notification (they reach the lock screen): off by default. */
+export const notifyAmountsOn = () => !!settings.notifyAmounts && !settings.hideAmounts;
+
 /** Is this kind on? For schedulers that plan ahead (recap, staking). */
 export const notifyKindOn = (kind: NotifyKind) => kindOn(settings, kind);
 

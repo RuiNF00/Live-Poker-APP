@@ -2781,6 +2781,7 @@ const es: Record<string, string> = {
   "Enviado sozinho: cobraste {amount}.": "Enviado automáticamente: cobraste {amount}.",
   "Enviado sozinho: não cobraste.": "Enviado automáticamente: no cobraste.",
   "Para desligar, abre o swap.": "Para desactivarlo, abre el swap.",
+  "Há novidades no swap. Toca para veres as contas.": "Hay novedades en el swap. Toca para ver las cuentas.",
   'Cash: {h} h': 'Cash: {h} h',
   'horas de cash': 'horas de cash',
   'BB/h cash': 'BB/h cash',
