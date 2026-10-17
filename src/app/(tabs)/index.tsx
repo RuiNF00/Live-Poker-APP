@@ -28,7 +28,8 @@ const dayTitles = new Map<number, string>();
 function dayTitle(day: number) {
   const today = dayKey(Date.now());
   if (day === today) return t('Hoje');
-  if (day === today - DAY) return t('Ontem');
+  // Half a day back is always inside yesterday, even when it was 23 or 25 hours long.
+  if (day === dayKey(today - DAY / 2)) return t('Ontem');
   let s = dayTitles.get(day);
   if (s === undefined) {
     const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
