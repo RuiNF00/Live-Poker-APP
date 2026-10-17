@@ -8,7 +8,8 @@ import { cost, playedMs, profit, type Breakdown } from '@/store/session-math';
 
 import { countryName, flag } from '@/tax/countries';
 import { EXPENSE_KINDS } from '@/store/trip-math';
-import type { ExpenseKind } from '@/store/types';
+import { isBagged } from '@/store/multi-day';
+import type { ExpenseKind, Session } from '@/store/types';
 import type { TaxReport } from '@/tax/tax-math';
 
 import type { CurrencyReport, Report } from './report';
@@ -19,6 +20,13 @@ const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-di
 const hours = (h: number) => h.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n * 100) / 100, cur);
 const cls = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
+
+/** Place, the day a multi-day tournament reached, and "no saco" while it waits for the next day. */
+function mttTag(s: Session): string {
+  if (s.kind !== 'mtt') return '';
+  const bits = [s.finish ? `${s.finish}º${s.field ? '/' + s.field : ''}` : '', s.day && s.day > 1 ? t('Dia {n}', { n: s.day }) : '', isBagged(s) ? t('no saco') : ''].filter(Boolean);
+  return bits.length ? ` <span class="muted">· ${esc(bits.join(' · '))}</span>` : '';
+}
 
 function period(r: Report): string {
   const from = r.range.from ?? r.first;
@@ -89,7 +97,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const sessions = c.sessions
     .map(
       (s) =>
-        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${s.kind === 'mtt' && s.finish ? ` <span class="muted">· ${s.finish}º${s.field ? '/' + s.field : ''}</span>` : ''}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
+        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${mttTag(s)}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
     )
     .join('');
 
@@ -190,6 +198,8 @@ function taxBlock(x: TaxReport): string {
 
 export function reportHtml(r: Report, opts: { player?: string; now?: number; tax?: TaxReport } = {}): string {
   const many = r.currencies.length > 1;
+  // Sessions only carry swapNet while swaps count in results (Settings), so this follows the toggle.
+  const swaps = r.currencies.some((c) => c.sessions.some((s) => s.swapNet));
   return `<!doctype html>
 <html lang="${locale.slice(0, 2)}">
 <head>
@@ -229,7 +239,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number; tax
     <div>
       <div class="brand">Sweat<span>book</span></div>
       <h1>${esc(t('Relatório de póquer'))}</h1>
-      <div class="muted">${esc(period(r))} · ${esc(r.scopeName)}</div>
+      <div class="muted">${esc(period(r))} · ${esc(r.scopeName)}${swaps ? ' · ' + esc(t('inclui swaps')) : ''}</div>
     </div>
     <div class="meta">${opts.player ? esc(opts.player) + '<br/>' : ''}${esc(t('Gerado a {date}', { date: day(opts.now ?? Date.now()) }))}</div>
   </header>

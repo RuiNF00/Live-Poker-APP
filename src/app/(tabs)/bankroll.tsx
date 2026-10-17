@@ -15,6 +15,7 @@ import { SwapsEntry } from '@/components/swaps/SwapsEntry';
 import { useSwaps } from '@/store/swaps-store';
 import { Insights } from '@/components/Insights';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
+import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -199,6 +200,8 @@ function BankrollTab() {
             </ChipRow>
           </View>
         ) : null}
+
+        <YearReviewEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (
