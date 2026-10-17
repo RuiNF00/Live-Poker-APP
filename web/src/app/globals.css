@@ -292,6 +292,37 @@ a {
   gap: calc(var(--k) * 4);
 }
 
+.rt-board-twice {
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--k) * 3);
+}
+
+.rt-board-run {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--k) * 3);
+}
+
+.rt-board-twice .rt-card-board {
+  --cw: 29;
+}
+
+.rt-run-tag {
+  width: calc(var(--k) * 14);
+  height: calc(var(--k) * 14);
+  margin-right: calc(var(--k) * 2);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 12, 10, 0.88);
+  border: 1px solid rgba(255, 106, 61, 0.5);
+  color: #f5edd8;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: calc(var(--k) * 9);
+}
+
 .rt-card {
   --cw: 26;
   position: relative;

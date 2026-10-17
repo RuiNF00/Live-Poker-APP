@@ -45,6 +45,9 @@ const BADGE_WORD: Partial<Record<ActionType, string>> = {
   post_straddle: 'STRADDLE',
 };
 
+/** Same marks as the tags beside the two boards. */
+const RUN_MARK: Record<number, string> = { 1: '①', 2: '②' };
+
 const SUIT_NAME: Record<string, string> = { s: 'espadas', h: 'copas', d: 'ouros', c: 'paus' };
 
 /** Ivory card with a serif rank, or the dark back with the brand mark. */
@@ -101,11 +104,25 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
           SWEATBOOK
         </div>
 
-        <div className="rt-board" style={{ top: `${BOARD_Y}%` }}>
-          {[0, 1, 2, 3, 4].map((i) =>
-            step.board[i] ? <TCard key={`${i}-${step.board[i]}`} card={step.board[i]} kind="board" /> : <span key={i} className="rt-card rt-card-board rt-slot" />,
-          )}
-        </div>
+        {step.runs ? (
+          // Run it twice: both boards, stacked, each tagged with its number.
+          <div className="rt-board rt-board-twice" style={{ top: `${BOARD_Y}%` }}>
+            {step.runs.map((r, k) => (
+              <div key={k} className="rt-board-run" aria-label={`Board ${k + 1}`}>
+                <span className="rt-run-tag">{k + 1}</span>
+                {r.board.map((c, i) => (
+                  <TCard key={`${i}-${c}`} card={c} kind="board" />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rt-board" style={{ top: `${BOARD_Y}%` }}>
+            {[0, 1, 2, 3, 4].map((i) =>
+              step.board[i] ? <TCard key={`${i}-${step.board[i]}`} card={step.board[i]} kind="board" /> : <span key={i} className="rt-card rt-card-board rt-slot" />,
+            )}
+          </div>
+        )}
 
         {pot > 0 && (
           <div className="rt-pot" style={{ top: `${POT_Y}%` }} aria-label={`${potLabel} ${fmt(pot)}`}>
@@ -137,8 +154,11 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
           const pos = [POS[s.position] ?? '#7F8D87', '#0C1311'];
           const a = s.lastAction;
           const badgeType = a ? (s.allIn && a.type !== 'fold' && a.type !== 'check' ? 'allin' : a.type) : null;
+          // Run it twice: a player who won only one board says which.
+          const runsWon = step.runs?.map((r, k) => (r.winners.some((w) => w.seat === s.seat) ? k + 1 : 0)).filter(Boolean) ?? [];
+          const winNote = runsWon.length === 1 ? RUN_MARK[runsWon[0]] : s.handLabel;
           const badge = win
-            ? { cls: 'win', text: `+${fmt(win.amount)}${s.handLabel ? ` · ${s.handLabel}` : ''}` }
+            ? { cls: 'win', text: `+${fmt(win.amount)}${winNote ? ` · ${winNote}` : ''}` }
             : s.handLabel && !s.folded && (step.kind === 'showdown' || step.kind === 'end')
               ? { cls: 'hand', text: s.handLabel }
               : badgeType && !s.folded && BADGE_WORD[badgeType]

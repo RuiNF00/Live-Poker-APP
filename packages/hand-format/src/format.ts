@@ -91,14 +91,17 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
         : ` ${formatAmount(a.type === 'call' ? a.paid : a.toAmount, bb, mode, locale)}`;
     return `${seat.name} ${actionLabel(a.type, locale)}${amount}`;
   }
-  const winners = step.winners ?? [];
-  return winners
-    .map((w) => {
-      const s = step.seats.find((x) => x.seat === w.seat)!;
-      const verb = locale === 'pt' ? 'ganha' : 'wins';
-      return `${s.name} ${verb} ${formatAmount(w.amount, bb, mode, locale)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
-    })
-    .join(' · ');
+  const paid = (winners: NonNullable<ReplayStep['winners']>) =>
+    winners
+      .map((w) => {
+        const s = step.seats.find((x) => x.seat === w.seat)!;
+        const verb = locale === 'pt' ? 'ganha' : 'wins';
+        return `${s.name} ${verb} ${formatAmount(w.amount, bb, mode, locale)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
+      })
+      .join(' · ');
+  // Run it twice: what each board paid.
+  if (step.runs) return step.runs.map((r, k) => `Board ${k + 1}: ${paid(r.winners)}`).join(' · ');
+  return paid(step.winners ?? []);
 }
 
 /** Short title for previews: "A♠K♦ vs Q♥Q♣ · 1k/2k". */
