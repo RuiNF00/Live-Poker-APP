@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, countsOf, uploadBlock } from '../cloud-guard';
+import { autoBackup, backupHealth, countsOf, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -57,4 +57,16 @@ test('trips count: a phone without the cloud copy\'s trips is not "more" than it
   const c: CloudState = { ...code, lastAt: 1, counts: { sessions: 4, trips: 6 } };
   assert.equal(uploadBlock(countsOf({ sessions: [{}, {}, {}, {}] }), c), 'would_shrink');
   assert.equal(uploadBlock(countsOf({ sessions: [{}, {}, {}, {}], trips: [{}, {}, {}, {}, {}, {}] }), c), null);
+});
+
+test('backup health: warns when the last copy failed or is a week old, never when it is off', () => {
+  const day = 86400000;
+  const now = 100 * day;
+  assert.deepEqual(backupHealth(null, now), { level: 'ok' });
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 6 * day }, now), { level: 'ok' });
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 9 * day }, now), { level: 'stale', days: 9 });
+  assert.equal(backupHealth({ id: 'a', secret: 's' }, now).level, 'stale');
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - day, failedAt: now - 1000, failure: 'quota' }, now), { level: 'failed', reason: 'quota' });
+  // A copy that worked after the failure clears it.
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 1000, failedAt: now - day, failure: 'network' }, now), { level: 'ok' });
 });

@@ -14,10 +14,13 @@ import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { fileInFolder, needsReview } from '@/poker/review';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStat } from '@/components/StreakStat';
+import { filterPills, HandFilterSheet } from '@/components/HandFilters';
+import { activeFilters, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
+import { ProMoment, useProMoment } from '@/components/ProMoment';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -59,6 +62,8 @@ export default function HandsScreen() {
   useOnboarding();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
+  const [filter, setFilter] = useState<HandFilter>(NO_FILTER);
+  const [filtering, setFiltering] = useState(false);
   const coach = useCoach();
   const unread = useMemo(() => unreadByHand(coach), [coach]);
   const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
@@ -68,7 +73,12 @@ export default function HandsScreen() {
     const qq = q.trim().toLowerCase();
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)));
+      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)) && matches(h, filter));
+    // Sorted by result: one list, biggest first, instead of days.
+    if (filter.sort !== 'recent') {
+      const data = sortByResult(rows, filter.sort, (h) => rowSummary(h).net);
+      return data.length ? [{ title: filter.sort === 'won' ? t('Mais bb ganhas') : t('Mais bb perdidas'), data }] : [];
+    }
     const out: { title: string; data: Hand[] }[] = [];
     let cur = -1;
     for (const h of rows) {
@@ -80,11 +90,15 @@ export default function HandsScreen() {
       out[out.length - 1].data.push(h);
     }
     return out;
-  }, [hands, q, tag, sentToCoach]);
+  }, [hands, q, tag, sentToCoach, filter]);
 
+  const pills = useMemo(() => filterPills(filter), [filter]);
+  // While the list is narrowed, nudges about the rest of it get out of the way.
+  const narrowed = !!tag || pills.length > 0;
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
   const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
   const checklist = useStartChecklist();
+  const moment = useProMoment();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
   const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
@@ -139,6 +153,7 @@ export default function HandsScreen() {
                 right={
                   <>
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
+                    {hands.length > 1 ? <IconButton name={activeFilters(filter) || filter.sort !== 'recent' ? 'options' : 'options-outline'} label={t('Filtrar mãos')} onPress={() => setFiltering(true)} /> : null}
                     <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
                     <IconButton name="settings-outline" label={t('Definições')} onPress={() => router.push('/settings')} />
                   </>
@@ -178,8 +193,10 @@ export default function HandsScreen() {
                     setDiscarded(null);
                   }}
                 />
-              ) : checklist ? (
+              ) : narrowed ? null : checklist ? (
                 <StartChecklist state={checklist} />
+              ) : moment ? (
+                <ProMoment state={moment} />
               ) : incomplete > 0 && tag !== INCOMPLETE ? (
                 <Banner
                   tone="warn"
@@ -223,6 +240,14 @@ export default function HandsScreen() {
                   ) : null}
                 </Row>
               ) : null}
+              {pills.length ? (
+                <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+                  {tag || q.trim() ? null : <T v="small">{shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}</T>}
+                  {pills.map((x) => (
+                    <FilterPill key={x.key} label={x.label} onClear={() => setFilter((f) => ({ ...f, ...x.clear }))} />
+                  ))}
+                </Row>
+              ) : null}
             </View>
           </SafeTop>
         }
@@ -242,7 +267,7 @@ export default function HandsScreen() {
               icon="search"
               title={t('Nada encontrado')}
               body={t('Tenta outro nome, torneio ou mão.')}
-              action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false))} />}
+              action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false), setFilter(NO_FILTER))} />}
             />
           )
         }
@@ -267,6 +292,14 @@ export default function HandsScreen() {
               setPicked(new Set());
             }}
           />
+          <IconButton
+            name="albums-outline"
+            label={t('Partilhar num só link')}
+            onPress={() => {
+              router.push({ pathname: '/pack/new', params: { ids: [...picked].join(',') } });
+              setPicked(new Set());
+            }}
+          />
           <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
@@ -284,6 +317,7 @@ export default function HandsScreen() {
           <IconButton name="close" label={t('Cancelar')} onPress={() => setPicked(new Set())} />
         </View>
       ) : null}
+      <HandFilterSheet visible={filtering} onClose={() => setFiltering(false)} value={filter} onChange={setFilter} hands={hands} />
       <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
       <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>

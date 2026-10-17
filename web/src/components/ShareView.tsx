@@ -1,16 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  buildReplay,
-  describeStep,
-  formatAmount,
-  streetLabel,
-  type ActionType,
-  type AmountMode,
-  type HandRecord,
-  type ReplayStep,
-} from '@livepoker/hand-format';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { type ActionType, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
+import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
 import { t, type Locale } from '@/lib/i18n';
 import type { HandComment, QuizSpot } from '@/lib/types';
 import { PokerTable } from './PokerTable';
@@ -38,6 +30,10 @@ interface Props {
   invite?: string | null;
   /** How the friend got here (from the app's share link), carried to the store badges. */
   utm?: { source: string; medium: string };
+  /** Starting amount mode when the viewer hasn't picked one (packs open in bb). */
+  initialMode?: AmountMode;
+  /** Shown above the hand: the pack's hand picker on /p/<id>. */
+  nav?: ReactNode;
 }
 
 const PLAY_MS = 1100;
@@ -55,7 +51,7 @@ export function ShareView(props: Props) {
   // A challenge opens straight on hero's decision: the table as it stands, question on screen.
   const [index, setIndex] = useState(quizStep > 0 ? quizStep - 1 : 0);
   const [playing, setPlaying] = useState(false);
-  const [mode, setMode] = useState<AmountMode>('chips');
+  const [mode, setMode] = useState<AmountMode>(props.initialMode ?? 'chips');
   const [comments, setComments] = useState(props.initialComments);
 
   /** The whole hand arrived with a vote: replay it, and load the comments the page held back. */
@@ -77,7 +73,8 @@ export function ShareView(props: Props) {
   const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
 
   useEffect(() => {
-    const saved = readLocal<AmountMode>('amountMode');
+    // A pack that hides amounts opens in BB whatever the viewer picked last time.
+    const saved = props.initialMode ? null : readLocal<AmountMode>('amountMode');
     if (saved === 'bb' || saved === 'chips') setMode(saved);
     track('share_viewed', { shareId: props.shareId });
     const voted = !!readLocal<string>(`quiz:${props.shareId}`);
@@ -175,6 +172,7 @@ export function ShareView(props: Props) {
 
   return (
     <main className="page">
+      {props.nav}
       <Header {...props} hand={hand} spoilers={!quizHidesSpoilers} />
 
       <section className="replayer" aria-label="Replayer" ref={replayer}>

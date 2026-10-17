@@ -45,9 +45,10 @@ export function HomeWidgetSync() {
       players,
       currency: defaultBankroll.currency,
       hideAmounts: !!settings.hideAmounts,
+      showResult: !!settings.widgetResult,
       streakPauses: settings.streakPauses ?? [],
     }),
-    [activeSession, sessions, hands, players, defaultBankroll.currency, settings.hideAmounts, settings.streakPauses],
+    [activeSession, sessions, hands, players, defaultBankroll.currency, settings.hideAmounts, settings.widgetResult, settings.streakPauses],
   );
 
   useEffect(() => {

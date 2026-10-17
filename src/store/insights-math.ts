@@ -12,6 +12,10 @@ import { stakeKey, stakeLabel } from './bankroll-math';
 import { cost, playedMs, profit } from './session-math';
 import type { Session } from './types';
 
+/** Insights from the mental game journal (Session.mind). */
+export type MindId = 'sleep' | 'energy' | 'focus' | 'tiltNext';
+export const MIND_IDS: MindId[] = ['sleep', 'energy', 'focus', 'tiltNext'];
+
 /** Fewest sessions on each side of a comparison. */
 export const MIN_SESSIONS = 5;
 /** Fewest hours on each side of an hourly comparison. */
@@ -28,7 +32,7 @@ export interface Group {
 }
 
 export interface Insight {
-  id: 'length' | 'weekday' | 'daytime' | 'venue' | 'stakes' | 'tilt';
+  id: 'length' | 'weekday' | 'daytime' | 'venue' | 'stakes' | 'tilt' | MindId;
   /** The verdict, one sentence. */
   title: string;
   /** What it is based on. */
@@ -233,6 +237,66 @@ export function insights(all: Session[], money: (n: number) => string, opts: Ins
         gapOf(r.rate, a.rate) * 2,
       );
     }
+  }
+
+  // Mental game journal: the sessions with a check-in, split by how the
+  // player arrived. Only said when arriving worse actually costs money.
+  const per = unit === 'hour' ? t('por hora') : t('por torneio');
+  // Short sleep, low energy and low focus often fall on the same sessions: one card per split.
+  const splits = new Set<string>();
+  const mindSplit = (id: MindId, cond: string, badLabel: string, goodLabel: string, isBad: (s: Session) => boolean | null) => {
+    const bad: Session[] = [];
+    const good: Session[] = [];
+    for (const s of base) {
+      const b = isBad(s);
+      if (b !== null) (b ? bad : good).push(s);
+    }
+    const a = group(badLabel, bad, result, unit);
+    const g = group(goodLabel, good, result, unit);
+    if (!enough(a, unit) || !enough(g, unit) || a.rate >= g.rate) return;
+    const key = bad.map((s) => s.id).join();
+    if (splits.has(key)) return;
+    splits.add(key);
+    push(
+      {
+        id,
+        title: g.rate <= 0 ? t('{cond}, perdes ainda mais.', { cond }) : a.rate < 0 ? t('{cond}, passas a perder dinheiro.', { cond }) : t('{cond}, rendes {pct}% menos {per}.', { cond, pct: pctDrop(g.rate, a.rate), per }),
+        detail: t('{best}: {rb} · {worst}: {rw}', { best: g.label, rb: rate(g), worst: a.label, rw: rate(a) }),
+        tone: 'bad',
+        groups: [g, a],
+        unit,
+        sample: sample([a, g]),
+      },
+      gapOf(g.rate, a.rate),
+    );
+  };
+  mindSplit('sleep', t('Quando dormes menos de 6 h'), t('Menos de 6 h'), t('6 h ou mais'), (s) => (s.mind?.sleep === undefined ? null : s.mind.sleep < 6));
+  mindSplit('energy', t('Com pouca energia'), t('Energia 1–2'), t('Energia 3–5'), (s) => (s.mind?.energy === undefined ? null : s.mind.energy <= 2));
+  mindSplit('focus', t('Com pouco foco'), t('Foco 1–2'), t('Foco 3–5'), (s) => (s.mind?.focus === undefined ? null : s.mind.focus <= 2));
+
+  // After a session the player rated tilt 4 or 5: the next one, within 2 days.
+  const after: Session[] = [];
+  const rest: Session[] = [];
+  sorted.forEach((s, i) => {
+    const prev = sorted[i - 1];
+    if (!prev?.mind?.tilt) return;
+    (prev.mind.tilt >= 4 && s.startedAt - (prev.endedAt ?? prev.startedAt) < 48 * H ? after : rest).push(s);
+  });
+  const ta = group(t('Após tilt 4+'), after, result, 'session');
+  const tr = group(t('Outras'), rest, result, 'session');
+  if (enough(ta, 'session') && enough(tr, 'session') && ta.rate < tr.rate) {
+    push(
+      {
+        id: 'tiltNext',
+        title: ta.rate < 0 ? t('Depois de tilt 4 ou mais, perdes em média {amount} na sessão seguinte.', { amount: money(-ta.rate) }) : t('Depois de tilt 4 ou mais, a sessão seguinte rende {pct}% menos.', { pct: pctDrop(tr.rate, ta.rate) }),
+        detail: t('Tilt marcado por ti no fim da sessão. A sessão seguinte, até 2 dias depois.'),
+        tone: 'bad',
+        groups: [ta, tr],
+        unit: 'session',
+        sample: sample([ta, tr]),
+      },
+      gapOf(tr.rate, ta.rate) * 2,
+    );
   }
 
   return out.sort((a, b) => b.gap - a.gap).map(({ gap: _, ...i }) => i);

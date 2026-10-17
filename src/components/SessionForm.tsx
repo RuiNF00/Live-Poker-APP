@@ -11,6 +11,7 @@ import type { Bankroll, Session } from '@/store/types';
 import { countryOfVenue } from '@/tax/countries';
 import { S } from '@/theme';
 
+import { MindAfter, MindBefore } from './MindCheckIn';
 import { StakeFields } from './StakeFields';
 import { TaxFields } from './TaxFields';
 import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T } from './ui';
@@ -79,6 +80,7 @@ export function SessionForm({
   const initTime = initial.endedAt ? clockOf(initial.startedAt) : '';
   const [timeText, setTimeText] = useState(initTime);
   const startMin = parseClock(timeText);
+  const [mindOpen, setMindOpen] = useState(!!initial.mind);
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
@@ -257,6 +259,16 @@ export function SessionForm({
       )}
       <StakeFields s={s} onChange={set} expenses={!!past} />
       {past && <TaxFields s={s} onChange={set} />}
+      {!past ? (
+        <MindBefore value={s.mind} onChange={(mind) => set({ mind })} />
+      ) : mindOpen ? (
+        <Section title={t('Diário mental')}>
+          <MindBefore value={s.mind} onChange={(mind) => set({ mind })} />
+          <MindAfter value={s.mind} onChange={(mind) => set({ mind })} />
+        </Section>
+      ) : (
+        <Button kind="ghost" size="sm" icon="add" title={t('Diário mental')} onPress={() => setMindOpen(true)} style={{ alignSelf: 'flex-start' }} />
+      )}
       {submitRef ? null : <Button title={submitLabel} icon={past ? 'checkmark' : 'play'} onPress={submit} />}
     </View>
   );

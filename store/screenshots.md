@@ -37,7 +37,7 @@ npx expo export -p web && npx serve -s dist -l 4173 &   # in the app root
 cd store/screenshots && npm i playwright && node render.mjs http://localhost:4173 out
 ```
 
-`frames.json` holds the route and caption (PT and EN) of each frame, `seed.mjs` the demo hands, sessions and players. Output: `out/{ios,android}/{pt,en}/1..7.png`. The final set is committed in `store/screenshots/final/` (and mirrored in `/mnt/project-files/launch/screenshots/`): iPhone 6.9" 1320×2868 (Apple scales it to the smaller iPhones; no iPad set because `supportsTablet` is false), Play phone 1080×1920, Play feature graphic 1024×500, PT and EN. Upload order = file number.
+`frames.json` holds the route and caption (PT and EN) of each frame, `seed.mjs` the demo hands, sessions and players. Output: `out/{ios,android}/{pt,en}/1..10.png` (10 frames: hand entry, replayer (run it twice), story, hands list, session, bankroll, trip, players, backing, paywall). Apple takes up to 10; Google Play takes up to 8, so `final/android/` keeps only 1..8. The final set is committed in `store/screenshots/final/` (and mirrored in `/mnt/project-files/launch/screenshots/`): iPhone 6.9" 1320×2868 (Apple scales it to the smaller iPhones; no iPad set because `supportsTablet` is false), Play phone 1080×1920, Play feature graphic 1024×500, PT and EN. Upload order = file number.
 
 Frames: 1 hand entry, 2 replayer, 3 Instagram story share, 4 hand list with tags, 5 live session, 6 bankroll, 7 player notes.
 

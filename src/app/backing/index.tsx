@@ -100,6 +100,7 @@ export default function BackingScreen() {
                       key={st.id}
                       left={<Avatar name={st.pl || '?'} />}
                       title={st.pl || t('Jogador')}
+                      accessibilityLabel={[st.pl || t('Jogador'), lab.text, st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), unpaid >= 0.5 ? t('Ainda não pagaste {amount}', { amount: money(unpaid, st.cur) }) : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
                           <T v="small" numberOfLines={1}>

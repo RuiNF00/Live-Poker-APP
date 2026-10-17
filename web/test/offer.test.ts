@@ -77,18 +77,27 @@ describe('cost', () => {
     expect(agreementCost(a)).toBe(1066.63);
     expect(eventCost(a, a.events[0])).toBe(316.25);
   });
-  it('new terms are markup or events only', () => {
+  it('new terms are markup, events, currency or backer; the title is not', () => {
     const a = agreement();
-    expect(termsChanged(a, agreement({ title: 'Outro', backer: 'Bia' }))).toBe(false);
+    expect(termsChanged(a, agreement({ title: 'Outro' }))).toBe(false);
+    expect(termsChanged(a, agreement({ cur: '$' }))).toBe(true);
+    expect(termsChanged(a, agreement({ backer: 'Bia' }))).toBe(true);
     expect(termsChanged(a, agreement({ markup: 1.2 }))).toBe(true);
     expect(termsChanged(a, agreement({ events: [{ ...base.events[0], p: 6 }, base.events[1], base.events[2]] }))).toBe(true);
   });
 });
 
+describe('event dates', () => {
+  it('refuses events dated more than two years ahead (they would dodge the purge)', () => {
+    expect(parseOffer({ ...base, events: [{ ...base.events[0], d: 7_258_118_400_000 }] })).toBe(null);
+    expect(agreement({ events: [{ ...base.events[0], d: Date.now() + 365 * 864e5 }] }).events).toHaveLength(1);
+  });
+});
+
 describe('page copy (store policy)', () => {
   it('never uses selling words', () => {
-    const banned = /comprar|investir|dispon[ií]vel|reserva|retorno|\broi\b|\bbuy\b(?!-in)|reserve|invest|available|\breturn/i;
-    for (const locale of ['pt', 'en'] as const) {
+    const banned = /comprar|investir|invertir|dispon[ií]vel|disponible|reserva|retorno|\broi\b|\bbuy\b(?!-in)|reserve|invest|available|\breturn|apost|apuest/i;
+    for (const locale of ['pt', 'pt-BR', 'en', 'es'] as const) {
       const c = offerCopy(locale);
       const text = Object.values(c)
         .map((v) => (typeof v === 'function' ? (v as (...x: string[]) => string)('X', 'Y') : v))

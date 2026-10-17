@@ -8,6 +8,7 @@ import type { Hand } from '@/poker/types';
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
 import { dayKey } from './fx-math';
+import { isBagged } from './multi-day';
 import { validSwapId, validSwapToken, type Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
@@ -83,7 +84,10 @@ export function parseBackup(text: string): BackupData {
   if (!isObj(j) || j.app !== 'sweatbook' || j.v !== 1) throw new Error('invalid');
   const arr = (k: string) => (Array.isArray(j[k]) ? (j[k] as unknown[]).filter(withId) : []);
   const hands = arr('hands').filter((h) => isObj(h) && Array.isArray(h.players) && Array.isArray(h.actions)) as unknown as Hand[];
-  const sessions = arr('sessions').filter((s) => isObj(s) && typeof s.startedAt === 'number') as unknown as Session[];
+  // A foreign or hand-edited backup may lack `breaks`; every session-time sum reads it.
+  const sessions = arr('sessions')
+    .filter((s): s is Record<string, unknown> => isObj(s) && typeof s.startedAt === 'number')
+    .map((s) => ({ ...s, breaks: Array.isArray(s.breaks) ? s.breaks : [] })) as unknown as Session[];
   const players = arr('players').filter((p) => isObj(p) && typeof p.name === 'string') as unknown as PlayerNote[];
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];
@@ -175,7 +179,7 @@ function clockOf(ts: number): string {
 }
 
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
-  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'place', 'field', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -201,8 +205,13 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         s.expenses ?? 0,
         s.tips ?? 0,
         Math.round(profit(s) * 100) / 100,
+        // Already inside profit when swaps count in results; listed so the number can be traced.
+        s.swapNet ? Math.round(s.swapNet * 100) / 100 : '',
         s.finish,
         s.field,
+        // Multi-day tournaments: the day it reached, and the stack while it waits in the bag.
+        s.kind === 'mtt' && s.day && s.day > 1 ? s.day : '',
+        isBagged(s) ? s.bag!.stack : '',
         s.country ?? '',
         s.withheld?.amount ?? '',
         s.withheld?.form ?? '',
@@ -244,7 +253,18 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
 }
 
 /** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */
-export function importSummary(n: { hands: number; sessions: number; players: number; backers?: number; bankrolls?: number; transfers?: number; trips?: number }): string {
+export function importSummary(n: {
+  hands: number;
+  sessions: number;
+  players: number;
+  backers?: number;
+  bankrolls?: number;
+  transfers?: number;
+  trips?: number;
+  packages?: number;
+  payments?: number;
+  backing?: number;
+}): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
     n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }),
@@ -255,6 +275,9 @@ export function importSummary(n: { hands: number; sessions: number; players: num
   if (n.bankrolls) parts.push(n.bankrolls === 1 ? t('1 bankroll') : t('{n} bankrolls', { n: n.bankrolls }));
   if (n.transfers) parts.push(n.transfers === 1 ? t('1 movimento') : t('{n} movimentos', { n: n.transfers }));
   if (n.trips) parts.push(n.trips === 1 ? t('1 viagem') : t('{n} viagens', { n: n.trips }));
+  if (n.packages) parts.push(n.packages === 1 ? t('1 pacote de staking') : t('{n} pacotes de staking', { n: n.packages }));
+  if (n.payments) parts.push(n.payments === 1 ? t('1 pagamento a backers') : t('{n} pagamentos a backers', { n: n.payments }));
+  if (n.backing) parts.push(n.backing === 1 ? t('1 jogador que apoias') : t('{n} jogadores que apoias', { n: n.backing }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

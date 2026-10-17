@@ -13,7 +13,7 @@ export const WHATS_NEW: Release[] = [
       { icon: 'calculator-outline', title: 'Calculadora de odds', body: 'A tua mão contra cartas ou um range, a partir do topo da lista de mãos.' },
       { icon: 'flame-outline', title: 'Semanas seguidas', body: 'Conta as semanas em que registas, com gelos que se ganham e modo pausa para viagens.' },
       { icon: 'wallet-outline', title: 'Bankroll e viagens', body: 'Resultados por sala e jogo, despesas de viagem, impostos por país e PDF para o contabilista.' },
-      { icon: 'people-outline', title: 'Staking e swaps', body: 'Vende ações, faz swaps confirmados por link e acerta contas no fim.' },
+      { icon: 'people-outline', title: 'Staking e swaps', body: 'Regista a ação vendida e os swaps confirmados por link, e acerta contas no fim. Nenhum dinheiro passa pela app.' },
       { icon: 'lock-closed-outline', title: 'Privacidade', body: 'Bloqueio com Face ID e modo que esconde os valores em toda a app.' },
     ],
   },

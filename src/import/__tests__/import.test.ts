@@ -112,6 +112,19 @@ test('Sweatbook CSV comes back as the same sessions', () => {
   assert.equal(profit(r.sessions[0]), profit(base));
   assert.equal(r.sessions[0].kind, 'mtt');
   assert.equal(playedMs(r.sessions[0]), 3 * 3600000);
+  assert.equal(new Date(r.sessions[0].startedAt).getHours(), 20, 'start time comes back too');
+});
+
+test('Sweatbook CSV keeps tips and hands apart from expenses', () => {
+  const base: Session = {
+    id: 'y', kind: 'cash', name: 'NLH 2/5', venue: 'Bellagio', currency: '$', startedAt: new Date(2026, 8, 2, 19).getTime(), endedAt: new Date(2026, 8, 2, 23).getTime(),
+    breaks: [], buyIn: 1000, entries: 1, addOn: 0, cashOut: 1800, expenses: 30, tips: 45, handsDealt: 120, sb: 2, bb: 5, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '',
+  };
+  const s = run(sessionsCsv([base])).sessions[0];
+  assert.equal(s.tips, 45);
+  assert.equal(s.expenses, 30);
+  assert.equal(s.handsDealt, 120);
+  assert.equal(profit(s), profit(base));
 });
 
 test('rows without a date or money are counted, not imported', () => {

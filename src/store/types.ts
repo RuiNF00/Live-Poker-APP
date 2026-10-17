@@ -1,5 +1,6 @@
 import type { Statement } from '@/lib/backing-link';
 import type { Tourney } from '@/poker/tourney';
+import type { SizeMemory } from '@/poker/entry';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
 export interface Session {
@@ -27,6 +28,8 @@ export interface Session {
   tips?: number;
   /** Hands dealt to you, when the player counts them (for hands per hour). */
   handsDealt?: number;
+  /** Mental game journal: a few taps before and after. Private: never in a share, link or statement. */
+  mind?: MindCheck;
   /** Action sold, in total: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%).
    *  Kept as the summary of `stakes` so older copies of the app still read it. */
   staking?: { sold: number; markup: number };
@@ -75,6 +78,21 @@ export interface Session {
   /** Receipts and tax forms, kept as files next to the app's data. */
   docs?: SessionDoc[];
   updatedAt?: number;
+}
+
+/** 1 to 5, tapped. */
+export type Scale = 1 | 2 | 3 | 4 | 5;
+
+/** Before the session: how the player arrives. After: how tilted it got, and one line. Every field is optional. */
+export interface MindCheck {
+  energy?: Scale;
+  focus?: Scale;
+  /** Hours slept the night before. */
+  sleep?: number;
+  mood?: string;
+  /** 1 calm, 5 full tilt. */
+  tilt?: Scale;
+  note?: string;
 }
 
 /** 'recover': asking it back (e.g. 1042-S with a treaty or an ITIN return); 'final': credited on your return or not recoverable. */
@@ -275,12 +293,18 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Home-screen widget: show this week's result. Off by default: a home screen is seen by whoever sits next to you. */
+  widgetResult?: boolean;
   /** Rates typed for currencies the ECB doesn't publish (ARS, CLP...): ISO code → units per 1 EUR. */
   fxManual?: Record<string, number>;
   /** Count swaps in results (Session.swapNet). Missing = yes. */
   includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
+  /** Haptic feedback; on unless turned off in Settings. */
+  haptics?: boolean;
+  /** Hand entry: the last bet/raise size per spot, per game kind, offered as a one-tap chip. */
+  sizes?: { cash?: SizeMemory; mtt?: SizeMemory };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -290,5 +314,5 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultTableSize: 9,
   onboarded: false,
   shareNames: false,
-  shareNotes: true,
+  shareNotes: false,
 };

@@ -4,6 +4,8 @@
 Run after fill.sh so the real app name is counted:
     python3 store/scripts/check-lengths.py store/out/listing/*.md
 """
+import glob
+import os
 import re
 import sys
 
@@ -16,6 +18,7 @@ LIMITS = {
     "Palavras-chave": (100, "bytes"), "Keywords": (100, "bytes"),
     "Descrição curta": (80, "chars"), "Short description": (80, "chars"),
     "Descrição": (4000, "chars"), "Description": (4000, "chars"),
+    "Nombre": (30, "chars"), "Palabras clave": (100, "bytes"), "Descripción corta": (80, "chars"), "Descripción": (4000, "chars"),
 }
 
 FIELD = re.compile(r"^\*\*(?P<label>[^*]+?)\*\* \(\d+[^)]*\):\s*(?P<inline>.*)$")
@@ -57,4 +60,6 @@ def main(paths):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    # No arguments: check the filled listings, so a bare run never passes vacuously.
+    default = sorted(glob.glob(os.path.join(os.path.dirname(__file__), "..", "out", "listing", "*.md")))
+    main(sys.argv[1:] or default)
