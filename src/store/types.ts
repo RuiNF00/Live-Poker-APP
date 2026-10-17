@@ -173,6 +173,8 @@ export interface Settings {
   bankrollId?: string;
   /** Bankroll tab shows ••• instead of amounts (for looking at it at the table). */
   hideAmounts?: boolean;
+  /** Logging-streak pauses (trips, breaks): those weeks never break it. */
+  streakPauses?: { from: number; to?: number }[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
