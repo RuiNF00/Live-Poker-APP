@@ -10,6 +10,7 @@ import { BRAND } from '@/theme';
 
 import { deriveKeys, seal, unseal } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
+import { longSignal } from './net';
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
 
@@ -49,6 +50,7 @@ export async function upload(c: CloudState, data: BackupData): Promise<CloudStat
     // Encrypted on the phone; the server only ever sees a key derived from the code.
     headers: { 'content-type': 'application/json', 'x-backup-key': auth },
     body: seal(JSON.stringify(data), enc, Crypto.getRandomBytes(12)),
+    signal: longSignal(),
   });
   if (res.status === 413) throw new Error('too_big');
   if (res.status === 507) throw new Error('quota');
@@ -61,7 +63,7 @@ export async function upload(c: CloudState, data: BackupData): Promise<CloudStat
 
 export async function download(c: CloudState): Promise<BackupData> {
   const { auth, enc } = deriveKeys(c.secret);
-  const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth } });
+  const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth }, signal: longSignal() });
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');

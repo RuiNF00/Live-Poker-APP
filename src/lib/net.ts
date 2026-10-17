@@ -20,6 +20,18 @@ export function withTimeout(base: Fetch, ms = TIMEOUT_MS, uploadMs = UPLOAD_TIME
   return wrapped as Fetch;
 }
 
+/**
+ * A signal for big transfers (cloud backup up and down, up to 2 MB): on one bar
+ * of signal they take far longer than the default limit, which would fail them
+ * every time. Passing it also opts the request out of the default limit.
+ */
+export function longSignal(ms = UPLOAD_TIMEOUT_MS): AbortSignal | undefined {
+  if (typeof AbortController === 'undefined') return undefined;
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), ms);
+  return ctrl.signal;
+}
+
 let installed = false;
 /** Once, at startup. */
 export function installFetchTimeout() {
