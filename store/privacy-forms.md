@@ -1,6 +1,6 @@
 # Store forms: ready answers
 
-Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, no sign-in, no analytics/ads/crash SDKs**, all hand data local on the device. Only a hand the user chooses to share (public link) and anonymous comments/votes on it reach our backend (Supabase). Subscriptions via Apple/Google in-app purchase through RevenueCat (products sweatbook_pro_monthly 29.99 USD, sweatbook_pro_annual 199.99 USD, 1-week free intro, group "Sweatbook Pro"). If any of this changes (crash reporter, analytics, RevenueCat, accounts), update this file and the privacy policy together.
+Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, no sign-in, no third-party analytics/ads/crash SDKs**, all hand data local on the device. Only a hand the user chooses to share (public link) and anonymous comments/votes on it reach our backend (Supabase). Subscriptions via Apple/Google in-app purchase through RevenueCat (products sweatbook_pro_monthly 29.99 USD, sweatbook_pro_annual 199.99 USD, 1-week free intro, group "Sweatbook Pro"). The app sends first-party usage events (event name, random per-install ID, platform; no personal data) to `https://{{WEB_DOMAIN}}/api/events`. If any of this changes (crash reporter, analytics, RevenueCat, accounts), update this file and the privacy policy together.
 
 ## Apple: App Privacy ("nutrition label")
 
@@ -14,6 +14,8 @@ Data not linked to you:
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
+| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
+| Identifiers → Device ID (random per-install ID for those events; not the IDFA) | Analytics |
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -46,8 +48,9 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 |---|---|---|---|
 | App activity → Other user-generated content (shared hands, comments) | Yes | Yes (only when the user shares or comments) | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
-| Device or other IDs | Yes (RevenueCat random app user ID) | No | App functionality |
+| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
+| App activity → App interactions (first-party usage events) | Yes | No | Analytics |
 
 Processed ephemerally: No, except audio (Yes).
 
