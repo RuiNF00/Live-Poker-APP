@@ -1,6 +1,7 @@
 // One tap per card: the whole deck as a 4×13 grid (suits × ranks), used cards
 // greyed out. Faster than rank-then-suit pickers and it is what the eye scans
-// fastest with a four-colour deck.
+// fastest with a four-colour deck. Cards look like the replayer's: cream face,
+// big rank in the suit colour, suit underneath.
 
 import React, { useState } from 'react';
 import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
@@ -10,6 +11,10 @@ import type { CardCode } from '@/poker/types';
 import { C, ff } from '@/theme';
 
 import { tap } from './ui';
+
+const FACE = '#F5EDD8';
+// Suit ink on the cream face: four colours, darker than the felt chips so they read on cream.
+const INK: Record<string, string> = { s: '#1E1E1E', h: '#DC2626', d: '#2563EB', c: '#16A34A' };
 
 export function CardPicker({
   used,
@@ -43,19 +48,20 @@ export function CardPicker({
                   }}
                   style={({ pressed }) => ({
                     width: cw,
-                    height: Math.min(48, cw * 1.38),
-                    borderRadius: 5,
-                    backgroundColor: isUsed ? C.surface2 : C.suit[s],
-                    opacity: isUsed ? 0.35 : pressed ? 0.7 : 1,
-                    borderWidth: isSel ? 2 : 0,
-                    borderColor: C.accent,
+                    height: Math.min(50, cw * 1.45),
+                    borderRadius: 6,
+                    backgroundColor: isUsed ? C.surface2 : FACE,
+                    opacity: isUsed ? 0.3 : pressed ? 0.7 : 1,
+                    borderWidth: isSel ? 2.5 : 1,
+                    borderColor: isSel ? C.accent : isUsed ? C.border : 'rgba(0,0,0,0.25)',
+                    transform: [{ translateY: isSel ? -3 : 0 }],
                     alignItems: 'center',
                     justifyContent: 'center',
                   })}>
-                  <Text style={{ color: isUsed ? C.muted : '#fff', fontWeight: '900', fontFamily: ff(900), fontSize: cw > 26 ? 15 : 13, letterSpacing: -0.5 }}>
+                  <Text style={{ color: isUsed ? C.muted : INK[s], fontWeight: '900', fontFamily: ff(900), fontSize: cw > 26 ? 17 : 14, lineHeight: cw > 26 ? 19 : 16, letterSpacing: -0.5 }}>
                     {displayRank(c)}
                   </Text>
-                  <Text style={{ color: isUsed ? C.muted : 'rgba(255,255,255,0.85)', fontSize: 9, lineHeight: 10 }}>{SUIT_SYMBOL[s]}</Text>
+                  <Text style={{ color: isUsed ? C.muted : INK[s], fontSize: cw > 26 ? 12 : 10, lineHeight: 13 }}>{SUIT_SYMBOL[s]}</Text>
                 </Pressable>
               );
             })}

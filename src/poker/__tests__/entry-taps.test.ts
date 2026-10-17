@@ -1,6 +1,7 @@
 /// <reference types="node" />
 // Tap budget for the hand-entry screen. A small driver plays the same moves the
-// screen offers (position + cards, presets, "só X paga", "alguém entrou?",
+// screen offers (position + cards, presets, "só X paga", a tap on a seat the
+// app folded by itself ("alguém entrou?"),
 // "todos check", board cards, save) and counts one tap per press, so a change
 // that makes the common hands slower fails here.
 import assert from 'node:assert/strict';
@@ -25,7 +26,8 @@ class Entry {
   hand: Hand;
   taps = 3; // position + two hole cards
   autoFrom?: number;
-  private done = new Set<number>();
+  private done = new Set<string>();
+  private history: { hand: Hand; autoFrom?: number }[] = [];
 
   constructor(heroPos: string, heroCards: string[]) {
     this.hand = mk(heroPos, heroCards);
@@ -39,7 +41,11 @@ class Entry {
     assert.ok(i >= 0, label);
     return i;
   }
+  private key() {
+    return this.hand.actions.map((a) => `${a.p}${a.kind[0]}${a.to ?? ''}`).join(',');
+  }
   private set(actions: HandAction[]) {
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
     this.hand = { ...this.hand, actions };
     this.autoFrom = undefined;
     this.settle();
@@ -47,10 +53,11 @@ class Entry {
   private settle() {
     const s = this.s;
     const len = this.hand.actions.length;
-    if (s.needsBoard || s.toAct === null || this.done.has(len)) return;
+    if (s.needsBoard || s.toAct === null || this.done.has(this.key())) return;
     const acts = autoFold(this.hand, s);
     if (!acts.length) return;
-    this.done.add(len);
+    this.done.add(this.key());
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
     this.hand = { ...this.hand, actions: [...this.hand.actions, ...acts] };
     this.autoFrom = len;
   }
@@ -97,6 +104,12 @@ class Entry {
     // Heads-up showdown: the picker is already open, two taps.
     this.taps += 2;
     this.hand = { ...this.hand, players: this.hand.players.map((p, i) => (i === this.seat(label) ? { ...p, cards } : p)) };
+  }
+  undo() {
+    const prev = this.history.pop()!;
+    this.taps++;
+    this.hand = prev.hand;
+    this.autoFrom = prev.autoFrom;
   }
   save() {
     this.taps++;
@@ -193,6 +206,22 @@ test('hero in the BB: CO opens, hero defends, turn checks through, hero bets the
   const r = e.save();
   assert.equal(e.taps, 18);
   assert.equal(r.final.foldWin, true);
+});
+
+test('after undo, a different line of the same length still folds to hero', () => {
+  const e = new Entry('BTN', ['Ah', 'Qh']);
+  e.entered('UTG+1');
+  e.size('2.2x');
+  assert.equal(e.s.toAct, 0);
+  e.undo(); // auto-folds after the open
+  e.undo(); // the open
+  e.undo(); // the rewind: back to the first auto-fold
+  e.entered('UTG');
+  e.size('2.2x');
+  assert.equal(e.s.toAct, 0);
+  e.entered('UTG+1');
+  e.act('call');
+  assert.equal(e.s.toAct, 0, 'the seats after the caller fold by themselves');
 });
 
 test('auto-fold stops when the user folds seats by hand', () => {
