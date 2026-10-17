@@ -4,6 +4,7 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
+import { assignGroups, type SwapGroup } from './swap-groups';
 import type { Session } from './types';
 
 export type SwapSide = 'a' | 'b';
@@ -268,9 +269,10 @@ export function assignSwaps(sessions: Session[], swaps: Swap[]): SwapAssignment 
 }
 
 /** The sessions with Session.swapNet filled in (read by profit()). Unchanged sessions keep their identity. */
-export function withSwaps(sessions: Session[], swaps: Swap[]): Session[] {
-  if (!swaps.length && !sessions.some((s) => s.swapNet)) return sessions;
+export function withSwaps(sessions: Session[], swaps: Swap[], groups: SwapGroup[] = []): Session[] {
+  if (!swaps.length && !groups.length && !sessions.some((s) => s.swapNet)) return sessions;
   const { bySession } = assignSwaps(sessions, swaps);
+  for (const [id, v] of assignGroups(sessions, groups).bySession) bySession.set(id, (bySession.get(id) ?? 0) + v);
   return sessions.map((s) => {
     const n = bySession.get(s.id);
     const v = n && Math.abs(n) >= 0.005 ? Math.round(n * 100) / 100 : undefined;

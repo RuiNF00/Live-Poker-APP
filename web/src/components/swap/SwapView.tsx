@@ -235,9 +235,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
   );
 }
 
-type C = ReturnType<typeof swapCopy>;
+export type C = ReturnType<typeof swapCopy>;
 
-function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
+export function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   return (
     <header className="live-top">
       <a href="/" className="live-brand" aria-label="Sweatbook">
@@ -254,9 +254,9 @@ function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   );
 }
 
-function EntryRow({ e, mine, c, onRemove, busy, children }: { e: SwapEntry; mine: boolean; c: C; onRemove: () => void; busy: boolean; children: React.ReactNode }) {
+export function EntryRow({ e, mine, c, onRemove, busy, children }: { e: Pick<SwapEntry, 'id'> & { side?: string }; mine: boolean; c: C; onRemove: () => void; busy: boolean; children: React.ReactNode }) {
   return (
-    <div className={`sw-row sw-side-${e.side}`}>
+    <div className={`sw-row ${e.side ? `sw-side-${e.side}` : ''}`}>
       <div className="sw-row-main">{children}</div>
       {mine ? (
         <button className="sw-remove" disabled={busy} onClick={onRemove} aria-label={c.remove}>
@@ -267,8 +267,24 @@ function EntryRow({ e, mine, c, onRemove, busy, children }: { e: SwapEntry; mine
   );
 }
 
-function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error: string; title: string; onAdd: (e: object) => Promise<boolean> }) {
+export function AddEntry({
+  c,
+  busy,
+  error,
+  title,
+  onAdd,
+  payees,
+}: {
+  c: C;
+  busy: boolean;
+  error: string;
+  title: string;
+  onAdd: (e: object) => Promise<boolean>;
+  /** Group swaps: who a payment can go to. */
+  payees?: { seat: number; name: string }[];
+}) {
   const [kind, setKind] = useState<'result' | 'payment'>('result');
+  const [to, setTo] = useState(payees?.[0]?.seat ?? -1);
   const [event, setEvent] = useState(title);
   const [amount, setAmount] = useState('');
   const [finish, setFinish] = useState('');
@@ -281,6 +297,7 @@ function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error
       amount: value,
       event: kind === 'result' ? event : '',
       finish: kind === 'result' && finish ? Number(finish) : null,
+      ...(payees && kind === 'payment' ? { to } : {}),
     });
     if (done) {
       setAmount('');
@@ -304,6 +321,18 @@ function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error
           <input value={event} maxLength={80} placeholder={c.eventPlaceholder} onChange={(e) => setEvent(e.target.value)} />
         </label>
       ) : null}
+      {payees && kind === 'payment' ? (
+        <label className="sw-field">
+          <span className="live-label">{c.payTo}</span>
+          <select value={to} onChange={(e) => setTo(Number(e.target.value))}>
+            {payees.map((p) => (
+              <option key={p.seat} value={p.seat}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <div className="sw-pair">
         <label className="sw-field">
           <span className="live-label">{kind === 'result' ? c.amountPrize : c.amountPayment}</span>
@@ -325,7 +354,7 @@ function AddEntry({ c, busy, error, title, onAdd }: { c: C; busy: boolean; error
   );
 }
 
-function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink: string }) {
+export function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <section className="live-card sw-form">
