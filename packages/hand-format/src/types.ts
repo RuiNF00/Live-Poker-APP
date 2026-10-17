@@ -65,12 +65,16 @@ export interface HandRecord {
   buttonSeat: number;
   players: Player[];
   board?: { flop?: [Card, Card, Card]; turn?: Card; river?: Card };
+  /** Run it twice: the second run's cards, after the cards both runs share (all-in before the river). */
+  board2?: Card[];
   /** Actions in order per street. Blind/ante posts belong in preflop. */
   actions: Partial<Record<Street, Action[]>>;
   /** Optional explicit winners; when absent the engine evaluates showdown. */
   winners?: { seat: number; amount: number }[];
   /** Seats that won at showdown when their cards are unknown (amounts are computed). */
   winnerSeats?: number[];
+  /** Run it twice: seats that won the second run when their cards are unknown. */
+  winnerSeats2?: number[];
   tournament?: TournamentInfo;
   tags?: string[];
   notes?: string;

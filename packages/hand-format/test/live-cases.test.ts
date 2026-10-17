@@ -105,3 +105,71 @@ describe('live cases', () => {
     expect(hand.actions.preflop?.[actionMap[0].index]).toEqual({ seat: 5, type: 'raise', amount: 30 });
   });
 });
+
+describe('run it twice', () => {
+  // Folds to the CO (KK), who jams; the button (AA, hero) calls. Seats: BTN 1, CO 6.
+  const jam = (board: string[], board2?: string[], extra: Partial<AppHand> = {}): AppHand => ({
+    ...base({}, [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'raise', to: 1000 }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }], board),
+    board2,
+    ...extra,
+  });
+
+  it('preflop all-in: each run plays for half the pot, one each is a split', () => {
+    // Run 1 is blanks (AA holds); run 2 brings a king (KK wins).
+    const h = jam(['2c', '7d', '9s', 'Jh', '3c'], ['Ks', '4h', '8d', 'Qc', '5s']);
+    const { hand } = fromAppHand(h);
+    expect(validateHand(hand)).toEqual([]);
+    const last = end(h);
+    expect(last.kind).toBe('showdown');
+    expect(last.runs?.map((r) => r.board)).toEqual([
+      ['2c', '7d', '9s', 'Jh', '3c'],
+      ['Ks', '4h', '8d', 'Qc', '5s'],
+    ]);
+    // 1000 + 1000 + blinds 7 = 2007: the odd chip goes with the first run.
+    expect(last.runs?.[0].winners).toEqual([{ seat: 1, amount: 1004, handLabel: expect.any(String) }]);
+    expect(last.runs?.[1].winners.map((w) => [w.seat, w.amount])).toEqual([[6, 1003]]);
+    expect(last.winners?.map((w) => [w.seat, w.amount]).sort()).toEqual([[1, 1004], [6, 1003]]);
+    expect(last.seats.find((s) => s.seat === 1)!.stack).toBe(1004);
+  });
+
+  it('turn all-in: the runs share the flop and turn', () => {
+    const h = base({}, [
+      { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'call' }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'check' },
+      { p: 2, kind: 'check' }, { p: 5, kind: 'check' }, { p: 0, kind: 'check' },
+      { p: 2, kind: 'check' }, { p: 5, kind: 'bet', to: 995 }, { p: 0, kind: 'call' }, { p: 2, kind: 'fold' },
+    ], ['2c', '7d', '9s', 'Jh', '3c']);
+    h.board2 = ['Ks'];
+    const last = end(h);
+    expect(last.runs?.[1].board).toEqual(['2c', '7d', '9s', 'Jh', 'Ks']);
+    expect(last.runs?.[0].winners.map((w) => w.seat)).toEqual([1]);
+    expect(last.runs?.[1].winners.map((w) => w.seat)).toEqual([6]);
+  });
+
+  it('river all-in or a missing second board: one board, as before', () => {
+    expect(end(jam(['2c', '7d', '9s', 'Jh', '3c'], ['Ks', '4h'])).runs).toBeUndefined();
+    expect(end(jam(['2c', '7d', '9s', 'Jh', '3c'], [])).runs).toBeUndefined();
+    expect(end(jam(['2c', '7d', '9s', 'Jh', '3c'])).winners).toEqual([{ seat: 1, amount: 2007, handLabel: expect.any(String) }]);
+  });
+
+  it('unknown cards: manual winners per run', () => {
+    const h = jam(['2c', '7d', '9s', 'Jh', '3c'], ['Ks', '4h', '8d', 'Qc', '5s'], { winners: [5], winners2: [5] });
+    h.players[5] = { ...h.players[5], cards: undefined };
+    const last = end(h);
+    expect(last.runs?.map((r) => r.winners.map((w) => [w.seat, w.amount]))).toEqual([[[6, 1004]], [[6, 1003]]]);
+  });
+
+  it('rejects a second board that reuses a card', () => {
+    const { hand } = fromAppHand(jam(['2c', '7d', '9s', 'Jh', '3c'], ['2c', '4h', '8d', 'Qc', '5s']));
+    expect(validateHand(hand)).toContain('duplicate card 2c');
+  });
+});
+
+describe('run it twice in the action log', () => {
+  it('says what each board paid', async () => {
+    const { describeStep } = await import('../src');
+    const h = base({}, [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'raise', to: 1000 }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }], ['2c', '7d', '9s', 'Jh', '3c']);
+    h.board2 = ['Ks', '4h', '8d', 'Qc', '5s'];
+    const text = describeStep(end(h), 5, 'chips', 'pt');
+    expect(text).toMatch(/^Board 1: BTN ganha 1004 .* · Board 2: CO ganha 1003 /);
+  });
+});

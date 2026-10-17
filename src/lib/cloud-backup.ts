@@ -8,10 +8,11 @@ import type { BackupData } from '@/store/backup';
 import { parseBackup } from '@/store/backup';
 import { BRAND } from '@/theme';
 
-import { deriveKeys, seal, unseal } from './backup-crypto';
+import { deriveKeys, sealAsync, unsealAsync } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
+import { outcomeOf, queue, registerSender } from './sync';
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
 
@@ -53,11 +54,12 @@ export async function upload(c: CloudState, data: BackupData, opts: { force?: bo
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
   const { auth, enc } = deriveKeys(c.secret);
+  const body = await sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
   const res = await fetch(`${API}/api/backup/${c.id}`, {
     method: 'PUT',
     // Encrypted on the phone; the server only ever sees a key derived from the code.
     headers: { 'content-type': 'application/json', 'x-backup-key': auth },
-    body: seal(JSON.stringify(data), enc, Crypto.getRandomBytes(12)),
+    body,
     signal: longSignal(),
   });
   if (res.status === 413) throw new Error('too_big');
@@ -78,7 +80,7 @@ export async function download(c: CloudState): Promise<BackupData> {
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');
-  return parseBackup(unseal(new Uint8Array(await res.arrayBuffer()), enc));
+  return parseBackup(await unsealAsync(new Uint8Array(await res.arrayBuffer()), enc));
 }
 
 export async function removeRemote(c: CloudState): Promise<void> {
@@ -86,3 +88,18 @@ export async function removeRemote(c: CloudState): Promise<void> {
   // 404: already gone. Anything else means the copy may still be on the server.
   if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : 'network');
 }
+
+/**
+ * Deletes the server copy now or when the signal is back. Only the derived key goes in
+ * the queue: it can delete the copy but not read it.
+ */
+export function queueCloudDelete(c: CloudState) {
+  queue('cloud-delete', { id: c.id, auth: deriveKeys(c.secret).auth }, c.id);
+}
+
+registerSender('cloud-delete', async (p) => {
+  const { id, auth } = p as { id: string; auth: string };
+  const res = await fetch(`${API}/api/backup/${id}`, { method: 'DELETE', headers: { 'x-backup-key': auth } }).catch(() => null);
+  if (!res) return 'retry';
+  return res.status === 404 ? 'done' : outcomeOf(res.status);
+});

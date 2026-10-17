@@ -1,10 +1,10 @@
 /// <reference types="node" />
 // Live-game cases: straddles, button ante, bomb pots, multiway all-ins with
-// side pots and chopped pots. Pots must come out to the chip.
+// side pots, chopped pots and run it twice. Pots must come out to the chip.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { legal, positions, replay, totalPot } from '../engine';
+import { board2Needed, isComplete, legal, positions, replay, totalPot, usedCards } from '../engine';
 import type { GameInfo, Hand, HandAction } from '../types';
 
 const CASH: GameInfo = { kind: 'cash', name: '2/5', sb: 2, bb: 5, ante: 0, anteType: 'none', currency: '€' };
@@ -121,4 +121,100 @@ test('chop with unknown cards: picking both winners splits the pot', () => {
   const r = replay(h);
   assert.equal(r.result!.resolved, true);
   assert.deepEqual(r.result!.won.slice(2, 4), [16, 16]);
+});
+
+/** Heads-up-ish all-in: everyone folds to the BTN (hero, AA), who jams; the BB (KK) calls. */
+const jam = (over: Partial<Hand> = {}) =>
+  mk({}, [['UTG', 'fold'], ['HJ', 'fold'], ['CO', 'fold'], ['BTN', 'raise', 1000], ['SB', 'fold'], ['BB', 'call']], {
+    players: Array.from({ length: 6 }, (_, i) => ({ name: i ? '' : 'Hero', stack: 1000, cards: i === 0 ? ['As', 'Ad'] : i === 2 ? ['Kh', 'Kc'] : undefined })),
+    ...over,
+  });
+
+test('run it twice preflop: each run plays for half, one each means a split', () => {
+  // Run 1: blanks, AA holds. Run 2: K on the flop, KK wins.
+  const h = jam({ board: ['2c', '7d', '9s', 'Jh', '3c'], board2: ['Ks', '4h', '8d', 'Qc', '5s'] });
+  const r = replay(h);
+  assert.equal(r.runoutFrom, 0);
+  assert.equal(board2Needed(r), 5);
+  assert.equal(r.boards.length, 2);
+  assert.ok(r.result?.resolved);
+  const pot = r.result!.pots[0];
+  assert.equal(pot.amount, 2002);
+  assert.deepEqual(pot.winners, [0]);
+  assert.deepEqual(pot.winners2, [2]);
+  assert.equal(r.result!.won[0], 1001);
+  assert.equal(r.result!.won[2], 1001);
+  assert.equal(r.result!.net[1], -2, 'the folded small blind loses only the blind');
+  assert.equal(r.result!.net[0], 1);
+});
+
+test('run it twice: the odd chip goes with the first run', () => {
+  // Board 1 AA wins, board 2 KK wins; a 1-chip button ante makes the pot odd
+  // (hero's all-in is 999 after paying it: 999 + 999 + SB 2 + ante 1).
+  const h = jam({ board: ['2c', '7d', '9s', 'Jh', '3c'], board2: ['Ks', '4h', '8d', 'Qc', '5s'] });
+  h.game = { ...h.game, ante: 1, anteType: 'btn' };
+  const r = replay(h);
+  assert.equal(r.result!.pots[0].amount, 2001);
+  assert.equal(r.result!.won[0], 1001);
+  assert.equal(r.result!.won[2], 1000);
+});
+
+test('run it twice on the turn: the runs share the flop and turn', () => {
+  // Limp pot to the flop, all-in on the turn; only the river is run twice.
+  const h = mk({}, [['UTG', 'fold'], ['HJ', 'fold'], ['CO', 'fold'], ['BTN', 'call'], ['SB', 'fold'], ['BB', 'check'],
+    ['BB', 'check'], ['BTN', 'check'], ['BB', 'bet', 995], ['BTN', 'call']], {
+    players: Array.from({ length: 6 }, (_, i) => ({ name: i ? '' : 'Hero', stack: 1000, cards: i === 0 ? ['As', 'Ad'] : i === 2 ? ['Kh', 'Kc'] : undefined })),
+    board: ['2c', '7d', '9s', 'Jh', '3c'],
+    board2: ['Ks'],
+  });
+  const r = replay(h);
+  assert.equal(r.invalidAt, null);
+  assert.equal(r.runoutFrom, 4);
+  assert.deepEqual(r.boards[1], ['2c', '7d', '9s', 'Jh', 'Ks']);
+  assert.deepEqual(r.result!.pots[0].winners, [0]);
+  assert.deepEqual(r.result!.pots[0].winners2, [2]);
+  assert.equal(r.result!.won[0] + r.result!.won[2], 2002);
+});
+
+test('run it twice waits for the second board and greys out its cards', () => {
+  const h = jam({ board: ['2c', '7d', '9s', 'Jh', '3c'], board2: ['Ks', '4h'] });
+  const r = replay(h);
+  assert.equal(r.result, null);
+  assert.equal(r.needsBoard2, true);
+  assert.equal(isComplete(h, r), false);
+  assert.ok(usedCards(h).has('Ks'));
+  h.board2 = ['Ks', '4h', '8d', 'Qc', '5s'];
+  assert.equal(isComplete(h), true);
+});
+
+test('run it twice is ignored when the all-in came on the river', () => {
+  const h = mk({}, [['UTG', 'fold'], ['HJ', 'fold'], ['CO', 'fold'], ['BTN', 'call'], ['SB', 'fold'], ['BB', 'check'],
+    ['BB', 'check'], ['BTN', 'check'], ['BB', 'check'], ['BTN', 'check'], ['BB', 'bet', 995], ['BTN', 'call']], {
+    players: Array.from({ length: 6 }, (_, i) => ({ name: i ? '' : 'Hero', stack: 1000, cards: i === 0 ? ['As', 'Ad'] : i === 2 ? ['Kh', 'Kc'] : undefined })),
+    board: ['2c', '7d', '9s', 'Jh', '3c'],
+    board2: [],
+  });
+  const r = replay(h);
+  assert.equal(r.needsBoard2, false);
+  assert.equal(r.boards.length, 1);
+  assert.equal(r.result!.won[0], 2002);
+});
+
+test('run it twice with side pots and unknown cards: each run has its own winners', () => {
+  // Three all-in preflop; villains' cards unknown, winners picked per run.
+  const h = mk({}, [['UTG', 'fold'], ['HJ', 'fold'], ['CO', 'raise', 300], ['BTN', 'raise', 1000], ['SB', 'fold'], ['BB', 'fold'], ['CO', 'call']], {
+    players: Array.from({ length: 6 }, (_, i) => ({ name: i ? '' : 'Hero', stack: i === 5 ? 300 : 1000, cards: i === 0 ? ['As', 'Ad'] : undefined })),
+    board: ['2c', '7d', '9s', 'Jh', '3c'],
+    board2: ['Ks', '4h', '8d', 'Qc', '5s'],
+    winners: [0],
+    winners2: [5],
+  });
+  const r = replay(h);
+  assert.ok(r.result?.resolved);
+  // Main pot 300+300+2+5 = 607 (CO and BTN), uncalled 700 back to BTN.
+  const [main] = r.result!.pots;
+  assert.equal(main.amount, 607);
+  assert.equal(r.result!.won[0], 304, 'hero wins the first half of the main pot');
+  assert.equal(r.result!.won[5], 303);
+  assert.equal(chipsInPlay(h), 5 * 1000 + 300, 'no chip created or lost');
 });

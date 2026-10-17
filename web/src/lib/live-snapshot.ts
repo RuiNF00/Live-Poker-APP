@@ -33,6 +33,8 @@ export interface LiveSnapshot {
   sold: number;
   hands: number;
   updatedAt: number;
+  /** Set when the page holds the result back (see holdResult): when it will show. Never sent by the app. */
+  heldUntil?: number;
 }
 
 // The app's StageId values (src/poker/types.ts).
@@ -84,4 +86,17 @@ export function parseSnapshot(x: unknown): LiveSnapshot | 'offensive' | null {
   };
   if ([snap.player, snap.name, snap.venue].some((s) => s && isOffensive(s))) return 'offensive';
   return snap;
+}
+
+/** How long after the end the prize stays off the public page and its preview. */
+export const RESULT_DELAY_MS = 3600_000;
+
+/**
+ * What the public sees: a session that has just ended shows that it ended, but not
+ * the prize, place or cash-out until an hour later. Anyone with a forwarded link
+ * would otherwise know who just won how much, and where.
+ */
+export function holdResult(s: LiveSnapshot, now = Date.now()): LiveSnapshot {
+  if (!s.endedAt || now - s.endedAt >= RESULT_DELAY_MS) return s;
+  return { ...s, cashOut: 0, finish: null, field: null, heldUntil: s.endedAt + RESULT_DELAY_MS };
 }

@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, festivalName, planReminders, planTotals, togglePicked } from '../festival-plan';
+import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
+import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, planReminders, planTotals, togglePicked } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -59,9 +59,57 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
 });
 
 test('ships without an event brand; the player can name the festival', () => {
-  const shipped = JSON.stringify({ ...F, source: undefined });
-  assert.doesNotMatch(shipped, /wsop|ggmillion|ggpoker/i);
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify({ ...f, venue: undefined }), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn/i, f.id);
+  // No outbound links: organisers also run real-money gaming sites (store review).
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /https?:|www\./i, f.id);
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '  Bahamas com a malta ' }), 'Bahamas com a malta');
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '   ' }), 'Bahamas, dezembro 2026');
+});
+
+test('one tournament across flights and days: start, re-enter a later flight, resume Day 2', () => {
+  const base = { id: 'x', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, breaks: [], buyIn: 26000, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 60000, stackLog: [], roster: [], notes: '' };
+  const ev = (id: string) => F.events.find((e) => e.id === id)!;
+  assert.deepEqual(eventAction(F, EMPTY_PLAN, [], ev('12-A')), { kind: 'start' });
+  assert.equal(eventAction(F, EMPTY_PLAN, [], ev('12-2A')), null);
+
+  const plan = { ...EMPTY_PLAN, sessions: { '12-A': 'x' } };
+  // Playing Flight A: every row of #12 points at that session.
+  assert.equal(eventAction(F, plan, [base], ev('12-B'))!.kind, 'view');
+  // Busted in A: Flight B is a re-entry, A itself has nothing left to do.
+  const busted = { ...base, endedAt: 2 };
+  assert.equal(eventAction(F, plan, [busted], ev('12-B'))!.kind, 'reenter');
+  assert.equal(eventAction(F, plan, [busted], ev('12-A')), null);
+  assert.equal(eventAction(F, plan, [busted], ev('12-2A')), null);
+  // Bagged in A: Day 2 picks it up; no new flight while chips are in the bag.
+  const bagged = { ...base, endedAt: 2, bag: { stack: 185000, at: 2 } };
+  assert.equal(eventAction(F, plan, [bagged], ev('12-2A'))!.kind, 'resume');
+  // Bagged in Flight A: the 2BC restart isn't yours.
+  assert.equal(eventAction(F, plan, [bagged], ev('12-2BC')), null);
+  assert.equal(eventAction(F, { ...EMPTY_PLAN, sessions: { '12-C': 'x' } }, [bagged], ev('12-2BC'))!.kind, 'resume');
+  assert.equal(eventAction(F, plan, [bagged], ev('12-B')), null);
+  // Other events are untouched.
+  assert.deepEqual(eventAction(F, plan, [bagged], ev('13')), { kind: 'start' });
+});
+
+test('Las Vegas schedule: matches the organiser page, no event numbers shown, Day 2 resumes a bagged flight', () => {
+  assert.equal(new Set(LV.events.map((e) => e.id)).size, LV.events.length);
+  const starts = LV.events.map((e) => e.start);
+  assert.deepEqual([...starts].sort(), starts);
+  assert.equal(LV.events[0].start, '2026-12-01T13:00');
+  assert.equal(LV.events.at(-1)!.start, '2026-12-21T12:00');
+  const wc = LV.events.filter((e) => e.name === 'World Championship');
+  assert.deepEqual(wc.map((e) => [e.flight, e.buyIn, e.start]), [
+    ['1A', 10400, '2026-12-13T11:00'],
+    ['1B', 10400, '2026-12-14T11:00'],
+    ['1C', 10400, '2026-12-15T11:00'],
+    ['2', 0, '2026-12-16T12:00'],
+  ]);
+  assert.equal(LV.events.find((e) => e.name === 'NLH High Roller (2 Day)')!.buyIn, 25800);
+  assert.ok(LV.events.every((e) => e.unnumbered));
+  // Las Vegas is UTC-8 in December.
+  assert.equal(new Date(venueTime(LV, '2026-12-13T11:00')).toISOString(), '2026-12-13T19:00:00.000Z');
+  const bagged = { id: 'w', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, endedAt: 2, bag: { stack: 120000, at: 2 }, breaks: [], buyIn: 10400, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 120000, stackLog: [], roster: [], notes: '' };
+  const day2 = LV.events.find((e) => e.name === 'World Championship' && e.day2)!;
+  assert.equal(eventAction(LV, { ...EMPTY_PLAN, sessions: { [wc[1].id]: 'w' } }, [bagged], day2)!.kind, 'resume');
 });

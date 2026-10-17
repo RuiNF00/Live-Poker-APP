@@ -10,6 +10,7 @@ import { usePro } from '@/billing/pro';
 import { Replayer } from '@/components/Replayer';
 import { Button, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
+import { claimState } from '@/lib/referrals';
 import { sampleHand } from '@/poker/sample';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -23,8 +24,8 @@ const STEPS = ['hero', 'goals', 'plays', 'volume', 'currency', 'plan'] as const;
  */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
-  const { settings, setSettings } = useStore();
-  const { paywall } = usePro();
+  const { settings, setSettings, bankrolls, sessions, transfers, saveBankroll } = useStore();
+  const { isPro, paywall } = usePro();
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>({ goals: [], plays: null, volume: null });
   const sample = useMemo(() => sampleHand('sample'), []);
@@ -36,7 +37,13 @@ export default function Welcome() {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
     router.back();
     // After the modal is gone, so the paywall slides up over the home screen.
-    setTimeout(() => paywall('plan'), 350);
+    // Pro already, or invited (their Pro days come with the first hand): no paywall to end on.
+    claimState()
+      .catch(() => null)
+      .then((claim) => {
+        const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
+        if (!isPro && !invited) setTimeout(() => paywall('plan'), 350);
+      });
   };
   const toggle = (g: Goal) => setA((x) => ({ ...x, goals: x.goals.includes(g) ? x.goals.filter((y) => y !== g) : [...x.goals, g] }));
 
@@ -127,6 +134,9 @@ export default function Welcome() {
                 active={settings.currency === c}
                 onPress={() => {
                   setSettings({ currency: c });
+                  // The bankroll made on first launch is still empty: give it the same currency.
+                  const b = bankrolls[0];
+                  if (bankrolls.length === 1 && b.currency !== c && !sessions.length && !transfers.length) saveBankroll({ ...b, currency: c });
                   next();
                 }}
               />

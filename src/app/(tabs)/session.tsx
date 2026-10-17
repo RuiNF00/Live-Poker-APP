@@ -19,9 +19,10 @@ import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, Nu
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
-import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
+import { FESTIVALS, type Festival } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
 import { festivalName, useFestivalPlan } from '@/store/festival-plan';
+import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -44,6 +45,44 @@ function useTick(ms = 1000) {
   return now;
 }
 
+// The parts of the live screen that change with time each keep their own tick,
+// so the clock redraws one line a second instead of the whole screen (chart,
+// table reads, money) behind it.
+
+function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
+  const now = useTick(1000);
+  return (
+    <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
+      {clock(playedMs(s, now))}
+    </T>
+  );
+}
+
+function LevelAlarm({ s }: { s: Session }) {
+  const now = useTick(1000);
+  const nextAt = nextLevelAt(s, now);
+  const levelDue = !!nextAt && nextAt <= now;
+  const color = levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted;
+  return (
+    <Row gap={4} style={{ marginTop: 2 }}>
+      <Ionicons name="alarm-outline" size={13} color={color} />
+      <T v="monoS" color={color}>
+        {!nextAt ? t('Aviso de nível') : levelDue ? t('{min} min · subir nível', { min: s.levelMinutes! }) : t('{min} min · sobe em {time}', { min: s.levelMinutes!, time: mmss(nextAt - now) })}
+      </T>
+    </Row>
+  );
+}
+
+function SinceStart({ s }: { s: Session }) {
+  // Hours and minutes: a 30 s tick is enough.
+  const now = useTick(30000);
+  return (
+    <T v="tiny" style={{ textAlign: 'center' }}>
+      {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(profit(s), s.currency) })}
+    </T>
+  );
+}
+
 function confirm(title: string, body: string, ok: () => void) {
   if (Platform.OS === 'web') ok();
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: t('Sim'), onPress: ok }]);
@@ -51,9 +90,9 @@ function confirm(title: string, body: string, ok: () => void) {
 
 export default function SessionScreen() {
   const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
-  const festivalPlan = useFestivalPlan(BAHAMAS_DEC_2026.id);
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
+  const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
 
   const startRef = useRef<(() => void) | null>(null);
   if (activeSession) return <Live s={activeSession} />;
@@ -62,15 +101,36 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: 96 }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
-          <ListItem
-            icon="calendar-outline"
-            iconColor={C.accent}
-            title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
-            subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
-            chevron
-            onPress={() => router.push('/festival')}
-          />
+          {FESTIVALS.map((f) => (
+            <FestivalItem key={f.id} f={f} />
+          ))}
         </ListGroup>
+        {bagged.length ? (
+          <Section title={t('Por continuar')}>
+            <ListGroup>
+              {bagged.map((b) => (
+                <ListItem
+                  key={b.id}
+                  icon="bag-handle-outline"
+                  iconColor={C.accent}
+                  title={b.name || t('Torneio')}
+                  subtitle={t('Dia {n} · {chips} no saco', { n: dayOf(b), chips: chips(b.bag!.stack) })}
+                  right={
+                    <Button
+                      size="sm"
+                      title={t('Dia {n}', { n: dayOf(b) + 1 })}
+                      icon="play"
+                      onPress={() => {
+                        tap('success');
+                        saveSession(resumeDay(b));
+                      }}
+                    />
+                  }
+                />
+              ))}
+            </ListGroup>
+          </Section>
+        ) : null}
         <SessionForm
           initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
           bankrolls={bankrolls}
@@ -94,12 +154,25 @@ export default function SessionScreen() {
   );
 }
 
+function FestivalItem({ f }: { f: Festival }) {
+  const plan = useFestivalPlan(f.id);
+  return (
+    <ListItem
+      icon="calendar-outline"
+      iconColor={C.accent}
+      title={festivalName(f, plan)}
+      subtitle={`${f.venue} · ${t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size })}`}
+      chevron
+      onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
+    />
+  );
+}
+
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
-  const now = useTick(1000);
   const { saveSession, hands } = useStore();
-  const [pad, setPad] = useState<null | 'stack' | 'cashout'>(null);
+  const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
@@ -107,7 +180,7 @@ function Live({ s }: { s: Session }) {
   const [softAsk, askNotify] = useNotifySoftAsk();
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
-  // Memoised: this screen re-renders every second (clock) and hands can be thousands.
+  // Memoised: hands can be thousands.
   const nHands = useMemo(() => hands.filter((h) => h.sessionId === s.id).length, [hands, s.id]);
   const save = (p: Partial<Session>) => saveSession({ ...s, ...p });
   const first = s.stackLog[0]?.stack ?? s.stack;
@@ -117,8 +190,6 @@ function Live({ s }: { s: Session }) {
     tap();
     save(levelAfter(s, dir));
   };
-  const nextAt = nextLevelAt(s, now);
-  const levelDue = !!nextAt && nextAt <= now;
   // Level length cycles Off → 15 → 20 → 30 → 40 → 60 → Off; the clock restarts on set (see withLevelClock).
   const cycleLevelLength = () => {
     tap();
@@ -141,12 +212,10 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
-      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
+      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
-          <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
-            {clock(playedMs(s, now))}
-          </T>
+          <PlayClock s={s} paused={paused} />
           <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
         </Card>
 
@@ -178,12 +247,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
             <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
-              <Row gap={4} style={{ marginTop: 2 }}>
-                <Ionicons name="alarm-outline" size={13} color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted} />
-                <T v="monoS" color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted}>
-                  {!nextAt ? t('Aviso de nível') : levelDue ? t('{min} min · subir nível', { min: s.levelMinutes! }) : t('{min} min · sobe em {time}', { min: s.levelMinutes!, time: mmss(nextAt - now) })}
-                </T>
-              </Row>
+              <LevelAlarm s={s} />
             </Pressable>
           </Card>
         </Row>
@@ -229,7 +293,10 @@ function Live({ s }: { s: Session }) {
         </Section>
 
         {!ending ? (
-          <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+          <View style={{ gap: S.sm }}>
+            {mtt ? <Button title={t('Ensacar fichas (fim do dia {n})', { n: dayOf(s) })} kind="secondary" size="md" icon="bag-handle-outline" onPress={() => setPad('bag')} /> : null}
+            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+          </View>
         ) : (
           <Section title={t('Terminar sessão')}>
             <Card style={{ gap: S.md }}>
@@ -296,6 +363,17 @@ function Live({ s }: { s: Session }) {
         )}
 
         <AmountPad
+          visible={pad === 'bag'}
+          title={t('Fichas no saco')}
+          bb={s.bb}
+          onClose={() => setPad(null)}
+          onDone={(v) => {
+            setPad(null);
+            tap('success');
+            saveSession(bagDay(s, v));
+          }}
+        />
+        <AmountPad
           visible={pad === 'stack'}
           title={t('Stack atual')}
           bb={s.bb}
@@ -305,9 +383,7 @@ function Live({ s }: { s: Session }) {
             save({ stack: v, stackLog: [...s.stackLog, { t: Date.now(), stack: v, level: s.level }] });
           }}
         />
-        <T v="tiny" style={{ textAlign: 'center' }}>
-          {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(profit(s), s.currency) })}
-        </T>
+        <SinceStart s={s} />
       </Screen>
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar}>

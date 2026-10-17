@@ -4,8 +4,7 @@
 // event to a running session.
 
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
@@ -16,10 +15,11 @@ import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
-import { eventDay, eventTitle, venueTime, BAHAMAS_DEC_2026, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type FestivalPlan } from '@/store/festival-plan';
+import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
+import { dayOf, reenterFlight, resumeDay } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -46,7 +46,8 @@ function dayLabel(day: string) {
 }
 
 export default function FestivalScreen() {
-  const f = BAHAMAS_DEC_2026;
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const f = FESTIVALS.find((x) => x.id === id) ?? FESTIVALS[0];
   const plan = useFestivalPlan(f.id);
   const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
@@ -82,8 +83,9 @@ export default function FestivalScreen() {
   };
 
   const startSession = (e: FestivalEvent) => {
-    const existing = plan.sessions[e.id] && sessions.find((s) => s.id === plan.sessions[e.id]);
-    if (existing && !existing.endedAt) return router.push('/session');
+    const a = eventAction(f, plan, sessions, e);
+    if (!a) return;
+    if (a.kind === 'view') return router.push('/session');
     if (activeSession) {
       const msg = t('Termina a sessão "{name}" antes de começar outra.', { name: activeSession.name || t('Sessão') });
       if (Platform.OS === 'web') router.push('/session');
@@ -91,7 +93,12 @@ export default function FestivalScreen() {
       return;
     }
     tap('medium');
-    const s = sessionFromEvent(f, e, settings.defaultTableSize, sameCurrency ? bankroll.id : undefined);
+    const s =
+      a.kind === 'resume'
+        ? resumeDay(a.session)
+        : a.kind === 'reenter'
+          ? reenterFlight(a.session, sessionName(e))
+          : sessionFromEvent(f, e, settings.defaultTableSize, sameCurrency ? bankroll.id : undefined);
     saveSession(s);
     updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(e.id) ? p.picked : [...p.picked, e.id], sessions: { ...p.sessions, [e.id]: s.id } }));
     router.push('/session');
@@ -153,7 +160,7 @@ export default function FestivalScreen() {
                   f={f}
                   e={e}
                   plan={plan}
-                  hasSession={!!plan.sessions[e.id] && sessions.some((s) => s.id === plan.sessions[e.id])}
+                  action={eventAction(f, plan, sessions, e)}
                   lateOpen={lateFor === e.id}
                   onToggle={() => toggle(e)}
                   onLate={() => setLateFor(lateFor === e.id ? null : e.id)}
@@ -175,12 +182,9 @@ export default function FestivalScreen() {
         ))}
 
         <View style={{ gap: 6, paddingHorizontal: 4 }}>
-          <Pressable onPress={() => void WebBrowser.openBrowserAsync(f.source.url).catch(() => {})} hitSlop={8} accessibilityRole="link">
-            <T v="tiny" color={C.textDim}>
-              {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
-              <T v="tiny" color={C.accent}>{'  ' + t('Abrir')}</T>
-            </T>
-          </Pressable>
+          <T v="tiny" color={C.textDim}>
+            {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+          </T>
           {f.notes.map((n) => (
             <T key={n} v="tiny">
               {t(n)}
@@ -274,7 +278,7 @@ function EventRow({
   f,
   e,
   plan,
-  hasSession,
+  action,
   lateOpen,
   onToggle,
   onLate,
@@ -284,7 +288,7 @@ function EventRow({
   f: Festival;
   e: FestivalEvent;
   plan: FestivalPlan;
-  hasSession: boolean;
+  action: EventAction | null;
   lateOpen: boolean;
   onToggle: () => void;
   onLate: () => void;
@@ -309,7 +313,7 @@ function EventRow({
             {eventTitle(e)}
           </T>
           <T v="small" numberOfLines={1}>
-            {[e.flight ? (e.day2 ? t('Dia 2 · Flight {f}', { f: e.flight }) : `Flight ${e.flight}`) : null, `${short(e.guarantee, f.currency)} GTD`].filter(Boolean).join(' · ')}
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${short(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
@@ -319,10 +323,10 @@ function EventRow({
           <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />
         </View>
       </Pressable>
-      {on ? (
+      {on || action?.kind === 'resume' ? (
         <View style={{ paddingHorizontal: S.md, paddingBottom: S.md, gap: S.sm }}>
           <Row gap={S.sm}>
-            <Pressable
+            {e.day2 ? <View style={{ flex: 1 }} /> : <Pressable
               onPress={onLate}
               accessibilityRole="button"
               style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
@@ -330,8 +334,23 @@ function EventRow({
               <T v="small" color={late ? C.text : C.accent} numberOfLines={1} style={{ flexShrink: 1 }}>
                 {lateLabel}
               </T>
-            </Pressable>
-            {e.day2 ? null : <Button size="sm" title={hasSession ? t('Ver sessão') : t('Começar sessão')} icon={hasSession ? 'open-outline' : 'play'} onPress={onStart} />}
+            </Pressable>}
+            {action ? (
+              <Button
+                size="sm"
+                title={
+                  action.kind === 'view'
+                    ? t('Ver sessão')
+                    : action.kind === 'resume'
+                      ? t('Começar Dia {n}', { n: dayOf(action.session) + 1 })
+                      : action.kind === 'reenter'
+                        ? t('Re-entrar ({flight})', { flight: e.flight ? 'Flight ' + e.flight : eventTitle(e) })
+                        : t('Começar sessão')
+                }
+                icon={action.kind === 'view' ? 'open-outline' : 'play'}
+                onPress={onStart}
+              />
+            ) : null}
           </Row>
           {lateOpen ? (
             <View style={{ gap: 6 }}>
@@ -350,13 +369,17 @@ function EventRow({
   );
 }
 
+function sessionName(e: FestivalEvent) {
+  return eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
+}
+
 /** A running tournament session for a festival event, starting now. */
 function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
   const now = Date.now();
   const base = blankSession('mtt', f.currency, tableSize);
   return {
     ...base,
-    name: eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : ''),
+    name: sessionName(e),
     venue: `${f.venue}, ${f.city.split(',')[0]}`,
     buyIn: e.buyIn,
     bankrollId,

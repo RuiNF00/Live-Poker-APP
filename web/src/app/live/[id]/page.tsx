@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { brand } from '@/config/brand';
 import { pickLocale } from '@/lib/i18n';
+import { limited } from '@/lib/abuse';
 import { liveStore, loadLive as loadLiveById } from '@/lib/live';
 import { normalizeCode } from '@/lib/refcode';
 import { LiveView } from '@/components/live/LiveView';
@@ -40,8 +41,13 @@ export default async function LivePage({ params, searchParams }: Params & Search
   const { r } = await searchParams;
   const rec = await loadLive(id);
   if (!rec) notFound();
-  const locale = pickLocale((await headers()).get('accept-language'));
-  after(() => liveStore().recordView(id).catch(() => {}));
+  const h = await headers();
+  const locale = pickLocale(h.get('accept-language'));
+  // One view per visitor (IP) per link per day, so reloads don't inflate the count.
+  const req = new Request(`${brand.siteUrl}/live/${id}`, { headers: h });
+  after(async () => {
+    if (!(await limited(req, `live-view:${id}`, 1, 86400))) await liveStore().recordView(id).catch(() => {});
+  });
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   return <LiveView id={id} locale={locale} initial={rec.snapshot} initialUpdatedAt={Date.parse(rec.updatedAt)} invite={invite} />;
 }
