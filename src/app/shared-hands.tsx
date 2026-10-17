@@ -1,21 +1,17 @@
 // "Mãos partilhadas": the hands friends sent you and your own shared hands, with the comments you
 // haven't seen yet. Sending still goes through WhatsApp or Instagram; this is where the talk comes back.
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
-import { Badge, Button, Card, Empty, ListItem, Row, Section, T } from '@/components/ui';
+import { Badge, Button, Card, Empty, ListItem, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { forgetFriendHand, hideFriendHand, useSharedHands } from '@/lib/friend-hands';
-import type { FriendHand } from '@/lib/friend-hands-core';
-import { anonId, reportHand } from '@/lib/share-api';
+import { useSharedHands } from '@/lib/friend-hands';
 import { comboLabel } from '@/poker/cards';
 import { blindsLabel } from '@/poker/format';
-import type { Hand } from '@/poker/types';
 import { BRAND, C, S } from '@/theme';
 
 const TERMS_URL = `${BRAND.webUrl}/terms`;
@@ -48,40 +44,70 @@ export default function SharedHands() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
-      <Section title={t('Dos teus amigos')}>
-        {friends.length ? (
+      {friends.length ? (
+        <Section title={t('Dos teus amigos')}>
           <Card padded={false}>
             {friends.map((f, i) => (
               <View key={f.id} style={i ? { borderTopWidth: 1, borderTopColor: C.border } : undefined}>
-                <FriendRow hand={f} count={counts[f.id]} fresh={fresh[f.id]} />
+                <HandRow
+                  cards={f.cards}
+                  title={f.title || t('Mão de um amigo')}
+                  when={f.openedAt}
+                  count={counts[f.id]}
+                  fresh={fresh[f.id]}
+                  onPress={() => router.push({ pathname: '/h/[id]', params: { id: f.id } })}
+                />
               </View>
             ))}
           </Card>
-        ) : (
-          <T v="small" style={{ paddingHorizontal: 4 }}>
-            {t('Quando abrires na app uma mão que um amigo te mandou, ela fica aqui para voltares à conversa.')}
-          </T>
-        )}
-      </Section>
+        </Section>
+      ) : null}
 
       <Section title={t('As tuas')}>
         {mine.length ? (
           <Card padded={false}>
             {ordered.map((h, i) => (
               <View key={h.id} style={i ? { borderTopWidth: 1, borderTopColor: C.border } : undefined}>
-                <MineRow hand={h} count={counts[h.shareId!]} fresh={fresh[h.shareId!]} />
+                <HandRow
+                  cards={h.players[h.hero]?.cards}
+                  title={[comboLabel(h.players[h.hero]?.cards), blindsLabel({ game: { ...h.game, ante: 0 } })].filter(Boolean).join(' · ') || t('Mão')}
+                  when={h.createdAt}
+                  count={counts[h.shareId!]}
+                  fresh={fresh[h.shareId!]}
+                  onPress={() => router.push({ pathname: '/hand/[id]', params: { id: h.id } })}
+                />
               </View>
             ))}
           </Card>
         ) : (
-          <T v="small" style={{ paddingHorizontal: 4 }}>
-            {t('Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.')}
-          </T>
+          <View style={{ gap: S.sm, paddingHorizontal: 4, alignItems: 'flex-start' }}>
+            <T v="small">{t('Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.')}</T>
+            <Button title={t('Partilhar uma mão')} kind="secondary" size="md" onPress={() => router.navigate('/')} />
+          </View>
         )}
       </Section>
 
       <Footer />
     </ScrollView>
+  );
+}
+
+// Friends' hands and yours look the same: the hole cards are what makes a hand recognisable. The
+// badge sits in a fixed column by the chevron, so new comments line up down the list.
+function HandRow(p: { cards?: string[]; title: string; when: number; count?: number; fresh?: number; onPress: () => void }) {
+  return (
+    <ListItem
+      left={p.cards?.length === 2 ? <CardRow cards={p.cards} size="xs" gap={1} /> : <View style={{ width: 44 }} />}
+      title={p.title}
+      subtitle={`${day(p.when)} · ${comments(p.count)}`}
+      right={
+        <View style={{ minWidth: 64, flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <NewBadge n={p.fresh} />
+        </View>
+      }
+      onPress={p.onPress}
+      accessibilityLabel={`${p.title}, ${comments(p.count)}${p.fresh ? `, ${p.fresh === 1 ? t('1 novo') : t('{n} novos', { n: p.fresh })}` : ''}`}
+    />
   );
 }
 
@@ -103,57 +129,5 @@ function Footer() {
         </T>
       </T>
     </View>
-  );
-}
-
-function FriendRow({ hand, count, fresh }: { hand: FriendHand; count?: number; fresh?: number }) {
-  const remove = () => {
-    const go = () => forgetFriendHand(hand.id);
-    if (Platform.OS === 'web') return go();
-    Alert.alert(t('Tirar da lista?'), t('A mão continua no link do teu amigo.'), [
-      { text: t('Cancelar'), style: 'cancel' },
-      { text: t('Tirar'), onPress: go },
-      {
-        text: t('Denunciar e tirar'),
-        style: 'destructive',
-        onPress: () => {
-          reportHand(hand.id, anonId()).catch(() => {});
-          hideFriendHand(hand.id);
-        },
-      },
-    ]);
-  };
-  return (
-    <ListItem
-      icon="person-outline"
-      title={hand.title || t('Mão de um amigo')}
-      subtitle={`${day(hand.openedAt)} · ${comments(count)}`}
-      right={
-        <Row gap={S.sm}>
-          <NewBadge n={fresh} />
-          <Pressable onPress={remove} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Tirar da lista')} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="close" size={18} color={C.muted} />
-          </Pressable>
-        </Row>
-      }
-      chevron={false}
-      onPress={() => router.push({ pathname: '/h/[id]', params: { id: hand.id } })}
-      accessibilityLabel={`${hand.title || t('Mão de um amigo')}, ${comments(count)}${fresh ? `, ${fresh === 1 ? t('1 novo') : t('{n} novos', { n: fresh })}` : ''}`}
-    />
-  );
-}
-
-function MineRow({ hand, count, fresh }: { hand: Hand; count?: number; fresh?: number }) {
-  const cards = hand.players[hand.hero]?.cards;
-  const title = [comboLabel(cards), blindsLabel(hand)].filter(Boolean).join(' · ');
-  return (
-    <ListItem
-      left={cards?.length === 2 ? <CardRow cards={cards} size="xs" gap={1} /> : undefined}
-      title={title || t('Mão')}
-      subtitle={`${day(hand.createdAt)} · ${comments(count)}`}
-      right={<NewBadge n={fresh} />}
-      onPress={() => router.push({ pathname: '/hand/[id]', params: { id: hand.id } })}
-      accessibilityLabel={`${title}, ${comments(count)}${fresh ? `, ${fresh === 1 ? t('1 novo') : t('{n} novos', { n: fresh })}` : ''}`}
-    />
   );
 }
