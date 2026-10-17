@@ -22,6 +22,7 @@ import { openInGtoWizard } from '@/lib/gto-wizard';
 import { useIdleCount } from '@/lib/idle-count';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
+import { ChargeNotice, useChargeNotice } from '@/components/ChargeNotice';
 import { ProMoment, useProMoment } from '@/components/ProMoment';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
@@ -104,6 +105,7 @@ export default function HandsScreen() {
   const incomplete = useIdleCount(hands, isIncomplete) ?? 0;
   const checklist = useStartChecklist();
   const moment = useProMoment();
+  const chargeEnd = useChargeNotice();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
   const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
@@ -199,7 +201,9 @@ export default function HandsScreen() {
                     setDiscarded(null);
                   }}
                 />
-              ) : narrowed ? null : checklist ? (
+              ) : narrowed ? null : chargeEnd ? (
+                <ChargeNotice end={chargeEnd} />
+              ) : checklist ? (
                 <StartChecklist state={checklist} />
               ) : moment ? (
                 <ProMoment state={moment} />

@@ -74,7 +74,8 @@ export default function Cancel() {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: 'lifetime', result: res });
     if (res === 'ok') {
       track('lifetime_purchased', lifetimeProps());
-      Alert.alert(t('Pro para sempre'), t('Agora cancela a subscrição na {store}, para não pagares mais.', { store }), [{ text: t('Abrir a {store}', { store }), onPress: toStore }]);
+      // The subscription keeps renewing until the player cancels it: straight to the store's page (payments audit §7).
+      toStore();
     } else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
   const onRestore = async () => {
@@ -156,7 +157,7 @@ export default function Cancel() {
               {reason === 'bankroll' ? (
                 <>
                   {offer ? (
-                    <OfferCard icon="pricetag" title={t('−{pct}% durante {n} meses', { pct: RETENTION.discount.pct, n: RETENTION.discount.months })} body={t('{price} por mês. Depois, o preço normal.', { price: offer.priceString })}>
+                    <OfferCard icon="pricetag" title={t('−{pct}% durante {n} meses', { pct: RETENTION.discount.pct, n: RETENTION.discount.months })} body={monthly ? t('{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.', { price: offer.priceString, n: RETENTION.discount.months, monthly: monthly.priceString }) : t('{price} por mês. Depois, o preço normal.', { price: offer.priceString })}>
                       <Button title={t('Aceitar a oferta')} onPress={async () => result(await offer.buy(), 'discount')} />
                     </OfferCard>
                   ) : null}
@@ -174,7 +175,7 @@ export default function Cancel() {
 
               {reason === 'noSubscription' ? (
                 lifetime ? (
-                  <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. Depois cancelas a subscrição na {store}.', { store })}>
+                  <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
                     <Button title={t('Comprar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
                   </OfferCard>
                 ) : (

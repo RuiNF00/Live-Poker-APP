@@ -1,7 +1,7 @@
 // The trial outside the paywall flow (payments/teardown-paywalls.md §5):
 // - the trial is offered once at the start of the first live session, so its
-//   days (3, set in the stores) are spent at the table, not at home; the
-//   onboarding paywall can also push it there ("Prefiro começar na próxima sessão");
+//   days (3, set in the stores) are spent at the table, not at home (first run
+//   shows no paywall); a "plan" paywall can also push it there ("Prefiro começar na próxima sessão");
 // - when a trial is turned off, or ends, the app says once, calmly, what stays.
 // The trial length always comes from the store product, never from here.
 

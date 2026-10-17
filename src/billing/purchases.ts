@@ -39,6 +39,9 @@ let sdk: Promise<typeof import('react-native-purchases')> | null = null;
 function rcModule() {
   sdk ??= import('react-native-purchases').then((m) => {
     m.default.configure({ apiKey: KEY! });
+    // Apple Ads: lets RevenueCat tie trials and purchases to a campaign and keyword. AdServices
+    // needs no tracking prompt and carries no device id (marketing/apple-ads-bahamas.md).
+    if (Platform.OS === 'ios') m.default.enableAdServicesAttributionTokenCollection().catch(() => {});
     return m;
   });
   return sdk;
@@ -169,6 +172,17 @@ export async function manageSubscription(): Promise<void> {
     await Linking.openURL(url ?? fallback);
   } catch {
     await Linking.openURL(fallback).catch(() => {});
+  }
+}
+
+/** Redeems an offer code (free Pro codes for trusted players): Apple's own sheet, or Google Play's redeem page. */
+export async function redeemCode(): Promise<void> {
+  const play = 'https://play.google.com/redeem';
+  try {
+    if (LIVE && Platform.OS === 'ios') return await (await rc()).presentCodeRedemptionSheet();
+    await Linking.openURL(Platform.OS === 'ios' ? 'https://apps.apple.com/redeem' : play);
+  } catch {
+    await Linking.openURL(play).catch(() => {});
   }
 }
 
