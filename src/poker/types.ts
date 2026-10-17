@@ -79,6 +79,10 @@ export interface Hand {
   title?: string;
   /** Manual winner(s) when showdown cards are unknown. */
   winners?: number[];
+  /** Run it twice: the second run's cards, after the cards both runs share. */
+  board2?: CardCode[];
+  /** Manual winner(s) of the second run when showdown cards are unknown. */
+  winners2?: number[];
   /** Voice note recorded at the table (local file); never leaves the phone. */
   voiceNote?: string;
   /** Share id once uploaded. */

@@ -93,6 +93,7 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
     out.push(head);
     if (acts.length) out.push(acts.join(', '));
   }
+  if (r.boards.length === 2) out.push('', `Second run: ${r.boards[1].join(' ')}`);
 
   if (r.result) {
     out.push('');
