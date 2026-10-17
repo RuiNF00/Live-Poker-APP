@@ -1144,6 +1144,16 @@ a {
   color: var(--muted);
 }
 
+.comment-terms {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.comment-terms a {
+  color: inherit;
+}
+
 .attach em {
   color: var(--text);
   font-style: normal;

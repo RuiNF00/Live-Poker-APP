@@ -37,3 +37,24 @@ export async function limited(req: Request, bucket: string, max: number, windowS
     return false;
   }
 }
+
+const seenHere = new Set<string>();
+
+/**
+ * True the first time `key` shows up in this bucket within the window (30 days by default), so the
+ * team hears about the first report of each item without hearing about every one after it.
+ */
+export async function firstTime(bucket: string, key: string, windowSec = 30 * 86400): Promise<boolean> {
+  try {
+    const db = serviceClient();
+    if (db) {
+      const { data, error } = await db.rpc('hit_rate_limit', { p_bucket: bucket, p_key: key, p_max: 1, p_window_seconds: windowSec });
+      if (!error) return data === false;
+    }
+  } catch {
+    // fall through to this instance's memory
+  }
+  if (seenHere.has(`${bucket}:${key}`)) return false;
+  seenHere.add(`${bucket}:${key}`);
+  return true;
+}

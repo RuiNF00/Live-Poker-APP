@@ -2925,6 +2925,9 @@ const en: Record<string, string> = {
   'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
   'Abrir o email': 'Open email',
   // Mãos partilhadas (friends' hands and new comments).
+  'Denunciar e tirar': 'Report and remove',
+  'Ao comentar ou partilhar aceitas os': 'By commenting or sharing you accept the',
+  'Algum problema com uma mão ou comentário? Escreve para': 'A problem with a hand or comment? Write to',
   '1 comentário novo nas mãos partilhadas': '1 new comment on shared hands',
   '{n} comentários novos nas mãos partilhadas': '{n} new comments on shared hands',
   'Mãos partilhadas': 'Shared hands',

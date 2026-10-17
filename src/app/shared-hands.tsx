@@ -3,18 +3,22 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
 import { Badge, Button, Card, Empty, ListItem, Row, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { forgetFriendHand, useSharedHands } from '@/lib/friend-hands';
+import { forgetFriendHand, hideFriendHand, useSharedHands } from '@/lib/friend-hands';
 import type { FriendHand } from '@/lib/friend-hands-core';
+import { anonId, reportHand } from '@/lib/share-api';
 import { comboLabel } from '@/poker/cards';
 import { blindsLabel } from '@/poker/format';
 import type { Hand } from '@/poker/types';
-import { C, S } from '@/theme';
+import { BRAND, C, S } from '@/theme';
+
+const TERMS_URL = `${BRAND.webUrl}/terms`;
 
 const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 
@@ -75,7 +79,30 @@ export default function SharedHands() {
           </T>
         )}
       </Section>
+
+      <Footer />
     </ScrollView>
+  );
+}
+
+// Who to write to and the rules for comments, where people talk to each other.
+function Footer() {
+  return (
+    <View style={{ gap: 4, paddingHorizontal: 4 }}>
+      <T v="tiny">
+        {t('Ao comentar ou partilhar aceitas os')}{' '}
+        <T v="tiny" style={{ textDecorationLine: 'underline' }} onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)} accessibilityRole="link">
+          {t('Termos')}
+        </T>
+        .
+      </T>
+      <T v="tiny">
+        {t('Algum problema com uma mão ou comentário? Escreve para')}{' '}
+        <T v="tiny" style={{ textDecorationLine: 'underline' }} onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`)} accessibilityRole="link">
+          {BRAND.supportEmail}
+        </T>
+      </T>
+    </View>
   );
 }
 
@@ -85,7 +112,15 @@ function FriendRow({ hand, count, fresh }: { hand: FriendHand; count?: number; f
     if (Platform.OS === 'web') return go();
     Alert.alert(t('Tirar da lista?'), t('A mão continua no link do teu amigo.'), [
       { text: t('Cancelar'), style: 'cancel' },
-      { text: t('Tirar'), style: 'destructive', onPress: go },
+      { text: t('Tirar'), onPress: go },
+      {
+        text: t('Denunciar e tirar'),
+        style: 'destructive',
+        onPress: () => {
+          reportHand(hand.id, anonId()).catch(() => {});
+          hideFriendHand(hand.id);
+        },
+      },
     ]);
   };
   return (

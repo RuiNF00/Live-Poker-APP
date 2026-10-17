@@ -14,15 +14,19 @@ import { fetchCommentCounts } from './share-api';
 
 const HANDS_KEY = 'rl.friendHands.v1';
 const SEEN_KEY = 'rl.commentsSeen.v1';
+// Hands you reported: they leave the list and don't come back if the link is opened again.
+const HIDDEN_KEY = 'rl.friendHandsHidden.v1';
+const MAX_HIDDEN = 200;
 const REFRESH_MS = 60_000;
 
 interface State {
   hands: FriendHand[];
   seen: Seen;
   counts: Record<string, number>;
+  hidden: string[];
 }
 
-let state: State = { hands: [], seen: {}, counts: {} };
+let state: State = { hands: [], seen: {}, counts: {}, hidden: [] };
 let loaded: Promise<void> | null = null;
 let fetchedAt = 0;
 // First run of this feature: what was already there isn't "new".
@@ -30,10 +34,16 @@ let firstRun = false;
 const listeners = new Set<(s: State) => void>();
 
 function load(): Promise<void> {
-  loaded ??= Promise.all([AsyncStorage.getItem(HANDS_KEY), AsyncStorage.getItem(SEEN_KEY)])
-    .then(([h, s]) => {
+  loaded ??= Promise.all([AsyncStorage.getItem(HANDS_KEY), AsyncStorage.getItem(SEEN_KEY), AsyncStorage.getItem(HIDDEN_KEY)])
+    .then(([h, s, x]) => {
       firstRun = s === null;
-      state = { ...state, hands: parseFriendHands(h ? JSON.parse(h) : []), seen: parseSeen(s ? JSON.parse(s) : {}) };
+      const hidden: unknown = x ? JSON.parse(x) : [];
+      state = {
+        ...state,
+        hands: parseFriendHands(h ? JSON.parse(h) : []),
+        seen: parseSeen(s ? JSON.parse(s) : {}),
+        hidden: Array.isArray(hidden) ? hidden.filter((i): i is string => typeof i === 'string').slice(0, MAX_HIDDEN) : [],
+      };
       emit();
     })
     .catch(() => {});
@@ -50,12 +60,20 @@ async function set(next: Partial<State>) {
   emit();
   if (next.hands) await AsyncStorage.setItem(HANDS_KEY, JSON.stringify(state.hands)).catch(() => {});
   if (next.seen) await AsyncStorage.setItem(SEEN_KEY, JSON.stringify(state.seen)).catch(() => {});
+  if (next.hidden) await AsyncStorage.setItem(HIDDEN_KEY, JSON.stringify(state.hidden)).catch(() => {});
 }
 
 /** A friend's hand opened in the app: it goes on the list (your own links never do). */
 export async function rememberFriendHand(id: string, title: string) {
   await load();
+  if (state.hidden.includes(id)) return;
   await set({ hands: remember(state.hands, { id, title }, Date.now()) });
+}
+
+/** Reported: off the list for good on this phone. */
+export async function hideFriendHand(id: string) {
+  await forgetFriendHand(id);
+  if (!state.hidden.includes(id)) await set({ hidden: [id, ...state.hidden].slice(0, MAX_HIDDEN) });
 }
 
 export async function forgetFriendHand(id: string) {
@@ -111,6 +129,6 @@ export function useSharedHands(opts: { refresh?: boolean } = {}) {
 
 onEraseAll(() => {
   // The stored copies go with the other rl.* keys; the memory copy goes now.
-  state = { hands: [], seen: {}, counts: {} };
+  state = { hands: [], seen: {}, counts: {}, hidden: [] };
   emit();
 });

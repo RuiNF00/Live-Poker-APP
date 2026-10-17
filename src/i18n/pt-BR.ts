@@ -1319,6 +1319,9 @@ const ptBR: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
   // Mãos partilhadas (friends' hands and new comments).
+  'Denunciar e tirar': 'Denunciar e remover',
+  'Ao comentar ou partilhar aceitas os': 'Ao comentar ou compartilhar você aceita os',
+  'Algum problema com uma mão ou comentário? Escreve para': 'Algum problema com uma mão ou comentário? Escreva para',
   '1 comentário novo nas mãos partilhadas': '1 comentário novo nas mãos compartilhadas',
   '{n} comentários novos nas mãos partilhadas': '{n} comentários novos nas mãos compartilhadas',
   'Mãos partilhadas': 'Mãos compartilhadas',

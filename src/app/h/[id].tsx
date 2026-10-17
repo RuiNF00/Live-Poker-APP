@@ -12,7 +12,7 @@ import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
-import { markCommentsSeen, rememberFriendHand } from '@/lib/friend-hands';
+import { hideFriendHand, markCommentsSeen, rememberFriendHand } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import { comboLabel } from '@/poker/cards';
@@ -96,6 +96,7 @@ export default function SharedHand() {
             onPress={() => {
               setReported(true);
               reportHand(id!, anonId()).catch(() => {});
+              if (!mine) hideFriendHand(id!);
             }}>
             <T v="tiny">{reported ? t('Obrigado, vamos rever esta mão.') : t('Denunciar esta mão')}</T>
           </Pressable>
