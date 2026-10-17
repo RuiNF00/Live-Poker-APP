@@ -18,6 +18,7 @@ import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
+import { recapHidden } from '@/lib/month-recap';
 import { shareRef } from '@/lib/referrals';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
@@ -169,7 +170,7 @@ export default function MonthScreen() {
           <ToggleItem
             icon="notifications-outline"
             title={t('Aviso no dia 1')}
-            subtitle={t('No dia 1 às {hour}:00, por exemplo: «{example}»', { hour: RECAP_HOUR, example: recapNotice(r, hidden).title })}
+            subtitle={t('No dia 1 às {hour}:00, por exemplo: «{example}»', { hour: RECAP_HOUR, example: recapNotice(r, recapHidden(settings)).title })}
             value={on}
             onChange={(v) => void toggle(v)}
           />
@@ -200,7 +201,7 @@ function Locked({ locked, title, onUnlock, children }: { locked: boolean; title:
   if (!locked) return <>{children}</>;
   return (
     <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-      {children}
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>{children}</View>
       <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
         <T v="h3" style={{ textAlign: 'center' }}>
           {title}

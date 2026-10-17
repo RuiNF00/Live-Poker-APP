@@ -14,7 +14,7 @@ import type { Hand } from '@/poker/types';
 import { balanceOf, ensureBankrolls } from '../bankroll-math';
 import { KEYS, QUARANTINE, SPECS, loadAll, type Boot } from '../boot';
 import { createWriter, type CollectionSpec } from '../persist';
-import { curve, profit, totals } from '../session-math';
+import { curve, playedMs, profit, totals } from '../session-math';
 import { withCuts } from '../staking';
 import { FakeStorage } from './fake-storage';
 import { RELEASES, current, release1, type Release } from './launch-fixtures';
@@ -135,7 +135,17 @@ const CASES: Case[] = [
     key: S + 's2',
     raw: edit((s) => (delete s.breaks, delete s.stackLog, delete s.roster)),
     quarantined: 0,
-    check: (d) => assert.deepEqual(d.sessions.items.find((s) => s.id === 's2')!.breaks, []),
+    check: (d) => {
+      const s = d.sessions.items.find((x) => x.id === 's2')!;
+      assert.deepEqual(s.breaks, []);
+      // Same money as the untouched copy: Bankroll and results don't move.
+      const ref = current().kv.data.get(S + 's2')!;
+      assert.equal(profit(s), profit(JSON.parse(ref)));
+      const sessions = withCuts(d.sessions.items, d.packages.items);
+      const br = ensureBankrolls(d.bankrolls.items, sessions, d.settings.currency);
+      assert.ok(Number.isFinite(balanceOf({ currency: s.currency }, sessions, d.transfers.items, br).balance));
+      assert.ok(Number.isFinite(playedMs(s)) && playedMs(s) >= 0);
+    },
   },
   { name: 'sessão com pausas que não são lista', key: S + 's2', raw: edit((s) => (s.breaks = 'x')), quarantined: 1 },
   { name: 'jogador sem etiquetas é reparado', key: SPECS.players.prefix + 'p1', raw: edit((p) => delete p.tags), quarantined: 0 },

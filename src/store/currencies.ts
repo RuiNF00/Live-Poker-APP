@@ -21,3 +21,22 @@ export function isoOf(cur: string): string | undefined {
 export const ECB_CODES = Object.values(CURRENCY_INFO)
   .filter((x) => x.ecb && x.code !== 'EUR')
   .map((x) => x.code);
+
+/** The stored value for an ISO code (BRL → "R$", MXN → "MXN"); undefined when the app doesn't list it. */
+export function storedCurrency(iso: string | null | undefined): string | undefined {
+  if (!iso) return undefined;
+  const up = iso.toUpperCase();
+  return Object.keys(CURRENCY_INFO).find((k) => CURRENCY_INFO[k].code === up);
+}
+
+/** A fresh install's currency: the phone region's (R$ in Brazil, $ in the US), else €. */
+export function deviceCurrency(): string {
+  try {
+    // Required lazily so plain Node (the tests) gets €.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getLocales } = require('expo-localization') as typeof import('expo-localization');
+    return storedCurrency(getLocales()[0]?.currencyCode) ?? '€';
+  } catch {
+    return '€';
+  }
+}

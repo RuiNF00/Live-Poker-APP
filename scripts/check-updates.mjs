@@ -14,8 +14,8 @@ const problems = [];
 const notes = [];
 
 if (!pkg.dependencies?.['expo-updates']) problems.push('expo-updates is not installed');
-// Same app version = same native code: an update never reaches a build it could crash.
-if (config.runtimeVersion?.policy !== 'appVersion') problems.push(`runtimeVersion must be { "policy": "appVersion" } (is ${JSON.stringify(config.runtimeVersion)})`);
+// Runtime = hash of the native code: an update never reaches a build it could crash.
+if (config.runtimeVersion?.policy !== 'fingerprint') problems.push(`runtimeVersion must be { "policy": "fingerprint" } (is ${JSON.stringify(config.runtimeVersion)})`);
 const u = config.updates ?? {};
 // Downloaded on launch, applied on the next cold start: never a reload mid-hand.
 if (u.checkAutomatically !== 'ON_LOAD') problems.push(`updates.checkAutomatically must be "ON_LOAD" (is ${JSON.stringify(u.checkAutomatically)})`);
@@ -37,4 +37,4 @@ if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log(['Updates: runtime appVersion, ON_LOAD, applied on next cold start, channel production.', ...notes.map((n) => 'Note: ' + n)].join('\n'));
+console.log(['Updates: runtime fingerprint (native changes get a new runtime), ON_LOAD, applied on next cold start, channel production.', ...notes.map((n) => 'Note: ' + n)].join('\n'));

@@ -42,6 +42,28 @@ export interface RpFacing {
   toCall: string;
   potOdds: number;
   mdf: number;
+  /** Villain's bet against the pot before it, and the value:bluff ratio a balanced range of that size has. */
+  betPct: number;
+  vb: number;
+  /** Raw numbers for the ICM panel: chips to call, everything in the middle, villain, chips behind and in front of each seat. */
+  call: number;
+  potAll: number;
+  villain: number | null;
+  stacks: number[];
+  bets: number[];
+}
+
+export interface RpHeroBet {
+  /** Size against the pot before the bet. */
+  pct: number;
+  /** Fold equity a pure bluff needs. */
+  bluffBE: number;
+  /** Value:bluff ratio that makes the next player indifferent. */
+  vb: number;
+  /** The next player to act, and their pot odds and MDF against the effective bet. */
+  vs: string;
+  vsPotOdds: number;
+  vsMdf: number;
 }
 
 export interface RpView {
@@ -55,6 +77,10 @@ export interface RpView {
   narration: string;
   /** Set when hero is the one to act facing a bet. */
   facing: RpFacing | null;
+  /** Hero just bet or raised: what a bluff needs, the size, and the price the next player gets. */
+  heroBet: RpHeroBet | null;
+  /** Hero to act with no bet to face: "Abrir ou foldar", "Pote com limps", "Passar ou apostar". */
+  decision: string | null;
   /** Pot / effective stack summary line. */
   info: string;
   /** Heads-up with villain's cards unknown: hero's equity against a range read from villain's preflop raises. */
@@ -63,6 +89,15 @@ export interface RpView {
 }
 
 export const STREET_LABEL: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
+
+const RANK_WORD: Record<string, string> = { A: 'Ás', K: 'Rei', Q: 'Dama', J: 'Valete', T: '10' };
+const SUIT_WORD: Record<string, string> = { h: 'copas', d: 'ouros', c: 'paus', s: 'espadas' };
+
+/** A card as a screen reader says it: "Ás de copas", "7 de paus". */
+export function spokenCard(c: CardCode): string {
+  const r = RANK_WORD[c[0]];
+  return t('{rank} de {suit}', { rank: r ? t(r) : c[0], suit: t(SUIT_WORD[c[1]] ?? c[1]) });
+}
 
 function badgeLabel(kind: BadgeKind, amt: string): string {
   switch (kind) {
@@ -125,7 +160,10 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     if (s.kind !== 'action' || !s.state.last) continue;
     const a = s.state.last;
     const kind: BadgeKind = a.allIn ? 'allin' : a.kind;
-    badges.set(a.p, { kind, label: badgeLabel(kind, fmt(a.kind === 'call' ? a.added : a.to)) });
+    // Postflop bets carry their size against the pot, as on a solver: "BET 60 (75%)".
+    const before = totalPot(s.state) - a.added;
+    const size = a.kind === 'bet' && s.state.street !== 'preflop' && before > 0 ? ` (${Math.round((a.added / before) * 100)}%)` : '';
+    badges.set(a.p, { kind, label: badgeLabel(kind, fmt(a.kind === 'call' ? a.added : a.to)) + size });
   }
 
   // All-in with nobody left to bet: the hands go face up for the run-out, as on TV.
@@ -225,14 +263,58 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   let facing: RpFacing | null = null;
   if (!result && st.toAct === hand.hero) {
     const toCall = Math.min(Math.max(0, st.currentBet - st.bets[hand.hero]), st.stacks[hand.hero]);
-    if (toCall > 0) {
-      const aggressor = st.lastAggressor ?? st.last?.p ?? null;
+    // Only a bet or raise has a price: blinds, straddles and limps don't (that's an open or iso spot).
+    if (toCall > 0 && st.raises > 0 && st.lastAggressor != null) {
+      const aggressor = st.lastAggressor;
+      const reach = st.bets[hand.hero] + st.stacks[hand.hero];
+      const potEff = potAll - Math.max(0, st.currentBet - reach);
       facing = {
         vs: aggressor != null ? displayName(hand, aggressor, pos) : '',
         toCall: fmt(toCall),
-        potOdds: toCall / (potAll + toCall),
-        mdf: Math.max(0, Math.min(1, (potAll - toCall) / potAll)),
+        // Against the effective bet: what villain put in beyond what hero can match goes back to them.
+        potOdds: toCall / (potEff + toCall),
+        mdf: Math.max(0, Math.min(1, (potEff - toCall) / potEff)),
+        betPct: toCall / Math.max(1, potEff - toCall),
+        vb: potEff / toCall,
+        call: toCall,
+        potAll,
+        villain: aggressor,
+        stacks: st.stacks.slice(),
+        bets: st.bets.slice(),
       };
+    }
+  }
+
+  // Hero has just bet or raised and someone still has to answer.
+  let heroBet: RpHeroBet | null = null;
+  const la = st.last;
+  if (!result && step.kind === 'action' && la && la.p === hand.hero && (la.kind === 'bet' || la.kind === 'raise') && st.toAct != null && st.toAct !== hand.hero) {
+    const v = st.toAct;
+    const vReach = st.bets[v] + st.stacks[v];
+    const back = Math.max(0, st.currentBet - vReach);
+    const risk = Math.max(0, la.added - back);
+    const potV = potAll - back;
+    const toCallV = Math.min(st.currentBet - st.bets[v], st.stacks[v]);
+    if (risk > 0 && toCallV > 0) {
+      heroBet = {
+        pct: la.added / Math.max(1, potAll - la.added),
+        bluffBE: risk / potV,
+        vb: potV / risk,
+        vs: displayName(hand, v, pos),
+        vsPotOdds: toCallV / (potV + toCallV),
+        vsMdf: Math.max(0, Math.min(1, (potV - toCallV) / potV)),
+      };
+    }
+  }
+
+  // Hero to act with no bet to face: say what the decision is instead of a price.
+  let decision: string | null = null;
+  if (!result && !facing && st.toAct === hand.hero) {
+    if (st.street !== 'preflop') decision = t('Passar ou apostar');
+    else {
+      let limps = 0;
+      for (let j = 1; j <= k; j++) if (r.steps[j].state.street === 'preflop' && r.steps[j].state.last?.kind === 'call') limps++;
+      decision = limps ? t('Pote com limps') : t('Abrir ou foldar');
     }
   }
 
@@ -258,6 +340,8 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     potLabel: fmt(result ? pot : st.pot),
     narration,
     facing,
+    heroBet,
+    decision,
     info,
     rangeEq,
     end: !!result,

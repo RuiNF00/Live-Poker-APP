@@ -10,12 +10,16 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { Sheet } from '@/components/BankrollSheets';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { blankSession, SessionForm } from '@/components/SessionForm';
 import { markupLabel } from '@/components/staking/sheets';
+import { balanceLabel } from '@/components/staking/use-staking';
 import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
-import { eventTitle, FESTIVALS, venueTime } from '@/poker/festivals';
+import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, shortDate } from '@/poker/format';
 import {
   MARKUPS,
@@ -24,19 +28,24 @@ import {
   getOffers,
   lineCost,
   lineRecords,
+  lineSettlement,
   offerEvents,
   offerPackageIds,
   offerTotals,
   stakesFor,
+  unanswered,
   updateLine,
   updateOffer,
   useOffers,
   withOfferStakes,
   type ActionOffer,
+  type LineSettlement,
   type PackageLine,
+  type SettlementState,
 } from '@/store/action-offer';
-import { festivalName, useFestivalPlan } from '@/store/festival-plan';
+import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
 import { uid, useStore } from '@/store/store';
+import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 const pct = (n: number) => `${String(n).replace('.', ',')}%`;
@@ -52,6 +61,8 @@ export default function ActionPackageScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [logging, setLogging] = useState<FestivalEvent | null>(null);
+  const [softAsk, askNotify] = useNotifySoftAsk();
 
   // Confirmations come from the links: check the ones still waiting whenever the screen shows.
   const waiting = (o?.lines ?? []).filter((l) => l.remote && !l.confirmedAt).map((l) => `${l.id}:${l.remote!.id}`).join(',');
@@ -93,6 +104,45 @@ export default function ActionPackageScreen() {
   // Events the player can add: the ones in their festival plan (Day 2s have no buy-in).
   const candidates = f.events.filter((e) => !e.day2 && (plan.picked.includes(e.id) || o.events.includes(e.id)));
   const nameOf = (l: PackageLine) => backers.find((b) => b.id === l.backerId)?.name ?? t('Backer');
+  // Once the first event is played (or goes by), where each backer stands on the festival.
+  const settled = o.lines.map((l) => ({ l, st: lineSettlement(f, o, l, plan.sessions, sessions) }));
+  const underway = settled.some(({ st }) => st.rows.some((r) => r.state !== 'upcoming'));
+  // Gone by with no session: asked, never assumed (a forgotten session would leave the accounts wrong).
+  const ask = o.lines.length ? unanswered(f, o, plan.sessions) : [];
+  const notPlayed = (e: FestivalEvent) => {
+    tap('select');
+    updateOffer(o.id, (x) => ({ ...x, skipped: [...(x.skipped ?? []).filter((y) => y !== e.id), e.id] }));
+  };
+  // "Joguei": log it as a past session of that event, with the package's stakes, and link it to the plan.
+  const logPlayed = (s: Session) => {
+    if (!logging) return;
+    saveSession(s);
+    updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(logging.id) ? p.picked : [...p.picked, logging.id], sessions: { ...p.sessions, [logging.id]: s.id } }));
+    setLogging(null);
+  };
+
+  const sendSettlement = async (l: PackageLine, st: LineSettlement) => {
+    tap('medium');
+    const cur = f.currency;
+    const msg = [
+      t('{title}: a tua parte de {pct}', { title, pct: pct(l.pct) }),
+      ...st.rows.map((r) => `${shortDate(venueTime(f, r.event.start))} · ${eventTitle(r.event)}${r.event.flight ? ` · Flight ${r.event.flight}` : ''} · ${rowLabel(r.state, r.prize, cur)}`),
+      '',
+      t('Prémios da tua parte: {amount}', { amount: money(st.prizes, cur) }),
+      st.cost ? (st.paid ? t('Custo da parte: {amount} (pago)', { amount: money(st.cost, cur) }) : t('Custo da parte: {amount} (por pagar)', { amount: money(st.cost, cur) })) : '',
+      st.refund ? t('Torneios que não joguei: devolvo-te {amount}', { amount: money(st.refund, cur) }) : '',
+      Math.abs(st.net) < 0.5
+        ? t('Estamos acertados.')
+        : st.net > 0
+          ? t('Devo-te {amount}.', { amount: money(st.net, cur) })
+          : t('Deves-me {amount}.', { amount: money(-st.net, cur) }),
+      st.done ? '' : t('Ainda há torneios por jogar: isto pode mudar.'),
+    ].filter((x) => x !== '');
+    const text = msg.join('\n');
+    if (Platform.OS === 'web') await Clipboard.setStringAsync(text);
+    else await Share.share({ message: text });
+    track('link_shared', { channel: 'festival_settlement' });
+  };
 
   // The package's stakes on every session already started from its events.
   const applyToSessions = (before: Set<string>) => {
@@ -128,6 +178,12 @@ export default function ActionPackageScreen() {
     updateOffer(o.id, (x) => ({ ...x, lines: [...x.lines, r.line] }));
     applyToSessions(before);
     setAdding(false);
+    // The first backer: offer the reminder that closes the accounts after each event (only asks once allowed or refused).
+    if (!o.lines.length)
+      void askNotify({
+        title: t('Avisamos-te no dia a seguir a cada torneio para fechares as contas'),
+        preview: { title: t('Acerto com {name}', { name: r.backer.name }), body: t('O torneio acabou. Regista o resultado para fechar as contas.') },
+      });
   };
 
   const removeLine = (l: PackageLine) => {
@@ -203,7 +259,9 @@ export default function ActionPackageScreen() {
           <T v="small">
             {o.lines.length === 0
               ? t('Regista cada backer com quem combinaste uma parte. As sessões destes torneios ficam com a parte de cada um.')
-              : t('Vendida a {n} backers por {price}. Pões {out} do teu bolso.', { n: o.lines.length, price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })}
+              : o.lines.length === 1
+                ? t('Vendida a 1 backer por {price}. Pões {out} do teu bolso.', { price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })
+                : t('Vendida a {n} backers por {price}. Pões {out} do teu bolso.', { n: o.lines.length, price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })}
           </T>
           <Row style={{ marginTop: S.xs, paddingTop: S.md, borderTopWidth: 1, borderTopColor: C.border }}>
             <Figure label={t('Buy-ins')} value={money(tot.buyIns, f.currency)} />
@@ -211,6 +269,24 @@ export default function ActionPackageScreen() {
             <Figure label="Markup" value={'+' + money(tot.premium, f.currency)} color={tot.premium > 0 ? C.good : undefined} />
           </Row>
         </Card>
+
+        {underway || ask.length ? (
+          <Section title={t('Contas do festival')}>
+            <View style={{ gap: S.sm }}>
+              {ask.map((e) => (
+                <Card key={e.id} tone="raised" style={{ gap: S.sm }}>
+                  <T v="h3">{t('Não jogaste o {event}?', { event: eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '') })}</T>
+                  <T v="small">{t('Não há sessão registada. As contas deste torneio ficam à espera até responderes.')}</T>
+                  <Button size="md" icon="create-outline" title={t('Joguei, registar resultado')} onPress={() => setLogging(e)} />
+                  <Button size="md" kind="secondary" title={t('Não joguei')} onPress={() => notPlayed(e)} />
+                </Card>
+              ))}
+              {settled.map(({ l, st }) => (
+                <SettleCard key={l.id} name={nameOf(l)} st={st} cur={f.currency} onOpen={() => router.push(`/staking/${l.backerId}`)} onSend={() => void sendSettlement(l, st)} />
+              ))}
+            </View>
+          </Section>
+        ) : null}
 
         <Section title={t('Backers ({n})', { n: o.lines.length })}>
           <View style={{ gap: S.sm }}>
@@ -315,6 +391,21 @@ export default function ActionPackageScreen() {
           {t('Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.')}
         </T>
       </Screen>
+
+      {softAsk}
+      <Sheet visible={!!logging} title={t('Sessão passada')} onClose={() => setLogging(null)}>
+        {logging ? (
+          <SessionForm
+            key={logging.id}
+            past
+            initial={pastSession(f, logging, settings.defaultTableSize, uid('s_'))}
+            recentNames={[]}
+            recentVenues={[]}
+            submitLabel={t('Guardar sessão')}
+            onSubmit={logPlayed}
+          />
+        ) : null}
+      </Sheet>
     </>
   );
 }
@@ -349,6 +440,79 @@ function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: st
         <Button size="md" kind="ghost" style={{ flex: 1 }} title={t('Cancelar')} onPress={onCancel} />
         <Button size="md" style={{ flex: 1.4 }} icon="checkmark" title={t('Registar')} onPress={() => onAdd(name, piece)} disabled={!ok} />
       </Row>
+    </Card>
+  );
+}
+
+/** A past session of a festival event, at its start time, with the package's stakes on it. */
+function pastSession(f: Festival, e: FestivalEvent, tableSize: number, id: string): Session {
+  const startedAt = venueTime(f, e.start);
+  return {
+    ...blankSession('mtt', f.currency, tableSize),
+    id,
+    name: eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : ''),
+    venue: `${f.venue}, ${f.city.split(',')[0]}`,
+    buyIn: e.buyIn,
+    stakes: stakesFor(getOffers(), f.id, e.id),
+    startedAt,
+    endedAt: startedAt + 6 * 3600e3,
+  };
+}
+
+/** One event of a backer's piece, in words: "prémio 1 200$", "sem prémio", "a decorrer"... */
+function rowLabel(state: SettlementState, prize: number, cur: string): string {
+  if (state === 'cashed') return t('prémio {amount}', { amount: money(prize, cur) });
+  if (state === 'busted') return t('sem prémio');
+  if (state === 'live') return t('a decorrer');
+  if (state === 'missed') return t('não joguei');
+  if (state === 'waiting') return t('à espera');
+  return t('por jogar');
+}
+
+function SettleCard({ name, st, cur, onOpen, onSend }: { name: string; st: LineSettlement; cur: string; onOpen: () => void; onSend: () => void }) {
+  const bal = balanceLabel(st.net, cur);
+  const status = st.done
+    ? t('Todos os torneios fechados')
+    : [
+        st.waiting ? t('{n} à espera de resposta', { n: st.waiting }) : '',
+        st.live ? t('{n} a decorrer', { n: st.live }) : '',
+        st.upcoming ? t('{n} por jogar', { n: st.upcoming }) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+  const lines: [string, string][] = [
+    [t('Prémios da parte'), money(st.prizes, cur)],
+    [st.paid ? t('Custo da parte (pago)') : t('Custo da parte (por pagar)'), (st.paid ? '' : '−') + money(st.cost, cur)],
+  ];
+  if (st.refund) lines.push([t('Não jogados (devolver)'), '+' + money(st.refund, cur)]);
+  return (
+    <Card style={{ gap: S.sm }}>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={[name, bal.text, ...lines.map(([k, v]) => `${k} ${v}`), status].filter(Boolean).join(', ')}
+        accessibilityHint={t('Abre as contas com este backer')}
+        style={{ gap: S.sm }}>
+        <Row style={{ alignItems: 'center' }}>
+          <T v="h3" numberOfLines={1} style={{ flex: 1 }}>
+            {name}
+          </T>
+          <T v="mono" color={bal.color} numberOfLines={1}>
+            {bal.text}
+          </T>
+          <Ionicons name="chevron-forward" size={16} color={C.muted} style={{ marginLeft: 4 }} />
+        </Row>
+        {lines.map(([k, v]) => (
+          <Row key={k} style={{ justifyContent: 'space-between' }}>
+            <T v="small">{k}</T>
+            <T v="small" style={{ fontVariant: ['tabular-nums'] }}>
+              {v}
+            </T>
+          </Row>
+        ))}
+        {status ? <T v="tiny">{status}</T> : null}
+      </Pressable>
+      <Button size="sm" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={onSend} />
     </Card>
   );
 }

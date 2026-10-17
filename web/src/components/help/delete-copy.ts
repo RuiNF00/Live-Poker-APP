@@ -1,30 +1,23 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { headers } from 'next/headers';
-import { HELP_BASE, HELP_INDEXED, helpLocale, LANG_TAG } from '@/components/help/copy';
-import { DeleteRequestForm, type DeleteFormCopy } from '@/components/help/DeleteRequestForm';
-import { HelpShell, sameIn } from '@/components/help/HelpShell';
-import { articles, SUPPORT_EMAIL, textOf, type HelpLocale } from '@/lib/help/articles';
+import type { HelpLocale } from '../../lib/help/articles';
+import { SUPPORT_EMAIL } from '../../lib/help/articles';
+import type { BackupDeleteCopy } from './BackupDeleteForm';
+import type { DeleteFormCopy } from './DeleteRequestForm';
 
-// sweatbook.poker/apagar-conta: the deletion page Google Play asks for (Data safety → delete
-// account URL). Sweatbook has no accounts, so it explains "Apagar todos os meus dados" in the
-// app and, for someone without the app, builds a request email. Nothing is stored here.
-// Language: ?lang=pt|pt-BR|es|en, else the browser's. /pt-br/apagar-conta, /es/eliminar-cuenta
-// and /delete-data redirect here (next.config.ts).
-type Search = Record<string, string | string[] | undefined>;
+// Text of /delete-account (the store deletion page) in the four help languages.
 
-interface Copy {
+export interface DeleteCopy {
   meta: string;
   title: string;
   lede: string;
   inApp: { h: string; steps: string[]; after: string };
-  noApp: { h: string; p: string; form: DeleteFormCopy };
+  noApp: { h: string; p: string; mail: string; linkOnly: string; form: DeleteFormCopy };
+  backup: { h: string; p: string; lost: string; form: BackupDeleteCopy };
   table: { h: string; what: string; when: string; rows: [string, string][] };
   kept: { h: string; items: string[] };
   cancel: { text: string; link: string };
 }
 
-const COPY: Record<HelpLocale, Copy> = {
+export const DELETE_COPY: Record<HelpLocale, DeleteCopy> = {
   pt: {
     meta: 'Apagar os teus dados',
     title: 'Apagar os teus dados',
@@ -36,21 +29,38 @@ const COPY: Record<HelpLocale, Copy> = {
     },
     noApp: {
       h: 'Sem a app',
-      p: 'Já não tens a app ou o telemóvel? Pede-nos por email. Como não há contas, precisamos de algo que nos leve aos teus dados: os links que partilhaste, o link do teu perfil ou dos teus swaps, ou o código de recuperação da cópia na nuvem (só o usamos para a encontrar e apagar). Respondemos a confirmar e apagamos em até 30 dias.',
+      p: 'Já não tens a app ou o telemóvel? A cópia na nuvem apaga-se aqui em baixo com o código de recuperação. Para o resto, pede-nos por email: como não há contas, precisamos do link do que queres apagar (mãos partilhadas, o teu perfil, os teus swaps). Respondemos a confirmar e apagamos em até 30 dias.',
+      mail: 'Pedir por email',
+      linkOnly: 'Basta o link. Nunca te pedimos códigos nem chaves.',
       form: {
         legend: 'O que queres apagar?',
         items: {
-          backup: 'A cópia na nuvem (junta o código de recuperação)',
           links: 'Mãos partilhadas por link (junta os links)',
           profile: 'O meu perfil público (junta o link)',
           swaps: 'Os meus swaps (junta os links)',
           other: 'Outra coisa',
         },
-        details: 'Links, código ou outra informação',
-        placeholder: 'Cola aqui os links ou o código…',
+        details: 'Links ou outra informação',
+        placeholder: 'Cola aqui os links…',
         send: 'Abrir no email',
         hint: `Abre a tua app de email com o pedido pronto. Não abre? Escreve para ${SUPPORT_EMAIL}.`,
         subject: 'Sweatbook · Pedido para apagar dados',
+      },
+    },
+    backup: {
+      h: 'Apagar a cópia na nuvem com o código',
+      p: 'O código fica neste browser: a página faz o mesmo que a app e só envia ao servidor uma chave que prova que a cópia é tua. Nunca nos envies o código por email.',
+      lost: 'Perdeste o código? Sem ele ninguém consegue encontrar nem ler a cópia, nem nós. É apagada sozinha 18 meses depois da última atualização.',
+      form: {
+        label: 'Código de recuperação',
+        placeholder: 'XXXXX-XXXXX-XXXXXXXXXXXXXXXX',
+        button: 'Apagar a cópia',
+        working: 'A apagar…',
+        done: 'Apagada. A cópia saiu dos nossos servidores.',
+        notFound: 'Não existe nenhuma cópia com este código, ou já foi apagada.',
+        invalid: 'O código tem 26 letras e números. Confirma e tenta outra vez.',
+        busy: 'Demasiadas tentativas. Tenta daqui a uma hora.',
+        failed: 'Não foi possível apagar agora. Tenta outra vez daqui a pouco.',
       },
     },
     table: {
@@ -61,13 +71,13 @@ const COPY: Record<HelpLocale, Copy> = {
         ['Mãos, sessões, notas de jogadores, bankroll, staking, definições e bloqueio no telemóvel', 'De imediato.'],
         ['Cópia na nuvem', 'De imediato. Uma cópia que não é atualizada durante 18 meses é apagada sozinha.'],
         ['Tudo o que partilhaste por link: mãos (com comentários e votos), sessões em direto, perfil público, links para o coach e acordos enviados a backers', 'Os links deixam de funcionar de imediato. Os registos saem dos servidores em até 60 dias.'],
-        ['Swaps ainda por confirmar', 'De imediato.'],
-        ['Swaps confirmados', 'O teu nome sai de imediato. O outro jogador fica com uma cópia só de leitura, com os valores e a nota de que apagaste os teus dados, para saber como ficam as contas dele. Essa cópia sai dos servidores 400 dias depois da última atividade.'],
+        ['Swaps e grupos de swaps', 'O teu nome e a tua chave de acesso são apagados do servidor de imediato. Um swap que nunca foi confirmado é apagado logo, e um grupo que criaste é apagado logo para todos. Num swap confirmado, os outros jogadores ficam no servidor com uma cópia só de leitura dos valores que registaram juntos durante 90 dias, e depois é apagada. As cópias nos telemóveis dos outros jogadores não são tocadas.'],
       ],
     },
     kept: {
       h: 'O que fica',
       items: [
+        'Mesmo sem apagares nada, um swap ou grupo por confirmar sai do servidor 30 dias depois de criado, e um confirmado 400 dias depois da última atividade.',
         'Estatísticas de utilização anónimas (por exemplo "mão guardada"), com um ID aleatório da instalação. Não identificam ninguém e são apagadas ao fim de 12 meses.',
         'Os registos de compra, na Apple, na Google e na RevenueCat (o estado da subscrição), pelo tempo que a lei exige.',
       ],
@@ -85,21 +95,38 @@ const COPY: Record<HelpLocale, Copy> = {
     },
     noApp: {
       h: 'Sem o app',
-      p: 'Não tem mais o app ou o celular? Peça por email. Como não há contas, precisamos de algo que nos leve aos seus dados: os links que você compartilhou, o link do seu perfil ou dos seus swaps, ou o código de recuperação da cópia na nuvem (só usamos para encontrá-la e excluí-la). Respondemos confirmando e excluímos em até 30 dias.',
+      p: 'Não tem mais o app ou o celular? A cópia na nuvem é excluída aqui embaixo com o código de recuperação. Para o resto, peça por email: como não há contas, precisamos do link do que você quer excluir (mãos compartilhadas, seu perfil, seus swaps). Respondemos confirmando e excluímos em até 30 dias.',
+      mail: 'Pedir por email',
+      linkOnly: 'Basta o link. Nunca pedimos códigos nem chaves.',
       form: {
         legend: 'O que você quer excluir?',
         items: {
-          backup: 'A cópia na nuvem (inclua o código de recuperação)',
           links: 'Mãos compartilhadas por link (inclua os links)',
           profile: 'Meu perfil público (inclua o link)',
           swaps: 'Meus swaps (inclua os links)',
           other: 'Outra coisa',
         },
-        details: 'Links, código ou outra informação',
-        placeholder: 'Cole aqui os links ou o código…',
+        details: 'Links ou outra informação',
+        placeholder: 'Cole aqui os links…',
         send: 'Abrir no email',
         hint: `Abre o seu app de email com o pedido pronto. Não abriu? Escreva para ${SUPPORT_EMAIL}.`,
         subject: 'Sweatbook · Pedido de exclusão de dados',
+      },
+    },
+    backup: {
+      h: 'Excluir a cópia na nuvem com o código',
+      p: 'O código fica neste navegador: a página faz o mesmo que o app e só envia ao servidor uma chave que prova que a cópia é sua. Nunca envie o código por email.',
+      lost: 'Perdeu o código? Sem ele ninguém consegue encontrar nem ler a cópia, nem a gente. Ela é excluída automaticamente 18 meses depois da última atualização.',
+      form: {
+        label: 'Código de recuperação',
+        placeholder: 'XXXXX-XXXXX-XXXXXXXXXXXXXXXX',
+        button: 'Excluir a cópia',
+        working: 'Excluindo…',
+        done: 'Excluída. A cópia saiu dos nossos servidores.',
+        notFound: 'Não existe nenhuma cópia com este código, ou ela já foi excluída.',
+        invalid: 'O código tem 26 letras e números. Confira e tente de novo.',
+        busy: 'Muitas tentativas. Tente de novo daqui a uma hora.',
+        failed: 'Não foi possível excluir agora. Tente de novo daqui a pouco.',
       },
     },
     table: {
@@ -110,13 +137,13 @@ const COPY: Record<HelpLocale, Copy> = {
         ['Mãos, sessões, notas de jogadores, bankroll, staking, configurações e bloqueio no celular', 'Na hora.'],
         ['Cópia na nuvem', 'Na hora. Uma cópia que não é atualizada por 18 meses é excluída automaticamente.'],
         ['Tudo o que você compartilhou por link: mãos (com comentários e votos), sessões ao vivo, perfil público, links para o coach e acordos enviados a backers', 'Os links param de funcionar na hora. Os registros saem dos servidores em até 60 dias.'],
-        ['Swaps ainda não confirmados', 'Na hora.'],
-        ['Swaps confirmados', 'Seu nome sai na hora. O outro jogador fica com uma cópia só de leitura, com os valores e a nota de que você excluiu seus dados, para saber como ficam as contas dele. Essa cópia sai dos servidores 400 dias depois da última atividade.'],
+        ['Swaps e grupos de swaps', 'Seu nome e sua chave de acesso são excluídos do servidor na hora. Um swap que nunca foi confirmado é excluído na hora, e um grupo que você criou é excluído na hora para todos. Num swap confirmado, os outros jogadores ficam no servidor com uma cópia só de leitura dos valores que vocês registraram por 90 dias, e depois ela é excluída. As cópias nos celulares dos outros jogadores não são afetadas.'],
       ],
     },
     kept: {
       h: 'O que fica',
       items: [
+        'Mesmo sem você excluir nada, um swap ou grupo não confirmado sai do servidor 30 dias depois de criado, e um confirmado 400 dias depois da última atividade.',
         'Estatísticas de uso anônimas (por exemplo "mão salva"), com um ID aleatório da instalação. Não identificam ninguém e são excluídas depois de 12 meses.',
         'Os registros de compra, na Apple, no Google e na RevenueCat (o status da assinatura), pelo tempo que a lei exige.',
       ],
@@ -134,21 +161,38 @@ const COPY: Record<HelpLocale, Copy> = {
     },
     noApp: {
       h: 'Sin la app',
-      p: '¿Ya no tienes la app o el teléfono? Pídenoslo por email. Como no hay cuentas, necesitamos algo que nos lleve a tus datos: los links que compartiste, el link de tu perfil o de tus swaps, o el código de recuperación de la copia en la nube (solo lo usamos para encontrarla y eliminarla). Te respondemos para confirmar y lo eliminamos en un plazo máximo de 30 días.',
+      p: '¿Ya no tienes la app o el teléfono? La copia en la nube se elimina aquí abajo con el código de recuperación. Para lo demás, pídenoslo por email: como no hay cuentas, necesitamos el link de lo que quieres eliminar (manos compartidas, tu perfil, tus swaps). Te respondemos para confirmar y lo eliminamos en un plazo máximo de 30 días.',
+      mail: 'Pedirlo por email',
+      linkOnly: 'Basta con el link. Nunca te pedimos códigos ni llaves.',
       form: {
         legend: '¿Qué quieres eliminar?',
         items: {
-          backup: 'La copia en la nube (añade el código de recuperación)',
           links: 'Manos compartidas por link (añade los links)',
           profile: 'Mi perfil público (añade el link)',
           swaps: 'Mis swaps (añade los links)',
           other: 'Otra cosa',
         },
-        details: 'Links, código u otra información',
-        placeholder: 'Pega aquí los links o el código…',
+        details: 'Links u otra información',
+        placeholder: 'Pega aquí los links…',
         send: 'Abrir en el email',
         hint: `Abre tu app de email con la petición lista. ¿No se abre? Escribe a ${SUPPORT_EMAIL}.`,
         subject: 'Sweatbook · Petición para eliminar datos',
+      },
+    },
+    backup: {
+      h: 'Eliminar la copia en la nube con el código',
+      p: 'El código se queda en este navegador: la página hace lo mismo que la app y solo envía al servidor una llave que prueba que la copia es tuya. Nunca nos envíes el código por email.',
+      lost: '¿Perdiste el código? Sin él nadie puede encontrar ni leer la copia, ni nosotros. Se elimina sola 18 meses después de la última actualización.',
+      form: {
+        label: 'Código de recuperación',
+        placeholder: 'XXXXX-XXXXX-XXXXXXXXXXXXXXXX',
+        button: 'Eliminar la copia',
+        working: 'Eliminando…',
+        done: 'Eliminada. La copia ya no está en nuestros servidores.',
+        notFound: 'No hay ninguna copia con este código, o ya se eliminó.',
+        invalid: 'El código tiene 26 letras y números. Revísalo y vuelve a intentarlo.',
+        busy: 'Demasiados intentos. Vuelve a intentarlo dentro de una hora.',
+        failed: 'No se pudo eliminar ahora. Vuelve a intentarlo en un rato.',
       },
     },
     table: {
@@ -159,13 +203,13 @@ const COPY: Record<HelpLocale, Copy> = {
         ['Manos, sesiones, notas de jugadores, bankroll, staking, ajustes y bloqueo en el teléfono', 'Al momento.'],
         ['Copia en la nube', 'Al momento. Una copia que no se actualiza durante 18 meses se elimina sola.'],
         ['Todo lo que compartiste por link: manos (con comentarios y votos), sesiones en directo, perfil público, links para el coach y acuerdos enviados a backers', 'Los links dejan de funcionar al momento. Los registros salen de los servidores en un plazo máximo de 60 días.'],
-        ['Swaps sin confirmar', 'Al momento.'],
-        ['Swaps confirmados', 'Tu nombre se elimina al momento. El otro jugador conserva una copia de solo lectura, con los importes y la nota de que eliminaste tus datos, para saber cómo quedan sus cuentas. Esa copia sale de los servidores 400 días después de la última actividad.'],
+        ['Swaps y grupos de swaps', 'Tu nombre y tu llave de acceso se eliminan del servidor al momento. Un swap que nunca se confirmó se elimina al momento, y un grupo que creaste se elimina al momento para todos. En un swap confirmado, los otros jugadores conservan en el servidor una copia de solo lectura de los importes que registraron juntos durante 90 días, y después se elimina. Las copias en los teléfonos de los otros jugadores no se tocan.'],
       ],
     },
     kept: {
       h: 'Qué se conserva',
       items: [
+        'Aunque no elimines nada, un swap o grupo sin confirmar sale del servidor 30 días después de crearse, y uno confirmado 400 días después de la última actividad.',
         'Estadísticas de uso anónimas (por ejemplo "mano guardada"), con un ID aleatorio de la instalación. No identifican a nadie y se eliminan a los 12 meses.',
         'Los registros de compra, en Apple, Google y RevenueCat (el estado de la suscripción), durante el tiempo que exige la ley.',
       ],
@@ -183,21 +227,38 @@ const COPY: Record<HelpLocale, Copy> = {
     },
     noApp: {
       h: 'Without the app',
-      p: "Don't have the app or the phone any more? Ask us by email. With no accounts, we need something that leads us to your data: the links you shared, the link to your profile or your swaps, or your cloud backup's recovery code (we only use it to find and delete the backup). We reply to confirm and delete within 30 days.",
+      p: 'Don\'t have the app or the phone any more? Delete your cloud backup right here with its recovery code. For everything else, ask us by email: with no accounts, we need the link to what you want deleted (shared hands, your profile, your swaps). We reply to confirm and delete within 30 days.',
+      mail: 'Ask by email',
+      linkOnly: 'The link is enough. We\'ll never ask for codes or keys.',
       form: {
         legend: 'What do you want deleted?',
         items: {
-          backup: 'My cloud backup (add the recovery code)',
           links: 'Hands shared by link (add the links)',
           profile: 'My public profile (add the link)',
           swaps: 'My swaps (add the links)',
           other: 'Something else',
         },
-        details: 'Links, code or other details',
-        placeholder: 'Paste the links or the code here…',
+        details: 'Links or other details',
+        placeholder: 'Paste the links here…',
         send: 'Open in email',
         hint: `Opens your email app with the request ready. Nothing opens? Write to ${SUPPORT_EMAIL}.`,
         subject: 'Sweatbook · Data deletion request',
+      },
+    },
+    backup: {
+      h: 'Delete your cloud backup with its code',
+      p: 'The code stays in this browser: the page does what the app does and only sends our server a key that proves the backup is yours. Never email us the code.',
+      lost: 'Lost the code? Without it no one can find or read the backup, not even us. It\'s deleted automatically 18 months after its last update.',
+      form: {
+        label: 'Recovery code',
+        placeholder: 'XXXXX-XXXXX-XXXXXXXXXXXXXXXX',
+        button: 'Delete the backup',
+        working: 'Deleting…',
+        done: 'Deleted. The backup is off our servers.',
+        notFound: 'There\'s no backup with this code, or it was already deleted.',
+        invalid: 'The code has 26 letters and numbers. Check it and try again.',
+        busy: 'Too many tries. Try again in an hour.',
+        failed: 'Couldn\'t delete it right now. Try again shortly.',
       },
     },
     table: {
@@ -208,13 +269,13 @@ const COPY: Record<HelpLocale, Copy> = {
         ['Hands, sessions, player notes, bankroll, staking, settings and the app lock on your phone', 'Straight away.'],
         ['Cloud backup', 'Straight away. A backup not updated for 18 months is deleted automatically.'],
         ['Everything you shared by link: hands (with comments and votes), live sessions, public profile, coach links and agreements sent to backers', 'The links stop working straight away. The records leave our servers within 60 days.'],
-        ['Swaps not yet confirmed', 'Straight away.'],
-        ['Confirmed swaps', 'Your name goes straight away. The other player keeps a read-only copy, with the amounts and a note that you deleted your data, so they still know where their accounts stand. That copy leaves our servers 400 days after its last activity.'],
+        ['Swaps and swap groups', 'Your name and access token are deleted from the server immediately. A swap that was never confirmed is deleted at once, and a group you created is deleted for everyone at once. For a confirmed swap, the other player(s) keep a read-only copy of the amounts you both recorded on the server for 90 days, then it is deleted. The copies on the other players\' phones are not touched.'],
       ],
     },
     kept: {
       h: 'What we keep',
       items: [
+        'Even if you delete nothing, an unconfirmed swap or group is deleted from the server 30 days after creation, and a confirmed one 400 days after the last activity.',
         'Anonymous usage statistics (for example "hand saved"), with a random install ID. They identify no one and are deleted after 12 months.',
         'Purchase records, at Apple, Google and RevenueCat (your subscription status), for as long as the law requires.',
       ],
@@ -223,72 +284,3 @@ const COPY: Record<HelpLocale, Copy> = {
   },
 };
 
-const one = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '');
-
-async function localeFor(search: Search): Promise<HelpLocale> {
-  const fromParam = helpLocale(one(search.lang));
-  if (fromParam) return fromParam;
-  const first = (await headers()).get('accept-language')?.split(',')[0];
-  return helpLocale(first) ?? 'pt';
-}
-
-export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
-  const locale = await localeFor(await searchParams);
-  return { title: COPY[locale].meta, robots: HELP_INDEXED ? undefined : { index: false, follow: false } };
-}
-
-export default async function DeleteDataPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const locale = await localeFor(await searchParams);
-  const c = COPY[locale];
-  const cancel = articles().find((a) => a.id === 'cancel');
-
-  return (
-    <HelpShell locale={locale} hrefs={sameIn((l) => `/apagar-conta?lang=${LANG_TAG[l]}`)}>
-      <section className="hc-hero">
-        <h1>{c.title}</h1>
-        <p className="hc-lede">{c.lede}</p>
-      </section>
-
-      <section className="hc-cat">
-        <h2>{c.inApp.h}</h2>
-        <ol className="hc-steps">
-          {c.inApp.steps.map((s) => (
-            <li key={s}>{s}</li>
-          ))}
-        </ol>
-        <p className="hc-plain">{c.inApp.after}</p>
-      </section>
-
-      <section className="hc-cat">
-        <h2>{c.noApp.h}</h2>
-        <p className="hc-plain">{c.noApp.p}</p>
-        <DeleteRequestForm to={SUPPORT_EMAIL} c={c.noApp.form} />
-      </section>
-
-      <section className="hc-cat">
-        <h2>{c.table.h}</h2>
-        <dl className="hc-table">
-          {c.table.rows.map(([what, when]) => (
-            <div key={what}>
-              <dt>{what}</dt>
-              <dd>{when}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <section className="hc-cat">
-        <h2>{c.kept.h}</h2>
-        <ul className="hc-bullets">
-          {c.kept.items.map((s) => (
-            <li key={s}>{s}</li>
-          ))}
-        </ul>
-        <p className="hc-note">
-          {c.cancel.text}{' '}
-          {cancel ? <Link href={`${HELP_BASE[locale]}/${textOf(cancel, locale).slug}`}>{c.cancel.link}</Link> : null}
-        </p>
-      </section>
-    </HelpShell>
-  );
-}

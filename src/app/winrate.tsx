@@ -10,7 +10,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { useLocked } from '@/components/ProGate';
 import { Button, Card, Row, Section, Segmented, T } from '@/components/ui';
-import { Interval, signed, SmallSample, WinRateCard } from '@/components/WinRate';
+import { Interval, signed, WinRateCard, WinRateSample } from '@/components/WinRate';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -37,7 +37,9 @@ export default function WinRateScreen() {
       body
     ) : (
       <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-        {body}
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
+          {body}
+        </View>
         <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
           <T v="h3" style={{ textAlign: 'center' }}>
             {title}
@@ -134,7 +136,7 @@ function Groups({ groups, cur, hidden }: { groups: WinRateGroup[]; cur: string; 
           <T v="tiny">
             {[t('entre {lo} e {hi}', { lo: signed(Math.round(g.w.lo), fmt), hi: signed(Math.round(g.w.hi), fmt) }), t('{h} h em {n} sessões', { h: n0(g.w.hours), n: g.w.sessions })].join(' · ')}
           </T>
-          {g.w.small ? <SmallSample compact /> : null}
+          {g.w.small ? <WinRateSample w={g.w} pill /> : null}
         </View>
       ))}
     </Card>

@@ -5,7 +5,7 @@
 import { t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { bbs, chips, timeOf } from '@/poker/format';
-import { levelOf } from '@/poker/tourney';
+import { levelOf, nextBreak, type NextBreak } from '@/poker/tourney';
 import { isPaused, playedMs } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -36,6 +36,8 @@ export interface LiveProps {
   /** 0 when no level length is set. */
   nextLevelAt: number;
   nextBlinds: string;
+  /** "Intervalo às 21:40 · 15 min" from the structure, '' when none is known. */
+  breakAt: string;
   labels: { time: string; stack: string; next: string; levelUp: string; newHand: string };
 }
 
@@ -66,6 +68,20 @@ export function nextLevelAt(s: Session, now = Date.now()): number | undefined {
   const from = s.levelStartedAt;
   const paused = (s.breaks ?? []).reduce((a, b) => a + Math.max(0, Math.min(b.end ?? now, now) - Math.max(b.start, from)), 0);
   return from + s.levelMinutes * 60_000 + paused;
+}
+
+/** The next break on a tournament's structure, timed from the level clock; null without one. */
+export function breakOf(s: Session, now = Date.now()): NextBreak | null {
+  if (s.kind !== 'mtt') return null;
+  const end = nextLevelAt(s, now);
+  return end === undefined ? null : nextBreak(s.tourney?.structure, s.level ?? 1, end);
+}
+
+/** "Intervalo às 21:40 · 15 min", or "Intervalo agora" while it should be on. */
+export function breakLabel(b: NextBreak | null, now = Date.now()): string {
+  if (!b) return '';
+  if (b.at <= now && now < b.at + b.minutes * 60_000) return t('Intervalo agora · {n} min', { n: b.minutes });
+  return t('Intervalo às {time} · {n} min', { time: timeOf(b.at), n: b.minutes });
 }
 
 /**
@@ -114,6 +130,7 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     blinds: `${chips(s.sb)}/${chips(s.bb)}`,
     nextLevelAt: next ?? 0,
     nextBlinds: `${chips(after.sb)}/${chips(after.bb)}`,
+    breakAt: breakLabel(breakOf(s, now), now),
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
@@ -125,10 +142,27 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
 }
 
 /** Text of the level-up reminder. */
-export function levelUpMessage(s: Session): { title: string; body: string } {
+export function levelUpMessage(s: Session, now = Date.now()): { title: string; body: string } {
   const after = levelAfter(s, 1);
+  const b = breakOf(s, now);
+  // The level ending now is followed by a break: pausing the session keeps the level clock on the floor's time.
+  if (b && b.afterLevel === (s.level ?? 1)) {
+    return {
+      title: t('Intervalo de {n} min', { n: b.minutes }),
+      body: t('Põe a sessão em pausa. Depois do intervalo, nível {n}: blinds {blinds}.', { n: after.level, blinds: `${chips(after.sb)}/${chips(after.bb)}` }),
+    };
+  }
   return {
     title: t('Subida de nível'),
     body: t('Nível {n}: blinds {blinds}. Toca para atualizar a sessão.', { n: after.level, blinds: `${chips(after.sb)}/${chips(after.bb)}` }),
+  };
+}
+
+/** Text of the call back to the table near the end of a break. */
+export function breakEndMessage(s: Session, b: NextBreak): { title: string; body: string } {
+  const l = s.tourney?.structure?.[b.afterLevel];
+  return {
+    title: t('O intervalo está a acabar'),
+    body: l ? t('Recomeça daqui a 2 min com o nível {n}: blinds {blinds}. Retoma a sessão.', { n: b.afterLevel + 1, blinds: `${chips(l.sb)}/${chips(l.bb)}` }) : t('Recomeça daqui a 2 min. Retoma a sessão.'),
   };
 }

@@ -166,7 +166,7 @@ export function SessionForm({
         <Section title={past ? 'Stakes' : 'Blinds'}>
           <ChipRow>
             {levels.map(([sb, bb]) => (
-              <Chip key={bb} label={`${chips(sb)}/${chips(bb)}`} active={s.bb === bb && s.sb === sb} onPress={() => set({ sb, bb, ante: mtt ? bb : 0 })} />
+              <Chip key={`${sb}/${bb}`} label={`${chips(sb)}/${chips(bb)}`} active={s.bb === bb && s.sb === sb} onPress={() => set({ sb, bb, ante: mtt ? bb : 0 })} />
             ))}
           </ChipRow>
         </Section>
@@ -259,9 +259,7 @@ export function SessionForm({
       )}
       <StakeFields s={s} onChange={set} expenses={!!past} />
       {past && <TaxFields s={s} onChange={set} />}
-      {!past ? (
-        <MindBefore value={s.mind} onChange={(mind) => set({ mind })} />
-      ) : mindOpen ? (
+      {!past ? null : mindOpen ? (
         <Section title={t('Diário mental')}>
           <MindBefore value={s.mind} onChange={(mind) => set({ mind })} />
           <MindAfter value={s.mind} onChange={(mind) => set({ mind })} />

@@ -639,12 +639,12 @@ const ARTICLES: Article[] = [
     pt: {
       slug: 'sweatbook-pro',
       title: 'Sweatbook Pro: preços e teste grátis',
-      summary: 'Mensal ou anual, com 7 dias grátis no anual.',
+      summary: 'Mensal ou anual, com 3 dias grátis no anual.',
       body: [
         {
           list: [
             'Mensal: 29,99 US$ por mês.',
-            'Anual: 199,99 US$ por ano, com 7 dias grátis.',
+            'Anual: 199,99 US$ por ano, com 3 dias grátis.',
           ],
         },
         'O preço na tua moeda é o que aparece na App Store ou no Google Play. O pagamento é feito pela loja e renova sozinho até cancelares. No teste grátis, avisamos antes da cobrança.',
@@ -653,12 +653,12 @@ const ARTICLES: Article[] = [
     en: {
       slug: 'sweatbook-pro',
       title: 'Sweatbook Pro: prices and free trial',
-      summary: 'Monthly or yearly, with 7 days free on the annual plan.',
+      summary: 'Monthly or yearly, with 3 days free on the annual plan.',
       body: [
         {
           list: [
             'Monthly: US$29.99 a month.',
-            'Annual: US$199.99 a year, with 7 days free.',
+            'Annual: US$199.99 a year, with 3 days free.',
           ],
         },
         "The price in your currency is the one the App Store or Google Play shows. Payment goes through the store and renews until you cancel. During the free trial we remind you before you're charged.",
@@ -730,7 +730,7 @@ const ARTICLES: Article[] = [
       title: 'Há um plano vitalício?',
       summary: 'Não. Há o mensal e o anual.',
       body: [
-        'Por agora não há pagamento único. O plano anual é o mais barato por mês e tem 7 dias grátis.',
+        'Por agora não há pagamento único. O plano anual é o mais barato por mês e tem 3 dias grátis.',
         'O plano grátis não tem prazo: podes usá-lo para sempre.',
       ],
     },
@@ -739,7 +739,7 @@ const ARTICLES: Article[] = [
       title: 'Is there a lifetime plan?',
       summary: 'No. There are monthly and annual plans.',
       body: [
-        "There's no one-off payment for now. The annual plan is the cheapest per month and has 7 days free.",
+        "There's no one-off payment for now. The annual plan is the cheapest per month and has 3 days free.",
         "The free plan doesn't expire: you can use it forever.",
       ],
     },

@@ -10,7 +10,7 @@ import type { Session } from './types';
 
 const H = 3600000;
 /** When the recap notification goes out on the 1st, local time. */
-export const RECAP_HOUR = 10;
+export const RECAP_HOUR = 13;
 
 /** "2026-10" for any moment in October 2026, local time. */
 export function monthKey(ts: number): string {
@@ -136,8 +136,9 @@ const oneDec = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 
 const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + rawMoney(Math.abs(Math.round(n)), cur);
 
 /**
- * What the notification on the 1st says. With privacy mode on it carries no
- * result at all (no money, no BB/h): it may show on a locked phone.
+ * What the notification on the 1st says. It shows on a locked phone, so it
+ * carries no result (no money, no BB/h) unless the player turned on "show
+ * amounts in notifications" and privacy mode is off; `hidden` covers both.
  */
 export function recapNotice(r: MonthRecap, hidden: boolean): { title: string; body: string } {
   const month = monthName(r.key);

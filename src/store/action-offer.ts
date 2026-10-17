@@ -13,7 +13,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import type { Backer, Stake, StakePackage } from '@/store/types';
+import { stakeCost, stakePrize } from '@/store/staking';
+import { stakesOf } from '@/store/session-math';
+import type { Backer, Session, Stake, StakePackage } from '@/store/types';
 
 export const MARKUPS = [1, 1.05, 1.1, 1.15, 1.2, 1.3];
 export const PIECES = [1, 2, 5, 10, 20];
@@ -41,6 +43,8 @@ export interface ActionOffer {
   events: string[];
   markup: number;
   lines: PackageLine[];
+  /** Events the player said they didn't play (asked a day after an event with no session). */
+  skipped?: string[];
   createdAt: number;
   updatedAt?: number;
 }
@@ -135,14 +139,143 @@ export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: st
   return out;
 }
 
+/** A day after an event starts with no session, the player is asked whether they played it. */
+const ASK_AFTER = 24 * 3600e3;
+
+/** Not played: the player said so and no session carries it. Never inferred. */
+function missed(o: ActionOffer, e: FestivalEvent, started: Record<string, string>): boolean {
+  return !started[e.id] && !!o.skipped?.includes(e.id);
+}
+
+/** Events that went by with no session and no answer yet: "Não jogaste o Evento X?". */
+export function unanswered(f: Festival, o: ActionOffer, started: Record<string, string>, now = Date.now()): FestivalEvent[] {
+  return offerEvents(f, o).filter((e) => !started[e.id] && !o.skipped?.includes(e.id) && venueTime(f, e.start) + ASK_AFTER < now);
+}
+
+/** One backer's piece of one event: its cost at the markup. */
+function eventPiece(o: ActionOffer, e: FestivalEvent, pct: number): number {
+  return (e.buyIn * pct * o.markup) / 100;
+}
+
 /**
  * What a backer still owes for a piece no session carries yet: the events of the
  * package not started, at the piece's cost. Once a session starts, its stake
- * (unpaid until the line is marked paid) carries that event instead.
+ * (unpaid until the line is marked paid) carries that event instead. Events
+ * the player said they didn't play aren't charged.
  */
 export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
   if (line.paid) return 0;
-  return r2(offerEvents(f, o).filter((e) => !started[e.id]).reduce((a, e) => a + (e.buyIn * line.pct * o.markup) / 100, 0));
+  return r2(
+    offerEvents(f, o)
+      .filter((e) => !started[e.id] && !missed(o, e, started))
+      .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
+  );
+}
+
+/** A paid piece of events the player said they didn't play: that money goes back to the backer. */
+export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
+  if (!line.paid) return 0;
+  return r2(
+    offerEvents(f, o)
+      .filter((e) => missed(o, e, started))
+      .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
+  );
+}
+
+export type SettlementState = 'cashed' | 'busted' | 'live' | 'upcoming' | 'waiting' | 'missed';
+
+export interface SettlementRow {
+  event: FestivalEvent;
+  state: SettlementState;
+  /** The backer's piece of it, at the markup (0 when not played). */
+  cost: number;
+  /** Their share of the prize (ended sessions). */
+  prize: number;
+}
+
+/**
+ * Where one backer stands on the festival: their prize share of each event, what
+ * the piece cost and whether it was paid, refunds for events not played, and
+ * what is left to send. `net` > 0: the player sends it to the backer; < 0: the
+ * backer sends it to the player. Matches what the package adds to their staking
+ * balance (pendingCost, missedRefund and the sessions' stakes).
+ */
+export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, sessions: Session[], now = Date.now()) {
+  const rows: SettlementRow[] = offerEvents(f, o).map((e) => {
+    const s = started[e.id] ? sessions.find((x) => x.id === started[e.id]) : undefined;
+    const x = s && stakesOf(s).find((y) => y.packageId === line.packageId);
+    if (s && x) {
+      const prize = s.endedAt ? stakePrize(s, x) : 0;
+      return { event: e, state: !s.endedAt ? 'live' : prize > 0 ? 'cashed' : 'busted', cost: stakeCost(s, x), prize };
+    }
+    if (missed(o, e, started)) return { event: e, state: 'missed', cost: 0, prize: 0 };
+    // Gone by with no session and no answer yet: still charged, until the player says.
+    const waiting = venueTime(f, e.start) + ASK_AFTER < now;
+    return { event: e, state: waiting ? 'waiting' : 'upcoming', cost: eventPiece(o, e, line.pct), prize: 0 };
+  });
+  const prizes = r2(rows.reduce((a, r) => a + r.prize, 0));
+  const cost = r2(rows.reduce((a, r) => a + r.cost, 0));
+  const refund = missedRefund(f, o, line, started);
+  return {
+    rows,
+    prizes,
+    cost,
+    paid: !!line.paid,
+    refund,
+    net: r2(prizes + refund - (line.paid ? 0 : cost)),
+    /** Every event ended or not played (as the player said): the numbers won't change. */
+    done: rows.every((r) => r.state === 'cashed' || r.state === 'busted' || r.state === 'missed'),
+    live: rows.filter((r) => r.state === 'live').length,
+    upcoming: rows.filter((r) => r.state === 'upcoming').length,
+    /** Events gone by with no session that the player hasn't answered for yet. */
+    waiting: rows.filter((r) => r.state === 'waiting').length,
+  };
+}
+
+export type LineSettlement = ReturnType<typeof lineSettlement>;
+
+/** "Acerto com {backer}": when to remind the player to answer for an event with no session. */
+export interface SettleReminder {
+  offerId: string;
+  eventId: string;
+  at: number;
+}
+
+/** Local 13:00 (device time) on or after `t`: outside the quiet hours (23:00-12:00). */
+function nextOnePm(t: number): number {
+  const d = new Date(t);
+  d.setHours(13, 0, 0, 0);
+  if (d.getTime() < t) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+/**
+ * The settlement reminders to schedule: per package, the next event with no
+ * session and no answer, at 13:00 once it can be asked about (an overdue one
+ * not reminded yet: the next 13:00). `sent` holds when each was scheduled
+ * (`offerId:eventId`): one gone by is never repeated. One a day at most.
+ */
+export function settleReminders(
+  items: { f: Festival; o: ActionOffer; started: Record<string, string> }[],
+  now = Date.now(),
+  sent: Record<string, number> = {},
+): SettleReminder[] {
+  const next: SettleReminder[] = [];
+  for (const { f, o, started } of items) {
+    if (!o.lines.length) continue;
+    const e = offerEvents(f, o).find((x) => !started[x.id] && !o.skipped?.includes(x.id) && !(sent[`${o.id}:${x.id}`] <= now));
+    if (e) next.push({ offerId: o.id, eventId: e.id, at: nextOnePm(Math.max(venueTime(f, e.start) + ASK_AFTER, now)) });
+  }
+  const days = new Set<string>();
+  return next
+    .sort((a, b) => a.at - b.at)
+    .filter((r) => {
+      const d = new Date(r.at);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (days.has(key)) return false;
+      days.add(key);
+      return true;
+    });
 }
 
 /** Packages these offers created: their stakes on a session are replaced, the rest kept. */

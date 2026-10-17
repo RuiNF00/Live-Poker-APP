@@ -11,6 +11,8 @@ export interface Level {
   ante: number;
   /** Level length in minutes. */
   minutes: number;
+  /** Minutes of the break that follows this level, if one does. */
+  breakAfter?: number;
 }
 
 export interface Tourney {
@@ -36,8 +38,20 @@ export const TEMPLATES: { id: string; minutes: number }[] = [
   { id: 'highroller', minutes: 60 },
 ];
 
+/** Breaks in a template: 15 minutes about every two hours of play, as most live structures do. */
+const TEMPLATE_BREAK = 15;
+
 export function templateStructure(minutes: number): Level[] {
-  return MTT_LEVELS.map(([sb, bb]) => ({ sb, bb, ante: bb, minutes }));
+  const every = Math.max(1, Math.round(120 / minutes));
+  return MTT_LEVELS.map(([sb, bb], i) => ({ sb, bb, ante: bb, minutes, ...((i + 1) % every === 0 ? { breakAfter: TEMPLATE_BREAK } : {}) }));
+}
+
+/** "Break 15", "BREAK - 20 min", "Intervalo (15')", "Dinner break 60": a break line, and its length (15 when not given). */
+const BREAK_LINE = /\b(break|pausa|intervalo|descanso|receso|dinner|jantar|cena)\b/i;
+function breakMinutes(line: string): number | null {
+  if (!BREAK_LINE.test(line)) return null;
+  const n = [...line.matchAll(/(\d+)\s*(?:m(?:in)?\b|')?/gi)].map((x) => Number(x[1])).find((x) => x >= 5 && x <= 120);
+  return n ?? 15;
 }
 
 /**
@@ -58,8 +72,9 @@ export function num(s: string): number {
 
 /**
  * A structure typed or pasted one level per line: "100/200/200 30",
- * "100-200 (200) 30m", "1  100/200  200  30". Lines without blinds (breaks,
- * headers) are skipped; a missing length repeats the one before.
+ * "100-200 (200) 30m", "1  100/200  200  30". A break line ("Break 15") goes
+ * on the level before it; other lines without blinds (headers) are skipped; a
+ * missing length repeats the one before.
  */
 export function parseStructure(text: string, defaultMinutes = 30): Level[] {
   const out: Level[] = [];
@@ -67,6 +82,8 @@ export function parseStructure(text: string, defaultMinutes = 30): Level[] {
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     const m = line.match(/(\d[\d,.]*k?)\s*[/-]\s*(\d[\d,.]*k?)(?:\s*[/-]\s*(\d[\d,.]*k?))?/i);
+    const brk = m ? null : breakMinutes(line);
+    if (brk && out.length) out[out.length - 1].breakAfter = brk;
     if (!m) continue;
     const sb = num(m[1]);
     const bb = num(m[2]);
@@ -163,4 +180,26 @@ export function syncTo(structure: Level[], level: number, minutesLeft?: number, 
   const l = levelOf(structure, n);
   const left = minutesLeft === undefined ? l.minutes : Math.max(0, Math.min(l.minutes, minutesLeft));
   return { sb: l.sb, bb: l.bb, ante: l.ante, level: n, levelMinutes: l.minutes, levelStartedAt: syncedLevelStart(l.minutes, left, now) };
+}
+
+export interface NextBreak {
+  /** The level it follows, when it starts (epoch ms) and how long it lasts. */
+  afterLevel: number;
+  at: number;
+  minutes: number;
+}
+
+/**
+ * The next break on the structure: after the current level when it has one,
+ * else after the next level that does, timed from when the current level ends.
+ */
+export function nextBreak(structure: Level[] | undefined, level: number, levelEndsAt: number): NextBreak | null {
+  if (!structure?.length) return null;
+  let at = levelEndsAt;
+  for (let n = Math.max(1, level); n <= structure.length; n++) {
+    const l = structure[n - 1];
+    if (n > level) at += l.minutes * 60_000;
+    if (l.breakAfter) return { afterLevel: n, at, minutes: l.breakAfter };
+  }
+  return null;
 }

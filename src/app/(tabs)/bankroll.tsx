@@ -16,6 +16,7 @@ import { useSwaps } from '@/store/swaps-store';
 import { Insights } from '@/components/Insights';
 import { useLocked } from '@/components/ProGate';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
+import { usePaged } from '@/components/ShowMore';
 import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { WinRateCard } from '@/components/WinRate';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
@@ -93,21 +94,24 @@ function BankrollTab() {
   const filter = useMemo<SessionFilter>(() => ({ game, format, stakes, range: effectiveRange(preset, custom) }), [game, format, stakes, preset, custom]);
   const range = filter.range;
   const list = useMemo(() => applyFilter(scoped, filter), [scoped, filter]);
-  const bal = balanceOf(scope, sessions, transfers, bankrolls);
-  const tot = totals(list, cur);
+  // Years of sessions: everything below is worked out once per change of data or filter, not on every tap.
+  const bal = useMemo(() => balanceOf(scope, sessions, transfers, bankrolls), [scope, sessions, transfers, bankrolls]);
+  const tot = useMemo(() => totals(list, cur), [list, cur]);
   const wr = useMemo(() => winRate(cashDone(list, cur)), [list, cur]);
   const lastMonth = useMemo(() => {
     const k = defaultMonth(list);
     return k ? monthRecap(list, k, cur) : null;
   }, [list, cur]);
-  const verdictNow = verdict(list, cur, (n) => fmt(n, cur));
-  const pts = curve(list, cur).map((p) => p.v);
-  const dd = drawdown(pts);
-  const last5 = lastResults(list, 5);
-  const first = list.filter((s) => s.endedAt).reduce((a, s) => Math.min(a, s.startedAt), Infinity);
   const hidden = !!settings.hideAmounts;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt only changes with `hidden`
+  const verdictNow = useMemo(() => verdict(list, cur, (n) => fmt(n, cur)), [list, cur, hidden]);
+  const pts = useMemo(() => curve(list, cur).map((p) => p.v), [list, cur]);
+  const dd = useMemo(() => drawdown(pts), [pts]);
+  const last5 = useMemo(() => lastResults(list, 5), [list]);
+  const first = useMemo(() => list.filter((s) => s.endedAt).reduce((a, s) => Math.min(a, s.startedAt), Infinity), [list]);
   const onlyResults = game !== 'all' || format !== 'all' || stakes.length > 0;
-  const history = ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range)));
+  const history = useMemo(() => ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range))), [list, onlyResults, scopedTx, range]);
+  const { shown: shownHistory, more: moreHistory } = usePaged(history);
   const nFilters = activeFilters(filter);
   const scopeBankrolls = bankrolls.filter((b) => inScope.has(b.id));
   const single = 'bankrollId' in scope ? bankrolls.find((b) => b.id === scope.bankrollId) : undefined;
@@ -170,7 +174,7 @@ function BankrollTab() {
           </Row>
         </Card>
 
-        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} /> : null}
+        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} /> : null}
 
         <MoreTools />
 
@@ -309,6 +313,15 @@ function BankrollTab() {
                   onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key } })}
                 />
               ) : null}
+              {tot.sessions && list.some((x) => x.kind === 'cash') ? (
+                <ListItem
+                  icon="layers-outline"
+                  iconColor={C.accent}
+                  title={t('Posso subir de stake?')}
+                  subtitle={t('Buy-ins para a tua stake e para a de cima')}
+                  onPress={() => router.push({ pathname: '/moveup', params: { bankroll: pastBankroll.id } })}
+                />
+              ) : null}
               <ListItem
                 icon="trending-down"
                 iconColor={C.bad}
@@ -340,7 +353,7 @@ function BankrollTab() {
         {history.length ? (
           <Section title={t('Histórico')}>
             <ListGroup>
-              {history.map((e) =>
+              {shownHistory.map((e) =>
                 'session' in e ? (
                   <SessionRow
                     key={e.session.id}
@@ -359,6 +372,7 @@ function BankrollTab() {
                 ),
               )}
             </ListGroup>
+            {moreHistory}
           </Section>
         ) : null}
       </Screen>

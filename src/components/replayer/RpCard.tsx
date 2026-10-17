@@ -10,8 +10,8 @@ import { C, ff } from '@/theme';
 
 export const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: "Georgia, 'Times New Roman', serif" });
 
-/** Four-colour deck on ivory: spades near-black, hearts red, diamonds blue, clubs green. */
-const INK: Record<Suit, string> = { s: '#1E1E1E', h: '#D42A2A', d: '#2259D6', c: '#178A42' };
+/** Four-colour deck on ivory: spades near-black, hearts red, diamonds blue, clubs green; each at 4.5:1 or better. */
+const INK: Record<Suit, string> = { s: '#1E1E1E', h: '#C62828', d: '#2259D6', c: '#127A3A' };
 
 export function RpCard({
   card,

@@ -110,6 +110,13 @@ test('downswings: biggest, recovered or not, and the current one', async () => {
   assert.equal(d.current!.depth, 200);
   assert.equal(d.current!.recovered, null);
   assert.equal(downswings([], '€').biggest, null);
+  // QA case: peak +2100, down to −600, back up to 0. Now is −2100 over 3 sessions; the deepest −2700 is the biggest.
+  const q = downswings([2100, -1500, -1200, 600].map((r, i) => mk(i + 1, r)), '€');
+  assert.equal(q.current!.depth, 2100);
+  assert.equal(q.current!.sessions, 3);
+  assert.equal(q.current!.to, 4 * 10 * H + 4 * H);
+  assert.equal(q.biggest!.depth, 2700);
+  assert.equal(q.biggest!.sessions, 2);
 });
 
 test('downswingOdds: needs 20 sessions, is repeatable, and a deeper fall is rarer', async () => {

@@ -9,9 +9,10 @@ import React, { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { SmallSample } from '@/components/SmallSample';
 import { Button, Card, Chip, ChipRow, Divider, Empty, ListGroup, ListItem, Row, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { chips, decimal, money, shortDate } from '@/poker/format';
+import { chips, compactMoney, decimal, money, shortDate } from '@/poker/format';
 import { byCurrency } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { BANDS, bandOf, biggestScores, finishedTourneys, gameOf, groupBy, MIN_GROUP, MIN_SAMPLE, summarize, tripOf, type Group, type StatsView } from '@/store/tourney-stats';
@@ -20,8 +21,8 @@ import { C, S } from '@/theme';
 const pct = (n: number | null, digits = 0) => (n === null ? '—' : `${n.toLocaleString(locale, { maximumFractionDigits: digits })}%`);
 const signedPct = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString(locale) + '%';
 const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : '') + money(Math.round(n), cur);
-/** "+23,1k$" in a tile: a full amount doesn't fit a third of the screen. */
-const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(Math.round(n), cur)) : (sign && n > 0 ? '+' : n < 0 ? '−' : '') + chips(Math.abs(n)) + cur);
+/** "+23.1k€" / "+$23.1k" in a tile: a full amount doesn't fit a third of the screen. */
+const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(Math.round(n), cur)) : (sign && n > 0 ? '+' : '') + compactMoney(n, cur));
 
 export default function TournamentStatsScreen() {
   const { sessions, trips, settings } = useStore();
@@ -57,7 +58,7 @@ export default function TournamentStatsScreen() {
   }
 
   const enough = sum.count >= MIN_SAMPLE;
-  const verdict = !enough ? t('Amostra pequena: {n} de {min} torneios. O ROI ganha sentido com mais volume.', { n: sum.count, min: MIN_SAMPLE }) : sum.roi === null ? t('Sem dinheiro investido nesta vista.') : sum.roi >= 0 ? t('Por cada 100 investidos, voltaram {x}.', { x: Math.round(100 + sum.roi) }) : t('Por cada 100 investidos, voltaram {x}. Em torneios, a variância é longa.', { x: Math.round(100 + sum.roi) });
+  const verdict = !enough ? null : sum.roi === null ? t('Sem dinheiro investido nesta vista.') : sum.roi >= 0 ? t('Por cada 100 investidos, voltaram {x}.', { x: Math.round(100 + sum.roi) }) : t('Por cada 100 investidos, voltaram {x}. Em torneios, a variância é longa.', { x: Math.round(100 + sum.roi) });
 
   return (
     <>
@@ -84,7 +85,7 @@ export default function TournamentStatsScreen() {
           <T v="monoXL" color={(enough ? (sum.roi ?? 0) : sum.net) >= 0 ? C.good : C.bad}>
             {enough && sum.roi !== null ? signedPct(sum.roi) : amt(sum.net)}
           </T>
-          <T v="body">{verdict}</T>
+          {verdict ? <T v="body">{verdict}</T> : <SmallSample n={sum.count} min={MIN_SAMPLE} variant="note" unit={t('torneios')} />}
           <T v="small">
             {t('{n} torneios · {e} entradas · {cur}', { n: sum.count, e: sum.entries, cur: currency })}
             {view === 'mine' ? ' · ' + t('depois de staking, swaps e despesas') : ' · ' + t('antes de staking e swaps')}

@@ -32,6 +32,7 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
     <Column modifiers={[fillMaxWidth()]}>
       <Text color={p.paused ? warn : accent} style={{ fontSize: 13, fontWeight: '700' }}>{p.status + ' · ' + p.played + ' · ' + p.since}</Text>
       <Text color={text} style={{ fontSize: 15, fontWeight: '700', fontFamily: 'monospace' }}>{p.stack + ' (' + p.stackBB + ') · ' + p.blinds}</Text>
+      {p.breakAt ? <Text color={warn} style={{ fontSize: 12, fontWeight: '600' }}>{p.breakAt}</Text> : null}
     </Column>
   );
   return {
@@ -43,6 +44,7 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
           {stat(p.labels.stack, p.stack, p.stackBB, text)}
           {stat(p.level, p.blinds, levelDue ? p.labels.levelUp + ' → ' + p.nextBlinds : p.nextBlinds ? '→ ' + p.nextBlinds : '', levelDue ? accent : text)}
         </Row>
+        {p.breakAt ? <Text color={warn} style={{ fontSize: 12, fontWeight: '600' }} modifiers={[padding(0, 8, 0, 0)]}>{p.breakAt}</Text> : null}
         <Row modifiers={[fillMaxWidth(), padding(0, 10, 0, 0)]}>
           <Text
             color="#1A0A04"

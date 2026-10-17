@@ -1,12 +1,12 @@
 // The coach comments on a replay step of the web replayer (packages/hand-format). The phone
 // builds the same steps from the hand, so a comment reads "Turn · BTN aposta 12 bb" here too.
 
-import { buildReplay, describeStep, fromAppHand, isAppHand, streetLabel } from '../../packages/hand-format/src';
+import { buildReplay, describeStep, fromAppHand, isAppHand, streetLabel, type Locale } from '../../packages/hand-format/src';
 
 import { publicHand } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
-export function stepLabeller(hand: Hand, locale: 'pt' | 'en'): (i: number | null) => string {
+export function stepLabeller(hand: Hand, locale: Locale): (i: number | null) => string {
   let steps: ReturnType<typeof buildReplay> = [];
   let bb = 1;
   try {
