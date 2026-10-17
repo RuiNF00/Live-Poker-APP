@@ -1299,6 +1299,24 @@ const ptBR: Record<string, string> = {
   'Estou à mesa: registar uma mão já': 'Estou na mesa: registrar uma mão agora',
   // Crash reports switch (Definições → Os teus dados).
   "Quanto acertas com cada backer, já calculado. Com o Pro.": "Quanto você acerta com cada backer, já calculado. Com o Pro.",
+  // Festivals: the player's own, and January to June 2027
+  'Os do calendário e os que adicionares': 'Os do calendário e os que você adicionar',
+  'Adicionar o meu festival': 'Adicionar meu festival',
+  'Apagar este festival?': 'Excluir este festival?',
+  'A viagem que criaste para ele fica, com as sessões e as despesas.': 'A viagem que você criou para ele continua, com as sessões e as despesas.',
+  'Ex.: Malta, novembro 2026': 'Ex.: Malta, novembro 2026',
+  'O último dia tem de ser depois do primeiro.': 'O último dia precisa ser depois do primeiro.',
+  'As sessões que jogares nestes dias entram na viagem do festival.': 'As sessões que você jogar nesses dias entram na viagem do festival.',
+  'Apagar festival': 'Excluir festival',
+  'As sessões que jogares nestes dias entram na viagem sozinhas, com as despesas e o resultado.': 'As sessões que você jogar nesses dias entram sozinhas na viagem, com as despesas e o resultado.',
+  'O calendário só tem datas publicadas pelos organizadores. Joga outro festival? Adiciona-o: a viagem e o planeador funcionam da mesma forma.': 'O calendário só tem datas publicadas pelos organizadores. Vai jogar outro festival? Adicione: a viagem e o planejador funcionam do mesmo jeito.',
+  'Mónaco, maio 2027': 'Mônaco, maio 2027',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.': 'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma acontecer em fevereiro.',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.': 'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma acontecer entre o fim de março e meados de abril.',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e o início de maio.': 'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma acontecer entre o fim de abril e o início de maio.',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e meados de maio.': 'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma acontecer entre o fim de abril e meados de maio.',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em meados de maio.': 'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma acontecer em meados de maio.',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.': 'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.',
 };
 
 export default ptBR;

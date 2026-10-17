@@ -8,20 +8,22 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { spanLabel } from '@/components/FestivalItem';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { usePro } from '@/billing/pro';
 import { FREE } from '@/billing/plans';
 import { ActionOffers } from '@/components/staking/ActionOffers';
 import { blankSession } from '@/components/SessionForm';
-import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
-import { eventDay, eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { getOffers, stakesFor } from '@/store/action-offer';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
 import { dayOf, reenterFlight, resumeDay } from '@/store/multi-day';
+import { useFestivals } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -37,7 +39,8 @@ function dayLabel(day: string) {
 
 export default function FestivalScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const f = FESTIVALS.find((x) => x.id === id) ?? FESTIVALS[0];
+  const festivals = useFestivals();
+  const f = festivals.find((x) => x.id === id) ?? festivals[0];
   const plan = useFestivalPlan(f.id);
   const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
@@ -100,21 +103,30 @@ export default function FestivalScreen() {
       {softAsk}
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <View style={{ gap: 4 }}>
-          <Row gap={8}>
-            <TextInput
-              value={plan.name ?? t(f.name)}
-              onChangeText={(name) => updatePlan(f.id, (p) => ({ ...p, name }))}
-              onBlur={() => updatePlan(f.id, (p) => ({ ...p, name: p.name?.trim() || undefined }))}
-              placeholder={t(f.name)}
-              placeholderTextColor={C.textDim}
-              accessibilityLabel={t('Nome do festival')}
-              returnKeyType="done"
-              maxLength={60}
-              style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
-            />
-            <Ionicons name="pencil" size={16} color={C.textDim} />
-          </Row>
-          <T v="label">{`${f.venue} · ${t(f.city)}`}</T>
+          {f.own ? (
+            <Row gap={8}>
+              <T v="h1" style={{ flex: 1, minWidth: 0, fontSize: 24 }}>
+                {f.name}
+              </T>
+              <IconButton name="pencil" label={t('Editar festival')} onPress={() => router.push({ pathname: '/festival-new', params: { id: f.id } })} />
+            </Row>
+          ) : (
+            <Row gap={8}>
+              <TextInput
+                value={plan.name ?? t(f.name)}
+                onChangeText={(name) => updatePlan(f.id, (p) => ({ ...p, name }))}
+                onBlur={() => updatePlan(f.id, (p) => ({ ...p, name: p.name?.trim() || undefined }))}
+                placeholder={t(f.name)}
+                placeholderTextColor={C.textDim}
+                accessibilityLabel={t('Nome do festival')}
+                returnKeyType="done"
+                maxLength={60}
+                style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
+              />
+              <Ionicons name="pencil" size={16} color={C.textDim} />
+            </Row>
+          )}
+          <T v="label">{[f.venue, f.city && t(f.city)].filter(Boolean).join(' · ')}</T>
           {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
         </View>
 
@@ -125,8 +137,8 @@ export default function FestivalScreen() {
 
         {!f.events.length ? (
           <Card tone="inset" style={{ gap: 4 }}>
-            <T v="h3">{f.dates ? t('{from} a {to}', { from: shortDay(f.dates.from), to: shortDay(f.dates.to) }) : t('Datas a confirmar')}</T>
-            <T v="small">{f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
+            <T v="h3">{f.dates ? `${spanLabel(f.dates.from, f.dates.to)} ${f.dates.to.slice(0, 4)}` : t('Datas a confirmar')}</T>
+            <T v="small">{f.own ? t('As sessões que jogares nestes dias entram na viagem sozinhas, com as despesas e o resultado.') : f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
           </Card>
         ) : (
           <ChipRow>
@@ -180,23 +192,22 @@ export default function FestivalScreen() {
           </Section>
         ))}
 
-        <View style={{ gap: 6, paddingHorizontal: 4 }}>
-          <T v="tiny" color={C.textDim}>
-            {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
-          </T>
-          {f.notes.map((n) => (
-            <T key={n} v="tiny">
-              {t(n)}
+        {f.own ? null : (
+          <View style={{ gap: 6, paddingHorizontal: 4 }}>
+            <T v="tiny" color={C.textDim}>
+              {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
             </T>
-          ))}
-        </View>
+            {f.notes.map((n) => (
+              <T key={n} v="tiny">
+                {t(n)}
+              </T>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </>
   );
 }
-
-/** "22 jan 2027" from 'YYYY-MM-DD', at noon so no timezone moves the day. */
-const shortDay = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** The trip for this festival: open it, or make it from the plan (dates from the planned events). */
 function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {

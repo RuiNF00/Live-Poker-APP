@@ -15,8 +15,8 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { createSwap, SwapError, swapUrl } from '@/lib/swap-api';
-import { FESTIVALS } from '@/poker/festivals';
 import { money } from '@/poker/format';
+import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore } from '@/store/store';
 import { fromRemote, swapNames, type SwapTerms } from '@/store/swaps';
 import { saveSwap, useSwaps } from '@/store/swaps-store';
@@ -70,16 +70,19 @@ function NewSwap() {
   }, [swaps]);
 
   // What you might be swapping for: the tournament you're in, festivals, recent events.
+  const festivals = useFestivals();
+  const [today] = useState(() => dayKey(Date.now()));
   const suggestions = useMemo(() => {
     const out: { title: string; venue: string; currency: string; scope: 'event' | 'series' }[] = [];
     if (live?.name) out.push({ title: live.name, venue: live.venue, currency: live.currency, scope: 'event' });
-    for (const f of FESTIVALS) out.push({ title: f.name, venue: f.venue, currency: f.currency, scope: 'series' });
+    // The next few festivals, not the whole calendar.
+    for (const f of festivals.filter((x) => notOver(x, today)).slice(0, 3)) out.push({ title: t(f.name), venue: f.venue, currency: f.currency, scope: 'series' });
     for (const s of sessions) {
       if (out.length >= 6) break;
       if (s.kind === 'mtt' && s.name && !out.some((o) => o.title === s.name)) out.push({ title: s.name, venue: s.venue, currency: s.currency, scope: 'event' });
     }
     return out.filter((o) => o.scope === scope);
-  }, [live, sessions, scope]);
+  }, [live, sessions, scope, festivals, today]);
 
   const pB = same ? pct : theirPct;
   const ok = me.trim() && them.trim() && title.trim() && !busy;

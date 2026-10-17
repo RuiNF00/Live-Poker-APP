@@ -19,6 +19,7 @@ import type { Hand } from '@/poker/types';
 import { mergeById, restoredSettings, type BackupData } from './backup';
 import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
+import { clearOwnFestivals } from './my-festivals';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
@@ -492,6 +493,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     await eraseLocal();
     clearPlans();
+    clearOwnFestivals();
     setHands([]);
     setSessions([]);
     setPlayers([]);
