@@ -23,14 +23,14 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
+import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
 import { C, R, S } from '@/theme';
 
-type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix';
+type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix' | EventKind;
 const LATE_REG_HOURS = [2, 3, 4, 5, 6, 8];
 
 function dayLabel(day: string) {
@@ -54,6 +54,7 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
   const f = useMemo(() => withPlanEvents(base, plan), [base, plan]);
   const { sessions, transfers, bankrolls, defaultBankroll, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
+  const [cap, setCap] = useState<number | null>(null);
   const [lateFor, setLateFor] = useState<string | null>(null);
   const [softAsk, askNotify] = useNotifySoftAsk();
 
@@ -70,11 +71,15 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
   }, [f, plan, remindersOn]);
 
   const days = useMemo(() => {
-    const list = f.events.filter((e) => (filter === 'all' ? true : filter === 'mine' ? plan.picked.includes(e.id) : e.game === filter));
+    const shown = (e: FestivalEvent) =>
+      filter === 'all' ? true : filter === 'mine' ? plan.picked.includes(e.id) : filter === 'NLH' || filter === 'PLO' || filter === 'Mix' ? e.game === filter : isKind(e, filter);
+    const list = f.events.filter((e) => shown(e) && (cap === null || entryBuyIn(f, e) <= cap));
     const by = new Map<string, FestivalEvent[]>();
     for (const e of list) by.set(eventDay(e), [...(by.get(eventDay(e)) ?? []), e]);
     return [...by.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [f, filter, plan.picked]);
+  }, [f, filter, cap, plan.picked]);
+  const caps = useMemo(() => buyInCaps(f), [f]);
+  const clash = useMemo(() => clashes(f, plan), [f, plan]);
 
   const toggle = (e: FestivalEvent) => {
     tap('select');
@@ -151,24 +156,39 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
         {!f.events.length ? (
           <T v="small">{f.own ? t('As sessões que jogares nestes dias entram na viagem sozinhas, com as despesas e o resultado.') : f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
         ) : (
-          <ChipRow>
-            {(
-              [
-                ['all', t('Todos')],
-                ['mine', t('Os meus ({n})', { n: tot.events })],
-                ['NLH', 'NLH'],
-                ['PLO', 'PLO'],
-                ['Mix', 'Mix'],
-              ] as [Filter, string][]
-            ).map(([k, label]) => (
-              <Chip key={k} label={label} active={filter === k} onPress={() => setFilter(k)} />
-            ))}
-          </ChipRow>
+          <View style={{ gap: S.sm }}>
+            <ChipRow>
+              {(
+                [
+                  ['all', t('Todos')],
+                  ['mine', t('Os meus ({n})', { n: tot.events })],
+                  ['sat', t('Satélites')],
+                  ['turbo', 'Turbo'],
+                  ['deep', 'Deepstack'],
+                  ['NLH', 'NLH'],
+                  ['PLO', 'PLO'],
+                  ['Mix', 'Mix'],
+                ] as [Filter, string][]
+              )
+                // A kind chip only where the schedule has one.
+                .filter(([k]) => (k !== 'sat' && k !== 'turbo' && k !== 'deep') || f.events.some((e) => isKind(e, k)))
+                .map(([k, label]) => (
+                  <Chip key={k} label={label} active={filter === k} onPress={() => setFilter(k)} />
+                ))}
+            </ChipRow>
+            {caps.length ? (
+              <ChipRow>
+                {caps.map((c) => (
+                  <Chip key={c} label={t('Até {amount}', { amount: money(c, f.currency) })} active={cap === c} onPress={() => setCap(cap === c ? null : c)} />
+                ))}
+              </ChipRow>
+            ) : null}
+          </View>
         )}
 
         {days.length === 0 && f.events.length ? (
           <Card tone="inset">
-            <T v="small">{t('Ainda não marcaste nenhum evento. Toca no círculo à direita de um evento para o adicionar.')}</T>
+            <T v="small">{filter === 'mine' && cap === null ? t('Ainda não marcaste nenhum evento. Toca no círculo à direita de um evento para o adicionar.') : t('Nenhum torneio com estes filtros.')}</T>
           </Card>
         ) : null}
 
@@ -183,6 +203,7 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
                   e={e}
                   plan={plan}
                   action={eventAction(f, plan, sessions, e)}
+                  clash={clash.get(e.id)}
                   lateOpen={lateFor === e.id}
                   onToggle={() => toggle(e)}
                   onLate={() => setLateFor(lateFor === e.id ? null : e.id)}
@@ -309,6 +330,7 @@ function EventRow({
   plan,
   action,
   lateOpen,
+  clash,
   onToggle,
   onLate,
   onSetLate,
@@ -318,6 +340,8 @@ function EventRow({
   e: FestivalEvent;
   plan: FestivalPlan;
   action: EventAction | null;
+  /** Another planned event this one overlaps. */
+  clash?: FestivalEvent;
   lateOpen: boolean;
   onToggle: () => void;
   onLate: () => void;
@@ -354,6 +378,14 @@ function EventRow({
       </Pressable>
       {on || action?.kind === 'resume' ? (
         <View style={{ paddingHorizontal: S.md, paddingBottom: S.md, gap: S.sm }}>
+          {on && clash ? (
+            <Row gap={6}>
+              <Ionicons name="warning-outline" size={14} color={C.warn} />
+              <T v="small" color={C.warn} style={{ flex: 1 }}>
+                {t('Coincide com {name} às {time}', { name: eventTitle(clash) + (clash.flight ? ` · ${clash.day2 ? t('Dia 2') : 'Flight ' + clash.flight}` : ''), time: clash.start.slice(11) })}
+              </T>
+            </Row>
+          ) : null}
           <Row gap={S.sm}>
             {e.day2 ? <View style={{ flex: 1 }} /> : <Pressable
               onPress={onLate}

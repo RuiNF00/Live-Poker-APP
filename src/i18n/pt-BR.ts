@@ -1519,6 +1519,7 @@ const ptBR: Record<string, string> = {
   'Liga-os nas Definições para gravares a tua cara.': 'Ative nas Configurações para gravar seu rosto.',
   'Abrir Definições': 'Abrir Configurações',
   'Pára antes da tua decisão, para quem vê votar no link.': 'Para antes da sua decisão, para quem vê votar no link.',
+  'Coincide com {name} às {time}': 'Coincide com {name} às {time}',
 };
 
 export default ptBR;
