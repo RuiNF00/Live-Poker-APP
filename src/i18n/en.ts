@@ -3102,6 +3102,18 @@ const en: Record<string, string> = {
   '−1 órbita': '−1 orbit',
   'Mais detalhes': 'More details',
   'Menos detalhes': 'Fewer details',
+  'São Paulo, novembro 2026': 'São Paulo, November 2026',
+  'Torrelodones, novembro 2026': 'Torrelodones, November 2026',
+  'Lisboa, novembro 2026': 'Lisbon, November 2026',
+  'Peralada, novembro 2026': 'Peralada, November 2026',
+  'Espinho, dezembro 2026': 'Espinho, December 2026',
+  'Praga, dezembro 2026': 'Prague, December 2026',
+  'Lisboa': 'Lisbon',
+  'Praga': 'Prague',
+  'O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.': 'Day 1B of #94, on 28 November, has no published time yet.',
+  'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': '#7 is missing (PKO Turbo, 27 November at 22:00): the organiser has not published its buy-in yet.',
+  'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Main Event: €550, 40,000 starting stack, 45-minute levels. The organiser has not published the flight days and times yet.',
+  'Evento principal de 7 a 13 de dezembro (€5.300). Evento principal de buy-in médio de 2 a 7 de dezembro (€1.650).': 'Main Event 7–13 December (€5,300). Mid buy-in Main Event 2–7 December (€1,650).',
 };
 
 export default en;

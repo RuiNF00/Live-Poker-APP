@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { LISBOA_NOV_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
@@ -61,7 +62,7 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
 });
 
 test('ships without an event brand; the player can name the festival', () => {
-  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main|bsop|\bcep\b|sau[ií]pe/i, f.id);
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main|bsop|\bcep\b|sau[ií]pe|vamos|\bvpt\b|\bcnp\b|winamax|solverde|\bept\b|pokerstars|millionaire maker|meia milha/i, f.id);
   // No outbound links: organisers also run real-money gaming sites (store review).
   for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /https?:|www\./i, f.id);
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
@@ -162,4 +163,33 @@ test('a tournament the player adds: in the schedule, planned, reminded, startabl
   assert.equal(now.action.kind, 'start');
   const gone = removeOwnEvent(plan, 'fe_1');
   assert.deepEqual([gone.events, gone.picked, gone.lateReg], [[], [], {}]);
+});
+
+test('November schedules: official rows only, start order, unique ids, Day 2s free and without a structure', () => {
+  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026]) {
+    assert.ok(FESTIVALS.includes(f), f.id);
+    assert.equal(new Set(f.events.map((e) => e.id)).size, f.events.length, f.id);
+    const starts = f.events.map((e) => e.start);
+    assert.deepEqual([...starts].sort(), starts, f.id);
+    for (const e of f.events) {
+      if (e.day2) assert.ok(e.buyIn === 0 && !e.stack && e.flight?.startsWith('2'), `${f.id} ${e.id}`);
+      else assert.ok(e.buyIn > 0, `${f.id} ${e.id}`);
+      assert.equal(!e.stack, !e.levelMinutes, `${f.id} ${e.id}`);
+    }
+  }
+  // São Paulo: #1-#105, in the venue's time (UTC-3).
+  const sp = SAO_PAULO_NOV_2026;
+  assert.deepEqual([...new Set(sp.events.map((e) => e.number))].sort((a, b) => a - b), Array.from({ length: 105 }, (_, i) => i + 1));
+  assert.equal(sp.events[0].start, '2026-11-13T12:00');
+  assert.deepEqual(sp.events.filter((e) => e.number === 26 && !e.day2).map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '1F', '1G', '1H', '1I', '1J']);
+  assert.deepEqual(['buyIn', 'stack', 'levelMinutes'].map((k) => sp.events.find((e) => e.id === '26-1A')![k as 'buyIn']), [5000, 40000, 40]);
+  assert.equal(venueTime(sp, '2026-11-16T12:00'), Date.UTC(2026, 10, 16, 15));
+  // #94 Day 1B has no published time: left out, said in the notes.
+  assert.ok(!sp.events.some((e) => e.id === '94-1B'));
+  // Torrelodones: the Low Cost flight has its own buy-in and structure.
+  const lc = TORRELODONES_NOV_2026.events.find((e) => e.id === '6-1C')!;
+  assert.deepEqual([lc.buyIn, lc.stack, lc.levelMinutes], [300, 25000, 20]);
+  // Lisbon: no #7 until its buy-in is out; the Turbo flight gets no structure.
+  assert.ok(!LISBOA_NOV_2026.events.some((e) => e.number === 7 && !e.unnumbered));
+  assert.equal(LISBOA_NOV_2026.events.find((e) => e.id === '2-1E')!.stack, undefined);
 });

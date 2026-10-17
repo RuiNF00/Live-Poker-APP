@@ -1444,6 +1444,16 @@ const ptBR: Record<string, string> = {
   'Apagar torneio': 'Excluir torneio',
   'Adicionar torneio': 'Adicionar torneio',
   'Hora (local)': 'Horário (local)',
+  'São Paulo, novembro 2026': 'São Paulo, novembro de 2026',
+  'Torrelodones, novembro 2026': 'Torrelodones, novembro de 2026',
+  'Lisboa, novembro 2026': 'Lisboa, novembro de 2026',
+  'Peralada, novembro 2026': 'Peralada, novembro de 2026',
+  'Espinho, dezembro 2026': 'Espinho, dezembro de 2026',
+  'Praga, dezembro 2026': 'Praga, dezembro de 2026',
+  'O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.': 'O Dia 1B do #94, em 28 de novembro, ainda não tem horário publicado.',
+  'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': 'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.',
+  'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
+  'Evento principal de 7 a 13 de dezembro (€5.300). Evento principal de buy-in médio de 2 a 7 de dezembro (€1.650).': 'Evento principal de 7 a 13 de dezembro (€5.300). Evento principal de buy-in médio de 2 a 7 de dezembro (€1.650).',
 };
 
 export default ptBR;
