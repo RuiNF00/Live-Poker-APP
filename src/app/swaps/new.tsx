@@ -137,6 +137,7 @@ function NewSwap() {
       if (Platform.OS === 'web') {
         open();
         await Clipboard.setStringAsync(url);
+        notice(t('Link copiado'), url);
       } else if (sendsToWhatsapp()) {
         open();
         await sendWhatsapp(msg);
