@@ -32,13 +32,13 @@ export function sizePresets(hand: Hand, s: TableState): SizePreset[] {
     const unopened = s.currentBet <= bb;
     if (unopened) {
       const limpers = s.bets.filter((b, i) => b === bb && !s.folded[i]).length - 1;
-      for (const x of [2, 2.2, 2.5, 3]) add(`${x}x`, Math.round(x * bb + Math.max(0, limpers) * bb));
+      for (const x of [2.5, 3, 4]) add(`${x}x`, Math.round(x * bb + Math.max(0, limpers) * bb));
     } else {
-      for (const x of [2.5, 3, 3.5, 4]) add(`${x}x`, roundTo(x * s.currentBet, unit));
+      for (const x of [2.5, 3, 4]) add(`${x}x`, roundTo(x * s.currentBet, unit));
     }
   } else if (s.currentBet === 0) {
     const pot = totalPot(s);
-    for (const [label, f] of [['25%', 0.25], ['33%', 0.33], ['50%', 0.5], ['75%', 0.75], [t('Pote'), 1], ['150%', 1.5]] as const)
+    for (const [label, f] of [['⅓', 1 / 3], ['½', 0.5], ['⅔', 2 / 3], [t('Pote'), 1]] as const)
       add(label, roundTo(pot * f, unit));
   } else {
     for (const x of [2.5, 3, 4]) add(`${x}x`, roundTo(x * s.currentBet, unit));

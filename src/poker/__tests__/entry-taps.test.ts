@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTo } from '../entry';
-import { nextLevel } from '../factory';
+import { newHand, nextLevel } from '../factory';
 import type { Hand, HandAction } from '../types';
 
 function mk(heroPos: string, heroCards: string[], n = 9): Hand {
@@ -126,11 +126,11 @@ class Entry {
 test('the typical hand (open, call, c-bet, fold) stays within the goal of 12 taps', () => {
   for (const [caller, taps] of [['BTN', 11], ['BB', 12]] as const) {
     const e = new Entry('CO', ['Ah', 'Kd']);
-    e.size('2.2x');
+    e.size('2.5x');
     e.only(caller);
     e.board('Kc', '8d', '3s');
     if (caller === 'BB') e.act('check');
-    e.size('33%');
+    e.size('⅓');
     e.act('fold');
     const r = e.save();
     assert.equal(e.taps, taps, caller);
@@ -149,14 +149,14 @@ test('guardar rápido: position, cards and a voice note save the hand in 5 taps'
 test('single-raised pot: hero opens CO, BTN calls, c-bet called, gives up on the turn — 15 taps', () => {
   const e = new Entry('CO', ['As', 'Qd']);
   assert.equal(e.s.toAct, 0, 'folds to hero by themselves');
-  e.size('2.2x');
+  e.size('2.5x');
   e.only('BTN');
   e.board('Kh', '7c', '2d');
-  e.size('33%');
+  e.size('⅓');
   e.only('BTN');
   e.board('9s');
   e.act('check');
-  e.size('50%');
+  e.size('½');
   e.act('fold');
   const r = e.save();
   assert.equal(e.taps, 15);
@@ -172,7 +172,7 @@ test('3-bet pot: HJ opens, hero 3-bets on the BTN, HJ calls and folds the flop �
   e.only('HJ');
   e.board('Jh', '8c', '3d');
   e.act('check');
-  e.size('33%');
+  e.size('⅓');
   e.act('fold');
   const r = e.save();
   assert.equal(e.taps, 14);
@@ -192,7 +192,7 @@ test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 16 t
   assert.equal(e.s.folded.filter((f) => !f).length, 3);
   e.board('9h', '6c', '2h');
   e.skip('Hero');
-  e.size('50%');
+  e.size('½');
   e.only(null);
   const r = e.save();
   assert.equal(e.taps, 16);
@@ -225,12 +225,12 @@ test('hero in the BB: CO opens, hero defends, turn checks through, hero bets the
   e.act('call');
   e.board('Qd', '9s', '4c');
   e.act('check');
-  e.size('33%');
+  e.size('⅓');
   e.act('call');
   e.board('2h');
   e.checkAround();
   e.board('3s');
-  e.size('50%');
+  e.size('½');
   e.act('fold');
   const r = e.save();
   assert.equal(e.taps, 18);
@@ -240,13 +240,13 @@ test('hero in the BB: CO opens, hero defends, turn checks through, hero bets the
 test('after undo, a different line of the same length still folds to hero', () => {
   const e = new Entry('BTN', ['Ah', 'Qh']);
   e.entered('UTG+1');
-  e.size('2.2x');
+  e.size('2.5x');
   assert.equal(e.s.toAct, 0);
   e.undo(); // auto-folds after the open
   e.undo(); // the open
   e.undo(); // the rewind: back to the first auto-fold
   e.entered('UTG');
-  e.size('2.2x');
+  e.size('2.5x');
   assert.equal(e.s.toAct, 0);
   e.entered('UTG+1');
   e.act('call');
@@ -291,4 +291,11 @@ test('next level: blinds go up one step and the ante keeps its share', () => {
   assert.deepEqual(nextLevel(g), { ...g, sb: 150, bb: 300, ante: 300, level: 2 });
   assert.equal(nextLevel({ ...g, kind: 'cash' }), null);
   assert.equal(nextLevel({ ...g, sb: 20000, bb: 40000 }), null);
+});
+
+test('the next hand at the same table keeps the villains in their seats', () => {
+  const last = { ...mk('CO', ['As', 'Kd']), createdAt: Date.now() - 60_000 };
+  last.players = last.players.map((p, i) => (i === 3 ? { ...p, name: 'Zé' } : p));
+  assert.equal(newHand({ id: 'n', last }).players[3].name, 'Zé');
+  assert.equal(newHand({ id: 'n', last: { ...last, createdAt: Date.now() - 8 * 3600_000 } }).players[3].name, '', 'a different day starts empty');
 });
