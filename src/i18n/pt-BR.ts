@@ -1419,6 +1419,8 @@ const ptBR: Record<string, string> = {
   'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Card do mês para compartilhar: {h} h, {n} sessões.',
   'Últimas {n} sessões: {won} a ganhar, {lost} a perder.': 'Últimas {n} sessões: {won} no positivo, {lost} no negativo.',
   'Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.': 'Calendário das últimas 15 semanas: {n} dias jogados, {won} no positivo, {lost} no negativo.',
+  'Começar: {name}': 'Começar: {name}',
+  'Às {time}': 'Às {time}',
 };
 
 export default ptBR;

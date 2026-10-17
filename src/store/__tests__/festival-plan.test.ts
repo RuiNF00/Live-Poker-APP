@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, planReminders, planTotals, togglePicked } from '../festival-plan';
+import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, plannedNow, planReminders, planTotals, togglePicked } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -116,4 +116,22 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   const bagged = { id: 'w', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, endedAt: 2, bag: { stack: 120000, at: 2 }, breaks: [], buyIn: 10400, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 120000, stackLog: [], roster: [], notes: '' };
   const day2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
   assert.equal(eventAction(LV, { ...EMPTY_PLAN, sessions: { [wc[1].id]: 'w' } }, [bagged], day2)!.kind, 'resume');
+});
+
+test('plannedNow: the planned event from 2 h before its start until late reg closes', () => {
+  const a = venueTime(F, '2026-12-02T11:00');
+  const plan = { ...EMPTY_PLAN, picked: ['1-A', '1-B'] };
+  assert.equal(plannedNow(F, EMPTY_PLAN, [], a), null);
+  assert.equal(plannedNow(F, plan, [], a - 3 * 3_600_000), null);
+  assert.equal(plannedNow(F, plan, [], a - 3_600_000)!.e.id, '1-A');
+  // Default window 4 h after the start, or the late reg the player typed.
+  assert.equal(plannedNow(F, plan, [], a + 5 * 3_600_000)!.e.id, '1-B');
+  assert.equal(plannedNow(F, { ...plan, lateReg: { '1-A': 360 } }, [], a + 5 * 3_600_000)!.e.id, '1-A');
+  // Already running: nothing to start (the live session is on screen instead).
+  const running = { id: 'x', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: a, breaks: [], buyIn: 2750, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 60000, stackLog: [], roster: [], notes: '' };
+  assert.equal(plannedNow(F, { ...plan, sessions: { '1-A': 'x' } }, [running], a + 3_600_000), null);
+  // Busted in A: B is a re-entry.
+  const late = plannedNow(F, { ...plan, sessions: { '1-A': 'x' } }, [{ ...running, endedAt: a + 3_600_000 }], venueTime(F, '2026-12-02T16:00'));
+  assert.equal(late!.e.id, '1-B');
+  assert.equal(late!.action.kind, 'reenter');
 });

@@ -1,0 +1,66 @@
+// One tap from a planned festival event to a running session, from the
+// festival planner or the Sessão tab: a new session, a re-entry on a later
+// flight, or Day 2 picking up the bagged one.
+
+import { router } from 'expo-router';
+import { Alert, Platform } from 'react-native';
+
+import { t } from '@/i18n';
+import { eventTitle, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { getOffers, stakesFor } from '@/store/action-offer';
+import { eventAction, getPlan, updatePlan } from '@/store/festival-plan';
+import { reenterFlight, resumeDay } from '@/store/multi-day';
+import { useStore } from '@/store/store';
+import type { Session } from '@/store/types';
+
+import { blankSession } from './SessionForm';
+import { tap } from './ui';
+
+function sessionName(e: FestivalEvent) {
+  return eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
+}
+
+/** A running tournament session for a festival event, starting now. */
+function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
+  const now = Date.now();
+  const base = blankSession('mtt', f.currency, tableSize);
+  return {
+    ...base,
+    name: sessionName(e),
+    venue: `${f.venue}, ${t(f.city.split(',')[0])}`,
+    buyIn: e.buyIn,
+    bankrollId,
+    // Backers who bought a piece of this event through an action package.
+    stakes: stakesFor(getOffers(), f.id, e.id),
+    startedAt: now,
+    stackLog: [{ t: now, stack: base.stack, level: base.level }],
+  };
+}
+
+export function useStartEvent() {
+  const { sessions, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
+  return (f: Festival, e: FestivalEvent) => {
+    const plan = getPlan(f.id);
+    const a = eventAction(f, plan, sessions, e);
+    if (!a) return;
+    if (a.kind === 'view') return router.push('/session');
+    if (activeSession) {
+      const msg = t('Termina a sessão "{name}" antes de começar outra.', { name: activeSession.name || t('Sessão') });
+      if (Platform.OS === 'web') router.push('/session');
+      else Alert.alert(t('Já tens uma sessão a decorrer'), msg, [{ text: t('Ver sessão'), onPress: () => router.push('/session') }, { text: t('Cancelar'), style: 'cancel' }]);
+      return;
+    }
+    tap('medium');
+    // The bankroll in the festival's currency, if there is one.
+    const bankroll = bankrolls.find((b) => b.currency === f.currency) ?? defaultBankroll;
+    const s =
+      a.kind === 'resume'
+        ? resumeDay(a.session)
+        : a.kind === 'reenter'
+          ? reenterFlight(a.session, sessionName(e))
+          : sessionFromEvent(f, e, settings.defaultTableSize, bankroll.currency === f.currency ? bankroll.id : undefined);
+    saveSession(s);
+    updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(e.id) ? p.picked : [...p.picked, e.id], sessions: { ...p.sessions, [e.id]: s.id } }));
+    router.push('/session');
+  };
+}

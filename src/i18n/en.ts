@@ -3078,6 +3078,8 @@ const en: Record<string, string> = {
   'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Month card to share: {h} h, {n} sessions.',
   'Resultado por mês: {list}.': 'Result by month: {list}.',
   'Gráfico das quedas: agora no pico, no máximo −{max}.': 'Drawdown chart: at the peak now, at most −{max}.',
+  'Começar: {name}': 'Start: {name}',
+  'Às {time}': 'At {time}',
 };
 
 export default en;
