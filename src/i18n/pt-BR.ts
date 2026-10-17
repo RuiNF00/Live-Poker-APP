@@ -1419,6 +1419,10 @@ const ptBR: Record<string, string> = {
   'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Card do mês para compartilhar: {h} h, {n} sessões.',
   'Últimas {n} sessões: {won} a ganhar, {lost} a perder.': 'Últimas {n} sessões: {won} no positivo, {lost} no negativo.',
   'Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.': 'Calendário das últimas 15 semanas: {n} dias jogados, {won} no positivo, {lost} no negativo.',
+  'Sticker Sondagem aqui': 'Figurinha Enquete aqui',
+  'Junta a sondagem': 'Adicione a enquete',
+  'No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.': 'No Instagram, coloque a figurinha Enquete no espaço vazio com {options}. Depois publique o story Resultado ou deixe o link para verem o que você fez.',
+  'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
 };
 
 export default ptBR;
