@@ -842,6 +842,7 @@ const ptBR: Record<string, string> = {
   'Neste telemóvel, na nuvem e nos links públicos': 'Neste celular, na nuvem e nos links públicos',
   'Replayer e partilha por link': 'Replayer e compartilhamento por link',
   'Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.': 'Desativado, o widget mostra ••• em vez do resultado da semana. Sua tela inicial fica visível na mesa.',
+  'Desligado, mostra •••: o ecrã principal vê-se à mesa.': 'Desativado, mostra •••: a tela inicial aparece na mesa.',
   'Regista um torneio': 'Registre um torneio',
   'Escolhe os torneios do próximo festival': 'Escolha os torneios do próximo festival',
   'O teu Pro está ativo nesta conta da loja.': 'Seu Pro está ativo nesta conta da loja.',

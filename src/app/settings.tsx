@@ -14,7 +14,7 @@ import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
-import { Button, Card, Chip, ChipRow, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
+import { Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
@@ -143,11 +143,12 @@ export default function SettingsScreen() {
             <Field label={t('O teu nome nos comentários')} value={settings.nickname} onChangeText={(nickname) => setSettings({ nickname: nickname.slice(0, 40) })} placeholder={t('Ex.: Rui')} />
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Moeda')}</T>
-              <ChipRow>
+              {/* Wraps instead of scrolling sideways: at large text a scroller hides the last ones. */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
                 {CURRENCIES.map((c) => (
                   <Chip key={c} label={c} active={settings.currency === c} onPress={() => setSettings({ currency: c })} style={{ minWidth: 48 }} />
                 ))}
-              </ChipRow>
+              </View>
             </View>
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Jogadores na mesa')}</T>
@@ -172,7 +173,7 @@ export default function SettingsScreen() {
         <Section title={t('Privacidade')}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
-            <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
+            <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
             {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>

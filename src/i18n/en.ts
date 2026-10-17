@@ -1930,6 +1930,7 @@ const en: Record<string, string> = {
   'Recomeça daqui a 2 min. Retoma a sessão.': 'Play restarts in 2 min. Resume the session.',
   'Mostrar o resultado no widget': 'Show the result on the widget',
   'Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.': "Off, the widget shows ••• instead of the week's result. Your home screen is seen at the table.",
+  'Desligado, mostra •••: o ecrã principal vê-se à mesa.': 'Off, it shows •••: people at the table can see your home screen.',
   'Exemplo': 'Example',
   'Top {n}': 'Top {n}',
   'Cash 1/2 a 2/5': 'Cash 1/2 to 2/5',

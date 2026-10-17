@@ -1828,6 +1828,7 @@ const es: Record<string, string> = {
   'Sessão a decorrer': 'Sesión en curso',
   'Mostrar o resultado no widget': 'Mostrar el resultado en el widget',
   'Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.': 'Desactivado, el widget muestra ••• en lugar del resultado de la semana. Tu pantalla de inicio se ve en la mesa.',
+  'Desligado, mostra •••: o ecrã principal vê-se à mesa.': 'Desactivado, muestra •••: la pantalla de inicio se ve en la mesa.',
   'Exemplo': 'Ejemplo',
   'Top {n}': 'Top {n}',
   'Cash 1/2 a 2/5': 'Cash 1/2 a 2/5',
