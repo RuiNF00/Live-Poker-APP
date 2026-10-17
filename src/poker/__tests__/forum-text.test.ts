@@ -108,3 +108,19 @@ test('live extras: straddles, button ante and bomb pots show in the header', () 
   assert.ok(!bomb.includes('Preflop'), bomb);
   assert.ok(bomb.includes('Flop (30 bb): Qd 8h 3h\nSB checks'), bomb);
 });
+
+test('run it twice: each board with the half it paid', () => {
+  const h = mk({
+    players: [
+      { name: 'Rui', stack: 1000, cards: ['As', 'Ad'] },
+      { name: '', stack: 1000 },
+      { name: '', stack: 1000, cards: ['Kh', 'Kc'] },
+      { name: '', stack: 1000 }, { name: '', stack: 1000 }, { name: '', stack: 1000 },
+    ],
+    actions: [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'raise', to: 1000 }, { p: 1, kind: 'fold' }, { p: 2, kind: 'call' }],
+    board: ['2c', '7d', '9s', 'Jh', '3c'],
+    board2: ['Ks', '4h', '8d', 'Qc', '5s'],
+  });
+  const txt = forumText(h);
+  assert.ok(txt.endsWith('BB shows Kh Kc\nRun it twice\n1st run: 2c 7d 9s Jh 3c · Hero wins 500.5 bb\n2nd run: Ks 4h 8d Qc 5s · BB wins 500 bb'), txt);
+});
