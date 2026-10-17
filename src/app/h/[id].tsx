@@ -37,7 +37,7 @@ export default function SharedHand() {
   const [err, setErr] = useState(false);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
-  const { hands, settings } = useStore();
+  const { hands, settings, setSettings } = useStore();
   const mine = !!id && hands.some((h) => h.shareId === id);
   const { friends } = useSharedHands();
   const listed = !!id && friends.some((f) => f.id === id);
@@ -101,6 +101,8 @@ export default function SharedHand() {
           <Replayer
             source="shared"
             hand={hand}
+            initialInBB={settings.inBB}
+            onInBB={(inBB) => setSettings({ inBB })}
             autoPlay={!seek}
             seek={seek}
             onStreet={setStreet}

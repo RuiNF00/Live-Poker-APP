@@ -239,3 +239,6 @@ export function useFestivalPlans(): Plans {
     () => plans,
   );
 }
+
+/** Same as useFestivalPlans (the swap suggestions use this name). */
+export const usePlans = useFestivalPlans;

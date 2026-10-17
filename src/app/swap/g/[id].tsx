@@ -10,7 +10,7 @@ import { ActivityIndicator, Alert, AppState, Platform, Pressable, Share, View } 
 
 import { GroupEntryRow, GroupEntrySheet, GroupHero, GroupSettle, seatLabel, type GroupDraft } from '@/components/swaps/group-parts';
 import { useLocked } from '@/components/ProGate';
-import { AccountsLocked, pctLabel, useSettledReview } from '@/components/swaps/parts';
+import { AccountsLocked, PAIR, pctLabel, useSettledReview } from '@/components/swaps/parts';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -129,7 +129,7 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
               ))}
             </ChipRow>
           </Section>
-          <Button
+          <Button lines={2}
             title={busy ? t('A entrar…') : pick === null ? t('Escolhe o teu nome') : t('Entrar como {name}', { name: remote.seats.find((s) => s.seat === pick)?.name ?? '' })}
             icon="checkmark-circle-outline"
             disabled={pick === null || busy}
@@ -243,7 +243,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
                 <T v="small">{t('Nada conta até estarem todos. Envia o link para o grupo: cada um toca no seu nome.')}</T>
               </View>
             </Row>
-            {g.invite ? <Button size="md" title={t('Enviar o link do grupo')} icon="share-outline" onPress={share} /> : null}
+            {g.invite ? <Button lines={2} size="md" title={t('Enviar o link do grupo')} icon="share-outline" onPress={share} /> : null}
           </Card>
         ) : null}
 
@@ -254,9 +254,9 @@ function OwnGroup({ g }: { g: SwapGroup }) {
         ) : null}
 
         {ready && !g.gone && !someoneLeft ? (
-          <Row gap={S.sm}>
-            <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
-            <Button title={t('Paguei')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
+          <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+            <Button lines={2} title={t('Cobrei')} icon="trophy-outline" style={PAIR} onPress={() => setSheet('result')} />
+            <Button lines={2} title={t('Paguei')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('payment')} />
           </Row>
         ) : null}
 
@@ -295,10 +295,10 @@ function OwnGroup({ g }: { g: SwapGroup }) {
                 accessibilityHint={releasable(s) ? t('Mantém premido para tirar do grupo') : undefined}>
                 <Row gap={S.md} style={{ paddingVertical: S.md, paddingHorizontal: S.lg, alignItems: 'center', minHeight: 44 }}>
                   <Ionicons name={s.confirmedAt ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={s.confirmedAt ? C.good : C.muted} />
-                  <T v="body" style={{ flex: 1 }}>
-                    {seatLabel(g, s.seat)}
-                  </T>
-                  <T v="small">{s.confirmedAt ? `${shortDate(s.confirmedAt)}, ${timeOf(s.confirmedAt)}` : t('Por entrar')}</T>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T v="body">{seatLabel(g, s.seat)}</T>
+                    <T v="small">{s.confirmedAt ? `${shortDate(s.confirmedAt)}, ${timeOf(s.confirmedAt)}` : t('Por entrar')}</T>
+                  </View>
                 </Row>
               </Pressable>
             ))}
@@ -338,9 +338,9 @@ function OwnGroup({ g }: { g: SwapGroup }) {
         ) : null}
 
         <View style={{ gap: S.sm, marginTop: S.md }}>
-          {ready && g.invite && !g.gone && !locked ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
+          {ready && g.invite && !g.gone && !locked ? <Button lines={2} title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
           {ready ? (
-            <Button
+            <Button lines={2}
               title={g.archived ? t('Tirar do arquivo') : t('Arquivar')}
               kind="ghost"
               size="md"
@@ -351,7 +351,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
               }}
             />
           ) : null}
-          <Button
+          <Button lines={2}
             title={creator && !g.gone ? t('Apagar para todos') : t('Sair do grupo')}
             kind="danger"
             size="md"

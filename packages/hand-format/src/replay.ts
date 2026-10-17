@@ -375,7 +375,13 @@ export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null
       const runAmount = parts[k];
       const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
       const top = Math.max(...scored.map((x) => x.score));
-      const best = scored.filter((x) => x.score === top);
+      let best = scored.filter((x) => x.score === top);
+      // Picked winners (no cards) name who won something, not which pot: one all-in for exactly
+      // this level can only have won here, so it takes this pot; a deeper picked winner won a side pot.
+      if (top === Number.MAX_SAFE_INTEGER && best.length > 1) {
+        const last = best.filter((b) => eligible.find((e) => e.seat === b.seat)!.invested === level);
+        if (last.length) best = last;
+      }
       const shares = splitChips(runAmount, best.length);
       best.forEach((b, i) => won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + shares[i]));
     });

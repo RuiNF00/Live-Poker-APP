@@ -24,7 +24,7 @@ import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { MonthRecapSync } from '@/lib/month-recap';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { TrialFollowUp } from '@/components/TrialFollowUp';
-import { Button, Empty } from '@/components/ui';
+import { Button, Empty, KeyboardDoneBar } from '@/components/ui';
 import { t } from '@/i18n';
 import { track, watchResume } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
@@ -92,6 +92,7 @@ export default function RootLayout() {
           <SettleReminder />
           <NotifyPolicySync />
           <ReviewSync />
+          <KeyboardDoneBar />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },

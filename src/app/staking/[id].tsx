@@ -352,6 +352,13 @@ function BackerScreen() {
       <PackageSheet
         pkg={pkg}
         suggestName={trip ? trip.name || trip.venue : undefined}
+        balance={
+          square
+            ? null
+            : l.balance > 0
+              ? t('Deves {amount} a {name}.', { amount: money(l.balance, cur), name: backer.name })
+              : t('{name} deve-te {amount}.', { amount: money(-l.balance, cur), name: backer.name })
+        }
         makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {

@@ -8,6 +8,8 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert,
+  InputAccessoryView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -198,6 +200,7 @@ export function Screen({
   children,
   scroll = true,
   contentStyle,
+  scrollRef,
   ...rest
 }: {
   title?: React.ReactNode;
@@ -206,6 +209,8 @@ export function Screen({
   children: React.ReactNode;
   scroll?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  /** To scroll to a part of the screen that just opened (the end-of-session form). */
+  scrollRef?: React.Ref<React.ComponentRef<typeof ScrollView>>;
 } & Omit<ScrollViewProps, 'children' | 'contentContainerStyle'>) {
   const insets = useSafeAreaInsets();
   if (!scroll)
@@ -216,10 +221,13 @@ export function Screen({
     );
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: C.bg }}
       contentContainerStyle={[{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: 48, gap: S.xl }, contentStyle]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
+      // iOS: the field being typed in scrolls above the keyboard instead of hiding under it.
+      automaticallyAdjustKeyboardInsets
       {...rest}>
       {title !== undefined ? <ScreenHeader title={title} eyebrow={eyebrow} right={right} /> : null}
       {children}
@@ -909,8 +917,21 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
   );
 }
 
+/** iOS number pads have no return key: one "OK" bar above them, mounted once in the root layout. */
+export const KEYBOARD_DONE_ID = 'sweatbook-keyboard-done';
+export function KeyboardDoneBar() {
+  if (Platform.OS !== 'ios') return null;
+  return (
+    <InputAccessoryView nativeID={KEYBOARD_DONE_ID}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', backgroundColor: C.surface2, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.border, paddingHorizontal: S.sm, paddingVertical: 4 }}>
+        <Button kind="plain" size="sm" title="OK" haptic={false} onPress={() => Keyboard.dismiss()} />
+      </View>
+    </InputAccessoryView>
+  );
+}
+
 /** Whole-number field: chips, money, places. */
-export function NumField({ label, value, onChange, suffix }: { label: string; value: number; onChange: (n: number) => void; suffix?: string }) {
+export function NumField({ label, value, onChange, suffix, autoFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean }) {
   return (
     <Field
       label={label}
@@ -918,13 +939,15 @@ export function NumField({ label, value, onChange, suffix }: { label: string; va
       value={value ? String(value) : ''}
       onChangeText={(x) => onChange(parseInt(x.replace(/\D/g, ''), 10) || 0)}
       keyboardType="number-pad"
+      inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_DONE_ID : undefined}
+      autoFocus={autoFocus}
       placeholder={suffix ? `0 ${suffix}` : '0'}
       inputStyle={{ fontFamily: F.mono, fontVariant: ['tabular-nums'] }}
     />
   );
 }
 
-export function SearchField({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle> }) {
+export function SearchField({ value, onChange, placeholder, style, autoFocus }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle>; autoFocus?: boolean }) {
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.md, paddingHorizontal: 12, borderWidth: 1, borderColor: C.fieldBorder, minHeight: 44, gap: 8 }, style]}>
       <Ionicons name="search" size={17} color={C.muted} />
@@ -932,6 +955,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         maxFontSizeMultiplier={CONTROL_SCALE}
         placeholderTextColor={C.muted}
         selectionColor={C.accent}

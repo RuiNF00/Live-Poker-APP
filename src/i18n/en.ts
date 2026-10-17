@@ -2356,6 +2356,13 @@ const en: Record<string, string> = {
   'dás': 'you give',
   '{from} paga a {to}': '{from} pays {to}',
   '{from} paga-te': '{from} pays you',
+  'Sem rede: cria quando houver sinal': 'No signal: it\'s created when you\'re back online',
+  'Mesmo grupo da última vez': 'Same group as last time',
+  'Pagas {amount} a {to}': 'You pay {to} {amount}',
+  '{from} paga-te {amount}': '{from} pays you {amount}',
+  'Fazer um swap': 'Make a swap',
+  'Com este torneio já preenchido': 'With this tournament already filled in',
+  'Swaps neste torneio': 'Swaps in this tournament',
   'Pagas a {to}': 'You pay {to}',
   '{from} pagou a {to}': '{from} paid {to}',
   '{name} cobrou {amount}: a tua parte é {owed}.': '{name} cashed {amount}: your share is {owed}.',
@@ -3091,6 +3098,10 @@ const en: Record<string, string> = {
   'Ex.: Main Event': 'E.g. Main Event',
   'Hora (local)': 'Time (local)',
   'Níveis (opcional)': 'Levels (optional)',
+  'Próxima mão': 'Next hand',
+  '−1 órbita': '−1 orbit',
+  'Mais detalhes': 'More details',
+  'Menos detalhes': 'Fewer details',
 };
 
 export default en;
