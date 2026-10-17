@@ -2,7 +2,11 @@ import { useMemo } from 'react';
 
 import { t } from '@/i18n';
 import { useRates } from '@/lib/fx';
+import { FESTIVALS } from '@/poker/festivals';
 import { money } from '@/poker/format';
+import { pendingCost, useOffers } from '@/store/action-offer';
+import { getPlan } from '@/store/festival-plan';
+import { rate } from '@/store/fx-math';
 import { backerLedger, packageStates, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
 import { useStore } from '@/store/store';
 import { C } from '@/theme';
@@ -20,14 +24,30 @@ export function useStaking() {
     return other.length ? Math.min(...other.map((s) => s.startedAt)) : null;
   }, [sessions, home]);
   const table = useRates(since);
+  const offers = useOffers();
   return useMemo(() => {
     const pk = packageStates(sessions, packages);
     const manual = settings.fxManual ?? {};
     const fx = { table, fallback: home, manual };
     const ledgers = new Map<string, BackerLedger>(backers.map((b) => [b.id, backerLedger(b.id, sessions, packages, payments, pk, fx)]));
+    // Festival action not paid for yet, for events no session carries yet: the backer owes it already.
+    for (const o of offers) {
+      const f = FESTIVALS.find((x) => x.id === o.festivalId);
+      if (!f) continue;
+      const started = getPlan(f.id).sessions;
+      for (const line of o.lines) {
+        const l = ledgers.get(line.backerId);
+        const due = l ? pendingCost(f, o, line, started) : 0;
+        if (!l || !due) continue;
+        if (!l.rows.length) l.currency = f.currency;
+        const k = rate(table, f.currency, l.currency, o.createdAt, manual) ?? 1;
+        l.unpaid += due * k;
+        l.balance -= due * k;
+      }
+    }
     const totals = stakingTotals([...ledgers.values()], home, table, manual);
     return { pk, ledgers, totals };
-  }, [sessions, packages, payments, backers, table, home, settings.fxManual]);
+  }, [sessions, packages, payments, backers, offers, table, home, settings.fxManual]);
 }
 
 /** A total that may be split across currencies: "1 200€" or "300€ + 14 508$". */

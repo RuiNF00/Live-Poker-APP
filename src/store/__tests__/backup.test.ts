@@ -25,6 +25,11 @@ test('rejects other files and drops broken items', () => {
   assert.deepEqual([b.hands.length, b.sessions.length, b.players.length], [0, 1, 1]);
 });
 
+test('a session without breaks gets an empty list, so the time sums do not crash', () => {
+  const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, sessions: [{ id: 'a', startedAt: 1, endedAt: 3_600_001 }, { id: 'b', startedAt: 2, breaks: 'x' }] }));
+  assert.deepEqual(b.sessions.map((s) => s.breaks), [[], []]);
+});
+
 test('merge keeps the newer copy and counts new items', () => {
   const r = mergeById([{ id: 'a', updatedAt: 5, v: 'local' }, { id: 'b', updatedAt: 9, v: 'local' }], [{ id: 'a', updatedAt: 7, v: 'in' }, { id: 'b', updatedAt: 1, v: 'in' }, { id: 'c', v: 'in' }]);
   assert.equal(r.added, 1);

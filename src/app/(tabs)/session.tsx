@@ -10,6 +10,7 @@ import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Vi
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
+import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
@@ -149,7 +150,23 @@ export default function SessionScreen() {
       </Screen>
       {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
       <View style={styles.thumbBar}>
-        <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+        {/* A bagged day waiting comes first: one tap on the big button must not buy in a second time. */}
+        {bagged[0] ? (
+          <>
+            <Button title={t('Nova sessão')} kind="secondary" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+            <Button
+              title={t('Dia {n}', { n: dayOf(bagged[0]) + 1 }) + ' · ' + (bagged[0].name || t('Torneio'))}
+              icon="play"
+              onPress={() => {
+                tap('success');
+                saveSession(resumeDay(bagged[0]));
+              }}
+              style={{ flex: 1.6 }}
+            />
+          </>
+        ) : (
+          <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+        )}
       </View>
     </View>
   );
@@ -233,6 +250,8 @@ function Live({ s }: { s: Session }) {
           <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
         </Card>
 
+        <StopLossBanner s={s} />
+
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
           <Card onPress={() => setPad('stack')} style={{ flex: 1, gap: 4 }} accessibilityLabel={t('Atualizar stack')}>
@@ -267,6 +286,12 @@ function Live({ s }: { s: Session }) {
             </Pressable>
           </Card>
         </Row>
+
+        {mtt ? (
+          <ListGroup>
+            <ListItem icon="trophy-outline" iconColor={C.accent} title={t('Modo torneio')} subtitle={t('Estrutura, relógio sincronizado, prémios e deal')} onPress={() => router.push('/tournament')} chevron />
+          </ListGroup>
+        ) : null}
 
         {s.stackLog.length > 1 && (
           <Section title={t('Stack ao longo da sessão')}>
@@ -320,6 +345,10 @@ function Live({ s }: { s: Session }) {
                 <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
                 {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                 {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
+              </Row>
+              <Row gap={S.sm}>
+                <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => save({ tips: tips || undefined })} />
+                <NumField label={t('Mãos jogadas')} value={s.handsDealt ?? 0} onChange={(handsDealt) => save({ handsDealt: handsDealt || undefined })} />
               </Row>
               <View style={{ gap: S.sm }}>
                 <T v="label">{t('Como correu')}</T>

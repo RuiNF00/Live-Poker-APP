@@ -59,6 +59,14 @@ export async function fetchHand(id: string): Promise<Hand> {
   return (j.hand ?? j) as Hand;
 }
 
+/** How many times the shared page was opened. */
+export async function fetchViews(id: string): Promise<number> {
+  const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error('fetch ' + res.status);
+  const j = (await res.json()) as { views?: number };
+  return typeof j.views === 'number' ? j.views : 0;
+}
+
 export async function fetchComments(id: string): Promise<Comment[]> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/comments`);
   if (!res.ok) return [];

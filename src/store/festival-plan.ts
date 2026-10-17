@@ -81,8 +81,9 @@ export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[]
 function day2Takes(f: Festival, plan: FestivalPlan, e: FestivalEvent, s: Session): boolean {
   const from = e.flight?.slice(1) ?? '';
   if (!from) return true;
-  const bagged = f.events.filter((x) => x.number === e.number && !x.day2 && plan.sessions[x.id] === s.id).map((x) => x.flight ?? '');
-  return !bagged.length || bagged.some((fl) => from.includes(fl));
+  // After a re-entry every flight played maps to the session: it bagged in the last one.
+  const last = f.events.filter((x) => x.number === e.number && !x.day2 && plan.sessions[x.id] === s.id).sort((a, b) => venueTime(f, b.start) - venueTime(f, a.start))[0];
+  return !last || from.includes(last.flight ?? '');
 }
 
 export interface PlanReminder {

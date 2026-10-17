@@ -1,7 +1,7 @@
 // Swap history: what swaps won or cost, per partner and per series, and how much they evened
 // out results. One number and a verdict first; the detail after. Only once there's enough data.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack } from 'expo-router';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';

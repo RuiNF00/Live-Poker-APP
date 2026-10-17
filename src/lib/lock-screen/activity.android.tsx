@@ -10,6 +10,7 @@ import { background, cornerRadius, fillMaxWidth, padding, paddingAll } from '@ex
 import { createCustomNotification } from 'expo-widgets';
 
 import type { LiveProps } from './live-state';
+import { notificationChannels, SESSION_CHANNEL } from './reminder';
 
 const ID = 'sweatbook-session';
 
@@ -57,8 +58,10 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
 
 /** Show or refresh the session notification. Throws when notifications are off. */
 export async function showSession(props: LiveProps): Promise<void> {
+  await notificationChannels();
   await SessionNotification.post(props, {
     id: ID,
+    channelId: SESSION_CHANNEL,
     ongoing: true,
     alertOnlyOnce: true,
     title: props.title,

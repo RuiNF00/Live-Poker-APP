@@ -1,6 +1,6 @@
 // Pieces of the group swap screens: where I stand, and the fewest payments that settle everyone.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 

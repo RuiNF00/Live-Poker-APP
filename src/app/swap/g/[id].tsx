@@ -2,7 +2,7 @@
 // who pays whom, the prizes and payments, and buttons to add yours. The group link (with its
 // invite): pick your name to take your seat.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';

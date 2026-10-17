@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { brand } from '@/config/brand';
+import { pickLocale } from '@/lib/i18n';
 import localFont from 'next/font/local';
 import './globals.css';
 
@@ -36,9 +38,11 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Same choice the pages make from Accept-Language, so screen readers and translators get the right language.
+  const lang = pickLocale((await headers()).get('accept-language'));
   return (
-    <html lang="pt" className={`${body.variable} ${mono.variable}`}>
+    <html lang={lang === 'pt' ? 'pt-PT' : lang} className={`${body.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

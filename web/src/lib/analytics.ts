@@ -2,13 +2,16 @@
 // own app_events table; when POSTHOG_KEY is set, the events route also
 // forwards a copy to PostHog (EU by default). Without the key this does
 // nothing. The copy carries no personal data: the random install id, the
-// event and its small props, with free text dropped. It is sent from the
+// event and its small props, with free text and content ids dropped. It is sent from the
 // server, so the player's IP address never reaches PostHog.
 
 import type { AppEvent } from './store';
 
-/** Props that may hold something the player typed. Kept in our table only. */
-const FREE_TEXT = new Set(['note']);
+/**
+ * Kept in our own table only: anything the player typed (the cancel note), and
+ * ids that point at a person's content or invite (Security, 17 Oct).
+ */
+const PRIVATE = new Set(['note', 'share_id', 'shareId', 'ref', 'live_id', 'liveId', 'handle']);
 
 export interface AnalyticsProvider {
   capture(e: AppEvent): Promise<void>;
@@ -17,7 +20,7 @@ export interface AnalyticsProvider {
 export function posthog(key: string, host = 'https://eu.i.posthog.com'): AnalyticsProvider {
   return {
     async capture(e) {
-      const props = Object.fromEntries(Object.entries(e.props).filter(([k]) => !FREE_TEXT.has(k)));
+      const props = Object.fromEntries(Object.entries(e.props).filter(([k]) => !PRIVATE.has(k)));
       await fetch(`${host.replace(/\/$/, '')}/i/v0/e/`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

@@ -15,7 +15,7 @@ import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
 import { Button, Card, Chip, ChipRow, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
-import { LANG_KEY, lang, t } from '@/i18n';
+import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
@@ -31,8 +31,12 @@ function note(title: string, body?: string) {
 }
 
 /** What support needs to reproduce a bug, and nothing about the player. */
-function bugParams() {
-  return new URLSearchParams({ topic: 'bug', app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang }).toString();
+// The help centre in each app language (web /ajuda, /pt-br/ajuda, /es/ayuda, /help).
+const HELP_PATH: Record<Variant, string> = { 'pt-PT': 'ajuda', 'pt-BR': 'pt-br/ajuda', es: 'es/ayuda', en: 'help' };
+
+function supportParams(topic?: 'bug' | 'suggestion') {
+  const p: Record<string, string> = { app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang: variant };
+  return new URLSearchParams(topic ? { topic, ...p } : p).toString();
 }
 
 /**
@@ -45,7 +49,8 @@ function switchLanguage() {
     return;
   }
   try {
-    localStorage.setItem(LANG_KEY, lang === 'pt' ? 'en' : 'pt');
+    // Web has no system per-app language: each tap moves to the next one.
+    localStorage.setItem(LANG_KEY, VARIANTS[(VARIANTS.indexOf(variant) + 1) % VARIANTS.length]);
     location.reload();
   } catch {
     // Storage blocked: nothing to remember the choice in.
@@ -141,7 +146,8 @@ export default function SettingsScreen() {
           </Card>
           <ListGroup>
             <ToggleItem icon="calculator-outline" title={t('Valores em big blinds')} subtitle={t('Nas mãos, em vez de fichas')} value={settings.inBB} onChange={(inBB) => setSettings({ inBB })} />
-            <ListItem icon="language-outline" title={t('Idioma')} subtitle={lang === 'pt' ? 'Português' : 'English'} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
+            <ToggleItem icon="phone-portrait-outline" title={t('Vibração')} subtitle={t('Só quando conta: guardar uma mão, fechar uma sessão')} value={settings.haptics !== false} onChange={(haptics) => setSettings({ haptics })} />
+            <ListItem icon="language-outline" title={t('Idioma')} subtitle={VARIANT_NAME[variant]} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
           </ListGroup>
         </Section>
 
@@ -172,6 +178,7 @@ export default function SettingsScreen() {
         <Section title={t('Ferramentas')}>
           <ListGroup>
             <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
+            <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
             <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
             <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
             <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
@@ -203,9 +210,10 @@ export default function SettingsScreen() {
 
         <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
           <ListGroup>
-            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?topic=suggestion`)} />
-            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${bugParams()}`)} />
-            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
+            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams('suggestion')}`)} />
+            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams('bug')}`)} />
+            <ListItem icon="book-outline" title={t('Ajuda')} subtitle={t('Respostas às dúvidas mais comuns')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/${HELP_PATH[variant]}`)} />
+            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams()}`)} />
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />

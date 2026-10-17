@@ -65,11 +65,12 @@ test('a busted player is replaced by a new one', () => {
 });
 
 test('in a session, the last hand of that session carries over, whatever its age', () => {
-  const session = { id: 's1', kind: 'cash', name: 'Casino', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', tableSize: 9, stack: 200, roster: [] } as unknown as Session;
+  // Saving a hand writes its table size and hero's end stack to the session.
+  const session = { id: 's1', kind: 'cash', name: 'Casino', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', tableSize: 6, stack: 208, roster: [] } as unknown as Session;
   const last = played({ sessionId: 's1', createdAt: Date.now() - 10 * 3600_000 });
   assert.ok(sameTable(last, session));
   const next = newHand({ id: 'n', session, last });
-  assert.equal(next.players.length, 6, 'the table as it was, not the session default');
+  assert.equal(next.players.length, 6, 'the table as it was');
   assert.equal(next.players[4].name, 'Rui');
   assert.equal(next.button, 1);
   assert.equal(next.sessionId, 's1');
@@ -98,4 +99,19 @@ test('someone sitting down on the left of a seat, and two players swapping seats
   assert.equal(sw.players[2].name, 'Rui');
   assert.equal(sw.players[4].name, 'Zé');
   assert.equal(sw.players[4].playerId, 'pl_ze');
+});
+
+test("QA: hero's stack comes from the session screen when it was corrected there", () => {
+  const session = { id: 's1', kind: 'cash', name: 'Casino', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', tableSize: 6, stack: 500, roster: [] } as unknown as Session;
+  const last = played({ sessionId: 's1' });
+  const next = newHand({ id: 'n', session, last });
+  assert.equal(next.players[0].stack, 500);
+  assert.equal(next.players[2].name, 'Zé', 'the others still carry over');
+});
+
+test('QA: changing the table size on the session starts a new table', () => {
+  const session = { id: 's1', kind: 'cash', name: 'Casino', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', tableSize: 9, stack: 200, roster: [] } as unknown as Session;
+  const last = played({ sessionId: 's1' });
+  assert.equal(sameTable(last, session), false);
+  assert.equal(newHand({ id: 'n', session, last }).players.length, 9);
 });

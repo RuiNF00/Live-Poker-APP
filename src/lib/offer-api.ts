@@ -45,7 +45,7 @@ export async function updateAgreement(remote: { id: string; token: string }, off
 
 /** When the backer confirmed (ISO), or null. */
 export async function fetchConfirmation(remote: { id: string }): Promise<string | null> {
-  const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { headers: { 'cache-control': 'no-cache' } })).json()) as { confirmedAt?: unknown };
+  const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { cache: 'no-store' })).json()) as { confirmedAt?: unknown };
   return typeof j.confirmedAt === 'string' ? j.confirmedAt : null;
 }
 

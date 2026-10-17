@@ -33,7 +33,8 @@
       },
       "ios": {
         "image": "latest"
-      }
+      },
+      "environment": "production"
     },
     "testflight": {
       "extends": "production",
@@ -44,7 +45,8 @@
       },
       "env": {
         "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker"
-      }
+      },
+      "environment": "production"
     }
   },
   "submit": {

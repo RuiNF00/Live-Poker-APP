@@ -23,11 +23,13 @@ const SAME_TABLE_MS = 6 * 3600 * 1000;
 
 /**
  * The last hand was at this same table: same session (or, outside a session,
- * a few hours ago) and hero in seat 0. Its players, stacks and button carry over.
+ * a few hours ago), same table size and hero in seat 0. Its players, stacks and
+ * button carry over.
  */
 export function sameTable(last: Hand | null | undefined, session?: Session | null): last is Hand {
   if (!last || last.hero !== 0) return false;
-  if (session) return last.sessionId === session.id;
+  // A table-size change on the session means a new table.
+  if (session) return last.sessionId === session.id && last.players.length === session.tableSize;
   return !last.sessionId && Date.now() - last.createdAt < SAME_TABLE_MS;
 }
 
@@ -92,6 +94,9 @@ export function newHand(opts: {
     const ends = endStacks(last);
     players = last.players.map((p, i) => (ends[i] > 0 ? { name: p.name, stack: ends[i], ...(p.playerId ? { playerId: p.playerId } : {}) } : { name: '', stack: i === 0 ? fresh : p.stack }));
     button = (last.button + 1) % last.players.length;
+    // Hero's stack on the session screen is the latest word (saving a hand
+    // writes it there too, and the player may have corrected it since).
+    if (session && session.stack > 0) players[0] = { ...players[0], stack: session.stack };
   }
   const now = Date.now();
   return {

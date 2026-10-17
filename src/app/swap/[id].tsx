@@ -11,6 +11,7 @@ import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react
 import { BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
 import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
@@ -30,6 +31,7 @@ export default function SwapScreen() {
   useEffect(() => {
     if (!id) return;
     track('link_opened', { kind: 'swap' });
+    noteSource('swap');
     if (r) claimInvite(String(r), 'share');
   }, [id, r]);
 

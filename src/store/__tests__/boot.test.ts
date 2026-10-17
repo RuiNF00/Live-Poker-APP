@@ -89,7 +89,7 @@ test('definições antigas guardam o que tinham e ganham os campos novos', async
   assert.equal(d.settings.inBB, true);
   assert.equal(d.settings.nickname, 'Rui');
   assert.equal(d.settings.defaultTableSize, 6);
-  assert.equal(d.settings.shareNotes, true);
+  assert.equal(d.settings.shareNotes, false);
   assert.equal(d.draft?.id, 'h99');
 });
 

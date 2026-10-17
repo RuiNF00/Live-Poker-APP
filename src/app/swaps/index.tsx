@@ -1,7 +1,7 @@
 // Swaps: percentages swapped with other players, each confirmed by both through a link,
 // and where you stand with each of them.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';

@@ -15,6 +15,8 @@ const ID = 'sweatbook-level-up';
 const CHANNEL = 'level-up';
 /** Opened when the reminder is tapped: the session screen, where the level goes up. */
 export const LEVEL_UP_URL = 'sweatbook://session';
+/** Android channel of the ongoing session notification. */
+export const SESSION_CHANNEL = 'session';
 
 export type N = typeof import('expo-notifications');
 let mod: N | null | undefined;
@@ -41,9 +43,17 @@ export function setup(n: N) {
     });
     if (Platform.OS === 'android') {
       await n.setNotificationChannelAsync(CHANNEL, { name: t('Subida de nível'), importance: n.AndroidImportance.HIGH, vibrationPattern: [0, 250, 150, 250] });
+      // The running session: quiet, and on a locked phone only "Sweatbook" with the contents hidden (no stack, no blinds).
+      await n.setNotificationChannelAsync(SESSION_CHANNEL, { name: t('Sessão a decorrer'), importance: n.AndroidImportance.LOW, lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE });
     }
   })().catch(() => {});
   return ready;
+}
+
+/** Make sure the Android channels exist before posting to them. */
+export async function notificationChannels(): Promise<void> {
+  const n = notifications();
+  if (n) await setup(n);
 }
 
 /** Ask once, when the player shows they want reminders. True when allowed. */

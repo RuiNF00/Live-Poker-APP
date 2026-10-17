@@ -24,6 +24,8 @@ export interface Tourney {
   startStack?: number;
   /** Prize for each place, 1st first. */
   payouts?: number[];
+  /** Bounties won so far, in the session's currency. Part of the prize (cashOut), not on top of it. */
+  bounties?: number;
 }
 
 /** Generic structures to start from: the app's blind ladder with a big-blind ante, at common level lengths. */
@@ -38,7 +40,21 @@ export function templateStructure(minutes: number): Level[] {
   return MTT_LEVELS.map(([sb, bb]) => ({ sb, bb, ante: bb, minutes }));
 }
 
-const num = (s: string) => Number(s.replace(/[^\d.]/g, '')) * (/k$/i.test(s.trim()) ? 1000 : 1);
+/**
+ * "250.000", "250,000", "250 000" and "1.5k" alike: a dot, comma or space
+ * followed by exactly three digits groups thousands (pt-PT writes 250.000);
+ * any other comma is a decimal point.
+ */
+export function num(s: string): number {
+  const k = /k$/i.test(s.trim()) ? 1000 : 1;
+  const x = s
+    .trim()
+    .replace(/k$/i, '')
+    .replace(/[.,\s](?=\d{3}(?!\d))/g, '')
+    .replace(',', '.')
+    .replace(/[^\d.]/g, '');
+  return Number(x) * k;
+}
 
 /**
  * A structure typed or pasted one level per line: "100/200/200 30",
@@ -52,34 +68,34 @@ export function parseStructure(text: string, defaultMinutes = 30): Level[] {
     const line = raw.trim();
     const m = line.match(/(\d[\d,.]*k?)\s*[/-]\s*(\d[\d,.]*k?)(?:\s*[/-]\s*(\d[\d,.]*k?))?/i);
     if (!m) continue;
-    const sb = num(m[1].replace(/,/g, ''));
-    const bb = num(m[2].replace(/,/g, ''));
+    const sb = num(m[1]);
+    const bb = num(m[2]);
     if (!(sb > 0 && bb >= sb)) continue;
     const rest = line.slice((m.index ?? 0) + m[0].length);
     const nums = [...rest.matchAll(/(\d[\d,.]*k?)\s*(m(?:in)?\b|')?/gi)];
-    let ante = m[3] ? num(m[3].replace(/,/g, '')) : 0;
+    let ante = m[3] ? num(m[3]) : 0;
     // After the blinds: an ante (if not given with a slash) and the length, which is the last small number or the one marked "m".
     const marked = nums.find((x) => x[2]);
     const lengthTok = marked ?? (nums.length && num(nums[nums.length - 1][1]) <= 120 ? nums[nums.length - 1] : undefined);
     if (lengthTok) minutes = num(lengthTok[1]);
     if (!m[3]) {
       const a = nums.find((x) => x !== lengthTok);
-      if (a) ante = num(a[1].replace(/,/g, ''));
+      if (a) ante = num(a[1]);
     }
     out.push({ sb, bb, ante, minutes });
   }
   return out;
 }
 
-/** Payouts typed or pasted: "1 250,000", "2: 150000", "10-12 15,000" (a range pays each place the same). */
+/** Payouts typed or pasted: "1 250,000", "2: 150.000 €", "Place 3: 90000", "10-12 15,000" (a range pays each place the same). */
 export function parsePayouts(text: string): number[] {
   const out: number[] = [];
   for (const raw of text.split(/\r?\n/)) {
-    const m = raw.trim().match(/^(\d+)(?:\s*(?:st|nd|rd|th|º|ª|\.)?)?\s*(?:[-–]\s*(\d+)(?:\s*(?:st|nd|rd|th|º|ª))?)?\s*[:=\t ]\s*[^\d]*([\d][\d,. ]*k?)/i);
+    const m = raw.trim().match(/^(?:place|lugar|posi[cç][aã]o|pos\.?|#)?\s*(\d+)(?:\s*(?:st|nd|rd|th|º|ª|\.)?)?\s*(?:[-–]\s*(\d+)(?:\s*(?:st|nd|rd|th|º|ª))?)?\s*[:=\t ]\s*[^\d]*([\d][\d,. ]*k?)/i);
     if (!m) continue;
     const from = Number(m[1]);
     const to = m[2] ? Number(m[2]) : from;
-    const amount = num(m[3].replace(/[, ]/g, ''));
+    const amount = num(m[3].trim());
     if (!(from >= 1 && to >= from && to <= 10000 && amount > 0)) continue;
     for (let p = from; p <= to; p++) out[p - 1] = amount;
   }
