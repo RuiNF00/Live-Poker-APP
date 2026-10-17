@@ -186,6 +186,7 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Filtros, salas e CSV', free: FREE.bankrollFilters, pro: true },
     { label: 'Stories com voz', free: false, pro: true },
     { label: 'Várias mãos para o solver', free: false, pro: true },
+    { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
     { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
     { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
   ];

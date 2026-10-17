@@ -2084,6 +2084,7 @@ const en: Record<string, string> = {
   'A tua mão foi vista {n} vezes': 'Your hand was viewed {n} times',
   'A tua melhor sessão: {amount}': 'Your best session: {amount}',
   'Vê em que salas, jogos e stakes ganhas mais.': 'See which rooms, games and stakes you win most at.',
+  'Torneios por buy-in, festival e jogo': 'Tournaments by buy-in, festival and game',
 };
 
 export default en;
