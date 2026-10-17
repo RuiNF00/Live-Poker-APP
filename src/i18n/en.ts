@@ -1453,7 +1453,6 @@ const en: Record<string, string> = {
   'Criar o meu link para backers': 'Create my backer link',
   // Festival planner
   'Começa daqui a {n} min': 'Starts in {n} min',
-  'Late reg fecha daqui a {n} min': 'Late reg closes in {n} min',
   'Torneios planeados': 'Planned tournaments',
   'Termina a sessão "{name}" antes de começar outra.': 'End the session "{name}" before starting another.',
   'Já tens uma sessão a decorrer': 'You already have a session running',
@@ -3188,6 +3187,9 @@ const en: Record<string, string> = {
   'Até {amount}': 'Up to {amount}',
   'Nenhum torneio com estes filtros.': 'No tournaments with these filters.',
   'Coincide com {name} às {time}': 'Clashes with {name} at {time}',
+  'Registo do {event} fecha às {time}': 'Registration for {event} closes at {time}',
+  'Ainda dá para entrar. Toca para começar a sessão.': 'Still time to get in. Tap to start the session.',
+  'Avisamos-te {n} min antes de fechar.': "We'll remind you {n} min before it closes.",
 };
 
 export default en;

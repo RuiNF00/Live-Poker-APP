@@ -44,7 +44,7 @@ test('totals count entries, not Day 2s, and compare with the bankroll', () => {
   assert.equal(bankrollShare(1000, 0), null);
 });
 
-test('reminders: 30 min before start, and 30 min before late reg closes when set', () => {
+test('reminders: 30 min before start, and 20 min before late reg closes when set', () => {
   const p = { ...EMPTY_PLAN, picked: ['12-A', '1-A'], lateReg: { '12-A': 6 * 60 } };
   const start12 = venueTime(F, '2026-12-10T11:00');
   const r = planReminders(F, p, venueTime(F, '2026-12-01T00:00'));
@@ -53,9 +53,15 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
     [
       ['bahamas-dez-2026:1-A:start', venueTime(F, '2026-12-02T10:30')],
       ['bahamas-dez-2026:12-A:start', start12 - 30 * 60_000],
-      ['bahamas-dez-2026:12-A:late', start12 + (6 * 60 - 30) * 60_000],
+      ['bahamas-dez-2026:12-A:late', start12 + (6 * 60 - 20) * 60_000],
     ],
   );
+  // Names the event and the venue time it closes; no amounts.
+  assert.equal(r[2].title, 'Registo do #12 Main Event · Flight A fecha às 17:00');
+  assert.doesNotMatch(r[2].title + r[2].body, /\$|€|\d{3,}/);
+  // A Day 2 has no registration to close.
+  const d2 = F.events.find((e) => e.day2)!;
+  assert.ok(!planReminders(F, { ...EMPTY_PLAN, picked: [d2.id], lateReg: { [d2.id]: 120 } }, 0).some((x) => x.id.endsWith(':late')));
   // Past ones are dropped.
   assert.deepEqual(planReminders(F, p, start12).map((x) => x.id), ['bahamas-dez-2026:12-A:late']);
   // A tap opens this festival on this event, not whichever festival comes first.
