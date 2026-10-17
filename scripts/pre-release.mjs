@@ -28,6 +28,7 @@ const steps = [
     cwd: 'packages/hand-format',
   },
   { name: 'Configuração Expo válida', cmd: 'npx expo config --type public --json > /dev/null' },
+  { name: 'iOS: modos em segundo plano e textos de permissão', cmd: 'node scripts/check-ios-plist.mjs' },
   ...(quick ? [] : [{ name: 'Bundle exporta sem erros', cmd: `npx expo export --platform web --output-dir ${out}` }]),
 ];
 
