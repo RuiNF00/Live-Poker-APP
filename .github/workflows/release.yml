@@ -1,0 +1,44 @@
+# Builds the app on EAS and submits it to App Store Connect (TestFlight) and Google Play.
+# Run from the Actions tab → "Release" → Run workflow.
+# Needs repo secret EXPO_TOKEN. Apple/Google credentials live on EAS (see store/README.md).
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform"
+        type: choice
+        options: [all, ios, android]
+        default: all
+      submit:
+        description: "Submit to the stores after building"
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Build${{ inputs.submit && ' and submit' || '' }}
+        run: >
+          eas build
+          --platform ${{ inputs.platform }}
+          --profile production
+          --non-interactive
+          --no-wait
+          ${{ inputs.submit && '--auto-submit' || '' }}
