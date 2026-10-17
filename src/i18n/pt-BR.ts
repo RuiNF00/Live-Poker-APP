@@ -629,7 +629,6 @@ const ptBR: Record<string, string> = {
   'Prémio': 'Prêmio',
   'Mãos registadas': 'Mãos registradas',
   'Começa daqui a {n} min': 'Começa em {n} min',
-  'Late reg fecha daqui a {n} min': 'Late reg fecha em {n} min',
   'Torneios planeados': 'Torneios planejados',
   'Termina a sessão "{name}" antes de começar outra.': 'Encerre a sessão "{name}" antes de começar outra.',
   'Já tens uma sessão a decorrer': 'Você já tem uma sessão em andamento',
@@ -1520,6 +1519,9 @@ const ptBR: Record<string, string> = {
   'Abrir Definições': 'Abrir Configurações',
   'Pára antes da tua decisão, para quem vê votar no link.': 'Para antes da sua decisão, para quem vê votar no link.',
   'Coincide com {name} às {time}': 'Coincide com {name} às {time}',
+  'Registo do {event} fecha às {time}': 'Registro do {event} fecha às {time}',
+  'Ainda dá para entrar. Toca para começar a sessão.': 'Ainda dá para entrar. Toque para começar a sessão.',
+  'Avisamos-te {n} min antes de fechar.': 'A gente avisa {n} min antes de fechar.',
 };
 
 export default ptBR;

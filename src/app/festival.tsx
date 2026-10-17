@@ -23,7 +23,7 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
+import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
@@ -205,6 +205,7 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
                   action={eventAction(f, plan, sessions, e)}
                   clash={clash.get(e.id)}
                   lateOpen={lateFor === e.id}
+                  remind={remindersOn}
                   onToggle={() => toggle(e)}
                   onLate={() => setLateFor(lateFor === e.id ? null : e.id)}
                   onSetLate={(min) => {
@@ -330,6 +331,7 @@ function EventRow({
   plan,
   action,
   lateOpen,
+  remind,
   clash,
   onToggle,
   onLate,
@@ -343,6 +345,8 @@ function EventRow({
   /** Another planned event this one overlaps. */
   clash?: FestivalEvent;
   lateOpen: boolean;
+  /** Planned-tournament reminders are on: picking a late reg time also sets its reminder. */
+  remind: boolean;
   onToggle: () => void;
   onLate: () => void;
   onSetLate: (min: number | null) => void;
@@ -422,6 +426,7 @@ function EventRow({
                 ))}
                 {late ? <Chip label={t('Limpar')} onPress={() => onSetLate(null)} /> : null}
               </ChipRow>
+              {remind ? <T v="tiny">{t('Avisamos-te {n} min antes de fechar.', { n: LATE_REMIND_BEFORE_MIN })}</T> : null}
             </View>
           ) : null}
           {e.own ? <Button kind="plain" size="sm" title={t('Apagar torneio')} onPress={() => updatePlan(f.id, (p) => removeOwnEvent(p, e.id))} /> : null}

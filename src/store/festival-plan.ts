@@ -26,8 +26,10 @@ export interface FestivalPlan {
 
 export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} };
 
-/** Minutes before the start, and before late reg closes, that the reminders fire. */
+/** Minutes before the start that the first reminder fires. */
 export const REMIND_BEFORE_MIN = 30;
+/** Minutes before late reg closes: late enough to still be on time, early enough to get to the cage. */
+export const LATE_REMIND_BEFORE_MIN = 20;
 
 /** The festival with the player's added tournaments in its schedule, by start. Safe to call twice. */
 export function withPlanEvents(f: Festival, plan: FestivalPlan): Festival {
@@ -194,6 +196,12 @@ export interface PlanReminder {
   body: string;
 }
 
+/** Venue wall-clock HH:MM of an instant. */
+export function venueHm(f: Festival, ms: number): string {
+  const x = new Date(ms + f.utcOffset * 60_000);
+  return `${String(x.getUTCHours()).padStart(2, '0')}:${String(x.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 /** Reminders still ahead of `now`: before each planned start, and before late reg closes where the player set it. */
 export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now()): PlanReminder[] {
   const out: PlanReminder[] = [];
@@ -208,14 +216,16 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
       title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }),
       body: name,
     });
-    const late = plan.lateReg[e.id];
+    // Day 2 has no registration to miss.
+    const late = e.day2 ? 0 : plan.lateReg[e.id];
     if (late) {
+      const closes = start + late * 60_000;
       out.push({
         id: `${f.id}:${e.id}:late`,
         url,
-        at: start + (late - REMIND_BEFORE_MIN) * 60_000,
-        title: t('Late reg fecha daqui a {n} min', { n: REMIND_BEFORE_MIN }),
-        body: name,
+        at: closes - LATE_REMIND_BEFORE_MIN * 60_000,
+        title: t('Registo do {event} fecha às {time}', { event: name, time: venueHm(f, closes) }),
+        body: t('Ainda dá para entrar. Toca para começar a sessão.'),
       });
     }
   }

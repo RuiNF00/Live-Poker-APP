@@ -1352,7 +1352,6 @@ const es: Record<string, string> = {
   'Atualiza sozinho.': 'Se actualiza solo.',
   'Criar o meu link para backers': 'Crear mi link para backers',
   'Começa daqui a {n} min': 'Empieza en {n} min',
-  'Late reg fecha daqui a {n} min': 'El late reg cierra en {n} min',
   'Torneios planeados': 'Torneos planeados',
   'Termina a sessão "{name}" antes de começar outra.': 'Termina la sesión "{name}" antes de empezar otra.',
   'Já tens uma sessão a decorrer': 'Ya tienes una sesión en curso',
@@ -3182,6 +3181,9 @@ const es: Record<string, string> = {
   'Até {amount}': 'Hasta {amount}',
   'Nenhum torneio com estes filtros.': 'Ningún torneo con estos filtros.',
   'Coincide com {name} às {time}': 'Coincide con {name} a las {time}',
+  'Registo do {event} fecha às {time}': 'El registro de {event} cierra a las {time}',
+  'Ainda dá para entrar. Toca para começar a sessão.': 'Todavía puedes entrar. Toca para empezar la sesión.',
+  'Avisamos-te {n} min antes de fechar.': 'Te avisamos {n} min antes del cierre.',
 };
 
 export default es;
