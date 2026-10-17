@@ -20,6 +20,8 @@ export interface FestivalPlan {
   sessions: Record<string, string>;
   /** The player's own name for the festival, replacing the shipped generic one. */
   name?: string;
+  /** Tournaments the player added: ones the schedule doesn't have, or a festival with no schedule yet. */
+  events?: FestivalEvent[];
 }
 
 export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} };
@@ -27,9 +29,38 @@ export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} 
 /** Minutes before the start, and before late reg closes, that the reminders fire. */
 export const REMIND_BEFORE_MIN = 30;
 
+/** The festival with the player's added tournaments in its schedule, by start. Safe to call twice. */
+export function withPlanEvents(f: Festival, plan: FestivalPlan): Festival {
+  const have = new Set(f.events.map((e) => e.id));
+  const add = (plan.events ?? []).filter((e) => !have.has(e.id));
+  return add.length ? { ...f, events: [...f.events, ...add].sort((a, b) => a.start.localeCompare(b.start)) } : f;
+}
+
+export interface OwnEventInput {
+  name: string;
+  /** 'YYYY-MM-DDTHH:MM', venue wall clock. */
+  start: string;
+  game: FestivalEvent['game'];
+  buyIn: number;
+  stack?: number;
+  levelMinutes?: number;
+}
+
+/** A tournament the player adds; its own number, so it never joins a schedule event's flights. */
+export function ownEvent(id: string, x: OwnEventInput, n: number): FestivalEvent {
+  return { id, number: 100_000 + n, name: x.name.trim(), unnumbered: true, game: x.game, buyIn: x.buyIn, guarantee: 0, start: x.start, stack: x.stack || undefined, levelMinutes: x.levelMinutes || undefined, own: true };
+}
+
+/** Takes an added tournament out of the plan, with its reminders' late reg; a session already played keeps its data. */
+export function removeOwnEvent(p: FestivalPlan, id: string): FestivalPlan {
+  const lateReg = { ...p.lateReg };
+  delete lateReg[id];
+  return { ...p, events: (p.events ?? []).filter((e) => e.id !== id), picked: p.picked.filter((x) => x !== id), lateReg };
+}
+
 export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   const set = new Set(plan.picked);
-  return f.events.filter((e) => set.has(e.id));
+  return withPlanEvents(f, plan).events.filter((e) => set.has(e.id));
 }
 
 /** What the festival is called on screen: the player's name for it, else the shipped one. */
@@ -106,6 +137,8 @@ function day2Takes(f: Festival, plan: FestivalPlan, e: FestivalEvent, s: Session
 
 export interface PlanReminder {
   id: string;
+  /** Opens the planner on this event (its "Começar sessão"). */
+  url: string;
   at: number;
   title: string;
   body: string;
@@ -117,8 +150,10 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
   for (const e of planned(f, plan)) {
     const start = venueTime(f, e.start);
     const name = eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
+    const url = `sweatbook://festival?id=${encodeURIComponent(f.id)}&event=${encodeURIComponent(e.id)}`;
     out.push({
       id: `${f.id}:${e.id}:start`,
+      url,
       at: start - REMIND_BEFORE_MIN * 60_000,
       title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }),
       body: name,
@@ -127,6 +162,7 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
     if (late) {
       out.push({
         id: `${f.id}:${e.id}:late`,
+        url,
         at: start + (late - REMIND_BEFORE_MIN) * 60_000,
         title: t('Late reg fecha daqui a {n} min', { n: REMIND_BEFORE_MIN }),
         body: name,

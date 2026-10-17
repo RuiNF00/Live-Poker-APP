@@ -34,6 +34,8 @@ async function capture(locale) {
   const local = new URL(appUrl).origin;
   await ctx.route('**/*', (r) => (r.request().url().startsWith(local) ? r.continue() : r.fulfill({ status: 204, body: '' })));
   const page = await ctx.newPage();
+  // The seed is dated at seed.now; run the clock from there so session timers and "yesterday" match it.
+  await page.clock.install({ time: seed.now });
   const shots = [];
   for (const f of frames) {
     // Opening the hand editor leaves a draft banner on other screens; clear it.

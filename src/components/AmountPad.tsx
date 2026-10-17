@@ -8,7 +8,7 @@ import { t } from '@/i18n';
 import { bbs, chips } from '@/poker/format';
 import { C, F, R, S } from '@/theme';
 
-import { Button, Row, Segmented, T, tap } from './ui';
+import { Button, Row, Segmented, T, tap, useSheetPad } from './ui';
 import { useSheetAnimation } from '@/lib/motion';
 
 export function AmountPad({
@@ -56,10 +56,11 @@ export function AmountPad({
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', inBB ? ',' : 'k', '0', '⌫'];
   const tooLow = min !== undefined && value < min;
   const capped = max !== undefined ? Math.min(value, max) : value;
+  const sheetPad = useSheetPad(34);
   return (
     <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
-      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: 34, gap: S.md }}>
+      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: sheetPad, gap: S.md }}>
         <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -4 }} />
         <Row style={{ justifyContent: 'space-between' }}>
           <T v="h2">{title}</T>

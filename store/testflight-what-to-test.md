@@ -1,6 +1,6 @@
 # TestFlight: "What to Test" for the first build
 
-Goes in App Store Connect → TestFlight → the build → Test Details → "What to Test", one version per language (limit 4000 characters each). Testers see it in the TestFlight app before installing. Based on `marketing/beta-recrutamento.md` §5. Change it on each new build when there is something specific to try. Android closed-test release notes stay in that file (Play has no "What to Test" field).
+Goes in App Store Connect → TestFlight → the build → Test Details → "What to Test", one version per language (limit 4000 characters each). Testers see it in the TestFlight app before installing. Based on `marketing/beta-recrutamento.md` §5. Change it on each new build when there is something specific to try. Android closed-test release notes stay in that file (Play has no "What to Test" field). Those Android notes also ask testers to check the keyboard doesn't cover a text field near the bottom of the screen (hand note, swap amount, stack), from #245's Android pass, which no emulator here can verify; if it fails, the fix is `behavior="padding"` on Android or react-native-keyboard-controller. TestFlight testers only have iPhones, so that line isn't here.
 
 Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos compartidas / Shared hands).
 

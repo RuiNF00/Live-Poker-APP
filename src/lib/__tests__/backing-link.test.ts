@@ -66,3 +66,22 @@ test('long histories are cut to the newest sessions', () => {
   assert.equal(st.rows[0].d, many[many.length - 1].startedAt);
   assert.ok(statementUrl(st).length < 8000);
 });
+
+test('statement says what the app says: its ledger (rates, festival pieces to come) and each row in its own currency', async () => {
+  const { backerLedger, packageStates } = await import('../../store/staking');
+  const eur = mk({ cashOut: 3000, stakes: [{ backerId: 'b1', share: 10, markup: 1 }] });
+  const usd = mk({ currency: '$', buyIn: 2000, cashOut: 0, stakes: [{ backerId: 'b1', share: 50, markup: 1 }] });
+  const table = { '1970-01-01': { USD: 1.1 } };
+  const l = backerLedger('b1', [eur, usd], [], [], packageStates([eur, usd], []), { table, fallback: '€' });
+  // What useStaking adds for festival events not started yet.
+  l.unpaid += 150;
+  l.balance -= 150;
+  const st = buildStatement(backer, 'Rui', l.currency, [eur, usd], [], [], 9, undefined, l);
+  assert.equal(st.cur, '$');
+  assert.equal(st.bal, Math.round(l.balance * 100) / 100);
+  assert.equal(st.inv, Math.round(l.invested * 100) / 100);
+  const eurRow = st.rows.find((r) => r.cu === '€');
+  assert.ok(eurRow, 'the € session says it is in €');
+  assert.equal(st.rows.find((r) => r.c === 1000)?.cu, undefined);
+  assert.equal(decodeStatement(encodeStatement(st))?.rows.find((r) => r.cu)?.cu, '€');
+});

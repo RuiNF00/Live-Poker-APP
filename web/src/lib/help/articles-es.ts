@@ -164,6 +164,7 @@ export const ES: Record<string, ArticleText> = {
         ],
       },
       'Cuando alguien cobra, toca Cobré y registra el premio. La app indica quién debe cuánto a quién; cuando pagues, regístralo en Pagué. Compartir las cuentas envía el resumen al otro jugador.',
+      'Si vendiste acción, el swap sale solo de tu parte: tus backers siguen con su porcentaje del premio entero.',
       'Crear swaps y hacer el ajuste es parte del Pro. Confirmar un swap por link siempre es gratis.',
       { note: 'Solo registro y cuentas: ningún dinero pasa por Sweatbook, los pagos se hacen entre ustedes. Solo para mayores de 18 años.' },
     ],

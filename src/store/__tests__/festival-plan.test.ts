@@ -2,8 +2,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, plannedNow, planReminders, planTotals, togglePicked } from '../festival-plan';
+import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -56,10 +57,12 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
   );
   // Past ones are dropped.
   assert.deepEqual(planReminders(F, p, start12).map((x) => x.id), ['bahamas-dez-2026:12-A:late']);
+  // A tap opens this festival on this event, not whichever festival comes first.
+  assert.equal(r[1].url, 'sweatbook://festival?id=bahamas-dez-2026&event=12-A');
 });
 
 test('ships without an event brand; the player can name the festival', () => {
-  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main|bsop|\bcep\b|sau[ií]pe/i, f.id);
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main|bsop|\bcep\b|sau[ií]pe|vamos|\bvpt\b|\bcnp\b|winamax|solverde|\bept\b|pokerstars|millionaire maker|meia milha/i, f.id);
   // No outbound links: organisers also run real-money gaming sites (store review).
   for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /https?:|www\./i, f.id);
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
@@ -100,7 +103,7 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   assert.equal(new Set(LV.events.map((e) => e.id)).size, LV.events.length);
   const starts = LV.events.map((e) => e.start);
   assert.deepEqual([...starts].sort(), starts);
-  assert.equal(LV.events[0].start, '2026-11-27T12:00');
+  assert.equal(LV.events[0].start, '2026-11-27T11:00');
   assert.equal(LV.events.at(-1)!.start, '2026-12-21T18:00');
   assert.equal(LV.events.filter((e) => e.name.startsWith('Satellite')).length, 25);
   const wc = LV.events.filter((e) => e.name === 'Main Event');
@@ -140,9 +143,64 @@ test('plannedNow: the planned event from 2 h before its start until late reg clo
 test('Las Vegas: published starting stack and level length, none for Turbo flights or Day 2s', () => {
   const ev = (id: string) => LV.events.find((e) => e.id === id)!;
   assert.deepEqual([ev('10-1A').stack, ev('10-1A').levelMinutes], [100000, 60]);
-  // High Roller: not confirmed yet, so the session starts with the defaults.
-  assert.equal(ev('24').stack, undefined);
+  assert.deepEqual([ev('24').stack, ev('24').levelMinutes], [200000, 40]);
   assert.equal(ev('10-2').stack, undefined);
   assert.equal(ev('29-1B Turbo').stack, undefined);
   assert.equal(ev('29-1A').stack, 40000);
+});
+
+test('a tournament the player adds: in the schedule, planned, reminded, startable; delete takes it out', () => {
+  const e = ownEvent('fe_1', { name: ' Deepstack ', start: '2026-12-05T15:00', game: 'NLH', buyIn: 400, stack: 30000, levelMinutes: 30 }, 1);
+  assert.equal(e.name, 'Deepstack');
+  const plan = { ...EMPTY_PLAN, events: [e], picked: ['fe_1'], lateReg: { fe_1: 120 } };
+  const all = withPlanEvents(F, plan);
+  assert.equal(all.events.length, F.events.length + 1);
+  assert.equal(withPlanEvents(all, plan).events.length, all.events.length);
+  assert.deepEqual(planTotals(F, plan), { events: 1, entries: 1, buyIns: 400 });
+  assert.equal(planReminders(F, plan, venueTime(F, '2026-12-01T00:00'))[0].url, 'sweatbook://festival?id=bahamas-dez-2026&event=fe_1');
+  const now = plannedNow(F, plan, [], venueTime(F, '2026-12-05T14:00'))!;
+  assert.equal(now.e.id, 'fe_1');
+  assert.equal(now.action.kind, 'start');
+  const gone = removeOwnEvent(plan, 'fe_1');
+  assert.deepEqual([gone.events, gone.picked, gone.lateReg], [[], [], {}]);
+});
+
+test('November schedules: official rows only, start order, unique ids, Day 2s free and without a structure', () => {
+  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026]) {
+    assert.ok(FESTIVALS.includes(f), f.id);
+    assert.equal(new Set(f.events.map((e) => e.id)).size, f.events.length, f.id);
+    const starts = f.events.map((e) => e.start);
+    assert.deepEqual([...starts].sort(), starts, f.id);
+    for (const e of f.events) {
+      if (e.day2) assert.ok(e.buyIn === 0 && !e.stack && e.flight?.startsWith('2'), `${f.id} ${e.id}`);
+      else assert.ok(e.buyIn > 0, `${f.id} ${e.id}`);
+      if (e.levelMinutes) assert.ok(e.stack, `${f.id} ${e.id}`);
+    }
+  }
+  // São Paulo: #1-#105, in the venue's time (UTC-3).
+  const sp = SAO_PAULO_NOV_2026;
+  assert.deepEqual([...new Set(sp.events.map((e) => e.number))].sort((a, b) => a - b), Array.from({ length: 105 }, (_, i) => i + 1));
+  assert.equal(sp.events[0].start, '2026-11-13T12:00');
+  assert.deepEqual(sp.events.filter((e) => e.number === 26 && !e.day2).map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '1F', '1G', '1H', '1I', '1J']);
+  assert.deepEqual(['buyIn', 'stack', 'levelMinutes'].map((k) => sp.events.find((e) => e.id === '26-1A')![k as 'buyIn']), [5000, 40000, 40]);
+  assert.equal(venueTime(sp, '2026-11-16T12:00'), Date.UTC(2026, 10, 16, 15));
+  assert.deepEqual(['start', 'levelMinutes'].map((k) => sp.events.find((e) => e.id === '94-1B')![k as 'start']), ['2026-11-27T20:00', 25]);
+  // Torrelodones: the Low Cost flight has its own buy-in and structure.
+  const lc = TORRELODONES_NOV_2026.events.find((e) => e.id === '6-1C')!;
+  assert.deepEqual([lc.buyIn, lc.stack, lc.levelMinutes], [300, 25000, 20]);
+  // Lisbon: #7 has its buy-in; the Turbo flight and the afternoon satellites have their own levels.
+  assert.equal(LISBOA_NOV_2026.events.find((e) => e.id === '7')!.buyIn, 125);
+  assert.deepEqual(['stack', 'levelMinutes'].map((k) => LISBOA_NOV_2026.events.find((e) => e.id === '2-1E')![k as 'stack']), [60000, 15]);
+  assert.deepEqual(LISBOA_NOV_2026.events.filter((e) => e.name.startsWith('Satellite')).map((e) => e.levelMinutes), [30, 25, 30, 25, 30]);
+  // Prague: the €1,100 Main Event's flights each have their own level length; the €5,300 one has no published levels.
+  const pr = PRAGUE_DEC_2026.events;
+  assert.deepEqual(pr.filter((e) => e.number === 1 && !e.day2).map((e) => e.levelMinutes), [40, 30, 40, 30, 30, 20]);
+  assert.deepEqual(['buyIn', 'stack', 'levelMinutes'].map((k) => pr.find((e) => e.id === '27-1A')![k as 'buyIn']), [5300, 30000, undefined]);
+  assert.equal(pr.find((e) => e.id === '55-1A')!.buyIn, 1650);
+  // Satellite groups: one numbered event per published start.
+  assert.deepEqual(pr.filter((e) => e.name === 'Satellite to #1 Main Event').map((e) => e.number), [2, 5, 7, 9, 11]);
+  // Punta del Este: Main Event flights 1A-1E, Day 2 on 8 Dec (UTC-3).
+  const pu = PUNTA_DEL_ESTE_DEC_2026.events.filter((e) => e.number === 8);
+  assert.deepEqual(pu.map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '2']);
+  assert.deepEqual([pu[0].buyIn, pu[0].stack, pu[0].levelMinutes, pu[0].guarantee], [2750, 20000, 30, 750_000]);
 });

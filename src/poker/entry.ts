@@ -3,7 +3,7 @@
 
 import { t } from '../i18n';
 
-import { apply, legal, totalPot, type TableState } from './engine';
+import { apply, legal, replay, totalPot, type TableState } from './engine';
 import { decimal } from './format';
 import type { Hand, HandAction } from './types';
 
@@ -214,6 +214,22 @@ export function rewindTo(hand: Hand, from: number, seat: number): HandAction[] |
 }
 
 /**
+ * Preflop, someone already limped and nobody raised: another seat the app
+ * folded most likely limped too, so its chip is that limp in one tap
+ * (a raise is still a tap on its seat on the felt).
+ */
+export function limpedPot(hand: Hand, from: number | undefined): boolean {
+  if (from === undefined) return false;
+  const before = hand.actions.slice(0, from);
+  return before.some((a) => a.kind === 'call') && !before.some((a) => a.kind === 'raise' || a.kind === 'bet');
+}
+
+export function limpIn(hand: Hand, from: number, seat: number): HandAction[] | null {
+  const actions = rewindTo(hand, from, seat);
+  return actions && [...actions, { p: seat, kind: 'call' }];
+}
+
+/**
  * Everyone still to act checks: the street checks through in one tap. Only
  * while nobody has bet, so it never folds anyone.
  */
@@ -230,4 +246,14 @@ export function checkAround(hand: Hand, s: TableState): HandAction[] {
     if (next.street !== s.street || next.toAct === null) break;
   }
   return acts.length > 1 ? acts : [];
+}
+
+/**
+ * "Check até ao fim": once chosen, each street checks around by itself as soon
+ * as its board card is in, so only the cards are left to pick.
+ */
+export function checkDownNext(hand: Hand): HandAction[] {
+  const s = replay(hand).final;
+  if (s.toAct === null || s.needsBoard) return [];
+  return checkAround(hand, s);
 }

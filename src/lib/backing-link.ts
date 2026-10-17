@@ -6,7 +6,7 @@
 // the amounts stay between the two of them. Only this backer's own pieces go out:
 // no notes, no hands, no other backers' names or amounts.
 
-import { backerLedger, packageStates, type YearStatement } from '@/store/staking';
+import { backerLedger, packageStates, type BackerLedger, type YearStatement } from '@/store/staking';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
 import { BRAND } from '@/theme';
 
@@ -35,6 +35,8 @@ export interface StatementRow {
   p?: string;
   /** Live link id, to follow the session while it runs. */
   l?: string;
+  /** The session's currency, when it isn't the statement's: c and o are in it. */
+  cu?: string;
 }
 
 /** "O ano com {backer}": one row per package (n '' = outside a package), in the statement's currency. */
@@ -77,9 +79,10 @@ export function buildStatement(
   payments: BackerPayment[],
   now = Date.now(),
   year?: YearStatement,
+  /** The ledger the app shows (rates applied, festival pieces not played yet counted): the link must say the same. */
+  ledger?: BackerLedger,
 ): Statement {
-  const pk = packageStates(sessions, packages);
-  const l = backerLedger(backer.id, sessions, packages, payments, pk);
+  const l = ledger ?? backerLedger(backer.id, sessions, packages, payments, packageStates(sessions, packages));
   const pkgName = new Map(packages.map((p) => [p.id, p.name]));
   const st: Statement = {
     v: 1,
@@ -99,6 +102,7 @@ export function buildStatement(
       const p = r.stake.packageId ? pkgName.get(r.stake.packageId) : undefined;
       if (p) row.p = p.slice(0, 40);
       if (s.live?.id && !s.endedAt) row.l = s.live.id;
+      if (s.currency && s.currency !== currency) row.cu = s.currency.slice(0, 4);
       return row;
     }),
   };
@@ -200,6 +204,7 @@ export function checkStatement(json: unknown): Statement | null {
       if (x.u) row.u = 1;
       if (typeof x.p === 'string' && x.p) row.p = str(x.p, 40);
       if (typeof x.l === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(x.l)) row.l = x.l;
+      if (typeof x.cu === 'string' && x.cu) row.cu = str(x.cu, 4);
       rows.push(row);
     }
     const st: Statement = {

@@ -4,19 +4,20 @@
 
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Share, View } from 'react-native';
+import { Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { useSwapSuggestions } from '@/components/swaps/suggest';
+import { notice } from '@/lib/notice';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
-import { SwapError } from '@/lib/swap-api';
+import { newCreateKey, SwapError } from '@/lib/swap-api';
 import { createGroup, groupUrl } from '@/lib/swap-group-api';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -46,6 +47,8 @@ function NewGroupSwap() {
   const [busy, setBusy] = useState(false);
   // No signal: everything typed stays, and the swap is created by itself when the signal is back.
   const [waiting, setWaiting] = useState(false);
+  // The draft's own key: a retry (by hand or when the signal is back) can't make a second group.
+  const key = useRef({ token: newCreateKey(), invite: newCreateKey() });
 
   // Leaving with Voltar drops the draft (going to the background keeps it).
   useFocusEffect(
@@ -56,6 +59,7 @@ function NewGroupSwap() {
         setNote('');
         setBusy(false);
         setWaiting(false);
+        key.current = { token: newCreateKey(), invite: newCreateKey() };
       },
       [],
     ),
@@ -109,7 +113,7 @@ function NewGroupSwap() {
     const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: Date.now() };
     try {
       const rc = await appUserId();
-      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others], rc);
+      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others], rc, key.current);
       saveGroup({ ...groupFromRemote(group, token, 0, invite), ownerRc: rc });
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');
@@ -126,7 +130,7 @@ function NewGroupSwap() {
         setWaiting(true);
         return;
       }
-      Alert.alert(
+      notice(
         t('Não foi possível criar o swap'),
         code === 'offensive' ? t('Um dos nomes não é permitido.') : code === 'rate_limited' ? t('Demasiados swaps seguidos. Tenta daqui a pouco.') : t('Precisa de rede para criar o link. Tenta de novo quando tiveres sinal.'),
       );
@@ -236,7 +240,7 @@ function NewGroupSwap() {
 
         <View style={{ gap: S.sm }}>
           <Button lines={2}
-            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: cria quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
+            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: é criado quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
             icon="paper-plane-outline"
             disabled={!ok}
             onPress={create}

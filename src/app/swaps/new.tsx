@@ -4,19 +4,20 @@
 
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Share, View } from 'react-native';
+import { Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { useSwapSuggestions } from '@/components/swaps/suggest';
+import { notice } from '@/lib/notice';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
-import { createSwap, SwapError, swapUrl } from '@/lib/swap-api';
+import { createSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { fromRemote, swapNames, type SwapTerms } from '@/store/swaps';
@@ -43,6 +44,8 @@ function NewSwap() {
   const [busy, setBusy] = useState(false);
   // No signal: everything typed stays, and the swap is created by itself when the signal is back.
   const [waiting, setWaiting] = useState(false);
+  // The draft's own key: a retry (by hand or when the signal is back) can't make a second swap.
+  const key = useRef(newCreateKey());
 
   // Each visit starts fresh: leaving with Voltar drops the draft (going to the background keeps it).
   useFocusEffect(
@@ -55,6 +58,7 @@ function NewSwap() {
         setNote('');
         setBusy(false);
         setWaiting(false);
+        key.current = newCreateKey();
       },
       [],
     ),
@@ -111,7 +115,7 @@ function NewSwap() {
     };
     try {
       const rc = await appUserId();
-      const { swap, token } = await createSwap(terms, rc);
+      const { swap, token } = await createSwap(terms, rc, key.current);
       saveSwap({ ...fromRemote(swap, token, 'a'), ownerRc: rc });
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');
@@ -128,7 +132,7 @@ function NewSwap() {
         setWaiting(true);
         return;
       }
-      Alert.alert(
+      notice(
         t('Não foi possível criar o swap'),
         code === 'offensive' ? t('Um dos nomes não é permitido.') : code === 'rate_limited' ? t('Demasiados swaps seguidos. Tenta daqui a pouco.') : t('Precisa de rede para criar o link. Tenta de novo quando tiveres sinal.'),
       );
@@ -248,7 +252,7 @@ function NewSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button lines={2} title={busy ? t('A criar…') : waiting ? t('Sem rede: cria quando houver sinal') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
+          <Button lines={2} title={busy ? t('A criar…') : waiting ? t('Sem rede: é criado quando houver sinal') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
               {them.trim() ? t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name }) : t('O outro jogador confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.')}{' '}

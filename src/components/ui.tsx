@@ -254,6 +254,15 @@ export function ScreenHeader({ title, eyebrow, right, style }: { title: React.Re
   );
 }
 
+/**
+ * Bottom padding of a bottom sheet. iOS keeps the design's `base`. Android 15 draws
+ * edge to edge, so a sheet in a Modal runs under the navigation bar: never less than its inset.
+ */
+export function useSheetPad(base: number): number {
+  const insets = useSafeAreaInsets();
+  return Platform.OS === 'android' ? Math.max(base, insets.bottom + S.md) : base;
+}
+
 /** Header for a modal sheet: title on the left, a close button on the right. */
 export function SheetHeader({ title, onClose, right, closeLabel }: { title: string; onClose: () => void; right?: React.ReactNode; closeLabel?: string }) {
   return (
@@ -891,7 +900,7 @@ export const inputStyle = {
   fontFamily: ff(600),
 };
 
-export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInputProps & { label?: string; hint?: string; inputStyle?: StyleProp<TextStyle> }) {
+export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInputProps & { label?: string; hint?: string; inputStyle?: StyleProp<TextStyle>; ref?: React.Ref<React.ComponentRef<typeof TextInput>> }) {
   const [focus, setFocus] = React.useState(false);
   return (
     <View style={[{ gap: 6, flex: rest.multiline ? undefined : undefined }, style as StyleProp<ViewStyle>]}>

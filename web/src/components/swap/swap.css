@@ -319,3 +319,12 @@
   min-width: 0;
   max-width: 100%;
 }
+
+/* A transfer with its "Paguei" button: the line between rows sits on the row. */
+.sw-transfer-row + .sw-transfer-row > .sw-transfer {
+  border-top: 1px solid var(--line);
+}
+
+.sw-transfer-row .sw-btn {
+  margin: 2px 0 10px;
+}

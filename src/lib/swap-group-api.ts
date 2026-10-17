@@ -28,8 +28,9 @@ async function call(path: string, init: RequestInit & { token?: string } = {}): 
 }
 
 /** `rcUserId`: my RevenueCat id, so the group's accounts follow my Pro for everyone in it. */
-export async function createGroup(terms: GroupTerms, names: string[], rcUserId?: string): Promise<{ group: RemoteGroup; token: string; invite: string }> {
-  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, names, rcUserId }) });
+/** `keys`: the draft's token and invite (newCreateKey), so a retry gets the same group back. */
+export async function createGroup(terms: GroupTerms, names: string[], rcUserId?: string, keys?: { token: string; invite: string }): Promise<{ group: RemoteGroup; token: string; invite: string }> {
+  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, names, rcUserId, ...keys }) });
   if (!j.group || !j.token || !j.invite) throw new SwapError('bad_response', 500);
   return { group: j.group, token: j.token, invite: j.invite };
 }

@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Platform, Pressable, Share, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Pressable, Share, View } from 'react-native';
 
 import { GroupEntryRow, GroupEntrySheet, GroupHero, GroupSettle, seatLabel, type GroupDraft } from '@/components/swaps/group-parts';
 import { useLocked } from '@/components/ProGate';
@@ -14,10 +14,10 @@ import { AccountsLocked, PAIR, pctLabel, useSettledReview } from '@/components/s
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { SwapError } from '@/lib/swap-api';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
-import { notice } from '@/lib/notice';
 import { shortDate, timeOf } from '@/poker/format';
 import { GROUP_MIN, groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
 import { addGroupPrize, leaveGroupEverywhere, releaseSeatHere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
@@ -105,7 +105,7 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
       tap('success');
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
-      Alert.alert(t('Não foi possível entrar'), code === 'seat_taken' ? t('Esse lugar já foi escolhido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'));
+      notice(t('Não foi possível entrar'), code === 'seat_taken' ? t('Esse lugar já foi escolhido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'));
       setBusy(false);
     }
   }
@@ -195,7 +195,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
   function onEntry(e: GroupEntry) {
     if (e.seat !== g.seat) return;
     confirmAction(t('Apagar registo?'), t('O grupo deixa de o ver. Usa isto só para corrigir um erro.'), t('Apagar'), async () => {
-      if (!(await removeGroupEntryHere(g.id, e))) Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (!(await removeGroupEntryHere(g.id, e))) notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
     });
   }
 
@@ -215,8 +215,8 @@ function OwnGroup({ g }: { g: SwapGroup }) {
       : t('O grupo fica com {n} jogadores e as contas começam quando estiverem todos. A percentagem de cada um não muda.', { n: g.seats.length - 1 });
     confirmAction(t('Tirar {name} do grupo?', { name }), body, t('Tirar'), async () => {
       const res = await releaseSeatHere(g.id, s.seat);
-      if (res === 'in_use') Alert.alert(t('Já tem registos'), t('Só podes tirar um jogador antes de ele registar prémios ou pagamentos.'));
-      else if (res === 'offline') Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (res === 'in_use') notice(t('Já tem registos'), t('Só podes tirar um jogador antes de ele registar prémios ou pagamentos.'));
+      else if (res === 'offline') notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
     });
   }
 
@@ -364,7 +364,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
                 creator && !g.gone ? t('Apagar') : t('Sair'),
                 async () => {
                   if (await leaveGroupEverywhere(g.id)) router.back();
-                  else Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+                  else notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
                 },
               )
             }

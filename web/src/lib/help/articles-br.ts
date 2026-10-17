@@ -162,6 +162,7 @@ export const BR: Record<string, ArticleText> = {
         ],
       },
       'Quando alguém ganhar prêmio, toque em Ganhei prêmio e registre o valor. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
+      'Se você vendeu ação, o swap sai só da sua parte: seus backers continuam com a porcentagem deles do prêmio inteiro.',
       'Criar swaps e fazer o acerto faz parte do Pro. Confirmar um swap pelo link é sempre grátis.',
       { note: 'Só registro e contas: nenhum dinheiro passa pelo Sweatbook, os pagamentos são feitos entre vocês. Só para maiores de 18 anos.' },
     ],

@@ -5,9 +5,9 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
@@ -20,9 +20,9 @@ import { track } from '@/lib/events';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
+import { notice } from '@/lib/notice';
 import { maybeAskForReview } from '@/lib/review';
 import { shareRef } from '@/lib/referrals';
-import { notice } from '@/lib/notice';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
 import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
@@ -72,7 +72,7 @@ export default function MonthScreen() {
       <>
         <Stack.Screen options={{ title: t('Resumo do mês') }} />
         <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter }}>
-          <Empty icon="calendar-outline" title={t('Ainda não há um mês para ver')} body={t('Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.')} />
+          <Empty icon="calendar-outline" title={t('Ainda não há um mês para ver')} body={t('Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.')} action={<Button title={t('Começar sessão')} icon="play" onPress={() => router.replace('/session')} />} />
         </View>
       </>
     );
@@ -91,7 +91,7 @@ export default function MonthScreen() {
       const target = await shareStory(await captureStory(card), link);
       track('story_shared', { target: String(target), kind: 'month', money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -118,7 +118,7 @@ export default function MonthScreen() {
       await sharePost([await captureStory(card)], await postText(to), to);
       track('story_shared', { target: to, kind: 'month', money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

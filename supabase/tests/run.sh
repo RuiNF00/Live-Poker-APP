@@ -15,6 +15,7 @@ psql -q -d "$DB" -f tests/swaps_test.sql
 psql -q -d "$DB" -f tests/swap_groups_test.sql
 psql -q -d "$DB" -f tests/swap_owner_rc_test.sql
 psql -q -d "$DB" -f tests/swap_group_release_test.sql
+psql -q -d "$DB" -f tests/swap_create_once_test.sql
 psql -q -d "$DB" -f tests/profiles_test.sql
 psql -q -d "$DB" -f tests/coach_test.sql
 psql -q -d "$DB" -f tests/action_offers_test.sql

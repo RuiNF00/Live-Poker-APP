@@ -240,7 +240,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "O Sweatbook usa o microfone para gravares notas de voz sobre as tuas mãos, para as histórias do Instagram e para os vídeos das mãos.",
+          "microphonePermission": "O Sweatbook usa o microfone para gravares notas de voz sobre as tuas mãos e para as histórias e os vídeos das mãos.",
           "enableBackgroundPlayback": false
         }
       ],
@@ -248,7 +248,7 @@
         "expo-image-picker",
         {
           "photosPermission": "O Sweatbook usa as tuas fotos para guardares recibos e formulários de impostos junto das tuas sessões.",
-          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos e formulários de impostos e para gravares a tua cara nos vídeos das mãos."
+          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos e formulários de impostos (W-2G, 1042-S) e para gravares a tua cara nos vídeos das mãos."
         }
       ],
       [

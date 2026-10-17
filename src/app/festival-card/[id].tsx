@@ -7,7 +7,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -18,9 +18,9 @@ import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/c
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { shareLink } from '@/lib/share-api';
-import { notice } from '@/lib/notice';
 import { carouselCaption, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -73,7 +73,7 @@ export default function FestivalCardScreen() {
       const target = await shareStory(await captureStory({ current: refs.current[page] }), link);
       track('story_shared', { target: String(target), kind: 'festival', look, money: showMoney, result: showResult, hand: !!best, days: recap.days, events: recap.events });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -95,7 +95,7 @@ export default function FestivalCardScreen() {
       await sharePost([await captureStory({ current: refs.current[page] })], await postText(to), to);
       track('story_shared', { target: to, kind: 'festival', look, money: showMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

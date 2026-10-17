@@ -12,7 +12,7 @@ import { combosOf, GRID_RANKS, gridClass, HAND_ORDER, rangePct, topClasses } fro
 import type { CardCode } from '@/poker/types';
 import { C, F, R, S, ff } from '@/theme';
 
-import { Button, Chip, Row, T, tap } from '../ui';
+import { Button, Chip, Row, T, tap, useSheetPad } from '../ui';
 import { cachedRangeEquity } from './model';
 
 const PRESETS = [5, 10, 20, 40];
@@ -115,10 +115,11 @@ export function RangeSheet({
     });
   });
 
+  const sheetPad = useSheetPad(34);
   return (
     <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
-      <View accessibilityViewIsModal style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: 34, gap: S.md }}>
+      <View accessibilityViewIsModal style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: sheetPad, gap: S.md }}>
         <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -4 }} />
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View style={{ gap: 2 }}>

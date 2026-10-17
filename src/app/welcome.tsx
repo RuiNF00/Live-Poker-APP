@@ -47,11 +47,12 @@ export default function Welcome() {
     router.back();
   };
   // At the table, or skipping: close with no paywall. The questions don't block anyone.
-  const close = (path: 'mesa' | 'saltar') => {
+  const close = (path: 'sessao' | 'mesa' | 'saltar') => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
     setSkipped(true);
-    track('onboarding_step', { step: path === 'mesa' ? 'table' : 'skip', index: step, path });
+    track('onboarding_step', { step: path === 'sessao' ? 'session' : path === 'mesa' ? 'table' : 'skip', index: step, path });
     router.back();
+    if (path === 'sessao') setTimeout(() => router.navigate('/session'), 350);
     if (path === 'mesa') setTimeout(() => router.push('/hand/new'), 350);
   };
   // Coming from another app: the history first (the import is free), the questions can wait.
@@ -228,9 +229,13 @@ export default function Welcome() {
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm }}>
         {at === 'hero' ? (
           <View style={{ gap: S.xs }}>
-            <Button title={t('Começar')} iconRight="chevron-forward" onPress={next} />
-            <Button kind="secondary" icon="flash-outline" title={t('Estou à mesa: registar uma mão já')} onPress={() => close('mesa')} />
-            <Button kind="ghost" size="sm" icon="swap-horizontal-outline" title={t('Já uso outra app: mudar em 1 minuto')} onPress={switchApp} />
+            {/* One main action, the fastest to something useful: a live session (its start is also where the trial is offered). */}
+            <Button title={t('Começar sessão')} icon="play" onPress={() => close('sessao')} />
+            <Button kind="secondary" icon="flash-outline" title={t('Registar uma mão')} onPress={() => close('mesa')} />
+            <Row gap={S.xs}>
+              <Button kind="ghost" size="sm" title={t('Responder a 4 perguntas')} onPress={next} style={{ flex: 1 }} lines={2} />
+              <Button kind="ghost" size="sm" title={t('Vens de outra app?')} onPress={switchApp} style={{ flex: 1 }} lines={2} />
+            </Row>
           </View>
         ) : null}
         {at === 'goals' ? <Button title={t('Continuar')} disabled={!a.goals.length} onPress={next} /> : null}

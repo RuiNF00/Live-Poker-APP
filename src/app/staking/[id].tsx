@@ -105,7 +105,7 @@ function BackerScreen() {
       ...l.rows
         .filter((r) => r.session.endedAt)
         .slice(0, 12)
-        .map((r) => `${shortDate(r.session.startedAt)} · ${r.session.name || t('Sessão')} · ${r.stake.share}% → ${money(r.owed - r.cost, cur)}`),
+        .map((r) => `${shortDate(r.session.startedAt)} · ${r.session.name || t('Sessão')} · ${r.stake.share}% → ${money(r.owed - r.cost, r.session.currency || cur)}`),
       '',
       t('Resultado: {amount}', { amount: money(l.result, cur) }),
       l.makeup ? t('Makeup: {amount}', { amount: money(l.makeup, cur) }) : '',
@@ -119,7 +119,7 @@ function BackerScreen() {
     // It carries only this backer's own pieces (see lib/backing-link).
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
-    const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined);
+    const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined, l);
     const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
@@ -155,6 +155,12 @@ function BackerScreen() {
           <T v="monoXL" color={bal.color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 34, lineHeight: 40 }}>
             {bal.text}
           </T>
+          {/* Offline with no rate yet: sessions in another currency are counted 1 to 1, so say it. */}
+          {l.missing.length ? (
+            <T v="small" color={C.warn} style={{ textAlign: 'center' }}>
+              {t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.join(', ') })}
+            </T>
+          ) : null}
           {backer.note ? (
             <T v="small" style={{ textAlign: 'center' }} numberOfLines={3}>
               {backer.note}

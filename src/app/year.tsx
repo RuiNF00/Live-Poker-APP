@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -17,9 +17,9 @@ import { YearCard } from '@/components/YearCard';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { countInSlices } from '@/lib/idle-count';
-import { notice } from '@/lib/notice';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -85,7 +85,7 @@ export default function YearScreen() {
       const target = await shareStory(await captureStory({ current: refs.current[page] }), link);
       track('story_shared', { target: String(target), kind: 'year', card: kind, money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -111,7 +111,7 @@ export default function YearScreen() {
       await sharePost([await captureStory({ current: refs.current[page] })], await postText(to), to);
       track('story_shared', { target: to, kind: 'year', card: kind, money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -250,7 +250,7 @@ function LockedCard({ title, onUnlock }: { title: string; onUnlock: () => void }
       <T v="callout" style={{ textAlign: 'center' }}>
         {t('As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.')}
       </T>
-      <Button kind="outline" size="sm" title={t('Desbloquear')} onPress={onUnlock} />
+      <Button kind="outline" size="sm" icon="lock-closed" title={t('Ver com Pro')} onPress={onUnlock} />
     </View>
   );
 }

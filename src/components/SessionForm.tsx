@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
-import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
+import { isMtt } from '@/billing/onboarding';
+import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 import { lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
@@ -44,6 +45,24 @@ export function blankSession(kind: GameKind, currency: string, tableSize = 9): S
   };
 }
 
+/** Usual tournament buy-in for each first-run answer, a starting point to edit. */
+const MTT_BUY_IN: Record<string, number> = { mtt1: 250, mtt2: 1100, mtt3: 5000 };
+
+/**
+ * The very first session, from the first-run answers: tournament or cash and the
+ * stakes, with a 100-big-blind buy-in for cash. Null when nothing was answered.
+ */
+export function firstSession(plays: string | null | undefined, currency: string, tableSize = 9): Session | null {
+  const g = gameForPlays(plays, currency);
+  if (!g || !plays) return null;
+  if (isMtt(plays)) {
+    const s = blankSession('mtt', currency, tableSize);
+    return { ...s, buyIn: MTT_BUY_IN[plays] ?? s.buyIn };
+  }
+  const buyIn = g.bb * 100;
+  return { ...blankSession('cash', currency, tableSize), sb: g.sb, bb: g.bb, buyIn, stack: buyIn };
+}
+
 /** Start a live session, or log a past one (`past`). */
 export function SessionForm({
   initial,
@@ -54,8 +73,11 @@ export function SessionForm({
   submitLabel,
   bankrolls = [],
   submitRef,
+  today = [],
 }: {
   initial: Session;
+  /** Festival tournaments starting today: a chip fills the form with that event (buy-in, stack, levels). */
+  today?: { key: string; label: string; fill: Partial<Session> }[];
   past?: boolean;
   /** Where the session can count; a choice only shows with two or more. */
   bankrolls?: Bankroll[];
@@ -139,6 +161,13 @@ export function SessionForm({
       <Card style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
           <Field label={mtt ? t('Torneio') : t('Jogo')} value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} />
+          {mtt && !past && today.length > 0 && (
+            <ChipRow style={{ marginHorizontal: -S.lg }}>
+              {today.map((x) => (
+                <Chip key={x.key} label={x.label} active={s.name === x.fill.name && s.buyIn === x.fill.buyIn} onPress={() => set(x.fill)} />
+              ))}
+            </ChipRow>
+          )}
           {recentNames.length > 0 && (
             <ChipRow style={{ marginHorizontal: -S.lg }}>
               {recentNames.map((n) => (

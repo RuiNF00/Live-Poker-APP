@@ -117,13 +117,13 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
               </div>
               <div className="bk-right">
                 {r.e ? (
-                  <p className={`bk-amt ${net > 0 ? 'up' : net < 0 ? 'down' : ''}`}>{(net > 0 ? '+' : '') + money(net, st.cur)}</p>
+                  <p className={`bk-amt ${net > 0 ? 'up' : net < 0 ? 'down' : ''}`}>{(net > 0 ? '+' : '') + money(net, r.cu ?? st.cur)}</p>
                 ) : r.l ? (
                   <a className="bk-follow" href={`/live/${encodeURIComponent(r.l)}${invite ? `?r=${encodeURIComponent(invite)}` : ''}`}>
                     {c.follow}
                   </a>
                 ) : (
-                  <p className="bk-sub">{c.youPaid(money(r.c, st.cur))}</p>
+                  <p className="bk-sub">{c.youPaid(money(r.c, r.cu ?? st.cur))}</p>
                 )}
               </div>
             </div>

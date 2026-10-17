@@ -3,6 +3,8 @@
 // include the fee, times are local to the venue. When a schedule changes,
 // update the rows and `source.checked` together.
 
+import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
+
 export interface FestivalEvent {
   /** Stable across app versions: plans and sessions point at it. */
   id: string;
@@ -20,6 +22,8 @@ export interface FestivalEvent {
   guarantee: number;
   /** Local wall-clock start at the venue, 'YYYY-MM-DDTHH:MM'. */
   start: string;
+  /** Added by the player (see FestivalPlan.events). */
+  own?: boolean;
   /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
   stack?: number;
   levelMinutes?: number;
@@ -115,7 +119,7 @@ const lv = (...a: Parameters<typeof ev>): FestivalEvent => ({ ...ev(...a), unnum
  * organiser's schedule PDF:
  * https://cdn.wynnresorts.com/image/upload/v1757097329/visitwynn_pdfs_files/Poker/WPT/WPT_World_Championship_Schedule.pdf
  * Turbo flights run a faster structure the PDF doesn't give, and a Day 2 is a restart: neither gets one.
- * The High Roller (24) isn't confirmed yet and is left out.
+ * The High Roller (24) is on the PDF's page 2: 40-min levels, 60 later.
  */
 const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   1: [30000, 30],
@@ -141,6 +145,7 @@ const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   21: [40000, 40],
   22: [40000, 40],
   23: [40000, 40],
+  24: [200000, 40],
   25: [40000, 40],
   26: [100000, 30],
   27: [30000, 20],
@@ -201,6 +206,8 @@ const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   82: [30000, 20],
   83: [30000, 20],
   84: [20000, 25],
+  85: [40000, 30],
+  86: [40000, 30],
 };
 const lvStructure = (e: FestivalEvent): FestivalEvent => {
   const x = e.day2 || e.flight?.includes('Turbo') ? undefined : LV_STRUCTURE[e.number];
@@ -229,7 +236,6 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     'Horas locais de Las Vegas.',
     'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.',
     'O Main Event não tem garantia publicada (o prémio adicionado não se aplica no Nevada).',
-    'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.',
   ],
   events: [
     lv(1, 'PLO', 'PLO', 1100, 0, '2026-12-01T13:00'),
@@ -303,9 +309,10 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(53, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-09T19:00'),
     lv(54, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-09T21:00'),
     lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-10T10:00', '1A'),
-    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-11T10:00', '1B'),
-    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-12T10:00', '1C'),
-    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-13T10:00', '1D'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-10T18:00', '1B Turbo'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-11T10:00', '1C'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 400, 3_000_000, '2026-12-11T18:00', '1D Turbo'),
+    lv(55, 'NLH Mystery Bounty', 'NLH', 0, 3_000_000, '2026-12-12T14:00', '2'),
     lv(56, "No Limit Hold'em", 'NLH', 800, 100_000, '2026-12-12T10:00'),
     lv(57, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-12T14:00'),
     lv(58, 'Satellite to Ladies NLH Championship', 'NLH', 200, 0, '2026-12-12T16:00'),
@@ -317,6 +324,21 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(63, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-13T18:00'),
     lv(64, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-14T18:00'),
     lv(84, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-14T12:00'),
+    // The $600 and $800 openers, flight times from the PDF (read by the research thread on Rui's Mac).
+    lv(85, "No Limit Hold'em", 'NLH', 600, 400_000, '2026-11-27T11:00', '1A'),
+    lv(85, "No Limit Hold'em", 'NLH', 600, 400_000, '2026-11-27T17:00', '1B'),
+    lv(85, "No Limit Hold'em", 'NLH', 600, 400_000, '2026-11-28T11:00', '1C'),
+    lv(85, "No Limit Hold'em", 'NLH', 600, 400_000, '2026-11-28T17:00', '1D'),
+    lv(85, "No Limit Hold'em", 'NLH', 600, 400_000, '2026-11-29T11:00', '1E'),
+    lv(85, "No Limit Hold'em", 'NLH', 600, 400_000, '2026-11-29T18:00', '1F Turbo'),
+    lv(85, "No Limit Hold'em", 'NLH', 0, 400_000, '2026-11-30T13:00', '2'),
+    lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-11-30T11:00', '1A'),
+    lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-11-30T17:00', '1B'),
+    lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-12-01T11:00', '1C'),
+    lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-12-01T17:00', '1D'),
+    lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-12-02T11:00', '1E'),
+    lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-12-02T18:00', '1F Turbo'),
+    lv(86, "No Limit Hold'em", 'NLH', 0, 1_000_000, '2026-12-03T13:00', '2'),
     lv(65, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-14T21:00'),
     lv(66, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-15T11:00'),
     lv(67, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-15T18:00'),
@@ -552,6 +574,14 @@ export const FESTIVALS: Festival[] = [
   MONACO_MAY_2027,
   ESTORIL_MAY_2027,
   LAS_VEGAS_SUMMER_2027,
+  // November 2026 (festivals-nov-2026.ts). Lists sort by start; FESTIVALS[0] stays the first-run checklist's festival.
+  TORRELODONES_NOV_2026,
+  SAO_PAULO_NOV_2026,
+  LISBOA_NOV_2026,
+  PERALADA_NOV_2026,
+  ESPINHO_DEC_2026,
+  PRAGUE_DEC_2026,
+  PUNTA_DEL_ESTE_DEC_2026,
 ];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */
