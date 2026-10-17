@@ -2767,7 +2767,7 @@ const es: Record<string, string> = {
   "Deves ao grupo": "Le debes al grupo",
   "Para acertar": "Por liquidar",
   "{from} paga-te": "{from} te paga",
-  "Sem rede: cria quando houver sinal": "Sin conexión: se crea cuando haya señal",
+  "Sem rede: é criado quando houver sinal": "Sin conexión: se crea cuando haya señal",
   "Mesmo grupo da última vez": "Mismo grupo que la última vez",
   "Pagas {amount} a {to}": "Pagas {amount} a {to}",
   "{from} paga-te {amount}": "{from} te paga {amount}",

@@ -251,7 +251,7 @@ function NewSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button lines={2} title={busy ? t('A criar…') : waiting ? t('Sem rede: cria quando houver sinal') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
+          <Button lines={2} title={busy ? t('A criar…') : waiting ? t('Sem rede: é criado quando houver sinal') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
               {them.trim() ? t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name }) : t('O outro jogador confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.')}{' '}

@@ -239,7 +239,7 @@ function NewGroupSwap() {
 
         <View style={{ gap: S.sm }}>
           <Button lines={2}
-            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: cria quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
+            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: é criado quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
             icon="paper-plane-outline"
             disabled={!ok}
             onPress={create}

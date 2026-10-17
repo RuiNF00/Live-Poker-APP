@@ -537,7 +537,7 @@ const ptBR: Record<string, string> = {
   'deves': 'você deve',
   'deve-te': 'te deve',
   '{from} paga-te': '{from} te paga',
-  'Sem rede: cria quando houver sinal': 'Sem conexão: será criado quando tiver sinal',
+  'Sem rede: é criado quando houver sinal': 'Sem conexão: será criado quando tiver sinal',
   'Pagas {amount} a {to}': 'Você paga {amount} a {to}',
   '{from} paga-te {amount}': '{from} te paga {amount}',
   'O grupo deve-te': 'O grupo te deve',
