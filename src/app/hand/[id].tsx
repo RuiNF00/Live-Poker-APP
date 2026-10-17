@@ -28,16 +28,11 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
+import { notice } from '@/lib/notice';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
-
-// react-native-web has no Alert: without this the web copy is silent.
-function linkCopied() {
-  if (Platform.OS === 'web') window.alert(t('Link copiado'));
-  else Alert.alert(t('Link copiado'));
-}
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -163,7 +158,7 @@ ${link}`;
     }
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      linkCopied();
+      notice(t('Link copiado'));
     } else {
       const res = await Share.share({ message: msg });
       // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
@@ -256,7 +251,7 @@ ${link}`;
     await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));
     track('link_shared', { channel: 'copy', share_id: shareId, ref });
     tap('success');
-    linkCopied();
+    notice(t('Link copiado'));
   };
 
   const unshare = () => {

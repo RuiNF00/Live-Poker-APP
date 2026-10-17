@@ -17,6 +17,7 @@ import { track } from '@/lib/events';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { SwapError } from '@/lib/swap-api';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
+import { notice } from '@/lib/notice';
 import { shortDate, timeOf } from '@/poker/format';
 import { GROUP_MIN, groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
 import { addGroupPrize, leaveGroupEverywhere, releaseSeatHere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
@@ -179,7 +180,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
     track('link_shared', { channel: 'swap' });
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(url);
-      Alert.alert(t('Link copiado'), url);
+      notice(t('Link copiado'), url);
     } else await Share.share({ message: t('Swap de grupo de {pct} no {title}. Escolhe o teu nome para entrar: {url}', { pct: pctLabel(g.terms.pct), title: g.terms.title, url }) });
   }
 

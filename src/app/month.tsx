@@ -24,6 +24,7 @@ import { askNotificationPermission, notifications } from '@/lib/lock-screen/remi
 import { recapHidden } from '@/lib/month-recap';
 import { maybeAskForReview } from '@/lib/review';
 import { shareRef } from '@/lib/referrals';
+import { notice } from '@/lib/notice';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
 import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
@@ -124,7 +125,7 @@ export default function MonthScreen() {
 
   const copy = async () => {
     await Clipboard.setStringAsync(await postText('any')).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
 

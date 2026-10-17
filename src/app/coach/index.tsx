@@ -11,6 +11,7 @@ import { Badge, Button, Card, Empty, ListGroup, ListItem, Pill, Row, T, tap } fr
 import { locale, t } from '@/i18n';
 import { linkStatus, unreadByHand, type CoachLink, type CoachState } from '@/lib/coach-core';
 import { revokeCoachLink, syncCoach, useCoach } from '@/lib/coach-api';
+import { notice } from '@/lib/notice';
 import { comboLabel } from '@/poker/cards';
 import type { Hand } from '@/poker/types';
 import { useStore } from '@/store/store';
@@ -82,7 +83,7 @@ function LinkCard({ link, coach, hands }: { link: CoachLink; coach: CoachState; 
     const msg = t('Podes rever estas {n} mãos? Comenta no próprio replay, sem criar conta: {url}', { n: link.handIds.length, url: link.url });
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      Alert.alert(t('Link copiado'));
+      notice(t('Link copiado'));
     } else await Share.share({ message: msg }).catch(() => {});
   };
   const revoke = async () => {

@@ -19,6 +19,7 @@ import { track } from '@/lib/events';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { countInSlices } from '@/lib/idle-count';
+import { notice } from '@/lib/notice';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -118,7 +119,7 @@ export default function YearScreen() {
 
   const copy = async () => {
     await Clipboard.setStringAsync(await postText('any')).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   if (review.sessions < YEAR_MIN_SESSIONS) {
