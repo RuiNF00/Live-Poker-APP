@@ -193,7 +193,7 @@ export function SheetHeader({ title, onClose, right, closeLabel }: { title: stri
     <View style={{ gap: S.md }}>
       <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -S.sm }} />
       <Row gap={S.md}>
-        <T v="h1" style={{ flex: 1 }} numberOfLines={1}>
+        <T v="h1" style={{ flex: 1 }} numberOfLines={2}>
           {title}
         </T>
         {right}
@@ -410,7 +410,7 @@ function softOf(hex: string) {
 }
 
 /** A setting with an on/off switch, used inside a ListGroup. */
-export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }: { title: string; subtitle?: string; value: boolean; onChange: (v: boolean) => void; icon?: IconName; iconColor?: string }) {
+export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor, lines = 2 }: { title: string; subtitle?: string; value: boolean; onChange: (v: boolean) => void; icon?: IconName; iconColor?: string; lines?: number }) {
   const flip = (v: boolean) => {
     tap('select');
     onChange(v);
@@ -429,7 +429,7 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }
         iconColor={iconColor}
         title={title}
         subtitle={subtitle}
-        numberOfLines={2}
+        numberOfLines={lines}
         chevron={false}
         right={
           <Switch
