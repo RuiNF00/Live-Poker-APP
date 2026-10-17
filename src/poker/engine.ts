@@ -56,11 +56,17 @@ export interface Step {
 }
 
 /**
- * A pot split k ways, odd chips to the first: whole chips, or cents when the pot has cents
- * (a €3.25 chop is 1.63 + 1.62, never two 2s).
+ * A pot split k ways, odd chips to the first: to the cent in a game with cent blinds (a €1 chop
+ * at 0.25/0.50 is 0.50 + 0.50, a €3.25 one 1.63 + 1.62), by the whole unit otherwise.
  */
-export function splitPot(amount: number, k: number): number[] {
-  const unit = Number.isInteger(amount) ? 1 : 100;
+/** A game played with cent chips (0.25/0.50): its chops split to the cent, not to the whole unit. */
+export function centGame(hand: Hand): boolean {
+  const g = hand.game;
+  return [g.sb, g.bb, g.ante].some((x) => !!x && !Number.isInteger(x));
+}
+
+export function splitPot(amount: number, k: number, cents = false): number[] {
+  const unit = cents || !Number.isInteger(amount) ? 100 : 1;
   const total = Math.round(amount * unit);
   const share = Math.floor(total / k);
   const odd = total - share * k;
@@ -556,9 +562,10 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
       const last = w.filter((i) => !pots.some((q) => q !== pot && q.amount > 0 && pots.indexOf(q) > pots.indexOf(pot) && q.eligible.includes(i)));
       return last.length ? last : w.length ? w : null;
     };
+    const cash = centGame(hand);
     const pay = (amount: number, winners: number[] | null) => {
       if (!winners) return;
-      splitPot(amount, winners.length).forEach((x, k) => (won[winners[k]] += x));
+      splitPot(amount, winners.length, cash).forEach((x, k) => (won[winners[k]] += x));
     };
     for (const pot of pots) {
       pot.winners = pick(pot, runs[0]);

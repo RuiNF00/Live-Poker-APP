@@ -164,6 +164,20 @@ describe('edge cases', () => {
     expect(won).toEqual({ 1: 150, 2: 140 });
   });
 
+  it('splits a whole-euro cash chop to the cent: €1 at 0.25/0.50 is 0.50 + 0.50', () => {
+    const h = base({
+      blinds: { sb: 0.25, bb: 0.5 },
+      buttonSeat: 2,
+      players: [
+        { seat: 1, stack: 50, cards: ['Ac', '2d'] },
+        { seat: 2, stack: 50, cards: ['Ad', '3c'] },
+      ],
+      board: { flop: ['Ks', 'Kh', 'Qs'], turn: 'Qh', river: 'Js' },
+      actions: { preflop: [{ seat: 2, type: 'call' }, { seat: 1, type: 'check' }], flop: [], turn: [], river: [] },
+    });
+    expect(buildReplay(h).at(-1)!.winners!.map((w) => w.amount)).toEqual([0.5, 0.5]);
+  });
+
   it('splits a chopped pot with cents to the cent', () => {
     const h = base({
       blinds: { sb: 0.25, bb: 0.5 },
