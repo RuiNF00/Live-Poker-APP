@@ -98,7 +98,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "O Sweatbook usa o microfone para gravares a tua explicação da mão nas histórias."
+          "microphonePermission": "O Sweatbook usa o microfone para gravares uma nota de voz a explicar a mão na tua história do Instagram."
         }
       ],
       [
@@ -117,6 +117,10 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "locales": {
+      "pt": "./locales/pt.json",
+      "en": "./locales/en.json"
     }
   }
 }
