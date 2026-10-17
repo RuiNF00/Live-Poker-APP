@@ -73,6 +73,14 @@ export function ShareView(props: Props) {
   const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>(quizStep > 0 ? 'open' : 'pending');
   // Until the friend has voted, nothing may give the answer away: notes, tags, later actions, comments.
   const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
+  const canComment = props.allowComments && !quizHidesSpoilers;
+  // Straight into the comment box, keyboard up, on the moment on screen: pause, then type and send.
+  const commentNow = () => {
+    setPlaying(false);
+    const box = document.getElementById('comment-text');
+    box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    box?.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     // A pack that hides amounts opens in BB whatever the viewer picked last time.
@@ -183,6 +191,11 @@ export function ShareView(props: Props) {
         <div className="step-line" aria-live="polite">
           <span className={`street-pill street-${step.street}`}>{streetLabel(step.street, locale)}</span>
           <span className="step-text">{describeStep(step, bb, mode, locale)}</span>
+          {canComment && (
+            <button className="comment-here" onClick={commentNow} aria-label={`${d.send} · ${streetLabel(step.street, locale)}`}>
+              {d.send}
+            </button>
+          )}
         </div>
 
         {quizState === 'open' && quizStep > 0 && (
@@ -199,7 +212,7 @@ export function ShareView(props: Props) {
         )}
 
         {index === steps.length - 1 && !playing && quizState !== 'open' && (
-          <EndCard locale={locale} allowComments={props.allowComments} />
+          <EndCard locale={locale} allowComments={props.allowComments} onComment={commentNow} />
         )}
 
         <div className="scrub">
@@ -298,6 +311,8 @@ export function ShareView(props: Props) {
           bb={bb}
           mode={mode}
           locale={locale}
+          ask={props.ask}
+          onCompose={() => setPlaying(false)}
           onJump={(i) => {
             setPlaying(false);
             goTo(i);
@@ -308,13 +323,13 @@ export function ShareView(props: Props) {
 
       <ReportHand shareId={props.shareId} locale={locale} />
 
-      <AppCta locale={locale} shareId={props.shareId} hideSticky={quizState === 'open' && quizStep > 0} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} />
+      <AppCta locale={locale} shareId={props.shareId} hideSticky={quizState === 'open' && quizStep > 0} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} onComment={canComment ? commentNow : undefined} />
     </main>
   );
 }
 
 /** The hand just ended: the friend's attention peaks here, so ask for a reply and show the app. */
-function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boolean }) {
+function EndCard({ locale, allowComments, onComment }: { locale: Locale; allowComments: boolean; onComment: () => void }) {
   const d = t(locale);
   const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
@@ -324,11 +339,7 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
         {allowComments && (
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => {
-              // Straight into the comment box (keyboard up): type, then Enviar.
-              scroll('comments');
-              document.getElementById('comment-text')?.focus({ preventScroll: true });
-            }}>
+            onClick={onComment}>
             {d.endComment}
           </button>
         )}
