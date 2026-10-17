@@ -3,8 +3,11 @@
 // reads like a statement, not like the app. Pure, so it can be tested.
 
 import { locale, t } from '@/i18n';
-import { duration, money } from '@/poker/format';
+import { duration, rawMoney } from '@/poker/format';
 import { cost, playedMs, profit, type Breakdown } from '@/store/session-math';
+
+import { countryName, flag } from '@/tax/countries';
+import type { TaxReport } from '@/tax/tax-math';
 
 import type { CurrencyReport, Report } from './report';
 
@@ -12,7 +15,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 const hours = (h: number) => h.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + money(Math.round(n * 100) / 100, cur);
+const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n * 100) / 100, cur);
 const cls = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
 
 function period(r: Report): string {
@@ -32,7 +35,7 @@ function table(title: string, rows: Breakdown[], cur: string, label = (k: string
         ${rows
           .map(
             (b) =>
-              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${b.hours >= 0.25 ? esc(money(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
+              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${b.hours >= 0.25 ? esc(rawMoney(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
           )
           .join('')}
       </tbody>
@@ -51,7 +54,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const tiles: [string, string, string?][] = [
     [t('Resultado'), signed(tt.profit, cur), cls(tt.profit)],
     [t('Horas'), hours(tt.hours)],
-    [t('Por hora'), tt.hours >= 0.25 ? money(Math.round(tt.hourly), cur) : '—'],
+    [t('Por hora'), tt.hours >= 0.25 ? rawMoney(Math.round(tt.hourly), cur) : '—'],
     [t('Sessões'), String(tt.sessions)],
   ];
   if (c.mtt.sessions) {
@@ -59,10 +62,10 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
     tiles.push(['ITM', tt.itm === null ? '—' : `${tt.itm.toFixed(0)}%`]);
   }
   if (c.deposits || c.withdrawals) {
-    tiles.push([t('Depósitos'), money(c.deposits, cur)]);
-    tiles.push([t('Levantamentos'), money(c.withdrawals, cur)]);
+    tiles.push([t('Depósitos'), rawMoney(c.deposits, cur)]);
+    tiles.push([t('Levantamentos'), rawMoney(c.withdrawals, cur)]);
   }
-  if (c.owedToBackers) tiles.push([t('Pago a backers'), money(Math.round(c.owedToBackers * 100) / 100, cur)]);
+  if (c.owedToBackers) tiles.push([t('Pago a backers'), rawMoney(Math.round(c.owedToBackers * 100) / 100, cur)]);
 
   const split =
     c.cash.sessions && c.mtt.sessions
@@ -72,7 +75,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
             h: hours(c.cash.hours),
             p: signed(c.cash.profit, cur),
             m: c.mtt.sessions === 1 ? t('1 entrada') : t('{n} entradas', { n: c.mtt.sessions }),
-            b: money(Math.round(c.mtt.buyIns), cur),
+            b: rawMoney(Math.round(c.mtt.buyIns), cur),
             c: c.mtt.cashes === 1 ? t('1 prémio') : t('{n} prémios', { n: c.mtt.cashes }),
             q: signed(c.mtt.profit, cur),
           }),
@@ -82,7 +85,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const sessions = c.sessions
     .map(
       (s) =>
-        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${s.kind === 'mtt' && s.finish ? ` <span class="muted">· ${s.finish}º${s.field ? '/' + s.field : ''}</span>` : ''}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(money(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(money(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
+        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${s.kind === 'mtt' && s.finish ? ` <span class="muted">· ${s.finish}º${s.field ? '/' + s.field : ''}</span>` : ''}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
     )
     .join('');
 
@@ -108,7 +111,62 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
     </section>`;
 }
 
-export function reportHtml(r: Report, opts: { player?: string; now?: number } = {}): string {
+function tripsBlock(r: Report): string {
+  if (!r.trips.length) return '';
+  const range = (from: number, to: number) => `${day(from)} – ${day(to)}`;
+  const rows = r.trips
+    .map(({ trip, summary: s }) => {
+      const conv = s.converted ? `<br/><span class="muted">≈ ${esc(signed(s.converted.net, s.converted.currency))}</span>` : '';
+      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span></td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
+    })
+    .join('');
+  return `
+    <section>
+      <h2>${esc(t('Viagens'))}</h2>
+      <table>
+        <thead><tr><th></th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Póquer'))}</th><th class="n">${esc(t('Despesas'))}</th><th class="n">${esc(t('Líquido'))}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="muted">${esc(t('Despesas de viagem (voos, hotel, comida...) não estão no resultado das sessões acima. Valores convertidos ao câmbio indicado pelo jogador.'))}</p>
+    </section>`;
+}
+
+function taxBlock(x: TaxReport): string {
+  if (!x.rows.some((r) => r.country || r.withheld)) return '';
+  const rows = x.rows
+    .map(
+      (r) =>
+        `<tr><td>${esc(r.country ? `${flag(r.country)} ${countryName(r.country)}` : countryName(undefined))}</td><td class="n">${r.sessions}</td><td class="n">${esc(rawMoney(r.wins, r.currency))}</td><td class="n">${esc(rawMoney(r.losses, r.currency))}</td><td class="n ${cls(r.net)}">${esc(signed(r.net, r.currency))}</td><td class="n">${r.withheld ? esc(rawMoney(r.withheld, r.currency)) : '—'}</td><td class="n">${r.toRecover ? esc(rawMoney(r.toRecover, r.currency)) : '—'}</td></tr>`,
+    )
+    .join('');
+  const us = x.us
+    ? `
+    <h3>${esc(t('Se declaras impostos nos EUA'))}</h3>
+    <table>
+      <thead><tr><th></th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Perdas dedutíveis'))}</th><th class="n">${esc(t('Fica a tributar'))}</th></tr></thead>
+      <tbody>${x.us
+        .map(
+          (u) =>
+            `<tr><td>${esc(u.currency)}</td><td class="n">${esc(rawMoney(u.wins, u.currency))}</td><td class="n">${esc(rawMoney(u.losses, u.currency))}</td><td class="n">${esc(rawMoney(u.deductible, u.currency))}</td><td class="n">${esc(rawMoney(u.taxable, u.currency))}</td></tr>`,
+        )
+        .join('')}</tbody>
+    </table>
+    <p class="muted">${esc(t('A partir de 2026 só 90% das perdas são dedutíveis, e nunca mais do que os ganhos. Quem declara nos EUA precisa de cada sessão documentada: data, local, jogo, buy-ins e cash-outs.'))}${x.us.some((u) => u.lostToCap) ? ' ' + esc(t('Neste período, {amount} de perdas ficam por deduzir por causa desta regra.', { amount: x.us.filter((u) => u.lostToCap).map((u) => rawMoney(u.lostToCap, u.currency)).join(' + ') })) : ''}</p>`
+    : '';
+  return `
+    <section>
+      <h2>${esc(t('Impostos por país'))}</h2>
+      <table>
+        <thead><tr><th>${esc(t('País'))}</th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Resultado'))}</th><th class="n">${esc(t('Retido'))}</th><th class="n">${esc(t('A recuperar'))}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}</p>
+      ${us}
+      <p class="note">${esc(t('Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.'))}</p>
+    </section>`;
+}
+
+export function reportHtml(r: Report, opts: { player?: string; now?: number; tax?: TaxReport } = {}): string {
   const many = r.currencies.length > 1;
   return `<!doctype html>
 <html lang="${locale.slice(0, 2)}">
@@ -140,6 +198,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number } = 
   .pos { color: #13803D; }
   .neg { color: #C03A2B; }
   .sessions td { font-size: 9.5pt; }
+  .note { border: 1px solid #F0C9B8; background: #FDF3EE; border-radius: 8px; padding: 8px 10px; font-size: 9pt; margin-top: 10px; }
   footer { margin-top: 22px; padding-top: 8px; border-top: 1px solid #D9E0DC; font-size: 8.5pt; color: #5B6B64; }
 </style>
 </head>
@@ -153,6 +212,8 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number } = 
     <div class="meta">${opts.player ? esc(opts.player) + '<br/>' : ''}${esc(t('Gerado a {date}', { date: day(opts.now ?? Date.now()) }))}</div>
   </header>
   ${r.currencies.length ? r.currencies.map((c) => currencyBlock(c, many)).join('') : `<p>${esc(t('Sem sessões no período'))}</p>`}
+  ${tripsBlock(r)}
+  ${opts.tax ? taxBlock(opts.tax) : ''}
   <footer>${esc(t('Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.'))}</footer>
 </body>
 </html>`;

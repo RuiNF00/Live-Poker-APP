@@ -1,0 +1,320 @@
+/* Public player profile (/u/<handle>), on the landing's "Noite" tokens (.lp). Phone first. */
+
+.pf {
+  max-width: 760px;
+  padding-bottom: 8px;
+}
+
+/* ---------- Header ---------- */
+
+.pf-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 0 8px;
+}
+.pf-avatar {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(70% 70% at 30% 25%, #245a49, var(--felt) 60%, var(--felt-edge));
+  border: 2px solid var(--accent-line);
+  box-shadow: 0 0 0 6px var(--accent-soft);
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text);
+}
+.lp .pf-head h1 {
+  margin: 16px 0 2px;
+  font-size: clamp(28px, 8vw, 40px);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.pf-handle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.pf-bio {
+  margin: 10px 0 0;
+  max-width: 28em;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--dim);
+  overflow-wrap: anywhere;
+}
+.pf-stats {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.pf-stats li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 6px;
+}
+.pf-stats li + li {
+  border-left: 1px solid var(--border);
+}
+.pf-stats b {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pf-stats span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pf-follow {
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.pf-follow .lp-btn {
+  width: 100%;
+}
+.pf-follow p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---------- Sections ---------- */
+
+.pf-empty {
+  margin: 28px 0 0;
+  padding: 20px;
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  color: var(--dim);
+}
+.pf-section {
+  margin-top: 32px;
+}
+.lp .pf-section h2 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pf-note {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pf-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Session card */
+.pf-session {
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.pf-kind {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.pf-kind span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--dim);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+.lp .pf-session h3 {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.pf-venue {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--dim);
+}
+.pf-big {
+  margin: 10px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.pf-big.up {
+  color: var(--good);
+}
+.pf-big.down {
+  color: #ff8a7a;
+}
+.pf-big.place {
+  color: var(--accent);
+}
+.pf-meta {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Shared hand row */
+.pf-hand {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'cards text' 'cards tag';
+  align-items: center;
+  gap: 4px 14px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: transform 0.12s ease, border-color 0.15s ease;
+}
+.pf-hand:active {
+  transform: scale(0.99);
+  border-color: var(--accent-line);
+}
+.pf-hand-cards {
+  grid-area: cards;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.pf-hole,
+.pf-board {
+  display: flex;
+  gap: 3px;
+}
+.pf-board {
+  opacity: 0.85;
+}
+.pf-hand-text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pf-hand-text b {
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pf-hand-text span {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-hand-tag {
+  grid-area: tag;
+  justify-self: start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+.pf-hand-tag.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- Download + footer ---------- */
+
+.pf-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 40px;
+  padding: 28px 18px;
+  border-radius: var(--r-xl);
+  background: radial-gradient(90% 80% at 50% 0%, rgba(255, 106, 61, 0.12), var(--surface) 70%);
+  border: 1px solid var(--border);
+}
+.lp .pf-cta h2 {
+  margin: 14px 0 6px;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+.pf-cta p {
+  margin: 0 0 18px;
+  max-width: 26em;
+  color: var(--dim);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.pf-cta .lp-stores {
+  justify-content: center;
+}
+.pf-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 18px;
+  margin-top: 32px;
+  padding: 18px 0 calc(110px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+.pf-foot a {
+  color: var(--dim);
+}
+.pf-report {
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pf-report:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
+@media (min-width: 720px) {
+  .pf-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -51,7 +51,8 @@ export function newHand(opts: {
     stack = session.stack;
     names = session.roster;
   } else if (last) {
-    game = { ...last.game };
+    // Straddles and bomb pots belong to one hand, never carried over.
+    game = { ...last.game, straddles: undefined, straddleFrom: undefined, bombPot: undefined };
     n = last.players.length;
     // Carry hero's stack over from where the last hand ended.
     const r = replay(last);

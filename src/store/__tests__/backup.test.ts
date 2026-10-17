@@ -35,11 +35,24 @@ test('csv quotes and computes profit', () => {
   const csv = sessionsCsv([sess(), sess({ id: 'live', endedAt: undefined })]);
   const lines = csv.trim().split('\n');
   assert.equal(lines.length, 2);
-  assert.match(lines[1], /^2026-10-01,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,200,1,0,200,450,0,,0,250,,,$/);
+  assert.match(lines[1], /^2026-10-01,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,200,1,0,200,450,0,,0,250,,,,,,,$/);
 });
 
 test('importSummary mentions bankrolls and transfers only when some came in', () => {
   assert.ok(!importSummary({ hands: 1, sessions: 2, players: 0 }).includes('bankroll'));
   const s = importSummary({ hands: 0, sessions: 0, players: 0, bankrolls: 2, transfers: 3 });
   assert.ok(s.includes('2 bankrolls · 3 movimentos'), s);
+});
+
+test('players you back go through a backup and come back validated, next to trips', async () => {
+  const { buildStatement } = await import('../../lib/backing-link');
+  const st = buildStatement({ id: 'b1', name: 'Eu', note: '', shareKey: 'k_test01', createdAt: 0 }, 'Rui', '€', [], [], [], 9);
+  const b = buildBackup({ hands: [], sessions: [], players: [], backing: [{ id: st.id, statement: st, createdAt: 1 }], trips: [], settings: DEFAULT_SETTINGS }, 5);
+  const back = parseBackup(JSON.stringify(b));
+  assert.deepEqual(back.backing, b.backing);
+  assert.deepEqual(back.trips, []);
+  // A tampered statement is dropped, the rest of the backup still loads.
+  const bad = JSON.parse(JSON.stringify(b));
+  bad.backing.push({ id: 'x', statement: { v: 9 } });
+  assert.equal(parseBackup(JSON.stringify(bad)).backing?.length, 1);
 });

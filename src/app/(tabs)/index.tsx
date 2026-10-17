@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
@@ -13,6 +13,8 @@ import { isComplete, positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStrip } from '@/components/StreakStrip';
+import { saveSolverFile, solverReady } from '@/lib/solver-export';
+import { StartChecklist } from '@/components/StartChecklist';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -49,7 +51,7 @@ const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
-  const { handsLeft, trialDays, paywall } = usePro();
+  const { handsLeft, trialDays, paywall, isPro } = usePro();
   useWelcomeOffer(hands.length);
   useOnboarding();
   const [q, setQ] = useState('');
@@ -133,6 +135,7 @@ export default function HandsScreen() {
               />
               {!activeSession && sessions.length > 0 ? <Verdict sessions={sessions} incomplete={incomplete} onIncomplete={() => setTag(INCOMPLETE)} /> : null}
               {hands.length > 0 && !searching ? <StreakStrip /> : null}
+              {!searching ? <StartChecklist /> : null}
               {hasDraft ? (
                 <Banner
                   tone="warn"
@@ -214,9 +217,10 @@ export default function HandsScreen() {
       />
       {picking ? (
         <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: S.md, flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.sm, paddingLeft: S.lg, borderRadius: R.lg, backgroundColor: C.surface3, borderWidth: 1, borderColor: C.borderStrong, ...SHADOW }}>
-          <T v="h3" style={{ flex: 1 }} accessibilityLiveRegion="polite">
+          <T v="h3" numberOfLines={1} style={{ flex: 1 }} accessibilityLiveRegion="polite">
             {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
           </T>
+          <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton
@@ -526,4 +530,25 @@ function Verdict({ sessions, incomplete, onIncomplete }: { sessions: Session[]; 
       ) : null}
     </Card>
   );
+}
+
+/** Picked hands as one PokerStars file; unfinished hands are left out, and the player is told. */
+function exportSolver(list: Hand[]) {
+  tap();
+  const ready = solverReady(list);
+  const skipped = list.length - ready.length;
+  if (!ready.length) {
+    note(t('Nenhuma mão completa'), t('Os solvers só leem mãos completas.'));
+    return;
+  }
+  saveSolverFile(ready)
+    .then(() => {
+      if (skipped) note(skipped === 1 ? t('1 mão por completar ficou de fora') : t('{n} mãos por completar ficaram de fora', { n: skipped }));
+    })
+    .catch(() => note(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
+}
+
+function note(title: string, body?: string) {
+  if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
+  else Alert.alert(title, body);
 }

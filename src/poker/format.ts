@@ -25,7 +25,20 @@ export function amount(n: number, hand: Pick<Hand, 'game'>, inBB: boolean): stri
   return inBB ? bbs(n, hand.game.bb) : chips(n);
 }
 
+let masked = false;
+/** Privacy mode (Settings): every amount on screen shows as •••. Set by the store. */
+export function setMoneyMasked(v: boolean) {
+  masked = v;
+}
+export const moneyMasked = () => masked;
+export const MASK = '•••';
+
+/** An amount for the screen: ••• in privacy mode. Files, reports and share images use rawMoney. */
 export function money(n: number, currency = '€'): string {
+  return masked ? MASK : rawMoney(n, currency);
+}
+
+export function rawMoney(n: number, currency = '€'): string {
   const sign = n < 0 ? '−' : '';
   const a = Math.abs(n);
   const cents = Math.round(a * 100);
@@ -50,7 +63,8 @@ export function pct(x: number, digits = 0): string {
 
 export function blindsLabel(hand: Pick<Hand, 'game'>): string {
   const g = hand.game;
-  const base = `${chips(g.sb)}/${chips(g.bb)}`;
+  if (g.bombPot) return `${chips(g.sb)}/${chips(g.bb)} · bomb ${chips(g.bombPot)}`;
+  const base = `${chips(g.sb)}/${chips(g.bb)}` + (g.straddles ? `/${chips(g.bb * 2 ** (g.straddleFrom === 'btn' ? 1 : g.straddles))}` : '');
   if (g.ante > 0 && g.anteType !== 'none') return `${base} (${chips(g.ante)})`;
   return base;
 }

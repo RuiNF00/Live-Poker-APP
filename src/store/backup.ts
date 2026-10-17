@@ -7,7 +7,7 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
-import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer } from './types';
+import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
   app: 'sweatbook';
@@ -24,6 +24,8 @@ export interface BackupData {
   /** Missing in backups made before bankrolls existed. */
   bankrolls?: Bankroll[];
   transfers?: Transfer[];
+  /** Missing in backups made before trips existed. */
+  trips?: Trip[];
   settings?: Partial<Settings>;
 }
 
@@ -37,6 +39,7 @@ export function buildBackup(
     backers?: Backer[];
     packages?: StakePackage[];
     payments?: BackerPayment[];
+    trips?: Trip[];
     backing?: BackedPlayer[];
     settings: Settings;
   },
@@ -54,6 +57,7 @@ export function buildBackup(
     backers: d.backers ?? [],
     packages: d.packages ?? [],
     payments: d.payments ?? [],
+    trips: d.trips ?? [],
     backing: d.backing ?? [],
     settings: d.settings,
   };
@@ -85,6 +89,12 @@ export function parseBackup(text: string): BackupData {
   const transfers = arr('transfers').filter(
     (x) => isObj(x) && typeof x.bankrollId === 'string' && (x.kind === 'deposit' || x.kind === 'withdrawal') && typeof x.amount === 'number' && Number.isFinite(x.amount) && typeof x.at === 'number',
   ) as unknown as Transfer[];
+  const trips = arr('trips')
+    .filter((x): x is Record<string, unknown> => isObj(x) && typeof x.name === 'string' && typeof x.currency === 'string' && typeof x.from === 'number' && typeof x.to === 'number')
+    .map((x) => {
+      const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
+      return { ...x, expenses: ex };
+    }) as unknown as Trip[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -98,6 +108,7 @@ export function parseBackup(text: string): BackupData {
     backing,
     bankrolls,
     transfers,
+    trips,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
   };
 }
@@ -119,9 +130,9 @@ function cell(v: string | number | undefined): string {
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** Sessions, then deposits and withdrawals, as CSV for spreadsheets and accountants. */
-export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = []): string {
-  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'notes'];
+/** Sessions, then deposits and withdrawals, then trip expenses, as CSV for spreadsheets and accountants. */
+export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
+  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -146,6 +157,10 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         Math.round(profit(s) * 100) / 100,
         s.finish,
         s.field,
+        s.country ?? '',
+        s.withheld?.amount ?? '',
+        s.withheld?.form ?? '',
+        s.withheld ? s.withheld.status : '',
         s.notes,
       ]
         .map(cell)
@@ -165,11 +180,25 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
       row[head.indexOf('notes')] = x.note;
       return row.map(cell).join(',');
     });
-  return [head.join(','), ...rows, ...moves].join('\n') + '\n';
+  // Type "expense", the kind in notes before the player's note, the trip as the game.
+  const spent = [...expenses]
+    .sort((a, b) => a.x.at - b.x.at)
+    .map(({ trip, x }) => {
+      const row: (string | number | undefined)[] = head.map(() => '');
+      row[0] = new Date(x.at).toISOString().slice(0, 10);
+      row[1] = 'expense';
+      row[head.indexOf('game')] = trip.name;
+      row[head.indexOf('venue')] = trip.venue;
+      row[head.indexOf('currency')] = x.currency;
+      row[head.indexOf('profit')] = -Math.abs(x.amount);
+      row[head.indexOf('notes')] = [x.kind, x.note].filter(Boolean).join(': ');
+      return row.map(cell).join(',');
+    });
+  return [head.join(','), ...rows, ...moves, ...spent].join('\n') + '\n';
 }
 
 /** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */
-export function importSummary(n: { hands: number; sessions: number; players: number; backers?: number; bankrolls?: number; transfers?: number }): string {
+export function importSummary(n: { hands: number; sessions: number; players: number; backers?: number; bankrolls?: number; transfers?: number; trips?: number }): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
     n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }),
@@ -179,6 +208,7 @@ export function importSummary(n: { hands: number; sessions: number; players: num
   // Only when the backup had any: older backups have none to mention.
   if (n.bankrolls) parts.push(n.bankrolls === 1 ? t('1 bankroll') : t('{n} bankrolls', { n: n.bankrolls }));
   if (n.transfers) parts.push(n.transfers === 1 ? t('1 movimento') : t('{n} movimentos', { n: n.transfers }));
+  if (n.trips) parts.push(n.trips === 1 ? t('1 viagem') : t('{n} viagens', { n: n.trips }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 
@@ -186,5 +216,5 @@ export function importSummary(n: { hands: number; sessions: number; players: num
 function decodeBacked(x: Record<string, unknown>): BackedPlayer | null {
   const st = isObj(x.statement) ? checkStatement(x.statement) : null;
   if (!st || st.id !== x.id) return null;
-  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, updatedAt: typeof x.updatedAt === 'number' ? x.updatedAt : undefined };
+  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, ...(typeof x.updatedAt === 'number' ? { updatedAt: x.updatedAt } : {}) };
 }

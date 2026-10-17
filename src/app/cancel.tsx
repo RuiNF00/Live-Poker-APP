@@ -74,13 +74,19 @@ export default function Cancel() {
           {mine ? (
             <View style={{ gap: S.sm }}>
               <T v="label">{t('No teu caderno')}</T>
-              <T v="monoL" color={mine.profit >= 0 ? C.good : C.bad}>
-                {(mine.profit > 0 ? '+' : '') + money(mine.profit, mine.currency)}
-              </T>
+              {mine.sessions > 0 ? (
+                <T v="monoL" color={mine.profit >= 0 ? C.good : C.bad}>
+                  {(mine.profit > 0 ? '+' : '') + money(mine.profit, mine.currency)}
+                </T>
+              ) : null}
               <T v="callout">
-                {t('{sessions} e {hands} desde {month}.', {
-                  sessions: mine.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: mine.sessions }),
-                  hands: mine.hands === 1 ? t('1 mão') : t('{n} mãos', { n: mine.hands }),
+                {t('{what} desde {month}.', {
+                  what: [
+                    mine.sessions === 0 ? null : mine.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: mine.sessions }),
+                    mine.hands === 0 ? null : mine.hands === 1 ? t('1 mão') : t('{n} mãos', { n: mine.hands }),
+                  ]
+                    .filter(Boolean)
+                    .join(t(' e ')),
                   month: new Date(mine.since).toLocaleDateString(locale, { month: 'long', year: 'numeric' }),
                 })}
               </T>
@@ -103,7 +109,12 @@ export default function Cancel() {
                 <T v="h2" style={{ flex: 1 }}>
                   {t(CANCEL_REASONS.find((r) => r.key === reason)!.label)}
                 </T>
-                <Button kind="ghost" small title={t('Mudar')} onPress={() => setReason(null)} />
+                <Button kind="ghost" small title={t('Mudar')} onPress={() => {
+                    setReason(null);
+                    setSent(false);
+                    setNote('');
+                  }}
+                />
               </Row>
 
               {reason === 'notPlaying' ? (

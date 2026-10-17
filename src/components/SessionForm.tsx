@@ -6,11 +6,13 @@ import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 import { parseDay, playedMs } from '@/store/session-math';
-import { uid } from '@/store/store';
+import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
+import { countryOfVenue } from '@/tax/countries';
 import { S } from '@/theme';
 
 import { StakeFields } from './StakeFields';
+import { TaxFields } from './TaxFields';
 import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T } from './ui';
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
@@ -63,7 +65,10 @@ export function SessionForm({
   /** The caller draws the submit button (a bar pinned above the tab bar) and calls this; the form then leaves it out. */
   submitRef?: React.RefObject<(() => void) | null>;
 }) {
-  const [s, setS] = useState<Session>(initial);
+  const [s0, setS] = useState<Session>(initial);
+  const { sessions } = useStore();
+  // A venue played before brings its country (for the tax report).
+  const s = s0.country !== undefined || !s0.venue ? s0 : { ...s0, country: countryOfVenue(s0.venue, sessions) };
   const initHours = initial.endedAt ? Math.max(1, Math.round(playedMs(initial) / 3600000)) : 4;
   const [hours, setHours] = useState(initHours);
   const initDay = dayStart(initial.endedAt ?? Date.now());
@@ -72,7 +77,7 @@ export function SessionForm({
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
-  const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId });
+  const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country });
   const online = s.format === 'online';
   const submit = () => {
     if (past) {
@@ -203,6 +208,7 @@ export function SessionForm({
         </>
       )}
       <StakeFields s={s} onChange={set} expenses={!!past} />
+      {past && <TaxFields s={s} onChange={set} />}
       {submitRef ? null : <Button title={submitLabel} icon={past ? 'checkmark' : 'play'} onPress={submit} />}
     </View>
   );

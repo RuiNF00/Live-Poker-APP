@@ -5,7 +5,7 @@
 
 import { t } from '@/i18n';
 import { replay, totalPot } from '@/poker/engine';
-import { bbs, duration, money } from '@/poker/format';
+import { bbs, duration, rawMoney } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 import { playedMs, profit } from '@/store/session-math';
 import type { Session } from '@/store/types';
@@ -59,11 +59,11 @@ export function sessionStats(s: Session, hands: Hand[], hideMoney: boolean, now 
   const hours = ms / 3_600_000;
   const big = biggestHand(mine);
   const all: (CardStat | null)[] = [
-    hideMoney ? null : { key: 'result', label: t('Resultado'), value: (p > 0 ? '+' : '') + money(p, s.currency), tone: p > 0 ? 'good' : p < 0 ? 'bad' : undefined },
+    hideMoney ? null : { key: 'result', label: t('Resultado'), value: (p > 0 ? '+' : '') + rawMoney(p, s.currency), tone: p > 0 ? 'good' : p < 0 ? 'bad' : undefined },
     s.kind === 'mtt' && s.finish ? { key: 'place', label: t('Lugar'), value: s.field ? `${s.finish}º/${s.field}` : `${s.finish}º` } : null,
     big ? { key: 'pot', label: t('Maior pote'), value: bbs(big.bb * (big.hand.game.bb || 1), big.hand.game.bb) } : null,
     ms > 60_000 ? { key: 'hours', label: t('A jogar'), value: duration(ms) } : null,
-    !hideMoney && hours >= 1 ? { key: 'perHour', label: t('Por hora'), value: (p > 0 ? '+' : '') + money(Math.round(p / hours), s.currency), tone: p > 0 ? 'good' : p < 0 ? 'bad' : undefined } : null,
+    !hideMoney && hours >= 1 ? { key: 'perHour', label: t('Por hora'), value: (p > 0 ? '+' : '') + rawMoney(Math.round(p / hours), s.currency), tone: p > 0 ? 'good' : p < 0 ? 'bad' : undefined } : null,
     mine.length ? { key: 'hands', label: t('Mãos registadas'), value: String(mine.length) } : null,
     s.venue ? { key: 'venue', label: t('Sala'), value: s.venue } : null,
   ];
@@ -90,7 +90,7 @@ export function milestoneFor(s: Session, sessions: Session[], hands: Hand[]): Mi
   const p = profit(s);
   const others = same.filter((x) => x.id !== s.id);
   if (p > 0 && others.length >= 4 && others.every((x) => profit(x) < p)) {
-    return { kind: 'bestResult', title: t('Melhor sessão de sempre'), detail: '+' + money(p, s.currency), money: true };
+    return { kind: 'bestResult', title: t('Melhor sessão de sempre'), detail: '+' + rawMoney(p, s.currency), money: true };
   }
 
   const months = new Map<number, number>();
@@ -98,7 +98,7 @@ export function milestoneFor(s: Session, sessions: Session[], hands: Hand[]): Mi
   const mine = monthKey(s.startedAt);
   const total = months.get(mine) ?? 0;
   if (total > 0 && months.size >= 3 && [...months].every(([k, v]) => k === mine || v < total)) {
-    return { kind: 'bestMonth', title: t('Melhor mês de sempre'), detail: '+' + money(total, s.currency), money: true };
+    return { kind: 'bestMonth', title: t('Melhor mês de sempre'), detail: '+' + rawMoney(total, s.currency), money: true };
   }
 
   const here = biggestHand(hands.filter((h) => h.sessionId === s.id));

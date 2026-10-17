@@ -10,6 +10,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { usePro } from '@/billing/pro';
+import { FREE } from '@/billing/plans';
 import { ActionOffers } from '@/components/staking/ActionOffers';
 import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
@@ -19,8 +21,9 @@ import { eventDay, eventTitle, venueTime, BAHAMAS_DEC_2026, type Festival, type 
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type FestivalPlan } from '@/store/festival-plan';
-import { stakesFor, getOffers } from '@/store/action-offer';
-import { useStore } from '@/store/store';
+import { getOffers, stakesFor } from '@/store/action-offer';
+import { uid, useStore } from '@/store/store';
+import { tripFromFestival } from '@/store/trip-math';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
@@ -121,6 +124,7 @@ export default function FestivalScreen() {
         </View>
 
         <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} />
+        <TripLink f={f} plan={plan} />
 
         <ActionOffers f={f} picked={plan.picked} />
 
@@ -189,6 +193,30 @@ export default function FestivalScreen() {
         </View>
       </ScrollView>
     </>
+  );
+}
+
+/** The trip for this festival: open it, or make it from the plan (dates from the planned events). */
+function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {
+  const { trips, settings, saveTrip } = useStore();
+  const { isPro, paywall } = usePro();
+  const trip = trips.find((x) => x.festivalId === f.id);
+  const open = () => {
+    if (trip) return router.push(`/trips/${trip.id}`);
+    if (!isPro && FREE.trips !== null && trips.length >= FREE.trips) return paywall('stats');
+    tap('medium');
+    const x = tripFromFestival(uid('tr_'), f, plan, f.currency !== settings.currency ? { currency: settings.currency, rate: 0 } : undefined);
+    saveTrip(x);
+    router.push(`/trips/${x.id}`);
+  };
+  return (
+    <Button
+      size="md"
+      kind="secondary"
+      icon="airplane-outline"
+      title={trip ? t('Ver viagem e despesas') : t('Criar viagem: voos, hotel e resultado líquido')}
+      onPress={open}
+    />
   );
 }
 

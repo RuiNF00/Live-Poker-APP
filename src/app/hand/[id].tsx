@@ -16,9 +16,11 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
-import { isNetworkError, queueShare, useQueuedShare } from '@/lib/share-queue';
+import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
+import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
+import { saveSolverFile } from '@/lib/solver-export';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -59,6 +61,16 @@ export default function HandScreen() {
     if (hand.shareId) return hand.shareId;
     setBusy(true);
     try {
+      // One public copy per hand: reuse a link made offline, or wait for the one being sent.
+      const slot = await takeDirectShare(hand.id);
+      if (slot.kind === 'ready') {
+        saveHand({ ...hand, ...slot.link });
+        return slot.link.shareId;
+      }
+      if (slot.kind === 'busy') {
+        Alert.alert(t('Link quase pronto'), t('Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.'));
+        return null;
+      }
       const { id: shareId, token } = await uploadHand(hand, { names: settings.shareNames, notes: settings.shareNotes });
       saveHand({ ...hand, shareId, shareToken: token });
       return shareId;
@@ -126,6 +138,28 @@ ${link}`;
     ]);
   };
 
+  // PokerStars hand history, for GTO Wizard, PioSolver, Hold'em Manager or PokerTracker.
+  const exportSolver = () => {
+    tap();
+    if (!isComplete(hand)) {
+      Alert.alert(t('Mão por completar'), t('Os solvers só leem mãos completas. Acaba a mão primeiro.'));
+      return;
+    }
+    const save = () => saveSolverFile([hand]).catch(() => Alert.alert(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
+    if (Platform.OS === 'web') return save();
+    Alert.alert(t('Exportar para solver'), t('Formato PokerStars: GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+      {
+        text: t('Copiar texto'),
+        onPress: async () => {
+          await Clipboard.setStringAsync(pokerStarsText(hand));
+          Alert.alert(t('Texto copiado'), t('Cola-o na importação de mãos do solver ou do tracker.'));
+        },
+      },
+      { text: t('Guardar ficheiro .txt'), onPress: save },
+      { text: t('Cancelar'), style: 'cancel' },
+    ]);
+  };
+
   const unshare = () => {
     const doIt = async () => {
       if (!hand.shareId || !hand.shareToken) return;
@@ -188,6 +222,7 @@ ${link}`;
             <ShareTile icon="help-circle-outline" label={t('Desafio')} sub={t('Votação')} disabled={busy} onPress={() => share(true)} />
             <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })} />
             <ShareTile icon="copy-outline" label={t('Texto')} sub={t('Fórum')} disabled={busy} onPress={askCopyText} />
+            <ShareTile icon="analytics-outline" label="Solver" sub="PokerStars" onPress={exportSolver} />
           </Row>
         </Section>
 
