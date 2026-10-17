@@ -4,13 +4,16 @@
 import * as Crypto from 'expo-crypto';
 
 import type { RemoteSwap, SwapEntry, SwapTerms } from '@/store/swaps';
+import { variant } from '@/i18n';
 import { BRAND } from '@/theme';
+
+import { withLang } from './link-lang';
 
 // Same server as share-api.ts (not imported from there: it pulls in more than we need).
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
 export function swapUrl(id: string, ref?: string): string {
-  return `${BRAND.webUrl}/swap/${id}${ref ? `?r=${encodeURIComponent(ref)}` : ''}`;
+  return withLang(`${BRAND.webUrl}/swap/${id}${ref ? `?r=${encodeURIComponent(ref)}` : ''}`, variant);
 }
 
 export const newCid = () => Crypto.randomUUID().replace(/-/g, '').slice(0, 16);

@@ -7,8 +7,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 
 import { Button, Card, Pill, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
+import { withLang } from '@/lib/link-lang';
 import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive } from '@/lib/live-link';
 import { shareRef } from '@/lib/referrals';
 import { useOnline } from '@/lib/sync';
@@ -23,7 +24,7 @@ function note(title: string, body: string) {
 
 async function shareLink(s: Session, id: string) {
   const ref = await shareRef().catch(() => '');
-  const url = `${liveUrl(id)}?utm_source=app&utm_medium=backer_live${ref ? `&r=${encodeURIComponent(ref)}` : ''}`;
+  const url = withLang(`${liveUrl(id)}?utm_source=app&utm_medium=backer_live${ref ? `&r=${encodeURIComponent(ref)}` : ''}`, variant);
   const msg = t('Segue a minha sessão em direto: {name}{url}', { name: s.name ? s.name + '\n' : '', url });
   track('link_shared', { channel: 'backer_live' });
   if (Platform.OS === 'web') {

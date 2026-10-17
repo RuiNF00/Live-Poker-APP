@@ -8,7 +8,8 @@ import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Empty, Row, T, tap } from '@/components/ui';
-import { locale, t } from '@/i18n';
+import { locale, t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { deletePack, usePacks } from '@/lib/pack-api';
 import type { HandPack } from '@/lib/pack-core';
 import type { Hand } from '@/poker/types';
@@ -50,7 +51,7 @@ function PackCard({ pack, hands }: { pack: HandPack; hands: Hand[] }) {
   const list = pack.handIds.map((id) => hands.find((h) => h.id === id)).filter((h): h is Hand => !!h);
   const share = async () => {
     tap();
-    const msg = `${t('{n} mãos para rever: o que fazias em cada uma? 👀', { n: pack.handIds.length })}\n${pack.url}`;
+    const msg = `${t('{n} mãos para rever: o que fazias em cada uma? 👀', { n: pack.handIds.length })}\n${withLang(pack.url, variant)}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));

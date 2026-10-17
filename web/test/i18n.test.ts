@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { intlTag, isPt, LOCALES, numberTag, pickLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
+import { intlTag, isPt, LOCALES, numberTag, ogLocale, pickLocale, previewLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
+import { previewCopy } from '../src/lib/preview-copy';
+import { packCopy } from '../src/components/pack/copy';
 import { backingCopy } from '../src/components/backing/copy';
 import { coachCopy } from '../src/components/coach/copy';
 import { landingCopy } from '../src/components/landing/copy';
@@ -90,6 +92,8 @@ const copies: [string, (l: Locale) => unknown][] = [
   ['offer', offerCopy],
   ['profile', profileCopy],
   ['swap', swapCopy],
+  ['pack', packCopy],
+  ['link preview', previewCopy],
 ];
 
 describe.each(copies)('%s copy', (_name, copy) => {
@@ -112,6 +116,23 @@ describe.each(copies)('%s copy', (_name, copy) => {
     expect(br).not.toMatch(/\ba (enviar|guardar|confirmar|decorrer|carregar)\b/i);
     // Neutral Spanish: no vosotros, no usted, no móvil/celular.
     expect(es).not.toMatch(/\b(vosotros|usted|móvil|celular|tenéis|podéis)\b/i);
+  });
+});
+
+describe('previewLocale', () => {
+  it("takes the sharer's language from the link, whatever the reader's browser says", () => {
+    expect(previewLocale('pt-PT', 'en-US')).toBe('pt');
+    expect(previewLocale('pt-BR', null)).toBe('pt-BR');
+    expect(previewLocale('es', 'pt-PT')).toBe('es');
+    expect(previewLocale('en', null)).toBe('en');
+  });
+  it("falls back to the reader's browser, then the site's language", () => {
+    expect(previewLocale(undefined, 'es-ES,es;q=0.9')).toBe('es');
+    expect(previewLocale(['es'], null)).toBe('pt');
+    expect(previewLocale('fr', null)).toBe('pt');
+  });
+  it('names og:locale', () => {
+    expect(LOCALES.map(ogLocale)).toEqual(['pt_PT', 'pt_BR', 'en_GB', 'es_ES']);
   });
 });
 
