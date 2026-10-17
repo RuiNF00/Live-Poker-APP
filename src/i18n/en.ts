@@ -2810,7 +2810,7 @@ const en: Record<string, string> = {
   'Fotografar a folha da estrutura': 'Photograph the structure sheet',
   'Fotografar a folha da estrutura: disponível na versão da loja': 'Photograph the structure sheet: available in the store version',
   'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'We couldn\'t read the levels in this photo. Try with more light and the sheet straight, or paste the text.',
-  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'No time? Position and cards are enough: tap “Save now” and finish it later.',
+  'Sem tempo? «Guardar já» e completas depois.': 'No time? Tap “Save now” and finish it later.',
   'O teu stack: {amount}. Toca para mudar': 'Your stack: {amount}. Tap to change',
   'Outras apps': 'Other apps',
   'Mensagens, Telegram…': 'Messages, Telegram…',

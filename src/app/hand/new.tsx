@@ -325,7 +325,8 @@ export default function NewHand() {
   const checks = phase === 'action' ? checkAround(hand, s) : [];
   // "Check até ao fim" on the flop and turn, also when the others already checked to hero.
   const checkDown = phase === 'action' && (s.street === 'flop' || s.street === 'turn') ? checkDownNow(hand, s) : [];
-  const levelUp = phase === 'hero' ? nextLevel(hand.game) : null;
+  // "Subiram as blinds?" means nothing before a first hand: it shows from the second one on.
+  const levelUp = phase === 'hero' && settings.onboarded ? nextLevel(hand.game) : null;
   // Heads-up showdown: the picker for the opponent's cards is already open.
   const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
   const sdSeat = showdownFor !== undefined ? showdownFor : liveVillains.length === 1 && (hand.players[liveVillains[0]].cards?.length ?? 0) < 2 ? liveVillains[0] : null;
@@ -354,6 +355,14 @@ export default function NewHand() {
           : l.p === hand.hero
           ? t('Fold de todos até ti')
           : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
+        : null;
+  // First hand only (onboarded is set when it's saved), and one tip at a time: the
+  // way out while hero hasn't acted yet, then how to skip seats on the felt.
+  const firstHint =
+    settings.onboarded || isEdit || phase !== 'action' || !l
+      ? null
+      : !hand.actions.some((a) => a.p === hand.hero)
+        ? t('Sem tempo? «Guardar já» e completas depois.')
         : skips.length > 1
           ? t('Toca num lugar da mesa para saltar até ele')
           : null;
@@ -527,10 +536,9 @@ export default function NewHand() {
                 ))}
               </ChipRow>
             )}
-            {/* First hand only (onboarded is set when it's saved): the rest is optional. */}
-            {!settings.onboarded && !isEdit ? (
+            {firstHint ? (
               <T v="tiny" color={C.accent} numberOfLines={2}>
-                {t('Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.')}
+                {firstHint}
               </T>
             ) : null}
             {(callers.length > 0 || checkDown.length > 0) && (

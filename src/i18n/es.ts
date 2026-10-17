@@ -2676,7 +2676,7 @@ const es: Record<string, string> = {
   'Barcelona, março 2027': 'Barcelona, marzo 2027',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. La primera etapa suele ser en marzo.',
   'O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.': 'El organizador aún no ha publicado las fechas. Los torneos aparecerán aquí cuando salga el programa.',
-  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': '¿Sin tiempo? Posición y cartas bastan: «Guardar ya» y la completas después.',
+  'Sem tempo? «Guardar já» e completas depois.': '¿Sin tiempo? «Guardar ya» y la completas después.',
   'O teu stack: {amount}. Toca para mudar': 'Tu stack: {amount}. Toca para cambiar',
   'Outras apps': 'Otras apps',
   'Mensagens, Telegram…': 'Mensajes, Telegram…',
