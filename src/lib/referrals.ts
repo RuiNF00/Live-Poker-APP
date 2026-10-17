@@ -21,6 +21,7 @@ interface ClaimState {
   code: string;
   result: ClaimResult;
   activated?: boolean;
+  handSaved?: boolean;
 }
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T | null> {
@@ -81,6 +82,8 @@ export async function bootReferrals(): Promise<void> {
   const firstRun = !(await getJSON<number>(K.first));
   await firstOpenAt();
   await ensureRegistered();
+  const c = await claimState();
+  if (c?.result === 'ok' && c.handSaved && !c.activated) await activateInvite();
   if (firstRun && Platform.OS === 'android') {
     try {
       const { getInstallReferrerAsync } = await import('expo-application');
@@ -113,10 +116,12 @@ export async function claimInvite(raw: string, source: ClaimSource, shareId?: st
 export async function activateInvite(): Promise<boolean> {
   const c = await claimState();
   if (!c || c.result !== 'ok' || c.activated) return false;
+  if (!c.handSaved) await AsyncStorage.setItem(K.claim, JSON.stringify({ ...c, handSaved: true })).catch(() => {});
   try {
-    const r = await post<{ status: string }>('activate', {});
-    if (!r) return false;
-    await AsyncStorage.setItem(K.claim, JSON.stringify({ ...c, activated: true })).catch(() => {});
+    const r = await post<{ booked?: boolean }>('activate', {});
+    // Not booked yet (RevenueCat hasn't seen this user): try again on next launch.
+    if (!r?.booked) return false;
+    await AsyncStorage.setItem(K.claim, JSON.stringify({ ...c, handSaved: true, activated: true })).catch(() => {});
     return true;
   } catch {
     return false;

@@ -74,7 +74,8 @@ export function skipTo(hand: Hand, s: TableState, target: number): HandAction[] 
     const l = legal(st)!;
     const a: HandAction = { p: st.toAct, kind: l.canCheck ? 'check' : 'fold' };
     const next: TableState | null = apply(st, a, hand);
-    if (!next) break;
+    // Never end the hand on the user's behalf (hero in the BB: the SB decides).
+    if (!next || (next.toAct === null && !next.needsBoard)) break;
     acts.push(a);
     st = next;
     if (next.street !== s.street) break;

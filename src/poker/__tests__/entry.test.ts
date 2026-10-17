@@ -44,3 +44,12 @@ test('shortcut does not apply when hero is not the aggressor', () => {
   const h = mk();
   assert.deepEqual(onlyCaller(h, replay(h).final, 1), []);
 });
+
+test('hero in the BB: auto-fold stops at the SB instead of handing hero a walk', () => {
+  let h = mk({ button: buttonForHeroPosition(9, 0, 'BB') });
+  h = { ...h, actions: skipTo(h, replay(h).final, h.hero) };
+  const s = replay(h).final;
+  assert.equal(h.actions.length, 7);
+  assert.notEqual(s.toAct, null);
+  assert.notEqual(s.toAct, h.hero);
+});

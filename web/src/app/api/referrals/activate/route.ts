@@ -9,7 +9,8 @@ export function OPTIONS() {
 }
 
 /**
- * POST { installId, myCode?, rcUserId? } → { status }. The app calls it after the friend saves a hand
+ * POST { installId, myCode?, rcUserId? } → { status, booked }. booked is false while the
+ * friend's RevenueCat user is missing or not new, so the app keeps retrying. The app calls it after the friend saves a hand
  * (and may call it again on launch): books both rewards once, then grants anything still
  * pending for this install on RevenueCat. Safe to repeat.
  */
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     const ok = !rc || !revenueCatConfigured() || (await isNewSubscriber(rc));
     const booked = ok ? await r.b.activate(installId) : [];
     await grantPending(r.b, [...booked, ...(await r.b.pending(installId))]);
-    return json({ status: await r.b.status(installId) });
+    return json({ status: await r.b.status(installId), booked: ok });
   } catch {
     return json({ error: 'unavailable' }, 503);
   }
