@@ -33,7 +33,7 @@ export function CardShareSheet({
 }) {
   const options: ShareOption[] = [];
   if (instagram) options.push({ icon: 'logo-instagram', label: instagramTitle ?? t('Story no Instagram'), onPress: later(instagram) });
-  if (x) options.push({ icon: 'logo-x', label: t('Post no X'), onPress: later(x) });
+  if (x) options.push({ icon: 'logo-x', label: t('Publicar no X'), onPress: later(x) });
   if (other) options.push({ icon: 'share-outline', label: t('Outras apps'), sub: t('WhatsApp, Mensagens, guardar imagem…'), onPress: later(other) });
   if (copy) options.push({ icon: 'link-outline', label: copyTitle ?? t('Copiar link'), onPress: copy });
   return <ShareSheet visible={visible} onClose={onClose} groups={[{ options }]} />;

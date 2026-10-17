@@ -172,9 +172,12 @@ export default function YearScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        onMomentumScrollEnd={(e) => {
+        // onScroll, not onMomentumScrollEnd: the dots follow the swipe, and the web never fires momentum events.
+        scrollEventThrottle={32}
+        onScroll={(e) => {
           const p = Math.round(e.nativeEvent.contentOffset.x / width);
-          if (p !== page) tap('select');
+          if (p === page) return;
+          tap('select');
           setPage(p);
         }}>
         {cards.map((k, i) => {
