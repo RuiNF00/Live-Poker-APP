@@ -95,7 +95,9 @@ export default function Paywall() {
               <T v="h3" style={{ flex: 1 }}>
                 {f.title}
               </T>
-              <T v="small">{f.body}</T>
+              <T v="small" style={{ flexShrink: 1, textAlign: 'right' }}>
+                {f.body}
+              </T>
             </Row>
           ))}
         </View>
@@ -156,17 +158,17 @@ export default function Paywall() {
           {t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
         </T>
         <Row style={{ justifyContent: 'center' }} gap={S.lg}>
-          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} hitSlop={8}>
+          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
             <T v="tiny" color={C.textDim}>
               {t('Termos')}
             </T>
           </Pressable>
-          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.privacy)} hitSlop={8}>
+          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.privacy)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
             <T v="tiny" color={C.textDim}>
               {t('Privacidade')}
             </T>
           </Pressable>
-          <Pressable onPress={onRestore} disabled={!!busy} hitSlop={8}>
+          <Pressable onPress={onRestore} disabled={!!busy} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
             <T v="tiny" color={C.textDim}>
               {t('Restaurar compras')}
             </T>
@@ -174,13 +176,13 @@ export default function Paywall() {
         </Row>
         {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
           <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
-            <Pressable onPress={() => router.replace('/invite')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="gift-outline" size={14} color={C.accent} />
               <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
                 {t('Convidar um amigo')}
               </T>
             </Pressable>
-            <Pressable onPress={dismiss} hitSlop={8}>
+            <Pressable onPress={dismiss} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
               <T v="small" color={C.muted}>
                 {t('Agora não')}
               </T>
