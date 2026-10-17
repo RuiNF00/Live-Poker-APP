@@ -360,20 +360,24 @@ export function awardPots(seats: SeatState[], values: Map<number, HandValue | nu
  * the first, like the app) and each run's share goes to the best hand on that run's board.
  */
 export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null>[], totalPot: number, cents = false) {
-  const levels = [...new Set(seats.map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
+  // Pots break only where a player still in is all-in, like the app: a folded blind's chips join
+  // the pot they fell in, so a chop or a run-it-twice half isn't split (and rounded) once per level.
+  const levels = [...new Set(seats.filter((s) => !s.folded).map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
   // Only dead money in the pot (a bomb pot checked down): one pot for everyone still in.
   if (!levels.length) levels.push(0);
   const won = runs.map(() => new Map<number, number>());
   // Antes are dead money and belong to the main pot.
   let dead = totalPot - seats.reduce((n, s) => n + s.invested, 0);
   let prev = 0;
-  for (const level of levels) {
-    const amount = dead + seats.reduce((n, s) => n + Math.max(0, Math.min(s.invested, level) - prev), 0);
+  for (const [i, level] of levels.entries()) {
+    // Folded chips above the last live level (rare) stay in the last pot.
+    const cap = i === levels.length - 1 ? Infinity : level;
+    const amount = dead + seats.reduce((n, s) => n + Math.max(0, Math.min(s.invested, cap) - prev), 0);
     dead = 0;
     const eligible = seats.filter((s) => !s.folded && s.invested >= level);
     prev = level;
     if (!amount || !eligible.length) continue;
-    const parts = splitChips(amount, runs.length);
+    const parts = splitChips(amount, runs.length, cents);
     runs.forEach((values, k) => {
       const runAmount = parts[k];
       const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
