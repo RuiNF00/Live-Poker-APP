@@ -2463,6 +2463,10 @@ const es: Record<string, string> = {
   'Este mês / média dos {n} meses anteriores': 'Este mes / media de los {n} meses anteriores',
   'depois de {days} dias grátis': 'después de {days} días gratis',
   'Cancela quando quiseres na {store}.': 'Cancela cuando quieras en {store}.',
+  'O que o Pro guardou da tua sessão': 'Lo que Pro guardó de tu sesión',
+  '{hands}, sem limite. Grátis até {date}.': '{hands}, sin límite. Gratis hasta el {date}.',
+  'Vê em que sala e stake ganhas mais. Grátis até {date}.': 'Mira en qué sala y stake ganas más. Gratis hasta el {date}.',
+  'Depois, {price} por ano. Para não pagar, cancela na Google Play antes dessa data.': 'Después, {price} al año. Para no pagar, cancela en Google Play antes de esa fecha.',
 };
 
 export default es;
