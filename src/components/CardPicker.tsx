@@ -11,6 +11,7 @@ import type { CardCode } from '@/poker/types';
 import { C, ff } from '@/theme';
 
 import { tap } from './ui';
+import { cardName } from '@/poker/card-name';
 
 const FACE = '#F5EDD8';
 // Suit ink on the cream face: four colours, darker than the felt chips so they read on cream.
@@ -41,6 +42,9 @@ export function CardPicker({
               return (
                 <Pressable
                   key={c}
+                  accessibilityRole="button"
+                  accessibilityLabel={cardName(c)}
+                  accessibilityState={{ selected: isSel, disabled: isUsed }}
                   disabled={isUsed}
                   onPress={() => {
                     tap('select');

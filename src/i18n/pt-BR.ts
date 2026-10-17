@@ -1044,6 +1044,8 @@ const ptBR: Record<string, string> = {
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estavam salvos à parte voltaram a abrir e estão de volta no app.',
   'Tira um filtro ou limpa todos para voltares a ver as mãos.': 'Tire um filtro ou limpe todos para voltar a ver as mãos.',
   'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
+  'fez fold': 'deu fold',
+  'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
 };
 
 export default ptBR;

@@ -11,6 +11,19 @@ import type { CardCode } from '@/poker/types';
 import { C, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
+import { cardName } from '@/poker/card-name';
+import { t } from '@/i18n';
+
+/** One sentence per seat for VoiceOver: who, where, stack, cards, what they did. */
+function seatLabel(s: SeatView): string {
+  const parts = [s.hero ? t('Tu') : s.name];
+  if (s.pos && s.pos !== s.name) parts.push(s.pos);
+  parts.push(s.allIn ? 'all-in' : t('stack {stack}', { stack: s.stack }));
+  if (s.cards) parts.push(s.cards.map(cardName).join(', '));
+  if (s.folded) parts.push(t('fez fold'));
+  else if (s.action?.label) parts.push(s.action.label);
+  return parts.join(', ');
+}
 
 export interface SeatView {
   name: string;
@@ -175,6 +188,9 @@ export function Table({
             return (
               <Pressable
                 key={'s' + i}
+                accessibilityRole={onSeatPress || onSeatLongPress ? 'button' : undefined}
+                accessibilityLabel={seatLabel(s)}
+                accessibilityState={{ selected: !!s.acting, disabled: !onSeatPress && !onSeatLongPress }}
                 disabled={!onSeatPress && !onSeatLongPress}
                 onPress={() => onSeatPress?.(i)}
                 onLongPress={onSeatLongPress ? () => onSeatLongPress(i) : undefined}

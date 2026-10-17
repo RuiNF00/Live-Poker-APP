@@ -351,7 +351,12 @@ function Live({ s }: { s: Session }) {
         {s.stackLog.length > 1 && (
           <Section title={t('Stack ao longo da sessão')}>
             <Card style={{ paddingHorizontal: S.md }}>
-              <LineChart values={s.stackLog.map((x) => x.stack)} height={120} zeroLine={false} />
+              <LineChart
+                values={s.stackLog.map((x) => x.stack)}
+                height={120}
+                zeroLine={false}
+                label={t('Stack de {from} para {to}; o mais alto foi {max}.', { from: chips(s.stackLog[0].stack), to: chips(s.stack), max: chips(Math.max(...s.stackLog.map((x) => x.stack))) })}
+              />
             </Card>
           </Section>
         )}

@@ -327,7 +327,7 @@ export function ListItem({
   chevron,
   destructive,
   left,
-  numberOfLines = 1,
+  numberOfLines = 2,
   accessibilityLabel,
 }: {
   icon?: IconName;
@@ -363,7 +363,7 @@ export function ListItem({
         )}
         {subtitle ? (
           typeof subtitle === 'string' ? (
-            <T v="small" numberOfLines={2}>
+            <T v="small" numberOfLines={3}>
               {subtitle}
             </T>
           ) : (
