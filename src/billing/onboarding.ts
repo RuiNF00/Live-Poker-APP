@@ -52,3 +52,22 @@ export function planFor(a: Answers): { title: string; points: string[] } {
   if (a.volume === 'lots') add('Mãos sem limite em todas as sessões');
   return { title, points: points.slice(0, 4) };
 }
+
+export type StartStep = 'hand' | 'session' | 'bankroll' | 'share';
+
+/** The first-week checklist on the hands list. Portuguese keys; show with t(). */
+export const START_STEPS: { key: StartStep; label: string }[] = [
+  { key: 'hand', label: 'Guarda 3 mãos' },
+  { key: 'session', label: 'Regista uma sessão' },
+  { key: 'bankroll', label: 'Define o bankroll inicial' },
+  { key: 'share', label: 'Partilha uma mão com um amigo' },
+];
+
+export function startProgress(s: { hands: { shareId?: string }[]; sessions: number; deposits: number }): Record<StartStep, boolean> {
+  return {
+    hand: s.hands.length >= 3,
+    session: s.sessions > 0,
+    bankroll: s.deposits > 0,
+    share: s.hands.some((h) => !!h.shareId),
+  };
+}

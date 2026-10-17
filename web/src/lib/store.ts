@@ -27,6 +27,8 @@ export interface ShareStore {
   createShare(input: CreateShareInput): Promise<{ id: string; editToken: string }>;
   getShare(id: string): Promise<SharedHand | null>;
   deleteShare(id: string, editToken: string): Promise<boolean>;
+  /** True when `editToken` is this live share's: only its owner may list it on a profile. */
+  ownsShare(id: string, editToken: string): Promise<boolean>;
   recordView(id: string): Promise<void>;
   listComments(id: string): Promise<HandComment[]>;
   addComment(id: string, c: NewComment): Promise<HandComment | null>;
@@ -134,6 +136,12 @@ class SupabaseStore implements ShareStore {
 
   async deleteShare(id: string, editToken: string) {
     const { data, error } = await this.db.rpc('delete_shared_hand', { p_id: id, p_edit_token: editToken });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async ownsShare(id: string, editToken: string) {
+    const { data, error } = await this.db.rpc('shared_hand_token_ok', { p_id: id, p_edit_token: editToken });
     if (error) throw error;
     return !!data;
   }
@@ -288,6 +296,10 @@ class LocalStore implements ShareStore {
       delete d.votes[id];
       return true;
     });
+  }
+
+  async ownsShare(id: string, editToken: string) {
+    return (await this.read()).shares[id]?.editTokenHash === sha256(editToken);
   }
 
   async recordView(id: string) {
