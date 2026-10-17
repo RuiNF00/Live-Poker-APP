@@ -8,7 +8,7 @@ import { Platform, ScrollView, View } from 'react-native';
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
-import { Button, Empty, Row, T } from '@/components/ui';
+import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
 import { fetchComments, fetchHand, postComment, type Comment } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 import { BRAND, C, R } from '@/theme';
@@ -30,7 +30,7 @@ export default function SharedHand() {
       <Row style={{ justifyContent: 'space-between', paddingTop: Platform.OS === 'web' ? 4 : 44 }}>
         <Row gap={8}>
           <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: C.accent }} />
-          <T v="h2">{BRAND.name}</T>
+          <Wordmark size={20} />
         </Row>
         <T v="tiny">{BRAND.tagline}</T>
       </Row>

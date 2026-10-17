@@ -7,16 +7,48 @@
     "icon": "./assets/images/icon.png",
     "scheme": "sweatbook",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0C1311",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.ruinf.sweatbook",
+      "supportsTablet": false,
+      "associatedDomains": ["applinks:sweatbook.vercel.app"],
+      "config": { "usesNonExemptEncryption": false },
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false },
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyCollectedDataTypes": [
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherUserContent",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]
+          }
+        ]
+      }
     },
     "android": {
+      "package": "com.ruinf.sweatbook",
       "adaptiveIcon": {
         "backgroundColor": "#0C1311",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/adaptive-icon.png"
       },
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "sweatbook.vercel.app", "pathPrefix": "/h/" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -34,14 +66,14 @@
         {
           "backgroundColor": "#0C1311",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160
         }
-      ]
+      ],
+      ["expo-build-properties", { "android": { "targetSdkVersion": 36, "compileSdkVersion": 36 } }]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "backgroundColor": "#0C1311"
+    }
   }
 }
