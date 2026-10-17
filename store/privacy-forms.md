@@ -10,9 +10,11 @@ Data not linked to you:
 
 | Category → type | Purpose |
 |---|---|
-| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers) | App Functionality |
+| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players) | App Functionality |
+| User Content → Other User Content (optional cancellation feedback: reason + up to 120 characters) | Analytics |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
+| Contact Info → Name (a nickname the user types for comments, the backer page or a public profile; optional, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
@@ -22,6 +24,8 @@ Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 day
 Voice notes on hands (PR #25) stay on the device and are not declared; only Instagram story voice notes are (Audio, processed ephemerally).
 
 Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.app (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
+
+App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device (photos enter the backup only end-to-end encrypted, which the backup row already covers): no new rows. Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -53,7 +57,8 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 
 | Data type | Collected | Optional | Purpose |
 |---|---|---|---|
-| App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers) | Yes | Yes (only when the user shares, comments, turns on backup or shares a session) | App functionality |
+| App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
+| Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle) | Yes | Yes | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |

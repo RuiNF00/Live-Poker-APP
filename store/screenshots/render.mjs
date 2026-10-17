@@ -24,7 +24,7 @@ async function capture(locale) {
   await ctx.addInitScript((s) => {
     if (localStorage.getItem('rl.hands.v1')) return;
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'sweatbook.replayer.tips.v1': '1' });
+  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'sweatbook.replayer.tips.v1': '1', 'rl.trips.v1': seed.trips.map((x) => x.id), ...Object.fromEntries(seed.trips.map((x) => ['rl.trip.v1.' + x.id, x])), 'rl.backing.v1': seed.backing.map((x) => x.id), ...Object.fromEntries(seed.backing.map((x) => ['rl.backed.v1.' + x.id, x])), 'rl.start.hidden.v1': '1' });
   // The sandbox has no route to the backend, so the app would show its
   // "no signal" pill on every frame. Answer every outside request with an
   // empty 204: the app sees itself online, as on a phone with signal.

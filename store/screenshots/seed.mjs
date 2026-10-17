@@ -41,3 +41,21 @@ export const players = [
   { id:'p3', name:'Fish casaco', look:'Casaco de cabedal', tags:['Fish','Calling station'], notes:'Paga até ao river com qualquer par.', createdAt: now-DAY, updatedAt: now },
 ];
 export const settings = { inBB:false, currency:'$', nickname:'Hero', defaultTableSize:9, onboarded:true };
+// A festival trip covering the last three weekly sessions and the live one, with travel costs.
+export const trips = [{ id:'t1', name:'Bahamas', venue:'Nassau', currency:'$', from: now-22*DAY, to: now+3*DAY, createdAt: now-23*DAY,
+  expenses: [
+    { id:'e1', kind:'flight', amount:1850, currency:'$', at: now-22*DAY, note:'' },
+    { id:'e2', kind:'hotel', amount:4200, currency:'$', at: now-22*DAY, note:'' },
+    { id:'e3', kind:'food', amount:960, currency:'$', at: now-10*DAY, note:'' },
+    { id:'e4', kind:'coaching', amount:1500, currency:'$', at: now-15*DAY, note:'' },
+  ] }];
+// "Quem eu banco": statements three players sent this backer (positive bal = the player owes the backer).
+const row = (dd, n, sh, c, o, e = true) => ({ d: now - dd*DAY, e: e ? now - dd*DAY + 7*3600000 : null, n, k: 'mtt', sh, mu: 1.1, c, o });
+export const backing = [
+  { id:'b1', createdAt: now-30*DAY, statement: { v:1, id:'b1', pl:'Miguel T.', bk:'Hero', cur:'$', at: now-DAY, bal: 18400, mk: 0, inv: 27500, res: 18400,
+    rows: [row(1,'$25K High Roller',20,5500,0,false), row(8,'$10K Turbo',25,2750,23900), row(15,'$50K Super High Roller',10,5500,0)] } },
+  { id:'b2', createdAt: now-40*DAY, statement: { v:1, id:'b2', pl:'Ana R.', bk:'Hero', cur:'$', at: now-2*DAY, bal: 6200, mk: 0, inv: 11000, res: 6200,
+    rows: [row(2,'$10K Turbo',30,3300,9500), row(9,'$25K High Roller',15,4125,0)] } },
+  { id:'b3', createdAt: now-50*DAY, statement: { v:1, id:'b3', pl:'Kenji S.', bk:'Hero', cur:'$', at: now-3*DAY, bal: -2750, mk: 8250, inv: 8250, res: -8250,
+    rows: [row(3,'$25K High Roller',30,8250,0)] } },
+];

@@ -5,5 +5,8 @@
   {"route": "/", "pt": ["Encontra qualquer", "mão depois"], "en": ["Find any hand", "later"]},
   {"route": "/session", "pt": ["Torneio e nível,", "sempre guardados"], "en": ["Tournament and level,", "remembered"]},
   {"route": "/bankroll", "pt": ["O teu bankroll", "sem folhas de Excel"], "en": ["Your bankroll,", "no spreadsheets"]},
-  {"route": "/players", "pt": ["Notas sobre quem", "está na mesa"], "en": ["Notes on who's", "at your table"]}
+  {"route": "/trips/t1", "pt": ["A viagem toda,", "despesas incluídas"], "en": ["The whole trip,", "expenses included"]},
+  {"route": "/players", "pt": ["Notas sobre quem", "está na mesa"], "en": ["Notes on who's", "at your table"]},
+  {"route": "/backing", "pt": ["Quem bancas,", "tudo num só sítio"], "en": ["Everyone you back,", "in one place"]},
+  {"route": "/paywall", "pt": ["Mãos ilimitadas", "com o Pro"], "en": ["Unlimited hands", "with Pro"]}
 ]
