@@ -1582,6 +1582,10 @@ const ptBR: Record<string, string> = {
   'Termina a {date}': 'Termina em {date}',
   'Renova a {date}': 'Renova em {date}',
   'Verifica a rede e tenta outra vez daqui a pouco.': 'Verifique a conexão e tente de novo daqui a pouco.',
+  // Backer's fixed link
+  'Desligar o link de {name}?': 'Desativar o link de {name}?',
+  'A página deixa de abrir. Se voltares a enviar as contas, vai um link novo.': 'A página deixa de abrir. Se você enviar as contas de novo, vai um link novo.',
+  '{name} tem um link fixo que se atualiza sozinho.': '{name} tem um link fixo que atualiza sozinho.',
 };
 
 export default ptBR;

@@ -3266,6 +3266,11 @@ const en: Record<string, string> = {
   'Termina a {date}': 'Ends on {date}',
   'Renova a {date}': 'Renews on {date}',
   'Verifica a rede e tenta outra vez daqui a pouco.': 'Check your connection and try again in a moment.',
+  // Backer's fixed link
+  'Desligar o link de {name}?': "Turn off {name}'s link?",
+  'A página deixa de abrir. Se voltares a enviar as contas, vai um link novo.': 'The page stops opening. If you send the statement again, a new link goes out.',
+  '{name} tem um link fixo que se atualiza sozinho.': '{name} has a fixed link that updates by itself.',
+  'Ver o que {name} vê': 'See what {name} sees',
 };
 
 export default en;

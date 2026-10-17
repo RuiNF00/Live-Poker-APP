@@ -3260,6 +3260,11 @@ const es: Record<string, string> = {
   'Termina a {date}': 'Termina el {date}',
   'Renova a {date}': 'Se renueva el {date}',
   'Verifica a rede e tenta outra vez daqui a pouco.': 'Revisa la conexión y vuelve a intentarlo en un momento.',
+  // Backer's fixed link
+  'Desligar o link de {name}?': '¿Desactivar el link de {name}?',
+  'A página deixa de abrir. Se voltares a enviar as contas, vai um link novo.': 'La página deja de abrirse. Si vuelves a enviar las cuentas, sale un link nuevo.',
+  '{name} tem um link fixo que se atualiza sozinho.': '{name} tiene un link fijo que se actualiza solo.',
+  'Ver o que {name} vê': 'Ver lo que ve {name}',
 };
 
 export default es;

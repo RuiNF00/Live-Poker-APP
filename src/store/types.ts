@@ -229,6 +229,8 @@ export interface Backer {
   shareKey?: string;
   /** Each time you sent them their statement, with the balance it showed (newest last). */
   reminders?: { at: number; balance: number }[];
+  /** Their fixed link (lib/backer-page): sent once, kept current by BackerPageSync. */
+  page?: { id: string; token: string; key: string };
   createdAt: number;
   updatedAt?: number;
 }

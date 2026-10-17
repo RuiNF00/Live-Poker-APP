@@ -8,6 +8,7 @@ import React from 'react';
 
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
+import { BackerPageSync } from '@/components/staking/BackerPage';
 import { SettleReminder } from '@/components/staking/SettleReminder';
 import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { SwapSettleReminder } from '@/components/swaps/SwapSettleReminder';
@@ -23,6 +24,7 @@ export default function AfterStart() {
     <>
       <AutoCloudBackup />
       <BackerLiveSync />
+      <BackerPageSync />
       <SessionLockScreen />
       <HomeWidgetSync />
       <SwapReminder />
