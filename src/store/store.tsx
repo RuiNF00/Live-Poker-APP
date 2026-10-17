@@ -16,11 +16,13 @@ import { forgetHandShare } from '@/lib/share-queue';
 import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
-import { mergeById, type BackupData } from './backup';
+import { mergeById, restoredSettings, type BackupData } from './backup';
 import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
+import { withSwaps, type Swap } from './swaps';
+import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
 const KEYS = {
@@ -95,6 +97,8 @@ interface StoreValue {
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
+  /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
+  readonly swaps: Swap[];
   importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
@@ -173,8 +177,8 @@ function draftKeyOf(h: Hand | null): number {
 
 /** A session as stored: without the derived makeup cut. */
 function bare(s: Session): Session {
-  if (s.makeupCut === undefined) return s;
-  const { makeupCut: _, ...rest } = s;
+  if (s.makeupCut === undefined && s.swapNet === undefined) return s;
+  const { makeupCut: _, swapNet: __, ...rest } = s;
   return rest;
 }
 
@@ -198,9 +202,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [payments, setPayments] = useState<BackerPayment[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [backing, setBacking] = useState<BackedPlayer[]>([]);
-  // What screens see: each session with its makeup package cut (derived, never stored).
-  const sessions = useMemo(() => withCuts(rawSessions, packages), [rawSessions, packages]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  // What screens see: each session with its makeup package cut and what swaps add or take
+  // (derived, never stored; swaps can be turned off).
+  const { swaps } = useSwaps();
+  const includeSwaps = settings.includeSwaps !== false;
+  const sessions = useMemo(() => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : []), [rawSessions, packages, swaps, includeSwaps]);
   // Privacy mode applies to every amount on screen, set before anything renders with it.
   setMoneyMasked(!!settings.hideAmounts);
   // The draft changes on every tap of hand entry. Keeping it in a ref (and
@@ -480,7 +487,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setPayments(pay.list);
       setTrips(tr.list);
       setBacking(bc.list);
-      setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
+      const fresh = !hands.length && !rawSessions.length;
+      setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
+      importSwaps(b.swaps ?? []).catch(() => {});
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing],
@@ -580,6 +589,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setDraft,
       eraseAll,
       importData,
+      get swaps() {
+        return currentSwaps();
+      },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps

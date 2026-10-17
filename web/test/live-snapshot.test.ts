@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSnapshot } from '../src/lib/live-snapshot';
+import { holdResult, parseSnapshot, RESULT_DELAY_MS, type LiveSnapshot } from '../src/lib/live-snapshot';
 
 const base = {
   v: 1, player: 'Rui', kind: 'mtt', name: 'Main Event', venue: 'Casino Estoril', currency: '€', startedAt: 1_700_000_000_000,
@@ -38,5 +38,20 @@ describe('parseSnapshot', () => {
   });
   it('blocks offensive public names', () => {
     expect(parseSnapshot({ ...base, name: 'Torneio do caralho' })).toBe('offensive');
+  });
+});
+
+describe('holdResult', () => {
+  const ended = { ...base, endedAt: 1_700_000_000_000, cashOut: 52_000, finish: 3, field: 412 } as LiveSnapshot;
+  it('hides the prize and place for an hour after the end', () => {
+    const s = holdResult(ended, ended.endedAt! + 10 * 60_000);
+    expect(s.cashOut).toBe(0);
+    expect(s.finish).toBe(null);
+    expect(s.field).toBe(null);
+    expect(s.heldUntil).toBe(ended.endedAt! + RESULT_DELAY_MS);
+  });
+  it('shows it after that, and never touches a running session', () => {
+    expect(holdResult(ended, ended.endedAt! + RESULT_DELAY_MS)).toEqual(ended);
+    expect(holdResult(base as LiveSnapshot, 0)).toEqual(base);
   });
 });

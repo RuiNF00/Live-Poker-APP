@@ -1,7 +1,7 @@
 // The app lock screen: covers everything on launch and after 30 s away, and
 // blanks the app in the app switcher so a glance at the phone shows nothing.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

@@ -5,7 +5,7 @@ import path from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { serviceClient } from './supabase';
 import { shortId } from './store';
-import type { LiveSnapshot } from './live-snapshot';
+import { holdResult, type LiveSnapshot } from './live-snapshot';
 
 export { parseSnapshot, type LiveSnapshot } from './live-snapshot';
 
@@ -163,7 +163,9 @@ export function liveStore(): LiveStore {
 /** Ids are short_id(): 10 characters of base64 without +/=. Anything else is a 404 without a query. */
 export const validId = (id: string) => /^[A-Za-z0-9]{6,16}$/.test(id);
 
+/** A link as the public sees it: a result that just came in stays hidden for an hour (holdResult). */
 export async function loadLive(id: string): Promise<LiveRecord | null> {
   if (!validId(id)) return null;
-  return liveStore().get(id);
+  const rec = await liveStore().get(id);
+  return rec && { ...rec, snapshot: holdResult(rec.snapshot) };
 }

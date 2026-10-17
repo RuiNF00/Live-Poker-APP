@@ -4,7 +4,7 @@
 // demo store so the paywall can still be built and tested end to end.
 
 import { Linking, Platform } from 'react-native';
-import Purchases, { INTRO_ELIGIBILITY_STATUS, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases';
+import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
 import { lang } from '../i18n';
 
@@ -30,18 +30,35 @@ export interface StorePlan {
   pkg?: PurchasesPackage;
 }
 
-let configured = false;
+let sdk: Promise<typeof import('react-native-purchases')> | null = null;
+/**
+ * The RevenueCat SDK, loaded and configured on first use. It is ~1 MB on web
+ * and nothing needs it before the first store call, so it stays out of startup.
+ */
+function rcModule() {
+  sdk ??= import('react-native-purchases').then((m) => {
+    m.default.configure({ apiKey: KEY! });
+    return m;
+  });
+  return sdk;
+}
+const rc = async () => (await rcModule()).default;
 
 export function configure(onChange: (isPro: boolean) => void): () => void {
   if (!LIVE) return () => {};
-  if (!configured) {
-    Purchases.configure({ apiKey: KEY! });
-    configured = true;
-  }
   const listener = (info: CustomerInfo) => onChange(hasPro(info));
-  Purchases.addCustomerInfoUpdateListener(listener);
+  let stop: (() => void) | null = null;
+  let stopped = false;
+  rc()
+    .then((P) => {
+      if (stopped) return;
+      P.addCustomerInfoUpdateListener(listener);
+      stop = () => P.removeCustomerInfoUpdateListener(listener);
+    })
+    .catch(() => {});
   return () => {
-    Purchases.removeCustomerInfoUpdateListener(listener);
+    stopped = true;
+    stop?.();
   };
 }
 
@@ -60,7 +77,7 @@ function fallbackPlans(): StorePlan[] {
 export async function getPlans(): Promise<StorePlan[]> {
   if (!LIVE) return fallbackPlans();
   try {
-    const offerings = await Purchases.getOfferings();
+    const offerings = await (await rc()).getOfferings();
     const pkgs = offerings.current?.availablePackages ?? [];
     const plans: StorePlan[] = [];
     for (const id of Object.keys(PRODUCTS) as PlanId[]) {
@@ -69,6 +86,7 @@ export async function getPlans(): Promise<StorePlan[]> {
     }
     if (Platform.OS === 'ios' && plans.length) {
       // iOS lists the intro offer even to players who already used it, so ask.
+      const { default: Purchases, INTRO_ELIGIBILITY_STATUS } = await rcModule();
       const elig = await Purchases.checkTrialOrIntroductoryPriceEligibility(plans.map((p) => p.pkg!.product.identifier));
       for (const p of plans) {
         if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
@@ -90,7 +108,7 @@ function trialDays(pkg: PurchasesPackage): number {
 export async function getIsPro(): Promise<boolean | null> {
   if (!LIVE) return null;
   try {
-    return hasPro(await Purchases.getCustomerInfo());
+    return hasPro(await (await rc()).getCustomerInfo());
   } catch {
     return null;
   }
@@ -100,7 +118,7 @@ export async function getIsPro(): Promise<boolean | null> {
 export async function getTrial(): Promise<{ start: number; end: number; willRenew: boolean } | null | undefined> {
   if (!LIVE) return undefined;
   try {
-    const e = (await Purchases.getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
     if (!e || e.periodType !== 'TRIAL' || !e.expirationDateMillis) return null;
     return { start: e.latestPurchaseDateMillis, end: e.expirationDateMillis, willRenew: e.willRenew };
   } catch {
@@ -112,7 +130,7 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean } | null> {
   if (!LIVE) return null;
   try {
-    const e = (await Purchases.getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
     if (!e || e.store === 'PROMOTIONAL') return null;
     const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
     return plan ? { plan, willRenew: e.willRenew } : null;
@@ -125,8 +143,8 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
 export async function manageSubscription(): Promise<void> {
   const fallback = Platform.OS === 'android' ? 'https://play.google.com/store/account/subscriptions' : 'https://apps.apple.com/account/subscriptions';
   try {
-    if (LIVE && Platform.OS === 'ios') return await Purchases.showManageSubscriptions();
-    const url = LIVE ? (await Purchases.getCustomerInfo()).managementURL : null;
+    if (LIVE && Platform.OS === 'ios') return await (await rc()).showManageSubscriptions();
+    const url = LIVE ? (await (await rc()).getCustomerInfo()).managementURL : null;
     await Linking.openURL(url ?? fallback);
   } catch {
     await Linking.openURL(fallback).catch(() => {});
@@ -141,6 +159,7 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
     if (Platform.OS === 'ios') {
       const d = pkg.product.discounts?.find((x) => x.identifier === RETENTION.discount.ios);
       if (!RETENTION.discount.ios || !d) return null;
+      const Purchases = await rc();
       const offer = await Purchases.getPromotionalOffer(pkg.product, d);
       if (!offer) return null;
       return { priceString: d.priceString, buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
@@ -148,7 +167,7 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
     const opt = pkg.product.subscriptionOptions?.find((o) => o.tags.includes(RETENTION.discount.android) || o.id.endsWith(`:${RETENTION.discount.android}`));
     const first = opt?.pricingPhases[0];
     if (!RETENTION.discount.android || !opt || !first) return null;
-    return { priceString: first.price.formatted, buy: () => attempt(() => Purchases.purchaseSubscriptionOption(opt)) };
+    return { priceString: first.price.formatted, buy: () => attempt(async () => (await rc()).purchaseSubscriptionOption(opt)) };
   } catch {
     return null;
   }
@@ -168,7 +187,7 @@ export async function buy(plan: StorePlan): Promise<BuyResult> {
   if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';
   if (!plan.pkg) return 'unavailable';
   try {
-    const { customerInfo } = await Purchases.purchasePackage(plan.pkg);
+    const { customerInfo } = await (await rc()).purchasePackage(plan.pkg);
     return hasPro(customerInfo) ? 'ok' : 'error';
   } catch (e) {
     return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'error';
@@ -178,7 +197,7 @@ export async function buy(plan: StorePlan): Promise<BuyResult> {
 export async function restore(): Promise<boolean> {
   if (!LIVE) return false;
   try {
-    return hasPro(await Purchases.restorePurchases());
+    return hasPro(await (await rc()).restorePurchases());
   } catch {
     return false;
   }
@@ -187,14 +206,14 @@ export async function restore(): Promise<boolean> {
 /** Link the store customer to the Supabase account once the player signs in. */
 export async function identify(userId: string): Promise<void> {
   if (!LIVE) return;
-  await Purchases.logIn(userId).catch(() => {});
+  await (await rc()).logIn(userId).catch(() => {});
 }
 
 /** RevenueCat's user id for this install (anonymous or signed in), so server-side grants find it. */
 export async function appUserId(): Promise<string | undefined> {
   if (!LIVE) return undefined;
   try {
-    return await Purchases.getAppUserID();
+    return await (await rc()).getAppUserID();
   } catch {
     return undefined;
   }

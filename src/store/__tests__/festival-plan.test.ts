@@ -59,7 +59,9 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
 });
 
 test('ships without an event brand; the player can name the festival', () => {
-  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify({ ...f, source: undefined, venue: undefined }), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn/i, f.id);
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify({ ...f, venue: undefined }), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn/i, f.id);
+  // No outbound links: organisers also run real-money gaming sites (store review).
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /https?:|www\./i, f.id);
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '  Bahamas com a malta ' }), 'Bahamas com a malta');
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '   ' }), 'Bahamas, dezembro 2026');

@@ -5,5 +5,6 @@ import { liveOgImage } from '@/lib/og-pages';
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const rec = await loadLive(id).catch(() => null);
-  return liveOgImage(rec?.snapshot ?? null);
+  // A held result has no prize to show yet: the generic preview, not a misleading "busted".
+  return liveOgImage(rec && !rec.snapshot.heldUntil ? rec.snapshot : null);
 }

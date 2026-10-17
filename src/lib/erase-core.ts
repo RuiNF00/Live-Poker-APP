@@ -4,8 +4,9 @@
  * Kept on purpose:
  * - the outbox and the share queue: they still hold the deletes of public links and
  *   the cloud copy, which go out when the signal is back;
- * - the free-plan usage log, the cached Pro flag and the trial date: purchases are
- *   tied to the store account, and erasing must not hand out new free hands;
+ * - the free-plan usage log, the cached Pro flag, the trial date and the free coaching
+ *   link flag: purchases are tied to the store account, and erasing must not hand out
+ *   new free hands or links;
  * - the install id and the referral state: otherwise erasing would claim invite
  *   rewards again.
  * None of these holds hands, sessions, notes or amounts.
@@ -22,9 +23,13 @@ export const KEEP_KEYS = [
   'rl.claim.v1',
   'rl.first.v1',
   'rl.firsthand.v1',
+  'rl.coach.free.v1',
 ];
+
+/** Prefixes of every key the app writes. A new feature's key must start with one of them. */
+export const APP_PREFIXES = ['rl.', 'sweatbook.', 'pp.'];
 
 /** Every app key except the ones above. Keys of other libraries are left alone. */
 export function keysToErase(all: readonly string[]): string[] {
-  return all.filter((k) => (k.startsWith('rl.') || k.startsWith('sweatbook.')) && !KEEP_KEYS.includes(k));
+  return all.filter((k) => APP_PREFIXES.some((p) => k.startsWith(p)) && !KEEP_KEYS.includes(k));
 }

@@ -1,6 +1,6 @@
 // Invite friends: your link, how many came and the Pro days you've earned.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
