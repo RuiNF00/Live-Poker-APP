@@ -8,8 +8,11 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Amount, Banner, Button, Card, Empty, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
+import { FREE } from '@/billing/plans';
+import { usePro } from '@/billing/pro';
+import { Amount, Banner, Button, Card, Chip, ChipRow, Empty, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
 import { prepare, toSessions, type DateOrder, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { pickTextFile } from '@/lib/files';
@@ -83,7 +86,7 @@ const FIELD_LABEL: Partial<Record<Field, string>> = {
 };
 const MAPPABLE = Object.keys(FIELD_LABEL) as Field[];
 
-type Step = { at: 'pick' } | { at: 'review'; file: Prepared } | { at: 'done'; added: number; total: number; summary?: string };
+type Step = { at: 'pick' } | { at: 'review'; file: Prepared } | { at: 'done'; added: number; total: number; moves?: number; summary?: string };
 
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -169,9 +172,12 @@ export default function ImportScreen() {
           file={step.file}
           bottom={insets.bottom}
           onBack={() => setStep({ at: 'pick' })}
-          onImport={(r) => {
-            const n = store.importData({ app: 'sweatbook', v: 1, exportedAt: Date.now(), hands: [], sessions: r.sessions, players: [] });
-            setStep({ at: 'done', added: n.sessions, total: r.sessions.length });
+          onImport={(r, placement) => {
+            const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls });
+            const before = new Set(store.transfers.map((x) => x.id));
+            const n = store.importData({ app: 'sweatbook', v: 1, exportedAt: Date.now(), hands: [], sessions: p.sessions, players: [], bankrolls: p.bankrolls, transfers: p.transfers });
+            const moves = p.transfers.filter((x) => !before.has(x.id)).length;
+            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, moves });
           }}
         />
       ) : (
@@ -181,7 +187,11 @@ export default function ImportScreen() {
             title={step.added === 1 ? t('1 sessão importada') : t('{n} sessões importadas', { n: step.added })}
             body={
               step.summary ??
-              (step.total > step.added
+              (step.moves
+                ? step.moves === 1
+                  ? t('E 1 depósito ou levantamento no saldo da bankroll.')
+                  : t('E {n} depósitos e levantamentos no saldo da bankroll.', { n: step.moves })
+                : step.total > step.added
                 ? step.total - step.added === 1
                   ? t('1 já estava no Sweatbook e ficou como estava.')
                   : t('{n} já estavam no Sweatbook e ficaram como estavam.', { n: step.total - step.added })
@@ -200,8 +210,9 @@ export default function ImportScreen() {
   );
 }
 
-function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: number; onBack: () => void; onImport: (r: ImportResult) => void }) {
-  const { settings, sessions: local } = useStore();
+function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
+  const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
+  const pro = usePro();
   const [mapping, setMapping] = useState<Mapping>(file.mapping);
   const [order, setOrder] = useState<DateOrder | undefined>(undefined);
   const [defaultKind, setDefaultKind] = useState<'cash' | 'mtt'>('cash');
@@ -212,8 +223,15 @@ function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: nu
     () => toSessions(file.table, mapping, { currency: settings.currency, tableSize: settings.defaultTableSize, source: file.source, order, defaultKind }),
     [file, mapping, order, defaultKind, settings.currency, settings.defaultTableSize],
   );
-  const have = useMemo(() => new Set(local.map((s) => s.id)), [local]);
+  const have = useMemo(() => new Set([...local.map((s) => s.id), ...localTx.map((x) => x.id)]), [local, localTx]);
   const fresh = r.sessions.filter((s) => !have.has(s.id)).length;
+  const freshMoves = r.moves.filter((m) => !have.has(m.id)).length;
+  const deposits = r.moves.filter((m) => m.kind === 'deposit').length;
+  const fileCurrencies = currenciesOf(r.sessions, r.moves, settings.currency);
+  const [placement, setPlacement] = useState<Placement>(() => defaultPlacement(fileCurrencies, bankrolls, defaultBankroll));
+  // A currency that showed up after a column change gets its default too.
+  const placed: Placement = { ...defaultPlacement(fileCurrencies, bankrolls, defaultBankroll), ...placement };
+  const canAddBankroll = pro.isPro || FREE.bankrolls === null || bankrolls.length < FREE.bankrolls;
   const list = [...r.sessions].sort((a, b) => b.startedAt - a.startedAt);
   const currencies = new Set(r.sessions.map((s) => s.currency));
   const cur = currencies.size === 1 ? [...currencies][0] : settings.currency;
@@ -255,13 +273,54 @@ function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: nu
         ) : null}
 
         {missing ? <Banner tone="warn" icon="alert-circle" title={t('Falta a coluna «{field}»', { field: missing })} body={t('Escolhe-a em Colunas, mais abaixo.')} /> : null}
+        {r.moves.length ? (
+          <Card tone="inset" style={{ gap: 6, paddingVertical: S.md }}>
+            <Note
+              icon="swap-vertical"
+              text={t(r.moves.length === 1 ? '{list} entra no saldo da bankroll.' : '{list} entram no saldo da bankroll.', {
+                list: [
+                  deposits ? (deposits === 1 ? t('1 depósito') : t('{n} depósitos', { n: deposits })) : '',
+                  r.moves.length - deposits ? (r.moves.length - deposits === 1 ? t('1 levantamento') : t('{n} levantamentos', { n: r.moves.length - deposits })) : '',
+                ]
+                  .filter(Boolean)
+                  .join(t(' e ')),
+              })}
+            />
+          </Card>
+        ) : null}
         {r.transfers || r.unreadable || fresh < r.sessions.length ? (
           <Card tone="inset" style={{ gap: 6, paddingVertical: S.md }}>
             {fresh < r.sessions.length ? <Note icon="copy-outline" text={r.sessions.length - fresh === 1 ? t('1 já está no Sweatbook e não entra outra vez.') : t('{n} já estão no Sweatbook e não entram outra vez.', { n: r.sessions.length - fresh })} /> : null}
-            {r.transfers ? <Note icon="swap-horizontal" text={r.transfers === 1 ? t('1 depósito ou levantamento fica de fora (não é uma sessão).') : t('{n} depósitos ou levantamentos ficam de fora (não são sessões).', { n: r.transfers })} /> : null}
+            {r.transfers ? <Note icon="swap-horizontal" text={r.transfers === 1 ? t('1 depósito ou levantamento sem data ou valor fica de fora.') : t('{n} depósitos ou levantamentos sem data ou valor ficam de fora.', { n: r.transfers })} /> : null}
             {r.unreadable ? <Note icon="help-circle-outline" text={r.unreadable === 1 ? t('1 linha sem data ou sem valores fica de fora.') : t('{n} linhas sem data ou sem valores ficam de fora.', { n: r.unreadable })} /> : null}
             {currencies.size > 1 ? <Note icon="cash-outline" text={t('Há sessões em {n} moedas; cada uma fica na sua.', { n: currencies.size })} /> : null}
           </Card>
+        ) : null}
+
+        {fileCurrencies.length ? (
+          <Section title={t('Para que bankroll')} hint={t('Cada moeda vai para uma bankroll dessa moeda.')}>
+            {fileCurrencies.map((c) => {
+              const mine = bankrolls.filter((b) => b.currency === c).sort((a, b) => a.createdAt - b.createdAt);
+              // A currency with no bankroll yet gets one anyway, so that one is free.
+              const newLocked = mine.length > 0 && !canAddBankroll;
+              return (
+                <View key={c} style={{ gap: S.sm }}>
+                  {fileCurrencies.length > 1 ? <T v="small">{c}</T> : null}
+                  <ChipRow>
+                    {mine.map((b) => (
+                      <Chip key={b.id} label={b.name} active={placed[c] === b.id} onPress={() => setPlacement({ ...placed, [c]: b.id })} />
+                    ))}
+                    <Chip
+                      label={mine.length ? t('Nova: {name}', { name: SOURCE_NAME[file.source] }) : t('Nova bankroll {currency}', { currency: c })}
+                      icon={newLocked ? 'lock-closed' : 'add'}
+                      active={placed[c] === NEW}
+                      onPress={() => (newLocked ? pro.paywall('stats') : setPlacement({ ...placed, [c]: NEW }))}
+                    />
+                  </ChipRow>
+                </View>
+              );
+            })}
+          </Section>
         ) : null}
 
         {!r.kindKnown && r.sessions.length ? (
@@ -331,9 +390,9 @@ function Review({ file, bottom, onBack, onImport }: { file: Prepared; bottom: nu
           <Button kind="secondary" title={t('Voltar')} onPress={onBack} style={{ paddingHorizontal: 18 }} />
           <Button
             style={{ flex: 1 }}
-            title={fresh === 0 ? t('Nada de novo para importar') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
-            disabled={fresh === 0}
-            onPress={() => onImport(r)}
+            title={fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
+            disabled={fresh + freshMoves === 0}
+            onPress={() => onImport(r, placed)}
           />
         </Row>
       </Dock>

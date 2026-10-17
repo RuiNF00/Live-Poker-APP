@@ -13,6 +13,7 @@ export const FIELDS = [
   'minutes',
   'breakMinutes',
   'kind',
+  'format',
   'name',
   'game',
   'limit',
@@ -49,6 +50,7 @@ const SYN: Record<Field, string[]> = {
   minutes: ['playingminutes', 'minutes', 'minutesplayed', 'minutos', 'mins', 'durationminutes'],
   breakMinutes: ['breakminutes', 'breaks', 'break', 'pausa', 'pausas'],
   kind: ['variant', 'sessiontype', 'kind', 'format', 'gametype', 'cashortournament', 'tipo', 'tipodejogo', 'type', 'modalidade'],
+  format: ['gameformat', 'liveonline', 'onlinelive', 'liveoronline', 'setting', 'environment', 'venuetype', 'locationtype', 'formato'],
   name: ['mttname', 'tournamentname', 'tournament', 'torneio', 'torneo', 'tournoi', 'event', 'eventname', 'title', 'name', 'nome'],
   game: ['game', 'jogo', 'juego', 'jeu', 'spiel', 'gamename', 'pokergame'],
   limit: ['limit', 'limite', 'bettinglimit', 'limittype'],
@@ -130,6 +132,8 @@ export function mappingFor(source: SourceId, headers: string[]): Mapping {
       breakMinutes: idx(headers, 'breakminutes'),
       // PBT's "type" is the kind of venue (Casino, Club); cash or tournament is "variant".
       kind: idx(headers, 'variant'),
+      // ...and "type" says Casino, Club or Online.
+      format: idx(headers, 'type'),
       name: idx(headers, 'mttname'),
       game: idx(headers, 'game'),
       limit: idx(headers, 'limit'),
@@ -154,6 +158,7 @@ export function mappingFor(source: SourceId, headers: string[]): Mapping {
       start: idx(headers, 'date'),
       hours: idx(headers, 'hours'),
       kind: idx(headers, 'type'),
+      format: idx(headers, 'format'),
       name: idx(headers, 'game'),
       venue: idx(headers, 'venue'),
       currency: idx(headers, 'currency'),

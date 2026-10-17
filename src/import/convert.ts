@@ -20,9 +20,22 @@ export interface ImportOptions {
   defaultKind?: 'mtt' | 'cash';
 }
 
+/** A deposit or withdrawal read from the file; the import screen picks its bankroll. */
+export interface ImportedMove {
+  id: string;
+  kind: 'deposit' | 'withdrawal';
+  /** Always positive. */
+  amount: number;
+  at: number;
+  currency: string;
+  note: string;
+}
+
 export interface ImportResult {
   sessions: Session[];
-  /** Deposits, withdrawals and transfers: bankroll moves, not poker. */
+  /** Deposits and withdrawals: bankroll moves, not poker. */
+  moves: ImportedMove[];
+  /** Bankroll rows that couldn't be read as a deposit or withdrawal (no date or amount). */
   transfers: number;
   /** Rows without a date or any money in them. */
   unreadable: number;
@@ -224,6 +237,38 @@ function hash(s: string): string {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const ONLINE = /online|internet|pokerstars|ggpoker|gg ?network|partypoker|888poker|winamax|ipoker|americas ?cardroom|\bacr\b|wpt ?global|natural ?8|ignition|bovada|coinpoker|unibet|betfair/i;
+const LIVE = /live|casino|club|clube|home|casa|cardroom|room|sala|bar|private/i;
+
+/** "Online", "Casino", "Club", "Live" → where it was played; null when the cell doesn't say. */
+export function formatOf(raw: string): 'live' | 'online' | null {
+  if (!raw.trim()) return null;
+  if (ONLINE.test(raw)) return 'online';
+  if (LIVE.test(raw)) return 'live';
+  return null;
+}
+
+const WITHDRAW = /withdraw|payout|cash ?out|levant|retirad|saque|retrait|auszahl/i;
+
+/** A bankroll row as a deposit or withdrawal: the sign of the amount, or the words on the row. */
+function moveOf(r: string[], get: (r: string[], f: Field) => string, at: number, opt: ImportOptions): ImportedMove | null {
+  const net = parseNum(get(r, 'profit'));
+  const out = parseNum(get(r, 'cashOut'));
+  const inn = parseNum(get(r, 'buyIn'));
+  const v = net ?? (out !== null || inn !== null ? (out ?? 0) - (inn ?? 0) : null);
+  if (v === null || Math.abs(v) < 0.005) return null;
+  const words = [get(r, 'kind'), get(r, 'game'), get(r, 'name'), get(r, 'notes')].join(' ');
+  // "Deposit/Payout" (PBT) says both; then the sign decides.
+  const both = TRANSFER_IN.test(words) && WITHDRAW.test(words);
+  const kind: 'deposit' | 'withdrawal' = !both && WITHDRAW.test(words) ? 'withdrawal' : !both && TRANSFER_IN.test(words) ? (v < 0 ? 'withdrawal' : 'deposit') : v < 0 ? 'withdrawal' : 'deposit';
+  const currency = currencyOf(get(r, 'currency'), opt.currency);
+  const amount = round2(Math.abs(v));
+  const note = get(r, 'notes');
+  return { id: 'imx_' + hash([opt.source, at, kind, amount, currency].join('|')), kind, amount, at, currency, note };
+}
+
+const TRANSFER_IN = /deposit|dep[oó]sito|cash ?in\b|top ?up|carregamento|einzahl|d[eé]p[oô]t/i;
+
 // ─── Rows → sessions ─────────────────────────────────────────────────────────
 
 /** Sessions from a mapped table. Same file twice gives the same ids, so a re-import adds nothing. */
@@ -235,16 +280,23 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
   const sessions: Session[] = [];
   const seen = new Map<string, number>();
   let transfers = 0;
+  const moves: ImportedMove[] = [];
   let unreadable = 0;
 
   for (const r of table.rows) {
     const k = kindUseful ? kindOf(get(r, 'kind')) : null;
     const nameRaw = get(r, 'name');
-    if (k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw))) {
-      transfers++;
+    const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
+    const startP = parseDate(get(r, 'start'), order);
+    if (isMove) {
+      const m = startP && moveOf(r, get, startP.t, opt);
+      if (m) {
+        const dup = seen.get(m.id) ?? 0;
+        seen.set(m.id, dup + 1);
+        moves.push(dup ? { ...m, id: m.id + '_' + dup } : m);
+      } else transfers++;
       continue;
     }
-    const startP = parseDate(get(r, 'start'), order);
     if (!startP) {
       unreadable++;
       continue;
@@ -330,6 +382,7 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     const notes = [get(r, 'notes'), get(r, 'tags') ? '#' + get(r, 'tags').replace(/\s*,\s*/g, ' #') : '', ...extra].filter(Boolean).join('\n');
 
     const venue = get(r, 'venue');
+    const format = formatOf(get(r, 'format')) ?? (ONLINE.test(venue) ? 'online' : null);
     const base = [opt.source, start, venue, name, round2(net ?? out - cost)].join('|');
     // Two identical rows (same start, place and result) are still two sessions.
     const dup = seen.get(base) ?? 0;
@@ -360,10 +413,11 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
       stackLog: [],
       roster: [],
       notes,
+      ...(format ? { format } : null),
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
-  return { sessions, transfers, unreadable, order, kindKnown: kindUseful, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  return { sessions, moves, transfers, unreadable, order, kindKnown: kindUseful, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */
