@@ -2881,6 +2881,11 @@ const es: Record<string, string> = {
   'Gerir': 'Gestionar',
   'Partilhar imagem': 'Compartir imagen',
   'Partilhar noutra app (X, WhatsApp…)': 'Compartir en otra app (X, WhatsApp…)',
+  'Apagar comentário de': 'Eliminar comentario de',
+  'Apagar comentário?': '¿Eliminar comentario?',
+  'Bloquear impede esta pessoa de voltar a comentar nesta mão.': 'Bloquear impide que esta persona vuelva a comentar en esta mano.',
+  'Apagar e bloquear': 'Eliminar y bloquear',
+  'Não deu para apagar o comentário agora. Tenta outra vez.': 'No se pudo eliminar el comentario ahora. Inténtalo de nuevo.',
 };
 
 export default es;

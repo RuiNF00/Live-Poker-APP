@@ -19,7 +19,7 @@ import { track } from '@/lib/events';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
-import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
+import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
@@ -196,6 +196,26 @@ ${link}`;
     ]);
   };
 
+  const removeOne = (c: Comment) => {
+    const doIt = async (block: boolean) => {
+      if (!hand.shareId || !hand.shareToken) return;
+      try {
+        await removeComment(hand.shareId, hand.shareToken, c.id, block);
+        if (block) loadComments();
+        else setComments((x) => x.filter((y) => y.id !== c.id));
+      } catch {
+        Alert.alert(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
+      }
+    };
+    if (Platform.OS === 'web') doIt(false);
+    else
+      Alert.alert(t('Apagar comentário?'), t('Bloquear impede esta pessoa de voltar a comentar nesta mão.'), [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Apagar'), style: 'destructive', onPress: () => doIt(false) },
+        { text: t('Apagar e bloquear'), style: 'destructive', onPress: () => doIt(true) },
+      ]);
+  };
+
   const unshare = () => {
     const doIt = async () => {
       if (!hand.shareId || !hand.shareToken) return;
@@ -278,6 +298,7 @@ ${link}`;
               onJumpStreet={jumpStreet}
               notes={hand.streetNotes}
               onNote={saveNote}
+              onRemove={hand.shareToken ? removeOne : undefined}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>

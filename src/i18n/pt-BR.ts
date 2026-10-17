@@ -1295,6 +1295,11 @@ const ptBR: Record<string, string> = {
   'Gerir': 'Gerenciar',
   'Partilhar imagem': 'Compartilhar imagem',
   'Partilhar noutra app (X, WhatsApp…)': 'Compartilhar em outro app (X, WhatsApp…)',
+  'Apagar comentário de': 'Excluir comentário de',
+  'Apagar comentário?': 'Excluir comentário?',
+  'Bloquear impede esta pessoa de voltar a comentar nesta mão.': 'Bloquear impede essa pessoa de comentar de novo nesta mão.',
+  'Apagar e bloquear': 'Excluir e bloquear',
+  'Não deu para apagar o comentário agora. Tenta outra vez.': 'Não deu para excluir o comentário agora. Tente de novo.',
 };
 
 export default ptBR;
