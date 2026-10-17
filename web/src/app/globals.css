@@ -299,6 +299,7 @@ a {
 }
 
 .rt-board-run {
+  margin-left: calc(var(--k) * -19);
   display: flex;
   align-items: center;
   gap: calc(var(--k) * 3);

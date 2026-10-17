@@ -26,6 +26,44 @@ export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
 };
 
 
+/** Same marks as the tags beside the two boards. */
+const RUN_MARK = { 1: '①', 2: '②' } as const;
+
+/** Run it twice: both boards stacked, smaller, each tagged with its number. */
+function RunBoards({ boards, k, top }: { boards: string[][]; k: number; top: number }) {
+  const cw = SIZE.boardCardW * 0.76 * k;
+  const ch = SIZE.boardCardH * 0.76 * k;
+  const gap = 3 * k;
+  const tag = 14 * k;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: top - ch - gap / 2, alignItems: 'center', gap }}>
+      {boards.map((b, j) => (
+        <View key={j} accessibilityLabel={`Board ${j + 1}`} style={{ flexDirection: 'row', alignItems: 'center', gap: SIZE.boardGap * 0.76 * k, marginLeft: -(tag + 3 * k) }}>
+          <View
+            style={{
+              width: tag,
+              height: tag,
+              marginRight: 3 * k,
+              borderRadius: tag / 2,
+              borderWidth: 1,
+              borderColor: 'rgba(255,106,61,0.5)',
+              backgroundColor: 'rgba(14,12,10,0.88)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Text style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>{j + 1}</Text>
+          </View>
+          {b.map((c, i) => (
+            <Appear key={`${i}-${c}`}>
+              <RpCard card={c} w={cw} h={ch} />
+            </Appear>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /** Fades a card or chip in when it first appears. */
 function Appear({ children, style }: { children: React.ReactNode; style?: object }) {
   const [o] = useState(() => new Animated.Value(0));
@@ -86,6 +124,9 @@ export function ReplayerTable({
             {BRAND.name.toUpperCase()}
           </Text>
           {/* board */}
+          {view.board2 ? (
+            <RunBoards boards={[view.board, view.board2]} k={k} top={(BOARD_Y / 100) * h} />
+          ) : (
           <View style={{ position: 'absolute', left: 0, right: 0, top: (BOARD_Y / 100) * h - boardH / 2, flexDirection: 'row', justifyContent: 'center', gap: SIZE.boardGap * k }}>
             {[0, 1, 2, 3, 4].map((c) =>
               view.board[c] ? (
@@ -97,6 +138,7 @@ export function ReplayerTable({
               ),
             )}
           </View>
+          )}
 
           {/* pot */}
           {view.pot > 0 ? (
@@ -209,7 +251,8 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
   const ch = (s.hero ? SIZE.heroCardH : SIZE.seatCardH) * k;
   const pos = { bg: posColor(s.pos), fg: '#0C1311' };
-  const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (s.handName ? ` · ${s.handName}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label: s.badge.label } : null;
+  const winNote = s.run ? RUN_MARK[s.run] : s.handName;
+  const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (winNote ? ` · ${winNote}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label: s.badge.label } : null;
   const border = s.won ? C.good : s.acting ? C.accent : s.hero ? 'rgba(245,237,216,0.55)' : 'rgba(245,237,216,0.14)';
 
   return (
