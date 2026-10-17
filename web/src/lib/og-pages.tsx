@@ -1,0 +1,403 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { ImageResponse } from 'next/og';
+import { brand } from '@/config/brand';
+import { numberTag, type Locale } from '@/lib/i18n';
+import { liveCopy } from '@/components/live/copy';
+import { previewCopy } from '@/lib/preview-copy';
+import { MARK_LINES, MARK_PATH } from '@/components/Brand';
+import { SUIT_PATHS } from '@/components/PlayingCard';
+import type { LiveSnapshot } from '@/lib/live-snapshot';
+import type { ProfilePayload } from '@/lib/profile-data';
+
+// Link previews (WhatsApp, Instagram, iMessage) for the site, invites and backer live pages,
+// in the app's "Noite" design. Shared hands have their own in lib/og.tsx.
+
+export const OG_SIZE = { width: 1200, height: 630 };
+
+const K = {
+  bg: '#0C1311',
+  surface: '#141D1A',
+  surface2: '#1A2521',
+  border: 'rgba(238,242,239,0.10)',
+  text: '#F1F4F2',
+  dim: '#B4BFBA',
+  muted: '#7F8D87',
+  accent: '#FF6A3D',
+  accentSoft: 'rgba(255,106,61,0.14)',
+  accentLine: 'rgba(255,106,61,0.45)',
+  good: '#4ADE80',
+  bad: '#FF8A7A',
+  warn: '#F5B83D',
+  felt: '#1C4A3C',
+  feltEdge: '#163D31',
+  cream: '#F6F2E8',
+  suit: { s: '#1B1D1C', h: '#D93A3A', d: '#2F6FE0', c: '#1F9D57' } as Record<string, string>,
+};
+
+type OgFont = { name: string; data: Buffer; weight: 500 | 800; style: 'normal' };
+let fonts: Promise<OgFont[]> | null = null;
+
+function brandFonts(): Promise<OgFont[]> {
+  fonts ??= Promise.all(
+    ([
+      [500, 'HankenGrotesk_500Medium.ttf'],
+      [800, 'HankenGrotesk_800ExtraBold.ttf'],
+    ] as const).map(async ([weight, file]) => ({
+      name: 'Hanken Grotesk',
+      data: await readFile(join(process.cwd(), 'assets/fonts', file)),
+      weight,
+      style: 'normal' as const,
+    })),
+  ).catch(() => []);
+  return fonts;
+}
+
+async function render(node: React.ReactElement, maxAge = 86400) {
+  return new ImageResponse(node, {
+    ...OG_SIZE,
+    fonts: await brandFonts(),
+    headers: { 'cache-control': `public, max-age=${maxAge}, s-maxage=${maxAge}` },
+  });
+}
+
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: `radial-gradient(circle at 82% 48%, ${K.felt} 0%, ${K.bg} 58%)`,
+        color: K.text,
+        fontFamily: 'Hanken Grotesk',
+        padding: '64px 72px',
+        position: 'relative',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Logo() {
+  const m = /^(.*?)(book)$/i.exec(brand.name);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <svg width="52" height="52" viewBox="0 2 64 64">
+        <path d={MARK_PATH} fill={K.accent} />
+        <path d={MARK_LINES} stroke={K.bg} strokeWidth="3.2" strokeLinecap="round" />
+      </svg>
+      <div style={{ display: 'flex', fontSize: 40, fontWeight: 800, letterSpacing: -1 }}>
+        {m ? m[1] : brand.name}
+        {m ? <span style={{ color: K.accent }}>{m[2]}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function Eyebrow({ label, color = K.accent }: { label: string; color?: string }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        alignSelf: 'flex-start',
+        padding: '8px 18px',
+        borderRadius: 999,
+        border: `2px solid ${color}66`,
+        background: `${color}22`,
+        color,
+        fontSize: 22,
+        fontWeight: 800,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+      }}
+    >
+      <div style={{ width: 12, height: 12, borderRadius: 6, background: color }} />
+      {label}
+    </div>
+  );
+}
+
+/** A cream card from the app's four-colour deck. */
+function CreamCard({ code, w, rotate = 0 }: { code: string; w: number; rotate?: number }) {
+  const rank = code[0] === 'T' ? '10' : code[0];
+  const col = K.suit[code[1]];
+  return (
+    <div
+      style={{
+        width: w,
+        height: Math.round(w * 1.4),
+        borderRadius: w * 0.11,
+        background: K.cream,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: w * 0.09,
+        color: col,
+        boxShadow: '0 24px 50px rgba(0,0,0,0.5)',
+        transform: `rotate(${rotate}deg)`,
+      }}
+    >
+      <div style={{ fontSize: w * 0.5, fontWeight: 800, lineHeight: 1, letterSpacing: -2 }}>{rank}</div>
+      <svg width={w * 0.34} height={w * 0.34} viewBox="0 0 100 100" style={{ marginTop: w * 0.04 }}>
+        <path d={SUIT_PATHS[code[1]]} fill={col} />
+      </svg>
+      <div style={{ display: 'flex', flex: 1, alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+        <svg width={w * 0.5} height={w * 0.5} viewBox="0 0 100 100">
+          <path d={SUIT_PATHS[code[1]]} fill={col} />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function Hand() {
+  return (
+    <div style={{ display: 'flex', position: 'absolute', right: 96, top: 150, gap: 0 }}>
+      <CreamCard code="Ah" w={190} rotate={-8} />
+      <div style={{ display: 'flex', marginLeft: -60, marginTop: 18 }}>
+        <CreamCard code="Qh" w={190} rotate={7} />
+      </div>
+    </div>
+  );
+}
+
+/** The bare site link (Instagram bio, WhatsApp). */
+export function siteOgImage() {
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 760, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', fontSize: 70, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>
+          <span>Grava a mão</span>
+          <span style={{ color: K.accent }}>antes do próximo deal.</span>
+        </div>
+        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>Regista, revê e partilha as tuas mãos live.</div>
+      </div>
+      <Hand />
+    </Frame>,
+    604800,
+  );
+}
+
+/** An invite (/r/<code>): the same for every code, so it caches like a static file. */
+export function inviteOgImage(days: number, c: { eyebrow: string; title: string; days: string }) {
+  const [line1, line2] = c.days.split('\n');
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 720, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+          <Eyebrow label={c.eyebrow} />
+          {/* Up to where the cards start: "Um amigo convidou você" ran into them. */}
+          <div style={{ display: 'flex', maxWidth: 640, fontSize: 60, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2 }}>{c.title}</div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 22,
+            alignSelf: 'flex-start',
+            padding: '18px 28px',
+            borderRadius: 22,
+            background: K.accentSoft,
+            border: `2px solid ${K.accentLine}`,
+          }}
+        >
+          <div style={{ display: 'flex', fontSize: 64, fontWeight: 800, color: K.accent, letterSpacing: -2 }}>+{days}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', fontSize: 28, fontWeight: 500, color: K.dim, lineHeight: 1.2 }}>
+            <span>{line1}</span>
+            {line2 ? <span>{line2}</span> : null}
+          </div>
+        </div>
+      </div>
+      <Hand />
+    </Frame>,
+    604800,
+  );
+}
+
+const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
+/** At most `n` characters, with "…" when cut, never in the middle of a word. */
+const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, '') + '…');
+const num = (n: number) => fmt.format(n);
+
+/**
+ * A backer live page (/live/<id>): the session as it stands, in the sharer's language. Short cache,
+ * it changes. No money: the link gets forwarded to group chats, so buy-ins, prizes, results and the
+ * share sold stay on the page; the preview shows the stack, the level and the place.
+ */
+export function liveOgImage(s: LiveSnapshot | null, locale: Locale = 'pt') {
+  if (!s) return siteOgImage();
+  const c = liveCopy(locale);
+  const nf = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 });
+  // The narrow group space (12 345), as on the page.
+  const n = (v: number) => nf.format(v).replace(/[\u00a0\u202f]/g, '\u202f');
+  const mtt = s.kind === 'mtt';
+  // A bagged day shows its stack, like a running one: there is no result yet.
+  const bagged = !!s.endedAt && s.bagged;
+  const ended = !!s.endedAt && !bagged;
+  const title = s.name || (mtt ? c.tournament : c.cash);
+  const sub = [s.player, s.venue].filter(Boolean).join(' · ');
+  const first = s.stackLog[0]?.stack ?? s.stack;
+  const delta = s.stack - first;
+  const bb = s.bb ? Math.round((s.stack / s.bb) * 10) / 10 : null;
+  const hours = Math.floor(s.playedMs / 3_600_000);
+  const played = `${hours}h${String(Math.floor((s.playedMs % 3_600_000) / 60_000)).padStart(2, '0')}`;
+  const stage = s.stage ? c.stages[s.stage] : null;
+  const tiles: [string, string][] = [
+    [s.level ? c.level(s.level) : c.blinds, `${n(s.sb)}/${n(s.bb)}`],
+    ...(stage && !ended ? ([[c.stage, stage]] as [string, string][]) : []),
+    [c.time, played],
+  ];
+  // Ended: a tournament shows the place (or the bust), a cash game only that it ended.
+  const bigLabel = ended ? (mtt ? (s.finish ? c.result : c.busted) : c.ended) : c.stack;
+  const big = ended ? (mtt && s.finish ? c.place(s.finish, s.field) : '—') : n(s.stack);
+  // Everything that matters sits in the middle third, so a square crop (WhatsApp's and iMessage's
+  // small thumbnail) still shows the stack; the logo and the state pill are the only things at the edges.
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Logo />
+          <Eyebrow
+            label={ended ? c.ended : bagged ? `${c.bagged} · ${c.day(s.day)}` : s.paused ? c.paused : c.live}
+            color={ended ? K.muted : bagged || s.paused ? K.warn : K.good}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, maxWidth: 1000 }}>
+          <div style={{ display: 'flex', fontSize: 40, fontWeight: 800, letterSpacing: -1, lineHeight: 1.1, textAlign: 'center' }}>{title.slice(0, 40)}</div>
+          {sub ? <div style={{ display: 'flex', fontSize: 26, fontWeight: 500, color: K.dim }}>{sub.slice(0, 50)}</div> : null}
+          <div style={{ display: 'flex', marginTop: 18, fontSize: 22, fontWeight: 800, letterSpacing: 2, color: K.muted, textTransform: 'uppercase' }}>{bigLabel}</div>
+          <div style={{ display: 'flex', fontSize: 132, fontWeight: 800, letterSpacing: -4, lineHeight: 1 }}>{big}</div>
+          {!ended && (bb !== null || delta) ? (
+            <div style={{ display: 'flex', gap: 22, marginTop: 8, fontSize: 32, fontWeight: 700, color: K.dim }}>
+              {bb !== null ? <span>{n(bb)} BB</span> : null}
+              {delta ? (
+                <span style={{ color: delta > 0 ? K.good : K.bad }}>
+                  {delta > 0 ? '+' : '−'}
+                  {n(Math.abs(delta))}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ display: 'flex', gap: 36, justifyContent: 'center' }}>
+          {tiles.map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
+              <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1.5, color: K.muted, textTransform: 'uppercase' }}>{k}</span>
+              <span style={{ fontSize: 30, fontWeight: 800 }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Frame>,
+    60,
+  );
+}
+
+/**
+ * A swap (/swap/<id>): the two players and the event, never the percentages or amounts (the chat it
+ * lands in may have more than the two of them).
+ */
+export function swapOgImage(sw: { a: string; b: string; title: string } | null, locale: Locale = 'pt') {
+  if (!sw) return siteOgImage();
+  const c = previewCopy(locale);
+  // About 0.55 em per character in the brand font, bold.
+  const names = Math.min(76, Math.floor(1056 / (0.55 * Math.max(sw.a.length, sw.b.length + 2))));
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 1056, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <Eyebrow label={c.swap} />
+          {/* One name per line, in a size that fits the whole name (up to 40 characters) instead of cutting it mid-word. */}
+          <div style={{ display: 'flex', flexDirection: 'column', fontSize: names, fontWeight: 800, letterSpacing: -2, lineHeight: 1.08 }}>
+            <span>{sw.a}</span>
+            <div style={{ display: 'flex', gap: 18 }}>
+              <span style={{ color: K.accent }}>×</span>
+              <span>{sw.b}</span>
+            </div>
+          </div>
+          {sw.title ? <div style={{ display: 'flex', fontSize: 34, fontWeight: 500, color: K.dim }}>{clip(sw.title, 56)}</div> : null}
+        </div>
+        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{c.swapSubline}</div>
+      </div>
+    </Frame>,
+    3600,
+  );
+}
+
+/** A pack of hands (/p/<id>): how many and its title, never whose or the amounts. */
+export function packOgImage(pack: { title: string; hands: number } | null, locale: Locale = 'pt') {
+  if (!pack) return siteOgImage();
+  const c = previewCopy(locale);
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 720, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <Eyebrow label={c.packHands(pack.hands)} />
+          <div style={{ display: 'flex', fontSize: 66, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>{(pack.title || c.packHeadline).slice(0, 60)}</div>
+        </div>
+        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{pack.title ? c.packHeadline : c.subline}</div>
+      </div>
+      <Hand />
+    </Frame>,
+    3600,
+  );
+}
+
+/** A public profile (/u/<handle>): who it is and what they share. Amounts never appear here. */
+export function profileOgImage(rec: { handle: string; payload: ProfilePayload } | null) {
+  if (!rec) return siteOgImage();
+  const p = rec.payload;
+  const name = (p.name || `@${rec.handle}`).slice(0, 32);
+  const hours = Math.round(p.sessions.reduce((n, s) => n + s.hours, 0));
+  const best = p.sessions.filter((s) => s.finish).sort((a, b) => a.finish! - b.finish!)[0];
+  const tiles: [string, string][] = [
+    ['Sessões', num(p.sessions.length)],
+    ['Mãos', num(p.hands.length)],
+    ['Horas', num(hours)],
+  ];
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 760, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Eyebrow label="Perfil de jogador" />
+          <div style={{ display: 'flex', fontSize: 76, fontWeight: 800, letterSpacing: -2.5, lineHeight: 1.04, marginTop: 14 }}>{name}</div>
+          <div style={{ display: 'flex', fontSize: 34, fontWeight: 500, color: K.accent }}>@{rec.handle}</div>
+          {best ? (
+            <div style={{ display: 'flex', fontSize: 28, fontWeight: 500, color: K.dim }}>
+              {`Melhor: ${best.finish}º${best.field ? ` de ${num(best.field)}` : ''}${best.name ? ` · ${best.name}` : ''}`.slice(0, 60)}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {tiles.map(([k, v]) => (
+            <div
+              key={k}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '16px 26px',
+                borderRadius: 20,
+                background: K.surface,
+                border: `2px solid ${K.border}`,
+                minWidth: 170,
+              }}
+            >
+              <span style={{ fontSize: 48, fontWeight: 800, letterSpacing: -1.5 }}>{v}</span>
+              <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1.5, color: K.muted, textTransform: 'uppercase' }}>{k}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <Hand />
+    </Frame>,
+    3600,
+  );
+}

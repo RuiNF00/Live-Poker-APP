@@ -1,0 +1,241 @@
+// Share a session: swipe between looks (dark, orange, transparent sticker for a
+// photo of the table), hide the money if you'd rather, and post it to
+// Instagram. Free cards always say "Feito com Sweatbook".
+
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
+import React, { useMemo, useRef, useState } from 'react';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { usePro } from '@/billing/pro';
+import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
+import { CardShareSheet } from '@/components/CardShareSheet';
+import { STORY_H, STORY_W } from '@/components/StoryCard';
+import { Button, Empty, IconButton, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
+import { track } from '@/lib/events';
+import { canShareStory, capturePost, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
+import { shareRef } from '@/lib/referrals';
+import { lastShare, rememberShare } from '@/lib/share-last';
+import { playedMs } from '@/store/session-math';
+import { CARD_STYLES, milestoneFor, sessionStats, stackPostText, stackStats, type CardStyle } from '@/share/session-card';
+import { useStore } from '@/store/store';
+import { BRAND, C, R, S } from '@/theme';
+
+const LOOK_NAME: Record<CardStyle, string> = { noite: t('Noite'), brasa: t('Brasa'), sticker: t('Sticker') };
+
+export default function SessionCardScreen() {
+  // `stack=1`: a tournament's chip count mid-festival ("Dia 1 ensacado: 85k"), chips only, from the live session.
+  const { id, stack } = useLocalSearchParams<{ id: string; stack?: string }>();
+  const { sessions, hands, settings } = useStore();
+  const s = sessions.find((x) => x.id === id);
+  const chipCount = stack === '1' && s?.kind === 'mtt';
+  const pro = usePro();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const [page, setPage] = useState(0);
+  // Privacy mode on: the card starts without amounts, so a result is never shared by accident.
+  const [hideMoney, setHideMoney] = useState(!!settings.hideAmounts);
+  const [brand, setBrand] = useState(true);
+  const [showMilestone, setShowMilestone] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
+  const postCard = useRef<React.ComponentRef<typeof View>>(null);
+
+  const stats = useMemo(() => (!s ? [] : chipCount ? stackStats(s) : sessionStats(s, hands, hideMoney)), [s, chipCount, hands, hideMoney]);
+  const milestone = useMemo(() => (s && !chipCount ? milestoneFor(s, sessions, hands) : null), [s, chipCount, sessions, hands]);
+  if (!s) return <Empty title={t('Sessão não encontrada')} />;
+
+  const pageW = width;
+  const scale = Math.min((width - 64) / STORY_W, (height * 0.58) / STORY_H, 1);
+  const look = CARD_STYLES[page];
+  const withBrand = brand || !pro.isPro;
+
+  const post = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const ref = await shareRef().catch(() => '');
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=session`, variant);
+      const node = { current: refs.current[page] };
+      const target =
+        look === 'sticker' ? await shareSticker(await captureSticker(node, STICKER_W, STICKER_H), link) : await shareStory(await captureStory(node), link);
+      track('story_shared', { target: String(target), kind: chipCount ? 'stack' : 'session', look, money: !hideMoney, milestone: !!(milestone && showMilestone) });
+    } catch {
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // The post text: time and hands, never the venue or an amount.
+  const postText = (link: string) => {
+    if (chipCount) return `${stackPostText(s)}\n${link}`;
+    const h = Math.max(1, Math.round(playedMs(s) / 3_600_000));
+    const n = hands.filter((x) => x.sessionId === s.id).length;
+    return `${n ? t('{h} h ao vivo, {hands} mãos registadas.', { h, hands: n }) : t('{h} h ao vivo.', { h })}\n${link}`;
+  };
+  const inviteLink = async (to: 'x' | 'whatsapp' | 'any') => {
+    const ref = await shareRef().catch(() => '');
+    return withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=session`, variant);
+  };
+
+  // X or any other app: the card at 4:5 (the dark look for the sticker) as a picture, the invite link in the text.
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
+    tap('medium');
+    setBusy(true);
+    try {
+      await sharePost([await capturePost(postCard)], postText(await inviteLink(to)), to);
+      track('story_shared', { target: to, kind: chipCount ? 'stack' : 'session', look, money: !hideMoney });
+    } catch {
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    await Clipboard.setStringAsync(postText(await inviteLink('any'))).catch(() => {});
+    notice(t('Link copiado'));
+  };
+
+  // The destination used last is the button itself (one tap less mid-tournament); the sheet is on "…".
+  // "Outras apps" and a first share keep the sheet, so the system one never opens unasked.
+  const last = lastShare();
+  const igTitle = look === 'sticker' ? t('Sticker no Instagram') : t('Story no Instagram');
+  const quick =
+    last === 'instagram'
+      ? { icon: 'logo-instagram' as const, label: igTitle }
+      : last === 'whatsapp'
+        ? { icon: 'logo-whatsapp' as const, label: 'WhatsApp' }
+        : last === 'x'
+          ? { icon: 'logo-x' as const, label: t('Publicar no X') }
+          : last === 'copy'
+            ? { icon: 'link-outline' as const, label: t('Copiar link') }
+            : null;
+  const sendLast = () => {
+    if (!last) return;
+    rememberShare(last);
+    if (last === 'instagram') void post();
+    else if (last === 'whatsapp' || last === 'x') void postTo(last);
+    else if (last === 'copy') void copy();
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title: chipCount ? t('Partilhar stack') : t('Partilhar sessão') }} />
+      <CardShareSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        instagram={post} instagramTitle={look === 'sticker' ? t('Sticker no Instagram') : undefined} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy}
+      />
+      {/* The 4:5 copy for X and other apps: drawn off screen, only ever captured. */}
+      <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
+        <SessionCard
+          ref={postCard}
+          session={s}
+          stats={stats}
+          look={look === 'sticker' ? 'noite' : look}
+          milestone={showMilestone ? milestone : null}
+          hideMoney={hideMoney}
+          brand={withBrand}
+          hideVenue={chipCount}
+          format="post"
+        />
+      </View>
+      <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          // onScroll, not onMomentumScrollEnd: the dots follow the swipe, and the web never fires momentum events.
+          scrollEventThrottle={32}
+          onScroll={(e) => {
+            const p = Math.round(e.nativeEvent.contentOffset.x / pageW);
+            if (p === page) return;
+            tap('select');
+            setPage(p);
+          }}>
+          {CARD_STYLES.map((k, i) => (
+            <View key={k} style={{ width: pageW, alignItems: 'center' }}>
+              <View style={{ width: STORY_W * scale, height: STORY_H * scale, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
+                {k === 'sticker' ? (
+                  // A felt backdrop stands in for the photo the sticker goes on.
+                  <LinearGradient colors={['#1F5A47', '#123327', '#0C1311']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ transform: [{ scale: Math.max(scale, 0.85) }] }}>
+                      <SessionCard ref={(r) => void (refs.current[i] = r)} session={s} stats={stats} look={k} brand={withBrand} hideVenue={chipCount} />
+                    </View>
+                    <T v="tiny" color="rgba(238,242,239,0.7)" style={{ position: 'absolute', bottom: 14 }}>
+                      {t('Fundo transparente: põe-no por cima da foto da mesa')}
+                    </T>
+                  </LinearGradient>
+                ) : (
+                  <View style={{ position: 'absolute', left: (STORY_W * scale - STORY_W) / 2, top: (STORY_H * scale - STORY_H) / 2, transform: [{ scale }] }}>
+                    <SessionCard
+                      ref={(r) => void (refs.current[i] = r)}
+                      session={s}
+                      stats={stats}
+                      look={k}
+                      milestone={showMilestone ? milestone : null}
+                      hideMoney={hideMoney}
+                      brand={withBrand} hideVenue={chipCount}
+                    />
+                  </View>
+                )}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+
+        <Row gap={6} style={{ justifyContent: 'center' }}>
+          {CARD_STYLES.map((k, i) => (
+            <View key={k} style={{ height: 6, width: i === page ? 18 : 6, borderRadius: 3, backgroundColor: i === page ? C.accent : C.borderStrong }} />
+          ))}
+        </Row>
+        <T v="small" style={{ textAlign: 'center', marginTop: -S.sm }}>
+          {LOOK_NAME[look]} · {t('Desliza para outro estilo')}
+        </T>
+
+        <View style={{ paddingHorizontal: S.gutter }}>
+          <ListGroup>
+            {chipCount ? null : <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Mostra horas, mãos e potes em bb, sem €')} value={hideMoney} onChange={setHideMoney} />}
+            {milestone ? <ToggleItem icon="trophy-outline" title={t('Mostrar marco')} subtitle={milestone.title} value={showMilestone} onChange={setShowMilestone} /> : null}
+            <ToggleItem
+              icon="pricetag-outline"
+              title={t('Com marca Sweatbook')}
+              subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')}
+              value={withBrand}
+              onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+            />
+          </ListGroup>
+        </View>
+      </ScrollView>
+      <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
+        {canShareStory ? (
+          quick && !busy ? (
+            <Row gap={S.sm}>
+              <Button
+                title={quick.label}
+                icon={quick.icon}
+                onPress={sendLast}
+                style={{ flex: 1 }}
+              />
+              <IconButton name="ellipsis-horizontal" size={46} label={t('Mais formas de partilhar')} onPress={() => setSheet(true)} />
+            </Row>
+          ) : (
+            <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
+          )
+        ) : (
+          <T v="small" style={{ textAlign: 'center' }}>
+            {t('Abre a app no telemóvel para publicar no Instagram.')}
+          </T>
+        )}
+      </View>
+    </>
+  );
+}

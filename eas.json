@@ -1,0 +1,90 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "22.11.0",
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "environment": "production"
+    },
+    "testflight": {
+      "extends": "production",
+      "distribution": "store",
+      "autoIncrement": true,
+      "channel": "production",
+      "ios": {
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker",
+        "EXPO_PUBLIC_BUILD_CHANNEL": "testflight"
+      },
+      "environment": "production"
+    },
+    "play-test": {
+      "extends": "production",
+      "autoIncrement": true,
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker",
+        "EXPO_PUBLIC_BUILD_CHANNEL": "play-test"
+      },
+      "environment": "production"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {},
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    },
+    "testflight": {
+      "ios": {}
+    },
+    "play-test": {
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
+    }
+  }
+}

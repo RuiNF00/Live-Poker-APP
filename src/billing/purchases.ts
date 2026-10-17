@@ -1,0 +1,314 @@
+// Thin wrapper over RevenueCat (react-native-purchases), which handles App
+// Store and Google Play subscriptions, receipt checks and renewals for us.
+// With no API key (Expo Go, web, a dev checkout) it falls back to a local
+// demo store so the paywall can still be built and tested end to end.
+
+import { Linking, Platform } from 'react-native';
+import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
+
+import { currencyAfter, decimalComma, lang, variant } from '../i18n';
+
+import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
+import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
+import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
+
+const KEY = Platform.select({
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+  default: undefined,
+});
+
+/** True when payments go through the real stores. */
+export const LIVE = !!KEY;
+
+export interface StorePlan {
+  id: PlanId;
+  priceString: string;
+  price: number;
+  /** ISO currency of the store price, so derived prices (per month) match it. */
+  currency: string;
+  /** Free trial days this player can still get (0 if none or already used). */
+  trialDays: number;
+  pkg?: PurchasesPackage;
+}
+
+let sdk: Promise<typeof import('react-native-purchases')> | null = null;
+/**
+ * The RevenueCat SDK, loaded and configured on first use. It is ~1 MB on web
+ * and nothing needs it before the first store call, so it stays out of startup.
+ */
+function rcModule() {
+  sdk ??= import('react-native-purchases').then((m) => {
+    m.default.configure({ apiKey: KEY! });
+    // Apple Ads: lets RevenueCat tie trials and purchases to a campaign and keyword. AdServices
+    // needs no tracking prompt and carries no device id (marketing/apple-ads-bahamas.md).
+    if (Platform.OS === 'ios') m.default.enableAdServicesAttributionTokenCollection().catch(() => {});
+    return m;
+  });
+  return sdk;
+}
+const rc = async () => (await rcModule()).default;
+
+export function configure(onChange: (isPro: boolean) => void): () => void {
+  if (!LIVE) return () => {};
+  const listener = (info: CustomerInfo) => onChange(hasPro(info));
+  let stop: (() => void) | null = null;
+  let stopped = false;
+  rc()
+    .then((P) => {
+      if (stopped) return;
+      P.addCustomerInfoUpdateListener(listener);
+      stop = () => P.removeCustomerInfoUpdateListener(listener);
+    })
+    .catch(() => {});
+  return () => {
+    stopped = true;
+    stop?.();
+  };
+}
+
+function hasPro(info: CustomerInfo): boolean {
+  return !!info.entitlements.active[ENTITLEMENT];
+}
+
+function usd(n: number) {
+  const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
+  return lang === 'en' ? `$${s}` : currencyAfter ? `${s}\u00a0US$` : `US$\u00a0${s}`;
+}
+
+function fallbackPlans(): StorePlan[] {
+  return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), currency: 'USD', trialDays: PLANS[id].trialDays }));
+}
+
+const PLANS_TIMEOUT_MS = 8_000;
+const RESTORE_TIMEOUT_MS = 20_000;
+
+/** A card room's network can leave a store call hanging: give up so the screen can say so. */
+function withTimeout<T>(run: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([run, new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new Error('timeout')), ms)))]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Store plans, or null when the store couldn't be reached. A real build never
+ * shows made-up prices (App Review 2.1): the paywall offers a retry instead.
+ * The demo store (no key: Expo Go, web previews) keeps the fallback prices.
+ */
+export async function getPlans(): Promise<StorePlan[] | null> {
+  if (!LIVE) return fallbackPlans();
+  try {
+    // Prices and trial eligibility under one deadline: the paywall shows a retry instead of a spinner forever.
+    return await withTimeout(loadPlans(), PLANS_TIMEOUT_MS);
+  } catch {
+    return __DEV__ ? fallbackPlans() : null;
+  }
+}
+
+async function loadPlans(): Promise<StorePlan[] | null> {
+  const offerings = await (await rc()).getOfferings();
+  const pkgs = offerings.current?.availablePackages ?? [];
+  const plans: StorePlan[] = [];
+  for (const id of Object.keys(PRODUCTS) as PlanId[]) {
+    const pkg = pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id]) || p.packageType === (id === 'monthly' ? 'MONTHLY' : 'ANNUAL'));
+    if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: pkg.product.priceString, currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
+  }
+  if (Platform.OS === 'ios' && plans.length) {
+    // iOS lists the intro offer even to players who already used it, so ask.
+    const { default: Purchases, INTRO_ELIGIBILITY_STATUS } = await rcModule();
+    const elig = await Purchases.checkTrialOrIntroductoryPriceEligibility(plans.map((p) => p.pkg!.product.identifier));
+    for (const p of plans) {
+      if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
+    }
+  }
+  return plans.length ? plans : __DEV__ ? fallbackPlans() : null;
+}
+
+/**
+ * The paywall layout and copy for this player's offering. With RevenueCat
+ * Experiments running, `current` is the offering the player was put in.
+ */
+export async function getPaywallConfig(): Promise<PaywallConfig> {
+  if (!LIVE) return DEFAULT_PAYWALL;
+  try {
+    const cur = (await (await rc()).getOfferings()).current;
+    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, variant === 'pt-PT' ? 'pt' : variant) : DEFAULT_PAYWALL;
+  } catch {
+    return DEFAULT_PAYWALL;
+  }
+}
+
+function trialDays(pkg: PurchasesPackage): number {
+  const intro = pkg.product.introPrice;
+  if (!intro || intro.price !== 0) return 0;
+  const unit = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 }[intro.periodUnit] ?? 0;
+  return unit * intro.periodNumberOfUnits;
+}
+
+export async function getIsPro(): Promise<boolean | null> {
+  if (!LIVE) return null;
+  try {
+    return hasPro(await (await rc()).getCustomerInfo());
+  } catch {
+    return null;
+  }
+}
+
+/** The running free trial, from the store. Null when not in one; undefined when the store can't say (demo store, offline). */
+export async function getTrial(): Promise<{ start: number; end: number; willRenew: boolean } | null | undefined> {
+  if (!LIVE) return undefined;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    if (!e || e.periodType !== 'TRIAL' || !e.expirationDateMillis) return null;
+    return { start: e.latestPurchaseDateMillis, end: e.expirationDateMillis, willRenew: e.willRenew };
+  } catch {
+    return undefined;
+  }
+}
+
+/** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
+  if (!LIVE) return null;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    if (!e || e.store === 'PROMOTIONAL') return null;
+    const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
+    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * When the store couldn't charge a renewal: Pro stays on through the store's grace period
+ * (App Store Billing Grace Period, Google Play grace) while it retries. Null when all is well.
+ */
+export async function getBillingIssue(): Promise<{ since: number } | null> {
+  if (!LIVE) return null;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    return e?.billingIssueDetectedAtMillis ? { since: e.billingIssueDetectedAtMillis } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Opens the store's own subscription page, where cancelling happens. */
+export async function manageSubscription(): Promise<void> {
+  const fallback = Platform.OS === 'android' ? 'https://play.google.com/store/account/subscriptions' : 'https://apps.apple.com/account/subscriptions';
+  try {
+    if (LIVE && Platform.OS === 'ios') return await (await rc()).showManageSubscriptions();
+    const url = LIVE ? (await (await rc()).getCustomerInfo()).managementURL : null;
+    await Linking.openURL(url ?? fallback);
+  } catch {
+    await Linking.openURL(fallback).catch(() => {});
+  }
+}
+
+/** Redeems an offer code (free Pro codes for trusted players): Apple's own sheet, or Google Play's redeem page. */
+export async function redeemCode(): Promise<void> {
+  const play = 'https://play.google.com/redeem';
+  try {
+    if (LIVE && Platform.OS === 'ios') return await (await rc()).presentCodeRedemptionSheet();
+    await Linking.openURL(Platform.OS === 'ios' ? 'https://apps.apple.com/redeem' : play);
+  } catch {
+    await Linking.openURL(play).catch(() => {});
+  }
+}
+
+/** The cancel-flow discount on the monthly plan, when it exists in the store. */
+export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+  const monthly = plans.find((p) => p.id === 'monthly');
+  // Demo store (dev builds and web): same shape as the lifetime one, so the cancel flow can be walked end to end.
+  if (!LIVE) return __DEV__ && monthly ? { priceString: usd(Math.round(monthly.price * (100 - RETENTION.discount.pct)) / 100), buy: async () => 'ok' as const } : null;
+  const pkg = monthly?.pkg;
+  if (!pkg) return null;
+  try {
+    if (Platform.OS === 'ios') {
+      const d = pkg.product.discounts?.find((x) => x.identifier === RETENTION.discount.ios);
+      if (!RETENTION.discount.ios || !d) return null;
+      const Purchases = await rc();
+      const offer = await Purchases.getPromotionalOffer(pkg.product, d);
+      if (!offer) return null;
+      return { priceString: d.priceString, buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
+    }
+    const opt = pkg.product.subscriptionOptions?.find((o) => o.tags.includes(RETENTION.discount.android) || o.id.endsWith(`:${RETENTION.discount.android}`));
+    const first = opt?.pricingPhases[0];
+    if (!RETENTION.discount.android || !opt || !first) return null;
+    return { priceString: first.price.formatted, buy: () => attempt(async () => (await rc()).purchaseSubscriptionOption(opt)) };
+  } catch {
+    return null;
+  }
+}
+
+async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
+  try {
+    // The store finished the purchase but Pro isn't on yet (RevenueCat still syncing): never say nothing was charged.
+    return hasPro((await run()).customerInfo) ? 'ok' : 'pending';
+  } catch (e) {
+    return buyError(e);
+  }
+}
+
+export { buyError, type BuyResult } from './buy-result';
+
+/** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
+export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+  if (!LIFETIME.enabled) return null;
+  // Expo Go / dev checkout (demo store): a stand-in so the cancel flow can be tried. Never in a store build.
+  if (!LIVE) return __DEV__ ? { priceString: usd(LIFETIME.usd), buy: async () => 'ok' as const } : null;
+  try {
+    const P = await rc();
+    const cur = (await P.getOfferings()).current;
+    if (!cur || cur.metadata?.lifetime === false) return null;
+    const pkg = cur.availablePackages.find((p) => p.product.identifier === LIFETIME.product || p.packageType === 'LIFETIME');
+    return pkg ? { priceString: pkg.product.priceString, buy: () => attempt(() => P.purchasePackage(pkg)) } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Buys a plan. `replacing` is the store product of the plan being left (monthly to annual):
+ * the App Store swaps plans inside the subscription group by itself; Google Play needs it said,
+ * or the player would end up with two subscriptions.
+ */
+export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResult> {
+  if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';
+  if (!plan.pkg) return 'unavailable';
+  const P = await rc().catch(() => null);
+  if (!P) return 'unavailable';
+  const { PRORATION_MODE } = await rcModule();
+  const change =
+    Platform.OS === 'android' && replacing
+      ? { oldProductIdentifier: playSubscriptionId(replacing), prorationMode: PRORATION_MODE.IMMEDIATE_WITH_TIME_PRORATION }
+      : null;
+  return attempt(() => P.purchasePackage(plan.pkg!, null, change));
+}
+
+/** 'none': the store answered and this account has no subscription; 'error': it didn't answer. */
+export type RestoreResult = 'ok' | 'none' | 'error';
+
+export async function restore(): Promise<RestoreResult> {
+  if (!LIVE) return 'none';
+  try {
+    return hasPro(await withTimeout((await rc()).restorePurchases(), RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
+  } catch {
+    return 'error';
+  }
+}
+
+/** Link the store customer to the Supabase account once the player signs in. */
+export async function identify(userId: string): Promise<void> {
+  if (!LIVE) return;
+  await (await rc()).logIn(userId).catch(() => {});
+}
+
+/** RevenueCat's user id for this install (anonymous or signed in), so server-side grants find it. */
+export async function appUserId(): Promise<string | undefined> {
+  if (!LIVE) return undefined;
+  try {
+    return await (await rc()).getAppUserID();
+  } catch {
+    return undefined;
+  }
+}

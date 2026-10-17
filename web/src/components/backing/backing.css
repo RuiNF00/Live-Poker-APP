@@ -1,0 +1,137 @@
+/* Backer statement page: built on the live page's styles (live.css). */
+.live .warn {
+  color: #f5b83d;
+}
+
+.bk-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid rgba(238, 242, 239, 0.08);
+  border-radius: 20px;
+  padding: 16px 18px 6px;
+}
+
+.bk-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(238, 242, 239, 0.06);
+}
+
+.bk-list .live-label {
+  padding-bottom: 8px;
+}
+
+.bk-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bk-name {
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bk-sub {
+  color: var(--muted);
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.bk-right {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.bk-amt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.bk-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bk-live {
+  color: var(--win);
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.bk-warn {
+  color: #f5b83d;
+  background: rgba(245, 184, 61, 0.12);
+}
+
+.bk-follow {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 106, 61, 0.14);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bk-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #1a0a04;
+  font-weight: 800;
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.bk-noapp {
+  margin-top: 6px !important;
+  font-size: 13px !important;
+}
+
+.bk-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bk-tell {
+  margin-top: 10px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #1a0a04;
+  font: inherit;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.bk-told {
+  font-size: 13px;
+  color: var(--muted, #9aa49e);
+}

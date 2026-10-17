@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSMicrophoneUsageDescription": "Sweatbook uses the microphone to record voice notes about your hands and for your stories and hand videos.",
+    "NSFaceIDUsageDescription": "Sweatbook uses Face ID to unlock the app, if you turn on the lock in Settings.",
+    "NSCameraUsageDescription": "Sweatbook uses the camera so you can photograph tax receipts and forms (W-2G, 1042-S) for your sessions and record your face for hand videos.",
+    "NSPhotoLibraryUsageDescription": "Sweatbook uses your photos so you can attach tax receipts and forms to your sessions."
+  }
+}
