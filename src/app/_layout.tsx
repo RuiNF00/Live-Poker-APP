@@ -32,6 +32,7 @@ import { useReduceMotion } from '@/lib/motion';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { startCoachSync } from '@/lib/coach-api';
+import { NotifyPolicySync } from '@/lib/notify-gate';
 import { bootReferrals } from '@/lib/referrals';
 // Registers the queued share-link sender before the outbox first drains.
 import '@/lib/share-queue';
@@ -83,6 +84,7 @@ export default function RootLayout() {
           <SwapReminder />
           <MonthRecapSync />
           <SettleReminder />
+          <NotifyPolicySync />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },

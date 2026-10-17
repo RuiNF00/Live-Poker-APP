@@ -1188,6 +1188,15 @@ const ptBR: Record<string, string> = {
   'Partilhar carrossel': 'Compartilhar carrossel',
   '{c}/{n} nos prémios': '{c}/{n} nos prêmios',
   'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'Registro minhas mãos e sessões ao vivo com o Sweatbook: {link}',
+  'Quando o coach comenta as tuas mãos': 'Quando o coach comenta suas mãos',
+  'No dia 1, se jogaste nesse mês': 'No dia 1, se você jogou naquele mês',
+  'Lembretes para registar': 'Lembretes para registrar',
+  'Se passares uns dias sem registar': 'Se passar uns dias sem registrar',
+  'Notificações desligadas no telemóvel': 'Notificações desativadas no celular',
+  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Ative nos ajustes do sistema para receber os avisos que escolher aqui.',
+  'Abrir definições': 'Abrir ajustes',
+  'Aparecem no ecrã bloqueado.': 'Aparecem na tela de bloqueio.',
+  'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Escolha quais nos Ajustes da Sweatbook.',
 };
 
 export default ptBR;

@@ -8,13 +8,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Empty, Field, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { canCreateLink, EXPIRY_CHOICES, MAX_COACH_HANDS, type ExpiryChoice } from '@/lib/coach-core';
 import { createCoachLink, freeLinkUsed } from '@/lib/coach-api';
 import { track } from '@/lib/events';
-import { askNotificationPermission } from '@/lib/lock-screen/reminder';
 import { isComplete } from '@/poker/engine';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -32,6 +32,7 @@ export default function NewCoachLink() {
   const [days, setDays] = useState<ExpiryChoice>(30);
   const [notes, setNotes] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [softAsk, askNotify] = useNotifySoftAsk();
   const [freeUsed, setFreeUsed] = useState<boolean | null>(null);
   useEffect(() => {
     freeLinkUsed().then(setFreeUsed);
@@ -73,13 +74,16 @@ export default function NewCoachLink() {
     }
     track('share_created', { kind: 'coach', hands: send.length, days: days ?? 0 });
     const msg = t('Podes rever estas {n} mãos? Comenta no próprio replay, sem criar conta: {url}', { n: send.length, url: r.link.url });
-    router.replace('/coach');
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       note(t('Link copiado'), t('Envia-o ao teu coach.'));
     } else await Share.share({ message: msg }).catch(() => {});
     // The moment it makes sense to ask: we tell the player when the coach answers.
-    askNotificationPermission().catch(() => {});
+    await askNotify({
+      title: t('Avisamos-te quando o coach comentar'),
+      preview: { title: t('Comentários do coach'), body: send.length === 1 ? t('O teu coach comentou 1 mão') : t('O teu coach comentou {n} mãos', { n: send.length }) },
+    }).catch(() => false);
+    router.replace('/coach');
   };
 
   const expiryLabel = (d: ExpiryChoice) => (d === null ? t('Sem prazo') : t('{n} dias', { n: d }));
@@ -144,6 +148,7 @@ export default function NewCoachLink() {
           {freeUsed ? t('Já usaste o link grátis. Com Pro, envias as pastas que quiseres.') : t('O primeiro link é grátis. Depois, é Pro.')}
         </T>
       ) : null}
+      {softAsk}
     </ScrollView>
   );
 }

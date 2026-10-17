@@ -6,6 +6,7 @@
 import { Platform } from 'react-native';
 
 import { t } from '@/i18n';
+import { KINDS } from '@/lib/notify-policy';
 import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -45,7 +46,16 @@ export function setup(n: N) {
       handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
     });
     if (Platform.OS === 'android') {
-      await n.setNotificationChannelAsync(CHANNEL, { name: t('Níveis e intervalos'), importance: n.AndroidImportance.HIGH, vibrationPattern: [0, 250, 150, 250] });
+      // Every channel in one place (lib/notify-policy), so Settings and the system list match.
+      for (const k of KINDS) {
+        const importance = k.importance === 'high' ? n.AndroidImportance.HIGH : k.importance === 'low' ? n.AndroidImportance.LOW : n.AndroidImportance.DEFAULT;
+        await n.setNotificationChannelAsync(k.channel, {
+          name: t(k.name),
+          importance,
+          ...(k.channel === CHANNEL ? { vibrationPattern: [0, 250, 150, 250] } : null),
+          ...(k.private ? { lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE } : null),
+        });
+      }
       // The running session: quiet, and on a locked phone only "Sweatbook" with the contents hidden (no stack, no blinds).
       await n.setNotificationChannelAsync(SESSION_CHANNEL, { name: t('Sessão a decorrer'), importance: n.AndroidImportance.LOW, lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE });
     }

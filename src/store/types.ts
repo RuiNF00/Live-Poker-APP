@@ -327,6 +327,10 @@ export interface Settings {
   monthRecap?: boolean;
   /** Amounts and results in notification text (they show on a locked phone). Missing = off. */
   notifyAmounts?: boolean;
+  /** Settings › Notificações: a kind turned off (lib/notify-policy). Missing = on. */
+  notify?: Partial<Record<import('@/lib/notify-policy').NotifyKind, boolean>>;
+  /** Hold what isn't the session's until the session ends or pauses. Missing = yes. */
+  notifyHoldInSession?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
