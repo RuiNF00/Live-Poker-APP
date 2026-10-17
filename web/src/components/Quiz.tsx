@@ -32,7 +32,21 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone, onHand, hideAnsw
   const [counts, setCounts] = useState<Partial<Record<VoteChoice, number>> | null>(null);
   const [mine, setMine] = useState<VoteChoice | null>(null);
   const [busy, setBusy] = useState(false);
+  // Before answering, only how many have: the split would sway the vote.
+  const [already, setAlready] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/hands/${shareId}/vote`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { counts?: Partial<Record<VoteChoice, number>> } | null) => {
+        if (live && d?.counts) setAlready(Object.values(d.counts).reduce((n, v) => n + (v ?? 0), 0));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [shareId]);
   // On a phone the question sits under the table: bring the choices on screen.
   useEffect(() => {
     const t = setTimeout(() => box.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 350);
@@ -62,11 +76,21 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone, onHand, hideAnsw
 
   const total = counts ? Object.values(counts).reduce((n, v) => n + (v ?? 0), 0) : 0;
   const played = hideAnswer ? undefined : step.action?.type;
+  // The headline after voting: the most picked choice among those on offer ("72% fold").
+  const top = counts ? choices.reduce((a, b) => ((counts[b] ?? 0) > (counts[a] ?? 0) ? b : a), choices[0]) : null;
+  const topPct = top && total ? Math.round(((counts?.[top] ?? 0) / total) * 100) : 0;
 
   return (
     <div className="quiz" role="dialog" aria-label={d.quizTitle} ref={box}>
       <div className="quiz-card">
-        <div className="quiz-title">{d.quizTitle}</div>
+        {counts && top && total > 1 ? (
+          <div className="quiz-result" aria-live="polite">
+            <div className="quiz-result-big">{d.quizTop(topPct, actionLabel(top, locale).toLowerCase())}</div>
+            <div className="quiz-result-sub">{mine && (counts[mine] ?? 0) >= (counts[top] ?? 0) ? d.quizWithMost : d.quizAgainstMost}</div>
+          </div>
+        ) : (
+          <div className="quiz-title">{d.quizTitle}</div>
+        )}
         <div className="quiz-sub">
           {actor?.name}
           {actor && actor.name !== actor.position && ` (${actor.position})`}
@@ -116,9 +140,12 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone, onHand, hideAnsw
             </button>
           </>
         ) : (
-          <button className="quiz-skip" onClick={onDone}>
-            {d.quizSkip}
-          </button>
+          <>
+            {already !== null ? <div className="quiz-count">{already ? d.quizAnswered(already) : d.quizFirst}</div> : null}
+            <button className="quiz-skip" onClick={onDone}>
+              {d.quizSkip}
+            </button>
+          </>
         )}
       </div>
     </div>

@@ -261,6 +261,14 @@ export default function HandsScreen() {
               setPicked(new Set());
             }}
           />
+          <IconButton
+            name="albums-outline"
+            label={t('Partilhar num só link')}
+            onPress={() => {
+              router.push({ pathname: '/pack/new', params: { ids: [...picked].join(',') } });
+              setPicked(new Set());
+            }}
+          />
           <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
