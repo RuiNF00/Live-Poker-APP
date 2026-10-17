@@ -470,30 +470,38 @@ function Live({ s }: { s: Session }) {
 
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
-          <Card onPress={() => setPad('stack')} style={{ flex: 1, gap: 4 }} accessibilityLabel={t('Atualizar stack')}>
-            <Row>
-              <T v="label" style={{ flex: 1 }}>
-                Stack
-              </T>
-              {mtt ? (
-                // The chip-count post of a festival day: card + text, chips only.
-                <Pressable onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Partilhar stack')} style={{ marginRight: 10 }}>
-                  <Ionicons name="share-outline" size={15} color={C.accent} />
-                </Pressable>
-              ) : null}
-              <Ionicons name="pencil" size={13} color={C.accent} />
-            </Row>
-            <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
-              {chips(s.stack)}
-            </T>
-            <Row gap={6}>
-              <T v="monoS">{bbs(s.stack, s.bb)}</T>
-              {delta ? (
-                <T v="monoS" color={delta > 0 ? C.good : C.bad}>
-                  {(delta > 0 ? '+' : '') + chips(delta)}
+          {/* The card opens the stack pad; the share icon sits on top of it, not inside, so the two taps aren't a button in a button. */}
+          <Card style={{ flex: 1 }}>
+            <Pressable onPress={() => setPad('stack')} accessibilityRole="button" accessibilityLabel={t('Atualizar stack')} style={({ pressed }) => ({ flex: 1, gap: 4, opacity: pressed ? 0.7 : 1 })}>
+              <Row>
+                <T v="label" style={{ flex: 1 }}>
+                  Stack
                 </T>
-              ) : null}
-            </Row>
+                <Ionicons name="pencil" size={13} color={C.accent} />
+              </Row>
+              <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+                {chips(s.stack)}
+              </T>
+              <Row gap={6}>
+                <T v="monoS">{bbs(s.stack, s.bb)}</T>
+                {delta ? (
+                  <T v="monoS" color={delta > 0 ? C.good : C.bad}>
+                    {(delta > 0 ? '+' : '') + chips(delta)}
+                  </T>
+                ) : null}
+              </Row>
+            </Pressable>
+            {mtt ? (
+              // The chip-count post of a festival day: card + text, chips only.
+              <Pressable
+                onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('Partilhar stack')}
+                style={{ position: 'absolute', top: S.lg, right: S.lg + 13 + 10 }}>
+                <Ionicons name="share-outline" size={15} color={C.accent} />
+              </Pressable>
+            ) : null}
           </Card>
           </View>
           <Card style={{ flex: 1, gap: 4 }}>
