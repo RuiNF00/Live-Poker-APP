@@ -90,7 +90,8 @@ function hm(ms: number): string {
 /**
  * What the lock screen shows. With privacy mode on (`hideAmounts`), a cash
  * game's stack is money on the table, so it shows ••• there; tournament chips
- * aren't money and stay.
+ * aren't money and stay. The session's name often carries the venue, so
+ * privacy mode shows the game instead.
  */
 export function liveProps(s: Session, now = Date.now(), hideAmounts = false): LiveProps {
   const paused = isPaused(s);
@@ -100,7 +101,7 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
   const after = levelAfter(s, 1);
   const hideCash = hideAmounts && !mtt;
   return {
-    title: s.name || (mtt ? t('Torneio') : 'Cash game'),
+    title: (!hideAmounts && s.name) || (mtt ? t('Torneio') : 'Cash game'),
     status: paused ? t('Em pausa') : t('A jogar'),
     paused,
     clockFrom: now - played,
