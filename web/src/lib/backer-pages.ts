@@ -11,7 +11,7 @@ export { parseSealed, type Sealed } from './sealed';
 
 // Backers' fixed links (/b#s=<id>.<key>): one sealed page per player and backer, replaced
 // by the app as sessions and payments change. The server can't read them (the key is
-// only in the link). Supabase in production (migration 20261017370000), a JSON file without it.
+// only in the link). Supabase in production (migration 20261017380000), a JSON file without it.
 
 export interface PageRecord {
   id: string;
