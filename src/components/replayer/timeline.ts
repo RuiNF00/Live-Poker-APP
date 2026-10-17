@@ -11,6 +11,8 @@ export const MOTION = {
   streetHold: 1.4,
   end: 2200,
   rise: 300,
+  /** A hidden hand turning face up at showdown. */
+  flip: 260,
   riseStagger: 80,
   fly: 420,
   flyStagger: 90,

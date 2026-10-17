@@ -13,7 +13,7 @@ import { BRAND, C, F, ff, posColor } from '@/theme';
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
 import { spokenTable, type BadgeKind, type RpSeat, type RpView } from './model';
-import { FlyingChips, RiseIn, useReduceMotion, type Flight } from './motion';
+import { FlipIn, FlyingChips, RiseIn, useReduceMotion, type Flight } from './motion';
 import { progressAt, type MotionAnim, type MotionStep } from './timeline';
 import { RpCard } from './RpCard';
 
@@ -247,7 +247,7 @@ export function ReplayerTable({
 
           {/* seats */}
           {view.seats.map((s) => (
-            <Seat key={'s' + s.i} seat={s} x={(seatPt(s.i).x / 100) * w} y={(seatPt(s.i).y / 100) * h} w={w} k={k} bestEquity={bestEquity} />
+            <Seat key={'s' + s.i} seat={s} x={(seatPt(s.i).x / 100) * w} y={(seatPt(s.i).y / 100) * h} w={w} k={k} bestEquity={bestEquity} reduce={reduce} />
           ))}
         </Pressable>
       )}
@@ -292,7 +292,7 @@ function Pill({ text, k, strong }: { text: string; k: number; strong?: boolean }
   );
 }
 
-function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y: number; w: number; k: number; bestEquity: number }) {
+function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: number; y: number; w: number; k: number; bestEquity: number; reduce: boolean }) {
   const pw = SIZE.plateW * k;
   const ph = SIZE.plateH * k;
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
@@ -315,14 +315,16 @@ function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y:
         ) : s.cards !== undefined ? (
           <View style={{ flexDirection: 'row', position: 'absolute', top: 0 }}>
             {(s.cards ?? [null, null]).map((c, ci) => (
-              <RpCard
-                key={ci}
-                card={c}
-                faceDown={!c}
-                w={cw}
-                h={ch}
-                style={{ marginLeft: ci ? -cw * (s.cards && s.cards.length > 2 ? 0.55 : 0.18) : 0, transform: [{ rotate: ci % 2 ? '4deg' : '-4deg' }] }}
-              />
+              // Keyed by the card, so a hand turned face up at showdown remounts and flips; hero's are known from the start.
+              <FlipIn key={c ?? `back${ci}`} reduce={reduce || s.hero || !c} delay={ci * 70}>
+                <RpCard
+                  card={c}
+                  faceDown={!c}
+                  w={cw}
+                  h={ch}
+                  style={{ marginLeft: ci ? -cw * (s.cards && s.cards.length > 2 ? 0.55 : 0.18) : 0, transform: [{ rotate: ci % 2 ? '4deg' : '-4deg' }] }}
+                />
+              </FlipIn>
             ))}
           </View>
         ) : null}
