@@ -34,10 +34,14 @@ export function PackView({ title, hands, hideAmounts, locale, siteUrl, invite, u
   const c = packCopy(locale);
   const [i, setI] = useState(0);
   useEffect(() => {
-    const n = Number(window.location.hash.slice(1));
-    // Opening on the hand the link points at is a one-off read of the URL.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (Number.isInteger(n) && n >= 1 && n <= hands.length) setI(n - 1);
+    // Opens on the hand the link points at (#n), and follows the hash if it changes.
+    const read = () => {
+      const n = Number(window.location.hash.slice(1));
+      if (Number.isInteger(n) && n >= 1 && n <= hands.length) setI(n - 1);
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
   }, [hands.length]);
   const go = useCallback(
     (n: number) => {
@@ -51,12 +55,10 @@ export function PackView({ title, hands, hideAmounts, locale, siteUrl, invite, u
   const cur = hands[i];
 
   const nav = (
-    <nav className="pk" aria-label={c.kicker}>
+    <nav className="pk" aria-label={c.kicker(hands.length)}>
       <div className="pk-top">
         <div className="pk-titles">
-          <p className="pk-kicker">
-            {c.kicker} · {c.hands(hands.length)}
-          </p>
+          <p className="pk-kicker">{c.kicker(hands.length)}</p>
           {title ? <h1 className="pk-title">{title}</h1> : null}
         </div>
         <div className="pk-pager">

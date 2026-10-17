@@ -1,8 +1,7 @@
 import type { Locale } from '@/lib/i18n';
 
 const pt = {
-  kicker: 'Mãos partilhadas',
-  hands: (n: number) => (n === 1 ? '1 mão' : `${n} mãos`),
+  kicker: (n: number) => (n === 1 ? '1 mão partilhada' : `${n} mãos partilhadas`),
   of: (i: number, n: number) => `Mão ${i} de ${n}`,
   prev: 'Mão anterior',
   next: 'Mão seguinte',
@@ -12,8 +11,7 @@ const pt = {
 };
 
 const en: typeof pt = {
-  kicker: 'Shared hands',
-  hands: (n) => (n === 1 ? '1 hand' : `${n} hands`),
+  kicker: (n) => (n === 1 ? '1 shared hand' : `${n} shared hands`),
   of: (i, n) => `Hand ${i} of ${n}`,
   prev: 'Previous hand',
   next: 'Next hand',
