@@ -5,8 +5,9 @@
 
 import { t } from '@/i18n';
 import { replay, totalPot } from '@/poker/engine';
-import { bbs, duration, rawMoney } from '@/poker/format';
+import { bbs, chips, duration, rawMoney } from '@/poker/format';
 import type { Hand } from '@/poker/types';
+import { dayOf, isBagged } from '@/store/multi-day';
 import { playedMs, profit } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -14,7 +15,7 @@ export type CardStyle = 'noite' | 'brasa' | 'sticker';
 export const CARD_STYLES: CardStyle[] = ['noite', 'brasa', 'sticker'];
 
 export interface CardStat {
-  key: 'result' | 'place' | 'pot' | 'hours' | 'perHour' | 'hands' | 'venue';
+  key: 'result' | 'place' | 'pot' | 'hours' | 'perHour' | 'hands' | 'venue' | 'stack' | 'bb' | 'day' | 'level';
   label: string;
   value: string;
   tone?: 'good' | 'bad';
@@ -68,6 +69,33 @@ export function sessionStats(s: Session, hands: Hand[], hideMoney: boolean, now 
     s.venue ? { key: 'venue', label: t('Sala'), value: s.venue } : null,
   ];
   return all.filter((x): x is CardStat => !!x).slice(0, 3);
+}
+
+/**
+ * The chip-count post of a festival ("Dia 1 ensacado: 85k"): the stack, the day and the level or time
+ * played. Chips only, never money, so it needs no privacy switch.
+ */
+export function stackStats(s: Session, now = Date.now()): CardStat[] {
+  const bagged = isBagged(s);
+  const stack = bagged ? s.bag!.stack : s.stack;
+  const ms = playedMs(s, now);
+  const all: (CardStat | null)[] = [
+    { key: 'stack', label: bagged ? t('No saco') : 'Stack', value: chips(stack) },
+    { key: 'day', label: t('Dia'), value: String(dayOf(s)) },
+    !bagged && s.bb ? { key: 'bb', label: 'BB', value: bbs(stack, s.bb) } : null,
+    !bagged && s.level ? { key: 'level', label: t('Nível'), value: String(s.level) } : null,
+    ms > 60_000 ? { key: 'hours', label: t('A jogar'), value: duration(ms) } : null,
+  ];
+  return all.filter((x): x is CardStat => !!x).slice(0, 3);
+}
+
+/** The post text for the stack card: tournament, day and chips, never the venue or an amount of money. */
+export function stackPostText(s: Session): string {
+  const name = s.name || t('Torneio');
+  const day = dayOf(s);
+  return isBagged(s)
+    ? t('{name} · Dia {n} ensacado: {chips}', { name, n: day, chips: chips(s.bag!.stack) })
+    : t('{name} · Dia {n}: {chips} em fichas', { name, n: day, chips: chips(s.stack) });
 }
 
 const monthKey = (ms: number) => {
