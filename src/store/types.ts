@@ -298,6 +298,8 @@ export interface Settings {
   includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
+  /** Haptic feedback; on unless turned off in Settings. */
+  haptics?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
