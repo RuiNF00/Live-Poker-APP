@@ -48,7 +48,7 @@ python3 store/scripts/check-lengths.py store/out/listing/*.md   # confirma limit
 
 ## Alojamento das páginas
 
-As páginas de `web/` são servidas pela app web de partilha de mãos (pasta `web/` na raiz do repositório, projeto Vercel único em `https://sweatbook.poker`), nos caminhos `/privacy`, `/terms`, `/support` e `/delete-account`. Os HTML daqui são a fonte de `/privacy` e `/terms`: depois de alterar, correr `scripts/fill.sh` e copiar só `privacy.html` e `terms.html` de `out/web/` para `web/public/`. `/support` e `/delete-account` são páginas da app web (`web/src/app`, 4 línguas); os `.html` antigos redirecionam para elas.
+As páginas de `web/` são servidas pela app web de partilha de mãos (pasta `web/` na raiz do repositório, projeto Vercel único em `https://sweatbook.poker`), nos caminhos `/privacy`, `/terms`, `/support` e `/delete-account`. Os HTML daqui são a fonte: depois de alterar, correr `scripts/fill.sh` e copiar `out/web/` para `web/public/`.
 
 ## Revisores
 
