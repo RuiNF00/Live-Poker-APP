@@ -1,4 +1,4 @@
-import { currencyAfter, locale } from '../i18n';
+import { FORMAT, locale, type LocaleFormat } from '../i18n';
 
 import type { ActionKind, Hand } from './types';
 
@@ -55,13 +55,25 @@ export function money(n: number, currency = '€'): string {
 }
 
 export function rawMoney(n: number, currency = '€'): string {
+  return moneyIn(FORMAT, n, currency, numFmt);
+}
+
+/**
+ * Money as one language writes it: "370€" and "1234,50€" in Portugal, "R$ 1.234,50"
+ * in Brazil, "1234,50 €" in Spain, "$1,234.50" in English and Mexico. Whole amounts
+ * stay short; cents always show two digits, never a bare JS decimal point.
+ */
+export function moneyIn(f: LocaleFormat, n: number, currency: string, num: (digits?: number) => Intl.NumberFormat = (d) => new Intl.NumberFormat(f.locale, d === undefined ? undefined : { minimumFractionDigits: d, maximumFractionDigits: d })): string {
   const sign = n < 0 ? '−' : '';
   const a = Math.abs(n);
   const cents = Math.round(a * 100);
-  // Whole amounts stay short ("370€"); cents always show two digits in the
-  // player's locale ("370,50€"), never a bare JS decimal point.
-  const s = a >= 1000 ? numFmt().format(Math.round(a)) : cents % 100 === 0 ? String(cents / 100) : numFmt(2).format(cents / 100);
-  return currencyAfter ? `${sign}${s}${currency}` : `${sign}${currency}${s}`;
+  const s = a >= 1000 ? num().format(Math.round(a)) : cents % 100 === 0 ? String(cents / 100) : num(2).format(cents / 100);
+  return f.currencyAfter ? `${sign}${s}${f.currencySpace}${currency}` : `${sign}${currency}${f.currencySpace}${s}`;
+}
+
+/** A plain decimal in the app's language: 3,5 in Portuguese and Spain, 3.5 in English. */
+export function decimal(x: number, digits = 1): string {
+  return numFmt(digits).format(x);
 }
 
 export const ACTION_LABEL: Record<ActionKind, string> = {

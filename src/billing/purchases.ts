@@ -68,7 +68,7 @@ function hasPro(info: CustomerInfo): boolean {
 
 function usd(n: number) {
   const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
-  return lang === 'en' ? `$${s}` : currencyAfter ? `${s} US$` : `US$ ${s}`;
+  return lang === 'en' ? `$${s}` : currencyAfter ? `${s}\u00a0US$` : `US$\u00a0${s}`;
 }
 
 function fallbackPlans(): StorePlan[] {

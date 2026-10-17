@@ -73,24 +73,42 @@ const detected = detect();
 export const variant: Variant = detected.variant;
 export const lang: Lang = variant === 'pt-PT' || variant === 'pt-BR' ? 'pt' : variant;
 
-/** BCP 47 tag for dates and numbers. Spanish keeps the device's region (es-MX writes 1,234.50). */
-export const locale =
-  variant === 'pt-PT' ? 'pt-PT'
-  : variant === 'pt-BR' ? 'pt-BR'
-  : variant === 'es' ? (detected.tag?.toLowerCase().startsWith('es') ? detected.tag : 'es-ES')
-  : 'en-GB';
+/** How one language writes numbers and money. */
+export type LocaleFormat = {
+  /** BCP 47 tag for Intl dates and numbers. */
+  locale: string;
+  /** Writes 3,5 rather than 3.5. */
+  decimalComma: boolean;
+  /** Money reads "370 €" (Portugal, Spain) rather than "$370" / "R$ 370". */
+  currencyAfter: boolean;
+  /** Between the amount and the symbol: Portugal keeps "370€" short, Brazil and Spain use a no-break space. */
+  currencySpace: string;
+};
 
-/** Whether this locale writes 3,5 rather than 3.5. */
-export const decimalComma: boolean = (() => {
+/** The number and money format for a language. Spanish keeps the device's region (es-MX writes $1,234.50). */
+export function localeFormat(v: Variant, tag?: string): LocaleFormat {
+  const locale =
+    v === 'pt-PT' ? 'pt-PT'
+    : v === 'pt-BR' ? 'pt-BR'
+    : v === 'es' ? (tag?.toLowerCase().startsWith('es') ? tag : 'es-ES')
+    : 'en-GB';
+  let decimalComma: boolean;
   try {
-    return new Intl.NumberFormat(locale).format(1.5).includes(',');
+    decimalComma = new Intl.NumberFormat(locale).format(1.5).includes(',');
   } catch {
-    return lang !== 'en';
+    decimalComma = v !== 'en';
   }
-})();
+  const spain = v === 'es' && /^es(-ES)?$/i.test(locale);
+  return {
+    locale,
+    decimalComma,
+    currencyAfter: v === 'pt-PT' || spain,
+    currencySpace: v === 'pt-BR' || spain ? '\u00a0' : '',
+  };
+}
 
-/** Whether money reads "370€" (Portugal, Spain) rather than "$370" / "R$370". */
-export const currencyAfter: boolean = variant === 'pt-PT' || (lang === 'es' && /^es(-ES)?$/i.test(locale));
+export const FORMAT: LocaleFormat = localeFormat(variant, detected.tag);
+export const { locale, decimalComma, currencyAfter } = FORMAT;
 
 const TABLE: Record<Variant, Record<string, string> | null> = { 'pt-PT': null, 'pt-BR': ptBR, en, es };
 
