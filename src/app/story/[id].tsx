@@ -29,7 +29,8 @@ const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?
 
 export default function StoryScreen() {
   // `to=instagram`: Instagram was already picked in the hand's Partilhar sheet, so the button goes straight there.
-  const { id, to } = useLocalSearchParams<{ id: string; to?: string }>();
+  // `ask`: the "O que queres saber?" typed in that sheet; it opens as the story's comment and goes with the link.
+  const { id, to, ask: asked } = useLocalSearchParams<{ id: string; to?: string; ask?: string }>();
   const { hands, saveHand, settings } = useStore();
   const hand = useMemo(() => hands.find((h) => h.id === id) ?? (id === 'sample' ? sampleHand('sample') : undefined), [hands, id]);
   const insets = useSafeAreaInsets();
@@ -37,7 +38,7 @@ export default function StoryScreen() {
   const ask = hand ? canAsk(hand) : false;
   const [mode, setMode] = useState<StoryMode | 'video'>(ask ? 'question' : 'result');
   const video = mode === 'video';
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(() => (asked || hand?.ask || '').slice(0, MAX_COMMENT));
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(false);
   const pro = usePro();
@@ -77,6 +78,8 @@ export default function StoryScreen() {
     return () => clearInterval(id);
   }, [video, busy, reel]);
   if (!hand || !shown || !moment) return <Empty title={t('Mão não encontrada')} />;
+  // A link made from here carries the question too, like one made from the Partilhar sheet.
+  const linked = !hand.shareId && !hand.ask && asked?.trim() ? { ...hand, ask: asked.trim().slice(0, 140) } : hand;
 
   // Preview fits the screen; the captured view inside stays 360×640.
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
@@ -105,7 +108,7 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+        shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
         Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
@@ -157,7 +160,7 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+        shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
         Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
@@ -212,7 +215,7 @@ export default function StoryScreen() {
     }
     let shareId: string;
     try {
-      shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+      shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
     } catch {
       Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
       return null;
