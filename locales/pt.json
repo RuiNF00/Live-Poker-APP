@@ -1,5 +1,6 @@
 {
   "ios": {
-    "NSMicrophoneUsageDescription": "O Sweatbook usa o microfone para gravares uma nota de voz a explicar a mão na tua história do Instagram."
+    "NSMicrophoneUsageDescription": "O Sweatbook usa o microfone para gravares uma nota de voz a explicar a mão na tua história do Instagram.",
+    "NSFaceIDUsageDescription": "O Sweatbook usa o Face ID para desbloquear a app, se ligares o bloqueio nas Definições."
   }
 }

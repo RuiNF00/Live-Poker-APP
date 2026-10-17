@@ -135,6 +135,16 @@
               "scheme": "https",
               "host": "sweatbook.poker",
               "pathPrefix": "/live/"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/swap/"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/b"
             }
           ],
           "category": [
@@ -180,6 +190,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Sweatbook usa as tuas fotos para guardares recibos e formulários de impostos junto das tuas sessões.",
+          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos e formulários de impostos (W-2G, 1042-S).",
+          "microphonePermission": false
+        }
+      ],
+      [
         "react-native-share",
         {
           "ios": [
@@ -191,6 +209,13 @@
           ]
         }
       ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Sweatbook usa o Face ID para desbloquear a app, se ligares o bloqueio nas Definições."
+        }
+      ],
+      "expo-secure-store",
       [
         "expo-notifications",
         {

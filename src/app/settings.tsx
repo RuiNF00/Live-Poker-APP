@@ -2,22 +2,26 @@
 // and the legal pages the stores require.
 
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { lockChanged } from '@/components/AppLock';
+import { AppLockSetting } from '@/components/AppLockSetting';
+import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
-import { Button, Card, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
+import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { BRAND, C, F, S } from '@/theme';
 
-const CURRENCIES = ['€', '$', '£', 'R$', 'CHF'];
 
 function note(title: string, body?: string) {
   if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
@@ -54,6 +58,26 @@ export default function SettingsScreen() {
     }
   };
 
+  const eraseAll = () => {
+    tap();
+    confirmAction(
+      t('Apagar todos os teus dados?'),
+      t('Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.'),
+      t('Apagar tudo'),
+      async () => {
+        setBusy(true);
+        try {
+          await store.eraseAll();
+          lockChanged();
+          router.replace('/');
+          note(t('Dados apagados'), t('A app está como nova.'));
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
+  };
+
   const counts = [hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length }), sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length }), players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })].join(' · ');
   return (
     <>
@@ -77,7 +101,11 @@ export default function SettingsScreen() {
             <Field label={t('O teu nome nos comentários')} value={settings.nickname} onChangeText={(nickname) => setSettings({ nickname: nickname.slice(0, 40) })} placeholder={t('Ex.: Rui')} />
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Moeda')}</T>
-              <Segmented options={CURRENCIES.map((c) => ({ key: c, label: c }))} value={settings.currency} onChange={(currency) => setSettings({ currency })} />
+              <ChipRow>
+                {CURRENCIES.map((c) => (
+                  <Chip key={c} label={c} active={settings.currency === c} onPress={() => setSettings({ currency: c })} style={{ minWidth: 48 }} />
+                ))}
+              </ChipRow>
             </View>
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Jogadores na mesa')}</T>
@@ -91,8 +119,15 @@ export default function SettingsScreen() {
 
         <Section title={t('Mãos que partilhas')} hint={t('Vale para links novos. Uma mão já partilhada fica como estava.')}>
           <ListGroup>
-            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={t('Desligado, aparecem como posições. As tuas alcunhas nunca saem do telemóvel.')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
+            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={settings.shareNames ? t('Os nomes que lhes deste aparecem no link') : t('Aparecem como BTN, SB, BB…')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
             <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Privacidade')}>
+          <ListGroup>
+            <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
+            {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>
 
@@ -108,6 +143,7 @@ export default function SettingsScreen() {
 
         <Section title={t('Ferramentas')}>
           <ListGroup>
+            <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
             <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
             <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
             <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
@@ -131,9 +167,16 @@ export default function SettingsScreen() {
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
           </ListGroup>
         </Section>
+
+        <Section title={t('Os teus dados')} hint={t('Antes de apagar, podes guardar tudo com «Exportar tudo».')}>
+          <ListGroup>
+            <ListItem icon="trash-outline" destructive title={busy ? t('A apagar…') : t('Apagar todos os meus dados')} subtitle={t('Neste telemóvel, na nuvem e nos links públicos')} onPress={busy ? undefined : eraseAll} />
+          </ListGroup>
+        </Section>
         <View style={{ alignItems: 'center', gap: 4, paddingTop: S.sm }}>
           <Wordmark size={18} />
           <T v="tiny">{BRAND.tagline}</T>
+          {Constants.expoConfig?.version ? <T v="tiny" color={C.muted}>{t('Versão {v}', { v: Constants.expoConfig.version })}</T> : null}
         </View>
       </ScrollView>
     </>

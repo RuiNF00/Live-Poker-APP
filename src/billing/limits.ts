@@ -16,7 +16,8 @@ function startOfDay(now: number): number {
 
 export function usedToday(log: UsageEvent[], kind: UsageKind, now = Date.now()): number {
   const from = startOfDay(now);
-  return log.filter((e) => e.kind === kind && e.t >= from && e.t <= now).length;
+  // Saves "in the future" count too: turning the clock back must not free them up.
+  return log.filter((e) => e.kind === kind && e.t >= from).length;
 }
 
 /** How many more are allowed today; `null` = unlimited. */

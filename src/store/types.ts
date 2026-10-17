@@ -55,7 +55,29 @@ export interface Session {
   format?: GameFormat;
   /** Bankroll it counts towards. Missing (older data): the first bankroll in its currency. */
   bankrollId?: string;
+  /** Country it was played in (ISO code, 'US', 'PT'…), for the tax report. */
+  country?: string;
+  /** Tax the cashier kept back from the prize, in the session's currency. */
+  withheld?: Withholding;
+  /** Receipts and tax forms, kept as files next to the app's data. */
+  docs?: SessionDoc[];
   updatedAt?: number;
+}
+
+/** 'recover': asking it back (e.g. 1042-S with a treaty or an ITIN return); 'final': credited on your return or not recoverable. */
+export interface Withholding {
+  amount: number;
+  form?: 'W-2G' | '1042-S' | 'other';
+  status: 'recover' | 'recovered' | 'final';
+}
+
+export interface SessionDoc {
+  id: string;
+  name: string;
+  /** File name inside the app's documents folder (the folder path changes between installs). */
+  file: string;
+  kind: 'receipt' | 'form' | 'other';
+  addedAt: number;
 }
 
 export type GameFormat = 'live' | 'online';
@@ -79,6 +101,45 @@ export interface Transfer {
   amount: number;
   at: number;
   note: string;
+  updatedAt?: number;
+}
+
+/**
+ * Poker expenses. Shared by trips and the tax report, so new kinds go at the
+ * end and none is ever renamed (they are stored).
+ */
+export type ExpenseKind = 'flight' | 'hotel' | 'food' | 'coaching' | 'software' | 'other';
+
+/** Money spent on a trip (not poker results). */
+export interface Expense {
+  id: string;
+  kind: ExpenseKind;
+  /** Always positive. */
+  amount: number;
+  /** The trip's currency or the one in `Trip.fx` (a flight paid at home). */
+  currency: string;
+  at: number;
+  note: string;
+}
+
+/**
+ * A trip to a festival or a card room: every session started between `from`
+ * and `to` counts towards it, and its expenses come off the result.
+ */
+export interface Trip {
+  id: string;
+  name: string;
+  venue: string;
+  currency: string;
+  /** Start of the first day and end of the last, inclusive. */
+  from: number;
+  to: number;
+  /** 1 unit of the trip currency in another one (usually the player's), typed by the player. */
+  fx?: { currency: string; rate: number };
+  /** Made from a festival plan (see poker/festivals). */
+  festivalId?: string;
+  expenses: Expense[];
+  createdAt: number;
   updatedAt?: number;
 }
 
@@ -184,7 +245,7 @@ export interface Settings {
   shareNotes: boolean;
   /** Bankroll new sessions go to. */
   bankrollId?: string;
-  /** Bankroll tab shows ••• instead of amounts (for looking at it at the table). */
+  /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];

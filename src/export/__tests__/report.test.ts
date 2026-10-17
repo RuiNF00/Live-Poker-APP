@@ -4,7 +4,8 @@ import { test } from 'node:test';
 
 import { replay } from '../../poker/engine';
 import { sampleHand } from '../../poker/sample';
-import type { Bankroll, Session, Transfer } from '../../store/types';
+import { sessionsCsv } from '../../store/backup';
+import type { Bankroll, Session, Transfer, Trip } from '../../store/types';
 import { buildReport, handsCsv } from '../report';
 import { reportHtml } from '../report-html';
 
@@ -74,4 +75,21 @@ test('the PDF page uses singular counts and two-digit days', () => {
   assert.match(html, /Cash: 2 sessões, .*Torneios: 1 entrada, .*, 1 prémio,/);
   assert.match(html, /03\/02\/2026/);
   assert.doesNotMatch(html, /[^\d]3\/02\/2026/);
+});
+
+test('trips in the range get their own table, after expenses, and expenses go to the CSV', () => {
+  const vegas: Trip = {
+    id: 'v', name: 'Vegas <WSOP>', venue: 'Bellagio', currency: '$', from: at(5, 1) - 20 * 3600000, to: at(5, 4), fx: { currency: '€', rate: 0.9 },
+    expenses: [{ id: 'e', kind: 'hotel', amount: 200, currency: '$', at: at(5, 2), note: '3 nights' }], createdAt: 0,
+  };
+  const r = buildReport({ sessions: list, transfers: tx, bankrolls: brs, range: year, trips: [vegas, { ...vegas, id: 'old', from: 0, to: 1 }] });
+  assert.deepEqual(r.trips.map((x) => x.trip.id), ['v']);
+  assert.equal(r.trips[0].summary.net, 300 - 200);
+  const html = reportHtml(r, { now: at(11, 31) });
+  assert.ok(html.includes('Vegas &lt;WSOP&gt;'));
+  const csv = sessionsCsv([], brs, [], [{ trip: vegas, x: vegas.expenses[0] }]).trim().split('\n');
+  assert.equal(csv.length, 2);
+  assert.ok(csv[1].startsWith(`${new Date(at(5, 2)).toISOString().slice(0, 10)},expense,`));
+  assert.ok(csv[1].includes(',-200,'));
+  assert.ok(csv[1].endsWith('hotel: 3 nights'));
 });

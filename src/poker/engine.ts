@@ -217,15 +217,46 @@ export function initialState(hand: Hand): TableState {
     s.pot += a;
     if (s.stacks[i] === 0) s.allIn[i] = true;
   };
+  // Bomb pot: everyone in for the same amount, no blinds, straight to the flop.
+  if (g.bombPot && g.bombPot > 0) {
+    for (let i = 0; i < n; i++) takeAnte(i, g.bombPot);
+    if (s.folded.filter((f, i) => !f && !s.allIn[i]).length <= 1) s.bettingDone = true;
+    advance(s, 'flop', hand);
+    return s;
+  }
   if (g.ante > 0 && g.anteType === 'all') for (let i = 0; i < n; i++) takeAnte(i, g.ante);
   if (g.ante > 0 && g.anteType === 'bb') takeAnte(bb, g.ante);
+  if (g.ante > 0 && g.anteType === 'btn') takeAnte(hand.button, g.ante);
   put(s, sb, g.sb);
   put(s, bb, g.bb);
   s.currentBet = Math.max(s.bets[sb], s.bets[bb], g.bb);
   s.minRaise = g.bb;
-  s.toAct = nextFrom(s, bb);
+  // Straddles: each doubles the last and acts as the new big blind, so the
+  // action starts to the left of the last straddler, who acts last.
+  let last = bb;
+  for (const [seat, amt] of straddleSeats(hand)) {
+    put(s, seat, amt);
+    s.currentBet = Math.max(s.currentBet, s.bets[seat]);
+    s.minRaise = amt;
+    last = seat;
+  }
+  s.toAct = nextFrom(s, last);
   if (s.toAct === null) closeStreet(s, hand);
   return s;
+}
+
+/** Seats and amounts of the straddles in this hand, in posting order. */
+export function straddleSeats(hand: Hand): [number, number][] {
+  const n = hand.players.length;
+  const g = hand.game;
+  const k = Math.floor(g.straddles ?? 0);
+  if (n < 3 || k <= 0 || g.bombPot) return [];
+  if (g.straddleFrom === 'btn') return [[hand.button, g.bb * 2]];
+  const out: [number, number][] = [];
+  const bb = bbIndex(n, hand.button);
+  // From UTG round, never reaching the blinds again.
+  for (let j = 0; j < Math.min(k, n - 3); j++) out.push([(bb + 1 + j) % n, g.bb * 2 ** (j + 1)]);
+  return out;
 }
 
 /** Give back the part of the top bet nobody matched. */

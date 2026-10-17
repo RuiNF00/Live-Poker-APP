@@ -4,7 +4,7 @@
 import type { CloudState } from './cloud-code';
 
 /** Everything a backup carries that the player made. Bankrolls are left out: every phone has a default one. */
-const KINDS = ['hands', 'sessions', 'players', 'transfers', 'backers', 'packages', 'payments'] as const;
+const KINDS = ['hands', 'sessions', 'players', 'transfers', 'backers', 'packages', 'payments', 'trips'] as const;
 type Kind = (typeof KINDS)[number];
 export type Counts = Partial<Record<Kind, number>>;
 

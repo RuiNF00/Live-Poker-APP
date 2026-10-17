@@ -9,7 +9,8 @@ import { positions, replay } from '@/poker/engine';
 import type { Hand } from '@/poker/types';
 import { bankrollOf, formatOf, inRange, type DateRange, type Scope, scopeIds } from '@/store/bankroll-math';
 import { breakdown, byCurrency, cost, owedToBackers, playedMs, profit, totals, type Breakdown, type Totals } from '@/store/session-math';
-import type { Bankroll, Session, Transfer } from '@/store/types';
+import { tripsIn, tripSummary, type TripSummary } from '@/store/trip-math';
+import type { Bankroll, Session, Transfer, Trip } from '@/store/types';
 
 export interface ReportInput {
   sessions: Session[];
@@ -18,6 +19,8 @@ export interface ReportInput {
   /** Missing: every bankroll. */
   scope?: Scope;
   range: DateRange;
+  /** Trips overlapping the range get their own table (every bankroll: a trip is its own thing). */
+  trips?: Trip[];
 }
 
 export interface CurrencyReport {
@@ -44,6 +47,7 @@ export interface Report {
   last?: number;
   scopeName: string;
   currencies: CurrencyReport[];
+  trips: { trip: Trip; summary: TripSummary }[];
 }
 
 function group(list: Session[], key: (s: Session) => string): Breakdown[] {
@@ -106,7 +110,10 @@ export function buildReport(inp: ReportInput): Report {
     : 'bankrollId' in inp.scope
       ? (inp.bankrolls.find((b) => 'bankrollId' in inp.scope! && b.id === inp.scope.bankrollId)?.name ?? '')
       : t('Todas {currency}', { currency: inp.scope.currency });
-  return { range: inp.range, first: list[0]?.startedAt, last: list[list.length - 1]?.startedAt, scopeName, currencies };
+  const trips = tripsIn(inp.trips ?? [], inp.range)
+    .reverse()
+    .map((trip) => ({ trip, summary: tripSummary(trip, inp.sessions) }));
+  return { range: inp.range, first: list[0]?.startedAt, last: list[list.length - 1]?.startedAt, scopeName, currencies, trips };
 }
 
 // ─── Hands CSV ───────────────────────────────────────────────────────────────

@@ -109,6 +109,12 @@ function subscribe(l: () => void) {
   return () => listeners.delete(l);
 }
 
+/** Delete all my data: the stored plans are already gone, forget the ones in memory. */
+export function clearPlans() {
+  plans = {};
+  emit();
+}
+
 export function getPlan(festivalId: string): FestivalPlan {
   return plans[festivalId] ?? EMPTY_PLAN;
 }

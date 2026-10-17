@@ -9,6 +9,7 @@ import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 import { deleteShare, uploadHand } from './share-api';
+import { takeSlot, type Slot } from './share-slot';
 import { outcomeOf, queue, registerSender, unqueue } from './sync';
 
 const KEY = 'sweatbook.share-queue.v1';
@@ -40,6 +41,20 @@ async function update(fn: (s: State) => void) {
   fn(s);
   for (const l of listeners) l();
   await AsyncStorage.setItem(KEY, JSON.stringify(s)).catch(() => {});
+}
+
+/**
+ * The player tapped Share: reuse a link made in the background, wait for one being
+ * sent, or (having taken any queued upload out) upload now. Never two uploads.
+ */
+export async function takeDirectShare(handId: string): Promise<Slot> {
+  const s = await load();
+  const cancelled = s.ready[handId] ? false : await unqueue('share-upload', handId);
+  let slot: Slot = { kind: 'upload' };
+  await update((x) => {
+    slot = takeSlot(x, handId, cancelled);
+  });
+  return slot;
 }
 
 /** True when the error means "no network" rather than "the server said no". */
@@ -104,16 +119,25 @@ registerSender('share-delete', async (p) => {
  */
 export async function forgetHandShare(hand: Pick<Hand, 'id' | 'shareId' | 'shareToken'>) {
   if (hand.shareId && hand.shareToken) queueShareDelete(hand.shareId, hand.shareToken);
-  const cancelled = await unqueue('share-upload', hand.id);
+  await dropQueuedShare(hand.id);
+}
+
+/**
+ * The hand got its link another way (a direct upload once the signal was back):
+ * any background upload for it is cancelled, or its link deleted as soon as it
+ * exists, so no second public copy is left without a token.
+ */
+export async function dropQueuedShare(handId: string) {
+  const cancelled = await unqueue('share-upload', handId);
   await update((s) => {
-    const r = s.ready[hand.id];
+    const r = s.ready[handId];
     if (r) {
       queueShareDelete(r.shareId, r.shareToken);
-      delete s.ready[hand.id];
+      delete s.ready[handId];
     }
     // Still listed as waiting but no longer in the queue: it is being sent right now.
-    if (s.waiting.includes(hand.id) && !cancelled && !s.dropped.includes(hand.id)) s.dropped.push(hand.id);
-    s.waiting = s.waiting.filter((id) => id !== hand.id);
+    if (s.waiting.includes(handId) && !cancelled && !s.dropped.includes(handId)) s.dropped.push(handId);
+    s.waiting = s.waiting.filter((id) => id !== handId);
   });
 }
 
@@ -139,6 +163,8 @@ export function useQueuedShare(hand: Hand | undefined, save: (h: Hand) => void):
       const r = s.ready[id];
       const h = latest.current;
       if (r && h && !h.shareId) save({ ...h, ...r });
+      // The hand already has another link: this one would be public with nobody holding its token.
+      else if (r && h && h.shareId !== r.shareId) queueShareDelete(r.shareId, r.shareToken);
       if (r) await update((x) => void delete x.ready[id]);
       setWaiting(!r && !has && s.waiting.includes(id));
     };

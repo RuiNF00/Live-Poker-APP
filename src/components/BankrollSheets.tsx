@@ -13,7 +13,7 @@ import { C, S } from '@/theme';
 
 import { Button, Chip, ChipRow, Field, NumField, Row, Section, Segmented, SheetHeader, T } from './ui';
 
-export const CURRENCIES = ['€', '$', '£', 'R$', 'CHF'];
+export const CURRENCIES = ['€', '$', '£', 'R$', 'CHF', 'HK$', 'A$'];
 
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
   return (
@@ -37,7 +37,7 @@ export function fullDay(ts: number): string {
 }
 
 /** Today, yesterday, the last week as chips, or any date typed. */
-function DayPicker({ value, onChange }: { value: number; onChange: (day: number) => void }) {
+export function DayPicker({ value, onChange }: { value: number; onChange: (day: number) => void }) {
   const [text, setText] = useState('');
   const today = startOfDay(Date.now());
   return (

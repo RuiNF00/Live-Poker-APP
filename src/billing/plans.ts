@@ -56,9 +56,11 @@ export const FREE = {
   bankrollFilters: false,
   /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
   bankrolls: 1 as number | null,
+  /** Trips (festivals) with expenses. The first is free so a player sees it work on a real trip. */
+  trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'plan' | 'generic';
+export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -77,6 +79,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   story: {
     title: t('Stories com a tua voz'),
     body: t('Vídeo com voz, sem marca de água.'),
+  },
+  solver: {
+    title: t('Leva as mãos todas para o solver'),
+    body: t('Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.'),
   },
   welcome: {
     title: t('Primeira mão feita'),

@@ -5,7 +5,7 @@
 // a view over several bankrolls only ever joins bankrolls in the same one.
 
 import { t } from '@/i18n';
-import { money } from '@/poker/format';
+import { rawMoney } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 
 import { byCurrency, profit } from './session-math';
@@ -163,9 +163,9 @@ export function stakeKey(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'buyIn'>): stri
 export function stakeLabel(key: string, currency: string): string {
   if (key.startsWith('c:')) return key.slice(2);
   const i = Number(key.slice(2));
-  if (i === 0) return `≤${money(BANDS[0], currency)}`;
-  if (i >= BANDS.length) return `>${money(BANDS[BANDS.length - 1], currency)}`;
-  return `${BANDS[i - 1] + 1}–${money(BANDS[i], currency)}`;
+  if (i === 0) return `≤${rawMoney(BANDS[0], currency)}`;
+  if (i >= BANDS.length) return `>${rawMoney(BANDS[BANDS.length - 1], currency)}`;
+  return `${BANDS[i - 1] + 1}–${rawMoney(BANDS[i], currency)}`;
 }
 
 export interface StakeOption {

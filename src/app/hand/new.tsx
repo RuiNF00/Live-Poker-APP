@@ -55,8 +55,10 @@ export default function NewHand() {
   const pro = usePro();
   const { activeSession, settings, hands } = store;
 
+  // Only an existing hand is an edit (free of the daily limit); a link with a made-up id is a new hand.
+  const [isEdit] = useState(() => !!params.edit && store.hands.some((h) => h.id === params.edit));
   const [draft, setDraftState] = useState<Draft>(() => {
-    const editing = params.edit ? store.hands.find((h) => h.id === params.edit) : null;
+    const editing = isEdit ? store.hands.find((h) => h.id === params.edit) : null;
     if (editing) return { hand: editing, posChosen: true };
     if (store.draft) return { hand: store.draft, posChosen: !!store.draft.actions.length || store.draft.button !== 0 || !!store.draft.players[0].cards };
     const last = hands[0] ?? null;
@@ -79,7 +81,7 @@ export default function NewHand() {
   const s = r.final;
 
   useEffect(() => {
-    if (!params.edit) store.setDraft(hand);
+    if (!isEdit) store.setDraft(hand);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand]);
 
@@ -170,7 +172,7 @@ export default function NewHand() {
     tap('medium');
     const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
-    if (!params.edit && !pro.canSaveHand()) {
+    if (!isEdit && !pro.canSaveHand()) {
       if (over) update(hand);
       pro.paywall('hands');
       return;
@@ -189,7 +191,7 @@ export default function NewHand() {
     if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     // Keep the session's live table state in sync, so the next hand is pre-filled.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
-    if (sess && !params.edit) {
+    if (sess && !isEdit) {
       const heroEnd = r.result ? s.stacks[hand.hero] + r.result.won[hand.hero] : s.stacks[hand.hero] + s.bets[hand.hero];
       store.saveSession({
         ...sess,
@@ -207,7 +209,7 @@ export default function NewHand() {
       });
     }
     if (!settings.onboarded) store.setSettings({ onboarded: true });
-    if (!params.edit) {
+    if (!isEdit) {
       store.setDraft(null);
       pro.record('hand');
     }
@@ -238,7 +240,7 @@ export default function NewHand() {
   const sdSeat = showdownFor !== undefined ? showdownFor : liveVillains.length === 1 && (hand.players[liveVillains[0]].cards?.length ?? 0) < 2 ? liveVillains[0] : null;
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
-  const busy = hand.actions.length || heroCards.length || params.edit;
+  const busy = hand.actions.length || heroCards.length || isEdit;
   // Tapping a seat on the felt is how the action is entered: a seat the app
   // folded by itself came in after all; a seat further round gets the turn,
   // with everyone in between checking or folding. Anything else edits the seat.
@@ -384,7 +386,7 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
-            {!settings.onboarded && !params.edit ? (
+            {!settings.onboarded && !isEdit ? (
               <T v="tiny" style={{ textAlign: 'center' }}>
                 {t('Posição e duas cartas. Os folds até ti são automáticos.')}
               </T>
@@ -564,7 +566,13 @@ export default function NewHand() {
         game={hand.game}
         tableSize={n}
         recentNames={recentNames}
-        onChange={(game) => update(hand.sessionId ? { ...hand, game } : rescaleStacks(hand, game))}
+        onChange={(game) => {
+          // Straddles and bomb pots change who acts first: the action starts over.
+          const g = hand.game;
+          const reset = g.straddles !== game.straddles || g.straddleFrom !== game.straddleFrom || g.bombPot !== game.bombPot;
+          const next = reset ? { ...hand, actions: [], board: [] } : hand;
+          update(hand.sessionId ? { ...next, game } : rescaleStacks(next, game));
+        }}
         onTableSize={(k) => update(resizeTable(hand, k), false)}
         onClose={() => setCtxOpen(false)}
       />
