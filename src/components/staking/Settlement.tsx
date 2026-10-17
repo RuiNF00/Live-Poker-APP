@@ -9,9 +9,9 @@ import { t } from '@/i18n';
 import { money, shortDate } from '@/poker/format';
 import { pieceSteps, type BackerLedger, type BackerLedgerRow } from '@/store/staking';
 import { C, F, S } from '@/theme';
-import { Sheet } from './sheets';
+import { dec, Sheet } from './sheets';
 
-const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
+const pct = (x: number) => `${Number.isInteger(Math.round(x * 1000) / 10) ? Math.round(x * 100) : dec(Math.round(x * 1000) / 10, 1)}%`;
 
 /** One line of the sums: what it is, how it was worked out, the amount. */
 function Step({ label, detail, amount, currency, total, color, sign = true }: { label: string; detail?: string; amount: number; currency: string; total?: boolean; color?: string; sign?: boolean }) {
@@ -111,7 +111,7 @@ function PieceSteps({ row, name, pkgName, currency, onTogglePaid }: { row: Backe
         {ended ? <Step label={t('Prémio da sessão')} amount={x.prizeTotal} currency={currency} sign={false} /> : null}
         <Step
           label={t('{name} pagou', { name })}
-          detail={`${pct(x.piece)} × ${m(x.buyIns)}${x.markup !== 1 ? ` × ${x.markup.toFixed(2)} markup` : ''}`}
+          detail={`${pct(x.piece)} × ${m(x.buyIns)}${x.markup !== 1 ? ` × ${dec(x.markup)} markup` : ''}`}
           amount={-x.cost}
           currency={currency}
         />
