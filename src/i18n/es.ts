@@ -3198,6 +3198,7 @@ const es: Record<string, string> = {
   'Criar e enviar por WhatsApp': 'Crear y enviar por WhatsApp',
   'Enviar o link': 'Enviar el enlace',
   'Mais formas de partilhar': 'Más formas de compartir',
+  '{name} · Dia {n}: {chips} em fichas ({bb})': '{name} · Día {n}: {chips} en fichas ({bb})',
   'Sessão apagada': 'Sesión eliminada',
   'Aos backers {amount}': 'A los backers {amount}',
   'Re-entrar · {amount}': 'Reentrar · {amount}',
