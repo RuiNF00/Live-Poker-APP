@@ -221,7 +221,7 @@ function OwnSwap({ s }: { s: Swap }) {
           </Card>
         ) : null}
 
-        {s.confirmedAt ? locked ? <AccountsLocked /> : <BalanceHero l={l} name={them} currency={cur} /> : null}
+        {s.confirmedAt ? locked ? <AccountsLocked /> : <BalanceHero l={l} name={them} currency={cur} gone={s.gone} /> : null}
 
         {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>

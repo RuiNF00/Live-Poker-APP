@@ -33,7 +33,7 @@ export function GroupHero({ g }: { g: SwapGroup }) {
       <T v="label">{verdict}</T>
       {square ? null : (
         <T v="monoXL" color={l.balance > 0 ? C.good : C.warn} numberOfLines={1} adjustsFontSizeToFit>
-          {signed(l.balance, cur)}
+          {money(Math.abs(l.balance), cur)}
         </T>
       )}
       {effect ? (

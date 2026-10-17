@@ -97,7 +97,8 @@ export function AccountsLocked() {
 }
 
 /** One number and a sentence: who owes whom in this swap. */
-export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string; currency: string }) {
+// gone: the swap was deleted on the server; bankroll leaves it out, so no "adds to your result" line.
+export function BalanceHero({ l, name, currency, gone }: { l: SwapLedger; name: string; currency: string; gone?: boolean }) {
   const square = settled(l);
   const color = square ? C.textDim : l.balance > 0 ? C.good : C.warn;
   const verdict = square
@@ -107,13 +108,13 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
     : l.balance > 0
       ? t('{name} deve-te', { name })
       : t('Deves a {name}', { name });
-  const effect = Math.abs(l.effect) >= 0.5 ? (l.effect > 0 ? t('O swap soma {amount} ao teu resultado', { amount: money(l.effect, currency) }) : t('O swap tira {amount} ao teu resultado', { amount: money(-l.effect, currency) })) : '';
+  const effect = !gone && Math.abs(l.effect) >= 0.5 ? (l.effect > 0 ? t('O swap soma {amount} ao teu resultado', { amount: money(l.effect, currency) }) : t('O swap tira {amount} ao teu resultado', { amount: money(-l.effect, currency) })) : '';
   return (
     <Card tone="raised" style={{ gap: S.xs, paddingVertical: S.xl }}>
       <T v="label">{verdict}</T>
       {square ? null : (
         <T v="monoXL" color={color} numberOfLines={1} adjustsFontSizeToFit>
-          {signed(l.balance, currency)}
+          {money(Math.abs(l.balance), currency)}
         </T>
       )}
       {l.iOwe >= 0.5 && l.theyOwe >= 0.5 ? (
@@ -129,10 +130,10 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
   );
 }
 
-/** A prize or a payment, with what it means in money for each side. */
 /** Two buttons side by side on a phone, one under the other when large text leaves no room for both labels. */
 export const PAIR = { flexGrow: 1, flexBasis: 140 } as const;
 
+/** A prize or a payment, with what it means in money for each side. */
 export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: SwapEntry; onLongPress?: () => void; hideOwed?: boolean }) {
   const names = swapNames(swap);
   const mine = e.side === swap.side;

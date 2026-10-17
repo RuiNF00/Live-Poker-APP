@@ -7,7 +7,7 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { AccountsLocked, PAIR, pctLabel, signed } from '@/components/swaps/parts';
+import { AccountsLocked, PAIR, pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -99,7 +99,8 @@ function SwapsScreen() {
                 ))
               ) : (
                 <>
-                  <T v="label">{t('Swaps')}</T>
+                  {/* With only archived swaps the heading is "Swaps" itself: no eyebrow repeating it. */}
+                  {tot.open || tot.pending ? <T v="label">{t('Swaps')}</T> : null}
                   <T v="h1">{locked && tot.open ? (tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open })) : tot.open ? t('Tudo acertado') : tot.pending ? t('À espera de confirmação') : t('Swaps')}</T>
                 </>
               )}
@@ -197,7 +198,7 @@ function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
         </T>
       )}
       <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit>
-        {square ? t('Acertado') : signed(l.balance, cur)}
+        {square ? t('Acertado') : money(Math.abs(l.balance), cur)}
       </T>
     </View>
   );
@@ -239,7 +240,7 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
         </T>
       )}
       <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit>
-        {square ? t('Acertado') : signed(l.balance, cur)}
+        {square ? t('Acertado') : money(Math.abs(l.balance), cur)}
       </T>
     </View>
   );
