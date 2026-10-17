@@ -23,3 +23,9 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 
 ## Festival planner (added at 2d301d9)
 - The planner ships with a published festival schedule whose name includes a real event brand (`src/poker/festivals.ts`). Showing a public schedule inside the app is factual use, but App Review can ask for proof of rights under 5.2.1 if the brand looks like an endorsement. Keep the brand out of store metadata and screenshots (it is), and don't use its logo. If a reviewer objects, rename the entry to a generic label ("Bahamas festival, Dec 2026").
+
+## Check at ac5dbc2
+- Festival: shipped as "Bahamas, dezembro 2026" (#70); the venue field names the resort, which is a factual location, not an endorsement. Event titles in `src/poker/festivals.ts` are the published schedule's own names; none appear in store metadata or screenshots.
+- Brand names left in-app only as input placeholders (`ContextSheet`, `SessionForm`, `staking/sheets`) and in the sample hand title (`src/poker/sample.ts`, "Estoril Poker Series"). Guideline 2.3.7 covers metadata, so these don't block, but the sample hand is visible to reviewers; a generic title ("Main Event €550") removes any doubt.
+- Retention offer ids in `src/billing/plans.ts` match store/privacy-forms.md (`sweatbook_retention_40` / `sweatbook-retention-40`, −40% for 3 months, monthly plan, cancel flow only).
+- Home widget (SweatbookHome) reads local data only: no privacy-form change. Listing now mentions it.

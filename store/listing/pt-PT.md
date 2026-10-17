@@ -42,6 +42,7 @@ PARTILHA E PEDE OPINIÃO
 PARA QUEM JOGA LIVE
 • Torneios e cash games, com relógio de sessão e registo do stack
 • A sessão em curso no ecrã bloqueado: tempo de jogo, stack e nível
+• Widget no ecrã principal com a sessão a decorrer ou o resultado da semana
 • Bankroll e resultados por casino, com depósitos, levantamentos e despesas
 • Staking: os teus backers, pacotes de vários torneios e markup, com o que deves a cada um
 • Um link em direto para os teus backers seguirem o stack e o nível durante a sessão

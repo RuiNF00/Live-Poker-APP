@@ -42,6 +42,7 @@ SHARE AND GET FEEDBACK
 BUILT FOR LIVE PLAYERS
 • Tournaments and cash games, with a session clock and stack tracking
 • Your live session on the lock screen: time played, stack and level
+• Home screen widget with your running session or this week's result
 • Bankroll and results by venue, with deposits, withdrawals and expenses
 • Staking: your backers, packages across several tournaments and markup, with what you owe each one
 • A live link for your backers to follow your stack and level during the session
