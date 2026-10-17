@@ -10,7 +10,7 @@
 **Subtítulo** (30): Controle de banca e mãos
 
 **Texto promocional** (170):
-Registre uma mão em segundos entre dois níveis e reveja no replayer. Compartilhe com um link e receba a opinião dos seus amigos.
+Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e compartilhe um link que qualquer pessoa abre. Grátis: 3 mãos por dia.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
 histórico,replayer,bankroll,sessões,torneio,mtt,cash,staking,swap,holdem,anotações,resultados
@@ -57,6 +57,7 @@ O Sweatbook é uma ferramenta de registro e estudo: apenas registros e contas. N
 Suporte: {{SUPPORT_EMAIL}}
 Privacidade: https://{{WEB_DOMAIN}}/privacy
 Termos de uso: https://{{WEB_DOMAIN}}/terms
+EULA da Apple: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 **Novidades da versão 1.0**: Primeira versão. Registre mãos de poker ao vivo em segundos, reveja no replayer e compartilhe por link.
 
