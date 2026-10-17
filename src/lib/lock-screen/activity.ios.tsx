@@ -41,6 +41,17 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
       <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle('#1A0A04')]}>{'+ ' + p.labels.newHand}</Text>
     </Link>
   );
+  // A tournament: its chip count as a story, without opening the session first.
+  const actions = p.shareUrl ? (
+    <HStack spacing={8}>
+      {newHand}
+      <Link destination={p.shareUrl} modifiers={[padding({ top: 10, bottom: 10, leading: 14, trailing: 14 }), background('#1A2521'), cornerRadius(12)]}>
+        <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(text)]}>{p.labels.shareStack}</Text>
+      </Link>
+    </HStack>
+  ) : (
+    newHand
+  );
 
   // The banner carries the app's own wordmark, small and dim like a system app
   // name: it says whose session this is, it isn't an ad.
@@ -82,7 +93,7 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
           </VStack>
         </HStack>
         {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
-        {newHand}
+        {actions}
       </VStack>
     ),
     compactLeading: <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accent)]}>♠︎</Text>,
@@ -111,7 +122,7 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     expandedBottom: (
       <VStack spacing={8}>
         {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
-        {newHand}
+        {actions}
       </VStack>
     ),
   };
