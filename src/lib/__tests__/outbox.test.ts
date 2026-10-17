@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { isOnline, observeFetch, onReconnect, reportNetwork } from '../online';
+import { isOnline, observeFetch, onReconnect, probeWhileOffline, reportNetwork } from '../online';
 import { MAX_AGE_MS, backoff, createOutbox, type Outcome } from '../outbox';
 
 function mem() {
@@ -93,4 +93,25 @@ test('online state follows what requests do, and reconnect fires once', async ()
   assert.equal(back, 1);
   off();
   reportNetwork(true);
+});
+
+test('the offline probe works against a cross-origin API without CORS (web)', async () => {
+  const real = globalThis.fetch;
+  const modes: (string | undefined)[] = [];
+  // Like a browser: a cross-origin request needs CORS unless it is no-cors (opaque answer).
+  globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+    modes.push(init?.mode);
+    if (init?.mode !== 'no-cors') throw new TypeError('Failed to fetch');
+    return new Response(null, { status: 200 });
+  }) as unknown as typeof fetch;
+  try {
+    reportNetwork(false);
+    probeWhileOffline('https://api.other-origin.test');
+    await new Promise((r) => setTimeout(r, 0));
+    assert.deepEqual(modes, ['no-cors']);
+    assert.equal(isOnline(), true);
+  } finally {
+    globalThis.fetch = real;
+    reportNetwork(true);
+  }
 });

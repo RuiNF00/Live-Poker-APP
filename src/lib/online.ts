@@ -63,12 +63,14 @@ let probeTimer: ReturnType<typeof setTimeout> | null = null;
 /**
  * While offline, ask `url` (any answer, even a 404, means online) every
  * `everyMs`. Call again when the app comes to the foreground for a check now.
+ * no-cors: on web the API can be another origin without CORS on its root; an
+ * opaque answer still proves the network works (native apps ignore `mode`).
  */
 export function probeWhileOffline(url: string, everyMs = 15000) {
   if (online) return;
   if (probeTimer) clearTimeout(probeTimer);
   probeTimer = null;
-  fetch(url, { method: 'HEAD', cache: 'no-store' })
+  fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' })
     .then(() => reportNetwork(true))
     .catch(() => {
       if (!online) probeTimer = setTimeout(() => probeWhileOffline(url, everyMs), everyMs);
