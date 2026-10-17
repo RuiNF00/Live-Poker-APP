@@ -1007,6 +1007,19 @@ const ptBR: Record<string, string> = {
   'O organizador não publicou o fecho do late reg (no World Championship as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'O organizador não publicou o fechamento do late reg (no World Championship as inscrições ficam abertas até o Dia 2): confirme no balcão do torneio.',
   'O World Championship não tem garantia publicada (o prémio adicionado não se aplica no Nevada).': 'O World Championship não tem garantia publicada (o prêmio adicionado não se aplica em Nevada).',
   'A parte dele sai das sessões deste pacote e o link deixa de funcionar.': 'A parte dele sai das sessões deste pacote e o link para de funcionar.',
+  'Guarda esta mão e as próximas sem limite.': 'Salve esta mão e as próximas sem limite.',
+  'A tua mão está a ser vista': 'Sua mão está sendo vista',
+  'Com Pro, guardas e partilhas todas as mãos da sessão.': 'Com o Pro, você salva e compartilha todas as mãos da sessão.',
+  'Vê de onde vem o teu lucro': 'Veja de onde vem o seu lucro',
+  'Vais receber um código. É a única chave da tua cópia: sem ele, ninguém (nem nós) a consegue abrir. Guarda-o fora deste telemóvel.': 'Você vai receber um código. É a única chave do seu backup: sem ele, ninguém (nem nós) consegue abri-lo. Guarde-o fora deste celular.',
+  'Ainda não guardaste o código fora deste telemóvel. Sem ele, ninguém (nem nós) consegue abrir a cópia.': 'Você ainda não salvou o código fora deste celular. Sem ele, ninguém (nem nós) consegue abrir o backup.',
+  'Guardar código': 'Salvar código',
+  'Já guardei': 'Já salvei',
+  'Recebes um código e as mãos, sessões e notas ficam guardadas. Se perderes o telemóvel, não perdes nada, desde que guardes o código. Sem ele, ninguém (nem nós) consegue abrir a cópia.': 'Você recebe um código e as mãos, sessões e notas ficam salvas. Se perder o celular, não perde nada, desde que guarde o código. Sem ele, ninguém (nem nós) consegue abrir o backup.',
+  'Encontrámos a tua cópia na nuvem': 'Encontramos seu backup na nuvem',
+  'Este telemóvel guardou o código da tua cópia. Recuperar as mãos, sessões e notas?': 'Este celular guardou o código do seu backup. Recuperar as mãos, sessões e notas?',
+  'A tua mão foi vista {n} vezes': 'Sua mão foi vista {n} vezes',
+  'A tua melhor sessão: {amount}': 'Sua melhor sessão: {amount}',
 };
 
 export default ptBR;
