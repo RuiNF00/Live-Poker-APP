@@ -19,7 +19,7 @@ import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, Nu
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
-import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
+import { FESTIVALS, type Festival } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
 import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
@@ -52,7 +52,6 @@ function confirm(title: string, body: string, ok: () => void) {
 
 export default function SessionScreen() {
   const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
-  const festivalPlan = useFestivalPlan(BAHAMAS_DEC_2026.id);
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
@@ -64,14 +63,9 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: 96 }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
-          <ListItem
-            icon="calendar-outline"
-            iconColor={C.accent}
-            title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
-            subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
-            chevron
-            onPress={() => router.push('/festival')}
-          />
+          {FESTIVALS.map((f) => (
+            <FestivalItem key={f.id} f={f} />
+          ))}
         </ListGroup>
         {bagged.length ? (
           <Section title={t('Por continuar')}>
@@ -119,6 +113,20 @@ export default function SessionScreen() {
         <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
       </View>
     </View>
+  );
+}
+
+function FestivalItem({ f }: { f: Festival }) {
+  const plan = useFestivalPlan(f.id);
+  return (
+    <ListItem
+      icon="calendar-outline"
+      iconColor={C.accent}
+      title={festivalName(f, plan)}
+      subtitle={`${f.venue} · ${t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size })}`}
+      chevron
+      onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
+    />
   );
 }
 

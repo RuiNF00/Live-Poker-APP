@@ -4,7 +4,7 @@
 // event to a running session.
 
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
@@ -16,7 +16,7 @@ import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
-import { eventDay, eventTitle, venueTime, BAHAMAS_DEC_2026, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
@@ -47,7 +47,8 @@ function dayLabel(day: string) {
 }
 
 export default function FestivalScreen() {
-  const f = BAHAMAS_DEC_2026;
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const f = FESTIVALS.find((x) => x.id === id) ?? FESTIVALS[0];
   const plan = useFestivalPlan(f.id);
   const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
@@ -316,7 +317,7 @@ function EventRow({
             {eventTitle(e)}
           </T>
           <T v="small" numberOfLines={1}>
-            {[e.flight ? (e.day2 ? t('Dia 2 · Flight {f}', { f: e.flight }) : `Flight ${e.flight}`) : null, `${short(e.guarantee, f.currency)} GTD`].filter(Boolean).join(' · ')}
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${short(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
