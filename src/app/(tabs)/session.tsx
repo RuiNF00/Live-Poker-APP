@@ -52,18 +52,7 @@ export default function SessionScreen() {
   if (activeSession) return <Live s={activeSession} />;
   return (
     <Screen title={t('Sessão')}>
-      <Card tone="raised" style={{ gap: S.md }}>
-        <Row gap={12}>
-          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="timer-outline" size={22} color={C.accent} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <T v="h2">{t('Começar sessão')}</T>
-            <T v="small">{t('Relógio, stack e blinds num só sítio.')}</T>
-          </View>
-        </Row>
-        <T v="small">{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
-      </Card>
+      <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
       <SessionForm
         initial={blankSession(sessions[0]?.kind ?? 'mtt', settings.currency, settings.defaultTableSize)}
         recentNames={recentNames}
