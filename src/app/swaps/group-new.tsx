@@ -3,21 +3,22 @@
 // counts until everyone is in.
 
 import { router, Stack, useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
+import { useSwapSuggestions } from '@/components/swaps/suggest';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
 import { SwapError } from '@/lib/swap-api';
 import { createGroup, groupUrl } from '@/lib/swap-group-api';
 import { money } from '@/poker/format';
-import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore } from '@/store/store';
 import { GROUP_MAX, GROUP_MIN, groupFromRemote, type GroupTerms } from '@/store/swap-groups';
 import { saveGroup, useGroups } from '@/store/swap-groups-store';
@@ -28,20 +29,23 @@ import { C, S } from '@/theme';
 const PCTS = [0.5, 1, 2, 3, 5];
 
 function NewGroupSwap() {
-  const { settings, sessions, activeSession, setSettings } = useStore();
+  const { settings, activeSession, setSettings } = useStore();
   const { swaps } = useSwaps();
   const { groups } = useGroups();
   const live = activeSession?.kind === 'mtt' ? activeSession : null;
+  const all = useSwapSuggestions();
   const [me, setMe] = useState(settings.nickname);
   const [others, setOthers] = useState<string[]>([]);
   const [typed, setTyped] = useState('');
   const [pct, setPct] = useState(2);
-  const [scope, setScope] = useState<'event' | 'series'>(live ? 'event' : 'series');
+  const [scope, setScope] = useState<'event' | 'series'>(live || all.some((o) => o.from === 'plan') ? 'event' : 'series');
   const [title, setTitle] = useState(live?.name ?? '');
   const [venue, setVenue] = useState(live?.venue ?? '');
   const [currency, setCurrency] = useState(live?.currency ?? (CURRENCIES.includes(settings.currency) ? settings.currency : '$'));
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  // No signal: everything typed stays, and the swap is created by itself when the signal is back.
+  const [waiting, setWaiting] = useState(false);
 
   // Leaving with Voltar drops the draft (going to the background keeps it).
   useFocusEffect(
@@ -51,6 +55,7 @@ function NewGroupSwap() {
         setTyped('');
         setNote('');
         setBusy(false);
+        setWaiting(false);
       },
       [],
     ),
@@ -71,19 +76,18 @@ function NewGroupSwap() {
     return out.slice(0, 12);
   }, [swaps, groups]);
 
-  const festivals = useFestivals();
-  const [today] = useState(() => dayKey(Date.now()));
-  const suggestions = useMemo(() => {
-    const out: { title: string; venue: string; currency: string; scope: 'event' | 'series' }[] = [];
-    if (live?.name) out.push({ title: live.name, venue: live.venue, currency: live.currency, scope: 'event' });
-    // The next few festivals, not the whole calendar.
-    for (const f of festivals.filter((x) => notOver(x, today)).slice(0, 3)) out.push({ title: t(f.name), venue: f.venue, currency: f.currency, scope: 'series' });
-    for (const s of sessions) {
-      if (out.length >= 6) break;
-      if (s.kind === 'mtt' && s.name && !out.some((o) => o.title === s.name)) out.push({ title: s.name, venue: s.venue, currency: s.currency, scope: 'event' });
-    }
-    return out.filter((o) => o.scope === scope);
-  }, [live, sessions, scope, festivals, today]);
+  const suggestions = all.filter((o) => o.scope === scope);
+
+  // The same table again (the group you swapped with last): everyone, the % and the currency in one tap.
+  const last = groups.find((g) => g.seats.some((x) => x.seat !== g.seat && x.name !== '-'));
+  const lastNames = last ? last.seats.filter((x) => x.seat !== last.seat && x.name !== '-').map((x) => x.name).slice(0, GROUP_MAX - 1) : [];
+  const sameAsLast = lastNames.length > 0 && lastNames.length === others.length && lastNames.every((n) => others.some((o) => o.toLowerCase() === n.toLowerCase()));
+  const pickLast = () => {
+    if (!last) return;
+    setOthers(lastNames);
+    setPct(last.terms.pct);
+    if (!live && CURRENCIES.includes(last.terms.currency)) setCurrency(last.terms.currency);
+  };
 
   const has = (n: string) => others.some((o) => o.toLowerCase() === n.trim().toLowerCase()) || n.trim().toLowerCase() === me.trim().toLowerCase();
   const toggle = (n: string) => setOthers((cur) => (cur.some((o) => o.toLowerCase() === n.toLowerCase()) ? cur.filter((o) => o.toLowerCase() !== n.toLowerCase()) : cur.length < GROUP_MAX - 1 ? [...cur, n] : cur));
@@ -117,6 +121,11 @@ function NewGroupSwap() {
       else await Share.share({ message: msg });
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
+      setBusy(false);
+      if (code === 'offline') {
+        setWaiting(true);
+        return;
+      }
       Alert.alert(
         t('Não foi possível criar o swap'),
         code === 'offensive' ? t('Um dos nomes não é permitido.') : code === 'rate_limited' ? t('Demasiados swaps seguidos. Tenta daqui a pouco.') : t('Precisa de rede para criar o link. Tenta de novo quando tiveres sinal.'),
@@ -124,6 +133,18 @@ function NewGroupSwap() {
       setBusy(false);
     }
   }
+
+  const createRef = useRef(create);
+  useEffect(() => {
+    createRef.current = create;
+  });
+  useEffect(() => {
+    if (!waiting) return;
+    return onReconnect(() => {
+      setWaiting(false);
+      void createRef.current();
+    });
+  }, [waiting]);
 
   return (
     <>
@@ -142,8 +163,9 @@ function NewGroupSwap() {
               <IconButton name="add" onPress={addTyped} label={t('Adicionar')} />
             </Row>
           ) : null}
-          {people.filter((p) => !has(p)).length ? (
+          {people.filter((p) => !has(p)).length || (lastNames.length && !sameAsLast) ? (
             <ChipRow>
+              {lastNames.length && !sameAsLast ? <Chip label={t('Mesmo grupo da última vez')} icon="people" onPress={pickLast} /> : null}
               {people
                 .filter((p) => !has(p))
                 .map((p) => (
@@ -213,8 +235,8 @@ function NewGroupSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button
-            title={busy ? t('A criar…') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
+          <Button lines={2}
+            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: cria quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
             icon="paper-plane-outline"
             disabled={!ok}
             onPress={create}

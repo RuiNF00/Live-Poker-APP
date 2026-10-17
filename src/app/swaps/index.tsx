@@ -7,12 +7,13 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { AccountsLocked, pctLabel, signed } from '@/components/swaps/parts';
+import { seatLabel } from '@/components/swaps/group-parts';
+import { AccountsLocked, PAIR, pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
-import { assignGroups, groupLedger, groupReady, type SwapGroup } from '@/store/swap-groups';
+import { assignGroups, groupLedger, groupNet, groupReady, minTransfers, type SwapGroup } from '@/store/swap-groups';
 import { syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
@@ -32,19 +33,7 @@ function SwapsScreen() {
       syncAllGroups();
     }, []),
   );
-  const tot = swapsTotal(swaps);
-  // Groups add to the same per-currency totals: what the group owes me, or what I owe it.
-  for (const g of groups) {
-    if (g.archived || g.gone || !groupReady(g)) continue;
-    tot.open++;
-    const b = groupLedger(g).balance;
-    const cur = tot.byCurrency.get(g.terms.currency) ?? { owedToMe: 0, iOwe: 0, net: 0 };
-    if (b > 0) cur.owedToMe += b;
-    else cur.iOwe -= b;
-    cur.net = Math.round((cur.owedToMe - cur.iOwe) * 100) / 100;
-    tot.byCurrency.set(g.terms.currency, cur);
-  }
-  tot.pending += groups.filter((g) => !g.archived && !g.gone && !groupReady(g)).length;
+  const tot = swapsTotal(swaps, groups);
   const active = swaps.filter((s) => !s.archived && !s.gone);
   const past = swaps.filter((s) => s.archived || s.gone);
   const activeGroups = groups.filter((g) => !g.archived && !g.gone);
@@ -77,8 +66,8 @@ function SwapsScreen() {
             body={t('Combina uma percentagem com outro jogador para um evento ou para a série toda. Ele confirma por link, os termos e a hora ficam fixados, e quando alguém cobra a app diz quem deve a quem.')}
             action={
               <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
-                <Button title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
-                <Button title={t('Swap de grupo')} kind="secondary" icon="people-outline" onPress={newGroup} />
+                <Button lines={2} title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
+                <Button lines={2} title={t('Swap de grupo')} kind="secondary" icon="people-outline" onPress={newGroup} />
               </View>
             }
           />
@@ -99,7 +88,8 @@ function SwapsScreen() {
                 ))
               ) : (
                 <>
-                  <T v="label">{t('Swaps')}</T>
+                  {/* With only archived swaps the heading is "Swaps" itself: no eyebrow repeating it. */}
+                  {tot.open || tot.pending ? <T v="label">{t('Swaps')}</T> : null}
                   <T v="h1">{locked && tot.open ? (tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open })) : tot.open ? t('Tudo acertado') : tot.pending ? t('À espera de confirmação') : t('Swaps')}</T>
                 </>
               )}
@@ -111,9 +101,9 @@ function SwapsScreen() {
             </Card>
             {locked && tot.open ? <AccountsLocked /> : null}
 
-            <Row gap={S.sm}>
-              <Button title={t('Novo swap')} icon="add" style={{ flex: 1 }} onPress={() => router.push('/swaps/new')} />
-              <Button title={t('Grupo')} kind="secondary" icon="people-outline" style={{ flex: 1 }} onPress={newGroup} />
+            <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+              <Button lines={2} title={t('Novo swap')} icon="add" style={PAIR} onPress={() => router.push('/swaps/new')} />
+              <Button lines={2} title={t('Grupo')} kind="secondary" icon="people-outline" style={PAIR} onPress={newGroup} />
             </Row>
             {tot.open || activeGroups.length ? (
               <ListGroup>
@@ -189,14 +179,15 @@ function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
   ) : locked ? (
     <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (
-    <View style={{ alignItems: 'flex-end', gap: 1 }}>
+    // Capped, so a long amount at large text can't squeeze the name to nothing.
+    <View style={{ alignItems: 'flex-end', gap: 1, maxWidth: '45%' }}>
       {square ? null : (
         <T v="tiny" color={l.balance > 0 ? C.good : C.warn}>
           {l.balance > 0 ? t('deve-te') : t('deves')}
         </T>
       )}
-      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }}>
-        {square ? t('Acertado') : signed(l.balance, cur)}
+      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit>
+        {square ? t('Acertado') : money(Math.abs(l.balance), cur)}
       </T>
     </View>
   );
@@ -225,19 +216,26 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
   const cur = g.terms.currency;
   const square = Math.abs(l.balance) < 0.5;
   const missing = g.seats.filter((s) => !s.confirmedAt).length;
+  // Who pays whom, right in the list: no need to open the group to settle up.
+  const mine = ready && !locked && !square && !g.gone && !g.archived ? minTransfers(groupNet(g)).filter((x) => x.from === g.seat || x.to === g.seat) : [];
+  const settle = mine
+    .slice(0, 2)
+    .map((x) => (x.from === g.seat ? t('Pagas {amount} a {to}', { amount: money(x.amount, cur), to: seatLabel(g, x.to) }) : t('{from} paga-te {amount}', { from: seatLabel(g, x.from), amount: money(x.amount, cur) })))
+    .join(' · ');
   const right = !ready ? (
     <Pill label={g.gone ? t('Apagado') : t('Faltam {n}', { n: missing })} color={g.gone ? C.muted : C.warn} />
   ) : locked ? (
     <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (
-    <View style={{ alignItems: 'flex-end', gap: 1 }}>
+    // Capped, so a long amount at large text can't squeeze the name to nothing.
+    <View style={{ alignItems: 'flex-end', gap: 1, maxWidth: '45%' }}>
       {square ? null : (
         <T v="tiny" color={l.balance > 0 ? C.good : C.warn}>
           {l.balance > 0 ? t('devem-te') : t('deves')}
         </T>
       )}
-      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }}>
-        {square ? t('Acertado') : signed(l.balance, cur)}
+      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit>
+        {square ? t('Acertado') : money(Math.abs(l.balance), cur)}
       </T>
     </View>
   );
@@ -250,8 +248,8 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
       }
       title={g.terms.title}
       subtitle={
-        <T v="small" numberOfLines={1}>
-          {t('{n} jogadores · {pct} cada', { n: g.seats.length, pct: pctLabel(g.terms.pct) })}
+        <T v="small" numberOfLines={2}>
+          {settle || t('{n} jogadores · {pct} cada', { n: g.seats.length, pct: pctLabel(g.terms.pct) })}
         </T>
       }
       right={right}

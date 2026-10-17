@@ -174,13 +174,13 @@ export function SwapReminder() {
               })}
             </Card>
             <View style={{ gap: S.sm }}>
-              <Button
+              <Button lines={2}
                 title={busy ? t('A guardar…') : prize > 0 ? t('Confirmo: cobrei {amount}', { amount: money(prize, s.currency) }) : t('Confirmo: não cobrei')}
                 icon="checkmark-circle-outline"
                 disabled={busy}
                 onPress={confirm}
               />
-              <Button kind="ghost" title={t('Agora não')} onPress={close} />
+              <Button lines={2} kind="ghost" title={t('Agora não')} onPress={close} />
               <T v="tiny" style={{ textAlign: 'center', paddingHorizontal: S.lg }} color={C.muted}>
                 {t('Fica registado no swap e o outro jogador vê as contas. Se o resultado estiver errado, corrige a sessão e regista no swap.')}
               </T>
@@ -223,7 +223,7 @@ export function SwapReminder() {
               );
             })}
             <View style={{ gap: S.sm }}>
-              <Button
+              <Button lines={2}
                 title={t('Ver swap')}
                 icon="swap-horizontal-outline"
                 onPress={() => {
@@ -234,7 +234,7 @@ export function SwapReminder() {
                   else if (g) router.push({ pathname: '/swap/g/[id]', params: { id: g.id } });
                 }}
               />
-              <Button kind="ghost" title={t('Fechar')} onPress={close} />
+              <Button lines={2} kind="ghost" title={t('Fechar')} onPress={close} />
             </View>
           </>
         )
