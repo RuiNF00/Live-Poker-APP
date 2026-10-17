@@ -12,6 +12,7 @@ import { isComplete, replay } from '@/poker/engine';
 import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
+import { ReviewCard } from '@/components/ReviewCard';
 import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -251,6 +252,7 @@ ${link}`;
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <CoachThread hand={hand} name={settings.nickname} />
+        <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
 
         <Section title={t('Partilhar')}>
           <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : shareWaiting ? t('Link à espera de rede') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />

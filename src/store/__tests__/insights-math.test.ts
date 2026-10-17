@@ -91,3 +91,27 @@ test('when every side loses, the best one "loses less" instead of "earns more"',
   ];
   assert.equal(insights(len, eur).find((x) => x.id === 'length')!.title, 'Depois das 6 horas perdes menos por hora.');
 });
+
+test('mental journal: short sleep costs money, said only with enough check-ins', () => {
+  const rested = Array.from({ length: 6 }, (_, i) => cash(MON + i * 7 * DAY, 4, 160, { mind: { sleep: 8 } })); // 40/h
+  const tired = Array.from({ length: 6 }, (_, i) => cash(MON + i * 7 * DAY + 2 * DAY, 4, 104, { mind: { sleep: 5 } })); // 26/h
+  const sleep = insights([...rested, ...tired], eur).find((x) => x.id === 'sleep');
+  assert.ok(sleep);
+  assert.equal(sleep!.title, 'Quando dormes menos de 6 h, rendes 35% menos por hora.');
+  assert.deepEqual(sleep!.sample, { sessions: 12, hours: 48 });
+  // Sessions with no check-in never count on either side.
+  const unknown = Array.from({ length: 4 }, (_, i) => cash(MON + i * 7 * DAY + 3 * DAY, 4, -400));
+  assert.equal(insights([...rested, ...tired.slice(0, 4), ...unknown], eur).find((x) => x.id === 'sleep'), undefined);
+});
+
+test('mental journal: the session after tilt 4+ loses on average', () => {
+  const list: Session[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = MON + i * 7 * DAY;
+    list.push(cash(d, 4, -300, { mind: { tilt: 5 } }), cash(d + DAY, 4, -90, { mind: { tilt: 2 } }), cash(d + 3 * DAY, 4, 150, { mind: { tilt: 1 } }));
+  }
+  const tn = insights(list, eur).find((x) => x.id === 'tiltNext');
+  assert.ok(tn);
+  assert.equal(tn!.title, 'Depois de tilt 4 ou mais, perdes em média 90€ na sessão seguinte.');
+  assert.equal(tn!.groups[0].sessions, 6);
+});

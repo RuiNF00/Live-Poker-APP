@@ -186,7 +186,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "O Sweatbook usa o microfone para gravares notas de voz sobre as tuas mãos e para as histórias do Instagram."
+          "microphonePermission": "O Sweatbook usa o microfone para gravares notas de voz sobre as tuas mãos e para as histórias do Instagram.",
+          "enableBackgroundPlayback": false
         }
       ],
       [

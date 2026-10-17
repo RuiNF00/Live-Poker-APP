@@ -36,7 +36,7 @@ export function HandHeader({ hand, quiz, inBB = false }: { hand: Hand; quiz?: bo
             {hand.title || g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash')}
           </T>
           <T v="small">
-            {[blindsLabel(hand), g.level ? t('Nível {n}', { n: g.level }) : '', stage, g.playersLeft ? t('{n} restantes', { n: g.playersLeft }) : '', t('{n} jog.', { n: hand.players.length })]
+            {[blindsLabel(hand), g.kind === 'mtt' && g.level ? t('Nível {n}', { n: g.level }) : '', stage, g.kind === 'mtt' && g.playersLeft ? t('{n} restantes', { n: g.playersLeft }) : '', t('{n} jog.', { n: hand.players.length })]
               .filter(Boolean)
               .join(' · ')}
           </T>

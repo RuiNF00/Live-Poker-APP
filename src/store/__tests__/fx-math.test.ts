@@ -69,3 +69,31 @@ test('mergeRates takes a time series or one day, ignores junk and other bases', 
   assert.equal(mergeRates(t, { base: 'USD', rates: { '2026-01-07': { EUR: 1 } } }), t);
   assert.equal(mergeRates(t, 'nope'), t);
 });
+
+test('new currencies: stored as ISO codes, ECB ones convert, the rest need a typed rate', async () => {
+  const { rate, homeTotals } = await import('../fx-math');
+  const { ECB_CODES, symbolOf } = await import('../currencies');
+  const table = { '2026-10-01': { USD: 1.1, CAD: 1.5, JPY: 160 } };
+  const ts = new Date(2026, 9, 2, 12).getTime();
+  // Old symbol-stored values keep converting.
+  assert.equal(rate(table, '$', '€', ts), 1 / 1.1);
+  assert.equal(rate(table, 'CAD', '$', ts), 1.1 / 1.5);
+  assert.equal(rate(table, 'JPY', '€', ts), 1 / 160);
+  // No ECB rate for ARS: null until the player types one.
+  assert.equal(rate(table, 'ARS', '€', ts), null);
+  assert.equal(rate(table, 'ARS', '€', ts, { ARS: 1500 }), 1 / 1500);
+  assert.ok(ECB_CODES.includes('MXN') && !ECB_CODES.includes('ARS') && !ECB_CODES.includes('EUR'));
+  assert.equal(symbolOf('CAD'), 'CA$');
+  const s = { id: 'a', kind: 'cash', name: '', venue: '', currency: 'ARS', startedAt: ts, endedAt: ts + 3600000, breaks: [], buyIn: 30000, entries: 1, addOn: 0, cashOut: 45000, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '' } as Session;
+  assert.deepEqual(homeTotals({ sessions: [s], transfers: [], bankrolls: [] }, '€', table, {}).missing, ['ARS']);
+  assert.equal(homeTotals({ sessions: [s], transfers: [], bankrolls: [] }, '€', table, {}, ts, { ARS: 1500 }).profit, 10);
+});
+
+test('amounts: yen and won have no cents, letter codes get a space', async () => {
+  const { rawMoney } = await import('../../poker/format');
+  assert.doesNotMatch(rawMoney(1234.56, 'JPY'), /[.,]56/);
+  assert.match(rawMoney(500.4, 'JPY'), /500/);
+  assert.match(rawMoney(12.5, '€'), /12,50|12\.50/);
+  assert.match(rawMoney(300, 'SEK'), /300 SEK|SEK 300/);
+  assert.match(rawMoney(300, 'CAD'), /CA\$/);
+});
