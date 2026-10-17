@@ -37,6 +37,12 @@ export async function pickDoc(source: DocSource, id: string): Promise<{ file: st
   d.create({ idempotent: true, intermediates: true });
   const file = `${id}.${ext(name, 'jpg')}`;
   await new File(uri).copy(new File(d, file), { overwrite: true });
+  // A camera photo also sits in the picker's cache until the system clears it: only our copy stays.
+  if (source === 'camera') {
+    try {
+      new File(uri).delete();
+    } catch {}
+  }
   return { file, name };
 }
 
