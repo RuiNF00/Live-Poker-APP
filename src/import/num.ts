@@ -10,8 +10,11 @@ export const NO_VALUE = /^(n\/?a|na|null|none|-+|—|–)$/i;
  */
 export function parseNum(raw: string | undefined): number | null {
   if (raw === undefined) return null;
-  let s = raw.trim().replace(/[−‒–]/g, '-');
+  let s = raw.trim();
   if (!s) return null;
+  // Most cells are plain numbers: skip the clean-up below (it adds up over thousands of rows).
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  s = s.replace(/[−‒–]/g, '-');
   let neg = false;
   if (/^\(.*\)$/.test(s)) {
     neg = true;

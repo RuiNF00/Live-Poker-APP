@@ -200,8 +200,13 @@ function clockOf(ts: number): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/** Local 'YYYY-MM-DD HH:MM:SS'. */
+function stampOf(ts: number): string {
+  return `${dayKey(ts)} ${clockOf(ts)}:${String(new Date(ts).getSeconds()).padStart(2, '0')}`;
+}
+
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
-  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -239,6 +244,11 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         s.withheld?.form ?? '',
         s.withheld ? s.withheld.status : '',
         s.notes,
+        // For the import, not for people: the exact times (with breaks, hours alone loses the end) and the id,
+        // so the same file imported again finds its sessions instead of doubling them.
+        stampOf(s.startedAt),
+        stampOf(s.endedAt!),
+        s.id,
       ]
         .map(cell)
         .join(','),
@@ -255,6 +265,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
       row[head.indexOf('currency')] = b?.currency ?? '';
       row[head.indexOf('profit')] = x.kind === 'deposit' ? Math.abs(x.amount) : -Math.abs(x.amount);
       row[head.indexOf('notes')] = x.note;
+      row[head.indexOf('started_at')] = stampOf(x.at);
+      row[head.indexOf('id')] = x.id;
       return row.map(cell).join(',');
     });
   // Type "expense", the kind in notes before the player's note, the trip as the game.
