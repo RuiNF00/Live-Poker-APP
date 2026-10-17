@@ -251,7 +251,12 @@ function BankrollTab() {
                   .join(' · ')}
               </T>
               <View style={{ marginTop: S.sm, marginHorizontal: -S.xs }}>
-                <LineChart values={pts} height={120} peaks={dd.peaks} />
+                <LineChart
+                  values={pts}
+                  height={120}
+                  peaks={dd.peaks}
+                  label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)) })}
+                />
               </View>
               <Row gap={S.sm}>
                 <Mini label={t('Pico')} value={fmt(dd.peak, cur)} />
