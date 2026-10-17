@@ -35,8 +35,8 @@ export const hands = [
 ];
 const sess = [];
 const res = [[25000,0],[25000,88000],[10000,0],[50000,131000],[25000,0],[10000,0],[50000,0],[10000,41500],[25000,154000],[50000,0],[10000,0],[25000,62000]];
-res.forEach(([b,c],i)=>{ const st = now - (i+1)*7*DAY; sess.push({ id:'s'+i, kind:'mtt', name: '$'+(b/1000)+'K '+({10000:'Turbo',25000:'High Roller',50000:'Super High Roller'})[b], venue:'Casino', currency:'$', startedAt: st, endedAt: st+6*3600000, breaks:[], buyIn:b, entries:1, addOn:0, cashOut:c, sb:100, bb:200, ante:200, anteType:'bb', tableSize:9, stack:0, stackLog:[], roster:[], notes:'' }); });
-sess.unshift({ id:'live', kind:'mtt', name:'$25K High Roller', venue:'Casino', currency:'$', startedAt: now-5*3600000, breaks:[], buyIn:25000, entries:1, addOn:0, cashOut:0, sb:1000, bb:2000, ante:2000, anteType:'bb', level:14, stage:'bubble', tableSize:9, stack:64000,
+res.forEach(([b,c],i)=>{ const st = now - (i+1)*7*DAY; sess.push({ id:'s'+i, kind:'mtt', name: '$'+(b/1000)+'K '+({10000:'Turbo',25000:'High Roller',50000:'Super High Roller'})[b], venue:'Nassau', currency:'$', startedAt: st, endedAt: st+6*3600000, breaks:[], buyIn:b, entries:1, addOn:0, cashOut:c, sb:100, bb:200, ante:200, anteType:'bb', tableSize:9, stack:0, stackLog:[], roster:[], notes:'' }); });
+sess.unshift({ id:'live', kind:'mtt', name:'$25K High Roller', venue:'Nassau', currency:'$', startedAt: now-5*3600000, breaks:[], buyIn:25000, entries:1, addOn:0, cashOut:0, sb:1000, bb:2000, ante:2000, anteType:'bb', level:14, stage:'bubble', tableSize:9, stack:64000,
   stackLog:[{t:now-5*3600000,stack:30000,level:1},{t:now-4*3600000,stack:41000,level:5},{t:now-3*3600000,stack:36000,level:8},{t:now-2*3600000,stack:52000,level:10},{t:now-3600000,stack:71000,level:12},{t:now-20*60000,stack:64000,level:14}],
   roster:['Hero','','Boné azul','','','','Reg alemão','',''], notes:'' });
 export const sessions = sess;

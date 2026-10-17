@@ -35,7 +35,7 @@ export default function InviteScreen() {
   const steps: [React.ComponentProps<typeof Ionicons>['name'], string][] = [
     ['paper-plane-outline', t('Envias o teu link a um amigo')],
     ['download-outline', t('Ele instala e guarda a primeira mão')],
-    ['flash-outline', t('Ganham os dois 7 dias de Pro')],
+    ['flash-outline', t('Recebem os dois 7 dias de Pro')],
   ];
 
   return (

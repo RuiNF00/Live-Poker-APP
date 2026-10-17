@@ -15,6 +15,7 @@ import { YearCard } from '@/components/YearCard';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
+import { canShareImage, shareImage } from '@/lib/share-image';
 import { shareRef } from '@/lib/referrals';
 import { countInSlices } from '@/lib/idle-count';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
@@ -82,6 +83,21 @@ export default function YearScreen() {
       track('story_shared', { target: String(target), kind: 'year', card: kind, money: !hideMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // X, WhatsApp and the rest: the same card through the share sheet, the link copied.
+  const postElsewhere = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const ref = await shareRef().catch(() => '');
+      await shareImage(await captureStory({ current: refs.current[page] }), `${BRAND.webUrl}/r/${ref}?utm_source=share&utm_medium=image&utm_campaign=year`);
+      track('story_shared', { target: 'sheet', kind: 'year', card: kind, money: !hideMoney });
+    } catch {
+      // closed the sheet
     } finally {
       setBusy(false);
     }
@@ -184,7 +200,10 @@ export default function YearScreen() {
               <Button kind="secondary" icon="play-outline" title={t('Ver a mão')} style={{ flex: 1 }} onPress={() => router.push(`/hand/${review.pot!.hand.id}`)} />
             ) : null}
             {canShareStory ? (
-              <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 2 }} onPress={post} />
+              <>
+                <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 2 }} onPress={post} />
+                {canShareImage ? <IconButton name="share-outline" label={t('Partilhar noutra app (X, WhatsApp…)')} onPress={postElsewhere} /> : null}
+              </>
             ) : (
               <T v="small" style={{ flex: 2, textAlign: 'center' }}>
                 {t('Abre a app no telemóvel para publicar no Instagram.')}

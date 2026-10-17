@@ -21,7 +21,6 @@ Data not linked to you:
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
-| User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup; not linked: the backup has no account and we cannot read it) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward) | Analytics, App Functionality |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
@@ -34,7 +33,7 @@ PostHog EU (#106, optional): our server forwards usage events (install id, event
 
 Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.app (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
 
-App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device (photos enter the backup only end-to-end encrypted, which the backup row already covers): no new rows. Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
+App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device. Receipt and tax-form photos and files never leave the phone: they are files in the app's documents folder (`src/lib/docs.native.ts`), and the cloud backup serialises only the session data with the file names (`src/lib/cloud-backup.ts`, checked at 24efbeb). So Photos or Videos is not declared on either form, matching the privacy manifest: no new rows. Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -64,7 +63,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 
 ## Apple: Accessibility Nutrition Labels
 
-Declare only what was tested on an iPhone (source: `/mnt/project-files/design/auditoria-acessibilidade.md` §9). At 174ec64 that is **Dark Interface** only (the app is dark-only). VoiceOver, Larger Text, Sufficient Contrast, Differentiate Without Color and Reduced Motion stay undeclared until the audit's fixes (§1-4, §6, §7) are merged and pass its 10-minute test (§8). The labels are optional and can be added after launch; a false label is grounds for complaints and rejection.
+Declare only what was tested on an iPhone (source: `/mnt/project-files/design/auditoria-acessibilidade.md` §9). At 174ec64 that was **Dark Interface** only (the app is dark-only). By fbdc87f the code also has VoiceOver for hand entry (#151), text up to 200% and contrast fixes (#144) and Reduce Motion in the replayer (#121); declare VoiceOver, Larger Text, Sufficient Contrast and Reduced Motion only after QA's `launch/roteiro-acessibilidade-beta.md` passes on an iPhone. VoiceOver, Larger Text, Sufficient Contrast, Differentiate Without Color and Reduced Motion stay undeclared until the audit's fixes (§1-4, §6, §7) are merged and pass its 10-minute test (§8). The labels are optional and can be added after launch; a false label is grounds for complaints and rejection.
 
 ## Google Play: Data safety
 
@@ -76,7 +75,6 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 |---|---|---|---|
 | App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
 | Financial info → Other financial info (amounts the user publishes on a live page, swap, public profile or action package; optional) | Yes | Yes | App functionality |
-| Photos and videos → Photos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | Yes | Yes | App functionality |
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
@@ -99,3 +97,8 @@ Processed ephemerally: No, except audio (Yes).
 ## Permissions as built (prebuild at cd6635d)
 - iOS usage strings: Camera, Photo Library, Face ID, Microphone (PT and EN). UIBackgroundModes: fetch, processing only (stray `audio` removed at 61cf15f).
 - Android: INTERNET, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, USE_BIOMETRIC / USE_FINGERPRINT, VIBRATE (plus POST_NOTIFICATIONS from expo-notifications if the merged manifest keeps it). No location, no storage, no SYSTEM_ALERT_WINDOW. The Data safety rows above match: no location, contacts or files declared; audio only for story voice notes; photos only inside the encrypted backup.
+
+## Android exact alarms (#170, tournament level timers)
+- Use **`SCHEDULE_EXACT_ALARM`**, not `USE_EXACT_ALARM`. Google Play's policy limits `USE_EXACT_ALARM` to apps whose core function is an alarm clock, timer or calendar, behind a Permissions declaration in the Play Console; a poker tracker would be rejected. `SCHEDULE_EXACT_ALARM` needs no Play declaration.
+- On Android 14+ `SCHEDULE_EXACT_ALARM` is **denied by default** for new installs (Android docs, "Schedule exact alarms are denied by default"). The app must check `canScheduleExactAlarms()`, ask only when the player turns on level alerts (open `ACTION_REQUEST_SCHEDULE_EXACT_ALARM` with a one-line reason), and fall back to `setWindow`/inexact notifications if the player says no. Without that check, `setExact*` throws.
+- Data safety and the privacy policy don't change: the alarm is local and nothing leaves the phone.

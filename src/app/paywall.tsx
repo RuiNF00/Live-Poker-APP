@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { chargeNoticeAt } from '@/billing/nudges';
 import { usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -169,12 +170,12 @@ export default function Paywall() {
           <Row gap={6} style={{ justifyContent: 'center' }}>
             <Ionicons name="shield-checkmark" size={14} color={C.good} />
             <T v="small" color={C.text}>
-              {t('Cancela quando quiseres na {store}.', { store })}
+              {Platform.OS === 'android' ? t('Cancela quando quiseres na Google Play, em Pagamentos e subscrições.') : t('Cancela quando quiseres na {store}.', { store })}
             </T>
           </Row>
         )}
         <T v="tiny" style={{ textAlign: 'center' }}>
-          {t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
+          {Platform.OS === 'android' ? t('Renova automaticamente. Cancela na Google Play antes da data de renovação.') : t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
         </T>
         <Row style={{ justifyContent: 'center' }} gap={S.lg}>
           <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
@@ -351,13 +352,17 @@ function Radio({ active }: { active: boolean }) {
 
 /** What happens during the trial, in three short lines. */
 function TrialSteps({ days, after }: { days: number; after: string }) {
+  // Real dates, the same ones the charge notice and the store use.
+  const [now] = useState(() => Date.now());
+  const end = now + days * 86_400_000;
+  const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   const steps: { icon: IconName; when: string; what: string }[] = [
     { icon: 'lock-open', when: t('Hoje'), what: t('Tudo desbloqueado. 0 a pagar.') },
-    // The charge notice (nudges.ts, 48 h before the end) keeps this promise.
+    // The charge notice (nudges.ts, or the home card without notifications) keeps this promise.
     days >= 3
-      ? { icon: 'notifications-outline', when: t('Dia {n}', { n: days - 2 }), what: t('Avisamos-te antes de cobrar.') }
+      ? { icon: 'notifications-outline', when: day(chargeNoticeAt(end)), what: t('Avisamos-te antes de cobrar.') }
       : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
-    { icon: 'card-outline', when: t('Dia {n}', { n: days }), what: t('Começa: {price}', { price: after }) },
+    { icon: 'card-outline', when: day(end), what: t('Começa: {price}', { price: after }) },
   ];
   return (
     <View style={{ paddingHorizontal: 4, paddingTop: S.sm, gap: S.md }}>

@@ -13,6 +13,7 @@ import { ONBOARDING_KEY } from './onboarding';
 import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
+import { deferState, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
@@ -177,8 +178,7 @@ export function useOnboarding() {
       AsyncStorage.getItem(ONBOARDING_KEY)
         .then((seen) => {
           if (!live || seen) return;
-          // It ends on the paywall, so the after-first-hand offer would be a second one: skip it.
-          AsyncStorage.multiSet([[ONBOARDING_KEY, '{}'], [KEYS.welcome, '1']]).catch(() => {});
+          AsyncStorage.setItem(ONBOARDING_KEY, '{}').catch(() => {});
           router.push('/welcome');
         })
         .catch(() => {});
@@ -190,8 +190,9 @@ export function useOnboarding() {
 }
 
 /**
- * The one unprompted trial offer: on the hands list, after the player saved a
- * first hand and came back from its replay. See shouldOfferWelcome.
+ * The one unprompted trial offer, whichever comes first: on the hands list
+ * after a first saved hand (here), or at the start of the first live session
+ * (TrialFollowUp). See shouldOfferWelcome.
  */
 export function useWelcomeOffer(handsSaved: number) {
   const { isPro, trialDays, paywall } = usePro();
@@ -201,10 +202,10 @@ export function useWelcomeOffer(handsSaved: number) {
       let live = true;
       // Let the screen settle after coming back before sliding the offer up.
       const timer = setTimeout(async () => {
-        const [shown, claim] = await Promise.all([AsyncStorage.getItem(KEYS.welcome).catch(() => null), claimState()]);
+        const [shown, claim, atSession] = await Promise.all([AsyncStorage.getItem(KEYS.welcome).catch(() => null), claimState(), deferState()]);
         const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
-        if (!live || !shouldOfferWelcome({ isPro, handsSaved, shown: shown === '1', trialDays, invited })) return;
-        await AsyncStorage.setItem(KEYS.welcome, '1').catch(() => {});
+        if (!live || !shouldOfferWelcome({ isPro, handsSaved, shown: shown === '1' || !!atSession?.shown, trialDays, invited })) return;
+        await Promise.all([AsyncStorage.setItem(KEYS.welcome, '1').catch(() => {}), markSessionOffer(atSession)]);
         if (live) paywall('welcome');
       }, 700);
       return () => {

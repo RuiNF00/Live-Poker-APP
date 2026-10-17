@@ -11,7 +11,6 @@ import { Replayer } from '@/components/Replayer';
 import { Button, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { claimState } from '@/lib/referrals';
 import { money } from '@/poker/format';
 import { sampleHand } from '@/poker/sample';
 import { useStore } from '@/store/store';
@@ -21,12 +20,13 @@ const STEPS = ['hero', 'goals', 'plays', 'volume', 'currency', 'plan'] as const;
 
 /**
  * First run: a sample hand replaying (the "aha" before anything else), four
- * one-tap questions, a plan built from them, then the paywall as the last step.
+ * one-tap questions and a plan built from them. No paywall: the trial waits
+ * for the first live session.
  */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
   const { settings, setSettings, bankrolls, sessions, transfers, saveBankroll } = useStore();
-  const { isPro, paywall } = usePro();
+  const { isPro } = usePro();
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>({ goals: [], plays: null, volume: null });
   const sample = useMemo(() => sampleHand('sample'), []);
@@ -42,15 +42,9 @@ export default function Welcome() {
   const finish = () => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
     track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
+    // No paywall here: the trial is offered once, at the first live session or
+    // the first saved hand (TrialFollowUp, useWelcomeOffer), so its days are spent playing.
     router.back();
-    // After the modal is gone, so the paywall slides up over the home screen.
-    // Pro already, or invited (their Pro days come with the first hand): no paywall to end on.
-    claimState()
-      .catch(() => null)
-      .then((claim) => {
-        const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
-        if (!isPro && !invited) setTimeout(() => paywall('plan'), 350);
-      });
   };
   // Coming from another app: the history first (the import is free), the questions can wait.
   const switchApp = () => {
