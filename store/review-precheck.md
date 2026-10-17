@@ -20,3 +20,6 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 - ✓ No sensitive permissions (location/storage blocked); the microphone only comes from expo-audio, at runtime.
 - ✓ Data safety and deletion URL in `privacy-forms.md`; IARC as Utility, not a Game.
 - ⚠ **Closed test with 12 testers for 14 days**: mandatory if Rui's Play account is **personal and created after 13 Nov 2023**. If so, the Android version **can't go public within 24h**: the minimum is 14 days of testing, and only then can he request production access (Google reviews that in about 7 days). iOS isn't affected. Steps in the checklist (`o-que-precisa-do-rui.md`, block 6).
+
+## Festival planner (added at 2d301d9)
+- The planner ships with a published festival schedule whose name includes a real event brand (`src/poker/festivals.ts`). Showing a public schedule inside the app is factual use, but App Review can ask for proof of rights under 5.2.1 if the brand looks like an endorsement. Keep the brand out of store metadata and screenshots (it is), and don't use its logo. If a reviewer objects, rename the entry to a generic label ("Bahamas festival, Dec 2026").

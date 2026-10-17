@@ -25,6 +25,11 @@ async function capture(locale) {
     if (localStorage.getItem('rl.hands.v1')) return;
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
   }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'sweatbook.replayer.tips.v1': '1' });
+  // The sandbox has no route to the backend, so the app would show its
+  // "no signal" pill on every frame. Answer every outside request with an
+  // empty 204: the app sees itself online, as on a phone with signal.
+  const local = new URL(appUrl).origin;
+  await ctx.route('**/*', (r) => (r.request().url().startsWith(local) ? r.continue() : r.fulfill({ status: 204, body: '' })));
   const page = await ctx.newPage();
   const shots = [];
   for (const f of frames) {
