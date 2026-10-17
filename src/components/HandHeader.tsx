@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { autoTags, positions, replay } from '@/poker/engine';
-import { blindsLabel, shortDate, timeOf } from '@/poker/format';
+import { amount, blindsLabel, shortDate, timeOf } from '@/poker/format';
 import { STAGES, type Hand } from '@/poker/types';
 import { C, S } from '@/theme';
 
@@ -13,12 +13,15 @@ import { CardRow } from './PlayingCard';
 import { Badge, Card, Pill, Row, T } from './ui';
 
 /** Title block of a hand: hero's cards and position, the game, tags and notes. */
-export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
+export function HandHeader({ hand, quiz, inBB = false }: { hand: Hand; quiz?: boolean; inBB?: boolean }) {
   const pos = positions(hand.players.length, hand.button);
   const g = hand.game;
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const hero = hand.players[hand.hero];
-  const auto = React.useMemo(() => (quiz ? [] : autoTags(hand, replay(hand))).filter((tg) => !hand.tags.includes(tg)), [hand, quiz]);
+  const r = replay(hand);
+  const auto = (quiz ? [] : autoTags(hand, r)).filter((tg) => !hand.tags.includes(tg));
+  // Hero's own result; hidden in quiz mode so it doesn't give the answer away.
+  const net = !quiz && r.result?.resolved ? r.result.net[hand.hero] : undefined;
   return (
     <View style={{ gap: S.md }}>
       <Row gap={S.md} style={{ alignItems: 'flex-start' }}>
@@ -38,7 +41,16 @@ export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
               .join(' · ')}
           </T>
         </View>
-        {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="md" gap={3} /> : null}
+        {hero.cards?.length === 2 || net !== undefined ? (
+          <View style={{ alignItems: 'flex-end', gap: 6 }}>
+            {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="md" gap={3} /> : null}
+            {net !== undefined ? (
+              <T v="monoL" color={net > 0 ? C.good : net < 0 ? C.bad : C.textDim} accessibilityLabel={t('Resultado')}>
+                {(net > 0 ? '+' : '') + amount(net, hand, inBB)}
+              </T>
+            ) : null}
+          </View>
+        ) : null}
       </Row>
       {hand.tags.length + auto.length > 0 && (
         <Row style={{ flexWrap: 'wrap' }} gap={6}>

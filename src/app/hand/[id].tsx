@@ -46,7 +46,7 @@ export default function HandScreen() {
     return (
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
         <Banner tone="info" icon="sparkles-outline" title={t('Mão de exemplo')} body={t('É assim que as tuas mãos ficam guardadas.')} />
-        <HandHeader hand={hand} />
+        <HandHeader hand={hand} inBB={settings.inBB} />
         <Replayer hand={hand} initialInBB={settings.inBB} autoPlay />
         <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
       </ScrollView>
@@ -147,7 +147,7 @@ ${link}`;
       />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
         <View style={{ paddingHorizontal: 4 }}>
-          <HandHeader hand={hand} />
+          <HandHeader hand={hand} inBB={settings.inBB} />
         </View>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
