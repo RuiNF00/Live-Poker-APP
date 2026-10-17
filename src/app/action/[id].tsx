@@ -139,7 +139,7 @@ export default function ActionPackageScreen() {
       deletePackage(l.packageId);
     };
     if (Platform.OS === 'web') return go();
-    Alert.alert(t('Tirar {name} do pacote?', { name: nameOf(l) }), t('A parte dele sai das sessões deste pacote e o link deixa de funcionar.'), [
+    Alert.alert(t('Tirar {name} do pacote?', { name: nameOf(l) }), t('A parte deste backer sai das sessões deste pacote e o link deixa de funcionar.'), [
       { text: t('Cancelar'), style: 'cancel' },
       { text: t('Tirar'), style: 'destructive', onPress: go },
     ]);

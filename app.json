@@ -3,6 +3,13 @@
     "name": "Sweatbook",
     "slug": "sweatbook",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sweatbook",
@@ -29,7 +36,8 @@
             "NSPrivacyCollectedDataTypeLinked": false,
             "NSPrivacyCollectedDataTypeTracking": false,
             "NSPrivacyCollectedDataTypePurposes": [
-              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality",
+              "NSPrivacyCollectedDataTypePurposeAnalytics"
             ]
           },
           {
@@ -70,6 +78,30 @@
             "NSPrivacyCollectedDataTypeTracking": false,
             "NSPrivacyCollectedDataTypePurposes": [
               "NSPrivacyCollectedDataTypePurposeAnalytics",
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeName",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherFinancialInfo",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePhotosorVideos",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
               "NSPrivacyCollectedDataTypePurposeAppFunctionality"
             ]
           }
@@ -194,8 +226,7 @@
         "expo-image-picker",
         {
           "photosPermission": "O Sweatbook usa as tuas fotos para guardares recibos e formulários de impostos junto das tuas sessões.",
-          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos e formulários de impostos (W-2G, 1042-S).",
-          "microphonePermission": false
+          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos e formulários de impostos (W-2G, 1042-S)."
         }
       ],
       [
@@ -255,7 +286,9 @@
         {
           "supportedLocales": [
             "pt",
-            "en"
+            "pt-BR",
+            "en",
+            "es"
           ]
         }
       ]
@@ -266,7 +299,9 @@
     },
     "locales": {
       "pt": "./locales/pt.json",
-      "en": "./locales/en.json"
+      "pt-BR": "./locales/pt-BR.json",
+      "en": "./locales/en.json",
+      "es": "./locales/es.json"
     }
   }
 }

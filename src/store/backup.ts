@@ -32,7 +32,12 @@ export interface BackupData {
   /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
   swaps?: Swap[];
   settings?: Partial<Settings>;
+  /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
+  quarantine?: [string, string][];
 }
+
+/** Same prefix as boot.ts (kept here so backups don't import the store's loader). */
+const QUARANTINE = 'rl.quarantine.v1.';
 
 export function buildBackup(
   d: {
@@ -48,6 +53,7 @@ export function buildBackup(
     backing?: BackedPlayer[];
     swaps?: Swap[];
     settings: Settings;
+    quarantine?: [string, string][];
   },
   now = Date.now(),
 ): BackupData {
@@ -67,6 +73,7 @@ export function buildBackup(
     backing: d.backing ?? [],
     swaps: d.swaps ?? [],
     settings: d.settings,
+    ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
 }
 
@@ -84,7 +91,10 @@ export function parseBackup(text: string): BackupData {
   if (!isObj(j) || j.app !== 'sweatbook' || j.v !== 1) throw new Error('invalid');
   const arr = (k: string) => (Array.isArray(j[k]) ? (j[k] as unknown[]).filter(withId) : []);
   const hands = arr('hands').filter((h) => isObj(h) && Array.isArray(h.players) && Array.isArray(h.actions)) as unknown as Hand[];
-  const sessions = arr('sessions').filter((s) => isObj(s) && typeof s.startedAt === 'number') as unknown as Session[];
+  // A foreign or hand-edited backup may lack `breaks`; every session-time sum reads it.
+  const sessions = arr('sessions')
+    .filter((s): s is Record<string, unknown> => isObj(s) && typeof s.startedAt === 'number')
+    .map((s) => ({ ...s, breaks: Array.isArray(s.breaks) ? s.breaks : [] })) as unknown as Session[];
   const players = arr('players').filter((p) => isObj(p) && typeof p.name === 'string') as unknown as PlayerNote[];
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];
@@ -121,6 +131,10 @@ export function parseBackup(text: string): BackupData {
     trips,
     swaps,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
+    // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
+    quarantine: Array.isArray(j.quarantine)
+      ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
+      : [],
   };
 }
 

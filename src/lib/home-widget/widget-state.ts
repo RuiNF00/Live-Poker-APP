@@ -43,19 +43,23 @@ export interface WidgetInput {
   players: { updatedAt: number }[];
   currency: string;
   hideAmounts: boolean;
+  /** The player turned on "Mostrar o resultado no widget". */
+  showResult?: boolean;
   streakPauses: Pause[];
 }
 
 export function widgetProps(x: WidgetInput, now = Date.now()): WidgetProps {
   const s = x.activeSession;
-  const lp = s ? liveProps(s, now) : null;
+  const lp = s ? liveProps(s, now, x.hideAmounts) : null;
 
   // This week, in the main currency: other currencies don't add up.
   const from = weekStart(now);
   const week = x.sessions.filter((v) => v.endedAt && v.startedAt >= from && v.currency === x.currency);
   const net = week.reduce((a, v) => a + profit(v), 0);
   const hours = week.reduce((a, v) => a + playedMs(v, v.endedAt), 0);
-  const result = !week.length ? '—' : x.hideAmounts ? '•••' : (net > 0 ? '+' : '') + money(net, x.currency);
+  // Hidden unless the player asks for it: a home screen is on show at the table and on the way out.
+  const hidden = x.hideAmounts || !x.showResult;
+  const result = !week.length ? '—' : hidden ? '•••' : (net > 0 ? '+' : '') + money(net, x.currency);
 
   const activity = [...x.hands.map((h) => h.createdAt), ...x.sessions.filter((v) => v.notes.trim()).map((v) => v.startedAt), ...x.players.map((p) => p.updatedAt)];
   const st = computeStreak(activity, x.streakPauses, now);
@@ -75,7 +79,7 @@ export function widgetProps(x: WidgetInput, now = Date.now()): WidgetProps {
     blinds: lp?.blinds ?? '',
     week: t('Esta semana'),
     result,
-    tone: !week.length || x.hideAmounts || net === 0 ? 'flat' : net > 0 ? 'up' : 'down',
+    tone: !week.length || hidden || net === 0 ? 'flat' : net > 0 ? 'up' : 'down',
     weekSub: !week.length
       ? t('Sem sessões ainda')
       : (week.length === 1 ? t('1 sessão') : t('{n} sessões', { n: week.length })) + ' · ' + duration(hours),

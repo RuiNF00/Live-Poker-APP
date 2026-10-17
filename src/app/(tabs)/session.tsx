@@ -10,9 +10,11 @@ import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Vi
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
+import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
+import { MindAfter } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
@@ -28,6 +30,7 @@ import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
+import { useSheetAnimation } from '@/lib/motion';
 
 /**
  * Re-renders every `ms` while this tab is on screen and returns the time of
@@ -149,7 +152,23 @@ export default function SessionScreen() {
       </Screen>
       {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
       <View style={styles.thumbBar}>
-        <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+        {/* A bagged day waiting comes first: one tap on the big button must not buy in a second time. */}
+        {bagged[0] ? (
+          <>
+            <Button title={t('Nova sessão')} kind="secondary" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+            <Button
+              title={t('Dia {n}', { n: dayOf(bagged[0]) + 1 }) + ' · ' + (bagged[0].name || t('Torneio'))}
+              icon="play"
+              onPress={() => {
+                tap('success');
+                saveSession(resumeDay(bagged[0]));
+              }}
+              style={{ flex: 1.6 }}
+            />
+          </>
+        ) : (
+          <Button title={t('Começar agora')} icon="play" haptic={false} onPress={() => startRef.current?.()} style={{ flex: 1 }} />
+        )}
       </View>
     </View>
   );
@@ -218,9 +237,13 @@ function Live({ s }: { s: Session }) {
     () => [
       { target: stackRef, title: t('O teu stack'), body: t('Toca para o atualizar entre mãos. As bb e o gráfico acompanham sozinhos.') },
       { target: barRef, title: t('Tudo ao alcance do polegar'), body: t('Pausa, rebuy e uma nota da sessão sem saíres deste ecrã.') },
-      { target: handRef, title: t('Regista uma mão'), body: t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') },
+      {
+        target: handRef,
+        title: t('Regista uma mão'),
+        body: mtt ? t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') : t('Já vem com o jogo, as blinds e o teu stack. Se fores chamado, fica guardada a meio.'),
+      },
     ],
-    [],
+    [mtt],
   );
 
   return (
@@ -232,6 +255,8 @@ function Live({ s }: { s: Session }) {
           <PlayClock s={s} paused={paused} />
           <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
         </Card>
+
+        <StopLossBanner s={s} />
 
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
@@ -267,6 +292,12 @@ function Live({ s }: { s: Session }) {
             </Pressable>
           </Card>
         </Row>
+
+        {mtt ? (
+          <ListGroup>
+            <ListItem icon="trophy-outline" iconColor={C.accent} title={t('Modo torneio')} subtitle={t('Estrutura, relógio sincronizado, prémios e deal')} onPress={() => router.push('/tournament')} chevron />
+          </ListGroup>
+        ) : null}
 
         {s.stackLog.length > 1 && (
           <Section title={t('Stack ao longo da sessão')}>
@@ -321,6 +352,10 @@ function Live({ s }: { s: Session }) {
                 {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                 {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
               </Row>
+              <Row gap={S.sm}>
+                <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => save({ tips: tips || undefined })} />
+                <NumField label={t('Mãos jogadas')} value={s.handsDealt ?? 0} onChange={(handsDealt) => save({ handsDealt: handsDealt || undefined })} />
+              </Row>
               <View style={{ gap: S.sm }}>
                 <T v="label">{t('Como correu')}</T>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
@@ -329,6 +364,7 @@ function Live({ s }: { s: Session }) {
                   ))}
                 </View>
               </View>
+              <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />
               <StakeFields s={s} onChange={save} />
               {(() => {
                 const end = { ...s, cashOut: finish.cashOut };
@@ -450,6 +486,7 @@ function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentPr
 
 /** A free note on the session: table dynamics, how you felt, anything to remember. */
 function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; value: string; onClose: () => void; onSave: (v: string) => void }) {
+  const sheetAnim = useSheetAnimation();
   const [text, setText] = useState(value);
   const [shownFor, setShownFor] = useState(visible);
   // Start from the saved note each time the sheet opens.
@@ -458,7 +495,7 @@ function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; valu
     if (visible) setText(value);
   }
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={t('Nota da sessão')} onClose={onClose} />

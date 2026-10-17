@@ -25,6 +25,11 @@ test('rejects other files and drops broken items', () => {
   assert.deepEqual([b.hands.length, b.sessions.length, b.players.length], [0, 1, 1]);
 });
 
+test('a session without breaks gets an empty list, so the time sums do not crash', () => {
+  const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, sessions: [{ id: 'a', startedAt: 1, endedAt: 3_600_001 }, { id: 'b', startedAt: 2, breaks: 'x' }] }));
+  assert.deepEqual(b.sessions.map((s) => s.breaks), [[], []]);
+});
+
 test('merge keeps the newer copy and counts new items', () => {
   const r = mergeById([{ id: 'a', updatedAt: 5, v: 'local' }, { id: 'b', updatedAt: 9, v: 'local' }], [{ id: 'a', updatedAt: 7, v: 'in' }, { id: 'b', updatedAt: 1, v: 'in' }, { id: 'c', v: 'in' }]);
   assert.equal(r.added, 1);
@@ -90,4 +95,12 @@ test('a restore on an empty phone brings the preferences back; a phone in use ke
   const junk = restoredSettings(DEFAULT_SETTINGS, { currency: 42 as unknown as string, defaultTableSize: 99 }, true);
   assert.equal(junk.currency, DEFAULT_SETTINGS.currency);
   assert.equal(junk.defaultTableSize, DEFAULT_SETTINGS.defaultTableSize);
+});
+
+test('backup carries quarantined values, and a restore can only write quarantine keys', () => {
+  const q: [string, string][] = [['rl.quarantine.v1.1.rl.hand.v2.h1', '{"id":"h1"']];
+  const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, quarantine: q });
+  const back = parseBackup(JSON.stringify({ ...b, quarantine: [...q, ['rl.settings.v1', '{}'], ['rl.quarantine.v1.2.x', 5], 'x'] }));
+  assert.deepEqual(back.quarantine, q);
+  assert.equal(buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS }).quarantine, undefined);
 });

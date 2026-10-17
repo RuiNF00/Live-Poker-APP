@@ -10,14 +10,26 @@ Data not linked to you:
 
 | Category → type | Purpose |
 |---|---|
-| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes) | App Functionality |
+| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players, optional private coaching links with coach comments, optional action-package agreements sent to a backer) | App Functionality |
+| User Content → Other User Content (optional cancellation feedback: reason + up to 120 characters) | Analytics |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
+| Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
+| User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | App Functionality |
+| Contact Info → Name (a nickname the user types for comments, the backer page or a public profile; optional, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 
 Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
+
+Voice notes on hands (PR #25) stay on the device and are not declared; only Instagram story voice notes are (Audio, processed ephemerally).
+
+PostHog EU (#106, optional): our server forwards usage events (install id, event name, small props; no IP, no free text) to PostHog as our processor. Still Analytics / not linked / not tracking on Apple; on Play, transfers to a service provider acting on our behalf are not "sharing", so "Shared: No" stays.
+
+Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.app (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
+
+App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device (photos enter the backup only end-to-end encrypted, which the backup row already covers): no new rows. Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -35,8 +47,10 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 ## Apple: other App Store Connect fields
 
 - Content rights: no third-party content.
-- Export compliance: exempt encryption only (`ITSAppUsesNonExemptEncryption=false` in app.json).
+- Export compliance: `ITSAppUsesNonExemptEncryption=true` (confirmed in the prebuild at cd6635d). Answer "uses standard encryption algorithms" (AES-256-GCM in the app for the cloud backup), no proprietary encryption, no CCATS; France excluded from v1 until the ANSSI declaration (see review-precheck.md and availability.md).
 - Sign-in required: No. No demo account needed. Review notes in `review-risks.md`.
+- Retention offer ("Conversão para Pro" thread), created by the store thread with the API keys, not by Rui: Apple promotional offer `sweatbook_retention_40` on sweatbook_pro_monthly (-40% for 3 months, pay as you go); Play offer `sweatbook-retention-40` on the monthly base plan (-40% for 3 months, developer-determined eligibility); Play base plan pause enabled (up to 3 months). Without them the app hides the offer.
+- Lifetime purchase (Conversão thread, PR pending): non-consumable `sweatbook_lifetime`, 499 USD (or the nearest Apple price point) / 499 USD Play one-time product, unlocks the same RevenueCat entitlement as the subscription, shown only in the cancel flow. Created by the store thread with the API keys (App Store Connect, Play Console, RevenueCat) and submitted with the version like the subscriptions. Restore purchases must restore it.
 - In-App Purchases: create the subscription products in App Store Connect before submitting, attach them to the version, and give each a review screenshot of the paywall. Requires the Paid Apps agreement, bank and tax forms done by Rui.
 - EU Digital Services Act trader status: question for Rui. A paid subscription makes the app commercial, which in practice means **trader** (his address and phone shown on the EU listing) unless he publishes through a company.
 
@@ -48,7 +62,10 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 
 | Data type | Collected | Optional | Purpose |
 |---|---|---|---|
-| App activity → Other user-generated content (shared hands, comments, optional cloud backup) | Yes | Yes (only when the user shares, comments or turns on backup) | App functionality |
+| App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
+| Financial info → Other financial info (amounts the user publishes on a live page, swap, public profile or action package; optional) | Yes | Yes | App functionality |
+| Photos and videos → Photos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | Yes | Yes | App functionality |
+| Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
@@ -66,3 +83,7 @@ Processed ephemerally: No, except audio (Yes).
 - Financial features: **None**. News: No. Health: No. Government: No.
 - Real-money gambling, games and contests: **No**.
 - Account deletion: not applicable (no accounts). If Play still shows the question, answer "My app does not allow users to create an account".
+
+## Permissions as built (prebuild at cd6635d)
+- iOS usage strings: Camera, Photo Library, Face ID, Microphone (PT and EN). UIBackgroundModes: fetch, processing only (stray `audio` removed at 61cf15f).
+- Android: INTERNET, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, USE_BIOMETRIC / USE_FINGERPRINT, VIBRATE (plus POST_NOTIFICATIONS from expo-notifications if the merged manifest keeps it). No location, no storage, no SYSTEM_ALERT_WINDOW. The Data safety rows above match: no location, contacts or files declared; audio only for story voice notes; photos only inside the encrypted backup.

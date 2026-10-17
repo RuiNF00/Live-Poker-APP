@@ -11,6 +11,7 @@ import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-nati
 import Svg, { Line, Path } from 'react-native-svg';
 
 import { usePro } from '@/billing/pro';
+import { useLocked } from '@/components/ProGate';
 import { Button, Card, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -24,7 +25,8 @@ const date = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'num
 
 export default function DownswingScreen() {
   const { sessions, defaultBankroll, settings } = useStore();
-  const { isPro, paywall } = usePro();
+  const { paywall } = usePro();
+  const locked = useLocked('downswingRead');
   const params = useLocalSearchParams<{ currency?: string }>();
   const cur = params.currency || defaultBankroll.currency;
   const hidden = !!settings.hideAmounts;
@@ -62,7 +64,7 @@ export default function DownswingScreen() {
           )}
           {done.length > 1 ? (
             <View style={{ marginTop: S.sm }}>
-              <Underwater values={d.underwater} />
+              <Underwater values={d.underwater} label={t('Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.', { now: fmt(cu?.depth ?? 0), max: fmt(big?.depth ?? 0) })} />
               <T v="tiny">{t('Quanto estavas abaixo do teu melhor resultado acumulado, sessão a sessão. Zero é um pico.')}</T>
             </View>
           ) : null}
@@ -82,7 +84,7 @@ export default function DownswingScreen() {
 
         <Section title={t('É normal?')}>
           {odds ? (
-            isPro ? (
+            !locked ? (
               <Read odds={odds} big={big} cu={cu} fmt={fmt} cur={cur} />
             ) : (
               <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
@@ -91,7 +93,7 @@ export default function DownswingScreen() {
                   <T v="h3" style={{ textAlign: 'center' }}>
                     {t('Vê se este downswing é azar ou sinal')}
                   </T>
-                  <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('stats')} />
+                  <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('downswingRead')} />
                 </BlurView>
               </View>
             )
@@ -165,14 +167,14 @@ function Mini({ label, value }: { label: string; value: string }) {
 }
 
 /** The curve below its running peak: 0 at a peak, red area below. */
-function Underwater({ values, height = 110 }: { values: number[]; height?: number }) {
+function Underwater({ values, height = 110, label }: { values: number[]; height?: number; label: string }) {
   const [w, setW] = useState(0);
   const min = Math.min(-1, ...values);
   const x = (i: number) => (i / Math.max(1, values.length - 1)) * w;
   const y = (v: number) => 2 + (v / min) * (height - 4);
   const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   return (
-    <View onLayout={(e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width)} style={{ height, marginBottom: S.xs }}>
+    <View onLayout={(e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width)} style={{ height, marginBottom: S.xs }} accessible accessibilityRole="image" accessibilityLabel={label}>
       {w > 0 ? (
         <Svg width={w} height={height}>
           <Path d={`${d} L${w},${y(0)} L0,${y(0)} Z`} fill={C.bad} fillOpacity={0.22} />

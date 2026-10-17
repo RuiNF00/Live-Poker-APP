@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import type { Locale } from '@/lib/i18n';
+import { intlTag, numberTag, withCurrency, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
 import { swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
@@ -66,15 +66,15 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
     };
   }, [gone, load, token]);
 
-  const fmt = new Intl.NumberFormat(locale === 'pt' ? 'de-DE' : 'en-GB', { maximumFractionDigits: 2 });
+  const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
   const money = (n: number) => {
     const sign = n < 0 ? '−' : '';
     const a = fmt.format(Math.abs(n));
-    return locale === 'pt' ? `${sign}${a}${t.currency}` : `${sign}${t.currency}${a}`;
+    return withCurrency(a, t.currency, locale, sign);
   };
   const pctLabel = (n: number) => `${fmt.format(n)}%`;
   const when = (iso: string | number) =>
-    new Date(iso).toLocaleString(locale === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    new Date(iso).toLocaleString(intlTag(locale), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   async function send(url: string, init: RequestInit, onToken?: (tok: string) => void) {
     setBusy(true);

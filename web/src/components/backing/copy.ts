@@ -1,6 +1,6 @@
 import type { Locale } from '@/lib/i18n';
 
-// Text for a backer's statement page, in the same two languages as the rest of the site.
+// Text for a backer's statement page, in the same languages as the rest of the site.
 const pt = {
   eyebrow: 'Staking',
   title: (player: string) => (player ? `As tuas contas com ${player}` : 'As tuas contas'),
@@ -53,4 +53,58 @@ const en: typeof pt = {
   metaDescription: 'Your piece, what you are owed and live sessions.',
 };
 
-export const backingCopy = (locale: Locale) => (locale === 'pt' ? pt : en);
+const ptBR: typeof pt = {
+  eyebrow: 'Staking',
+  title: (player: string) => (player ? `Suas contas com ${player}` : 'Suas contas'),
+  sent: (date: string) => `Enviadas em ${date}`,
+  owesYou: (player: string) => (player ? `${player} deve a você` : 'Deve a você'),
+  youOwe: (player: string) => (player ? `Você deve a ${player}` : 'Você deve'),
+  square: 'Estão quites',
+  invested: 'Sua parte custou',
+  result: 'Seu resultado',
+  makeup: 'Makeup',
+  sessions: 'Sessões',
+  running: 'Em andamento',
+  unpaid: 'A pagar',
+  follow: 'Acompanhar ao vivo',
+  youPaid: (amount: string) => `você pagou ${amount}`,
+  saveTitle: 'Acompanhe todos os jogadores que você banca',
+  saveBody: 'Salve estas contas na Sweatbook: você vê a ação em aberto, o que devem a você, o makeup e as sessões ao vivo de cada jogador, num só lugar.',
+  save: 'Salvar na minha Sweatbook',
+  noApp: 'Ainda não tem o app?',
+  privacy: 'Estas contas vêm no próprio link e não passam pelos nossos servidores. Apenas registro e contas: nenhum dinheiro passa pela Sweatbook.',
+  invalid: 'Este link não tem contas',
+  invalidBody: 'Confira se você abriu o link completo que o jogador enviou.',
+  metaTitle: 'Contas de staking · Sweatbook',
+  metaDescription: 'Sua parte, o que devem a você e as sessões ao vivo.',
+};
+
+const es: typeof pt = {
+  eyebrow: 'Staking',
+  title: (player: string) => (player ? `Tus cuentas con ${player}` : 'Tus cuentas'),
+  sent: (date: string) => `Enviadas el ${date}`,
+  owesYou: (player: string) => (player ? `${player} te debe` : 'Te debe'),
+  youOwe: (player: string) => (player ? `Le debes a ${player}` : 'Debes'),
+  square: 'Están a mano',
+  invested: 'Tu parte costó',
+  result: 'Tu resultado',
+  makeup: 'Makeup',
+  sessions: 'Sesiones',
+  running: 'En curso',
+  unpaid: 'Pendiente',
+  follow: 'Seguir en vivo',
+  youPaid: (amount: string) => `pagaste ${amount}`,
+  saveTitle: 'Sigue a todos los jugadores que bancas',
+  saveBody: 'Guarda estas cuentas en Sweatbook: ves la acción abierta, lo que te deben, el makeup y las sesiones en vivo de cada jugador, en un solo lugar.',
+  save: 'Guardar en mi Sweatbook',
+  noApp: '¿Aún no tienes la app?',
+  privacy: 'Estas cuentas van en el propio link y no pasan por nuestros servidores. Solo registro y cuentas: ningún dinero pasa por Sweatbook.',
+  invalid: 'Este link no tiene cuentas',
+  invalidBody: 'Comprueba que abriste el link completo que te envió el jugador.',
+  metaTitle: 'Cuentas de staking · Sweatbook',
+  metaDescription: 'Tu parte, lo que te deben y las sesiones en vivo.',
+};
+
+const copy: Record<Locale, typeof pt> = { pt, 'pt-BR': ptBR, en, es };
+
+export const backingCopy = (locale: Locale) => copy[locale];

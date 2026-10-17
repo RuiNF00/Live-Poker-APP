@@ -7,8 +7,8 @@ import { Alert, Platform, View } from 'react-native';
 
 import { Sheet } from '@/components/BankrollSheets';
 import { ExpenseForm, KIND, TripForm, tripDates } from '@/components/TripSheets';
-import { Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
-import { locale, t } from '@/i18n';
+import { Button, Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
+import { decimalComma, locale, t } from '@/i18n';
 import { FESTIVALS } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { planTotals, useFestivalPlan } from '@/store/festival-plan';
@@ -104,6 +104,8 @@ export default function TripScreen() {
           ) : null}
         </Card>
 
+        {s.sessions ? <ShareRecap trip={trip} /> : null}
+
         {trip.festivalId ? <FestivalPlanCard trip={trip} fmt={fmt} /> : null}
 
         <Section title={t('Despesas')} action={t('+ Despesa')} onAction={() => newExpense('other')}>
@@ -146,7 +148,7 @@ export default function TripScreen() {
                     key={x.id}
                     icon={x.kind === 'mtt' ? 'trophy-outline' : 'cash-outline'}
                     title={x.name || x.venue || t('Sessão')}
-                    subtitle={[day(x.startedAt), `${(playedMs(x) / 3600000).toFixed(1).replace('.', locale.startsWith('pt') ? ',' : '.')} h`].join(' · ')}
+                    subtitle={[day(x.startedAt), `${(playedMs(x) / 3600000).toFixed(1).replace('.', decimalComma ? ',' : '.')} h`].join(' · ')}
                     value={p === null ? signed(profit(x), x.currency) : signed(p)}
                     valueColor={profit(x) >= 0 ? C.good : C.bad}
                   />
@@ -195,6 +197,26 @@ export default function TripScreen() {
         ) : null}
       </Sheet>
     </>
+  );
+}
+
+/** The festival recap story: offered up front once the trip is over, a quiet row while it's on. */
+function ShareRecap({ trip }: { trip: Trip }) {
+  const [over] = useState(() => Date.now() > trip.to);
+  const open = () => router.push({ pathname: '/festival-card/[id]', params: { id: trip.id } });
+  if (!over) {
+    return (
+      <ListGroup>
+        <ListItem icon="logo-instagram" title={t('Partilhar resumo do festival')} subtitle={t('Uma story com os dias, eventos e a melhor mão')} onPress={open} />
+      </ListGroup>
+    );
+  }
+  return (
+    <Card tone="accent" style={{ gap: S.sm }}>
+      <T v="h3">{t('O festival acabou')}</T>
+      <T v="small">{t('Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.')}</T>
+      <Button title={t('Criar story do festival')} icon="logo-instagram" onPress={open} />
+    </Card>
   );
 }
 

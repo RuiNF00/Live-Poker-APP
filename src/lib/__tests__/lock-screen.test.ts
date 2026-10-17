@@ -80,3 +80,18 @@ test('level-up message names the next level and blinds', () => {
   assert.match(m.body, /Nível 7/);
   assert.match(m.body, /500\/1[\s.,]?000/);
 });
+
+test('privacy mode: a cash stack is money and shows •••, tournament chips stay', () => {
+  const cash = liveProps(mk({ kind: 'cash', sb: 5, bb: 10, ante: 0, anteType: 'none', stack: 2400 }), 60 * MIN, true);
+  assert.equal(cash.stack, '•••');
+  assert.equal(cash.stackBB, '•••');
+  assert.equal(cash.blinds, '5/10');
+  const mttP = liveProps(mk(), 60 * MIN, true);
+  assert.notEqual(mttP.stack, '•••');
+  assert.notEqual(liveProps(mk({ kind: 'cash', stack: 2400 }), 60 * MIN).stack, '•••');
+});
+
+test('privacy mode: the session name (often the venue) gives way to the game', () => {
+  assert.equal(liveProps(mk({ kind: 'cash', name: 'Casino X 2/5' }), 60 * MIN).title, 'Casino X 2/5');
+  assert.equal(liveProps(mk({ kind: 'cash', name: 'Casino X 2/5' }), 60 * MIN, true).title, 'Cash game');
+});

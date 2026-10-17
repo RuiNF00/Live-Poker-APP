@@ -42,6 +42,7 @@
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.6",
     "expo-task-manager": "~58.0.12",
+    "expo-updates": "~58.0.17",
     "expo-web-browser": "~58.0.6",
     "expo-widgets": "^58.0.20",
     "fflate": "^0.8.3",
@@ -76,7 +77,11 @@
     "lint": "expo lint",
     "test": "tsx --test 'src/**/__tests__/*.test.ts'",
     "typecheck": "tsc --noEmit",
-    "bench": "tsx scripts/bench-storage.ts"
+    "bench": "tsx scripts/bench-storage.ts",
+    "i18n:missing": "tsx scripts/i18n-missing.ts",
+    "check:release": "node scripts/pre-release.mjs",
+    "ota:publish": "node scripts/pre-release.mjs --quick && npx eas-cli@latest update --channel production --environment production",
+    "ota:rollback": "npx eas-cli@latest update:roll-back-to-embedded --channel production"
   },
   "private": true
 }

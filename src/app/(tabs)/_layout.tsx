@@ -1,13 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { BottomTabBar, Tabs } from 'expo-router/js-tabs';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SessionMiniBar } from '@/components/SessionMiniBar';
-import { tap } from '@/components/ui';
+import { setHaptics, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { useStore } from '@/store/store';
 import { C, ff } from '@/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -50,6 +51,8 @@ function NewHandButton() {
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { settings } = useStore();
+  useEffect(() => setHaptics(settings.haptics !== false), [settings.haptics]);
   const bottom = Math.max(insets.bottom, 10);
   return (
     <Tabs

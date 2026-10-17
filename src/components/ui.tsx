@@ -32,8 +32,14 @@ import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
+// Off in Settings › Vibração; kept here so every tap() call obeys it.
+let hapticsOn = true;
+export function setHaptics(on: boolean) {
+  hapticsOn = on;
+}
+
 export function tap(kind: 'light' | 'medium' | 'select' | 'success' = 'light') {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || !hapticsOn) return;
   if (kind === 'select') Haptics.selectionAsync().catch(() => {});
   else if (kind === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   else Haptics.impactAsync(kind === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -322,6 +328,7 @@ export function ListItem({
   destructive,
   left,
   numberOfLines = 1,
+  accessibilityLabel,
 }: {
   icon?: IconName;
   iconColor?: string;
@@ -335,6 +342,8 @@ export function ListItem({
   destructive?: boolean;
   left?: React.ReactNode;
   numberOfLines?: number;
+  /** What VoiceOver reads for the row, when the visible text alone reads out of order. */
+  accessibilityLabel?: string;
 }) {
   const body = (
     <>
@@ -372,10 +381,16 @@ export function ListItem({
     </>
   );
   const st: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingHorizontal: S.lg, paddingVertical: 12, minHeight: 52 };
-  if (!onPress) return <View style={st}>{body}</View>;
+  if (!onPress)
+    return (
+      <View style={st} accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel}>
+        {body}
+      </View>
+    );
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={() => {
         tap();
         onPress();
@@ -506,7 +521,7 @@ export function Button({
   iconRight,
   small,
   size,
-  haptic = true,
+  haptic,
   sub,
 }: {
   title: string;
@@ -519,6 +534,7 @@ export function Button({
   iconRight?: IconName;
   small?: boolean;
   size?: BtnSize;
+  /** Defaults to a light tap on primary buttons only: haptics are for moments that count. */
   haptic?: boolean;
   /** Second line under the title (primary buttons with a price, say). */
   sub?: string;
@@ -538,7 +554,7 @@ export function Button({
       disabled={disabled}
       hitSlop={sz === 'sm' ? 4 : 0}
       onPress={() => {
-        if (haptic) tap(kind === 'primary' ? 'medium' : 'light');
+        if (haptic ?? kind === 'primary') tap('light');
         onPress?.();
       }}
       style={({ pressed }) => [
@@ -794,6 +810,7 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
         placeholderTextColor={C.muted}
         selectionColor={C.accent}
         {...rest}
+        accessibilityLabel={rest.accessibilityLabel ?? label ?? rest.placeholder}
         onFocus={(e) => {
           setFocus(true);
           rest.onFocus?.(e);

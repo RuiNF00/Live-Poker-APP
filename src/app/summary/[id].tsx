@@ -8,7 +8,7 @@ import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
-import { replay } from '@/poker/engine';
+import { isComplete, replay } from '@/poker/engine';
 import { bbs, duration, money } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 import { playedMs, profit } from '@/store/session-math';
@@ -69,7 +69,7 @@ export default function SessionSummary() {
 
       <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
         <Tile label={t('Horas')} value={duration(playedMs(s))} />
-        <Tile label={t('Mãos')} value={String(mine.length)} />
+        <Tile label={s.handsDealt ? t('Mãos jogadas') : t('Mãos guardadas')} value={String(s.handsDealt ?? mine.length)} />
         <Tile label={t('Maior pote')} value={biggest ? bbs(biggest.bb, 1) : '—'} />
       </Row>
 
@@ -102,6 +102,9 @@ export default function SessionSummary() {
 
       <View style={{ gap: S.sm }}>
         <Button title={t('Partilhar sessão')} icon="share-social" onPress={() => router.push(`/session-card/${id}`)} />
+        {mine.filter((h) => isComplete(h)).length >= 2 ? (
+          <Button kind="secondary" title={t('Partilhar as mãos num só link')} icon="albums-outline" onPress={() => router.push({ pathname: '/pack/new', params: { session: id } })} />
+        ) : null}
         <Button kind="ghost" title={t('Ver no bankroll')} icon="stats-chart" onPress={() => router.replace('/bankroll')} />
         <Button kind="ghost" title={t('Fechar')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       </View>

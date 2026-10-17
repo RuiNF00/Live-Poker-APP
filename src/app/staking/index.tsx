@@ -59,6 +59,7 @@ function StakingScreen() {
                       key={b.id}
                       left={<Avatar name={b.name} />}
                       title={b.name}
+                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? parts(l, cur) : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
                           <T v="small" numberOfLines={1}>
@@ -141,15 +142,17 @@ function StakingScreen() {
   );
 }
 
-/** What a backer's balance is made of, in one line: "a receber 400€ · por pagar 120€ · pago 100€". */
+/**
+ * What a backer's balance is made of, in one line: "o backer recebe 400€ · ação por pagar 120€".
+ * Only when it's more than one thing: a single part is the balance itself, said again.
+ */
 function parts(l: BackerLedger, cur: string): string {
-  return [
-    l.owed ? t('a receber {amount}', { amount: money(l.owed, cur) }) : '',
-    l.unpaid ? t('por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
+  const list = [
+    l.owed ? t('o backer recebe {amount}', { amount: money(l.owed, cur) }) : '',
+    l.unpaid ? t('ação por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
     Math.abs(l.paid) >= 0.5 ? (l.paid > 0 ? t('pagaste {amount}', { amount: money(l.paid, cur) }) : t('recebeste {amount}', { amount: money(-l.paid, cur) })) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ].filter(Boolean);
+  return list.length > 1 ? list.join(' · ') : '';
 }
 
 /** One coloured number and a sentence, Splitwise style: where you stand with all your backers. */
@@ -175,21 +178,25 @@ function BalanceHeadline({ totals, makeup, live }: { totals: StakingTotals; make
   const extra = [makeup ? t('makeup {amount}', { amount: makeup }) : '', live ? (live === 1 ? t('1 sessão a decorrer') : t('{n} sessões a decorrer', { n: live })) : '']
     .filter(Boolean)
     .join(' · ');
+  // VoiceOver reads the card as one sentence, without the "≈" sign.
+  const spoken = [verdict, square ? '' : big.replace('≈ ', t('cerca de') + ' '), split2, extra].filter(Boolean).join('. ');
   return (
-    <Card tone="raised" style={{ gap: S.xs, paddingVertical: S.xl }}>
-      <T v="label">{verdict}</T>
-      {square ? null : (
-        <T v="monoXL" color={color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 40, lineHeight: 46 }}>
-          {big}
-        </T>
-      )}
-      {split2 ? <T v="small">{split2}</T> : null}
-      {totals.approx ? <T v="tiny">{t('Em {currency} ao câmbio de hoje. Cada backer fica na moeda das sessões dele.', { currency })}</T> : null}
-      {extra ? (
-        <T v="small" color={makeup ? C.warn : undefined}>
-          {extra}
-        </T>
-      ) : null}
+    <Card tone="raised" style={{ paddingVertical: S.xl }}>
+      <View accessible accessibilityLabel={spoken} style={{ gap: S.xs }}>
+        <T v="label">{verdict}</T>
+        {square ? null : (
+          <T v="monoXL" color={color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 40, lineHeight: 46 }}>
+            {big}
+          </T>
+        )}
+        {split2 ? <T v="small">{split2}</T> : null}
+        {totals.approx ? <T v="tiny">{t('Em {currency} ao câmbio de hoje. Cada backer fica na moeda das sessões dele.', { currency })}</T> : null}
+        {extra ? (
+          <T v="small" color={makeup ? C.warn : undefined}>
+            {extra}
+          </T>
+        ) : null}
+      </View>
     </Card>
   );
 }

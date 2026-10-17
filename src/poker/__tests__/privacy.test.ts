@@ -12,13 +12,13 @@ const hand = {
   button: 0, hero: 0, actions: [], board: [], tags: [], notes: 'Fold?',
 } as unknown as Hand;
 
-test('opponents are anonymous by default, ids and tokens never leave', () => {
+test('opponents are anonymous by default, ids, tokens and notes never leave', () => {
   const p = publicHand(hand) as unknown as Record<string, unknown> & Hand;
   assert.equal(p.players[0].name, 'Rui');
   assert.equal(p.players[1].name, '');
   assert.equal('playerId' in p.players[1], false);
   for (const k of ['sessionId', 'shareToken', 'shareId', 'voiceNote']) assert.equal(k in p, false);
-  assert.equal(p.notes, 'Fold?');
+  assert.equal(p.notes, '');
 });
 
 test('opt-in names, opt-out notes', () => {

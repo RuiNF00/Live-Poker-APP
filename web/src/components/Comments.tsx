@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { describeStep, streetLabel, type AmountMode, type ReplayStep, type Street } from '@livepoker/hand-format';
+import type { AmountMode, ReplayStep, Street } from '@livepoker/hand-format';
+import { describeStep, streetLabel } from '@/lib/hand-i18n';
 
 const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
 import { t, type Dict, type Locale } from '@/lib/i18n';

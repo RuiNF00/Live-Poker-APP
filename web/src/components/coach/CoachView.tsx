@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { buildReplay, describeStep, formatAmount, stakesText, streetLabel, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
+import { stakesText, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
+import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
 import { Mark as Logo } from '@/components/Brand';
 import { PokerTable } from '@/components/PokerTable';
 import { PlayingCard } from '@/components/PlayingCard';
 import type { CoachComment, Mark } from '@/lib/coach-data';
-import { t, type Locale } from '@/lib/i18n';
+import { intlTag, t, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
 import { coachCopy, type CoachCopy } from './copy';
 import './coach.css';
@@ -55,7 +56,7 @@ export function CoachView(props: Props) {
   };
 
   const expires = props.expiresAt
-    ? new Date(props.expiresAt).toLocaleDateString(locale === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+    ? new Date(props.expiresAt).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'long', timeZone: 'UTC' })
     : null;
 
   return (

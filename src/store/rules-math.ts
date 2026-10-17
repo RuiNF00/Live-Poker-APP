@@ -3,7 +3,7 @@
 //
 // A cash buy-in is 100 big blinds; "30 buy-ins" for 2/5 means 30 × 500.
 
-import { cost, ownCost, profit } from './session-math';
+import { cost, profit } from './session-math';
 import type { BankrollRules, Session } from './types';
 
 export const DEFAULT_RULES: BankrollRules = { cashBuyIns: 30, mttBuyIns: 100, stopLoss: 0, stopLossPer: 'session', target: 0 };
@@ -55,13 +55,13 @@ export function allowedStakes(balance: number, r: BankrollRules): Allowed {
   };
 }
 
-/** Stakes played since `since` that the rules don't allow at today's balance, biggest first. */
-export function aboveRules(sessions: Session[], balance: number, r: BankrollRules, since: number): string[] {
+/** Stakes played since `since` that the rules don't allow at today's balance, biggest first. `fmt` writes a tournament buy-in (currency, privacy mode). */
+export function aboveRules(sessions: Session[], balance: number, r: BankrollRules, since: number, fmt: (n: number) => string = String): string[] {
   const out = new Map<string, number>();
   for (const s of sessions) {
     if (s.startedAt < since) continue;
     if (s.kind === 'cash' ? s.bb > 0 && balance < needFor(s.bb, r) : r.mttBuyIns > 0 && s.buyIn > balance / r.mttBuyIns) {
-      const label = s.kind === 'cash' ? `${s.sb}/${s.bb}` : `MTT ${s.buyIn}`;
+      const label = s.kind === 'cash' ? `${s.sb}/${s.bb}` : `MTT ${fmt(s.buyIn)}`;
       out.set(label, s.kind === 'cash' ? s.bb * BUY_IN_BB : s.buyIn);
     }
   }
@@ -70,10 +70,11 @@ export function aboveRules(sessions: Session[], balance: number, r: BankrollRule
 
 /**
  * Where a live session stands. Cash: the stack against everything put in.
- * A tournament has no money result until it ends, so it is what it cost.
+ * A tournament has no money result until it ends: it counts as 0, or a
+ * big buy-in alone would trip the stop-loss at registration.
  */
 export function liveResult(s: Session): number {
-  return s.kind === 'cash' ? s.stack - cost(s) - (s.expenses || 0) - (s.tips || 0) : -ownCost(s);
+  return s.kind === 'cash' ? s.stack - cost(s) - (s.expenses || 0) - (s.tips || 0) : 0;
 }
 
 function startOfDay(ts: number): number {
@@ -123,4 +124,13 @@ export function stopLoss(
 export function targetProgress(r: BankrollRules | undefined, balance: number): number | null {
   if (!r || !(r.target > 0)) return null;
   return Math.max(0, Math.min(1, balance / r.target));
+}
+
+/**
+ * The target balance, crossed during the live session: true when the balance
+ * before it was under the target and, with the live result, is at or over it.
+ */
+export function goalReachedLive(r: BankrollRules | undefined, balanceBefore: number, live: Session | null): boolean {
+  if (!r || !(r.target > 0) || !live || live.endedAt) return false;
+  return balanceBefore < r.target && balanceBefore + liveResult(live) >= r.target;
 }

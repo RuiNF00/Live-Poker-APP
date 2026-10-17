@@ -89,7 +89,7 @@ test('definições antigas guardam o que tinham e ganham os campos novos', async
   assert.equal(d.settings.inBB, true);
   assert.equal(d.settings.nickname, 'Rui');
   assert.equal(d.settings.defaultTableSize, 6);
-  assert.equal(d.settings.shareNotes, true);
+  assert.equal(d.settings.shareNotes, false);
   assert.equal(d.draft?.id, 'h99');
 });
 
@@ -307,4 +307,43 @@ test('2.000 estragos aleatórios: o arranque nunca rebenta', async () => {
     }
     assert.ok(d.hands.items.length >= 29, `case ${i}: lost more than the damaged hand`);
   }
+});
+
+test('quarentena que esta versão já lê volta para a app (restauro numa versão corrigida)', async () => {
+  const r = current();
+  const h = { ...JSON.parse(r.kv.data.get(H + 'h3')!), id: 'hx', createdAt: 1 };
+  const qKey = `${QUARANTINE}123.${H}hx`;
+  r.kv.data.set(qKey, JSON.stringify(h));
+  const stillBad = `${QUARANTINE}124.${H}hy`;
+  r.kv.data.set(stillBad, '{"id":"hy"');
+  const d = await launch(r.kv);
+  exercise(d);
+  assert.equal(d.recovered, 1);
+  assert.ok(d.hands.items.some((x) => x.id === 'hx'));
+  assert.ok(!r.kv.data.has(qKey));
+  assert.deepEqual(d.quarantine, [[stillBad, '{"id":"hy"']]);
+  // On disk in the per-item layout: the next launch reads it without quarantine.
+  const again = await loadAll(r.kv);
+  assert.ok(again.hands.items.some((x) => x.id === 'hx'));
+  assert.equal(again.recovered, 0);
+});
+
+test('lista v1 de quarentena que agora se lê volta inteira, sem duplicar o que já existe', async () => {
+  const r = current();
+  const known = JSON.parse(r.kv.data.get(H + 'h1')!);
+  const fresh = { ...known, id: 'hz' };
+  r.kv.data.set(`${QUARANTINE}5.${SPECS.hands.legacy}`, JSON.stringify([known, fresh]));
+  const d = await launch(r.kv);
+  assert.equal(d.recovered, 1);
+  assert.equal(d.hands.items.filter((x) => x.id === 'h1').length, 1);
+  assert.equal(d.quarantine.length, 0);
+});
+
+test('definições e índices de quarentena ficam à parte e aparecem na lista', async () => {
+  const r = current();
+  r.kv.data.set(KEYS.settings, '{"currency":');
+  r.kv.data.set(SPECS.hands.index, 'xx');
+  const d = await launch(r.kv);
+  assert.equal(d.quarantine.length, 2);
+  assert.equal((await loadAll(r.kv)).quarantine.length, 2);
 });

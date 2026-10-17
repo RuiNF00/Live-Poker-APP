@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import { positions, totalPot, type HandResult, type Replay, type Step } from '@/poker/engine';
 import { equity } from '@/poker/equity';
 import { evaluate } from '@/poker/evaluator';
-import { amount } from '@/poker/format';
+import { amount, decimal } from '@/poker/format';
 import { equityVsRange, rangePctForRaises, topRange } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
@@ -326,7 +326,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   const info = [
     `${t('Pote')} ${fmt(result ? pot : potAll)}`,
     !st.folded[hand.hero] && !result && eff > 0 ? `${t('Efetivo')} ${fmt(eff)}` : null,
-    spr != null && eff > 0 && !result && !st.folded[hand.hero] ? `SPR ${spr.toFixed(1)}` : null,
+    spr != null && eff > 0 && !result && !st.folded[hand.hero] ? `SPR ${decimal(spr)}` : null,
   ]
     .filter(Boolean)
     .join(' · ');

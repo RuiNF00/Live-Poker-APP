@@ -2,26 +2,11 @@
 // to the winner. Everything is skipped when the phone asks for reduced motion.
 
 import React, { useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing } from 'react-native';
+import { Animated, Easing } from 'react-native';
+
+export { useReduceMotion } from '@/lib/motion';
 
 import { ChipStack } from './ChipStack';
-
-/** True while the system "Reduce Motion" setting is on. */
-export function useReduceMotion(): boolean {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    let live = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((v) => live && setReduce(v))
-      .catch(() => {});
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
-    return () => {
-      live = false;
-      sub.remove();
-    };
-  }, []);
-  return reduce;
-}
 
 /** A board card rising onto the felt; `delay` staggers the three flop cards. */
 export function RiseIn({ children, delay = 0, reduce }: { children: React.ReactNode; delay?: number; reduce: boolean }) {

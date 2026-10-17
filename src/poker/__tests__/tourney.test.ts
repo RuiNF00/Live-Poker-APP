@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { levelAfter, nextLevelAt, withLevelClock } from '../../lib/lock-screen/live-state';
 import type { Session } from '../../store/types';
-import { averageStack, parsePayouts, parseStructure, payState, stackDepth, syncTo, templateStructure } from '../tourney';
+import { averageStack, num, parsePayouts, parseStructure, payState, stackDepth, syncTo, templateStructure } from '../tourney';
 
 const MIN = 60_000;
 
@@ -31,11 +31,25 @@ test('structure typed or pasted: blinds, ante and length in the usual shapes', (
   assert.equal(templateStructure(30)[0].ante, 200);
 });
 
+test('numbers: thousands by dot, comma or space; decimals; k', () => {
+  assert.equal(num('250.000'), 250000);
+  assert.equal(num('250,000'), 250000);
+  assert.equal(num('1.5k'), 1500);
+  assert.equal(num('2,5k'), 2500);
+  assert.equal(num('1.000.000'), 1000000);
+  assert.equal(num('26.5'), 26.5);
+});
+
 test('payouts: places, ranges and holes', () => {
   assert.deepEqual(parsePayouts('1 250,000\n2: 150000\n3rd $90,000\n4-5 50,000'), [250000, 150000, 90000, 50000, 50000]);
   // Place 3 not listed: pays what the place below pays.
   assert.deepEqual(parsePayouts('1 100\n2 60\n4 30'), [100, 60, 30, 30]);
   assert.deepEqual(parsePayouts('Total 1,000,000'), []);
+  // pt-PT: the dot groups thousands.
+  assert.deepEqual(parsePayouts('1 250.000\n2 150.000 €\n3-4 90 000'), [250000, 150000, 90000, 90000]);
+  assert.deepEqual(parsePayouts('1º 26.000€'), [26000]);
+  assert.deepEqual(parsePayouts('1 - 1.000.000 €'), [1000000]);
+  assert.deepEqual(parsePayouts('Place 1: 5000\nLugar 2: 3000'), [5000, 3000]);
 });
 
 test('pay jumps: bubble, min-cash and the next jump', () => {
