@@ -34,6 +34,12 @@ function roman(n: number): string {
   return out;
 }
 
+function utcTime(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}/${p(d.getUTCMonth() + 1)}/${p(d.getUTCDate())} ${d.getUTCHours()}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} UTC`;
+}
+
 /** US Eastern time, as Stars prints it: "2026/10/17 7:04:09 ET". */
 export function easternTime(ms: number): string {
   const d = new Date(ms);
@@ -64,7 +70,8 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const out: string[] = [];
 
   const id = num(hand.id + ':' + hand.createdAt);
-  const when = easternTime(hand.createdAt);
+  // Stars' "local [ET]" form; parsers that want the bracketed ET accept it, and so do the rest.
+  const when = `${utcTime(hand.createdAt)} [${easternTime(hand.createdAt)}]`;
   if (cash) out.push(`PokerStars Hand #${id}:  Hold'em No Limit (${fmt(g.sb)}/${fmt(g.bb)} ${code}) - ${when}`);
   else {
     const tid = num(hand.sessionId || g.name || hand.id, 10);

@@ -92,7 +92,7 @@ test('cash hand: header, seats, Stars wording, showdown and summary', () => {
   });
   const txt = roundTrip(h);
   const lines = txt.split('\n');
-  assert.match(lines[0], /^PokerStars Hand #\d{12}: {2}Hold'em No Limit \(€1\/€2 EUR\) - 2026\/10\/17 19:04:09 ET$/);
+  assert.match(lines[0], /^PokerStars Hand #\d{12}: {2}Hold'em No Limit \(€1\/€2 EUR\) - 2026\/10\/17 23:04:09 UTC \[2026\/10\/17 19:04:09 ET\]$/);
   assert.equal(lines[1], "Table 'Casino Lisboa' 6-max Seat #1 is the button");
   assert.equal(lines[2], 'Seat 1: Hero (€200 in chips)');
   assert.equal(lines[3], 'Seat 2: SB (€135 in chips)');
