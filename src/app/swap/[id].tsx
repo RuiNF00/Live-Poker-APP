@@ -234,7 +234,7 @@ function OwnSwap({ s }: { s: Swap }) {
           <Card tone="inset" style={{ flexDirection: 'row', gap: S.md, alignItems: 'center' }}>
             <SwapBadge />
             <T v="small" style={{ flex: 1 }}>
-              {t('Quando cobrares, toca em "Cobrei". {name} regista os prémios dele e as contas fazem-se sozinhas.', { name: them })}
+              {t('Quando cobrares, toca em "Cobrei". {name} regista os seus prémios e as contas fazem-se sozinhas.', { name: them })}
             </T>
           </Card>
         ) : null}

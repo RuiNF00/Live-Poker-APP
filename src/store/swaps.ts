@@ -165,7 +165,8 @@ export function swapsTotal(list: Swap[]): SwapsTotal {
   let open = 0;
   let pending = 0;
   for (const s of list) {
-    if (s.archived) continue;
+    // Archived, or deleted by the other player: out of the header totals.
+    if (s.archived || s.gone) continue;
     if (!s.confirmedAt) {
       if (!s.gone) pending++;
       continue;

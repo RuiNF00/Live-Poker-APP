@@ -137,7 +137,7 @@ function SwapsScreen() {
                   <ToggleItem
                     icon="stats-chart-outline"
                     title={t('Incluir swaps no resultado')}
-                    subtitle={t('A tua % sai da sessão onde cobraste; a tua parte dos prémios dele entra na tua última sessão. Conta na bankroll, no €/h e nos relatórios.')}
+                    subtitle={t('A tua % sai da sessão onde cobraste; a tua parte dos prémios da outra pessoa entra na tua última sessão. Conta na bankroll, nos ganhos por hora e nos relatórios.')}
                     value={include}
                     onChange={(v) => setSettings({ includeSwaps: v })}
                   />

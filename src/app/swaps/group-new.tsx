@@ -8,7 +8,8 @@ import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { withPro } from '@/components/ProGate';
-import { pctLabel } from '@/components/swaps/parts';
+import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
+import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -25,7 +26,6 @@ import { useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
 const PCTS = [0.5, 1, 2, 3, 5];
-const CURRENCIES = ['$', '€', '£'];
 
 function NewGroupSwap() {
   const { settings, sessions, activeSession, setSettings } = useStore();
@@ -188,7 +188,7 @@ function NewGroupSwap() {
         </Section>
 
         <Section title={t('Moeda')}>
-          <Segmented options={CURRENCIES.map((c) => ({ key: c, label: c }))} value={currency} onChange={setCurrency} size="sm" />
+          <CurrencyPick value={currency} onChange={setCurrency} home={settings.currency} />
         </Section>
 
         {!settings.nickname ? (

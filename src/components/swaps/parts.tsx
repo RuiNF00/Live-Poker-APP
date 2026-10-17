@@ -10,10 +10,28 @@ import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, 
 import { lang, t } from '@/i18n';
 import { money, shortDate, timeOf } from '@/poker/format';
 import { useStore } from '@/store/store';
+import { CURRENCIES } from '@/store/currencies';
 import { other, owedOn, settled, swapNames, type Swap, type SwapEntry, type SwapLedger, type SwapSide, type SwapTerms } from '@/store/swaps';
 import { C, R, S } from '@/theme';
 
 export const pctLabel = (n: number) => `${lang === 'pt' ? String(n).replace('.', ',') : n}%`;
+
+const FIRST = ['$', '€', '£'];
+
+/** The swap's currency: the usual three plus the one picked, the rest one tap away. */
+export function CurrencyPick({ value, onChange, home }: { value: string; onChange: (c: string) => void; home?: string }) {
+  const [all, setAll] = useState(false);
+  const short = [...new Set([...FIRST, ...(home && CURRENCIES.includes(home) ? [home] : []), value])];
+  const list = all ? CURRENCIES : short;
+  return (
+    <ChipRow>
+      {list.map((c) => (
+        <Chip key={c} label={c} active={value === c} onPress={() => onChange(c)} />
+      ))}
+      {!all ? <Chip label={t('Mais moedas')} icon="add" onPress={() => setAll(true)} /> : null}
+    </ChipRow>
+  );
+}
 
 /** Both sides of the deal, as two lines anyone can check: "5% dos teus prémios vão para o João". */
 export function TermsCard({ terms, names, side, children }: { terms: SwapTerms; names: Record<SwapSide, string>; side: SwapSide | null; children?: React.ReactNode }) {
@@ -89,7 +107,7 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
         </T>
       )}
       {l.iOwe >= 0.5 && l.theyOwe >= 0.5 ? (
-        <T v="small">{t('Deves {mine} dos teus prémios · {name} deve {theirs} dos dele', { mine: money(l.iOwe, currency), theirs: money(l.theyOwe, currency), name })}</T>
+        <T v="small">{t('Deves {mine} dos teus prémios · {name} deve {theirs} dos seus', { mine: money(l.iOwe, currency), theirs: money(l.theyOwe, currency), name })}</T>
       ) : null}
       {l.iPaid >= 0.5 || l.theyPaid >= 0.5 ? (
         <T v="small">
@@ -238,7 +256,7 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
               ? value === 0
                 ? t('Sem prémio: fica registado e ninguém deve nada por ele.')
                 : t('Deves {amount} a {name} ({pct} de {prize}).', { amount: money(preview, cur), name: them, pct: pctLabel(swap.terms[swap.side].pct), prize: money(value, cur) })
-              : t('Regista só os teus prémios; {name} regista os dele.', { name: them })
+              : t('Regista só os teus prémios; {name} regista os seus.', { name: them })
             : owe > 0
               ? t('Deves {amount} a {name} neste momento.', { amount: money(owe, cur), name: them })
               : t('Regista o que pagaste a {name}; o que ele te paga regista ele.', { name: them })}

@@ -47,6 +47,7 @@ test('totals keep currencies apart and count unconfirmed swaps separately', () =
     swap({ id: '2', terms: { ...terms, currency: '€' }, entries: [e('a', 'result', 10000)] }),
     swap({ id: '3', confirmedAt: undefined }),
     swap({ id: '4', archived: true, entries: [e('b', 'result', 1e6)] }),
+    swap({ id: '5', gone: true, entries: [e('b', 'result', 1e6)] }),
   ]);
   assert.deepEqual(t.byCurrency.get('$'), { owedToMe: 3000, iOwe: 0, net: 3000 });
   assert.deepEqual(t.byCurrency.get('€'), { owedToMe: 0, iOwe: 500, net: -500 });

@@ -7,7 +7,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
-import { pctLabel } from '@/components/swaps/parts';
+import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
+import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -22,7 +23,6 @@ import { C, S } from '@/theme';
 import { withPro } from '@/components/ProGate';
 
 const PCTS = [1, 2, 3, 5, 7.5, 10];
-const CURRENCIES = ['$', '€', '£'];
 
 function NewSwap() {
   const { settings, sessions, activeSession, setSettings } = useStore();
@@ -197,7 +197,7 @@ function NewSwap() {
         </Section>
 
         <Section title={t('Moeda')}>
-          <Segmented options={CURRENCIES.map((c) => ({ key: c, label: c }))} value={currency} onChange={setCurrency} size="sm" />
+          <CurrencyPick value={currency} onChange={setCurrency} home={settings.currency} />
         </Section>
 
         {!settings.nickname ? (
