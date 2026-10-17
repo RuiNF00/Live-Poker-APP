@@ -59,6 +59,33 @@ export async function notificationChannels(): Promise<void> {
   if (n) await setup(n);
 }
 
+/**
+ * Android 12+ may refuse exact alarms (14+ does by default): the level and
+ * break reminders then go out as inexact alarms, which a phone lying still can
+ * hold back a few minutes. True where that can't happen.
+ */
+export async function exactAlarmsAllowed(): Promise<boolean> {
+  const n = notifications();
+  if (!n || Platform.OS !== 'android') return true;
+  try {
+    return (await n.getExactAlarmPermissionsAsync()).granted;
+  } catch {
+    return true;
+  }
+}
+
+/** Opens the system screen for exact alarms; true once allowed. Never USE_EXACT_ALARM: that one is only for alarm-clock apps. */
+export async function askExactAlarms(): Promise<boolean> {
+  const n = notifications();
+  if (!n || Platform.OS !== 'android') return true;
+  try {
+    return (await n.requestExactAlarmPermissionsAsync()).granted;
+  } catch {
+    // SCHEDULE_EXACT_ALARM not declared in this build: reminders stay inexact.
+    return false;
+  }
+}
+
 /** Ask once, when the player shows they want reminders. True when allowed. */
 export async function askNotificationPermission(): Promise<boolean> {
   const n = notifications();

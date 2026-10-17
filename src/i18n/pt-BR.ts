@@ -1137,6 +1137,7 @@ const ptBR: Record<string, string> = {
   // Festival with dates only
   'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': 'A programação ainda não saiu. Os torneios aparecem aqui quando o organizador publicar; você já pode criar a viagem.',
   'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Datas a confirmar: por enquanto o organizador só publicou os dias do festival. Os torneios aparecem aqui quando sair a programação.',
+  'Com o telemóvel parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos chegam à hora; o relógio aqui está sempre certo.': 'Com o celular parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos eles chegam na hora; o relógio aqui está sempre certo.',
 };
 
 export default ptBR;

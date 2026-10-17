@@ -2609,6 +2609,12 @@ const es: Record<string, string> = {
   'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': 'El programa aún no ha salido. Los torneos aparecerán aquí cuando el organizador lo publique; ya puedes crear el viaje.',
   'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Fechas por confirmar: por ahora el organizador solo ha publicado los días del festival. Los torneos aparecerán aquí cuando salga el programa.',
   'Série de verão, janeiro 2027': 'Serie de verano, enero 2027',
+  'Os avisos de nível podem chegar atrasados': 'Los avisos de nivel pueden llegar tarde',
+  'Com o telemóvel parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos chegam à hora; o relógio aqui está sempre certo.': 'Con el teléfono quieto, Android puede retrasar los avisos unos minutos. Con alarmas exactas llegan a tiempo; el reloj de aquí siempre está bien.',
+  'Permitir alarmes exatos': 'Permitir alarmas exactas',
+  'Etapa nacional, Barcelona · março 2027': 'Etapa nacional, Barcelona · marzo 2027',
+  'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. La primera etapa suele ser en marzo.',
+  'O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.': 'El organizador aún no ha publicado las fechas. Los torneos aparecerán aquí cuando salga el programa.',
 };
 
 export default es;

@@ -200,7 +200,24 @@ export const BAHIA_JAN_2027: Festival = {
   dates: { from: '2027-01-22', to: '2027-01-30' },
 };
 
-export const FESTIVALS: Festival[] = [BAHAMAS_DEC_2026, LAS_VEGAS_DEC_2026, BAHIA_JAN_2027];
+/**
+ * The first stop of Spain's national series, in Barcelona, usually in March.
+ * The 2027 dates aren't published (checked 2026-10-17): no dates, no events,
+ * only the month it usually runs in, said as such. Generic name, no brand.
+ */
+export const BARCELONA_MAR_2027: Festival = {
+  id: 'barcelona-mar-2027',
+  name: 'Etapa nacional, Barcelona · março 2027',
+  venue: 'Barcelona',
+  city: 'Espanha',
+  currency: '€',
+  utcOffset: 60,
+  source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.'],
+  events: [],
+};
+
+export const FESTIVALS: Festival[] = [BAHAMAS_DEC_2026, LAS_VEGAS_DEC_2026, BAHIA_JAN_2027, BARCELONA_MAR_2027];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */
 export function venueTime(f: Pick<Festival, 'utcOffset'>, local: string): number {

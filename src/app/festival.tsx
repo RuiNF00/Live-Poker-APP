@@ -119,14 +119,14 @@ export default function FestivalScreen() {
         </View>
 
         {f.events.length ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
-        <TripLink f={f} plan={plan} />
+        {f.events.length || f.dates ? <TripLink f={f} plan={plan} /> : null}
 
         {f.events.length ? <ActionOffers f={f} picked={plan.picked} /> : null}
 
         {!f.events.length ? (
           <Card tone="inset" style={{ gap: 4 }}>
             <T v="h3">{f.dates ? t('{from} a {to}', { from: shortDay(f.dates.from), to: shortDay(f.dates.to) }) : t('Datas a confirmar')}</T>
-            <T v="small">{t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.')}</T>
+            <T v="small">{f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
           </Card>
         ) : (
           <ChipRow>
