@@ -75,3 +75,16 @@ describe('web text in four languages', () => {
     }
   });
 });
+
+describe('html lang of language-specific pages', () => {
+  it('comes from the route, then from ?lang=, else the browser decides', async () => {
+    const { pageLang } = await import('../src/lib/page-lang');
+    expect(pageLang('/es/ayuda', null)).toBe('es');
+    expect(pageLang('/help/cancel-pro', 'pt')).toBe('en');
+    expect(pageLang('/pt-br/ajuda/x', null)).toBe('pt-BR');
+    expect(pageLang('/ajuda', null)).toBe('pt-PT');
+    expect(pageLang('/support', 'pt-BR')).toBe('pt-BR');
+    expect(pageLang('/delete-account', 'es')).toBe('es');
+    expect(pageLang('/support', null)).toBeNull();
+  });
+});
