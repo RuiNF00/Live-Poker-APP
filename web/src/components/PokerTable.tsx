@@ -10,6 +10,7 @@ import type { Locale } from '@/lib/i18n';
 import { BOARD_Y, BRAND_Y, dealerSpot, POT_Y, STAGE_RATIO, tableMap } from '@/lib/tableLayout';
 import { ChipStack } from './ChipStack';
 import { SuitIcon, SUIT_COLORS } from './PlayingCard';
+import { cardLabel, hiddenCardLabel } from '@/lib/card-name';
 
 interface Props {
   step: ReplayStep;
@@ -49,15 +50,14 @@ const BADGE_WORD: Partial<Record<ActionType, string>> = {
 /** Same marks as the tags beside the two boards. */
 const RUN_MARK: Record<number, string> = { 1: '①', 2: '②' };
 
-const SUIT_NAME: Record<string, string> = { s: 'espadas', h: 'copas', d: 'ouros', c: 'paus' };
 
 /** Ivory card with a serif rank, or the dark back with the brand mark. */
-function TCard({ card, kind }: { card?: Card | null; kind: 'board' | 'seat' | 'hero' }) {
-  if (!card) return <span className={`rt-card rt-card-${kind} rt-card-back`} aria-label="carta escondida" />;
+function TCard({ card, kind, locale }: { card?: Card | null; kind: 'board' | 'seat' | 'hero'; locale: Locale }) {
+  if (!card) return <span className={`rt-card rt-card-${kind} rt-card-back`} aria-label={hiddenCardLabel(locale)} />;
   const rank = card[0] === 'T' ? '10' : card[0];
   const suit = card[1];
   return (
-    <span className={`rt-card rt-card-${kind}`} style={{ color: SUIT_COLORS[suit] }} aria-label={`${rank} de ${SUIT_NAME[suit]}`}>
+    <span className={`rt-card rt-card-${kind}`} style={{ color: SUIT_COLORS[suit] }} aria-label={cardLabel(card, locale)}>
       <span className={`rt-rank${rank.length > 1 ? ' rt-rank-10' : ''}`}>{rank}</span>
       <span className="rt-suit">
         <SuitIcon suit={suit} size={100} />
@@ -112,7 +112,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
               <div key={k} className="rt-board-run" aria-label={`Board ${k + 1}`}>
                 <span className="rt-run-tag">{k + 1}</span>
                 {r.board.map((c, i) => (
-                  <TCard key={`${i}-${c}`} card={c} kind="board" />
+                  <TCard locale={locale} key={`${i}-${c}`} card={c} kind="board" />
                 ))}
               </div>
             ))}
@@ -120,7 +120,7 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
         ) : (
           <div className="rt-board" style={{ top: `${BOARD_Y}%` }}>
             {[0, 1, 2, 3, 4].map((i) =>
-              step.board[i] ? <TCard key={`${i}-${step.board[i]}`} card={step.board[i]} kind="board" /> : <span key={i} className="rt-card rt-card-board rt-slot" />,
+              step.board[i] ? <TCard locale={locale} key={`${i}-${step.board[i]}`} card={step.board[i]} kind="board" /> : <span key={i} className="rt-card rt-card-board rt-slot" />,
             )}
           </div>
         )}
@@ -175,11 +175,11 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
                 {s.folded ? (
                   <span className="rt-fold">FOLD</span>
                 ) : s.cards && s.showCards ? (
-                  s.cards.map((c) => <TCard key={c} card={c} kind={kind} />)
+                  s.cards.map((c) => <TCard locale={locale} key={c} card={c} kind={kind} />)
                 ) : (
                   <>
-                    <TCard kind={kind} />
-                    <TCard kind={kind} />
+                    <TCard locale={locale} kind={kind} />
+                    <TCard locale={locale} kind={kind} />
                   </>
                 )}
               </div>

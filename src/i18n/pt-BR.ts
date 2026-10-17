@@ -1398,6 +1398,8 @@ const ptBR: Record<string, string> = {
   'Equity contra a tua grelha': 'Equity contra a sua grade',
   "prémios {amount}": "prêmios {amount}",
   "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
+  'Toca duas vezes para avançar.': 'Toque duas vezes para avançar.',
+  'tu': 'você',
 };
 
 export default ptBR;

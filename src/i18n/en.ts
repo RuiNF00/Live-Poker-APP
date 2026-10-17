@@ -3036,6 +3036,12 @@ const en: Record<string, string> = {
   'Próximo: {name}': 'Next: {name}',
   'Voos, hotel e resultado líquido': 'Flights, hotel and net result',
   'Equity contra a tua grelha': 'Equity against your grid',
+  'Toca duas vezes para avançar.': 'Double-tap to go forward.',
+  'tu': 'you',
+  'cartas tapadas': 'cards face down',
+  'Par, {rank}': 'Pair, {rank}',
+  '{a} e {b}, mesmo naipe': '{a} and {b}, suited',
+  '{a} e {b}, naipes diferentes': '{a} and {b}, offsuit',
 };
 
 export default en;
