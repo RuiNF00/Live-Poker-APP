@@ -17,6 +17,8 @@ Data not linked to you:
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 
+Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
+
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
 Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
