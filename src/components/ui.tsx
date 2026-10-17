@@ -1005,38 +1005,55 @@ export function Banner({
   live?: boolean;
 }) {
   const col = tone === 'warn' ? C.warn : tone === 'info' ? C.info : tone === 'good' ? C.good : C.accent;
-  return (
-    <Card tone={tone === 'info' ? 'raised' : tone} onPress={onPress} style={{ paddingVertical: 12, paddingHorizontal: 14 }}>
-      <Row gap={12}>
-        {live ? (
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: col, shadowColor: col, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }} />
-        ) : icon ? (
-          <Ionicons name={icon} size={18} color={col} />
-        ) : null}
-        <View style={{ flex: 1, gap: 1 }}>
-          <T v="h3" color={col}>
-            {title}
-          </T>
-          {body ? <T v="small">{body}</T> : null}
-        </View>
-        {action ? (
-          <T v="small" color={col} style={{ fontFamily: ff(800) }}>
-            {action}
-          </T>
-        ) : null}
-        {onDismiss ? (
-          // Its own tap target, set apart by a hairline, so it isn't hit while reaching for the banner.
-          <Pressable
-            onPress={onDismiss}
-            hitSlop={{ top: 12, bottom: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel={dismissLabel ?? t('Fechar')}
-            style={{ alignSelf: 'stretch', justifyContent: 'center', paddingLeft: 14, marginLeft: 2, borderLeftWidth: 1, borderLeftColor: C.border }}>
-            <Ionicons name="close" size={18} color={C.muted} />
+  const main = (
+    <>
+      {live ? (
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: col, shadowColor: col, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }} />
+      ) : icon ? (
+        <Ionicons name={icon} size={18} color={col} />
+      ) : null}
+      <View style={{ flex: 1, gap: 1 }}>
+        <T v="h3" color={col}>
+          {title}
+        </T>
+        {body ? <T v="small">{body}</T> : null}
+      </View>
+      {action ? (
+        <T v="small" color={col} style={{ fontFamily: ff(800) }}>
+          {action}
+        </T>
+      ) : null}
+    </>
+  );
+  const dismiss = onDismiss ? (
+    // Its own tap target, set apart by a hairline, so it isn't hit while reaching for the banner.
+    <Pressable
+      onPress={onDismiss}
+      hitSlop={{ top: 12, bottom: 12, right: 12 }}
+      accessibilityRole="button"
+      accessibilityLabel={dismissLabel ?? t('Fechar')}
+      style={{ alignSelf: 'stretch', justifyContent: 'center', paddingLeft: 14, marginLeft: 2, borderLeftWidth: 1, borderLeftColor: C.border }}>
+      <Ionicons name="close" size={18} color={C.muted} />
+    </Pressable>
+  ) : null;
+  const style = { paddingVertical: 12, paddingHorizontal: 14 };
+  // Tappable and dismissable: two buttons side by side, never one inside the other.
+  if (onPress && dismiss)
+    return (
+      <Card tone={tone === 'info' ? 'raised' : tone} style={style}>
+        <Row gap={12}>
+          <Pressable onPress={onPress} accessibilityRole="button" style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {main}
           </Pressable>
-        ) : onPress && !action ? (
-          <Ionicons name="chevron-forward" size={17} color={col} />
-        ) : null}
+          {dismiss}
+        </Row>
+      </Card>
+    );
+  return (
+    <Card tone={tone === 'info' ? 'raised' : tone} onPress={onPress} style={style}>
+      <Row gap={12}>
+        {main}
+        {dismiss ?? (onPress && !action ? <Ionicons name="chevron-forward" size={17} color={col} /> : null)}
       </Row>
     </Card>
   );
