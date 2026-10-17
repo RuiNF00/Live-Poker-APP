@@ -66,12 +66,13 @@ export default function Paywall() {
               <Ionicons name="flash" size={28} color={C.accentInk} />
             </View>
           )}
-          <T v="title">{copy.title}</T>
+          <T v={compact ? 'h1' : 'title'}>{copy.title}</T>
           <T v="callout">{copy.body}</T>
           {hands.length >= 3 && reason !== 'welcome' ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
-        <View style={{ gap: S.sm }}>
+        {/* Small phones skip the feature list so both plans fit above the footer. */}
+        <View style={{ gap: S.sm, display: compact ? 'none' : 'flex' }}>
           {featuresFor(reason).map(({ feature: f, highlight }) => (
             <Row key={f.key} gap={S.md} style={{ minHeight: 40 }}>
               <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
@@ -99,9 +100,10 @@ export default function Paywall() {
                 line={t('{price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
                 was={monthly ? formatPrice(monthly.price * 12, monthly.currency, locale) : undefined}
                 tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, '−' + saving + '%']}
+                compact={compact}
               />
             ) : null}
-            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} /> : null}
+            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact} /> : null}
             {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
@@ -141,19 +143,19 @@ export default function Paywall() {
           </Pressable>
         </Row>
         {reason === 'hands' && FREE.handsPerDay ? (
-          <Pressable onPress={() => router.replace('/invite')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 2 }}>
-            <Ionicons name="gift-outline" size={14} color={C.accent} />
-            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
-              {t('Convida um amigo: 7 dias Pro para os dois')}
-            </T>
-          </Pressable>
-        ) : null}
-        {reason === 'hands' && FREE.handsPerDay ? (
-          <Pressable onPress={close} hitSlop={8} style={{ paddingTop: 2 }}>
-            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>
-              {t('Agora não · amanhã tens mais {n}', { n: FREE.handsPerDay })}
-            </T>
-          </Pressable>
+          <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
+            <Pressable onPress={() => router.replace('/invite')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="gift-outline" size={14} color={C.accent} />
+              <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+                {t('Convidar um amigo')}
+              </T>
+            </Pressable>
+            <Pressable onPress={close} hitSlop={8}>
+              <T v="small" color={C.muted}>
+                {t('Agora não')}
+              </T>
+            </Pressable>
+          </Row>
         ) : null}
       </View>
     </View>
@@ -169,6 +171,7 @@ function PlanCard({
   line,
   was,
   tags = [],
+  compact,
 }: {
   active: boolean;
   onPress: () => void;
@@ -178,6 +181,8 @@ function PlanCard({
   line: string;
   was?: string;
   tags?: (string | null)[];
+  /** One row: radio, name and line on the left, price on the right. */
+  compact?: boolean;
 }) {
   return (
     <Pressable
@@ -193,14 +198,31 @@ function PlanCard({
         borderWidth: 2,
         borderColor: active ? C.accent : C.border,
         backgroundColor: active ? C.accentSoft : C.surface,
-        padding: S.lg,
+        padding: compact ? S.md : S.lg,
         gap: S.sm,
         opacity: pressed ? 0.9 : 1,
       })}>
+      {compact ? (
+        <Row gap={S.sm}>
+          <Radio active={active} />
+          <View style={{ flex: 1, gap: 1 }}>
+            <Row gap={6}>
+              <T v="h3">{title}</T>
+              {tags[0] ? <T style={{ color: C.accent, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
+            </Row>
+            <T v="tiny" numberOfLines={1}>
+              {line}
+            </T>
+          </View>
+          <T v="mono" numberOfLines={1}>
+            {big}
+          </T>
+          <T v="tiny">{unit}</T>
+        </Row>
+      ) : (
+        <>
       <Row gap={S.sm}>
-        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
-          {active ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent }} /> : null}
-        </View>
+        <Radio active={active} />
         <T v="h2" style={{ flex: 1 }}>
           {title}
         </T>
@@ -228,7 +250,17 @@ function PlanCard({
           {line}
         </T>
       </View>
+        </>
+      )}
     </Pressable>
+  );
+}
+
+function Radio({ active }: { active: boolean }) {
+  return (
+    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
+      {active ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent }} /> : null}
+    </View>
   );
 }
 
