@@ -4,6 +4,8 @@ Goes in App Store Connect → TestFlight → the build → Test Details → "Wha
 
 Real-phone checks behind the video and link lines (from Instagram, 17 Oct): (1) time from "Criar vídeo da mão" to the Instagram editor on a mid-range iPhone; estimate ~0.45 s per captured frame (12-16 frames) + ~2 MB upload + ~10 s server render (12 s with the face); (2) the table fully drawn in every frame (280 ms fade-in wait per frame, could be shortened if devices look fine); (3) link previews (hand, live, invite, swap, staking) in real WhatsApp/X/iMessage chats on the public domain: large image, title in the sender's language, stack visible in the live link's small square thumbnail. (4) From Instagram's in-app browser (open a link from an Instagram DM or bio), the App Store and Google Play buttons on /h, /r and /b open the store apps, not a web page inside Instagram. Points (3) and (4) need the domain live first, and (4) also the store URLs: until those exist the buttons read "Em breve". Point (2) is also in the tester lines below, with and without the face. The "Partilhar stack" tester line needs #281 in the build; drop it from all 4 languages if the build predates #281.
 
+Purchases on the first build (buy, renew, cancel, billing failure, restore, lifetime, −40% offer) follow the sandbox script in `launch/teste-pagamentos.md` (shared folder), run by Rui and us, not by every tester.
+
 Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos compartidas / Shared hands).
 
 ## PT-PT
