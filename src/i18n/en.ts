@@ -1865,6 +1865,16 @@ const en: Record<string, string> = {
   'vs média': 'vs average',
   'Indicar': 'Set',
   'Estrutura, relógio sincronizado, prémios e deal': 'Structure, synced clock, payouts and deal',
+  'Nota privada': 'Private note',
+  'Estás aqui': 'You are here',
+  'estás aqui': 'you are here',
+  'A mão toda': 'The whole hand',
+  'A MÃO TODA': 'THE WHOLE HAND',
+  'Ainda nada sobre esta rua.': 'Nothing on this street yet.',
+  'Sobre o': 'About the',
+  'As tuas notas': 'Your notes',
+  'Uma nota por rua, só tu vês. Nunca sai do telemóvel.': 'One note per street, only you see it. It never leaves your phone.',
+  'Nota privada sobre o {s} (só tu vês)': 'Private note on the {s} (only you see it)',
 };
 
 export default en;

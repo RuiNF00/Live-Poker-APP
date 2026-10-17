@@ -1,10 +1,9 @@
 // Client for the hand-sharing backend. Interface agreed with the sharing
 // thread; the implementation behind these URLs lives in /api.
-
 import * as Crypto from 'expo-crypto';
 
 import { publicHand, type ShareOptions } from '@/poker/privacy';
-import type { Hand } from '@/poker/types';
+import type { Hand, Street } from '@/poker/types';
 import { BRAND } from '@/theme';
 
 export const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -14,6 +13,8 @@ export interface Comment {
   name: string;
   text: string;
   createdAt: number;
+  /** Street the comment is about; null or missing = the whole hand. */
+  street?: Street | null;
 }
 
 export function shareUrl(id: string) {
@@ -65,7 +66,7 @@ export async function fetchComments(id: string): Promise<Comment[]> {
   return (j.comments ?? j) as Comment[];
 }
 
-export async function postComment(id: string, c: { name: string; text: string }): Promise<Comment> {
+export async function postComment(id: string, c: { name: string; text: string; street?: Street }): Promise<Comment> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/comments`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
