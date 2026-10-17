@@ -1,4 +1,5 @@
 import { lang, locale } from '../i18n';
+import { decimalsOf, symbolOf } from '../store/currencies';
 
 import type { ActionKind, Hand } from './types';
 
@@ -55,13 +56,17 @@ export function money(n: number, currency = '€'): string {
 }
 
 export function rawMoney(n: number, currency = '€'): string {
-  const sign = n < 0 ? '−' : '';
-  const a = Math.abs(n);
+  // Yen, won and the like have no cents: always whole.
+  const a = decimalsOf(currency) ? Math.abs(n) : Math.round(Math.abs(n));
+  const sign = n < 0 && a > 0 ? '−' : '';
   const cents = Math.round(a * 100);
   // Whole amounts stay short ("370€"); cents always show two digits in the
   // player's locale ("370,50€"), never a bare JS decimal point.
   const s = a >= 1000 ? numFmt().format(Math.round(a)) : cents % 100 === 0 ? String(cents / 100) : numFmt(2).format(cents / 100);
-  return lang === 'pt' ? `${sign}${s}${currency}` : `${sign}${currency}${s}`;
+  const sym = symbolOf(currency);
+  // Letter codes (CHF, SEK) need a space; symbols sit close.
+  const gap = /^[A-Za-z]{2,}$/.test(sym) ? ' ' : '';
+  return lang === 'pt' ? `${sign}${s}${gap}${sym}` : `${sign}${sym}${gap}${s}`;
 }
 
 export const ACTION_LABEL: Record<ActionKind, string> = {

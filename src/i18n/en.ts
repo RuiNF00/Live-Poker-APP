@@ -1786,6 +1786,12 @@ const en: Record<string, string> = {
   'Com {n} torneios, um ROI de {roi} ainda cabe na variância dos torneios.': 'After {n} tournaments, a {roi} ROI is still within tournament variance.',
   'Ainda a observar ({n} sessões): o veredito aparece com 100 h de cash ou 50 torneios.': 'Still watching ({n} sessions): the verdict shows after 100 h of cash or 50 tournaments.',
   'Win rate: o que ganhas em média por hora (em torneios, o ROI). Desvio padrão: quanto um resultado costuma fugir dessa média; quanto maior, mais longas as fases boas e más.': 'Win rate: what you win on average per hour (for tournaments, ROI). Standard deviation: how far a result usually strays from that average; the bigger it is, the longer the good and bad runs.',
+  // Currencies without ECB rates
+  'O BCE não publica {list}: escreve o teu câmbio ›': "The ECB doesn't publish {list}: type your rate ›",
+  'Câmbio escrito por ti': 'Your own rate',
+  'Estas moedas não têm câmbio diário do BCE. Usamos o teu para todas as datas; muda-o quando quiseres.': 'These currencies have no daily ECB rate. We use yours for every date; change it whenever you like.',
+  '1 € = quantos {code}?': '1 € = how many {code}?',
+  'Guardar câmbio': 'Save rate',
   // Bankroll rules
   'Regras de bankroll': 'Bankroll rules',
   'Definir regras de bankroll': 'Set bankroll rules',

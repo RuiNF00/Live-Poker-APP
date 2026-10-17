@@ -275,6 +275,8 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Rates typed for currencies the ECB doesn't publish (ARS, CLP...): ISO code → units per 1 EUR. */
+  fxManual?: Record<string, number>;
   /** Count swaps in results (Session.swapNet). Missing = yes. */
   includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
