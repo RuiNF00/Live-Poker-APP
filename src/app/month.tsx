@@ -5,7 +5,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 
@@ -72,7 +72,7 @@ export default function MonthScreen() {
       <>
         <Stack.Screen options={{ title: t('Resumo do mês') }} />
         <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter }}>
-          <Empty icon="calendar-outline" title={t('Ainda não há um mês para ver')} body={t('Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.')} />
+          <Empty icon="calendar-outline" title={t('Ainda não há um mês para ver')} body={t('Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.')} action={<Button title={t('Começar sessão')} icon="play" onPress={() => router.replace('/session')} />} />
         </View>
       </>
     );

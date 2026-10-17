@@ -3121,6 +3121,9 @@ const en: Record<string, string> = {
   '{name} · Dia {n} ensacado: {chips}': '{name} · Day {n} bagged: {chips}',
   '{name} · Dia {n}: {chips} em fichas': '{name} · Day {n}: {chips} in chips',
   'Enviar a {name} ({n}%)': 'Send to {name} ({n}%)',
+  'Já jogaste? Junta uma sessão passada': 'Already played? Add a past session',
+  'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Start a session when you sit down. Profit, €/hour and ROI show up here.',
+  'Nada neste bankroll': 'Nothing in this bankroll',
 };
 
 export default en;
