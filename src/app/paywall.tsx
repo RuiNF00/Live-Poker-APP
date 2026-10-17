@@ -123,9 +123,18 @@ export default function Paywall() {
           <Button
             title={trial ? t('Começar {days} dias grátis', { days: trial }) : t('Subscrever Pro')}
             sub={trial ? t('Depois {after}', { after }) : after}
+            iconRight="chevron-forward"
             disabled={!chosen || !!busy}
             onPress={onBuy}
           />
+        )}
+        {compact ? null : (
+          <Row gap={6} style={{ justifyContent: 'center' }}>
+            <Ionicons name="shield-checkmark" size={14} color={C.good} />
+            <T v="small" color={C.text}>
+              {t('Sem compromisso. Cancela quando quiseres.')}
+            </T>
+          </Row>
         )}
         <T v="tiny" style={{ textAlign: 'center' }}>
           {t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
