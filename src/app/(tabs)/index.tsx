@@ -20,6 +20,7 @@ import { filterPills, HandFilterSheet } from '@/components/HandFilters';
 import { activeFilters, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
+import { useSharedHands } from '@/lib/friend-hands';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { useIdleCount } from '@/lib/idle-count';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
@@ -76,6 +77,7 @@ export default function HandsScreen() {
   const [filter, setFilter] = useState<HandFilter>(NO_FILTER);
   const [filtering, setFiltering] = useState(false);
   const coach = useCoach();
+  const shared = useSharedHands();
   const unread = useMemo(() => unreadByHand(coach), [coach]);
   const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
   const [searching, setSearching] = useState(false);
@@ -211,6 +213,13 @@ export default function HandsScreen() {
                 <ChargeNotice end={chargeEnd} />
               ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+              ) : shared.newTotal > 0 ? (
+                <Banner
+                  icon="chatbubbles-outline"
+                  title={shared.newTotal === 1 ? t('1 comentário novo nas mãos partilhadas') : t('{n} comentários novos nas mãos partilhadas', { n: shared.newTotal })}
+                  action={t('Ver')}
+                  onPress={() => router.push('/shared-hands')}
+                />
               ) : news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : checklist ? (

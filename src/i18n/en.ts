@@ -2963,6 +2963,24 @@ const en: Record<string, string> = {
   'A TUA EQUITY': 'YOUR EQUITY',
   'Repor': 'Reset',
   'Aplicar': 'Apply',
+  // Mãos partilhadas (friends' hands and new comments).
+  'Denunciar e tirar': 'Report and remove',
+  'Ao comentar ou partilhar aceitas os': 'By commenting or sharing you accept the',
+  'Algum problema com uma mão ou comentário? Escreve para': 'A problem with a hand or comment? Write to',
+  '1 comentário novo nas mãos partilhadas': '1 new comment on shared hands',
+  '{n} comentários novos nas mãos partilhadas': '{n} new comments on shared hands',
+  'Mãos partilhadas': 'Shared hands',
+  'As mãos dos teus amigos e os comentários nas tuas': 'Your friends\' hands and the comments on yours',
+  'Sem comentários': 'No comments',
+  'Ainda sem mãos partilhadas': 'No shared hands yet',
+  'Partilha uma mão e os comentários dos teus amigos aparecem aqui. As mãos que eles te mandarem também.': 'Share a hand and your friends\' comments show up here. So do the hands they send you.',
+  'Dos teus amigos': 'From your friends',
+  'Quando abrires na app uma mão que um amigo te mandou, ela fica aqui para voltares à conversa.': 'When you open a hand a friend sent you in the app, it stays here so you can come back to the conversation.',
+  'As tuas': 'Yours',
+  'Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.': 'Share a hand (the Share button on the hand) so your friends can comment.',
+  'Tirar da lista?': 'Remove from the list?',
+  'A mão continua no link do teu amigo.': 'The hand stays on your friend\'s link.',
+  'Mão de um amigo': 'A friend\'s hand',
 };
 
 export default en;

@@ -15,8 +15,9 @@ import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
-import { Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
+import { Badge, Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
+import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { openStoreReviewPage } from '@/lib/review';
@@ -78,6 +79,7 @@ function switchLanguage() {
 
 export default function SettingsScreen() {
   const store = useStore();
+  const shared = useSharedHands();
   const { settings, setSettings, hands, sessions, players } = store;
   const pro = usePro();
   const insets = useSafeAreaInsets();
@@ -204,6 +206,14 @@ export default function SettingsScreen() {
         <Section title={t('Ferramentas')}>
           <ListGroup>
             <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
+            <ListItem
+              icon="chatbubbles-outline"
+              iconColor={C.accent}
+              title={t('Mãos partilhadas')}
+              subtitle={t('As mãos dos teus amigos e os comentários nas tuas')}
+              right={shared.newTotal ? <Badge solid color={C.accent} label={String(shared.newTotal)} /> : undefined}
+              onPress={() => router.push('/shared-hands')}
+            />
             <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
             <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
             <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Recebem os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />

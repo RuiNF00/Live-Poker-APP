@@ -1345,6 +1345,20 @@ const ptBR: Record<string, string> = {
   'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Escolha as mãos dele na grade e veja sua equity contra elas.',
   'vs a tua range': 'vs sua range',
   'A TUA EQUITY': 'SUA EQUITY',
+  // Mãos partilhadas (friends' hands and new comments).
+  'Denunciar e tirar': 'Denunciar e remover',
+  'Ao comentar ou partilhar aceitas os': 'Ao comentar ou compartilhar você aceita os',
+  'Algum problema com uma mão ou comentário? Escreve para': 'Algum problema com uma mão ou comentário? Escreva para',
+  '1 comentário novo nas mãos partilhadas': '1 comentário novo nas mãos compartilhadas',
+  '{n} comentários novos nas mãos partilhadas': '{n} comentários novos nas mãos compartilhadas',
+  'Mãos partilhadas': 'Mãos compartilhadas',
+  'As mãos dos teus amigos e os comentários nas tuas': 'As mãos dos seus amigos e os comentários nas suas',
+  'Ainda sem mãos partilhadas': 'Ainda sem mãos compartilhadas',
+  'Partilha uma mão e os comentários dos teus amigos aparecem aqui. As mãos que eles te mandarem também.': 'Compartilhe uma mão e os comentários dos seus amigos aparecem aqui. As mãos que eles mandarem para você também.',
+  'Dos teus amigos': 'Dos seus amigos',
+  'As tuas': 'As suas',
+  'Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.': 'Compartilhe uma mão (botão Compartilhar na mão) para seus amigos comentarem.',
+  'A mão continua no link do teu amigo.': 'A mão continua no link do seu amigo.',
 };
 
 export default ptBR;
