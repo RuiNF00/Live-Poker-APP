@@ -254,6 +254,13 @@ a {
   padding: 10px 6px 12px;
 }
 
+.table-tap {
+  cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .table-wrap {
   position: relative;
   width: 100%;
