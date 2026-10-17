@@ -2353,7 +2353,7 @@ const es: Record<string, string> = {
   'Com 3 sessões de cash terminadas em {currency} mostramos o teu win rate e a margem de erro.': 'Con 3 sesiones de cash terminadas en {currency} te mostramos tu win rate y el margen de error.',
   'Já tens horas suficientes: o teu win rate está a ±{m} BB/h.': 'Ya tienes horas suficientes: tu win rate está a ±{m} BB/h.',
   'Faltam cerca de {h} h, umas {n} sessões como as tuas.': 'Faltan alrededor de {h} h, unas {n} sesiones como las tuyas.',
-  'Para saberes o teu win rate com uma margem de ±{u} BB/h precisas de cerca de {need} h com a tua variância. Hoje tens {have} h e a margem é de ±{m} BB/h.': 'Para saber tu win rate con un margen de ±{u} BB/h necesitas alrededor de {need} h con tu varianza. Hoy tienes {have} h y el margen es de ±{m} BB/h.',
+  'Para saberes o teu win rate com uma margem de ±{u} BB/h precisas de cerca de {need} h com a tua variância. Hoje tens {have} h e a margem é de ±{m} BB/h.': 'Para saber tu win rate con un margen de ±{u} BB/h necesitas unas {need} h con tu varianza. Hoy tienes {have} h y el margen es de ±{m} BB/h.',
   '±5 BB/h chega para decidir se sobes de stake ou que jogos escolher. Quanto mais variância tens, mais horas são precisas.': '±5 BB/h basta para decidir si subes de stake o qué juegos elegir. Cuanta más varianza tienes, más horas hacen falta.',
   'Ainda não há grupos com 2 ou mais sessões aqui.': 'Aún no hay grupos con 2 o más sesiones aquí.',
   'entre {lo} e {hi}': 'entre {lo} y {hi}',
