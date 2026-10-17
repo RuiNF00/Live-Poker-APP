@@ -569,6 +569,16 @@ const en: Record<string, string> = {
   'Apagar esta sessão?': 'Delete this session?',
   'Apagar {name}?': 'Delete {name}?',
   'As notas sobre este jogador desaparecem. As mãos ficam.': 'Your notes on this player go away. The hands stay.',
+  'Mão de exemplo': 'Example hand',
+  'É assim que as tuas mãos ficam guardadas.': 'This is how your hands are kept.',
+  'Editar mão': 'Edit hand',
+  'Apagar mão': 'Delete hand',
+  'Mão por completar': 'Unfinished hand',
+  'Toca para continuar onde ficaste.': 'Tap to pick up where you left off.',
+  'Partilhar': 'Share',
+  'Votação': 'Poll',
+  'Atualizar': 'Refresh',
+  'Os teus amigos veem o replay no browser e comentam, mesmo sem a app.': 'Friends watch the replay in their browser and comment, no app needed.',
 };
 
 export default en;
