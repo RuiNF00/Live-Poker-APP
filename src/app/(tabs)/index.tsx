@@ -14,6 +14,7 @@ import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStrip } from '@/components/StreakStrip';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
+import { StartChecklist } from '@/components/StartChecklist';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -134,6 +135,7 @@ export default function HandsScreen() {
               />
               {!activeSession && sessions.length > 0 ? <Verdict sessions={sessions} incomplete={incomplete} onIncomplete={() => setTag(INCOMPLETE)} /> : null}
               {hands.length > 0 && !searching ? <StreakStrip /> : null}
+              {!searching ? <StartChecklist /> : null}
               {hasDraft ? (
                 <Banner
                   tone="warn"
