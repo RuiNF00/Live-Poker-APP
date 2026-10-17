@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { replay } from '@/poker/engine';
 import { sampleHand } from '@/poker/sample';
 
-import { viewAt } from '../model';
+import { timeline, viewAt } from '../model';
 
 const opts = { inBB: false, reveal: false, atEnd: false };
 
@@ -25,4 +25,12 @@ test('no range equity while three or more are in the hand', () => {
   const r = replay(hand);
   const k = r.steps.findIndex((s) => hand.players.filter((_, p) => !s.state.folded[p]).length >= 3);
   assert.equal(viewAt(hand, r, Math.max(k, 0), opts).rangeEq, null);
+});
+
+test('timeline: long names show the position, never a name cut mid-word', () => {
+  const hand = sampleHand('sample');
+  const items = timeline(hand, replay(hand), true).filter((it) => it.kind === 'action');
+  for (const it of items) assert.ok(it.label.length <= 7 || hand.players.some((p) => p.name === it.label), it.label);
+  const names = hand.players.map((p) => p.name).filter(Boolean) as string[];
+  for (const it of items) assert.ok(!names.some((n) => n !== it.label && n.startsWith(it.label) && n.length > 7), `cut: ${it.label}`);
 });

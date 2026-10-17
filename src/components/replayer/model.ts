@@ -259,7 +259,9 @@ export function timeline(hand: Hand, r: Replay, inBB: boolean): TimelineItem[] {
     else if (s.kind === 'showdown') items.push({ k, kind: 'end', label: 'SHOWDOWN', color: 'street' });
     else if (s.kind === 'action' && s.state.last) {
       const a = s.state.last;
-      const who = a.p === hand.hero ? hand.players[a.p].name || 'Hero' : hand.players[a.p].name ? hand.players[a.p].name.slice(0, 6) : pos[a.p];
+      // A name that doesn't fit the timeline slot shows the position instead of being cut mid-word.
+      const nm = hand.players[a.p].name;
+      const who = nm && nm.length <= 7 ? nm : a.p === hand.hero ? 'Hero' : pos[a.p];
       const amt = amount(a.kind === 'call' ? a.added : a.to, hand, inBB).replace(' ', '');
       const code = a.allIn ? `AI ${amt}` : { fold: 'F', check: 'X', call: `C ${amt}`, bet: `B ${amt}`, raise: `R ${amt}` }[a.kind];
       items.push({
