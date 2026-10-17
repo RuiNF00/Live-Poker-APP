@@ -910,7 +910,7 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
 }
 
 /** Whole-number field: chips, money, places. */
-export function NumField({ label, value, onChange, suffix }: { label: string; value: number; onChange: (n: number) => void; suffix?: string }) {
+export function NumField({ label, value, onChange, suffix, autoFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean }) {
   return (
     <Field
       label={label}
@@ -918,6 +918,7 @@ export function NumField({ label, value, onChange, suffix }: { label: string; va
       value={value ? String(value) : ''}
       onChangeText={(x) => onChange(parseInt(x.replace(/\D/g, ''), 10) || 0)}
       keyboardType="number-pad"
+      autoFocus={autoFocus}
       placeholder={suffix ? `0 ${suffix}` : '0'}
       inputStyle={{ fontFamily: F.mono, fontVariant: ['tabular-nums'] }}
     />

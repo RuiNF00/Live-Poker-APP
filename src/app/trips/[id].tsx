@@ -63,7 +63,9 @@ export default function TripScreen() {
     saveTrip({ ...trip, expenses: [x, ...trip.expenses.filter((e) => e.id !== x.id)] });
     setSheet(null);
   };
-  const newExpense = (kind: ExpenseKind) => setSheet({ type: 'expense', x: blankExpense(uid('e_'), kind, kind === 'flight' && other ? other.currency : cur), isNew: true });
+  // A new expense is paid like the last one of its kind on this trip (the hotel in dollars stays in dollars).
+  const lastPaid = (kind: ExpenseKind) => expenses.find((e) => e.kind === kind && (e.currency === cur || e.currency === other?.currency))?.currency;
+  const newExpense = (kind: ExpenseKind) => setSheet({ type: 'expense', x: blankExpense(uid('e_'), kind, lastPaid(kind) ?? (kind === 'flight' && other ? other.currency : cur)), isNew: true });
 
   return (
     <>
