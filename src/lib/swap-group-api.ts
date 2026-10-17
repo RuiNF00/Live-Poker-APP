@@ -1,16 +1,18 @@
 // Client for group swaps on sweatbook.poker (web/src/app/api/swap-groups). The creator gets
 // seat 0's token and the group's invite; each other player claims their seat with the invite.
 
+import { variant } from '@/i18n';
 import type { GroupEntry, GroupTerms, RemoteGroup } from '@/store/swap-groups';
 import { BRAND } from '@/theme';
 
+import { withLang } from './link-lang';
 import { SwapError } from './swap-api';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
 /** The link for the group chat: the invite rides in the fragment, never in a server log. */
 export function groupUrl(id: string, invite: string, ref?: string): string {
-  return `${BRAND.webUrl}/swap/g/${id}${ref ? `?r=${encodeURIComponent(ref)}` : ''}#i=${invite}`;
+  return withLang(`${BRAND.webUrl}/swap/g/${id}${ref ? `?r=${encodeURIComponent(ref)}` : ''}#i=${invite}`, variant);
 }
 
 type Reply = { group?: RemoteGroup; token?: string; invite?: string; id?: string; accounts?: boolean };

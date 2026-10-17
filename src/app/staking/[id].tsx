@@ -11,7 +11,8 @@ import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, Pay
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
@@ -120,7 +121,7 @@ function BackerScreen() {
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
     const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined, l);
-    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
+    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: withLang(statementUrl(st, ref), variant) })].join('\n');
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       notice(t('Texto copiado'));
