@@ -23,6 +23,8 @@ export interface GroupStore {
   claim(id: string, invite: string, seat: number): Promise<string | null>;
   addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
+  /** Seat 0 frees another seat with nothing in the accounts: open again, its token dead. */
+  release(id: string, token: string, seat: number): Promise<boolean>;
   /** Seat 0 deletes it for everyone; any other seat leaves (name "-", token dead). */
   leave(id: string, token: string): Promise<boolean>;
   /** The creator's RevenueCat id (seat 0 only; replaces the last one). Never in a read of the group. */
@@ -77,6 +79,12 @@ class SupabaseGroups implements GroupStore {
 
   async removeEntry(id: string, token: string, entryId: string) {
     const { data, error } = await this.db.rpc('remove_swap_group_entry', { p_id: id, p_token: token, p_entry_id: entryId });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async release(id: string, token: string, seat: number) {
+    const { data, error } = await this.db.rpc('release_swap_group_seat', { p_id: id, p_token: token, p_seat: seat });
     if (error) throw error;
     return !!data;
   }
@@ -200,6 +208,18 @@ class LocalGroups implements GroupStore {
       r.entries = r.entries.filter((x) => !(x.id === entryId && x.seat === seat));
       r.updatedAt = new Date().toISOString();
       return r.entries.length < n;
+    });
+  }
+
+  async release(id: string, token: string, seat: number) {
+    return this.mutate((d) => {
+      const r = d[id];
+      if (this.seatOf(r, token) !== 0 || seat < 1 || !r.seats[seat]?.confirmedAt) return false;
+      if (r.entries.some((e) => e.seat === seat || e.to === seat)) return false;
+      r.seats[seat] = { ...r.seats[seat], confirmedAt: null };
+      r.hashes[seat] = null;
+      r.updatedAt = new Date().toISOString();
+      return true;
     });
   }
 

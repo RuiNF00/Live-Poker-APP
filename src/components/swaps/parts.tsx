@@ -2,13 +2,14 @@
 // to add one.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
+import { maybeAskForReview } from '@/lib/review';
 import { money, shortDate, timeOf } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { CURRENCIES } from '@/store/currencies';
@@ -301,3 +302,15 @@ export function SwapBadge({ size = 40 }: { size?: number }) {
   );
 }
 
+
+/**
+ * Store-review moment C (design/pedido-avaliacao.md): the swap has just become square after a
+ * payment, on both sides. Only the change while the screen is open counts, not opening a square one.
+ */
+export function useSettledReview(square: boolean) {
+  const was = useRef(square);
+  useEffect(() => {
+    if (square && !was.current) void maybeAskForReview('settled');
+    was.current = square;
+  }, [square]);
+}

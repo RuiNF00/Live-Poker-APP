@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
 
 import { useLocked } from '@/components/ProGate';
-import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
+import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, useSettledReview, type EntryDraft } from '@/components/swaps/parts';
 import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
@@ -17,7 +17,7 @@ import { track } from '@/lib/events';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
 import { useStore } from '@/store/store';
-import { fromRemote, other, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
+import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
@@ -148,6 +148,7 @@ function OwnSwap({ s }: { s: Swap }) {
   const l = swapLedger(s);
   const cur = s.terms.currency;
   const pending = s.entries.some((e) => e.pending);
+  useSettledReview(!pending && s.entries.some((e) => e.kind === 'payment') && settled(l));
 
   const sync = useCallback(() => syncSwap(s.id).then((ok) => setOffline(!ok)), [s.id]);
   useEffect(() => {
