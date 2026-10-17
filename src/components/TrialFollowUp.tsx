@@ -22,7 +22,7 @@ export function TrialFollowUp() {
     // After the live screen has settled, so the paywall slides over it.
     const timer = setTimeout(async () => {
       const s = await deferState();
-      if (!live || !s || !sessionStartOffer(s, { isPro, trialDays, now: Date.now() })) return;
+      if (!live || !sessionStartOffer(s, { isPro, trialDays })) return;
       await markSessionOffer(s);
       if (live) paywall('sessionStart');
     }, 1200);

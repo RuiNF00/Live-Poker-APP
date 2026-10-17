@@ -1079,6 +1079,7 @@ const ptBR: Record<string, string> = {
   'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Melhor sessão: {amount}. Toque para ver o resumo do mês.',
   'Toca para veres o resumo do mês.': 'Toque para ver o resumo do mês.',
   'Torneios com prémio: {cashes} de {n}': 'Torneios com prêmio: {cashes} de {n}',
+  'Cancela quando quiseres na {store}.': 'Cancele quando quiser na {store}.',
 };
 
 export default ptBR;

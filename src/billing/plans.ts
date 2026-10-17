@@ -27,7 +27,8 @@ export interface PlanInfo {
 
 export const PLANS: Record<PlanId, PlanInfo> = {
   monthly: { id: 'monthly', price: 29.99, period: 'mês', trialDays: 0 },
-  annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 7 },
+  // Demo store only: real builds read the trial from the store product (3 days, Rui 17 Oct).
+  annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 3 },
 };
 
 /**

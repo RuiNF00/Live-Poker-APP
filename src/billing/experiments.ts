@@ -15,11 +15,11 @@ export interface PaywallConfig {
   layout: PaywallLayout;
   /** Headline overrides per trigger, already in the player's language. */
   copy: Partial<Record<PaywallReason, { title?: string; body?: string }>>;
-  /** Players who play a few sessions a month can start the trial at their next live session instead (trial-moments.ts). */
+  /** The onboarding paywall offers to start the trial at the next live session instead (trial-moments.ts). On unless the offering sets "defer": false. */
   defer: boolean;
 }
 
-export const DEFAULT_PAYWALL: PaywallConfig = { offering: 'default', layout: 'list', copy: {}, defer: false };
+export const DEFAULT_PAYWALL: PaywallConfig = { offering: 'default', layout: 'list', copy: {}, defer: true };
 
 const LIMITS = { title: 60, body: 120 };
 
@@ -51,5 +51,5 @@ export function parsePaywallConfig(offering: string, metadata: Record<string, un
       if (title || body) copy[reason as PaywallReason] = { ...(title ? { title } : {}), ...(body ? { body } : {}) };
     }
   }
-  return { offering: offering || 'default', layout, copy, defer: m.defer === true };
+  return { offering: offering || 'default', layout, copy, defer: m.defer !== false };
 }

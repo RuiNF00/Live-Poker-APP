@@ -2490,6 +2490,8 @@ const en: Record<string, string> = {
   'Melhor sessão: {amount} em {venue}. Toca para veres o resumo do mês.': 'Best session: {amount} at {venue}. Tap to see the month\'s recap.',
   'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Best session: {amount}. Tap to see the month\'s recap.',
   'Toca para veres o resumo do mês.': 'Tap to see the month\'s recap.',
+  'depois de {days} dias grátis': 'after {days} free days',
+  'Cancela quando quiseres na {store}.': 'Cancel any time in {store}.',
 };
 
 export default en;

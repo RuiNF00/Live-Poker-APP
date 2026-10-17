@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
@@ -7,7 +6,6 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
-import { ONBOARDING_KEY, type Answers } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -41,14 +39,8 @@ export default function Paywall() {
   const trial = chosen?.trialDays ?? 0;
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
-  // A few sessions a month: the trial can wait for the next live session (offering metadata "defer").
-  const [few, setFew] = useState(false);
-  useEffect(() => {
-    if (reason !== 'plan' || !paywallConfig.defer) return;
-    AsyncStorage.getItem(ONBOARDING_KEY)
-      .then((v) => setFew(!!v && (JSON.parse(v) as Partial<Answers>).volume === 'few'))
-      .catch(() => {});
-  }, [reason, paywallConfig.defer]);
+  // At the end of onboarding the trial can wait for the next live session, so its days are spent at the table.
+  const deferable = reason === 'plan' && paywallConfig.defer;
   const later = () => {
     void deferTrial();
     track('onboarding_step', { step: 'defer', defer: true, offering: paywallConfig.offering });
@@ -129,6 +121,8 @@ export default function Paywall() {
           <ActivityIndicator color={C.accent} />
         ) : (
           <View style={{ gap: S.sm + 2 }}>
+            {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
+            <T v="label">Sweatbook Pro</T>
             {annual ? (
               <PlanCard
                 active={sel === 'annual'}
@@ -137,7 +131,6 @@ export default function Paywall() {
                 big={annual.priceString}
                 unit={t('/ano')}
                 line={t('{price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
-                was={monthly ? formatPrice(monthly.price * 12, monthly.currency, locale) : undefined}
                 tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, '−' + saving + '%']}
                 compact={compact}
               />
@@ -154,15 +147,18 @@ export default function Paywall() {
             <ActivityIndicator color={C.accent} />
           </View>
         ) : (
-          <Button
-            title={trial ? t('Começar {days} dias grátis', { days: trial }) : t('Subscrever Pro')}
-            sub={trial ? t('Depois {after}', { after }) : after}
-            iconRight="chevron-forward"
-            disabled={!chosen || !!busy}
-            onPress={onBuy}
-          />
+          <>
+            {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}
+            {after ? (
+              <T v="small" style={{ textAlign: 'center' }}>
+                <T v="h3">{after}</T>
+                {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
+              </T>
+            ) : null}
+            <Button title={trial ? t('Continuar') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
+          </>
         )}
-        {few && trial ? (
+        {deferable && trial ? (
           <Pressable onPress={later} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
             <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
               {t('Prefiro começar na próxima sessão')}
@@ -173,7 +169,7 @@ export default function Paywall() {
           <Row gap={6} style={{ justifyContent: 'center' }}>
             <Ionicons name="shield-checkmark" size={14} color={C.good} />
             <T v="small" color={C.text}>
-              {t('Sem compromisso. Cancela quando quiseres.')}
+              {t('Cancela quando quiseres na {store}.', { store })}
             </T>
           </Row>
         )}
@@ -243,7 +239,7 @@ function PlanCard({
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={`${title}, ${big} ${unit}, ${line}`}
+      accessibilityLabel={`Sweatbook Pro, ${title}, ${big} ${unit}, ${line}`}
       onPress={() => {
         tap('select');
         onPress();
@@ -263,7 +259,7 @@ function PlanCard({
           <View style={{ flex: 1, gap: 1 }}>
             <Row gap={6}>
               <T v="h3">{title}</T>
-              {tags[0] ? <T style={{ color: C.accent, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
+              {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
             <T v="tiny" numberOfLines={1}>
               {line}
@@ -282,8 +278,8 @@ function PlanCard({
           {title}
         </T>
         {tags.filter(Boolean).map((tg, i) => (
-          <View key={tg} style={{ backgroundColor: i === 0 ? C.accent : C.surface3, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
-            <T style={{ color: i === 0 ? C.accentInk : C.text, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tg}</T>
+          <View key={tg} style={{ backgroundColor: C.surface3, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
+            <T style={{ color: C.text, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tg}</T>
           </View>
         ))}
       </Row>
@@ -357,7 +353,7 @@ function Radio({ active }: { active: boolean }) {
 function TrialSteps({ days, after }: { days: number; after: string }) {
   const steps: { icon: IconName; when: string; what: string }[] = [
     { icon: 'lock-open', when: t('Hoje'), what: t('Tudo desbloqueado. 0 a pagar.') },
-    // The day-5 reminder (nudges.ts) keeps this promise.
+    // The charge notice (nudges.ts, 48 h before the end) keeps this promise.
     days >= 3
       ? { icon: 'notifications-outline', when: t('Dia {n}', { n: days - 2 }), what: t('Avisamos-te antes de cobrar.') }
       : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
@@ -393,7 +389,7 @@ function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; 
     const timer = setTimeout(async () => {
       const ok = await ask({
         title: t('Avisamos-te antes de cobrar'),
-        preview: { title: t('Dia 5 do teu Pro'), body: t('Vês as mãos que registaste e o dia em que o teste acaba.') },
+        preview: { title: t('O teste grátis acaba a {date}', { date: new Date(Date.now() + trial * 86_400_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }) }), body: t('Vês as mãos que registaste e o dia em que o teste acaba.') },
       });
       if (!live || !ok) return;
       setReminder(true);
