@@ -415,3 +415,29 @@
   line-height: 1.5;
   color: var(--muted);
 }
+
+.hc-sub {
+  margin: 26px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+.hc-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+.hc-input:focus {
+  outline: 0;
+  border-color: var(--accent);
+}
+.hc-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export const DELETE_ITEMS = ['backup', 'links', 'profile', 'swaps', 'other'] as const;
+export const DELETE_ITEMS = ['links', 'profile', 'swaps', 'other'] as const;
 export type DeleteItem = (typeof DELETE_ITEMS)[number];
 
 export interface DeleteFormCopy {
