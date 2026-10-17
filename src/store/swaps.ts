@@ -73,6 +73,11 @@ export interface Swap {
   updatedAt: number;
 }
 
+/** Server ids (short_id(), as web/src/lib/swaps.ts validId) and side tokens (64 hex). Checked
+ * before either goes into a URL or a header, e.g. from a restored backup or a link. */
+export const validSwapId = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z0-9]{6,16}$/.test(x);
+export const validSwapToken = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x);
+
 export const other = (s: SwapSide): SwapSide => (s === 'a' ? 'b' : 'a');
 
 /** Names as both players see them: the confirmed name wins over what the proposer typed. */
@@ -271,4 +276,29 @@ export function withSwaps(sessions: Session[], swaps: Swap[]): Session[] {
     const v = n && Math.abs(n) >= 0.005 ? Math.round(n * 100) / 100 : undefined;
     return (s.swapNet ?? undefined) === v ? s : { ...s, swapNet: v };
   });
+}
+
+const sameName = (a: string, b: string) => !!a.trim() && a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * The swaps a tournament I just finished belongs to, still waiting for my result from it:
+ * confirmed, same currency, played since the swap began, and for a single-event swap that
+ * event (same name, or the swap was agreed while I was playing it).
+ */
+export function swapsForSession(swaps: Swap[], s: Session): Swap[] {
+  if (s.kind !== 'mtt' || !s.endedAt) return [];
+  return swaps.filter((sw) => {
+    if (!sw.confirmedAt || sw.gone || sw.archived || sw.terms.currency !== s.currency) return false;
+    if (s.startedAt < sw.terms.createdAt - 2 * DAY) return false;
+    if (sw.terms.scope === 'event' && !sameName(sw.terms.title, s.name) && !(sw.terms.createdAt >= s.startedAt && sw.terms.createdAt <= s.endedAt!)) return false;
+    const linked = new Set(Object.entries(sw.links ?? {}).filter(([, id]) => id === s.id).map(([cid]) => cid));
+    return !sw.entries.some((e) => e.side === sw.side && e.kind === 'result' && (linked.has(e.cid) || (sameName(e.event, s.name) && e.amount === (s.cashOut || 0))));
+  });
+}
+
+/** Entries the other player added since `before`: what to tell me about after a sync. */
+export function newFromOther(before: Swap | undefined, after: Swap): SwapEntry[] {
+  if (!before) return [];
+  const seen = new Set(before.entries.map((e) => e.side + e.id));
+  return after.entries.filter((e) => e.side !== after.side && !seen.has(e.side + e.id));
 }

@@ -31,3 +31,8 @@ test('study folders never leave the phone', () => {
   const p = publicHand({ ...hand, folders: ['Rever com coach'] });
   assert.equal('folders' in p, false);
 });
+
+test('private street notes never leave the phone, even with notes shared', () => {
+  const p = publicHand({ ...hand, streetNotes: { turn: 'Devia ter apostado mais pequeno.' } }, { names: false, notes: true }) as unknown as Record<string, unknown>;
+  assert.equal('streetNotes' in p, false);
+});

@@ -93,7 +93,8 @@ export default function Welcome() {
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: S.gutter, gap: S.xl }}>
         {at === 'hero' ? (
           <>
-            <View style={{ marginHorizontal: -S.gutter }}>
+            {/* Same side margin as the hand screen: the controls keep their rounded ends. */}
+            <View style={{ marginHorizontal: S.md - S.gutter }}>
               <Replayer hand={sample} autoPlay />
             </View>
             <View style={{ gap: S.sm }}>
