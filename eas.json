@@ -7,19 +7,24 @@
     "base": {
       "node": "22.11.0",
       "env": {
-        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker"
       }
     },
     "development": {
       "extends": "base",
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     },
     "preview": {
       "extends": "base",
       "distribution": "internal",
       "channel": "preview",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "android": {
         "buildType": "apk"
       },
@@ -36,6 +41,9 @@
       },
       "ios": {
         "image": "latest"
+      },
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
       },
       "environment": "production"
     },
