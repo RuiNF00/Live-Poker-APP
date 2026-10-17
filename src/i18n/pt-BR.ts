@@ -569,7 +569,7 @@ const ptBR: Record<string, string> = {
   'Apagar backer': 'Excluir backer',
   '{share}% com makeup · ficas com {cut}% do lucro': '{share}% com makeup · você fica com {cut}% do lucro',
   'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.': 'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e você só ganha sua parte do lucro quando o pacote estiver acima de zero.',
-  'O backer compra a mesma percentagem de cada torneio do pacote, ao markup combinado. Cada torneio acerta-se sozinho.': 'O backer compra a mesma porcentagem de cada torneio do pacote, ao markup combinado. Cada torneio se acerta sozinho.',
+  'O backer fica com a mesma percentagem de cada torneio do pacote, ao markup combinado. Cada torneio acerta-se sozinho.': 'O backer fica com a mesma porcentagem de cada torneio do pacote, ao markup combinado. Cada torneio se acerta sozinho.',
   'A tua parte do lucro': 'Sua parte do lucro',
   'Já não entra em sessões novas. O saldo fica.': 'Não entra mais em sessões novas. O saldo fica.',
   'Apagar pacote': 'Excluir pacote',
@@ -1395,6 +1395,8 @@ const ptBR: Record<string, string> = {
   'Las Vegas, verão 2027': 'Las Vegas, verão de 2027',
   'Ao comentar aceitas os': 'Ao comentar, você aceita os',
   'Equity contra a tua grelha': 'Equity contra a sua grade',
+  "prémios {amount}": "prêmios {amount}",
+  "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
 };
 
 export default ptBR;

@@ -77,6 +77,30 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
         {st.mk >= 0.5 ? <Tile label={c.makeup} value={money(st.mk, st.cur)} tone="warn" /> : null}
       </section>
 
+      {st.yr ? (
+        <section className="bk-list">
+          <p className="live-label">{c.year(st.yr.y)}</p>
+          {[...st.yr.pk, ...(st.yr.pk.length > 1 ? [null] : [])].map((p, i) => {
+            const y = st.yr!;
+            const row = p ?? { n: c.yearTotal, s: y.pk.reduce((a, x) => a + x.s, 0), c: y.pk.reduce((a, x) => a + x.c, 0), o: y.pk.reduce((a, x) => a + x.o, 0), mk: y.pk.reduce((a, x) => a + x.mk, 0), net: y.pk.reduce((a, x) => a + x.net, 0) };
+            return (
+              <div className="bk-row" key={i}>
+                <div className="bk-main">
+                  <p className="bk-name">{row.n || c.outside}</p>
+                  <p className="bk-sub">
+                    {c.yearSub(row.s, money(row.c, st.cur), money(row.o, st.cur))}
+                    {row.mk >= 0.5 ? <span className="bk-pill bk-warn">{`${c.makeup} ${money(row.mk, st.cur)}`}</span> : null}
+                  </p>
+                </div>
+                <div className="bk-right">
+                  <p className={`bk-amt ${row.net > 0 ? 'up' : row.net < 0 ? 'down' : ''}`}>{(row.net > 0 ? '+' : '') + money(row.net, st.cur)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
+
       <section className="bk-list">
         <p className="live-label">{c.sessions}</p>
         {st.rows.map((r, i) => {
