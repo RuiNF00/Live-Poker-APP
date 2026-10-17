@@ -325,6 +325,8 @@ export interface Settings {
   sizes?: { cash?: SizeMemory; mtt?: SizeMemory };
   /** Local notification on the 1st with last month's recap. Missing = on (it only goes out once notifications are allowed). */
   monthRecap?: boolean;
+  /** Amounts and results in notification text (they show on a locked phone). Missing = off. */
+  notifyAmounts?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
