@@ -5,7 +5,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE } from '@/billing/plans';
@@ -91,6 +91,12 @@ const FIELD_LABEL: Partial<Record<Field, string>> = {
   notes: t('Notas'),
 };
 const MAPPABLE = Object.keys(FIELD_LABEL) as Field[];
+
+/** A narrow screen or big text (200%): three tiles or two buttons side by side no longer fit. */
+function useTight() {
+  const { width, fontScale } = useWindowDimensions();
+  return width / Math.max(1, fontScale) < 320;
+}
 
 type Step = { at: 'pick' } | { at: 'review'; file: Prepared } | { at: 'done'; added: number; total: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
 
@@ -242,6 +248,7 @@ export default function ImportScreen() {
 
 /** After the import: what came in, the best year, and a way straight into that year's review. */
 function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; bottom: number; onAgain: () => void }) {
+  const tight = useTight();
   const r = step.recap;
   const sub =
     step.summary ??
@@ -269,7 +276,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
         </View>
 
         {r.sessions ? (
-          <StatGrid cols={3}>
+          <StatGrid cols={tight ? 1 : 3}>
             <Stat label={t('Horas')} value={String(Math.round(r.hours))} />
             <Stat label={t('Salas')} value={String(r.venues)} />
             <Stat label={t('Anos')} value={String(r.from === null ? 0 : r.to! - r.from + 1)} />
@@ -309,6 +316,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
 }
 
 function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
+  const tight = useTight();
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
   const [mapping, setMapping] = useState<Mapping>(file.mapping);
@@ -363,7 +371,7 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
         </View>
 
         {r.sessions.length ? (
-          <StatGrid cols={3}>
+          <StatGrid cols={tight ? 1 : 3}>
             <Stat label={t('Lucro')} value={(total > 0 ? '+' : '') + money(Math.round(total), cur)} tone={total >= 0 ? 'good' : 'bad'} />
             <Stat label="Cash" value={String(r.sessions.length - mtts)} />
             <Stat label={t('Torneios')} value={String(mtts)} />
@@ -448,9 +456,19 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
               {list.slice(0, 5).map((s) => (
                 <ListItem
                   key={s.id}
-                  title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
+                  title={
+                    tight ? (
+                      // Big text: the amount goes under the name instead of squeezing it.
+                      <View style={{ gap: 2 }}>
+                        <T v="body">{s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}</T>
+                        <Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />
+                      </View>
+                    ) : (
+                      s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')
+                    )
+                  }
                   subtitle={[fullDate(s.startedAt), s.venue].filter(Boolean).join(' · ')}
-                  right={<Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />}
+                  right={tight ? undefined : <Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />}
                 />
               ))}
             </ListGroup>
@@ -464,8 +482,8 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
                 <ListItem
                   key={f}
                   title={FIELD_LABEL[f]!}
-                  subtitle={mapping[f] !== undefined ? sample(mapping[f]!) || ' ' : undefined}
-                  value={mapping[f] !== undefined ? file.table.headers[mapping[f]!] : '—'}
+                  subtitle={mapping[f] !== undefined ? (tight ? [file.table.headers[mapping[f]!], sample(mapping[f]!)].filter(Boolean).join(' · ') : sample(mapping[f]!) || ' ') : undefined}
+                  value={tight ? (mapping[f] === undefined ? '—' : undefined) : mapping[f] !== undefined ? file.table.headers[mapping[f]!] : '—'}
                   valueColor={mapping[f] !== undefined ? C.text : C.muted}
                   onPress={() => setEditing(f)}
                 />
@@ -486,15 +504,15 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
       </ScrollView>
 
       <Dock bottom={bottom}>
-        <Row gap={S.sm}>
+        <View style={{ flexDirection: tight ? 'column-reverse' : 'row', gap: S.sm }}>
           <Button kind="secondary" title={t('Voltar')} onPress={onBack} style={{ paddingHorizontal: 18 }} />
           <Button
-            style={{ flex: 1 }}
+            style={tight ? undefined : { flex: 1 }}
             title={fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
             disabled={fresh + freshMoves === 0}
             onPress={() => onImport(r, placed)}
           />
-        </Row>
+        </View>
       </Dock>
 
       <ColumnSheet

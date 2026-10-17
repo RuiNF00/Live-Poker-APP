@@ -97,3 +97,17 @@ test('one event: after my result, the seats still to record theirs', async () =>
   assert.deepEqual(groupWaitingOn(group({ terms: ev, entries: [e(0, 'result', 0), e(2, 'result', 900)] })), [1, 3]);
   assert.deepEqual(groupWaitingOn(group({ entries: [e(0, 'result', 0)] })), [], 'a series never waits');
 });
+
+test('a seat dropped before anyone took it leaves a gap in the numbers, and the accounts still add up', () => {
+  // João (seat 2) never joined and was dropped: seats 0, 1 and 3 remain.
+  const g = group({ seats: group().seats.filter((s) => s.seat !== 2), entries: [e(3, 'result', 100000), e(1, 'payment', 500, { to: 3 })] });
+  const net = groupNet(g);
+  assert.deepEqual([...net.keys()], [0, 1, 3]);
+  assert.equal(net.get(0), 2000);
+  assert.equal(net.get(1), 2000 + 500);
+  assert.equal(net.get(3), -4000 - 500);
+  assert.equal([...net.values()].reduce((a, b) => a + b, 0), 0);
+  const tr = minTransfers(net);
+  assert.ok(tr.every((x) => x.from === 3 && (x.to === 0 || x.to === 1)));
+  assert.equal(tr.reduce((a, x) => a + x.amount, 0), 4500);
+});

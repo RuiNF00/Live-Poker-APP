@@ -4,7 +4,7 @@
 // it. Money only shows when the player turns it on. Only the trip's own name
 // goes on the card: never the venue (no casino or event brand in a share).
 
-import { decimalComma, t } from '@/i18n';
+import { decimalComma, t, variant } from '@/i18n';
 import { replay } from '@/poker/engine';
 import { rawMoney } from '@/poker/format';
 import type { Hand } from '@/poker/types';
@@ -122,8 +122,15 @@ export function festivalRecap(trip: Trip, sessions: Session[], hands: Hand[]): F
   };
 }
 
-/** "14º" ("14.º" in Spanish). */
-const ordinal = (n: number) => t('{n}º', { n });
+/** "14.º" in pt-PT and es, "14º" in pt-BR, "14th" in English. */
+export function ordinal(n: number): string {
+  if (variant === 'en') {
+    const tens = n % 100;
+    const suffix = tens >= 11 && tens <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
+    return `${n}${suffix}`;
+  }
+  return variant === 'pt-BR' ? `${n}º` : `${n}.º`;
+}
 export const placeLabel = (finish: number, field?: number) => (field ? `${ordinal(finish)}/${field}` : ordinal(finish));
 
 const one = (n: number) => {

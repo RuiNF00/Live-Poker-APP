@@ -50,7 +50,7 @@ export default function TripsScreen() {
             body={t('Junta as sessões de um festival e o que gastaste em voos, hotel e comida. Vês o resultado depois das despesas, na moeda da viagem e na tua.')}
             action={
               <View style={{ gap: S.sm, alignSelf: 'stretch', marginTop: S.sm }}>
-                {!hasFestival ? <Button title={t('Criar para o {name}', { name: festival.name })} icon="trophy-outline" onPress={fromFestival} /> : null}
+                {!hasFestival ? <Button title={t('Criar para o {name}', { name: t(festival.name) })} icon="trophy-outline" onPress={fromFestival} /> : null}
                 <Button title={t('Nova viagem')} icon="add" kind="secondary" onPress={add} />
               </View>
             }
@@ -83,7 +83,7 @@ export default function TripsScreen() {
                 })}
               </ListGroup>
             </Section>
-            {!hasFestival ? <Button title={t('Criar para o {name}', { name: festival.name })} icon="trophy-outline" kind="secondary" size="md" onPress={fromFestival} /> : null}
+            {!hasFestival ? <Button title={t('Criar para o {name}', { name: t(festival.name) })} icon="trophy-outline" kind="secondary" size="md" onPress={fromFestival} /> : null}
             {locked ? (
               <Card tone="inset" style={{ gap: S.sm }}>
                 <Pill label="Pro" color={C.accent} style={{ alignSelf: 'flex-start' }} />

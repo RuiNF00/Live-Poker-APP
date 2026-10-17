@@ -193,7 +193,7 @@ export function SheetHeader({ title, onClose, right, closeLabel }: { title: stri
     <View style={{ gap: S.md }}>
       <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -S.sm }} />
       <Row gap={S.md}>
-        <T v="h1" style={{ flex: 1 }} numberOfLines={1}>
+        <T v="h1" style={{ flex: 1 }} numberOfLines={2}>
           {title}
         </T>
         {right}
@@ -410,7 +410,7 @@ function softOf(hex: string) {
 }
 
 /** A setting with an on/off switch, used inside a ListGroup. */
-export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }: { title: string; subtitle?: string; value: boolean; onChange: (v: boolean) => void; icon?: IconName; iconColor?: string }) {
+export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor, lines = 2 }: { title: string; subtitle?: string; value: boolean; onChange: (v: boolean) => void; icon?: IconName; iconColor?: string; lines?: number }) {
   const flip = (v: boolean) => {
     tap('select');
     onChange(v);
@@ -429,7 +429,7 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }
         iconColor={iconColor}
         title={title}
         subtitle={subtitle}
-        numberOfLines={2}
+        numberOfLines={lines}
         chevron={false}
         right={
           <Switch
@@ -529,6 +529,7 @@ export function Button({
   size,
   haptic,
   sub,
+  lines = 1,
 }: {
   title: string;
   kind?: BtnKind;
@@ -544,6 +545,8 @@ export function Button({
   haptic?: boolean;
   /** Second line under the title (primary buttons with a price, say). */
   sub?: string;
+  /** Lines the title may take in a narrow slot. Web can't shrink text, and 200% may not fit in one line even shrunk. */
+  lines?: 1 | 2;
 }) {
   const sz: BtnSize = size ?? (small ? 'sm' : 'lg');
   const h = sz === 'lg' ? 54 : sz === 'md' ? 44 : 36;
@@ -584,7 +587,7 @@ export function Button({
       {iconNode}
       {/* Shrinks to fit a narrow slot (the session dock at 200%) instead of cutting to "Nova…". */}
       <View style={{ alignItems: 'center', flexShrink: 1 }}>
-        <RNText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1 }}>
+        <RNText numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1, textAlign: 'center' }}>
           {title}
         </RNText>
         {sub ? <RNText maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}

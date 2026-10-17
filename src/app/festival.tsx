@@ -135,7 +135,14 @@ function FestivalView({ f }: { f: Festival }) {
               <Ionicons name="pencil" size={16} color={C.textDim} />
             </Row>
           )}
-          <T v="label">{[f.venue, f.city && t(f.city)].filter(Boolean).join(' · ')}</T>
+          {f.events.length ? (
+            <T v="label">{[f.own ? f.venue : t(f.venue), f.city && t(f.city)].filter(Boolean).join(' · ')}</T>
+          ) : (
+            // No schedule: where and when is all there is, in one line under the name.
+            <T v="body" color={C.textDim}>
+              {[f.own ? f.venue : t(f.venue), f.city && t(f.city), f.dates ? `${spanLabel(f.dates.from, f.dates.to)} ${f.dates.to.slice(0, 4)}` : t('Datas a confirmar')].filter(Boolean).join(' · ')}
+            </T>
+          )}
           {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
         </View>
 
@@ -145,10 +152,7 @@ function FestivalView({ f }: { f: Festival }) {
         {f.events.length ? <ActionOffers f={f} picked={plan.picked} /> : null}
 
         {!f.events.length ? (
-          <Card tone="inset" style={{ gap: 4 }}>
-            <T v="h3">{f.dates ? `${spanLabel(f.dates.from, f.dates.to)} ${f.dates.to.slice(0, 4)}` : t('Datas a confirmar')}</T>
-            <T v="small">{f.own ? t('As sessões que jogares nestes dias entram na viagem sozinhas, com as despesas e o resultado.') : f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
-          </Card>
+          <T v="small">{f.own ? t('As sessões que jogares nestes dias entram na viagem sozinhas, com as despesas e o resultado.') : f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
         ) : (
           <ChipRow>
             {(
@@ -236,7 +240,8 @@ function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {
       size="md"
       kind="secondary"
       icon="airplane-outline"
-      title={trip ? t('Ver viagem e despesas') : t('Criar viagem: voos, hotel e resultado líquido')}
+      title={trip ? t('Ver viagem e despesas') : t('Criar viagem')}
+      sub={trip ? undefined : t('Voos, hotel e resultado líquido')}
       onPress={open}
     />
   );
