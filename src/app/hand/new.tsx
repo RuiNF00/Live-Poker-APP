@@ -310,7 +310,9 @@ export default function NewHand() {
     phase !== 'action' || !l
       ? null
       : autoSeats.length
-        ? (l.p === hand.hero ? t('Fold de todos até ti') : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })) + ' · ' + t('alguém entrou? Toca no lugar dele na mesa')
+        ? l.p === hand.hero
+          ? t('Fold de todos até ti')
+          : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
         : skips.length > 1
           ? t('Toca num lugar da mesa para saltar até ele')
           : null;
@@ -468,6 +470,17 @@ export default function NewHand() {
                 {seatHint}
               </T>
             ) : null}
+            {/* The seats folded by the app, as big targets: whoever came in is one tap (the felt works too). */}
+            {autoSeats.length > 0 && (
+              <ChipRow>
+                <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
+                  {t('Alguém entrou?')}
+                </T>
+                {autoSeats.map((i) => (
+                  <Chip key={i} label={displayName(hand, i, pos)} onPress={() => rewind(i)} />
+                ))}
+              </ChipRow>
+            )}
             {/* First hand only (onboarded is set when it's saved): the rest is optional. */}
             {!settings.onboarded && !isEdit ? (
               <T v="tiny" color={C.accent} numberOfLines={2}>
@@ -576,36 +589,7 @@ export default function NewHand() {
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
                   <T v="h2">Showdown</T>
-                  <T v="small">{t('Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)')}</T>
-                  <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                    {hand.players.map((p, i) =>
-                      i === hand.hero || s.folded[i] ? null : (
-                        <Chip
-                          key={i}
-                          big
-                          active={sdSeat === i}
-                          label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
-                          onPress={() => setShowdownFor(sdSeat === i ? null : i)}
-                        />
-                      ),
-                    )}
-                  </Row>
-                  {sdSeat !== null && (
-                    <CardPicker
-                      used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
-                      selected={hand.players[sdSeat].cards ?? []}
-                      onPick={(c) => {
-                        const p = hand.players[sdSeat];
-                        let cards = [...(p.cards ?? [])];
-                        if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-                        else if (cards.length < 2) cards.push(c);
-                        else cards = [cards[1], c];
-                        setPlayer(sdSeat, { ...p, cards });
-                        if (cards.length === 2) setShowdownFor(null);
-                      }}
-                    />
-                  )}
-                  {twiceChip && <ChipRow>{twiceChip}</ChipRow>}
+                  {/* Who won comes first: it is the one answer the hand needs. Cards shown are optional. */}
                   {r.boards.length === 2 &&
                     r.boards.map((b, run) => (
                       <Row key={run} gap={10}>
@@ -640,6 +624,36 @@ export default function NewHand() {
                       ))}
                     </View>
                   )}
+                  <T v="label">{t('Cartas mostradas (opcional)')}</T>
+                  <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                    {hand.players.map((p, i) =>
+                      i === hand.hero || s.folded[i] ? null : (
+                        <Chip
+                          key={i}
+                          big
+                          active={sdSeat === i}
+                          label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
+                          onPress={() => setShowdownFor(sdSeat === i ? null : i)}
+                        />
+                      ),
+                    )}
+                  </Row>
+                  {sdSeat !== null && (
+                    <CardPicker
+                      used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
+                      selected={hand.players[sdSeat].cards ?? []}
+                      onPick={(c) => {
+                        const p = hand.players[sdSeat];
+                        let cards = [...(p.cards ?? [])];
+                        if (cards.includes(c)) cards = cards.filter((x) => x !== c);
+                        else if (cards.length < 2) cards.push(c);
+                        else cards = [cards[1], c];
+                        setPlayer(sdSeat, { ...p, cards });
+                        if (cards.length === 2) setShowdownFor(null);
+                      }}
+                    />
+                  )}
+                  {twiceChip && <ChipRow>{twiceChip}</ChipRow>}
                 </View>
               )}
               {r.result && (

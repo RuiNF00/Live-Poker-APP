@@ -174,7 +174,6 @@ const en: Record<string, string> = {
   'Fold de todos até ti': 'Folded to you',
   'Fold de todos até {name}': 'Folded to {name}',
   'Todos check': 'Check around',
-  'alguém entrou? Toca no lugar dele na mesa': 'someone came in? Tap their seat on the table',
   'Toca num lugar da mesa para saltar até ele': 'Tap a seat on the table to skip to it',
   'Guardar já': 'Save now',
   'Ante no botão': 'Button ante',
@@ -206,7 +205,6 @@ const en: Record<string, string> = {
   'escolhe 1 carta': 'pick 1 card',
   'escolhe {n} cartas': 'pick {n} cards',
   'Guardar sem board': 'Save without board',
-  'Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)': 'What did they show? (optional — without cards you pick the winner)',
   'Quem ganhou?': 'Who won?',
   'Por rever': 'To review',
   'Por rever ({n})': 'To review ({n})',
@@ -3065,6 +3063,8 @@ const en: Record<string, string> = {
   '{a} e {b}, naipes diferentes': '{a} and {b}, offsuit',
   "{game}: diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "{game}: tell me what you'd do, street by street. Comment right on the hand 👀",
   "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Tell me what you'd do, street by street. Comment right on the hand 👀",
+  'Alguém entrou?': 'Someone came in?',
+  'Cartas mostradas (opcional)': 'Cards shown (optional)',
 };
 
 export default en;

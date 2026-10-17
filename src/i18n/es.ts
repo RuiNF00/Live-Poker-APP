@@ -153,7 +153,6 @@ const es: Record<string, string> = {
   'Fold de todos até ti': 'Fold de todos hasta ti',
   'Fold de todos até {name}': 'Fold de todos hasta {name}',
   'Todos check': 'Todos check',
-  'alguém entrou? Toca no lugar dele na mesa': '¿entró alguien? Toca su asiento en la mesa',
   'Toca num lugar da mesa para saltar até ele': 'Toca un asiento de la mesa para saltar hasta él',
   'Guardar já': 'Guardar ya',
   'Ante no botão': 'Ante en el botón',
@@ -185,7 +184,6 @@ const es: Record<string, string> = {
   'escolhe 1 carta': 'elige 1 carta',
   'escolhe {n} cartas': 'elige {n} cartas',
   'Guardar sem board': 'Guardar sin board',
-  'Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)': '¿Qué cartas mostraron? (opcional — sin cartas eliges tú al ganador)',
   'Quem ganhou?': '¿Quién ganó?',
   'Por rever': 'Por revisar',
   'Por rever ({n})': 'Por revisar ({n})',
@@ -3060,6 +3058,8 @@ const es: Record<string, string> = {
   '{a} e {b}, naipes diferentes': '{a} y {b}, de palos distintos',
   "{game}: diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "{game}: dime qué harías, calle a calle. Comenta en la misma mano 👀",
   "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Dime qué harías, calle a calle. Comenta en la misma mano 👀",
+  'Alguém entrou?': '¿Entró alguien?',
+  'Cartas mostradas (opcional)': 'Cartas mostradas (opcional)',
 };
 
 export default es;
