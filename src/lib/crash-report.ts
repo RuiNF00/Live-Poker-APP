@@ -13,7 +13,8 @@ import { Platform } from 'react-native';
 
 import { variant } from '@/i18n';
 
-import { loadSentry } from './crash-sdk';
+import { loadSentry, wipeSentryCache } from './crash-sdk';
+import { onEraseAll } from './erase-all';
 import { scrubBreadcrumb, scrubEvent, TAGS, type CrashTag } from './crash-scrub';
 
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined;
@@ -54,7 +55,8 @@ export async function startCrashReports(): Promise<void> {
       replaysOnErrorSampleRate: 0,
       attachScreenshot: false,
       attachViewHierarchy: false,
-      enableAutoSessionTracking: true,
+      // Sessions carry the native install id (did): the store consoles give the crash-free rate instead.
+      enableAutoSessionTracking: false,
       beforeSend: (e) => scrubEvent(e),
       beforeBreadcrumb: (b) => scrubBreadcrumb(b),
     });
@@ -79,8 +81,17 @@ export async function setCrashReports(on: boolean): Promise<void> {
   } catch {
     // Storage full: the switch stays as it was.
   }
-  if (!on && sentry) {
+  if (!on) await stopCrashReports();
+}
+
+/** Stops reporting now and drops anything still queued on disk, so nothing goes out later. */
+async function stopCrashReports(): Promise<void> {
+  if (sentry) {
     await sentry.close().catch(() => {});
     sentry = null;
   }
+  wipeSentryCache();
 }
+
+// Erase-all: nothing queued from before may leave afterwards.
+onEraseAll(stopCrashReports);

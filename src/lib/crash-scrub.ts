@@ -13,14 +13,25 @@ const LONG = 200;
 export const TAGS = ['channel', 'platform', 'locale', 'pro', 'live_session'] as const;
 export type CrashTag = (typeof TAGS)[number];
 
+const URL_IN_TEXT = /\b(?:https?|sweatbook|exp):\/\/[^\s"'<>)]+/gi;
+
 export function scrubString(s: string): string {
   if (s.length > LONG) return `[${s.length} chars removed]`;
-  return s.replace(EMAIL, '[email]').replace(PHONE, '[number]');
+  // URLs first: fetch errors quote the whole link, token included.
+  return s.replace(URL_IN_TEXT, stripUrl).replace(EMAIL, '[email]').replace(PHONE, '[number]');
 }
 
-/** A URL without its query and fragment (links carry edit tokens, recovery codes, keys after #). */
+/**
+ * A URL (or app path) with no secrets: no query or fragment (edit tokens,
+ * recovery codes, keys after #), and every path segment that isn't a plain
+ * route word becomes :id (coach and swap tokens, backup ids and hand ids sit
+ * in the path).
+ */
 export function stripUrl(u: string): string {
-  return u.replace(/[?#].*$/, '');
+  const bare = u.replace(/[?#].*$/, '');
+  const m = /^([a-z][a-z0-9+.-]*:\/\/[^/]*)?(.*)$/i.exec(bare)!;
+  const path = m[2].split('/').map((seg) => (seg === '' || /^[a-z][a-z-]*$/.test(seg) ? seg : ':id'));
+  return (m[1] ?? '') + path.join('/');
 }
 
 function deep(x: unknown, depth = 0): unknown {
@@ -73,10 +84,15 @@ export function scrubEvent<E extends object>(event: E): E {
   return e as unknown as E;
 }
 
-/** Sentry's beforeBreadcrumb: no console lines; network crumbs keep method, path and status only. */
+/**
+ * Sentry's beforeBreadcrumb: no console lines and no touches (a touched
+ * button's label can be a name or an amount); network crumbs keep method,
+ * path and status only; navigation keeps the route, never its params.
+ */
 export function scrubBreadcrumb<B extends object>(crumb: B): B | null {
   const b = crumb as Obj;
-  if (b.category === 'console') return null;
+  const cat = typeof b.category === 'string' ? b.category : '';
+  if (cat === 'console' || cat === 'touch' || cat.startsWith('ui.')) return null;
   const out: Obj = { ...b };
   if (out.message != null) out.message = deep(out.message);
   if (out.data && typeof out.data === 'object') {

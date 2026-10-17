@@ -11,8 +11,16 @@ test('emails, telefones e textos longos saem; linhas de código ficam', () => {
   assert.equal(scrubString('x'.repeat(201)), '[201 chars removed]');
 });
 
-test('links perdem query e #', () => {
+test('links perdem query, # e tokens no caminho', () => {
   assert.equal(stripUrl('https://sweatbook.poker/r/abc?edit_token=SECRET#key'), 'https://sweatbook.poker/r/abc');
+  assert.equal(stripUrl('https://api.sweatbook.poker/api/coach/Zx9_kq2LmNoP4rStUv'), 'https://api.sweatbook.poker/api/coach/:id');
+  assert.equal(stripUrl('sweatbook://swap/AbCdEfGh12345678'), 'sweatbook://swap/:id');
+  assert.equal(stripUrl('/hand/h_000123'), '/hand/:id');
+  assert.equal(stripUrl('/bankroll'), '/bankroll');
+});
+
+test('o URL dentro da mensagem de erro também é limpo', () => {
+  assert.equal(scrubString('Network request failed: https://x.pt/api/backup/Q1w2E3r4T5y6U7i8O9p0?k=1'), 'Network request failed: https://x.pt/api/backup/:id');
 });
 
 test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquetas proibidas', () => {
@@ -29,6 +37,7 @@ test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquet
   assert.equal('user' in e, false);
   assert.equal('server_name' in e, false);
   assert.deepEqual(e.request, { url: 'https://x.pt/a' });
+  assert.equal('headers' in (e.request as object), false);
   assert.deepEqual(e.contexts, { device: { model: 'iPhone15,2' } });
   assert.deepEqual(e.tags, { channel: 'production' });
   assert.equal((e.extra as { note: string }).note, 'Ele 3-beta muito leve com A5s, liga-me [number]');
@@ -37,7 +46,9 @@ test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquet
   assert.deepEqual(e.breadcrumbs, [{ category: 'fetch', data: { method: 'GET', url: 'https://x.pt/api', status_code: 200 } }]);
 });
 
-test('migalhas de consola são deitadas fora', () => {
+test('migalhas de consola e de toques são deitadas fora; navegação só com a rota', () => {
   assert.equal(scrubBreadcrumb({ category: 'console', message: 'x' }), null);
-  assert.deepEqual(scrubBreadcrumb({ category: 'navigation', data: { from: '/hand/1?x=2', to: '/bankroll' } }), { category: 'navigation', data: { from: '/hand/1', to: '/bankroll' } });
+  assert.equal(scrubBreadcrumb({ category: 'ui.click', message: 'Zé · 500 €' }), null);
+  assert.equal(scrubBreadcrumb({ category: 'touch', data: { label: 'Ana' } }), null);
+  assert.deepEqual(scrubBreadcrumb({ category: 'navigation', data: { from: '/hand/h_1?x=2', to: '/bankroll' } }), { category: 'navigation', data: { from: '/hand/:id', to: '/bankroll' } });
 });
