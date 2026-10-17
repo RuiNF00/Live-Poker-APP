@@ -73,8 +73,11 @@ export function SessionForm({
   submitLabel,
   bankrolls = [],
   submitRef,
+  today = [],
 }: {
   initial: Session;
+  /** Festival tournaments starting today: a chip fills the form with that event (buy-in, stack, levels). */
+  today?: { key: string; label: string; fill: Partial<Session> }[];
   past?: boolean;
   /** Where the session can count; a choice only shows with two or more. */
   bankrolls?: Bankroll[];
@@ -158,6 +161,13 @@ export function SessionForm({
       <Card style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
           <Field label={mtt ? t('Torneio') : t('Jogo')} value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} />
+          {mtt && !past && today.length > 0 && (
+            <ChipRow style={{ marginHorizontal: -S.lg }}>
+              {today.map((x) => (
+                <Chip key={x.key} label={x.label} active={s.name === x.fill.name && s.buyIn === x.fill.buyIn} onPress={() => set(x.fill)} />
+              ))}
+            </ChipRow>
+          )}
           {recentNames.length > 0 && (
             <ChipRow style={{ marginHorizontal: -S.lg }}>
               {recentNames.map((n) => (

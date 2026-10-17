@@ -4,6 +4,7 @@
 import { Link, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
@@ -24,6 +25,7 @@ import { useStore } from '@/store/store';
 import { BRAND, C, R } from '@/theme';
 
 export default function SharedHand() {
+  const insets = useSafeAreaInsets();
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   const { id, q, r, c: fresh, utm_source, utm_medium } = useLocalSearchParams<{ id: string; q?: string; r?: string; c?: string; utm_source?: string; utm_medium?: string }>();
   // A friend's link opened in the app: credit the sharer and the channel.
@@ -79,7 +81,7 @@ export default function SharedHand() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 60, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
-      <Row style={{ justifyContent: 'space-between', paddingTop: Platform.OS === 'web' ? 4 : 44 }}>
+      <Row style={{ justifyContent: 'space-between', paddingTop: Platform.OS === 'web' ? 4 : Platform.OS === 'android' ? insets.top + 4 : 44 }}>
         <Row gap={8}>
           <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: C.accent }} />
           <Wordmark size={20} />

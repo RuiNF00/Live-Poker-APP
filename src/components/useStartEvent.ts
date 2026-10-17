@@ -16,12 +16,12 @@ import type { Session } from '@/store/types';
 import { blankSession } from './SessionForm';
 import { tap } from './ui';
 
-function sessionName(e: FestivalEvent) {
+export function sessionName(e: FestivalEvent) {
   return eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
 }
 
 /** A running tournament session for a festival event, starting now. */
-function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
+export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
   const now = Date.now();
   const base = blankSession('mtt', f.currency, tableSize);
   return {

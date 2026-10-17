@@ -5,9 +5,10 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { AddFestivalEvent } from '@/components/AddFestivalEvent';
 import { spanLabel } from '@/components/FestivalItem';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { useStartEvent } from '@/components/useStartEvent';
@@ -21,7 +22,7 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
+import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
@@ -37,16 +38,19 @@ function dayLabel(day: string) {
 }
 
 export default function FestivalScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // `event`: from a reminder, scroll to that event's row (its "Começar sessão").
+  const { id, event } = useLocalSearchParams<{ id?: string; event?: string }>();
   const festivals = useFestivals();
   const ready = useFestivalsReady();
   // An own festival's id before the list is read: wait, so nothing (a trip) attaches to another festival.
   const f = festivals.find((x) => x.id === id) ?? (ready || !id ? festivals[0] : undefined);
-  return f ? <FestivalView key={f.id} f={f} /> : null;
+  return f ? <FestivalView key={f.id} f={f} focus={event} /> : null;
 }
 
-function FestivalView({ f }: { f: Festival }) {
-  const plan = useFestivalPlan(f.id);
+function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
+  const plan = useFestivalPlan(base.id);
+  // The schedule plus the tournaments the player added.
+  const f = useMemo(() => withPlanEvents(base, plan), [base, plan]);
   const { sessions, transfers, bankrolls, defaultBankroll, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
   const [lateFor, setLateFor] = useState<string | null>(null);
@@ -83,12 +87,21 @@ function FestivalView({ f }: { f: Festival }) {
   };
 
   const start = useStartEvent();
+  // Opened from a reminder: scroll once to that event, whose card shows "Começar sessão".
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const focusAt = useRef({ day: -1, row: -1, done: !focus });
+  const scrollToFocus = (p: Partial<{ day: number; row: number }>) => {
+    const y = Object.assign(focusAt.current, p);
+    if (y.done || y.day < 0 || y.row < 0) return;
+    y.done = true;
+    scroll.current?.scrollTo({ y: y.day + y.row, animated: true });
+  };
 
   return (
     <>
       <Stack.Screen options={{ title: t('Festival') }} />
       {softAsk}
-      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
+      <ScrollView ref={scroll} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <View style={{ gap: 4 }}>
           {f.own ? (
             <Row gap={8}>
@@ -158,11 +171,12 @@ function FestivalView({ f }: { f: Festival }) {
         ) : null}
 
         {days.map(([day, list]) => (
-          <Section key={day} title={dayLabel(day)}>
+          <View key={day} onLayout={list.some((e) => e.id === focus) ? (ev) => scrollToFocus({ day: ev.nativeEvent.layout.y }) : undefined}>
+          <Section title={dayLabel(day)}>
             <View style={{ gap: S.sm }}>
               {list.map((e) => (
+                <View key={e.id} onLayout={e.id === focus ? (ev) => scrollToFocus({ row: ev.nativeEvent.layout.y }) : undefined}>
                 <EventRow
-                  key={e.id}
                   f={f}
                   e={e}
                   plan={plan}
@@ -182,10 +196,14 @@ function FestivalView({ f }: { f: Festival }) {
                   }}
                   onStart={() => start(f, e)}
                 />
+                </View>
               ))}
             </View>
           </Section>
+          </View>
         ))}
+
+        <AddFestivalEvent f={base} />
 
         {f.own ? null : (
           <View style={{ gap: 6, paddingHorizontal: 4 }}>
@@ -322,7 +340,7 @@ function EventRow({
             {eventTitle(e)}
           </T>
           <T v="small">
-            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? `${chips(e.stack)} · ${e.levelMinutes} min` : null].filter(Boolean).join(' · ')}
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? chips(e.stack) : null, e.stack && e.levelMinutes ? `${e.levelMinutes} min` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
@@ -372,6 +390,7 @@ function EventRow({
               </ChipRow>
             </View>
           ) : null}
+          {e.own ? <Button kind="plain" size="sm" title={t('Apagar torneio')} onPress={() => updatePlan(f.id, (p) => removeOwnEvent(p, e.id))} /> : null}
         </View>
       ) : null}
     </Card>

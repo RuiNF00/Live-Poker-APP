@@ -18,7 +18,7 @@ export async function cancelFestivalReminders(): Promise<void> {
   if (!n) return;
   try {
     const scheduled = await n.getAllScheduledNotificationsAsync();
-    await Promise.all(scheduled.filter((x) => x.content.data?.url === 'sweatbook://festival').map((x) => n.cancelScheduledNotificationAsync(x.identifier)));
+    await Promise.all(scheduled.filter((x) => String(x.content.data?.url ?? '').startsWith('sweatbook://festival')).map((x) => n.cancelScheduledNotificationAsync(x.identifier)));
   } catch (e) {
     console.warn('[festival] cancel', e);
   }
@@ -41,7 +41,7 @@ export async function syncFestivalReminders(f: Festival, plan: FestivalPlan, on 
     for (const r of planReminders(f, plan, now).slice(0, 40)) {
       await n.scheduleNotificationAsync({
         identifier: r.id,
-        content: { title: r.title, body: r.body, data: { url: 'sweatbook://festival' }, sound: true },
+        content: { title: r.title, body: r.body, data: { url: r.url }, sound: true },
         trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: r.at, channelId: CHANNEL },
       });
     }
