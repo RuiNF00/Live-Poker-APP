@@ -308,7 +308,7 @@ ${link}`;
         <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} />
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
-        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <Replayer hand={hand} source="own" initialInBB={settings.inBB} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
