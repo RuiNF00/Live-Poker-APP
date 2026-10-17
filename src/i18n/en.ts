@@ -2952,6 +2952,15 @@ const en: Record<string, string> = {
   'Abrir o email': 'Open email',
   'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
   'o que fazias aqui? 👀': 'what would you do here? 👀',
+  'Desenha a range do vilão': 'Draw villain\'s range',
+  'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Pick their hands on the grid and see your equity against them.',
+  'vs a tua range': 'vs your range',
+  'Editar a range do vilão': 'Edit villain\'s range',
+  'Range do vilão': 'Villain\'s range',
+  'Sem mãos na range': 'No hands in the range',
+  'A TUA EQUITY': 'YOUR EQUITY',
+  'Repor': 'Reset',
+  'Aplicar': 'Apply',
 };
 
 export default en;

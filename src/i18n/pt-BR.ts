@@ -1342,6 +1342,9 @@ const ptBR: Record<string, string> = {
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
   'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
   'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
+  'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Escolha as mãos dele na grade e veja sua equity contra elas.',
+  'vs a tua range': 'vs sua range',
+  'A TUA EQUITY': 'SUA EQUITY',
 };
 
 export default ptBR;
