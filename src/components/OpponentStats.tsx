@@ -7,7 +7,7 @@ import { Pressable, View } from 'react-native';
 import { GLOSSARY, type TermKey } from '@/data/glossary';
 import { t } from '@/i18n';
 import { type OpponentStats } from '@/store/queries';
-import { C, R, S } from '@/theme';
+import { C, ff, R, S } from '@/theme';
 
 import type { PlayerNote } from '@/store/types';
 
@@ -53,7 +53,7 @@ export function OpponentStatsRow({ stats }: { stats: OpponentStats | undefined }
       </Row>
       {term ? (
         <T v="small" color={C.text}>
-          <T v="small" color={C.text} style={{ fontWeight: '700' }}>
+          <T v="small" color={C.text} style={{ fontFamily: ff(700), fontWeight: '700' }}>
             {term + ': '}
           </T>
           {t(GLOSSARY[term].line)}

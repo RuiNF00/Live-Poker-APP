@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
-import { ListGroup, Row, SheetHeader, T, tap, ToggleItem } from '@/components/ui';
+import { ListGroup, Row, SheetHeader, T, tap, ToggleItem, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { useStore } from '@/store/store';
 import { computeStreak, FREEZE_EVERY, type WeekState } from '@/store/streak';
@@ -38,6 +38,7 @@ export function StreakStat() {
     else setSettings({ streakPauses: list.map((p) => (p.to === undefined ? { ...p, to: Date.now() } : p)) });
   };
 
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <>
       <Pressable
@@ -64,7 +65,7 @@ export function StreakStat() {
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={() => setOpen(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={t('Sequência de registo')} onClose={() => setOpen(false)} />
             <Row gap={S.sm}>
               <T v="h2" style={{ flex: 1 }}>

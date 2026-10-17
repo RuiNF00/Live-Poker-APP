@@ -22,7 +22,7 @@ import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
 import { FestivalItem, PlannedNow } from '@/components/FestivalItem';
-import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
+import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
@@ -270,10 +270,11 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
     setShownFor(s);
     if (s) setMind(s.mind);
   }
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={!!s} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
-        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md, maxHeight: '92%' }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md, maxHeight: '92%' }}>
           <SheetHeader title={t('Antes de começar')} onClose={onClose} />
           <ScrollView contentContainerStyle={{ gap: S.md }} keyboardShouldPersistTaps="handled">
             <MindBefore value={mind} onChange={setMind} />
@@ -681,10 +682,11 @@ function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; valu
     setShownFor(visible);
     if (visible) setText(value);
   }
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
-        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
           <SheetHeader title={t('Nota da sessão')} onClose={onClose} />
           <Field value={text} onChangeText={setText} placeholder={t('A mesa, como te sentes, o que queres lembrar…')} multiline autoFocus inputStyle={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
           <Button title={t('Guardar')} icon="checkmark" onPress={() => onSave(text.trim())} />

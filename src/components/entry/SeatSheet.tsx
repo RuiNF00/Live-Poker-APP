@@ -11,7 +11,7 @@ import { C, R, S } from '@/theme';
 
 import { AmountPad } from '../AmountPad';
 import { OpponentStatsRow, PlayerRead } from '../OpponentStats';
-import { Button, Chip, ChipRow, Field, inputStyle, Row, SheetHeader, T } from '../ui';
+import { Button, Chip, ChipRow, Field, inputStyle, Row, SheetHeader, T, useSheetPad } from '../ui';
 
 export interface SeatChanges {
   /** Other villain seats this player can swap with, by position. */
@@ -64,6 +64,7 @@ export function SeatSheet({
       setPlayerId(player.playerId);
     }
   }, [player, visible]);
+  const sheetPad = useSheetPad(36);
   if (!player) return null;
   const q = name.trim().toLowerCase();
   const sugg = known.filter((k) => !q || k.name.toLowerCase().includes(q)).slice(0, 8);
@@ -73,7 +74,7 @@ export function SeatSheet({
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
-      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, padding: S.gutter, paddingTop: S.lg, paddingBottom: 36, gap: S.lg }}>
+      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, padding: S.gutter, paddingTop: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
         <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
         <View style={{ gap: S.sm }}>
           <Field
