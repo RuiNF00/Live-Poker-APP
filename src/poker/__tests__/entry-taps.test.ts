@@ -665,3 +665,14 @@ test('round 4 · BB ante costs no tap: it is how a new tournament hand starts', 
   const e = new Entry('CO', ['Ah', 'Kd']);
   assert.equal(e.s.pot, g.ante, 'the big blind posts the ante for the table');
 });
+
+test('a hand saved before its end ("Guardar já") hands its starting stacks to the next hand, so no chips go missing', () => {
+  const e = new Entry('BTN', ['As', 'Kd']);
+  e.size('2.5x');
+  e.only('BB');
+  e.board('Kc', '8d', '3s'); // saved on the flop: the preflop pot and the BB ante are in the middle
+  const last = { ...e.hand, createdAt: Date.now() };
+  const next = newHand({ id: 'n', last });
+  assert.deepEqual(next.players.map((p) => p.stack), last.players.map((p) => p.stack));
+  assert.equal(next.button, (last.button + 1) % last.players.length, 'the button still moves on');
+});
