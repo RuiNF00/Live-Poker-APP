@@ -215,7 +215,7 @@ export function inviteOgImage(days: number) {
   );
 }
 
-const fmt = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
+const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
 const num = (n: number) => fmt.format(n);
 // The live card is written in pt-PT: money as the app writes it there.
 const money = (n: number, cur: string) => formatMoney(n, cur, 'pt');

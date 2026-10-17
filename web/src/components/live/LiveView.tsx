@@ -72,7 +72,7 @@ export function LiveView({
     };
   }, [id, s.endedAt, gone]);
 
-  // Chip counts read best with a dot (pt) or comma (en): pt-PT's space is a full cell in a mono font.
+  // Chip counts as the app writes them (pt-PT: 2500, 12 345).
   const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 });
   const num = (n: number) => fmt.format(n);
   const money = (n: number) => formatMoney(n, s.currency, locale);

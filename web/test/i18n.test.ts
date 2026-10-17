@@ -43,7 +43,7 @@ describe('pickLocale', () => {
 describe('locale helpers', () => {
   it('maps locales to Intl tags', () => {
     expect(LOCALES.map(intlTag)).toEqual(['pt-PT', 'pt-BR', 'en-GB', 'es']);
-    expect(LOCALES.map(numberTag)).toEqual(['de-DE', 'pt-BR', 'en-GB', 'es']);
+    expect(LOCALES.map(numberTag)).toEqual(['pt-PT', 'pt-BR', 'en-GB', 'es-ES']);
     expect(LOCALES.filter(isPt)).toEqual(['pt', 'pt-BR']);
   });
   it('places the currency per locale', () => {

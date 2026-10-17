@@ -15,11 +15,11 @@ export function intlTag(l: Locale): string {
 }
 
 /**
- * Tag for numbers. pt-PT groups thousands with a space, so the site has always used de-DE for
- * the 1.234,56 look; pt-BR and es already group with dots.
+ * Tag for numbers, the same the app uses (CLDR): pt-PT and es-ES group only from five digits
+ * (2500, 12 345 / 12.345), pt-BR always (2.500), English with commas.
  */
 export function numberTag(l: Locale): string {
-  return l === 'pt' ? 'de-DE' : l === 'pt-BR' ? 'pt-BR' : l === 'es' ? 'es' : 'en-GB';
+  return l === 'pt' ? 'pt-PT' : l === 'pt-BR' ? 'pt-BR' : l === 'es' ? 'es-ES' : 'en-GB';
 }
 
 const MONEY_VARIANT: Record<Locale, MoneyVariant> = { pt: 'pt-PT', 'pt-BR': 'pt-BR', en: 'en', es: 'es' };
