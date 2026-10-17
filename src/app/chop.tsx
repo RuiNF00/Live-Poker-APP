@@ -6,6 +6,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { Term } from '@/components/Term';
 import { Card, Chip, ChipRow, Divider, NumField, Row, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { chips, money } from '@/poker/format';
@@ -64,9 +65,9 @@ export default function ChopScreen() {
                 <T v="label" style={{ flex: 1.3 }}>
                   {t('Jogador')}
                 </T>
-                <T v="label" style={{ flex: 1, textAlign: 'right' }}>
-                  ICM
-                </T>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Term k="ICM" />
+                </View>
                 <T v="label" style={{ flex: 1, textAlign: 'right' }}>
                   {t('Chip chop')}
                 </T>

@@ -30,7 +30,7 @@ export default function NewCoachLink() {
   const pro = usePro();
   const [title, setTitle] = useState(folder || t('Rever com coach'));
   const [days, setDays] = useState<ExpiryChoice>(30);
-  const [notes, setNotes] = useState(true);
+  const [notes, setNotes] = useState(false);
   const [busy, setBusy] = useState(false);
   const [freeUsed, setFreeUsed] = useState<boolean | null>(null);
   useEffect(() => {

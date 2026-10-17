@@ -1,0 +1,398 @@
+// Action sold for a festival, as a record: the events and markup of the package,
+// each backer's agreed piece (a normal staking deal), what it adds up to, and a
+// private link per backer to confirm their piece. Nothing is sold or paid here:
+// payments happen outside the app and the player only logs them.
+
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Clipboard from 'expo-clipboard';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Alert, Platform, Pressable, Share, View } from 'react-native';
+
+import { usePro } from '@/billing/pro';
+import { markupLabel } from '@/components/staking/sheets';
+import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
+import { t } from '@/i18n';
+import { track } from '@/lib/events';
+import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
+import { eventTitle, FESTIVALS, venueTime } from '@/poker/festivals';
+import { money, shortDate } from '@/poker/format';
+import {
+  MARKUPS,
+  PIECES,
+  agreement,
+  getOffers,
+  lineCost,
+  lineRecords,
+  offerEvents,
+  offerPackageIds,
+  offerTotals,
+  stakesFor,
+  updateLine,
+  updateOffer,
+  useOffers,
+  withOfferStakes,
+  type ActionOffer,
+  type PackageLine,
+} from '@/store/action-offer';
+import { festivalName, useFestivalPlan } from '@/store/festival-plan';
+import { uid, useStore } from '@/store/store';
+import { C, R, S } from '@/theme';
+
+const pct = (n: number) => `${String(n).replace('.', ',')}%`;
+
+export default function ActionPackageScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const offers = useOffers();
+  const o = offers.find((x) => x.id === id);
+  const f = FESTIVALS.find((x) => x.id === o?.festivalId);
+  const plan = useFestivalPlan(o?.festivalId ?? '');
+  const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession } = useStore();
+  const pro = usePro();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  // Confirmations come from the links: check the ones still waiting whenever the screen shows.
+  const waiting = (o?.lines ?? []).filter((l) => l.remote && !l.confirmedAt).map((l) => `${l.id}:${l.remote!.id}`).join(',');
+  const refresh = useCallback(async () => {
+    if (!o || !waiting) return;
+    for (const pair of waiting.split(',')) {
+      const [lineId, remoteId] = pair.split(':');
+      try {
+        const at = await fetchConfirmation({ id: remoteId });
+        if (at) updateLine(o.id, lineId, (l) => ({ ...l, confirmedAt: at }));
+      } catch (e) {
+        if (e instanceof OfferFailure && e.reason === 'gone') updateLine(o.id, lineId, (l) => ({ ...l, remote: undefined, confirmedAt: null }));
+      }
+    }
+    // Only when the set of links waiting changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [o?.id, waiting]);
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+      const timer = setInterval(() => void refresh(), 30_000);
+      return () => clearInterval(timer);
+    }, [refresh]),
+  );
+
+  if (!o || !f)
+    return (
+      <>
+        <Stack.Screen options={{ title: t('Ação vendida') }} />
+        <Screen contentStyle={{ paddingTop: S.lg }}>
+          <Empty title={t('Este pacote já não existe')} action={<Button title={t('Voltar')} onPress={() => router.back()} />} />
+        </Screen>
+      </>
+    );
+
+  const title = festivalName(f, plan);
+  const tot = offerTotals(f, o);
+  const events = offerEvents(f, o);
+  // Events the player can add: the ones in their festival plan (Day 2s have no buy-in).
+  const candidates = f.events.filter((e) => !e.day2 && (plan.picked.includes(e.id) || o.events.includes(e.id)));
+  const nameOf = (l: PackageLine) => backers.find((b) => b.id === l.backerId)?.name ?? t('Backer');
+
+  // The package's stakes on every session already started from its events.
+  const applyToSessions = (before: Set<string>) => {
+    const mine = getOffers().filter((x) => x.festivalId === f.id);
+    const pkgs = new Set([...before, ...offerPackageIds(mine)]);
+    for (const [eventId, sessionId] of Object.entries(plan.sessions)) {
+      const s = sessions.find((x) => x.id === sessionId);
+      if (!s) continue;
+      const stakes = withOfferStakes(s.stakes, stakesFor(mine, f.id, eventId), pkgs);
+      if (JSON.stringify(stakes) !== JSON.stringify(s.stakes ?? [])) saveSession({ ...s, stakes });
+    }
+  };
+
+  /** New terms (events or markup): staking packages follow, and every sent link asks to confirm again. */
+  const changeTerms = (fn: (x: ActionOffer) => ActionOffer) => {
+    const before = offerPackageIds(getOffers());
+    const next = fn(o);
+    updateOffer(o.id, () => ({ ...next, lines: next.lines.map((l) => (l.remote ? { ...l, confirmedAt: null } : l)) }));
+    for (const l of next.lines) {
+      const p = packages.find((x) => x.id === l.packageId);
+      if (p && p.markup !== next.markup) savePackage({ ...p, markup: next.markup });
+      if (l.remote) void updateAgreement(l.remote, agreement(f, next, l, settings.nickname, nameOf(l), title)).catch(() => {});
+    }
+    applyToSessions(before);
+  };
+
+  const addLine = (name: string, piece: number) => {
+    tap('success');
+    const before = offerPackageIds(getOffers());
+    const r = lineRecords(name, backers, title, o, piece, { line: uid('l'), backer: uid('b'), pkg: uid('p') });
+    if (r.isNew) saveBacker(r.backer);
+    savePackage(r.pkg);
+    updateOffer(o.id, (x) => ({ ...x, lines: [...x.lines, r.line] }));
+    applyToSessions(before);
+    setAdding(false);
+  };
+
+  const removeLine = (l: PackageLine) => {
+    const go = () => {
+      const before = offerPackageIds(getOffers());
+      if (l.remote) queueAgreementDelete(l.remote);
+      updateOffer(o.id, (x) => ({ ...x, lines: x.lines.filter((y) => y.id !== l.id) }));
+      applyToSessions(before);
+      deletePackage(l.packageId);
+    };
+    if (Platform.OS === 'web') return go();
+    Alert.alert(t('Tirar {name} do pacote?', { name: nameOf(l) }), t('A parte dele sai das sessões deste pacote e o link deixa de funcionar.'), [
+      { text: t('Cancelar'), style: 'cancel' },
+      { text: t('Tirar'), style: 'destructive', onPress: go },
+    ]);
+  };
+
+  const togglePaid = (l: PackageLine) => {
+    tap('select');
+    const before = offerPackageIds(getOffers());
+    updateLine(o.id, l.id, (x) => ({ ...x, paid: !x.paid }));
+    applyToSessions(before);
+  };
+
+  const send = async (l: PackageLine) => {
+    if (!settings.nickname.trim()) return setError(t('Escreve o teu nome para o backer saber de quem é o link.'));
+    // Free: links for one package. More is Pro.
+    if (!l.remote && !pro.isPro && getOffers().some((x) => x.id !== o.id && x.lines.some((y) => y.remote))) return pro.paywall('generic');
+    setBusy(l.id);
+    setError(null);
+    tap('medium');
+    try {
+      const body = agreement(f, o, l, settings.nickname, nameOf(l), title);
+      let remote = l.remote;
+      if (remote) await updateAgreement(remote, body);
+      else {
+        remote = await publishAgreement(body);
+        updateLine(o.id, l.id, (x) => ({ ...x, remote, confirmedAt: null }));
+      }
+      const msg = t('A tua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirma aqui o que combinámos: {url}', {
+        title,
+        pct: pct(l.pct),
+        n: events.length,
+        markup: markupLabel(o.markup),
+        url: remote.url,
+      });
+      if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
+      else await Share.share({ message: msg });
+      track('link_shared', { channel: 'action_package' });
+    } catch (e) {
+      const why = e instanceof OfferFailure ? e.reason : 'network';
+      setError(
+        why === 'offensive'
+          ? t('Um dos nomes não passou no filtro. Muda-o e tenta outra vez.')
+          : why === 'rate_limited'
+            ? t('Demasiadas tentativas. Tenta daqui a pouco.')
+            : t('Sem ligação. Tenta outra vez quando tiveres rede.'),
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title: t('Ação vendida'), headerBackTitle: t('Voltar') }} />
+      <Screen contentStyle={{ paddingTop: S.lg }}>
+        <Card tone="raised" style={{ gap: S.sm }}>
+          <T v="label">{title}</T>
+          <T v="monoXL" numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 36, lineHeight: 42 }}>
+            {pct(tot.sold)}
+          </T>
+          <T v="small">
+            {o.lines.length === 0
+              ? t('Regista cada backer com quem combinaste uma parte. As sessões destes torneios ficam com a parte de cada um.')
+              : t('Vendida a {n} backers por {price}. Pões {out} do teu bolso.', { n: o.lines.length, price: money(tot.price, f.currency), out: money(Math.max(0, tot.outOfPocket), f.currency) })}
+          </T>
+          <Row style={{ marginTop: S.xs, paddingTop: S.md, borderTopWidth: 1, borderTopColor: C.border }}>
+            <Figure label={t('Buy-ins')} value={money(tot.buyIns, f.currency)} />
+            <Figure label={t('Ficas com')} value={pct(Math.round(tot.keep * 10) / 10)} />
+            <Figure label="Markup" value={'+' + money(tot.premium, f.currency)} color={tot.premium > 0 ? C.good : undefined} />
+          </Row>
+        </Card>
+
+        <Section title={t('Backers ({n})', { n: o.lines.length })}>
+          <View style={{ gap: S.sm }}>
+            {o.lines.map((l) => (
+              <Card key={l.id} style={{ gap: S.sm }}>
+                <Row style={{ alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T v="h3" numberOfLines={1}>
+                      {nameOf(l)}
+                    </T>
+                    <T v="small">{t('{pct} de cada torneio · {cost}', { pct: pct(l.pct), cost: money(lineCost(f, o, l.pct), f.currency) })}</T>
+                  </View>
+                  <IconButton name="trash-outline" size={34} label={t('Tirar do pacote')} onPress={() => removeLine(l)} />
+                </Row>
+                <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+                  {l.confirmedAt ? (
+                    <Pill label={t('Confirmou a {date}', { date: shortDate(Date.parse(l.confirmedAt)) })} color={C.good} icon="checkmark" />
+                  ) : l.remote ? (
+                    <Pill label={t('Por confirmar')} color={C.warn} />
+                  ) : null}
+                  <Pressable onPress={() => togglePaid(l)} accessibilityRole="switch" accessibilityState={{ checked: !!l.paid }} hitSlop={6}>
+                    <Pill label={l.paid ? t('Pago') : t('Por pagar')} color={l.paid ? C.good : C.muted} icon={l.paid ? 'checkmark' : 'ellipse-outline'} />
+                  </Pressable>
+                </Row>
+                <Button
+                  size="sm"
+                  kind={l.remote ? 'ghost' : 'secondary'}
+                  icon="share-outline"
+                  title={l.remote ? t('Enviar o link outra vez') : t('Enviar link para confirmar')}
+                  onPress={() => void send(l)}
+                  disabled={busy === l.id}
+                />
+              </Card>
+            ))}
+            {adding ? (
+              <AddLine cur={f.currency} names={backers.map((b) => b.name)} cost={(p) => lineCost(f, o, p)} onAdd={addLine} onCancel={() => setAdding(false)} />
+            ) : (
+              <Button
+                kind={o.lines.length ? 'outline' : 'primary'}
+                icon="person-add-outline"
+                title={o.lines.length ? t('Registar outro backer') : t('Registar um backer')}
+                onPress={() => setAdding(true)}
+                disabled={!events.length}
+              />
+            )}
+          </View>
+        </Section>
+
+        {settings.nickname.trim() || !o.lines.length ? null : (
+          <Field label={t('O teu nome nos links')} value={settings.nickname} onChangeText={(nickname) => setSettings({ nickname })} placeholder="Rui" maxLength={40} />
+        )}
+        {error ? (
+          <T v="small" color={C.warn}>
+            {error}
+          </T>
+        ) : null}
+
+        <Section title="Markup">
+          <ChipRow>
+            {MARKUPS.map((m) => (
+              <Chip key={m} label={markupLabel(m)} active={o.markup === m} onPress={() => changeTerms((x) => ({ ...x, markup: m }))} />
+            ))}
+          </ChipRow>
+        </Section>
+
+        <Section title={t('Torneios ({n})', { n: events.length })}>
+          {candidates.length === 0 ? (
+            <Card tone="inset">
+              <T v="small">{t('Marca no festival os torneios que vais jogar e volta aqui.')}</T>
+            </Card>
+          ) : (
+            <View style={{ gap: S.sm }}>
+              {candidates.map((e) => {
+                const on = o.events.includes(e.id);
+                return (
+                  <Card key={e.id} tone={on ? 'accent' : 'default'} padded={false}>
+                    <Pressable
+                      onPress={() => {
+                        tap('select');
+                        changeTerms((x) => ({ ...x, events: on ? x.events.filter((y) => y !== e.id) : f.events.filter((y) => y.id === e.id || x.events.includes(y.id)).map((y) => y.id) }));
+                      }}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md }}>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <T v="h3" numberOfLines={2}>
+                          {eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '')}
+                        </T>
+                        <T v="small">{[shortDate(venueTime(f, e.start)), money(e.buyIn, f.currency)].join(' · ')}</T>
+                      </View>
+                      <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />
+                    </Pressable>
+                  </Card>
+                );
+              })}
+            </View>
+          )}
+          {o.lines.some((l) => l.remote) ? <T v="tiny">{t('Mudar os torneios ou o markup pede a cada backer que confirme outra vez.')}</T> : null}
+        </Section>
+
+        <T v="tiny" style={{ textAlign: 'center', paddingHorizontal: S.lg, paddingBottom: S.lg }}>
+          {t('Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.')}
+        </T>
+      </Screen>
+    </>
+  );
+}
+
+function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: string[]; cost: (pct: number) => number; onAdd: (name: string, pct: number) => void; onCancel: () => void }) {
+  const [name, setName] = useState('');
+  const [piece, setPiece] = useState(5);
+  const ok = name.trim().length > 0 && piece > 0;
+  return (
+    <Card tone="raised" style={{ gap: S.md }}>
+      <Field label={t('Backer')} value={name} onChangeText={setName} placeholder={t('Nome')} maxLength={40} />
+      {names.length ? (
+        <ChipRow>
+          {names.slice(0, 8).map((n) => (
+            <Chip key={n} label={n} active={name.trim().toLowerCase() === n.trim().toLowerCase()} onPress={() => setName(n)} />
+          ))}
+        </ChipRow>
+      ) : null}
+      <View style={{ gap: S.sm }}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <T v="label">{t('% de cada torneio')}</T>
+          <Stepper value={piece} onChange={setPiece} />
+        </Row>
+        <ChipRow>
+          {PIECES.map((p) => (
+            <Chip key={p} label={`${p}%`} active={piece === p} onPress={() => setPiece(p)} />
+          ))}
+        </ChipRow>
+        <T v="small">{t('Custo da parte: {cost}', { cost: money(cost(piece), cur) })}</T>
+      </View>
+      <Row gap={S.sm}>
+        <Button size="md" kind="ghost" style={{ flex: 1 }} title={t('Cancelar')} onPress={onCancel} />
+        <Button size="md" style={{ flex: 1.4 }} icon="checkmark" title={t('Registar')} onPress={() => onAdd(name, piece)} disabled={!ok} />
+      </Row>
+    </Card>
+  );
+}
+
+function Figure({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <View style={{ flex: 1, gap: 2 }}>
+      <T v="label" numberOfLines={1}>
+        {label}
+      </T>
+      <T v="mono" color={color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 16 }}>
+        {value}
+      </T>
+    </View>
+  );
+}
+
+/** − 5% + in steps of 1 up to 10, then 5. */
+function Stepper({ value, onChange, min = 0.5 }: { value: number; onChange: (v: number) => void; min?: number }) {
+  const step = (dir: 1 | -1) => {
+    const by = (dir > 0 ? value < 10 : value <= 10) ? 1 : 5;
+    const next = Math.max(min, Math.min(100, dir > 0 ? Math.floor(value / by) * by + by : Math.ceil(value / by) * by - by));
+    if (next !== value) {
+      tap('select');
+      onChange(next);
+    }
+  };
+  const btn = (dir: 1 | -1) => (
+    <Pressable
+      onPress={() => step(dir)}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={dir > 0 ? t('Mais') : t('Menos')}
+      style={{ width: 36, height: 36, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name={dir > 0 ? 'add' : 'remove'} size={18} color={C.text} />
+    </Pressable>
+  );
+  return (
+    <Row gap={6}>
+      {btn(-1)}
+      <T v="mono" style={{ minWidth: 48, textAlign: 'center' }}>
+        {pct(value)}
+      </T>
+      {btn(1)}
+    </Row>
+  );
+}

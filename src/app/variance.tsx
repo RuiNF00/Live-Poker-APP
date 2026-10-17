@@ -85,7 +85,11 @@ export default function VarianceScreen() {
           {mine ? <Button size="sm" kind={isPro ? 'secondary' : 'outline'} icon={isPro ? 'download-outline' : 'lock-closed'} title={isPro ? t('Usar os meus números') : t('Usar os meus números com Pro')} onPress={useMine} style={{ alignSelf: 'flex-start' }} /> : null}
         </Card>
 
-        <Section title={t('Pressupostos ({currency})', { currency: cur })} hint={mode === 'cash' ? t('Em cash live, o desvio padrão costuma andar entre 30 e 60 big blinds por hora. Ex.: em 1/2, 60 a 120 por hora.') : t('Em torneios, o desvio padrão costuma ser de 3 a 6 buy-ins em campos pequenos e mais em campos grandes.')}>
+        <Section title={t('Pressupostos ({currency})', { currency: cur })} hint={
+            t('Win rate: o que ganhas em média por hora (em torneios, o ROI). Desvio padrão: quanto um resultado costuma fugir dessa média; quanto maior, mais longas as fases boas e más.') +
+            ' ' +
+            (mode === 'cash' ? t('Em cash live, o desvio padrão costuma andar entre 30 e 60 big blinds por hora. Ex.: em 1/2, 60 a 120 por hora.') : t('Em torneios, o desvio padrão costuma ser de 3 a 6 buy-ins em campos pequenos e mais em campos grandes.'))
+          }>
           <Card style={{ gap: S.md }}>
             {mode === 'cash' ? (
               <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>

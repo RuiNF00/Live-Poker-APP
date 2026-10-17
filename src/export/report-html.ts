@@ -75,6 +75,8 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
     tiles.push([t('Depósitos'), rawMoney(c.deposits, cur)]);
     tiles.push([t('Levantamentos'), rawMoney(c.withdrawals, cur)]);
   }
+  if (tt.tips) tiles.push([t('Gorjetas'), rawMoney(Math.round(tt.tips * 100) / 100, cur)]);
+  if (tt.handsPerHour !== null) tiles.push([t('Mãos por hora'), String(Math.round(tt.handsPerHour))]);
   if (c.owedToBackers) tiles.push([t('Pago a backers'), rawMoney(Math.round(c.owedToBackers * 100) / 100, cur)]);
 
   const split =

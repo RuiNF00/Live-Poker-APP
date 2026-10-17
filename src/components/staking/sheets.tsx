@@ -91,7 +91,7 @@ function PackageForm({ pkg, onSave, onDelete }: { pkg: StakePackage; onSave: (p:
   const set = (p: Partial<StakePackage>) => setX((v) => ({ ...v, ...p }));
   return (
     <>
-      <Field label={t('Nome do pacote')} value={x.name} onChangeText={(name) => set({ name })} placeholder={t('Ex.: Série de outubro, EPT Barcelona')} maxLength={60} />
+      <Field label={t('Nome do pacote')} value={x.name} onChangeText={(name) => set({ name })} placeholder={t('Ex.: Série de outubro, festival de verão')} maxLength={60} />
       <Section title={t('Acordo')}>
         <Segmented
           options={[

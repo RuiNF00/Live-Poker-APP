@@ -2,8 +2,8 @@
 // the event you're playing, the festival, the currency). Creating it makes the link the other
 // player confirms; nothing counts until they do.
 
-import { router, Stack } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -38,6 +38,21 @@ export default function NewSwap() {
   const [currency, setCurrency] = useState(live?.currency ?? (CURRENCIES.includes(settings.currency) ? settings.currency : '$'));
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Each visit starts fresh: leaving with Voltar drops the draft (going to the background keeps it).
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        setThem('');
+        setPct(5);
+        setSame(true);
+        setTheirPct(5);
+        setNote('');
+        setBusy(false);
+      },
+      [],
+    ),
+  );
 
   // People you swapped with before, newest first: a repeat swap is one tap.
   const people = useMemo(() => {
@@ -207,7 +222,8 @@ export default function NewSwap() {
           <Button title={busy ? t('A criar…') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
-              {t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name })}
+              {t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name })}{' '}
+              {t('Envia o link só a {name}: quem o abrir primeiro pode confirmar.', { name })}
             </T>
           </Row>
         </View>

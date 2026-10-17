@@ -21,8 +21,12 @@ export interface Session {
   cashOut: number;
   finish?: number;
   field?: number;
-  /** Travel, hotel, tips: comes off your result. */
+  /** Travel, hotel, food: comes off your result. */
   expenses?: number;
+  /** Dealer tips: off your result like expenses, with their own total. */
+  tips?: number;
+  /** Hands dealt to you, when the player counts them (for hands per hour). */
+  handsDealt?: number;
   /** Action sold, in total: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%).
    *  Kept as the summary of `stakes` so older copies of the app still read it. */
   staking?: { sold: number; markup: number };

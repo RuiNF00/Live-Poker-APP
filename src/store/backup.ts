@@ -7,8 +7,9 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
-import type { Swap } from './swaps';
+import { validSwapId, validSwapToken, type Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
@@ -102,7 +103,7 @@ export function parseBackup(text: string): BackupData {
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
   const swaps = arr('swaps').filter(
-    (x) => isObj(x) && typeof x.token === 'string' && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+    (x) => isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
   ) as unknown as Swap[];
   return {
     app: 'sweatbook',
@@ -168,14 +169,21 @@ function cell(v: string | number | undefined): string {
 }
 
 /** Sessions, then deposits and withdrawals, then trip expenses, as CSV for spreadsheets and accountants. */
+/** Local 'HH:MM': the date and time the player saw, not UTC (a 20:00 session in Nassau is not the next day). */
+function clockOf(ts: number): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
-  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
     .map((s) =>
       [
-        new Date(s.startedAt).toISOString().slice(0, 10),
+        dayKey(s.startedAt),
+        clockOf(s.startedAt),
         s.kind,
         formatOf(s),
         bankrollOf(s, bankrolls)?.name ?? '',
@@ -183,6 +191,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         s.venue,
         s.currency,
         (playedMs(s) / 3600000).toFixed(2),
+        s.handsDealt ?? '',
         s.buyIn,
         s.entries,
         s.addOn || 0,
@@ -191,6 +200,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         stakingSummary(stakesOf(s))?.sold ?? 0,
         stakingSummary(stakesOf(s))?.markup ?? '',
         s.expenses ?? 0,
+        s.tips ?? 0,
         Math.round(profit(s) * 100) / 100,
         // Already inside profit when swaps count in results; listed so the number can be traced.
         s.swapNet ? Math.round(s.swapNet * 100) / 100 : '',
@@ -214,8 +224,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
     .map((x) => {
       const b = bankrolls.find((r) => r.id === x.bankrollId);
       const row: (string | number | undefined)[] = head.map(() => '');
-      row[0] = new Date(x.at).toISOString().slice(0, 10);
-      row[1] = x.kind;
+      row[0] = dayKey(x.at);
+      row[head.indexOf('type')] = x.kind;
       row[head.indexOf('bankroll')] = b?.name ?? '';
       row[head.indexOf('currency')] = b?.currency ?? '';
       row[head.indexOf('profit')] = x.kind === 'deposit' ? Math.abs(x.amount) : -Math.abs(x.amount);
@@ -227,8 +237,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
     .sort((a, b) => a.x.at - b.x.at)
     .map(({ trip, x }) => {
       const row: (string | number | undefined)[] = head.map(() => '');
-      row[0] = new Date(x.at).toISOString().slice(0, 10);
-      row[1] = 'expense';
+      row[0] = dayKey(x.at);
+      row[head.indexOf('type')] = 'expense';
       row[head.indexOf('game')] = trip.name;
       row[head.indexOf('venue')] = trip.venue;
       row[head.indexOf('currency')] = x.currency;
