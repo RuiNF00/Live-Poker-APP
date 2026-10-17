@@ -5,7 +5,7 @@
 export const BRAND = {
   name: 'Sweatbook',
   tagline: 'O teu caderno de póquer live',
-  webUrl: (process.env.EXPO_PUBLIC_WEB_URL as string | undefined) ?? 'https://sweatbook.vercel.app',
+  webUrl: (process.env.EXPO_PUBLIC_WEB_URL as string | undefined) ?? 'https://sweatbook.poker',
   scheme: 'sweatbook',
 };
 

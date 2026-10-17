@@ -11,7 +11,7 @@
     "ios": {
       "bundleIdentifier": "com.ruinf.sweatbook",
       "supportsTablet": false,
-      "associatedDomains": ["applinks:sweatbook.vercel.app"],
+      "associatedDomains": ["applinks:sweatbook.poker"],
       "config": { "usesNonExemptEncryption": false },
       "infoPlist": { "ITSAppUsesNonExemptEncryption": false },
       "privacyManifests": {
@@ -45,7 +45,7 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "data": [{ "scheme": "https", "host": "sweatbook.vercel.app", "pathPrefix": "/h/" }],
+          "data": [{ "scheme": "https", "host": "sweatbook.poker", "pathPrefix": "/h/" }],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ],

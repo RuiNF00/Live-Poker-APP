@@ -7,7 +7,7 @@
     "base": {
       "node": "22.11.0",
       "env": {
-        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.vercel.app"
+        "EXPO_PUBLIC_WEB_URL": "https://sweatbook.poker"
       }
     },
     "development": {
