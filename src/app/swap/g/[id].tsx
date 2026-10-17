@@ -146,7 +146,8 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
 }
 
 function OwnGroup({ g }: { g: SwapGroup }) {
-  const locked = useLocked('swaps');
+  // Who owes whom: with my Pro, or for everyone when the creator has Pro.
+  const locked = useLocked('swaps') && !g.accounts;
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
   const [offline, setOffline] = useState(false);
   const ready = groupReady(g);

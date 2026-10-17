@@ -10,7 +10,7 @@ import { storeLinks } from '@/lib/storeLinks';
 import { groupNet, minTransfers, type PublicGroup } from '@/lib/swap-group-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
-import { AddEntry, EntryRow, PrivateLink, Top } from './SwapView';
+import { AccountsInApp, AddEntry, EntryRow, PrivateLink, Top } from './SwapView';
 import '@/app/landing.css';
 import '@/components/live/live.css';
 import './swap.css';
@@ -20,12 +20,13 @@ const POLL_MS = 30000;
 /**
  * /swap/g/<id>: a group swap. With the group's invite (in the link's fragment) a player picks
  * their name and gets their seat's private link; with a seat's token they record their own
- * prizes and payments. Everyone sees the fewest transfers that settle the group.
+ * prizes and payments. When the creator has Pro, everyone sees the fewest transfers that settle the group.
  */
-export function GroupView({ locale, initial, invite: ref }: { locale: Locale; initial: PublicGroup; invite: string | null }) {
+export function GroupView({ locale, initial, accounts: initialAccounts, invite: ref }: { locale: Locale; initial: PublicGroup; accounts: boolean; invite: string | null }) {
   const c = swapCopy(locale);
   const id = initial.id;
   const [group, setGroup] = useState(initial);
+  const [accounts, setAccounts] = useState(initialAccounts);
   const [token, setToken] = useState<string | null>(null);
   const [inviteKey, setInviteKey] = useState<string | null>(null);
   const [pick, setPick] = useState<number | null>(null);
@@ -44,7 +45,10 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
       try {
         const res = await fetch(`/api/swap-groups/${encodeURIComponent(id)}`, { cache: 'no-store', headers: tok ? { 'x-edit-token': tok } : {} });
         if (res.status === 404) return setGone(true);
-        if (res.ok) setGroup(((await res.json()) as { group: PublicGroup }).group);
+        if (!res.ok) return;
+        const j = (await res.json()) as { group: PublicGroup; accounts?: boolean };
+        setGroup(j.group);
+        if (typeof j.accounts === 'boolean') setAccounts(j.accounts);
       } catch {}
     },
     [id],
@@ -190,7 +194,9 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
       {you === null && !inviteKey && missing > 0 ? <p className="live-updated">{c.needInvite}</p> : null}
       {!ready && !canJoin ? <p className="live-updated">{c.waitingSeats(missing)}</p> : null}
 
-      {ready ? (
+      {ready && !accounts ? <AccountsInApp c={c} locale={locale} stores={stores} /> : null}
+
+      {ready && accounts ? (
         <section className="live-card">
           <p className="live-label">{c.settleTitle}</p>
           {transfers.length ? (
@@ -215,7 +221,7 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
             <EntryRow key={e.id} e={e} mine={e.seat === you} c={c} onRemove={() => send(`/api/swap-groups/${id}/entries/${e.id}`, { method: 'DELETE' })} busy={busy}>
               <p className="sw-row-title">{e.event || t.title}</p>
               <p className="sw-row-sub">{[c.won(name(e.seat)) + ' ' + money(e.amount), e.finish ? c.place(e.finish) : ''].filter(Boolean).join(' · ')}</p>
-              <p className="sw-row-owe">{c.owesPart(pctLabel, money((t.pct / 100) * e.amount))} × {group.seats.length - 1}</p>
+              {accounts ? <p className="sw-row-owe">{c.owesPart(pctLabel, money((t.pct / 100) * e.amount))} × {group.seats.length - 1}</p> : null}
             </EntryRow>
           ))}
         </section>
@@ -257,7 +263,7 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
         </p>
       ) : null}
 
-      {ready ? (
+      {ready && accounts ? (
         <section className="live-cta" id="baixar">
           <Mark size={36} />
           <p>{c.groupConfirmedCta}</p>

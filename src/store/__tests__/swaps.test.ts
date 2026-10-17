@@ -68,6 +68,14 @@ test('merging the server copy keeps entries not sent yet, and drops them once th
   assert.ok(arrived.entries.every((x) => !x.pending));
 });
 
+test('the accounts follow the creator’s Pro from the server, and a reply without it keeps the last answer', () => {
+  const remote: RemoteSwap = { id: 's1', terms, confirmedAt: '2026-10-17T10:00:00Z', confirmedName: 'João', entries: [], code: null, you: 'b', updatedAt: '' };
+  const open = mergeRemote(swap(), { ...remote, accounts: true });
+  assert.equal(open.accounts, true);
+  assert.equal(mergeRemote(open, remote).accounts, true);
+  assert.equal(mergeRemote(open, { ...remote, accounts: false }).accounts, false);
+});
+
 test('erasing queues a delete for every swap still on the server, with its own token', () => {
   const jobs = swapDeleteJobs([swap({ id: 'mine', token: 'ta' }), swap({ id: 'theirs', side: 'b', token: 'tb', confirmedAt: undefined }), swap({ id: 'old', token: 'tc', gone: true })]);
   assert.deepEqual(jobs, [

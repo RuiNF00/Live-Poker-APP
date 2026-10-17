@@ -151,10 +151,10 @@ function SwapsScreen() {
               <Section title={t('Ativos')}>
                 <ListGroup>
                   {activeGroups.map((g) => (
-                    <GroupRow key={g.id} g={g} locked={locked} />
+                    <GroupRow key={g.id} g={g} locked={locked && !g.accounts} />
                   ))}
                   {active.map((s) => (
-                    <SwapRow key={s.id} s={s} locked={locked} />
+                    <SwapRow key={s.id} s={s} locked={locked && !s.accounts} />
                   ))}
                 </ListGroup>
               </Section>
@@ -163,10 +163,10 @@ function SwapsScreen() {
               <Section title={t('Arquivo')}>
                 <ListGroup>
                   {pastGroups.map((g) => (
-                    <GroupRow key={g.id} g={g} locked={locked} />
+                    <GroupRow key={g.id} g={g} locked={locked && !g.accounts} />
                   ))}
                   {past.map((s) => (
-                    <SwapRow key={s.id} s={s} locked={locked} />
+                    <SwapRow key={s.id} s={s} locked={locked && !s.accounts} />
                   ))}
                 </ListGroup>
               </Section>

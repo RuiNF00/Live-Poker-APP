@@ -32,7 +32,9 @@ const SYNC_EVERY = 2 * 60000;
 
 export function SwapReminder() {
   const { sessions } = useStore();
-  const locked = useLocked('swaps');
+  const noPro = useLocked('swaps');
+  // The accounts are open when I have Pro or the swap's creator does.
+  const locked = (x: { accounts?: boolean }) => noPro && !x.accounts;
   const { ready, swaps } = useSwaps();
   const { ready: gReady, groups } = useGroups();
   const [asked, setAsked] = useState<string[] | null>(null);
@@ -141,7 +143,7 @@ export function SwapReminder() {
                       {pctLabel(sw.terms[sw.side].pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {locked ? t('Swap com {name}', { name }) : owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
+                      {locked(sw) ? t('Swap com {name}', { name }) : owe > 0 ? t('Deves {amount} a {name}', { amount: money(owe, s.currency), name }) : t('Não deves nada a {name}', { name })}
                     </T>
                   </Row>
                 );
@@ -154,7 +156,7 @@ export function SwapReminder() {
                       {pctLabel(g.terms.pct)}
                     </T>
                     <T v="body" style={{ flex: 1 }}>
-                      {locked
+                      {locked(g)
                         ? t('Swap de grupo · {title}', { title: g.terms.title })
                         : owe > 0
                         ? t('Grupo de {n}: pagas {each} a cada um ({amount})', { n: g.seats.length, each: money(groupShareOf(g, prize), s.currency), amount: money(owe, s.currency) })
@@ -185,9 +187,10 @@ export function SwapReminder() {
                 {t('Para desligar, abre o swap.')}
               </T>
             ) : null}
-            {locked ? <AccountsLocked /> : null}
-            {!locked && shown.swaps.map((sw0) => {
+            {[...shown.swaps, ...shown.groups].some((x) => locked(x)) ? <AccountsLocked /> : null}
+            {shown.swaps.map((sw0) => {
               const sw = getSwap(sw0.id) ?? sw0;
+              if (locked(sw)) return null;
               const name = swapNames(sw)[other(sw.side)];
               return (
                 <View key={sw.id} style={{ gap: S.sm }}>
@@ -201,8 +204,9 @@ export function SwapReminder() {
                 </View>
               );
             })}
-            {!locked && shown.groups.map((g0) => {
+            {shown.groups.map((g0) => {
               const g = getGroup(g0.id) ?? g0;
+              if (locked(g)) return null;
               return (
                 <View key={g.id} style={{ gap: S.sm }}>
                   <T v="label">{t('Swap de grupo · {title}', { title: g.terms.title })}</T>

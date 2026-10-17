@@ -139,7 +139,8 @@ function Head({ terms, names }: { terms: Swap['terms']; names: Record<'a' | 'b',
 }
 
 function OwnSwap({ s }: { s: Swap }) {
-  const locked = useLocked('swaps');
+  // Who owes whom: with my Pro, or for everyone when the creator has Pro.
+  const locked = useLocked('swaps') && !s.accounts;
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
   const [offline, setOffline] = useState(false);
   const names = swapNames(s);

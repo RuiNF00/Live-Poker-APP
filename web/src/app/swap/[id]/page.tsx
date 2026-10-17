@@ -5,6 +5,7 @@ import { cache } from 'react';
 import { brand } from '@/config/brand';
 import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { normalizeCode } from '@/lib/refcode';
+import { swapCreatorPro } from '@/lib/swap-pro';
 import { loadSwap as loadSwapById, publicSwap } from '@/lib/swaps';
 import { SwapView } from '@/components/swap/SwapView';
 import { swapCopy } from '@/components/swap/copy';
@@ -42,5 +43,7 @@ export default async function SwapPage({ params, searchParams }: Params & Search
   if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
-  return <SwapView locale={locale} initial={publicSwap(rec, null)} invite={invite} />;
+  // Who pays whom shows only when the swap's creator has Pro; otherwise just the results.
+  const accounts = await swapCreatorPro(id);
+  return <SwapView locale={locale} initial={publicSwap(rec, null)} accounts={accounts} invite={invite} />;
 }
