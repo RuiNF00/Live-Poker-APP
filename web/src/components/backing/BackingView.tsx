@@ -6,6 +6,7 @@ import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
 import { decodeStatement, type Statement } from '@/lib/backing';
 import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
+import { appHref, useAndroid } from '@/lib/app-link';
 import { readLocal, writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
 import { track } from '@/lib/track';
@@ -22,6 +23,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
   const c = backingCopy(locale);
   const [st, setSt] = useState<Statement | null | undefined>(undefined);
   const [data, setData] = useState('');
+  const android = useAndroid();
   // "Recebi" / "Paguei" for this statement: when they told the player, kept on this phone only.
   const [told, setTold] = useState<number | null>(null);
 
@@ -51,7 +53,13 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
   };
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'backer_statement' }, invite);
 
-  if (st === undefined) return <main className="live" />;
+  // The statement is in the link's #, which only the phone reads: the frame paints at once.
+  if (st === undefined)
+    return (
+      <main className="live">
+        <Top />
+      </main>
+    );
   if (st === null)
     return (
       <main className="live">
@@ -86,7 +94,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
     window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
   // The app opens this and saves it (sweatbook://backing/add).
-  const appLink = `sweatbook://backing/add?d=${data}${invite ? `&r=${encodeURIComponent(invite)}` : ''}`;
+  const appLink = appHref(`backing/add?d=${data}${invite ? `&r=${encodeURIComponent(invite)}` : ''}`, android);
 
   return (
     <main className="live">

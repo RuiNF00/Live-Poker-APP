@@ -266,7 +266,7 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
         />
       ) : null}
 
-      {privateLink && you !== 0 ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/g/${id}?k=${token}`} /> : null}
+      {privateLink && you !== 0 ? <PrivateLink c={c} link={privateLink} appLink={`swap/g/${id}?k=${token}`} /> : null}
 
       <p className="live-updated">{c.autoRefresh}</p>
       {!canJoin ? (
