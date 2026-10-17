@@ -22,6 +22,9 @@ const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcom
 interface ProValue {
   isPro: boolean;
   plans: store.StorePlan[];
+  /** The store couldn't be reached for prices; `reloadPlans` tries again. */
+  plansFailed: boolean;
+  reloadPlans: () => void;
   /** Layout and copy from the RevenueCat offering (A/B tests without a release). */
   paywallConfig: PaywallConfig;
   /** Free hands left today; null when unlimited (Pro or no limit). */
@@ -44,6 +47,11 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [isPro, setIsPro] = useState(false);
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
+  const [plansFailed, setPlansFailed] = useState(false);
+  const reloadPlans = useCallback(() => {
+    setPlansFailed(false);
+    store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
+  }, []);
   const [paywallConfig, setPaywallConfig] = useState<PaywallConfig>(DEFAULT_PAYWALL);
   const trialDays = plans.find((p) => p.id === 'annual')?.trialDays ?? 0;
 
@@ -62,7 +70,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
     const off = store.configure(setPro);
     store.getIsPro().then((v) => v !== null && setPro(v));
-    store.getPlans().then(setPlans);
+    store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
     store.getPaywallConfig().then(setPaywallConfig);
     return off;
   }, [setPro]);
@@ -135,8 +143,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession]);
 
   const value = useMemo(
-    () => ({ isPro, plans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges }),
-    [isPro, plans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges],
+    () => ({ isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges }),
+    [isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

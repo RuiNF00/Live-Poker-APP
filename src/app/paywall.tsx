@@ -19,7 +19,7 @@ export default function Paywall() {
   // Small phones (SE, mini): drop the hero icon so the plans show without scrolling.
   const compact = useWindowDimensions().height < 760;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
-  const { plans, purchase, restore, isPro, paywallConfig } = usePro();
+  const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig } = usePro();
   const { hands } = useStore();
   const [sel, setSel] = useState<PlanId>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
@@ -50,7 +50,7 @@ export default function Paywall() {
     if (res === 'ok') {
       setWelcomed(true);
       setStarted(trial);
-    } else if (res === 'unavailable') Alert.alert(t('Ainda não disponível'), t('As subscrições ainda não estão ativas nesta versão.'));
+    } else if (res === 'unavailable') Alert.alert(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
     else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
@@ -100,7 +100,14 @@ export default function Paywall() {
           ))}
         </View>
 
-        {plans.length === 0 ? (
+        {plans.length === 0 && plansFailed ? (
+          <View style={{ alignItems: 'center', gap: S.md, paddingVertical: S.lg }}>
+            <T v="callout" style={{ textAlign: 'center' }}>
+              {t('Não deu para ligar à {store}. Tenta outra vez.', { store })}
+            </T>
+            <Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={reloadPlans} />
+          </View>
+        ) : plans.length === 0 ? (
           <ActivityIndicator color={C.accent} />
         ) : (
           <View style={{ gap: S.sm + 2 }}>

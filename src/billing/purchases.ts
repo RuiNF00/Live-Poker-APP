@@ -75,7 +75,12 @@ function fallbackPlans(): StorePlan[] {
   return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), currency: 'USD', trialDays: PLANS[id].trialDays }));
 }
 
-export async function getPlans(): Promise<StorePlan[]> {
+/**
+ * Store plans, or null when the store couldn't be reached. A real build never
+ * shows made-up prices (App Review 2.1): the paywall offers a retry instead.
+ * The demo store (no key: Expo Go, web previews) keeps the fallback prices.
+ */
+export async function getPlans(): Promise<StorePlan[] | null> {
   if (!LIVE) return fallbackPlans();
   try {
     const offerings = await (await rc()).getOfferings();
@@ -93,9 +98,9 @@ export async function getPlans(): Promise<StorePlan[]> {
         if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
       }
     }
-    return plans.length ? plans : fallbackPlans();
+    return plans.length ? plans : __DEV__ ? fallbackPlans() : null;
   } catch {
-    return fallbackPlans();
+    return __DEV__ ? fallbackPlans() : null;
   }
 }
 
