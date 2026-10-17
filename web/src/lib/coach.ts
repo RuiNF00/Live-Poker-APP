@@ -26,6 +26,8 @@ export interface CoachStore {
   since(token: string, ownerToken: string, since: string | null): Promise<CoachComment[]>;
   reply(token: string, ownerToken: string, c: Omit<NewCoachComment, 'mark'>): Promise<CoachComment | null>;
   revoke(token: string, ownerToken: string): Promise<boolean>;
+  /** Gone now, with its hands and comments ("delete all my data" on the phone). */
+  remove(token: string, ownerToken: string): Promise<boolean>;
   purge(): Promise<void>;
 }
 
@@ -99,6 +101,12 @@ class SupabaseCoach implements CoachStore {
 
   async revoke(token: string, ownerToken: string) {
     const { data, error } = await this.db.rpc('revoke_coach_link', { p_token: token, p_owner_token: ownerToken });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async remove(token: string, ownerToken: string) {
+    const { data, error } = await this.db.rpc('delete_coach_link', { p_token: token, p_owner_token: ownerToken });
     if (error) throw error;
     return !!data;
   }
@@ -202,6 +210,15 @@ class LocalCoach implements CoachStore {
       const l = d[sha256(token)];
       if (l?.ownerHash !== sha256(ownerToken)) return false;
       l.revokedAt ??= new Date().toISOString();
+      return true;
+    });
+  }
+
+  async remove(token: string, ownerToken: string) {
+    return this.mutate((d) => {
+      const k = sha256(token);
+      if (d[k]?.ownerHash !== sha256(ownerToken)) return false;
+      delete d[k];
       return true;
     });
   }

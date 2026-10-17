@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { CoachThread } from '@/components/CoachThread';
 import { CommentsList } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { isComplete } from '@/poker/engine';
@@ -215,6 +216,7 @@ ${link}`;
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} initialInBB={settings.inBB} />
+        <CoachThread hand={hand} name={settings.nickname} />
 
         <Section title={t('Partilhar')}>
           <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : shareWaiting ? t('Link à espera de rede') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />

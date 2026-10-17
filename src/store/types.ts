@@ -1,4 +1,5 @@
 import type { Statement } from '@/lib/backing-link';
+import type { Tourney } from '@/poker/tourney';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
 export interface Session {
@@ -57,6 +58,8 @@ export interface Session {
   notes: string;
   /** How it went, tapped when ending: focus, tilt, table. */
   tags?: string[];
+  /** Tournament mode: blind structure, field and payouts (see poker/tourney.ts). */
+  tourney?: Tourney;
   /** Tournament day this session is on, when past Day 1 (see store/multi-day.ts). */
   day?: number;
   /** Set when a tournament day ended with chips in the bag: the session waits for its next day. */
