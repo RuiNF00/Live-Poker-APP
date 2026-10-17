@@ -67,7 +67,7 @@ export function StakeFields({ s, onChange, expenses = true }: { s: Session; onCh
             }}
           />
         ) : sold < 100 ? (
-          <Button kind="outline" size="md" icon="person-add-outline" title={stakes.length ? t('Registar outro backer') : t('Registar ação vendida')} onPress={() => setAdding(true)} />
+          <Button kind="outline" size="md" lines={2} icon="person-add-outline" title={stakes.length ? t('Registar outro backer') : t('Registar ação vendida')} onPress={() => setAdding(true)} />
         ) : null}
       </Section>
       {expenses && (
@@ -166,7 +166,7 @@ function AddStake({ s, maxShare, taken, onAdd, onCancel }: { s: Session; maxShar
         </>
       ) : pkg.share > maxShare ? (
         <T v="small" color={C.warn}>
-          {t('Só resta {n}% por vender: fica com {n}%.', { n: maxShare })}
+          {t('Só restam {n}% da tua ação por registar: fica com {n}%.', { n: maxShare })}
         </T>
       ) : null}
 

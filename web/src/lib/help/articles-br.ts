@@ -82,7 +82,7 @@ export const BR: Record<string, ArticleText> = {
           'Desafio · Votação: o replay para antes da sua decisão e cada pessoa vota antes de ver o resto. Os votos aparecem no app, em Comentários.',
           'Story · Instagram: imagem ou vídeo para o Story (veja o artigo sobre Stories).',
           'Texto · Fórum: a mão em texto, com ou sem o link do replay.',
-          'Solver · PokerStars: a mão no formato PokerStars para solvers e trackers.',
+          'Exportar para solver: a mão em formato hand history (.txt) para solvers e trackers.',
         ],
       },
       'Compartilhar por link é ilimitado, também no plano grátis. Sem internet, o link fica pronto quando o sinal voltar.',
@@ -201,7 +201,7 @@ export const BR: Record<string, ArticleText> = {
     title: 'Exportar para solver, PDF e CSV',
     summary: 'Uma mão para o GTO Wizard ou o ano inteiro em PDF.',
     body: [
-      'Uma mão: na página da mão, toque em Solver · PokerStars e depois em Copiar texto ou Salvar arquivo .txt. O formato PokerStars abre no GTO Wizard, PioSolver, Hold’em Manager e PokerTracker. Só funciona com mãos completas.',
+      'Uma mão: na página da mão, toque em Exportar para solver e depois em Copiar texto ou Salvar arquivo .txt. O formato hand history abre no GTO Wizard, PioSolver, Hold’em Manager e PokerTracker. Só funciona com mãos completas.',
       'Várias mãos de uma vez: selecione na lista de mãos e toque em Exportar para solver (Pro).',
       'Relatórios: Configurações → Backup → Relatório PDF e CSV. Escolha o período e exporte o relatório em PDF, ou as sessões ou as mãos em CSV (Pro). O backup completo em .json é grátis.',
     ],

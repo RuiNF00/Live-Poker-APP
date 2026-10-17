@@ -43,7 +43,7 @@ export function landingCopy(locale: Locale) {
     howTitle: 'Feito para a mesa',
     how: [
       ['À mesa', 'Guarda em segundos', 'Blinds, nível e stacks vêm da sessão. Tocas em quem entrou no pote e está feito.'],
-      ['No intervalo', 'Revê rua a rua', 'A mesa, as apostas em big blinds e as tuas notas, uma rua de cada vez.'],
+      ['No intervalo', 'Revê rua a rua', 'A mesa, os valores em big blinds e as tuas notas, uma rua de cada vez.'],
       ['Depois', 'Pede opinião', 'Um link para o WhatsApp ou uma story para o Instagram. Os amigos votam e comentam no browser.'],
     ],
     shareTitle: 'Os teus amigos recebem um desafio',
@@ -142,7 +142,7 @@ export function landingCopy(locale: Locale) {
       howTitle: 'Built for the table',
       how: [
         ['At the table', 'Save it in seconds', 'Blinds, level and stacks come from your session. Tap who entered the pot, done.'],
-        ['On break', 'Replay street by street', 'The table, bets in big blinds and your notes, one street at a time.'],
+        ['On break', 'Replay street by street', 'The table, sizes in big blinds and your notes, one street at a time.'],
         ['After', 'Ask for a read', 'A link for WhatsApp or a story for Instagram. Friends vote and comment in the browser.'],
       ],
       shareTitle: 'Your friends get a challenge',
