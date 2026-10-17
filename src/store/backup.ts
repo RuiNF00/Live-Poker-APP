@@ -3,10 +3,12 @@
 
 import { t } from '@/i18n';
 import { checkStatement } from '@/lib/backing-link';
+import type { Festival, FestivalEvent } from '@/poker/festivals';
 import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import type { FestivalPlan } from './festival-plan';
 import type { SwapGroup } from './swap-groups';
 import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
@@ -34,6 +36,9 @@ export interface BackupData {
   swaps?: Swap[];
   /** Group swaps with this player's seat token (absent before group swaps). */
   swapGroups?: SwapGroup[];
+  /** Festival plans by festival id, and the festivals the player added (absent before they were backed up). */
+  festivalPlans?: Record<string, FestivalPlan>;
+  ownFestivals?: Festival[];
   settings?: Partial<Settings>;
   /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
   quarantine?: [string, string][];
@@ -56,6 +61,8 @@ export function buildBackup(
     backing?: BackedPlayer[];
     swaps?: Swap[];
     swapGroups?: SwapGroup[];
+    festivalPlans?: Record<string, FestivalPlan>;
+    ownFestivals?: Festival[];
     settings: Settings;
     quarantine?: [string, string][];
   },
@@ -77,6 +84,8 @@ export function buildBackup(
     backing: d.backing ?? [],
     swaps: d.swaps ?? [],
     swapGroups: d.swapGroups ?? [],
+    festivalPlans: d.festivalPlans ?? {},
+    ownFestivals: d.ownFestivals ?? [],
     settings: d.settings,
     ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
@@ -84,6 +93,60 @@ export function buildBackup(
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 const withId = (x: unknown) => isObj(x) && typeof x.id === 'string' && x.id.length > 0;
+const isStr = (x: unknown): x is string => typeof x === 'string';
+const isNum = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** Keys from a file: never one that would reach the object's prototype. */
+const safeKey = (k: string) => k.length > 0 && k.length <= 100 && k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
+
+function okEvent(e: unknown): e is FestivalEvent {
+  return withId(e) && isObj(e) && isStr(e.name) && isNum(e.number) && isNum(e.buyIn) && isStr(e.start) && (e.game === 'NLH' || e.game === 'PLO' || e.game === 'Mix');
+}
+
+/** Only the shapes the planner reads; anything else in the file is dropped. */
+function decodePlans(x: unknown): Record<string, FestivalPlan> {
+  const out: Record<string, FestivalPlan> = {};
+  if (!isObj(x)) return out;
+  const strMap = <T>(m: unknown, ok: (v: unknown) => v is T): Record<string, T> => {
+    const r: Record<string, T> = {};
+    if (isObj(m)) for (const [k, v] of Object.entries(m)) if (safeKey(k) && ok(v)) r[k] = v;
+    return r;
+  };
+  for (const [id, p] of Object.entries(x)) {
+    if (!safeKey(id) || !isObj(p) || !Array.isArray(p.picked)) continue;
+    const events = Array.isArray(p.events) ? (p.events as unknown[]).filter(okEvent).map((e) => ({ ...e, guarantee: isNum(e.guarantee) ? e.guarantee : 0 })) : [];
+    out[id] = {
+      picked: (p.picked as unknown[]).filter(isStr),
+      lateReg: strMap(p.lateReg, isNum),
+      sessions: strMap(p.sessions, isStr),
+      ...(isStr(p.name) ? { name: p.name.slice(0, 60) } : {}),
+      ...(events.length ? { events } : {}),
+    };
+  }
+  return out;
+}
+
+function decodeOwnFestivals(x: unknown): Festival[] {
+  if (!Array.isArray(x)) return [];
+  return x
+    .filter((f): f is Record<string, unknown> => withId(f) && isObj(f) && f.own === true && isStr(f.name) && isStr(f.currency) && isObj(f.dates) && isStr(f.dates.from) && DAY.test(f.dates.from) && isStr(f.dates.to) && DAY.test(f.dates.to))
+    .map((f) => {
+      const dates = f.dates as { from: string; to: string };
+      return {
+        id: f.id as string,
+        name: (f.name as string).slice(0, 60),
+        venue: isStr(f.venue) ? f.venue : '',
+        city: isStr(f.city) ? f.city : '',
+        currency: f.currency as string,
+        utcOffset: isNum(f.utcOffset) ? f.utcOffset : 0,
+        source: { label: '', checked: isObj(f.source) && isStr(f.source.checked) ? f.source.checked : '' },
+        notes: [],
+        events: [],
+        dates: { from: dates.from, to: dates.to },
+        own: true,
+      };
+    });
+}
 
 /** Throws 'invalid' when the text isn't a Sweatbook backup. Drops malformed items. */
 export function parseBackup(text: string): BackupData {
@@ -141,6 +204,8 @@ export function parseBackup(text: string): BackupData {
     trips,
     swaps,
     swapGroups,
+    festivalPlans: decodePlans(j.festivalPlans),
+    ownFestivals: decodeOwnFestivals(j.ownFestivals),
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
     // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
     quarantine: Array.isArray(j.quarantine)
