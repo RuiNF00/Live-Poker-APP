@@ -522,7 +522,7 @@ const ptBR: Record<string, string> = {
   'Ainda não pagaste {amount}': 'Você ainda não pagou {amount}',
   'As contas são as que cada jogador te enviou. As sessões em direto atualizam sozinhas.': 'As contas são as que cada jogador te enviou. As sessões ao vivo se atualizam sozinhas.',
   'As contas e as sessões em direto: {url}': 'As contas e as sessões ao vivo: {url}',
-  'Também bancas outros jogadores?': 'Você também banca outros jogadores?',
+  'Também bancas outros jogadores?': 'Também banca outros jogadores?',
   'Ação em aberto, o que te devem e sessões em direto': 'Ação em aberto, o que te devem e sessões ao vivo',
   'Guarda as contas que te enviam e segue-os num só sítio.': 'Salve as contas que te enviam e acompanhe todos em um só lugar.',
   'deves': 'você deve',

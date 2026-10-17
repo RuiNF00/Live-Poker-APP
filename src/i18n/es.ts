@@ -1131,7 +1131,7 @@ const es: Record<string, string> = {
   'Ainda não pagaste {amount}': 'Aún no pagaste {amount}',
   'As contas são as que cada jogador te enviou. As sessões em direto atualizam sozinhas.': 'Las cuentas son las que te envió cada jugador. Las sesiones en directo se actualizan solas.',
   'As contas e as sessões em direto: {url}': 'Las cuentas y las sesiones en directo: {url}',
-  'Também bancas outros jogadores?': '¿También respaldas a otros jugadores?',
+  'Também bancas outros jogadores?': '¿Respaldas a otros jugadores?',
   'Ação em aberto, o que te devem e sessões em direto': 'Acción abierta, lo que te deben y sesiones en directo',
   'Guarda as contas que te enviam e segue-os num só sítio.': 'Guarda las cuentas que te envían y síguelos en un solo lugar.',
   'Marcar como pago?': '¿Marcar como pagado?',
