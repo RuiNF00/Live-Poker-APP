@@ -26,3 +26,8 @@ test('opt-in names, opt-out notes', () => {
   assert.equal(p.players[1].name, 'Zé do boné');
   assert.equal(p.notes, '');
 });
+
+test('study folders never leave the phone', () => {
+  const p = publicHand({ ...hand, folders: ['Rever com coach'] });
+  assert.equal('folders' in p, false);
+});

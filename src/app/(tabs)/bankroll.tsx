@@ -193,7 +193,12 @@ function BankrollTab() {
               icon="stats-chart"
               title={t('Ainda sem sessões')}
               body={t('Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o €/hora e o ROI aparecem aqui.')}
-              action={<Button title={t('Juntar sessão passada')} icon="add" kind="secondary" size="md" onPress={() => setSheet({ type: 'session', s: 'new' })} />}
+              action={
+                <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
+                  <Button title={t('Juntar sessão passada')} icon="add" kind="secondary" size="md" onPress={() => setSheet({ type: 'session', s: 'new' })} />
+                  <Button title={t('Importar de outra app')} icon="download-outline" kind="ghost" size="md" onPress={() => router.push('/import')} />
+                </View>
+              }
             />
           )
         ) : (
