@@ -42,7 +42,7 @@ test('days, events, cashes, best finish and the result in buy-ins', () => {
   assert.equal(moneyLabel(r), '+1200$');
   assert.deepEqual(
     recapStats(r).map((x) => [x.key, x.value]),
-    [['days', '4'], ['events', '3'], ['cashes', '1/3'], ['place', '9º/412']],
+    [['days', '4'], ['events', '3'], ['cashes', '1/3'], ['place', '9.º/412']],
   );
 });
 
@@ -99,7 +99,7 @@ test('carousel: events, days cashed, slides and the caption without amounts', ()
 
   const link = 'https://sweatbook.poker/r/abc?utm_medium=carousel';
   const cap = carouselCaption(r, link, { showResult: true, showMoney: false });
-  assert.ok(cap.startsWith('Bahamas, dezembro 2026: 2 eventos, 1/2 nos prémios, melhor lugar 9º/412'));
+  assert.ok(cap.startsWith('Bahamas, dezembro 2026: 2 eventos, 1/2 nos prémios, melhor lugar 9.º/412'));
   assert.ok(cap.includes(link));
   assert.ok(!cap.includes('$'));
   assert.ok(!cap.includes('Casino'));
