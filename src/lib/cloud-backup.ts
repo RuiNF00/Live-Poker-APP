@@ -12,6 +12,7 @@ import { deriveKeys, seal, unseal } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
+import { outcomeOf, queue, registerSender } from './sync';
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
 
@@ -86,3 +87,18 @@ export async function removeRemote(c: CloudState): Promise<void> {
   // 404: already gone. Anything else means the copy may still be on the server.
   if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : 'network');
 }
+
+/**
+ * Deletes the server copy now or when the signal is back. Only the derived key goes in
+ * the queue: it can delete the copy but not read it.
+ */
+export function queueCloudDelete(c: CloudState) {
+  queue('cloud-delete', { id: c.id, auth: deriveKeys(c.secret).auth }, c.id);
+}
+
+registerSender('cloud-delete', async (p) => {
+  const { id, auth } = p as { id: string; auth: string };
+  const res = await fetch(`${API}/api/backup/${id}`, { method: 'DELETE', headers: { 'x-backup-key': auth } }).catch(() => null);
+  if (!res) return 'retry';
+  return res.status === 404 ? 'done' : outcomeOf(res.status);
+});

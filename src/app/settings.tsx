@@ -9,10 +9,11 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
-import { Button, Card, Chip, ChipRow, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
@@ -55,6 +56,26 @@ export default function SettingsScreen() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const eraseAll = () => {
+    tap();
+    confirmAction(
+      t('Apagar todos os teus dados?'),
+      t('Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.'),
+      t('Apagar tudo'),
+      async () => {
+        setBusy(true);
+        try {
+          await store.eraseAll();
+          lockChanged();
+          router.replace('/');
+          note(t('Dados apagados'), t('A app está como nova.'));
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
   };
 
   const counts = [hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length }), sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length }), players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })].join(' · ');
@@ -144,6 +165,12 @@ export default function SettingsScreen() {
             <ListItem icon="help-buoy-outline" title={t('Ajuda e contacto')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Os teus dados')} hint={t('Antes de apagar, podes guardar tudo com «Exportar tudo».')}>
+          <ListGroup>
+            <ListItem icon="trash-outline" destructive title={busy ? t('A apagar…') : t('Apagar todos os meus dados')} subtitle={t('Neste telemóvel, na nuvem e nos links públicos')} onPress={busy ? undefined : eraseAll} />
           </ListGroup>
         </Section>
         <View style={{ alignItems: 'center', gap: 4, paddingTop: S.sm }}>
