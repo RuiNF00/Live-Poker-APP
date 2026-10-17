@@ -424,7 +424,7 @@ function RangeEq({ eq, onPress, locked }: { eq: NonNullable<ReturnType<typeof vi
         accessibilityLabel={`${vs}. ${t('Editar a range do vilão')}${locked ? ', Pro' : ''}`}
         style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: R.pill, borderWidth: 1, borderColor: C.border, backgroundColor: pressed ? C.surface3 : C.surface2 })}>
         <Text style={{ color: C.text, fontFamily: F.medium, fontSize: 12 }}>{vs}</Text>
-        {locked ? <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 9, letterSpacing: 0.5 }}>PRO</Text> : null}
+        {locked ? <Ionicons name="lock-closed" size={11} color={C.accent} /> : null}
         <Ionicons name="chevron-forward" size={11} color={C.textDim} />
       </Pressable>
     </View>
