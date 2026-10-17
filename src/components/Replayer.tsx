@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -12,6 +13,7 @@ import { ReplayerTable } from './replayer/ReplayerTable';
 import { tap } from './ui';
 
 const SPEEDS = [1, 1.5, 2, 0.5];
+const TIPS_KEY = 'sweatbook.replayer.tips.v1';
 const BASE_MS = 1100;
 
 /**
@@ -73,10 +75,35 @@ export function Replayer({
     return () => clearTimeout(id);
   }, [running, k, last, steps, speed]);
 
+  // A card being dealt is felt as well as seen: one firm tap per new street.
+  const prevK = useRef(k);
+  useEffect(() => {
+    if (k > prevK.current && (steps[k]?.kind === 'board' || steps[k]?.kind === 'showdown')) tap('medium');
+    prevK.current = k;
+  }, [k, steps]);
+
+  // First open: a tip right where the controls are, gone after the first tap or "Percebi".
+  const [tips, setTips] = useState(false);
+  useEffect(() => {
+    let live = true;
+    AsyncStorage.getItem(TIPS_KEY)
+      .then((v) => live && !v && setTips(true))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const doneTips = () => {
+    if (!tips) return;
+    setTips(false);
+    AsyncStorage.setItem(TIPS_KEY, '1').catch(() => {});
+  };
+
   const view = useMemo(() => viewAt(hand, r, k, { inBB, reveal: reveal && !locked, atEnd }), [hand, r, k, inBB, reveal, locked, atEnd]);
   const items = useMemo(() => timeline(hand, r, inBB), [hand, r, inBB]);
 
   const go = (to: number) => {
+    doneTips();
     tap('select');
     setPlaying(false);
     setI(Math.max(0, Math.min(last, to)));
@@ -142,7 +169,36 @@ export function Replayer({
         <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} onPress={() => setReveal((x) => !x)} />
       </View>
 
+      {tips && !locked ? <TipBubble onClose={doneTips} /> : null}
       <Timeline items={items} current={k} last={last} onPick={go} />
+    </View>
+  );
+}
+
+/** First-open coach mark: how to move through a hand, shown once, in place. */
+function TipBubble({ onClose }: { onClose: () => void }) {
+  return (
+    <View
+      accessibilityRole="alert"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderRadius: R.md,
+        backgroundColor: 'rgba(255,106,61,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,106,61,0.45)',
+        paddingVertical: 9,
+        paddingLeft: 12,
+        paddingRight: 6,
+      }}>
+      <Ionicons name="hand-left-outline" size={18} color={C.accent} />
+      <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>
+        {t('Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.')}
+      </Text>
+      <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+        <Text style={{ color: C.accent, fontFamily: ff(700), fontSize: 13 }}>{t('Percebi')}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -176,6 +232,9 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Stat label={t('Pot odds')} value={`${(f.potOdds * 100).toFixed(1)}%`} color={C.info} />
           <Stat label="MDF" value={`${Math.round(f.mdf * 100)}%`} color="#A78BFA" />
           {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
+          <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
+            {view.info}
+          </Text>
         </>
       ) : (
         <>

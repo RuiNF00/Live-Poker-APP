@@ -507,6 +507,8 @@ const en: Record<string, string> = {
   'HERO A DECIDIR': 'HERO TO ACT',
   'Pot odds': 'Pot odds',
   'vs top': 'vs top',
+  'Percebi': 'Got it',
+  'Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.': 'Tap the right of the table to step forward and the left to step back. Tap an action below to jump to it.',
   'Próxima street': 'Next street',
   'Velocidade': 'Speed',
   'Mostrar cartas': 'Show cards',
