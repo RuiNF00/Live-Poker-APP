@@ -3215,6 +3215,10 @@ const en: Record<string, string> = {
   'Dia {n} a {date}: lembrar-me': 'Day {n} on {date}: remind me',
   'Avisamos-te {n} min antes.': "We'll remind you {n} min before.",
   'Avisamos-te antes do Dia {n}': "We'll remind you before Day {n}",
+  'Repetir todas as semanas': 'Repeat every week',
+  '{day} às {time}, pronto a começar com um toque': '{day} at {time}, ready to start in one tap',
+  '{day} de cada semana, pronto a começar com um toque': 'Every {day}, ready to start in one tap',
+  'Começa às': 'Starts at',
 };
 
 export default en;
