@@ -11,6 +11,7 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
+import { SwapsEntry } from '@/components/swaps/SwapsEntry';
 import { Insights } from '@/components/Insights';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
@@ -197,6 +198,7 @@ function BankrollTab() {
 
         <StakingEntry />
         <TripsEntry />
+        <SwapsEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (

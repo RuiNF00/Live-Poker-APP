@@ -7,6 +7,7 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import type { Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
@@ -26,6 +27,8 @@ export interface BackupData {
   transfers?: Transfer[];
   /** Missing in backups made before trips existed. */
   trips?: Trip[];
+  /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
+  swaps?: Swap[];
   settings?: Partial<Settings>;
 }
 
@@ -41,6 +44,7 @@ export function buildBackup(
     payments?: BackerPayment[];
     trips?: Trip[];
     backing?: BackedPlayer[];
+    swaps?: Swap[];
     settings: Settings;
   },
   now = Date.now(),
@@ -59,6 +63,7 @@ export function buildBackup(
     payments: d.payments ?? [],
     trips: d.trips ?? [],
     backing: d.backing ?? [],
+    swaps: d.swaps ?? [],
     settings: d.settings,
   };
 }
@@ -95,6 +100,9 @@ export function parseBackup(text: string): BackupData {
       const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
+  const swaps = arr('swaps').filter(
+    (x) => isObj(x) && typeof x.token === 'string' && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+  ) as unknown as Swap[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -109,6 +117,7 @@ export function parseBackup(text: string): BackupData {
     bankrolls,
     transfers,
     trips,
+    swaps,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
   };
 }
