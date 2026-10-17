@@ -1,8 +1,9 @@
 // What the replayer shows at each step, worked out from the engine. Pure, testable.
 
 import { t } from '@/i18n';
-import { positions, totalPot, type Replay, type Step } from '@/poker/engine';
+import { positions, totalPot, type HandResult, type Replay, type Step } from '@/poker/engine';
 import { equity } from '@/poker/equity';
+import { evaluate } from '@/poker/evaluator';
 import { amount } from '@/poker/format';
 import { equityVsRange, rangePctForRaises, topRange } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
@@ -29,6 +30,8 @@ export interface RpSeat {
   /** Won at the end of the hand, formatted, e.g. "+12,5 bb". */
   won: string | null;
   handName: string | null;
+  /** Run it twice: the one run this player won (1 or 2), when they didn't win both. */
+  run: 1 | 2 | null;
   /** Share of the pot if the board ran out now, 0..1, when every live hand is face up. */
   equity: number | null;
 }
@@ -44,6 +47,8 @@ export interface RpFacing {
 export interface RpView {
   seats: RpSeat[];
   board: CardCode[];
+  /** Run it twice, at the end: the second run's full board. */
+  board2: CardCode[] | null;
   street: Street;
   pot: number;
   potLabel: string;
@@ -155,6 +160,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
       betLabel: !result && st.bets[i] > 0 ? fmt(st.bets[i]) : null,
       won: result && won > 0 ? '+' + fmt(won) : null,
       handName: result && cards ? (result.handNames[i] ?? null) : null,
+      run: null,
       equity: null,
     };
   });
@@ -195,7 +201,23 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   else if (step.kind === 'board') narration = STREET_LABEL[step.street];
   else if (isShowdown) narration = 'Showdown';
   else if (st.last) narration = `${displayName(hand, st.last.p, pos)}: ${badgeLabel(st.last.allIn ? 'allin' : st.last.kind, fmt(st.last.kind === 'call' ? st.last.added : st.last.to)).toLowerCase()}`;
-  if (result) {
+  // Run it twice: each board pays half of every pot.
+  const board2 = result && r.boards.length === 2 ? r.boards[1] : null;
+  if (result && board2) {
+    const runs = runPayouts(result, hand.players.length);
+    for (const s of seats) if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
+    narration = runs
+      .map((paid, j) => {
+        const names = seats
+          .filter((s) => paid[s.i] > 0)
+          .map((s) => {
+            const hn = s.cards ? (j === 0 ? s.handName : evaluate([...s.cards, ...board2]).name) : null;
+            return `${s.name} ${t('ganha')} ${fmt(paid[s.i])}${hn ? ` (${hn})` : ''}`;
+          });
+        return `Board ${j + 1}: ${names.join(', ')}`;
+      })
+      .join(' · ');
+  } else if (result) {
     const winners = seats.filter((s) => s.won);
     if (winners.length) narration = winners.map((s) => `${s.name} ${t('ganha')} ${s.won!.slice(1)}${s.handName ? ` (${s.handName})` : ''}`).join(' · ');
   }
@@ -230,6 +252,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   return {
     seats,
     board,
+    board2,
     street: step.street,
     pot,
     potLabel: fmt(result ? pot : st.pot),
@@ -239,6 +262,26 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     rangeEq,
     end: !!result,
   };
+}
+
+/** Run it twice: what each run paid each player, split as the engine splits it. */
+export function runPayouts(result: HandResult, n: number): number[][] {
+  const out = [new Array(n).fill(0), new Array(n).fill(0)];
+  const pay = (run: number, amount: number, winners: number[] | null | undefined) => {
+    if (!winners?.length) return;
+    const share = Math.floor(amount / winners.length);
+    let odd = amount - share * winners.length;
+    for (const w of winners) {
+      out[run][w] += share + (odd > 0 ? 1 : 0);
+      if (odd > 0) odd--;
+    }
+  };
+  for (const pot of result.pots) {
+    const first = Math.ceil(pot.amount / 2);
+    pay(0, first, pot.winners);
+    pay(1, pot.amount - first, pot.winners2);
+  }
+  return out;
 }
 
 export interface TimelineItem {
