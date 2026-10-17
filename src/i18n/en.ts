@@ -1517,6 +1517,17 @@ const en: Record<string, string> = {
   'Filipinas': 'Philippines',
   'Emirados Árabes Unidos': 'United Arab Emirates',
   'Outro': 'Other',
+  // Home currency
+  'Património · tudo em {cur}': 'Net worth · all in {cur}',
+  'Mudar a moeda': 'Change currency',
+  'Para juntar as tuas moedas precisamos do câmbio do dia. Liga-te à internet uma vez e fica guardado no telemóvel.': 'To add up your currencies we need the daily exchange rates. Go online once and they stay saved on your phone.',
+  'Póquer em {year}: {amount}': 'Poker in {year}: {amount}',
+  'ROI {pct}%': 'ROI {pct}%',
+  'Câmbio do BCE de {date}. Cada sessão conta ao câmbio do seu dia.': 'ECB rate of {date}. Each session counts at its own day’s rate.',
+  'Sem câmbio para {list}: fica de fora.': 'No rate for {list}: left out.',
+  'A tua moeda': 'Your currency',
+  'Os totais de todas as bankrolls aparecem nesta moeda. As sessões novas também começam nela.': 'Totals across all bankrolls show in this currency. New sessions start in it too.',
+  'Câmbio do BCE hoje: {rate}': 'ECB rate today: {rate}',
 };
 
 export default en;

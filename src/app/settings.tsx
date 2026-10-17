@@ -10,8 +10,9 @@ import { Alert, Platform, ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { AppLockSetting } from '@/components/AppLockSetting';
+import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
-import { Button, Card, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
@@ -20,7 +21,6 @@ import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { BRAND, C, F, S } from '@/theme';
 
-const CURRENCIES = ['€', '$', '£', 'R$', 'CHF'];
 
 function note(title: string, body?: string) {
   if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
@@ -80,7 +80,11 @@ export default function SettingsScreen() {
             <Field label={t('O teu nome nos comentários')} value={settings.nickname} onChangeText={(nickname) => setSettings({ nickname: nickname.slice(0, 40) })} placeholder={t('Ex.: Rui')} />
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Moeda')}</T>
-              <Segmented options={CURRENCIES.map((c) => ({ key: c, label: c }))} value={settings.currency} onChange={(currency) => setSettings({ currency })} />
+              <ChipRow>
+                {CURRENCIES.map((c) => (
+                  <Chip key={c} label={c} active={settings.currency === c} onPress={() => setSettings({ currency: c })} style={{ minWidth: 48 }} />
+                ))}
+              </ChipRow>
             </View>
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Jogadores na mesa')}</T>

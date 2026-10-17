@@ -51,3 +51,10 @@ test('upload() rule: empty or under half never replaces the server copy unless f
   // Brand-new code, or the user confirmed deleting things on purpose.
   assert.equal(uploadBlock(empty, known, true), null);
 });
+
+test('trips count: a phone without the cloud copy\'s trips is not "more" than it', () => {
+  assert.equal(countsOf({ trips: [{}, {}] }).trips, 2);
+  const c: CloudState = { ...code, lastAt: 1, counts: { sessions: 4, trips: 6 } };
+  assert.equal(uploadBlock(countsOf({ sessions: [{}, {}, {}, {}] }), c), 'would_shrink');
+  assert.equal(uploadBlock(countsOf({ sessions: [{}, {}, {}, {}], trips: [{}, {}, {}, {}, {}, {}] }), c), null);
+});
