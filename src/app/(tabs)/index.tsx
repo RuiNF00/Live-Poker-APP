@@ -9,7 +9,7 @@ import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
 import { SharedHandsCard } from '@/components/SharedHandsCard';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
-import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
+import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, useSheetPad, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
@@ -65,6 +65,7 @@ const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
   const narrow = useWindowDimensions().width < 380;
+  const sheetPad = useSheetPad(S.xxl);
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
   const backup = useBackupWarning();
@@ -357,7 +358,7 @@ export default function HandsScreen() {
       <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
       <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={picked.size === 1 ? t('Tag para 1 mão') : t('Tag para {n} mãos', { n: picked.size })} onClose={() => setTagging(false)} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
               {DEFAULT_TAGS.map((tg) => {
@@ -630,6 +631,7 @@ const TO_REVIEW = '__review';
 /** "Guardar em pasta": private study folders, toggled on every picked hand. */
 function FolderSheet({ visible, onClose, folders, list, save }: { visible: boolean; onClose: () => void; folders: string[]; list: Hand[]; save: (h: Hand) => void }) {
   const [name, setName] = useState('');
+  const sheetPad = useSheetPad(S.xxl);
   const toggle = (f: string, on: boolean) => list.forEach((h) => save(fileInFolder(h, f, on)));
   const create = () => {
     const f = name.trim();
@@ -642,7 +644,7 @@ function FolderSheet({ visible, onClose, folders, list, save }: { visible: boole
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={list.length === 1 ? t('Guardar 1 mão em') : t('Guardar {n} mãos em', { n: list.length })} onClose={onClose} />
             {folders.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
