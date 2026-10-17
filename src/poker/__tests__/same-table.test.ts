@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { positions } from '../engine';
-import { addSeat, endStacks, newHand, removeSeat, sameTable, swapSeats } from '../factory';
+import { addSeat, endStacks, gameForPlays, newHand, removeSeat, sameTable, swapSeats } from '../factory';
 import type { Hand } from '../types';
 import type { Session } from '@/store/types';
 
@@ -114,4 +114,12 @@ test('QA: changing the table size on the session starts a new table', () => {
   const last = played({ sessionId: 's1' });
   assert.equal(sameTable(last, session), false);
   assert.equal(newHand({ id: 'n', session, last }).players.length, 9);
+});
+
+test('the first hand ever takes the game from the first-run answer', () => {
+  assert.equal(gameForPlays('mtt2')?.kind, 'mtt');
+  assert.deepEqual([gameForPlays('cash1')?.kind, gameForPlays('cash1')?.bb], ['cash', 2]);
+  assert.equal(gameForPlays('cash4')?.bb, 100);
+  assert.equal(gameForPlays(null), null);
+  assert.equal(gameForPlays('weird'), null);
 });

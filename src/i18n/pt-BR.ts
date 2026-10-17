@@ -1264,6 +1264,7 @@ const ptBR: Record<string, string> = {
   'O teu {year} no póquer': 'Seu {year} no poker',
   '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h em {n} sessões. O resumo do seu ano está pronto.',
   '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h em {n} sessões, {amount}. O resumo do seu ano está pronto.',
+  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'Sem tempo? Posição e cartas já bastam: toque em «Salvar agora» e complete depois.',
 };
 
 export default ptBR;

@@ -2824,6 +2824,7 @@ const es: Record<string, string> = {
   'O teu {year} no póquer': 'Tu {year} en el póker',
   '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h en {n} sesiones. El resumen de tu año está listo.',
   '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h en {n} sesiones, {amount}. El resumen de tu año está listo.',
+  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': '¿Sin tiempo? Posición y cartas bastan: «Guardar ya» y la completas después.',
 };
 
 export default es;

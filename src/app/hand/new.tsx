@@ -12,11 +12,13 @@
 //    to be completed after the session.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
@@ -32,7 +34,7 @@ import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
-import { addSeat, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
+import { addSeat, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
@@ -81,6 +83,23 @@ export default function NewHand() {
   const heroCards = hand.players[hand.hero].cards ?? [];
   const r = useMemo(() => replay(hand), [hand]);
   const s = r.final;
+
+  // The very first hand: tournament or cash, and the stakes, from the first-run answers.
+  useEffect(() => {
+    if (isEdit || store.draft || hands.length || activeSession) return;
+    let live = true;
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((raw) => {
+        const game = gameForPlays(raw ? (JSON.parse(raw) as { plays?: string }).plays : null, settings.currency);
+        if (!live || !game) return;
+        setDraftState((d) => (d.hand.actions.length ? d : { ...d, hand: rescaleStacks(d.hand, game) }));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isEdit) store.setDraft(hand);
@@ -446,6 +465,12 @@ export default function NewHand() {
             {seatHint ? (
               <T v="tiny" color={C.textDim} numberOfLines={2}>
                 {seatHint}
+              </T>
+            ) : null}
+            {/* First hand only (onboarded is set when it's saved): the rest is optional. */}
+            {!settings.onboarded && !isEdit ? (
+              <T v="tiny" color={C.accent} numberOfLines={2}>
+                {t('Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.')}
               </T>
             ) : null}
             {(callers.length > 0 || checks.length > 0) && (
