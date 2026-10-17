@@ -53,6 +53,8 @@ export interface ShareStore {
   reportComment(commentId: string, reporterId: string): Promise<ReportResult>;
   /** The hand's owner (edit token) hides a comment; with `block`, every comment of its author on that hand, now and later. */
   removeComment(commentId: string, editToken: string, block: boolean): Promise<boolean>;
+  /** "Delete all my data" in the app: every comment written with this author key, on any hand. */
+  deleteCommentsByAuthor(authorKey: string): Promise<number>;
   /** Visible comments per hand, for the app's list of shared hands. */
   commentCounts(ids: string[]): Promise<Record<string, number>>;
   /** The owner turns "Novo comentário" notices on for this hand (an Expo push token) or off (null). */
@@ -233,6 +235,12 @@ class SupabaseStore implements ShareStore {
       : await this.db.rpc('hide_hand_comment', { p_comment_id: commentId, p_edit_token: editToken });
     if (error) throw error;
     return !!data;
+  }
+
+  async deleteCommentsByAuthor(authorKey: string) {
+    const { data, error } = await this.db.rpc('delete_comments_by_author', { p_author_key: authorKey });
+    if (error) throw error;
+    return Number(data ?? 0);
   }
 
   async commentCounts(ids: string[]) {
@@ -422,6 +430,20 @@ class LocalStore implements ShareStore {
       if (block && key) ((d.blocks ??= {})[handId] ??= []).push(key);
       d.removed = [...(d.removed ?? []), ...list.filter((c) => c.id === commentId || (block && key && c.authorKey === key)).map((c) => c.id)];
       return true;
+    });
+  }
+
+  async deleteCommentsByAuthor(authorKey: string) {
+    return this.mutate((d) => {
+      let n = 0;
+      for (const h of Object.keys(d.comments)) {
+        const list = d.comments[h] as (HandComment & { authorKey?: string | null })[];
+        const keep = list.filter((c) => c.authorKey !== authorKey);
+        n += list.length - keep.length;
+        d.comments[h] = keep;
+        if (d.blocks?.[h]) d.blocks[h] = d.blocks[h].filter((k) => k !== authorKey);
+      }
+      return n;
     });
   }
 

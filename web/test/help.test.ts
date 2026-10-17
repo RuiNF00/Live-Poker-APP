@@ -55,6 +55,9 @@ describe('store pages', () => {
     expect(to['/apagar-conta']).toBe('/delete-account?lang=pt');
     expect(to['/pt-br/apagar-conta']).toBe('/delete-account?lang=pt-BR');
     expect(to['/es/eliminar-cuenta']).toBe('/delete-account?lang=es');
+    // The old static copies, still linked from privacy.html and terms.html.
+    expect(to['/delete-account.html']).toBe('/delete-account');
+    expect(to['/support.html']).toBe('/support');
     expect(redirects.every((r) => !r.permanent)).toBe(true);
   });
 });

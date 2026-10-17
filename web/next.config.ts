@@ -58,6 +58,9 @@ const nextConfig: NextConfig = {
       { source: '/apagar-conta', ...to('/delete-account', 'pt') },
       { source: '/pt-br/apagar-conta', ...to('/delete-account', 'pt-BR') },
       { source: '/es/eliminar-cuenta', ...to('/delete-account', 'es') },
+      // The old static copies (privacy.html and terms.html still link to them) are gone.
+      { source: '/delete-account.html', destination: '/delete-account', permanent: false },
+      { source: '/support.html', destination: '/support', permanent: false },
     ];
   },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
