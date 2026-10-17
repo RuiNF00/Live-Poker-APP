@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Animated, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { t } from '@/i18n';
 import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
@@ -66,7 +67,7 @@ export function ReplayerTable({
           style={{ flex: 1 }}
           onPress={(e) => (e.nativeEvent.locationX < w * 0.35 ? onTapLeft?.() : onTapRight?.())}
           accessibilityRole="button"
-          accessibilityLabel="Mesa">
+          accessibilityLabel={t('Mesa')}>
           <Felt w={w} h={h} />
 
           <Text
