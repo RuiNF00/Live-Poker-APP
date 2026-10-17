@@ -57,7 +57,7 @@ export default function ExportScreen() {
     return { from: f ?? undefined, to: to !== null ? endOfDay(to) : undefined };
   }, [fromText, toText, now]);
   const range = useMemo(() => rangeOf(period, now, custom), [period, now, custom]);
-  const report = useMemo(() => buildReport({ sessions, transfers, bankrolls, scope, range, trips }), [sessions, transfers, bankrolls, scope, range, trips]);
+  const report = useMemo(() => buildReport({ sessions, transfers, bankrolls, scope, range, trips, home: settings.currency }), [sessions, transfers, bankrolls, scope, range, trips, settings.currency]);
   const tax = useMemo(() => taxReport(report.currencies.flatMap((c) => c.sessions), range, report.trips), [report, range]);
   const main = report.currencies[0];
   const ids = scope ? scopeIds(scope, bankrolls) : null;

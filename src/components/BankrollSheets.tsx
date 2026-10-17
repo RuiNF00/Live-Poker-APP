@@ -13,12 +13,14 @@ import type { Bankroll, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
 
 import { Button, Chip, ChipRow, Field, NumField, Row, Section, Segmented, SheetHeader, T } from './ui';
+import { useSheetAnimation } from '@/lib/motion';
 
 export { CURRENCIES };
 
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
+  const sheetAnim = useSheetAnimation();
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+    <Modal visible={visible} animationType={sheetAnim} onRequestClose={onClose} presentationStyle="pageSheet">
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
         {visible ? children : null}

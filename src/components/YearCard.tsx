@@ -131,7 +131,7 @@ function Stat({ label, value, fg, dim }: { label: string; value: string; fg: str
   );
 }
 
-function YearBody({ r, fg, dim, line }: BodyProps) {
+function YearBody({ r, fg, dim, line, hideMoney }: BodyProps) {
   const flags = r.countries.map(flag).join(' ');
   return (
     <View style={{ gap: 18 }}>
@@ -145,6 +145,13 @@ function YearBody({ r, fg, dim, line }: BodyProps) {
         <Stat label={t('Salas')} value={String(r.venues)} fg={fg} dim={dim} />
         {r.hands ? <Stat label={t('Mãos')} value={String(r.hands)} fg={fg} dim={dim} /> : null}
       </View>
+      {/* Hours and sessions count every currency; money is one currency only, so it says which. */}
+      {!hideMoney ? (
+        <View style={{ gap: 2 }}>
+          <Kicker dim={dim}>{t('Resultado em {currency}', { currency: r.currency })}</Kicker>
+          <Big color={toneOf(r.profit) ?? fg} size={40}>{signed(r.profit, r.currency)}</Big>
+        </View>
+      ) : null}
       {r.countries.length ? (
         <View style={{ gap: 6 }}>
           <Kicker dim={dim}>{r.countries.length === 1 ? t('1 país') : t('{n} países', { n: r.countries.length })}</Kicker>

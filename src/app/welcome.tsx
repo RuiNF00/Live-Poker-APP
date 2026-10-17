@@ -52,6 +52,13 @@ export default function Welcome() {
         if (!isPro && !invited) setTimeout(() => paywall('plan'), 350);
       });
   };
+  // Coming from another app: the history first (the import is free), the questions can wait.
+  const switchApp = () => {
+    AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
+    track('onboarding_step', { step: 'switch', index: step });
+    router.back();
+    setTimeout(() => router.push('/import'), 350);
+  };
   const pickCurrency = (c: string) => {
     setSettings({ currency: c });
     // The bankroll made on first launch is still empty: give it the same currency.
@@ -220,7 +227,12 @@ export default function Welcome() {
       </ScrollView>
 
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm }}>
-        {at === 'hero' ? <Button title={t('Começar')} iconRight="chevron-forward" onPress={next} /> : null}
+        {at === 'hero' ? (
+          <View style={{ gap: S.xs }}>
+            <Button title={t('Começar')} iconRight="chevron-forward" onPress={next} />
+            <Button kind="ghost" size="sm" icon="swap-horizontal-outline" title={t('Já uso outra app: mudar em 1 minuto')} onPress={switchApp} />
+          </View>
+        ) : null}
         {at === 'goals' ? <Button title={t('Continuar')} disabled={!a.goals.length} onPress={next} /> : null}
         {/* The currency is already set (from the phone's region): one tap to keep it. */}
         {at === 'currency' ? <Button title={t('Continuar')} onPress={() => {

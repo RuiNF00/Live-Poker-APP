@@ -12,6 +12,7 @@ import { AmountPad } from '@/components/AmountPad';
 import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { useSheetAnimation } from '@/lib/motion';
 import { bbs, chips, money, timeOf } from '@/poker/format';
 import { averageStack, levelOf, parsePayouts, parseStructure, payState, stackDepth, syncTo, syncedLevelStart, TEMPLATES, templateStructure, type Level, type Tourney } from '@/poker/tourney';
 import { useStore } from '@/store/store';
@@ -439,8 +440,9 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
     if (visible) setText(initial);
   }
   const n = useMemo(() => parse(text), [parse, text]);
+  const animation = useSheetAnimation();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={title} onClose={onClose} />
