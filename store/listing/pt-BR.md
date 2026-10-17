@@ -40,19 +40,19 @@ COMPARTILHE E PEÇA OPINIÃO
 
 CONTROLE DE BANCA PARA QUEM JOGA AO VIVO
 • Torneios e cash games, com relógio de sessão e registro do stack
-• Bankroll e resultados por cassino ou clube, com despesas
+• Bankroll e resultados por clube ou sala, com despesas
 • Staking: registre a ação que você vendeu, os backers, pacotes e makeup, e veja o que deve a cada um
-• Calculadora de acordo para a mesa final (ICM e chip chop)
+• Calculadora de deal para a mesa final (ICM e chip chop)
 • Leituras dos jogadores da sua mesa durante a sessão
 • Sem cadastro: suas mãos ficam no seu celular
 • Backup na nuvem opcional e criptografado, com código de recuperação e sem e-mail
 • Exporte tudo para um arquivo
-• App em português e inglês
+• App em português do Brasil, português de Portugal, espanhol e inglês
 
 SWEATBOOK PRO
-Grátis: até 3 mãos salvas por dia. Com o Sweatbook Pro você tem mãos ilimitadas, os filtros de bankroll de 30 dias, 90 dias e 1 ano, a exportação de sessões em CSV e Stories com a sua voz e sem marca d'água. Assinatura mensal ou anual; o plano anual começa com 1 semana grátis para novos assinantes. O pagamento é cobrado na sua conta Apple quando você confirma a compra. A assinatura é renovada automaticamente, a não ser que você cancele pelo menos 24 horas antes do fim do período, nos ajustes da sua conta.
+Grátis: até 3 mãos salvas por dia, compartilhamento sem limite, importação, calculadora de odds, planejador de festivais e bloqueio do app. Com o Sweatbook Pro você tem mãos ilimitadas, gestão de staking (backers, makeup e acertos), acerto de swaps, relatório anual de impostos, resultados de várias moedas num só total, várias bankrolls, todos os filtros de bankroll (30 dias, 90 dias, 1 ano, por stake), onde você ganha e perde, win rate por jogo, stake e sala, viagens ilimitadas, relatórios em PDF e CSV, exportação de várias mãos de uma vez para o solver, links ilimitados para o coach e Stories com a sua voz e sem marca d'água. A página de quem banca você e confirmar um swap por link são sempre grátis. Assinatura mensal ou anual; o plano anual começa com 3 dias grátis para novos assinantes. O pagamento é cobrado na sua conta Apple quando você confirma a compra. A assinatura é renovada automaticamente, a não ser que você cancele pelo menos 24 horas antes do fim do período, nos ajustes da sua conta.
 
-O Sweatbook é uma ferramenta de registro e estudo: apenas registros e contas. Nenhum dinheiro passa pelo app. Não permite apostar nem jogar a dinheiro. Para maiores de 18 anos.
+O Sweatbook é uma ferramenta de registro e estudo: apenas registros e contas. Nenhum dinheiro passa pela Sweatbook. Não é possível jogar valendo dinheiro. Para maiores de 18 anos.
 
 Suporte: {{SUPPORT_EMAIL}}
 Privacidade: https://{{WEB_DOMAIN}}/privacy

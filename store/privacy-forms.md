@@ -1,10 +1,16 @@
 # Store forms: ready answers
 
-Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, no sign-in, no third-party analytics/ads/crash SDKs**, all hand data local on the device unless the user turns on the optional cloud backup (recovery code, no account; deleted after 18 months without updates). Only a hand the user chooses to share (public link) and anonymous comments/votes on it reach our backend (Supabase). Subscriptions via Apple/Google in-app purchase through RevenueCat (products sweatbook_pro_monthly 29.99 USD, sweatbook_pro_annual 199.99 USD, 1-week free intro offer on the annual plan only, group "Sweatbook Pro"). The app sends first-party usage events (event name, random per-install ID, platform; no personal data) to `https://{{WEB_DOMAIN}}/api/events`. If any of this changes (crash reporter, analytics, RevenueCat, accounts), update this file and the privacy policy together.
+Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, no sign-in, no third-party analytics/ads/crash SDKs**, all hand data local on the device unless the user turns on the optional cloud backup (recovery code, no account; deleted after 18 months without updates). Only a hand the user chooses to share (public link) and anonymous comments/votes on it reach our backend (Supabase). Subscriptions via Apple/Google in-app purchase through RevenueCat (products sweatbook_pro_monthly 29.99 USD, sweatbook_pro_annual 199.99 USD, 3-day free intro offer on the annual plan only (Rui, 17 Oct 15:04; was 1 week), group "Sweatbook Pro"). The app sends first-party usage events (event name, random per-install ID, platform; no personal data) to `https://{{WEB_DOMAIN}}/api/events`. If any of this changes (crash reporter, analytics, RevenueCat, accounts), update this file and the privacy policy together.
 
 ## Apple: App Privacy ("nutrition label")
 
-Data used to track you: **None**. Data linked to you: **None**.
+Data used to track you: **None**.
+
+Data linked to you (over-declared on purpose, per the data audit `/mnt/project-files/launch/auditoria-dados-privacidade.md` #10):
+
+| Category → type | Purpose |
+|---|---|
+| Contact Info → Name (a nickname the user types for comments, the backer page, a public profile, swaps or coaching links; optional; it sits next to that player's data on a page, so we declare it linked) | App Functionality |
 
 Data not linked to you:
 
@@ -15,10 +21,9 @@ Data not linked to you:
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
-| User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | App Functionality |
-| Contact Info → Name (a nickname the user types for comments, the backer page or a public profile; optional, not tied to identity) | App Functionality |
+| User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup; not linked: the backup has no account and we cannot read it) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
-| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
+| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward) | Analytics, App Functionality |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 
 Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
@@ -50,9 +55,16 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 - Export compliance: `ITSAppUsesNonExemptEncryption=true` (confirmed in the prebuild at cd6635d). Answer "uses standard encryption algorithms" (AES-256-GCM in the app for the cloud backup), no proprietary encryption, no CCATS; France excluded from v1 until the ANSSI declaration (see review-precheck.md and availability.md).
 - Sign-in required: No. No demo account needed. Review notes in `review-risks.md`.
 - Retention offer ("Conversão para Pro" thread), created by the store thread with the API keys, not by Rui: Apple promotional offer `sweatbook_retention_40` on sweatbook_pro_monthly (-40% for 3 months, pay as you go); Play offer `sweatbook-retention-40` on the monthly base plan (-40% for 3 months, developer-determined eligibility); Play base plan pause enabled (up to 3 months). Without them the app hides the offer.
-- Lifetime purchase (Conversão thread, PR pending): non-consumable `sweatbook_lifetime`, 499 USD (or the nearest Apple price point) / 499 USD Play one-time product, unlocks the same RevenueCat entitlement as the subscription, shown only in the cancel flow. Created by the store thread with the API keys (App Store Connect, Play Console, RevenueCat) and submitted with the version like the subscriptions. Restore purchases must restore it.
+- Annual free trial: **3 days** (Rui, 17 Oct). App Store Connect → Subscriptions → `sweatbook_pro_annual` → Introductory Offers → Free, duration 3 days, all countries, new subscribers only. Play Console → `sweatbook_pro_annual` → base plan → Add offer → Free trial P3D, eligibility "New customer acquisition: never had this subscription". Both created by the store thread with the API keys; the paywall must show the price and first charge date, which the Conversão thread is handling.
+- Retention offer and pause: App Store promotional offer `sweatbook_retention_40` on `sweatbook_pro_monthly` (40% off for 3 months; needs the In-App Purchase key from step 16 loaded into RevenueCat), Play offer `sweatbook-retention-40` on the monthly base plan, and **pause turned on** in both Play base plans (the cancel screen offers a 3-month pause on Android). All created by the store thread through the APIs.
+- Every product gets an App Review screenshot (the paywall for the subscriptions, the cancel screen for lifetime and the retention offer), rendered from the app like the store screenshots, and is submitted with version 1.0.
+- Lifetime purchase (merged in #106): non-consumable `sweatbook_lifetime`, 499 USD (or the nearest Apple price point) / 499 USD Play one-time product, unlocks the same RevenueCat entitlement as the subscription, shown only in the cancel flow. Created by the store thread with the API keys (App Store Connect, Play Console, RevenueCat) and submitted with the version like the subscriptions. Restore purchases must restore it.
 - In-App Purchases: create the subscription products in App Store Connect before submitting, attach them to the version, and give each a review screenshot of the paywall. Requires the Paid Apps agreement, bank and tax forms done by Rui.
 - EU Digital Services Act trader status: question for Rui. A paid subscription makes the app commercial, which in practice means **trader** (his address and phone shown on the EU listing) unless he publishes through a company.
+
+## Apple: Accessibility Nutrition Labels
+
+Declare only what was tested on an iPhone (source: `/mnt/project-files/design/auditoria-acessibilidade.md` §9). At 174ec64 that is **Dark Interface** only (the app is dark-only). VoiceOver, Larger Text, Sufficient Contrast, Differentiate Without Color and Reduced Motion stay undeclared until the audit's fixes (§1-4, §6, §7) are merged and pass its 10-minute test (§8). The labels are optional and can be added after launch; a false label is grounds for complaints and rejection.
 
 ## Google Play: Data safety
 
@@ -69,7 +81,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
-| App activity → App interactions (first-party usage events) | Yes | No | Analytics |
+| App activity → App interactions (first-party usage events; also the referral check) | Yes | No | Analytics, App functionality |
 
 Processed ephemerally: No, except audio (Yes).
 

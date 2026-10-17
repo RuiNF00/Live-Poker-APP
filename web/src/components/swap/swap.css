@@ -225,3 +225,85 @@
   min-height: 44px;
   cursor: pointer;
 }
+
+/* Group swaps */
+.sw-field select {
+  height: 50px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+}
+
+.sw-seats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sw-seat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 16px;
+}
+
+.sw-seat-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.sw-seat-state {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.sw-seat-ok {
+  color: var(--good, #3fbf7f);
+}
+
+.sw-seat-pick {
+  width: 100%;
+  border: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 16px;
+}
+
+.sw-seat-pick.on {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+
+.sw-seat-pick:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sw-transfer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.sw-transfer:first-of-type {
+  border-top: 0;
+}
+
+.sw-transfer b {
+  font-family: var(--mono, ui-monospace, monospace);
+  white-space: nowrap;
+}

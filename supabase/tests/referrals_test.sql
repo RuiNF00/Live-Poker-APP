@@ -102,3 +102,48 @@ reset role;
 set role service_role;
 select referral_activated(:friend) and not referral_activated('dddddddd-0000-0000-0000-000000000001') as activated_flag;
 reset role;
+
+-- Retention (migration 20261017250000): old referrals and unused codes go, recent ones stay
+reset role;
+insert into referral_codes (install_id, code, rc_user_id, created_at) values
+  ('f0000000-0000-0000-0000-000000000001', 'XLDR2345', 'rc_old_ref', now() - interval '900 days'),
+  ('f0000000-0000-0000-0000-000000000002', 'XLDF2345', 'rc_old_friend', now() - interval '900 days'),
+  ('f0000000-0000-0000-0000-000000000003', 'XDLE2345', null, now() - interval '900 days');
+insert into referrals (friend_install_id, referrer_install_id, claimed_at, activated_at) values
+  ('f0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000001', now() - interval '800 days', now() - interval '799 days');
+insert into referral_rewards (install_id, friend_install_id, role, days, pro_until, created_at) values
+  ('f0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000002', 'friend', 7, now() - interval '792 days', now() - interval '799 days');
+update referral_codes set last_seen_at = now() - interval '500 days' where install_id::text like 'f0000000%';
+select count(*) = 3 as trigger_marks_seen from referral_codes where install_id::text like 'f0000000%' and last_seen_at > now() - interval '1 minute';
+alter table referral_codes disable trigger referral_code_seen;
+update referral_codes set last_seen_at = now() - interval '500 days' where install_id::text like 'f0000000%';
+alter table referral_codes enable trigger referral_code_seen;
+set role service_role;
+select referral_code_for(:referrer, 'ABCD2345') = 'ABCD2345' as seen_again;
+select purge_referrals();
+reset role;
+select not exists (select 1 from referrals where friend_install_id = 'f0000000-0000-0000-0000-000000000002') as old_referral_purged;
+select not exists (select 1 from referral_rewards where friend_install_id = 'f0000000-0000-0000-0000-000000000002') as old_rewards_purged;
+select not exists (select 1 from referral_codes where install_id::text like 'f0000000%') as unused_old_codes_purged;
+select exists (select 1 from referrals where friend_install_id = :friend) as recent_referral_kept;
+select exists (select 1 from referral_codes where install_id = :referrer) as active_code_kept;
+
+-- "Delete all my data": the friend's side, then the referrer's side
+set role service_role;
+select erase_referrals(:friend);
+reset role;
+select not exists (select 1 from referrals where friend_install_id = :friend)
+   and not exists (select 1 from referral_codes where install_id = :friend)
+   and not exists (select 1 from referral_rewards where friend_install_id = :friend) as friend_erased;
+set role service_role;
+select erase_referrals(:referrer);
+reset role;
+select not exists (select 1 from referral_codes where install_id = :referrer)
+   and not exists (select 1 from referrals where referrer_install_id = :referrer)
+   and not exists (select 1 from referral_rewards where install_id = :referrer) as referrer_erased;
+\set ON_ERROR_STOP off
+set role anon;
+select erase_referrals('22222222-2222-2222-2222-222222222222');
+select purge_referrals();
+reset role;
+\set ON_ERROR_STOP on

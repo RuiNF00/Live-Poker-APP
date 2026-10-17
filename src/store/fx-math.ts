@@ -83,6 +83,8 @@ export interface HomeTotals {
   missing: string[];
   /** More than one currency went into these numbers. */
   mixed: boolean;
+  /** Net worth by currency, biggest first: the balance in its own currency, in the home one, and its share of what is positive (null when negative). */
+  parts: { currency: string; amount: number; home: number; share: number | null }[];
 }
 
 /** Everything in the player's own currency. */
@@ -97,6 +99,7 @@ export function homeTotals(
   const missing = new Set<string>();
   const used = new Set<string>();
   let netWorth = 0;
+  const parts = new Map<string, { currency: string; amount: number; home: number; share: number | null }>();
   for (const b of d.bankrolls) {
     const bal = balanceOf({ bankrollId: b.id }, d.sessions, d.transfers, d.bankrolls).balance;
     if (!bal) continue;
@@ -107,7 +110,13 @@ export function homeTotals(
     }
     used.add(b.currency);
     netWorth += bal * r;
+    const x = parts.get(b.currency) ?? { currency: b.currency, amount: 0, home: 0, share: null };
+    x.amount += bal;
+    x.home += bal * r;
+    parts.set(b.currency, x);
   }
+  const plus = [...parts.values()].reduce((a, x) => a + Math.max(0, x.home), 0);
+  for (const x of parts.values()) x.share = x.home > 0 && plus > 0 ? x.home / plus : null;
   let p = 0;
   let n = 0;
   let mttInv = 0;
@@ -128,7 +137,7 @@ export function homeTotals(
       mttProfit += v;
     }
   }
-  return { currency: home, netWorth, profit: p, sessions: n, roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null, missing: [...missing], mixed: used.size > 1 || (used.size === 1 && !used.has(home)) };
+  return { currency: home, netWorth, profit: p, sessions: n, roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null, missing: [...missing], mixed: used.size > 1 || (used.size === 1 && !used.has(home)), parts: [...parts.values()].sort((a, b) => b.home - a.home) };
 }
 
 /**

@@ -8,7 +8,8 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
 
-import { BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
+import { useLocked } from '@/components/ProGate';
+import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
 import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
@@ -138,6 +139,7 @@ function Head({ terms, names }: { terms: Swap['terms']; names: Record<'a' | 'b',
 }
 
 function OwnSwap({ s }: { s: Swap }) {
+  const locked = useLocked('swaps');
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
   const [offline, setOffline] = useState(false);
   const names = swapNames(s);
@@ -196,7 +198,9 @@ function OwnSwap({ s }: { s: Swap }) {
       <Screen contentStyle={{ paddingTop: S.lg }}>
         <Head terms={s.terms} names={names} />
 
-        {s.gone ? (
+        {s.left && s.left !== s.side ? (
+          <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('O outro jogador apagou os dados. As contas ficam como estavam.')} />
+        ) : s.gone ? (
           <Banner tone="warn" icon="trash-outline" title={t('Apagado do servidor')} body={t('Um dos jogadores apagou o link. Esta cópia fica no teu telemóvel como registo.')} />
         ) : offline || pending ? (
           <Banner tone="info" icon="cloud-offline-outline" title={t('Sem rede')} body={t('O que registares fica guardado e é enviado quando houver sinal.')} />
@@ -215,9 +219,9 @@ function OwnSwap({ s }: { s: Swap }) {
           </Card>
         ) : null}
 
-        {s.confirmedAt ? <BalanceHero l={l} name={them} currency={cur} /> : null}
+        {s.confirmedAt ? locked ? <AccountsLocked /> : <BalanceHero l={l} name={them} currency={cur} /> : null}
 
-        {s.confirmedAt && !s.gone ? (
+        {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm}>
             <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
             <Button title={l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
@@ -234,7 +238,7 @@ function OwnSwap({ s }: { s: Swap }) {
           <Card tone="inset" style={{ flexDirection: 'row', gap: S.md, alignItems: 'center' }}>
             <SwapBadge />
             <T v="small" style={{ flex: 1 }}>
-              {t('Quando cobrares, toca em "Cobrei". {name} regista os prémios dele e as contas fazem-se sozinhas.', { name: them })}
+              {t('Quando cobrares, toca em "Cobrei". {name} regista os seus prémios e as contas fazem-se sozinhas.', { name: them })}
             </T>
           </Card>
         ) : null}
@@ -243,7 +247,7 @@ function OwnSwap({ s }: { s: Swap }) {
           <Section title={t('Prémios')} hint={t('Mantém premido um registo teu para o apagar.')}>
             <ListGroup>
               {results.map((e) => (
-                <EntryRow key={e.cid + e.side} swap={s} e={e} onLongPress={() => onEntry(e)} />
+                <EntryRow key={e.cid + e.side} swap={s} e={e} hideOwed={locked} onLongPress={() => onEntry(e)} />
               ))}
             </ListGroup>
           </Section>
@@ -253,14 +257,14 @@ function OwnSwap({ s }: { s: Swap }) {
           <Section title={t('Pagamentos')}>
             <ListGroup>
               {payments.map((e) => (
-                <EntryRow key={e.cid + e.side} swap={s} e={e} onLongPress={() => onEntry(e)} />
+                <EntryRow key={e.cid + e.side} swap={s} e={e} hideOwed={locked} onLongPress={() => onEntry(e)} />
               ))}
             </ListGroup>
           </Section>
         ) : null}
 
         <View style={{ gap: S.sm, marginTop: S.md }}>
-          {s.confirmedAt && !s.gone ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
+          {s.confirmedAt && !s.gone && !locked ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
           {s.confirmedAt ? (
             <Button
               title={s.archived ? t('Tirar do arquivo') : t('Arquivar')}
