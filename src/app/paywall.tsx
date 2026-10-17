@@ -7,12 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
-import { Row, T, tap } from '@/components/ui';
+import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { useStore } from '@/store/store';
-import { BRAND, C, R, ff } from '@/theme';
-
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
+import { C, R, S, SHADOW, ff } from '@/theme';
 
 export default function Paywall() {
   const insets = useSafeAreaInsets();
@@ -30,12 +28,10 @@ export default function Paywall() {
   const saving = monthly && annual ? annualSavingPct(monthly.price, annual.price) : annualSavingPct(PLANS.monthly.price, PLANS.annual.price);
   const chosen = sel === 'annual' ? annual : monthly;
   const trial = chosen?.trialDays ?? 0;
-  const annualTrial = annual?.trialDays ?? 0;
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   const onBuy = async () => {
-    tap('medium');
     setBusy('buy');
     const res = await purchase(sel, reason);
     setBusy(null);
@@ -55,71 +51,32 @@ export default function Paywall() {
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
   const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[sel].period) }) : '';
 
-  if (isPro)
-    return (
-      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 28 }}>
-        <Ionicons name="checkmark-circle" size={60} color={C.accent} />
-        <T v="h1" style={{ textAlign: 'center' }}>
-          {welcomed ? t('Bem-vindo ao Pro') : t('Já és Pro')}
-        </T>
-        {welcomed ? (
-          <T v="body" color={C.textDim} style={{ textAlign: 'center', lineHeight: 21 }}>
-            {reason === 'hands'
-              ? t('Já não há limite de mãos. Toca em Guardar e a tua mão fica no caderno.')
-              : reason === 'story'
-                ? t('Já podes gravar a tua voz e tirar a marca da story.')
-                : reason === 'stats'
-                  ? t('Os filtros e os resultados por sala e jogo já estão abertos.')
-                  : t('Regista todas as mãos que quiseres, sem limite diário.')}
-          </T>
-        ) : null}
-        <Pressable
-          onPress={close}
-          style={({ pressed }) => ({ marginTop: 6, backgroundColor: C.accent, borderRadius: R.md, paddingVertical: 14, paddingHorizontal: 36, opacity: pressed ? 0.85 : 1 })}>
-          <T style={{ color: C.accentInk, fontSize: 16, fontWeight: '800', fontFamily: ff(800) }}>{reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')}</T>
-        </Pressable>
-      </View>
-    );
+  if (isPro) return <Unlocked reason={reason} welcomed={welcomed} onDone={close} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 18, paddingBottom: 24, gap: 18 }}>
-        <Pressable accessibilityLabel={t('Fechar')} onPress={close} hitSlop={12} style={{ alignSelf: 'flex-start', padding: 4 }}>
-          <Ionicons name="close" size={26} color={C.textDim} />
-        </Pressable>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: S.xl }}>
+        <IconButton name="close" label={t('Fechar')} onPress={close} />
 
-        <View style={{ gap: 8 }}>
-          <View style={{ alignSelf: 'flex-start', backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <T v="label" color={C.accent}>
-              {BRAND.name} Pro
-            </T>
+        <View style={{ gap: S.md }}>
+          <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
+            <Ionicons name="flash" size={28} color={C.accentInk} />
           </View>
-          <T v="title" style={{ fontSize: 28, lineHeight: 33 }}>
-            {copy.title}
-          </T>
-          <T v="body" color={C.textDim} style={{ lineHeight: 21 }}>
-            {copy.body}
-          </T>
-          {hands.length >= 3 && reason !== 'welcome' ? (
-            <Row gap={6}>
-              <Ionicons name="albums-outline" size={14} color={C.muted} />
-              <T v="small">{t('Já tens {n} mãos no teu caderno.', { n: hands.length })}</T>
-            </Row>
-          ) : null}
+          <T v="title">{copy.title}</T>
+          <T v="callout">{copy.body}</T>
+          {hands.length >= 3 && reason !== 'welcome' ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: S.sm }}>
           {featuresFor(reason).map(({ feature: f, highlight }) => (
-            <Row key={f.key} gap={12} style={{ alignItems: 'flex-start' }}>
-              <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
+            <Row key={f.key} gap={S.md} style={{ minHeight: 40 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={f.icon as IconName} size={18} color={highlight ? C.accentInk : C.accent} />
               </View>
-              <View style={{ flex: 1 }}>
-                <T v="h2" style={{ fontSize: 15 }}>
-                  {f.title}
-                </T>
-                <T v="small">{f.body}</T>
-              </View>
+              <T v="h3" style={{ flex: 1 }}>
+                {f.title}
+              </T>
+              <T v="small">{f.body}</T>
             </Row>
           ))}
         </View>
@@ -127,73 +84,62 @@ export default function Paywall() {
         {plans.length === 0 ? (
           <ActivityIndicator color={C.accent} />
         ) : (
-          <View style={{ gap: 10 }}>
+          <View style={{ gap: S.sm + 2 }}>
             {annual ? (
               <PlanCard
                 active={sel === 'annual'}
                 onPress={() => setSel('annual')}
                 title={t('Anual')}
-                price={annual.priceString + ' / ' + t('ano')}
+                big={annual.priceString}
+                unit={t('/ano')}
+                line={t('{price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
                 was={monthly ? formatPrice(monthly.price * 12, monthly.currency, locale) : undefined}
-                sub={t('{price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
-                badge={annual.trialDays ? t('{days} dias grátis · poupa {pct}%', { days: annual.trialDays, pct: saving }) : t('Poupa {pct}%', { pct: saving })}
+                tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, '−' + saving + '%']}
               />
             ) : null}
-            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} price={monthly.priceString + ' / ' + t('mês')} sub={t('Cancela quando quiseres')} /> : null}
-            {sel === 'monthly' && annualTrial ? (
-              <Pressable onPress={() => setSel('annual')} hitSlop={6}>
-                <T v="small" color={C.accent} style={{ textAlign: 'center' }}>
-                  {t('O plano anual começa com {days} dias grátis', { days: annualTrial })}
-                </T>
-              </Pressable>
-            ) : null}
-            {trial && chosen ? <TrialSteps days={trial} after={after} store={store} /> : null}
+            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} /> : null}
+            {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: insets.bottom + 10, gap: 10, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg }}>
-        <Pressable
-          disabled={!chosen || !!busy}
-          onPress={onBuy}
-          style={({ pressed }) => ({
-            backgroundColor: C.accent,
-            borderRadius: R.md,
-            paddingVertical: 16,
-            alignItems: 'center',
-            opacity: !chosen || busy ? 0.5 : pressed ? 0.85 : 1,
-          })}>
-          {busy === 'buy' ? (
-            <ActivityIndicator color={C.accentInk} />
-          ) : (
-            <T style={{ color: C.accentInk, fontSize: 17, fontWeight: '800', fontFamily: ff(800) }}>{trial ? t('Experimentar {days} dias grátis', { days: trial }) : t('Subscrever Pro')}</T>
-          )}
-        </Pressable>
-        <T v="tiny" style={{ textAlign: 'center', lineHeight: 15 }}>
-          {trial ? t('Grátis durante {days} dias, depois {after}.', { days: trial, after }) + ' ' : after ? `${after}. ` : ''}
-          {t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
+      <View style={{ paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + S.sm, gap: S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
+        {busy === 'buy' ? (
+          <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={C.accent} />
+          </View>
+        ) : (
+          <Button
+            title={trial ? t('Começar {days} dias grátis', { days: trial }) : t('Subscrever Pro')}
+            sub={trial ? t('Depois {after}', { after }) : after}
+            disabled={!chosen || !!busy}
+            onPress={onBuy}
+          />
+        )}
+        <T v="tiny" style={{ textAlign: 'center' }}>
+          {t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
         </T>
-        <Row style={{ justifyContent: 'center' }} gap={18}>
-          <Pressable onPress={onRestore} disabled={!!busy} hitSlop={6}>
-            <T v="tiny" color={C.textDim}>
-              {busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')}
-            </T>
-          </Pressable>
-          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} hitSlop={6}>
+        <Row style={{ justifyContent: 'center' }} gap={S.lg}>
+          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} hitSlop={8}>
             <T v="tiny" color={C.textDim}>
               {t('Termos')}
             </T>
           </Pressable>
-          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.privacy)} hitSlop={6}>
+          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.privacy)} hitSlop={8}>
             <T v="tiny" color={C.textDim}>
               {t('Privacidade')}
             </T>
           </Pressable>
+          <Pressable onPress={onRestore} disabled={!!busy} hitSlop={8}>
+            <T v="tiny" color={C.textDim}>
+              {t('Restaurar compras')}
+            </T>
+          </Pressable>
         </Row>
         {reason === 'hands' && FREE.handsPerDay ? (
-          <Pressable onPress={close} hitSlop={6}>
-            <T v="small" style={{ textAlign: 'center' }} color={C.muted}>
-              {t('Continuar grátis · amanhã tens mais {n} mãos', { n: FREE.handsPerDay })}
+          <Pressable onPress={close} hitSlop={8} style={{ paddingTop: 2 }}>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>
+              {t('Agora não · amanhã tens mais {n}', { n: FREE.handsPerDay })}
             </T>
           </Pressable>
         ) : null}
@@ -202,71 +148,125 @@ export default function Paywall() {
   );
 }
 
-function PlanCard({ active, onPress, title, price, was, sub, badge }: { active: boolean; onPress: () => void; title: string; price: string; was?: string; sub: string; badge?: string }) {
+function PlanCard({
+  active,
+  onPress,
+  title,
+  big,
+  unit,
+  line,
+  was,
+  tags = [],
+}: {
+  active: boolean;
+  onPress: () => void;
+  title: string;
+  big: string;
+  unit: string;
+  line: string;
+  was?: string;
+  tags?: (string | null)[];
+}) {
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
+      accessibilityLabel={`${title}, ${big} ${unit}, ${line}`}
       onPress={() => {
         tap('select');
         onPress();
       }}
-      style={{
+      style={({ pressed }) => ({
         borderRadius: R.lg,
         borderWidth: 2,
         borderColor: active ? C.accent : C.border,
         backgroundColor: active ? C.accentSoft : C.surface,
-        padding: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-      }}>
-      <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
-        {active ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent }} /> : null}
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Row gap={8} style={{ flexWrap: 'wrap' }}>
-          <T v="h2">{title}</T>
-          {badge ? (
-            <View style={{ backgroundColor: C.accent, borderRadius: R.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-              <T style={{ color: C.accentInk, fontSize: 11, fontWeight: '800', fontFamily: ff(800) }}>{badge}</T>
-            </View>
+        padding: S.lg,
+        gap: S.sm,
+        opacity: pressed ? 0.9 : 1,
+      })}>
+      <Row gap={S.sm}>
+        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
+          {active ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent }} /> : null}
+        </View>
+        <T v="h2" style={{ flex: 1 }}>
+          {title}
+        </T>
+        {tags.filter(Boolean).map((tg, i) => (
+          <View key={tg} style={{ backgroundColor: i === 0 ? C.accent : C.surface3, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
+            <T style={{ color: i === 0 ? C.accentInk : C.text, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tg}</T>
+          </View>
+        ))}
+      </Row>
+      <Row gap={6} style={{ alignItems: 'flex-end', paddingLeft: 30 }}>
+        <T v="monoL">{big}</T>
+        <T v="small" style={{ paddingBottom: 3 }}>
+          {unit}
+        </T>
+        <View style={{ flex: 1 }} />
+        <View style={{ alignItems: 'flex-end', flexShrink: 1 }}>
+          {was ? (
+            <T v="monoS" style={{ textDecorationLine: 'line-through', color: C.muted }} accessibilityLabel={t('Em vez de {price}', { price: was })}>
+              {was}
+            </T>
           ) : null}
-        </Row>
-        <T v="small">{sub}</T>
-      </View>
-      <View style={{ alignItems: 'flex-end' }}>
-        {was ? (
-          <T v="tiny" style={{ textDecorationLine: 'line-through' }} accessibilityLabel={t('Em vez de {price}', { price: was })}>
-            {was}
-          </T>
-        ) : null}
-        <T v="mono">{price}</T>
-      </View>
+          <T v="small">{line}</T>
+        </View>
+      </Row>
     </Pressable>
   );
 }
 
-/** What happens during the trial, so starting it doesn't feel like a leap. */
-function TrialSteps({ days, after, store }: { days: number; after: string; store: string }) {
+/** What happens during the trial, in three short lines. */
+function TrialSteps({ days, after }: { days: number; after: string }) {
   const steps: { icon: IconName; when: string; what: string }[] = [
-    { icon: 'lock-open', when: t('Hoje'), what: t('Desbloqueias tudo. Não pagas nada hoje.') },
-    { icon: 'calendar-outline', when: t('Dia {n}', { n: days }), what: t('Começa a subscrição: {price}. Se cancelares antes, não pagas nada.', { price: after }) },
-    { icon: 'settings-outline', when: t('Quando quiseres'), what: t('Cancelas nas definições da {store}.', { store }) },
+    { icon: 'lock-open', when: t('Hoje'), what: t('Tudo desbloqueado. 0 a pagar.') },
+    { icon: 'notifications-outline', when: t('Dia {n}', { n: days }), what: t('Começa: {price}', { price: after }) },
+    { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
   ];
   return (
-    <View style={{ backgroundColor: C.surface, borderRadius: R.lg, padding: 14, gap: 12, borderWidth: 1, borderColor: C.border }}>
-      {steps.map((s) => (
-        <Row key={s.when} gap={12} style={{ alignItems: 'flex-start' }}>
-          <Ionicons name={s.icon} size={16} color={C.accent} style={{ marginTop: 2 }} />
-          <View style={{ flex: 1 }}>
-            <T v="small" style={{ color: C.text, fontWeight: '800', fontFamily: ff(800) }}>
-              {s.when}
-            </T>
-            <T v="small">{s.what}</T>
+    <View style={{ paddingHorizontal: 4, paddingTop: S.sm, gap: S.md }}>
+      {steps.map((s, i) => (
+        <Row key={s.when} gap={S.md}>
+          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: i === 0 ? C.accentSoft : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={s.icon} size={14} color={i === 0 ? C.accent : C.textDim} />
           </View>
+          <T v="h3" style={{ width: 92 }}>
+            {s.when}
+          </T>
+          <T v="small" style={{ flex: 1 }}>
+            {s.what}
+          </T>
         </Row>
       ))}
+    </View>
+  );
+}
+
+function Unlocked({ reason, welcomed, onDone }: { reason: PaywallReason; welcomed: boolean; onDone: () => void }) {
+  const line = !welcomed
+    ? null
+    : reason === 'hands'
+      ? t('Toca em Guardar. A mão vai para o caderno.')
+      : reason === 'story'
+        ? t('Grava a tua voz. Sem marca de água.')
+        : reason === 'stats'
+          ? t('Filtros, salas e jogos abertos.')
+          : t('Mãos sem limite, a partir de agora.');
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: S.md, padding: S.xxl }}>
+      <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
+        <Ionicons name="checkmark" size={40} color={C.accentInk} />
+      </View>
+      <T v="title" style={{ textAlign: 'center' }}>
+        {welcomed ? t('Bem-vindo ao Pro') : t('Já és Pro')}
+      </T>
+      {line ? (
+        <T v="callout" style={{ textAlign: 'center' }}>
+          {line}
+        </T>
+      ) : null}
+      <Button title={reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
     </View>
   );
 }
