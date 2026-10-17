@@ -34,6 +34,8 @@ interface Props {
   shareUrl: string;
   /** Sharer's referral code, when the link carries one. */
   invite?: string | null;
+  /** How the friend got here (from the app's share link), carried to the store badges. */
+  utm?: { source: string; medium: string };
 }
 
 const PLAY_MS = 1100;
@@ -261,7 +263,7 @@ export function ShareView(props: Props) {
 
       <ReportHand shareId={props.shareId} locale={locale} />
 
-      <AppCta locale={locale} shareId={props.shareId} invite={props.invite ?? null} />
+      <AppCta locale={locale} shareId={props.shareId} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} />
     </main>
   );
 }

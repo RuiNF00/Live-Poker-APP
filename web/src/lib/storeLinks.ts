@@ -11,12 +11,12 @@ export function storeLinks(utm: Utm, ref?: string | null): { ios: string; androi
   return { ios: appStoreUrl(utm), android: playStoreUrl(utm, ref) };
 }
 
-/** `ref` (an invite code) rides in the Play referrer so Android claims it without the friend typing it. */
+/** `ref` (an invite code) rides in the Play referrer as `r` so Android claims it without the friend typing it. */
 function playStoreUrl(utm: Utm, ref?: string | null): string {
   if (!brand.playStoreUrl) return '';
   const u = new URL(brand.playStoreUrl);
   const referrer = new URLSearchParams(Object.entries(utm).filter(([, v]) => !!v) as [string, string][]);
-  if (ref) referrer.set('ref', ref);
+  if (ref) referrer.set('r', ref);
   if ([...referrer].length) u.searchParams.set('referrer', referrer.toString());
   return u.toString();
 }
@@ -24,7 +24,8 @@ function playStoreUrl(utm: Utm, ref?: string | null): string {
 function appStoreUrl(utm: Utm): string {
   if (!brand.appStoreUrl) return '';
   const u = new URL(brand.appStoreUrl);
-  const ct = [utm.utm_source, utm.utm_campaign].filter(Boolean).join('-').slice(0, 40);
+  // Campaign token per channel (instagram-story, app-share_link, site...), App Analytics groups by it.
+  const ct = [utm.utm_source, utm.utm_medium].filter(Boolean).join('-').slice(0, 40);
   if (ct) u.searchParams.set('ct', ct);
   if (brand.appStoreProviderToken) u.searchParams.set('pt', brand.appStoreProviderToken);
   u.searchParams.set('mt', '8');

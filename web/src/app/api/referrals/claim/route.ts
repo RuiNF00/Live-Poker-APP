@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cors } from '@/lib/cors';
-import { CODE_RE, newCode, type ReferralSource } from '@/lib/referrals';
+import { newCode, normalizeCode, type ReferralSource } from '@/lib/referrals';
 import { json, readBody } from '../shared';
 
 const SOURCES: ReferralSource[] = ['share', 'story', 'link', 'manual', 'play_referrer'];
@@ -17,8 +17,8 @@ export async function POST(req: Request) {
   const r = await readBody(req, 'claim');
   if (r.error) return r.error;
   const { installId, rcUserId, raw } = r.body;
-  const code = typeof raw.code === 'string' ? raw.code.trim().toUpperCase() : '';
-  if (!CODE_RE.test(code)) return json({ result: 'unknown_code' });
+  const code = typeof raw.code === 'string' ? normalizeCode(raw.code) : null;
+  if (!code) return json({ result: 'unknown_code' });
   const source = SOURCES.includes(raw.source as ReferralSource) ? (raw.source as ReferralSource) : 'link';
   const shareId = typeof raw.shareId === 'string' && /^[A-Za-z0-9]{3,20}$/.test(raw.shareId) ? raw.shareId : null;
   try {

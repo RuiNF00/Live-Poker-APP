@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { normalizeCode } from '@/lib/refcode';
 import { after } from 'next/server';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
@@ -31,11 +32,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function SharePage({ params, searchParams }: Params & { searchParams: Promise<{ q?: string; r?: string }> }) {
+export default async function SharePage({ params, searchParams }: Params & { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { id } = await params;
-  const { q, r } = await searchParams;
+  const { q, r, utm_source, utm_medium } = await searchParams;
+  const param = (v: unknown) => (typeof v === 'string' && /^[\w.-]{1,40}$/.test(v) ? v : null);
   // Invite code of the player who shared (the app appends ?r=<code> to its share links).
-  const invite = typeof r === 'string' && /^[A-HJ-NP-Z2-9]{6,10}$/i.test(r) ? r.toUpperCase() : null;
+  const invite = typeof r === 'string' ? normalizeCode(r) : null;
   const share = await loadShare(id);
   if (!share) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
@@ -54,6 +56,7 @@ export default async function SharePage({ params, searchParams }: Params & { sea
   return (
     <ShareView
       invite={invite}
+      utm={{ source: param(utm_source) ?? 'share', medium: param(utm_medium) ?? 'hand' }}
       shareId={id}
       hand={resolved.hand}
       title={share.title}

@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { brand } from '@/config/brand';
 import { Landing, type Search } from '@/components/landing/Landing';
+import { normalizeCode } from '@/lib/refcode';
 
-const CODE_RE = /^[A-HJ-NP-Z2-9]{6,10}$/;
 
 export const metadata: Metadata = {
   title: { absolute: `Convite para o ${brand.name}` },
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 /** Invite link: https://sweatbook.poker/r/<code>. Opens the app when installed (universal link). */
 export default async function Invite({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<Search> }) {
-  const code = (await params).code.toUpperCase();
-  if (!CODE_RE.test(code)) notFound();
+  const code = normalizeCode((await params).code);
+  if (!code) notFound();
   return <Landing search={await searchParams} invite={code} />;
 }

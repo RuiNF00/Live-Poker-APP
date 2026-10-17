@@ -21,12 +21,22 @@ function detectPlatform(): Platform {
 }
 
 /** The acquisition hook: every viewer of a shared hand is a potential user. */
-export function AppCta({ locale, shareId, invite }: { locale: Locale; shareId: string; invite: string | null }) {
+export function AppCta({
+  locale,
+  shareId,
+  invite,
+  utm,
+}: {
+  locale: Locale;
+  shareId: string;
+  invite: string | null;
+  utm: { source: string; medium: string };
+}) {
   const d = t(locale);
   const [platform, setPlatform] = useState<Platform>('other');
   useEffect(() => setPlatform(detectPlatform()), []);
 
-  const { ios, android } = storeLinks({ utm_source: 'share', utm_medium: 'hand', utm_campaign: shareId }, invite);
+  const { ios, android } = storeLinks({ utm_source: utm.source, utm_medium: utm.medium, utm_campaign: shareId }, invite);
   useEffect(() => {
     if (invite) writeLocal('invite', invite);
   }, [invite]);

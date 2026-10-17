@@ -25,7 +25,7 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
 | `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
 | `POST /api/events` `{ event, installId (uuid), platform: ios\|android\|web, props? }` | `204`. Eventos do funil: `app_open`, `hand_saved`, `limit_hit`, `paywall_shown`, `purchase`, `share_created`, `story_shared` (app) e `share_viewed`, `store_click`, `landing_view` (site). Sem dados pessoais. Contagens diárias no Supabase: `select * from app_event_daily limit 100;` |
-| `POST /api/referrals/code` `{ installId, rcUserId? }` | `{ code, url }` (convite `https://sweatbook.poker/r/<code>`; o mesmo código sempre) |
+| `POST /api/referrals/code` `{ installId, code?, rcUserId? }` | `{ code, url }` (convite `https://sweatbook.poker/r/<code>`; o mesmo código sempre; `code` regista o código da app, 10 hex) |
 | `POST /api/referrals/claim` `{ installId, code, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
 | `POST /api/referrals/activate` `{ installId, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
 | `POST /api/referrals/status` `{ installId, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |

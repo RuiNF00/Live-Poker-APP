@@ -9,7 +9,8 @@ import { grantPromotional } from './revenuecat';
 // Server-only: rewards are granted from here, so the tables are closed to app/browser keys.
 
 export const REWARD_DAYS = 7;
-export const CODE_RE = /^[A-HJ-NP-Z2-9]{6,10}$/;
+export { CODE_RE, normalizeCode } from './refcode';
+
 export type ReferralSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
 export type ClaimResult = 'ok' | 'already' | 'unknown_code' | 'self' | 'too_late';
 
@@ -111,7 +112,7 @@ class LocalBackend implements ReferralBackend {
   claim(friend: string, code: string, source: ReferralSource, shareId: string | null) {
     return this.mutate((d): ClaimResult => {
       if (d.referrals[friend]) return 'already';
-      const referrer = Object.entries(d.codes).find(([, c]) => c.code === code.toUpperCase())?.[0];
+      const referrer = Object.entries(d.codes).find(([, c]) => c.code === code.toUpperCase() || c.code === code.toLowerCase())?.[0];
       if (!referrer) return 'unknown_code';
       if (referrer === friend) return 'self';
       d.referrals[friend] = { referrer, source, shareId, claimedAt: new Date().toISOString(), activatedAt: null };

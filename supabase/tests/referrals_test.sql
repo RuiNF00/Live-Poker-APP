@@ -37,3 +37,12 @@ select * from referrals;
 select claim_referral(gen_random_uuid(), 'ABCD2345', 'link');
 select activate_referral(:friend);
 reset role;
+
+-- App-minted hex codes (migration 20261017060000)
+set role service_role;
+select referral_code_for('55555555-5555-5555-5555-555555555555', 'a1b2c3d4e5', 'rc5') = 'a1b2c3d4e5' as hex_code_kept;
+select claim_referral('66666666-6666-6666-6666-666666666666', 'A1B2C3D4E5', 'share', 'demo') = 'ok' as hex_code_claimed;
+reset role;
+set role anon;
+select log_app_event('link_opened', gen_random_uuid(), 'ios', '{"ref":"a1b2c3d4e5"}') is null as link_event_ok;
+reset role;
