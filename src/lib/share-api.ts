@@ -22,12 +22,13 @@ export function shareUrl(id: string) {
 }
 
 /** Where a shared link was sent from, for install attribution. */
-export type ShareChannel = 'link' | 'challenge' | 'story' | 'text';
+export type ShareChannel = 'link' | 'challenge' | 'story' | 'text' | 'x';
 const CHANNEL: Record<ShareChannel, [source: string, medium: string]> = {
   link: ['app', 'share_link'],
   challenge: ['app', 'challenge'],
   story: ['instagram', 'story'],
   text: ['app', 'text'],
+  x: ['x', 'post'],
 };
 
 /** The public link with its channel, the hand as campaign and the sharer's referral code. */

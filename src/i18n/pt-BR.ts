@@ -1288,6 +1288,12 @@ const ptBR: Record<string, string> = {
   'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
   // Crash reports switch (Definições → Os teus dados).
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
+  'Não conseguimos preparar a imagem. Tenta outra vez.': 'Não conseguimos preparar a imagem. Tente de novo.',
+  'A minha sessão de póquer ao vivo': 'Minha sessão de poker ao vivo',
+  'O que fazias nesta mão?': 'O que você faria nesta mão?',
+  'Vê o replay da mão': 'Veja o replay da mão',
+  'O meu ano no póquer ao vivo': 'Meu ano no poker ao vivo',
+  'Partilhar no X': 'Compartilhar no X',
 };
 
 export default ptBR;

@@ -14,7 +14,7 @@ import { Button, Chip, Empty, IconButton, Row, T, tap } from '@/components/ui';
 import { YearCard } from '@/components/YearCard';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
+import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { countInSlices } from '@/lib/idle-count';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
@@ -82,6 +82,21 @@ export default function YearScreen() {
       track('story_shared', { target: String(target), kind: 'year', card: kind, money: !hideMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const postX = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const ref = await shareRef().catch(() => '');
+      const link = `${BRAND.webUrl}/r/${ref}?utm_source=x&utm_medium=post&utm_campaign=year`;
+      await sharePost([await captureStory({ current: refs.current[page] })], `${t('O meu ano no póquer ao vivo')}\n${link}`);
+      track('story_shared', { target: 'x', kind: 'year', card: kind, money: !hideMoney });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -184,7 +199,10 @@ export default function YearScreen() {
               <Button kind="secondary" icon="play-outline" title={t('Ver a mão')} style={{ flex: 1 }} onPress={() => router.push(`/hand/${review.pot!.hand.id}`)} />
             ) : null}
             {canShareStory ? (
-              <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 2 }} onPress={post} />
+              <>
+                <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 2 }} onPress={post} />
+                <Button kind="secondary" icon="logo-x" title="X" disabled={busy} style={{ width: 88 }} onPress={postX} />
+              </>
             ) : (
               <T v="small" style={{ flex: 2, textAlign: 'center' }}>
                 {t('Abre a app no telemóvel para publicar no Instagram.')}

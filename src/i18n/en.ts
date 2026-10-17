@@ -2876,6 +2876,12 @@ const en: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'Enviar relatórios de erros': 'Send crash reports',
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Only what failed and the version, so we can fix it fast. No names, hands or amounts.',
+  'Não conseguimos preparar a imagem. Tenta outra vez.': 'We couldn\'t prepare the image. Try again.',
+  'A minha sessão de póquer ao vivo': 'My live poker session',
+  'O que fazias nesta mão?': 'What would you do in this hand?',
+  'Vê o replay da mão': 'Watch the hand replay',
+  'O meu ano no póquer ao vivo': 'My year of live poker',
+  'Partilhar no X': 'Share on X',
 };
 
 export default en;

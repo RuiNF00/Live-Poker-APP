@@ -15,7 +15,7 @@ import { FestivalSlide, SLIDE_H, SLIDE_W } from '@/components/FestivalCarousel';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureSlide, shareCarousel } from '@/lib/instagram-story';
+import { canShareStory, captureSlide, shareCarousel, sharePost } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { carouselCaption, carouselSlides, eventRows, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
@@ -71,6 +71,23 @@ export default function FestivalCarouselScreen() {
       const target = await shareCarousel(files, caption);
       setCopied(true);
       track('story_shared', { target: String(target), kind: 'festival_carousel', slides: slides.length, money: showMoney, result: showResult, hand: slides.includes('hand') });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // X takes 4 images a post: the closing slide is the one left out (the link is in the text).
+  const postX = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const files: string[] = [];
+      for (let i = 0; i < slides.length && files.length < 4; i++) if (slides[i] !== 'close') files.push(await captureSlide({ current: refs.current[i] }));
+      const xLink = `${BRAND.webUrl}/r/${ref}?utm_source=x&utm_medium=post&utm_campaign=festival`;
+      await sharePost(files, carouselCaption(recap, xLink, { showResult, showMoney }));
+      track('story_shared', { target: 'x', kind: 'festival_carousel', slides: files.length, money: showMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
     } finally {
@@ -160,7 +177,10 @@ export default function FestivalCarouselScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Button title={busy ? t('A preparar…') : t('Publicar no feed')} icon="logo-instagram" disabled={busy} onPress={post} />
+          <Row gap={S.sm}>
+            <Button title={busy ? t('A preparar…') : t('Publicar no feed')} icon="logo-instagram" disabled={busy} style={{ flex: 1 }} onPress={post} />
+            <Button kind="secondary" icon="logo-x" title="X" disabled={busy} style={{ width: 88 }} onPress={postX} />
+          </Row>
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}

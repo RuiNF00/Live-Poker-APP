@@ -14,7 +14,7 @@ import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureSticker, captureStory, shareSticker, shareStory } from '@/lib/instagram-story';
+import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { CARD_STYLES, milestoneFor, sessionStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
@@ -58,6 +58,22 @@ export default function SessionCardScreen() {
       track('story_shared', { target: String(target), kind: 'session', look, money: !hideMoney, milestone: !!(milestone && showMilestone) });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // X: the same card as a picture in a post, with the invite link in the text.
+  const postX = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const ref = await shareRef().catch(() => '');
+      const link = `${BRAND.webUrl}/r/${ref}?utm_source=x&utm_medium=post&utm_campaign=session`;
+      await sharePost([await captureStory({ current: refs.current[page] })], `${t('A minha sessão de póquer ao vivo')}\n${link}`);
+      track('story_shared', { target: 'x', kind: 'session', look, money: !hideMoney });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -132,7 +148,10 @@ export default function SessionCardScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} onPress={post} />
+          <Row gap={S.sm}>
+            <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 1 }} onPress={post} />
+            {look === 'sticker' ? null : <Button kind="secondary" icon="logo-x" title="X" disabled={busy} style={{ width: 88 }} onPress={postX} />}
+          </Row>
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}

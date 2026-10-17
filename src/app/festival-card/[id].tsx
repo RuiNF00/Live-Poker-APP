@@ -15,7 +15,7 @@ import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureStory, ensureShareId, shareStory } from '@/lib/instagram-story';
+import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { shareLink } from '@/lib/share-api';
 import { festivalRecap, recapStats } from '@/share/festival-card';
@@ -70,6 +70,23 @@ export default function FestivalCardScreen() {
       track('story_shared', { target: String(target), kind: 'festival', look, money: showMoney, result: showResult, hand: !!best, days: recap.days, events: recap.events });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // X: the card as a picture with the best hand's replay (or the invite) in the post text.
+  const postX = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const ref = await shareRef().catch(() => '');
+      let link = `${BRAND.webUrl}/r/${ref}?utm_source=x&utm_medium=post&utm_campaign=festival`;
+      if (best?.hand.shareId) link = shareLink(best.hand.shareId, 'x', { ref });
+      await sharePost([await captureStory({ current: refs.current[page] })], `${recap.title}\n${link}`);
+      track('story_shared', { target: 'x', kind: 'festival', look, money: showMoney });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -151,7 +168,10 @@ export default function FestivalCardScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} onPress={post} />
+          <Row gap={S.sm}>
+            <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 1 }} onPress={post} />
+            <Button kind="secondary" icon="logo-x" title="X" disabled={busy} style={{ width: 88 }} onPress={postX} />
+          </Row>
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}

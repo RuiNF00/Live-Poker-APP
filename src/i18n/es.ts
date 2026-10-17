@@ -2870,6 +2870,12 @@ const es: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'Enviar relatórios de erros': 'Enviar informes de errores',
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Solo lo que falló y la versión, para corregirlo rápido. Sin nombres, manos ni importes.',
+  'Não conseguimos preparar a imagem. Tenta outra vez.': 'No pudimos preparar la imagen. Inténtalo de nuevo.',
+  'A minha sessão de póquer ao vivo': 'Mi sesión de póquer en vivo',
+  'O que fazias nesta mão?': '¿Qué harías en esta mano?',
+  'Vê o replay da mão': 'Mira el replay de la mano',
+  'O meu ano no póquer ao vivo': 'Mi año de póquer en vivo',
+  'Partilhar no X': 'Compartir en X',
 };
 
 export default es;

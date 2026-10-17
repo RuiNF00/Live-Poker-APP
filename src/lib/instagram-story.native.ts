@@ -207,3 +207,18 @@ export async function shareCarousel(files: string[], caption: string): Promise<S
   for (const f of files) await Sharing.shareAsync(f, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('Partilhar carrossel') });
   return 'sheet';
 }
+
+/**
+ * An X (Twitter) post, or any app in the share sheet: the images with the
+ * post text and its link. X takes up to 4 images. The text is also copied, in
+ * case the app picked drops it.
+ */
+export async function sharePost(files: string[], text: string): Promise<void> {
+  await Clipboard.setStringAsync(text).catch(() => {});
+  const Share = nativeShare();
+  if (Share) {
+    await Share.open({ urls: files.slice(0, 4), message: text, type: 'image/png', failOnCancel: false, title: t('Partilhar no X') });
+    return;
+  }
+  await Sharing.shareAsync(files[0], { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('Partilhar no X') });
+}
