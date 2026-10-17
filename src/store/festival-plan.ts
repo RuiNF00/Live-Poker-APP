@@ -15,6 +15,8 @@ export interface FestivalPlan {
   lateReg: Record<string, number>;
   /** Session started from an event. */
   sessions: Record<string, string>;
+  /** The player's own name for the festival, replacing the shipped generic one. */
+  name?: string;
 }
 
 export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} };
@@ -25,6 +27,11 @@ export const REMIND_BEFORE_MIN = 30;
 export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   const set = new Set(plan.picked);
   return f.events.filter((e) => set.has(e.id));
+}
+
+/** What the festival is called on screen: the player's name for it, else the shipped one. */
+export function festivalName(f: Festival, plan: FestivalPlan): string {
+  return plan.name?.trim() || t(f.name);
 }
 
 /** Entries (Day 2s don't cost anything) and what they add up to. */

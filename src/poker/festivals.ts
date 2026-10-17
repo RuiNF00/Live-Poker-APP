@@ -40,23 +40,24 @@ const ev = (number: number, name: string, game: FestivalEvent['game'], buyIn: nu
 };
 
 /**
- * WSOP Paradise 2026, Baha Mar, Nassau, 2–17 December 2026.
+ * The Baha Mar festival, Nassau, 2–17 December 2026. Shipped under a generic
+ * name (no event brand in the app, App Review 5.2.1); the player can rename it.
  * Source: wsop.com/tournaments/2026-wsop-paradise (event list with flights and
  * start times) and wsop.com/news/2026-wsop-paradise (bracelet schedule, same
  * buy-ins), both read on 2026-10-17. Press reports quoted $2,500/$25,000 for
  * some events; the official pages say $2,750/$26,000 and those are used here.
  */
-export const WSOP_PARADISE_2026: Festival = {
-  id: 'wsop-paradise-2026',
-  name: 'WSOP Paradise 2026',
+export const BAHAMAS_DEC_2026: Festival = {
+  id: 'bahamas-dez-2026',
+  name: 'Bahamas, dezembro 2026',
   venue: 'Baha Mar',
   city: 'Nassau, Bahamas',
   currency: '$',
   utcOffset: -300,
-  source: { url: 'https://www.wsop.com/tournaments/2026-wsop-paradise/', label: 'wsop.com', checked: '2026-10-17' },
+  source: { url: 'https://www.wsop.com/tournaments/2026-wsop-paradise/', label: 'site oficial do organizador', checked: '2026-10-17' },
   notes: [
     'Horas locais de Nassau (hora de Nova Iorque).',
-    'A WSOP ainda não publicou o fecho do late reg nem as regras de re-entry: confirma na app WSOP LIVE.',
+    'O organizador ainda não publicou o fecho do late reg nem as regras de re-entry: confirma no balcão do torneio.',
     'Flights 2A e 2BC do Super Main Event tratados como Dia 2 (sem novo buy-in).',
   ],
   events: [
@@ -66,12 +67,12 @@ export const WSOP_PARADISE_2026: Festival = {
     ev(2, 'High Roller PLO/NLH Mixed', 'Mix', 26000, 1_000_000, '2026-12-03T12:00'),
     ev(1, 'Circuit Championship Mystery Bounty', 'NLH', 2750, 5_000_000, '2026-12-03T17:00', 'D'),
     ev(3, 'High Roller NLH', 'NLH', 50000, 2_500_000, '2026-12-04T14:00'),
-    ev(4, 'GGMillion$ Championship', 'NLH', 10000, 20_000_000, '2026-12-05T11:00', 'A'),
-    ev(5, 'WSOP Pro-Am', 'NLH', 250000, 10_000_000, '2026-12-05T12:00'),
+    ev(4, 'Championship', 'NLH', 10000, 20_000_000, '2026-12-05T11:00', 'A'),
+    ev(5, 'Pro-Am', 'NLH', 250000, 10_000_000, '2026-12-05T12:00'),
     ev(6, "Bahamas Big Bet Mix (Dealer's Choice)", 'Mix', 5300, 1_000_000, '2026-12-05T16:00'),
-    ev(4, 'GGMillion$ Championship', 'NLH', 10000, 20_000_000, '2026-12-06T11:00', 'B'),
+    ev(4, 'Championship', 'NLH', 10000, 20_000_000, '2026-12-06T11:00', 'B'),
     ev(7, 'PLO High Roller', 'PLO', 50000, 2_000_000, '2026-12-06T14:00'),
-    ev(4, 'GGMillion$ Championship', 'NLH', 10000, 20_000_000, '2026-12-07T11:00', 'C'),
+    ev(4, 'Championship', 'NLH', 10000, 20_000_000, '2026-12-07T11:00', 'C'),
     ev(8, 'PLO Super High Roller', 'PLO', 100000, 5_000_000, '2026-12-08T12:00'),
     ev(9, 'Baha-Monster Stack', 'NLH', 5300, 1_000_000, '2026-12-08T14:00'),
     ev(10, '8-Game Mixed', 'Mix', 10000, 1_000_000, '2026-12-09T11:00'),
@@ -93,7 +94,7 @@ export const WSOP_PARADISE_2026: Festival = {
   ],
 };
 
-export const FESTIVALS: Festival[] = [WSOP_PARADISE_2026];
+export const FESTIVALS: Festival[] = [BAHAMAS_DEC_2026];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */
 export function venueTime(f: Pick<Festival, 'utcOffset'>, local: string): number {

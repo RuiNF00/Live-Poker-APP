@@ -19,8 +19,9 @@ import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, Nu
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
-import { WSOP_PARADISE_2026 } from '@/poker/festivals';
+import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
+import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -50,6 +51,7 @@ function confirm(title: string, body: string, ok: () => void) {
 
 export default function SessionScreen() {
   const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
+  const festivalPlan = useFestivalPlan(BAHAMAS_DEC_2026.id);
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
 
@@ -61,7 +63,7 @@ export default function SessionScreen() {
         <ListItem
           icon="calendar-outline"
           iconColor={C.accent}
-          title={WSOP_PARADISE_2026.name}
+          title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
           subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
           chevron
           onPress={() => router.push('/festival')}
