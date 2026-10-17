@@ -33,6 +33,12 @@ import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
 
+// react-native-web has no Alert: without this the web copy is silent.
+function linkCopied() {
+  if (Platform.OS === 'web') window.alert(t('Link copiado'));
+  else Alert.alert(t('Link copiado'));
+}
+
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { hands, saveHand, deleteHand, settings } = useStore();
@@ -157,7 +163,7 @@ ${link}`;
     }
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      Alert.alert(t('Link copiado'));
+      linkCopied();
     } else {
       const res = await Share.share({ message: msg });
       // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
@@ -250,7 +256,7 @@ ${link}`;
     await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));
     track('link_shared', { channel: 'copy', share_id: shareId, ref });
     tap('success');
-    Alert.alert(t('Link copiado'));
+    linkCopied();
   };
 
   const unshare = () => {
