@@ -29,6 +29,12 @@ const pt = {
   invalidBody: 'Confirma que abriste o link completo que o jogador te enviou.',
   metaTitle: 'Contas de staking · Sweatbook',
   metaDescription: 'A tua parte, o que te devem e as sessões em direto.',
+  next: (event: string, when: string) => `Próximo: ${event} · ${when}`,
+  received: 'Recebi',
+  paid: 'Já paguei',
+  receivedMsg: (amount: string, date: string) => `Recebi os ${amount} das contas de ${date}. Obrigado!`,
+  paidMsg: (amount: string, date: string) => `Já te paguei os ${amount} das contas de ${date}.`,
+  told: (player: string, date: string) => (player ? `Avisaste ${player} a ${date}.` : `Avisaste a ${date}.`),
 };
 
 const en: typeof pt = {
@@ -59,6 +65,12 @@ const en: typeof pt = {
   invalidBody: 'Check you opened the whole link the player sent you.',
   metaTitle: 'Staking statement · Sweatbook',
   metaDescription: 'Your piece, what you are owed and live sessions.',
+  next: (event: string, when: string) => `Next: ${event} · ${when}`,
+  received: 'I got it',
+  paid: 'I paid',
+  receivedMsg: (amount: string, date: string) => `Got the ${amount} from the ${date} statement. Thanks!`,
+  paidMsg: (amount: string, date: string) => `I paid you the ${amount} from the ${date} statement.`,
+  told: (player: string, date: string) => (player ? `You told ${player} on ${date}.` : `You told them on ${date}.`),
 };
 
 const ptBR: typeof pt = {
@@ -89,6 +101,12 @@ const ptBR: typeof pt = {
   invalidBody: 'Confira se você abriu o link completo que o jogador enviou.',
   metaTitle: 'Contas de staking · Sweatbook',
   metaDescription: 'Sua parte, o que devem a você e as sessões ao vivo.',
+  next: (event: string, when: string) => `Próximo: ${event} · ${when}`,
+  received: 'Recebi',
+  paid: 'Já paguei',
+  receivedMsg: (amount: string, date: string) => `Recebi os ${amount} das contas de ${date}. Valeu!`,
+  paidMsg: (amount: string, date: string) => `Já te paguei os ${amount} das contas de ${date}.`,
+  told: (player: string, date: string) => (player ? `Você avisou ${player} em ${date}.` : `Você avisou em ${date}.`),
 };
 
 const es: typeof pt = {
@@ -119,6 +137,12 @@ const es: typeof pt = {
   invalidBody: 'Comprueba que abriste el link completo que te envió el jugador.',
   metaTitle: 'Cuentas de staking · Sweatbook',
   metaDescription: 'Tu parte, lo que te deben y las sesiones en vivo.',
+  next: (event: string, when: string) => `Próximo: ${event} · ${when}`,
+  received: 'Recibido',
+  paid: 'Ya pagué',
+  receivedMsg: (amount: string, date: string) => `Recibí los ${amount} de las cuentas del ${date}. ¡Gracias!`,
+  paidMsg: (amount: string, date: string) => `Ya te pagué los ${amount} de las cuentas del ${date}.`,
+  told: (player: string, date: string) => (player ? `Avisaste a ${player} el ${date}.` : `Avisaste el ${date}.`),
 };
 
 const copy: Record<Locale, typeof pt> = { pt, 'pt-BR': ptBR, en, es };

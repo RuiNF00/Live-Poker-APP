@@ -147,6 +147,29 @@ function missed(o: ActionOffer, e: FestivalEvent, started: Record<string, string
   return !started[e.id] && !!o.skipped?.includes(e.id);
 }
 
+/** The next event a backer has a piece of that hasn't started: its title and the venue's wall clock. */
+export function nextEventFor(
+  festivals: Festival[],
+  offers: ActionOffer[],
+  backerId: string,
+  started: (festivalId: string) => Record<string, string>,
+  now = Date.now(),
+): { n: string; s: string } | null {
+  let next: { n: string; s: string; t: number } | null = null;
+  for (const o of offers) {
+    if (!o.lines.some((l) => l.backerId === backerId && l.pct > 0)) continue;
+    const f = festivals.find((x) => x.id === o.festivalId);
+    if (!f) continue;
+    const done = started(f.id);
+    for (const e of offerEvents(f, o)) {
+      const at = venueTime(f, e.start);
+      if (done[e.id] || o.skipped?.includes(e.id) || at < now) continue;
+      if (!next || at < next.t) next = { n: eventTitle(e), s: e.start, t: at };
+    }
+  }
+  return next && { n: next.n, s: next.s };
+}
+
 /** Events that went by with no session and no answer yet: "Não jogaste o Evento X?". */
 export function unanswered(f: Festival, o: ActionOffer, started: Record<string, string>, now = Date.now()): FestivalEvent[] {
   return offerEvents(f, o).filter((e) => !started[e.id] && !o.skipped?.includes(e.id) && venueTime(f, e.start) + ASK_AFTER < now);
