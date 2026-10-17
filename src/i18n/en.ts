@@ -677,6 +677,8 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Ajuda': 'Help',
+  'Respostas às dúvidas mais comuns': 'Answers to the most common questions',
   'Vibração': 'Haptics',
   'Só quando conta: guardar uma mão, fechar uma sessão': 'Only when it counts: saving a hand, closing a session',
   'Mais recentes': 'Most recent',
@@ -723,7 +725,7 @@ const en: Record<string, string> = {
   'Bankroll e viagens': 'Bankroll and trips',
   'Resultados por sala e jogo, despesas de viagem, impostos por país e PDF para o contabilista.': 'Results by venue and game, trip expenses, taxes by country and a PDF for your accountant.',
   'Staking e swaps': 'Staking and swaps',
-  'Vende ações, faz swaps confirmados por link e acerta contas no fim.': 'Sell action, make swaps confirmed by link and settle up at the end.',
+  'Regista a ação vendida e os swaps confirmados por link, e acerta contas no fim. Nenhum dinheiro passa pela app.': 'Record action sold and swaps confirmed by link, and settle up at the end. No money moves through the app.',
   'Bloqueio com Face ID e modo que esconde os valores em toda a app.': 'Face ID lock and a mode that hides amounts across the app.',
   'Idioma': 'Language',
   'No telemóvel': 'In phone settings',
