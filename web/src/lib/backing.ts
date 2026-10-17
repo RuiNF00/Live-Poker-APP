@@ -27,6 +27,8 @@ export interface StatementRow {
   p?: string;
   /** Live link id, to follow the session while it runs. */
   l?: string;
+  /** The session's currency, when it isn't the statement's: c and o are in it. */
+  cu?: string;
 }
 
 /** "O ano com {backer}": one row per package (n '' = outside a package), in the statement's currency. */
@@ -125,6 +127,7 @@ export function checkStatement(json: unknown): Statement | null {
       if (x.u) row.u = 1;
       if (typeof x.p === 'string' && x.p) row.p = str(x.p, 40);
       if (typeof x.l === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(x.l)) row.l = x.l;
+      if (typeof x.cu === 'string' && x.cu) row.cu = str(x.cu, 4);
       rows.push(row);
     }
     const st: Statement = {

@@ -3134,6 +3134,7 @@ const es: Record<string, string> = {
   'Lisboa': 'Lisboa',
   'Praga': 'Praga',
   'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
+  'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
 };
 
 export default es;
