@@ -11,6 +11,7 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
+import { Insights } from '@/components/Insights';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -250,6 +251,7 @@ function BankrollTab() {
               <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
             </StatGrid>
             <Calendar list={list} cur={cur} />
+            <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
             <Breakdowns list={list} cur={cur} />
             {!isPro ? (
               <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
