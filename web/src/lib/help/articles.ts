@@ -18,12 +18,17 @@ export interface Article {
   cat: CategoryId;
   /** Shown only once this feature is in the store build. */
   feature?: keyof typeof LIVE_FEATURES;
+  /** Shown only until this feature is in the store build. */
+  unless?: keyof typeof LIVE_FEATURES;
   pt: ArticleText;
   en: ArticleText;
 }
 
-/** Features whose articles wait for the store build. Swaps are on their own branch (PR #90). */
-export const LIVE_FEATURES = { swaps: false };
+/**
+ * Features whose articles wait for the store build. Swaps are on their own branch (PR #90);
+ * the lifetime plan, offered only in the cancel flow, is in PR #106.
+ */
+export const LIVE_FEATURES = { swaps: false, lifetime: false };
 
 export const CATEGORIES: Record<CategoryId, Record<Locale, string>> = {
   start: { pt: 'Começar', en: 'Getting started' },
@@ -374,6 +379,7 @@ const ARTICLES: Article[] = [
         },
         'Para mandar as contas, abre o backer e toca em Enviar contas. O link leva só a parte desse backer (até 30 sessões), sem notas, mãos nem outros backers, e os números vão no próprio link: o servidor não os vê.',
         'Link em direto: em Staking, toca em Criar link para esta sessão. Os backers veem o stack, o nível e o resultado a atualizar, sem notas, mãos nem nomes.',
+        { note: 'A gestão do staking (saldos, makeup e extratos dos backers) faz parte do Pro.' },
       ],
     },
     en: {
@@ -391,6 +397,7 @@ const ARTICLES: Article[] = [
         },
         "To send the accounts, open the backer and tap Send statement. The link carries only that backer's part (up to 30 sessions), with no notes, hands or other backers, and the numbers ride in the link itself: the server never sees them.",
         'Live link: in Staking, tap Create a link for this session. Backers see your stack, level and result update, with no notes, hands or names.',
+        { note: 'Staking management (backer balances, makeup and statements) is part of Pro.' },
       ],
     },
   },
@@ -404,7 +411,7 @@ const ARTICLES: Article[] = [
       summary: 'Os dois confirmam os termos; a app guarda o registo.',
       body: [
         'Quando combinas um swap, registas os termos na app e mandas o link ao outro jogador. Ele confirma no browser, sem instalar nada, e os dois ficam com os mesmos termos, a hora e o código do acordo.',
-        'No fim do torneio, a app diz quem deve quanto a quem. O acerto é feito por vocês, como sempre.',
+        'No fim do torneio, a app diz quem deve quanto a quem (as contas do acerto são do Pro). O acerto é feito por vocês, como sempre.',
         { note: 'Registo e contas apenas: nenhum dinheiro passa pela Sweatbook. Só para maiores de 18 anos.' },
       ],
     },
@@ -414,7 +421,7 @@ const ARTICLES: Article[] = [
       summary: 'Both confirm the terms; the app keeps the record.',
       body: [
         "When you agree a swap, log the terms in the app and send the link to the other player. They confirm in the browser, no app needed, and you both end up with the same terms, time and deal code.",
-        'When the tournament ends, the app shows who owes whom. You settle between yourselves, as always.',
+        'When the tournament ends, the app shows who owes whom (settlement accounts are part of Pro). You settle between yourselves, as always.',
         { note: 'Records and accounts only: no money moves through Sweatbook. 18+ only.' },
       ],
     },
@@ -428,7 +435,7 @@ const ARTICLES: Article[] = [
       summary: 'Resultados por país e imposto retido, prontos para o contabilista.',
       body: [
         'Ao editar uma sessão, toca em Impostos e recibos. Escolhe o país (fica guardado para essa sala), o imposto retido na fonte e o estado (A recuperar, Recuperado ou Fica pago), e junta fotos ou ficheiros dos recibos. Os recibos ficam no telemóvel, não vão para a nuvem.',
-        'O relatório está em Definições → Cópia de segurança → Relatório PDF e CSV. O PDF tem os resultados por país e o imposto retido a recuperar.',
+        'O relatório está em Definições → Cópia de segurança → Relatório PDF e CSV (Pro). O PDF tem os resultados por país e o imposto retido a recuperar.',
         { note: 'Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma sempre com um contabilista.' },
       ],
     },
@@ -438,7 +445,7 @@ const ARTICLES: Article[] = [
       summary: 'Results by country and tax withheld, ready for your accountant.',
       body: [
         "When editing a session, tap Taxes and receipts. Pick the country (remembered for that venue), the tax withheld and its status (To recover, Recovered or Stays paid), and attach photos or files of your receipts. Receipts stay on the phone; they don't go to the cloud.",
-        'The report is in Settings → Backup → PDF report and CSV. The PDF shows results by country and withheld tax to recover.',
+        'The report is in Settings → Backup → PDF report and CSV (Pro). The PDF shows results by country and withheld tax to recover.',
         { note: "This isn't tax advice. It's the numbers you logged, sorted by country. Always check with an accountant." },
       ],
     },
@@ -575,12 +582,14 @@ const ARTICLES: Article[] = [
           list: [
             '3 mãos novas por dia (a 4.ª fica guardada como rascunho).',
             'Partilha por link ilimitada, com replay e votação.',
+            'Importar de outras apps.',
+            'Segurança: cópia na nuvem, esconder valores e bloqueio da app.',
+            'A sessão no ecrã bloqueado, a calculadora de odds e o planeador do festival.',
             'Um bankroll e uma viagem.',
             'Exportar uma mão para solver, e a cópia completa em .json.',
-            'Cópia na nuvem, esconder valores e bloqueio da app.',
           ],
         },
-        'O Pro tira o limite de mãos e junta vários bankrolls com filtros, relatórios PDF e CSV, exportação de várias mãos, viagens ilimitadas e Stories com a tua voz e sem marca.',
+        'O Pro tira o limite de mãos e junta: vários bankrolls com filtros e o total em várias moedas, a gestão do staking (contas e extratos dos backers), o relatório de impostos, relatórios PDF e CSV, exportação de várias mãos, viagens ilimitadas e Stories com a tua voz e sem marca.',
       ],
     },
     en: {
@@ -592,12 +601,14 @@ const ARTICLES: Article[] = [
           list: [
             '3 new hands a day (the 4th is kept as a draft).',
             'Unlimited link sharing, with replay and voting.',
+            'Import from other apps.',
+            'Security: cloud backup, hide amounts and app lock.',
+            'Your session on the lock screen, the odds calculator and the festival planner.',
             'One bankroll and one trip.',
             'Single-hand solver export, and the full .json copy.',
-            'Cloud backup, hide amounts and app lock.',
           ],
         },
-        'Pro removes the hand limit and adds multiple bankrolls with filters, PDF and CSV reports, multi-hand export, unlimited trips and Stories with your voice and no brand.',
+        'Pro removes the hand limit and adds: multiple bankrolls with filters and a total across currencies, staking management (backer accounts and statements), the tax report, PDF and CSV reports, multi-hand export, unlimited trips and Stories with your voice and no brand.',
       ],
     },
   },
@@ -690,8 +701,9 @@ const ARTICLES: Article[] = [
     },
   },
   {
-    id: 'lifetime',
+    id: 'no-lifetime',
     cat: 'plans',
+    unless: 'lifetime',
     pt: {
       slug: 'plano-vitalicio',
       title: 'Há um plano vitalício?',
@@ -708,6 +720,47 @@ const ARTICLES: Article[] = [
       body: [
         "There's no one-off payment for now. The annual plan is the cheapest per month and has 7 days free.",
         "The free plan doesn't expire: you can use it forever.",
+      ],
+    },
+  },
+  {
+    id: 'lifetime',
+    cat: 'plans',
+    feature: 'lifetime',
+    pt: {
+      slug: 'plano-vitalicio',
+      title: 'Há um plano vitalício?',
+      summary: 'Há, para quem não quer uma subscrição. Aparece ao cancelar.',
+      body: [
+        'O Pro é uma subscrição mensal ou anual. Para quem prefere pagar uma vez, há o Pro para sempre, por 499 US$ (o preço na tua moeda é o da loja).',
+        'Não está no ecrã do Pro. Aparece quando cancelas e escolhes «Não quero uma subscrição»:',
+        {
+          steps: [
+            'Definições → Conta → A tua subscrição.',
+            'Em «Porque queres cancelar?», escolhe Não quero uma subscrição.',
+            'Toca em Comprar uma vez.',
+            'Depois cancela a subscrição na App Store ou no Google Play, para não pagares as duas coisas.',
+          ],
+        },
+        { note: 'O pagamento único não cancela a subscrição sozinho. Cancela-a na loja logo a seguir.' },
+      ],
+    },
+    en: {
+      slug: 'lifetime-plan',
+      title: 'Is there a lifetime plan?',
+      summary: "Yes, for people who don't want a subscription. It shows when you cancel.",
+      body: [
+        'Pro is a monthly or annual subscription. If you prefer to pay once, there is Pro for good, for US$499 (the price in your currency is the store’s).',
+        "It isn't on the Pro screen. It shows when you cancel and pick “I don't want a subscription”:",
+        {
+          steps: [
+            'Settings → Account → Your subscription.',
+            "Under “Why do you want to cancel?”, pick I don't want a subscription.",
+            'Tap Buy once.',
+            "Then cancel the subscription in the App Store or Google Play, so you don't pay for both.",
+          ],
+        },
+        { note: "The one-off payment doesn't cancel the subscription by itself. Cancel it in the store right after." },
       ],
     },
   },
@@ -764,7 +817,7 @@ const ARTICLES: Article[] = [
 ];
 
 export function articles(): Article[] {
-  return ARTICLES.filter((a) => !a.feature || LIVE_FEATURES[a.feature]);
+  return ARTICLES.filter((a) => (!a.feature || LIVE_FEATURES[a.feature]) && !(a.unless && LIVE_FEATURES[a.unless]));
 }
 
 export function findArticle(locale: Locale, slug: string): Article | undefined {
