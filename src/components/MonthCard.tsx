@@ -13,7 +13,7 @@ import { playedMs } from '@/store/session-math';
 import { C, F, ff } from '@/theme';
 
 import { Logo, Watermark } from './SessionCard';
-import { STORY_H, STORY_W } from './StoryCard';
+import { POST_H, STORY_H, STORY_W } from './StoryCard';
 
 const INK = C.accentInk;
 const DIM = 'rgba(26,10,4,0.62)';
@@ -37,20 +37,34 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MonthCard({ r, hideMoney = true, brand = true, ref }: { r: MonthRecap; hideMoney?: boolean; brand?: boolean; ref?: React.Ref<React.ComponentRef<typeof View>> }) {
+export function MonthCard({
+  r,
+  hideMoney = true,
+  brand = true,
+  format = 'story',
+  ref,
+}: {
+  r: MonthRecap;
+  hideMoney?: boolean;
+  brand?: boolean;
+  /** 'post': 4:5 for X and other apps, without the room Instagram's bars need. */
+  format?: 'story' | 'post';
+  ref?: React.Ref<React.ComponentRef<typeof View>>;
+}) {
+  const post = format === 'post';
   const bb = r.bbHourly !== null ? `${r.bbHourly > 0 ? '+' : ''}${r.bbHourly.toLocaleString(locale, { maximumFractionDigits: 1 })}` : null;
   const b = r.best && r.best.profit > 0 ? r.best : null;
   return (
-    <View ref={ref} collapsable={false} style={{ width: STORY_W, height: STORY_H, overflow: 'hidden', backgroundColor: C.accent }}>
+    <View ref={ref} collapsable={false} style={{ width: STORY_W, height: post ? POST_H : STORY_H, overflow: 'hidden', backgroundColor: C.accent }}>
       <LinearGradient colors={['#FF7A4F', C.accent, '#E9542A']} locations={[0, 0.5, 1]} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
 
       {/* Below Instagram's profile bar */}
-      <View style={{ position: 'absolute', top: 70, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ position: 'absolute', top: post ? 26 : 70, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {brand ? <Logo size={14} color={INK} cut={C.accent} /> : <View />}
         <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: DIM }}>{t('O meu mês no póquer').toUpperCase()}</Text>
       </View>
 
-      <View style={{ position: 'absolute', top: 120, left: 26, right: 26, bottom: 150, justifyContent: 'center', gap: 18 }}>
+      <View style={{ position: 'absolute', top: post ? 52 : 120, left: 26, right: 26, bottom: post ? 52 : 150, justifyContent: 'center', gap: post ? 12 : 18 }}>
         <View style={{ gap: 2 }}>
           <Kicker>{monthName(r.key, true)}</Kicker>
           <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} style={{ fontFamily: F.mono, fontSize: 88, lineHeight: 98, color: INK, letterSpacing: -2 }}>
@@ -78,7 +92,7 @@ export function MonthCard({ r, hideMoney = true, brand = true, ref }: { r: Month
       </View>
 
       {/* Above Instagram's reply bar */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 74 }}>{brand ? <Watermark color={INK} dim={DIM} /> : null}</View>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: post ? 20 : 74 }}>{brand ? <Watermark color={INK} dim={DIM} /> : null}</View>
     </View>
   );
 }

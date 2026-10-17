@@ -37,6 +37,10 @@ export async function captureStory(_ref: React.RefObject<React.ComponentRef<type
   throw new Error('Story capture needs the iOS or Android app');
 }
 
+export async function capturePost(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  throw new Error('Post capture needs the iOS or Android app');
+}
+
 export type StoryTarget = 'instagram' | 'sheet';
 
 export async function storyGoesToInstagram(): Promise<boolean> {

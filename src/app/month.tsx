@@ -18,7 +18,7 @@ import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section
 import { lang, locale, t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
-import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
+import { canShareStory, capturePost, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
 import { notice } from '@/lib/notice';
@@ -51,6 +51,7 @@ export default function MonthScreen() {
   const { width } = useWindowDimensions();
   const preview = Math.min(PREVIEW, (width - 2 * S.gutter) / STORY_W);
   const card = useRef<React.ComponentRef<typeof View>>(null);
+  const postCard = useRef<React.ComponentRef<typeof View>>(null);
   const [granted, setGranted] = useState<boolean | null>(() => (notifications() ? null : false));
   useEffect(() => {
     const n = notifications();
@@ -116,7 +117,7 @@ export default function MonthScreen() {
     tap('medium');
     setBusy(true);
     try {
-      await sharePost([await captureStory(card)], await postText(to), to);
+      await sharePost([await capturePost(postCard)], await postText(to), to);
       track('story_shared', { target: to, kind: 'month', money: !hideMoney });
     } catch {
       notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -203,6 +204,10 @@ export default function MonthScreen() {
                   <MonthCard ref={card} r={r} hideMoney={hideMoney} />
                 </View>
               </View>
+            </View>
+            {/* The 4:5 copy for X and other apps: drawn off screen, only ever captured. */}
+            <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
+              <MonthCard ref={postCard} r={r} hideMoney={hideMoney} format="post" />
             </View>
             <Row gap={S.sm}>
               <IconButton
