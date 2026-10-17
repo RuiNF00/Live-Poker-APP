@@ -11,6 +11,7 @@ import { C, F, R, ff } from '@/theme';
 
 import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
 import { IcmPanel } from './replayer/IcmPanel';
+import { useReduceMotion } from './replayer/motion';
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { tap } from './ui';
 
@@ -357,12 +358,13 @@ const ITEM_W = 62;
 function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; current: number; last: number; onPick: (k: number) => void }) {
   const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const [w, setW] = useState(0);
+  const reduce = useReduceMotion();
   const at = Math.max(
     0,
     items.reduce((best, it, idx) => (it.k <= current ? idx : best), 0),
   );
   useEffect(() => {
-    if (w) ref.current?.scrollTo({ x: Math.max(0, at * ITEM_W - w / 2 + ITEM_W / 2), animated: true });
+    if (w) ref.current?.scrollTo({ x: Math.max(0, at * ITEM_W - w / 2 + ITEM_W / 2), animated: !reduce });
   }, [at, w]);
   return (
     <ScrollView
