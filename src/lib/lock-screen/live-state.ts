@@ -78,7 +78,8 @@ export function nextLevelAt(s: Session, now = Date.now()): number | undefined {
 export function levelsDue(s: Session, now = Date.now()): Partial<Session> | null {
   if (s.kind !== 'mtt') return null;
   let cur: Session = s;
-  for (let i = 0; i < 30; i++) {
+  // Enough for a whole day of 5-minute levels; the bound only stops a broken clock looping.
+  for (let i = 0; i < 300; i++) {
     const at = nextLevelAt(cur, now);
     if (at === undefined || at > now) break;
     cur = { ...cur, ...levelAfter(cur, 1), levelStartedAt: at };

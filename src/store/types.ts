@@ -42,6 +42,8 @@ export interface Session {
   live?: { id: string; token: string; showVenue?: boolean };
   /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
   makeupCut?: number;
+  /** That cut as a Sweatbook CSV gave it, for a session imported where no package works it out. makeupCut wins when there is one. */
+  fileCut?: number;
   /** What swaps add to (their share of the other player's prizes) or take from (your share given away) this session. Derived (withSwaps). */
   swapNet?: number;
   // Live table state, used to pre-fill every new hand.

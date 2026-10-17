@@ -8,6 +8,8 @@ export interface CloudState {
   lastAt?: number;
   /** What the server copy held after the last upload or restore from this phone. */
   counts?: Partial<Record<string, number>>;
+  /** exportedAt of the copy this phone last uploaded or restored: a different one on the server was written by another phone. */
+  sent?: number;
   /** Last upload that failed, and why ('network', 'quota'…); cleared by the next one that works. */
   failedAt?: number;
   failure?: string;

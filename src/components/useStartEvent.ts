@@ -44,12 +44,14 @@ export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: numbe
 
 export function useStartEvent() {
   const { sessions, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
-  return (f: Festival, e: FestivalEvent) => {
+  /** `ended`: the session just ended in the same tap ("Próximo do plano"), not saved in the store yet. */
+  return (f: Festival, e: FestivalEvent, ended?: Session) => {
     const plan = getPlan(f.id);
-    const a = eventAction(f, plan, sessions, e);
+    const all = ended ? sessions.map((x) => (x.id === ended.id ? ended : x)) : sessions;
+    const a = eventAction(f, plan, all, e);
     if (!a) return;
     if (a.kind === 'view') return router.push('/session');
-    if (activeSession) {
+    if (activeSession && activeSession.id !== ended?.id) {
       const msg = t('Termina a sessão "{name}" antes de começar outra.', { name: activeSession.name || t('Sessão') });
       if (Platform.OS === 'web') router.push('/session');
       else Alert.alert(t('Já tens uma sessão a decorrer'), msg, [{ text: t('Ver sessão'), onPress: () => router.push('/session') }, { text: t('Cancelar'), style: 'cancel' }]);

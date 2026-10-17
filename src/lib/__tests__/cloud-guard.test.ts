@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, backupHealth, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
+import { autoBackup, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -83,4 +83,18 @@ test('an empty cloud copy (backup just turned on with no data) is nothing to pro
   assert.equal(uploadBlock({}, empty), null);
   assert.equal(cloudAhead({}, empty), false);
   assert.equal(uploadBlock({ hands: 1 }, empty), null);
+});
+
+test('after a saved hand: copy once things settle, at most every 10 minutes, never a smaller phone', () => {
+  const t0 = 1_000_000_000_000;
+  const c: CloudState = { ...code, lastAt: t0, counts: full };
+  assert.equal(changeBackupIn(null, full, t0), null);
+  assert.equal(changeBackupIn(c, { ...full, hands: 121 }, t0 + H), CHANGE_DEBOUNCE_MS);
+  assert.equal(changeBackupIn(c, { ...full, hands: 121 }, t0 + 60_000), 9 * 60_000);
+  assert.equal(changeBackupIn(c, empty, t0 + H), null);
+  // Over the server limit: back to one try every 6 hours, not one per hand.
+  const big: CloudState = { ...c, failedAt: t0 + H, failure: 'too_big' };
+  assert.equal(changeBackupIn(big, { ...full, hands: 121 }, t0 + 2 * H), 5 * H);
+  // A network failure doesn't slow it down.
+  assert.equal(changeBackupIn({ ...c, failedAt: t0 + H, failure: 'network' }, { ...full, hands: 121 }, t0 + 2 * H), CHANGE_DEBOUNCE_MS);
 });

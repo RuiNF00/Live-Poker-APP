@@ -4,14 +4,15 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
 import { useAfterFirstFrame } from '@/components/Deferred';
+import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, firstSession, SessionForm } from '@/components/SessionForm';
@@ -23,7 +24,8 @@ import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
 import { FestivalItem, PlannedNow } from '@/components/FestivalItem';
-import { sessionFromEvent, sessionName } from '@/components/useStartEvent';
+import { AfterFestivalSession, Day2Remind } from '@/components/AfterFestivalSession';
+import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useStartEvent';
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
@@ -33,7 +35,7 @@ import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { eventDay } from '@/poker/festivals';
-import { updatePlan } from '@/store/festival-plan';
+import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
@@ -42,29 +44,12 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { useSheetAnimation } from '@/lib/motion';
 
-/**
- * Re-renders every `ms` while this tab is on screen and returns the time of
- * the tick. Tabs stay mounted, so an always-on interval kept redrawing the
- * whole session screen every second behind hand entry and the hands list.
- */
-function useTick(ms = 1000) {
-  const [now, setNow] = useState(() => Date.now());
-  useFocusEffect(
-    useCallback(() => {
-      setNow(Date.now());
-      const id = setInterval(() => setNow(Date.now()), ms);
-      return () => clearInterval(id);
-    }, [ms]),
-  );
-  return now;
-}
-
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
 // table reads, money) behind it.
 
 function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
-  const now = useTick(1000);
+  const now = useNow(1000);
   return (
     <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
       {clock(playedMs(s, now))}
@@ -73,7 +58,7 @@ function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
 }
 
 function LevelAlarm({ s, onDue }: { s: Session; onDue: () => void }) {
-  const now = useTick(1000);
+  const now = useNow(1000);
   const nextAt = nextLevelAt(s, now);
   const levelDue = !!nextAt && nextAt <= now;
   // A tournament's level goes up by itself when the clock runs out (see levelsDue); cash just shows it.
@@ -93,7 +78,7 @@ function LevelAlarm({ s, onDue }: { s: Session; onDue: () => void }) {
 
 function SinceStart({ s }: { s: Session }) {
   // Hours and minutes: a 30 s tick is enough.
-  const now = useTick(30000);
+  const now = useNow(30000);
   return (
     <T v="tiny" style={{ textAlign: 'center' }}>
       {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(s.kind === 'cash' ? liveResult(s) : profit(s), s.currency) })}
@@ -213,6 +198,9 @@ export default function SessionScreen() {
                   }
                 />
               ))}
+              {bagged.map((b) => (
+                <Day2Remind key={'d2' + b.id} b={b} />
+              ))}
             </ListGroup>
           </Section>
         ) : null}
@@ -319,7 +307,7 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
-  const { saveSession, hands, settings } = useStore();
+  const { saveSession, hands, settings, sessions } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   // The clock and stack first; the chart, money and staking a frame later.
@@ -345,6 +333,30 @@ function Live({ s }: { s: Session }) {
     scrollToEnd.current = true;
   };
   const [moods, setMoods] = useState<string[]>([]);
+  // A festival tournament: a re-entry or the next planned event, offered right where it ends.
+  const festivals = useFestivals();
+  const plans = useFestivalPlans();
+  const after = useMemo(() => (ending && s.kind === 'mtt' ? afterSession(festivals, plans, sessions, s) : null), [ending, festivals, plans, sessions, s]);
+  const startEvent = useStartEvent();
+  // Saves the result and returns the ended session.
+  const close = () => {
+    tap('success');
+    const now = Date.now();
+    const ended: Session = {
+      ...s,
+      cashOut: finish.cashOut,
+      finish: finish.place || undefined,
+      field: finish.field || undefined,
+      endedAt: now,
+      tags: moods.length ? moods : undefined,
+      breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
+    };
+    saveSession(ended);
+    // No money in events: kind, hands saved in it and a duration bucket.
+    const h = playedMs(s, now) / 3_600_000;
+    track('session_closed', { kind: s.kind, hands: hands.filter((x) => x.sessionId === s.id).length, minutes_bucket: h < 1 ? '<1h' : h < 3 ? '1-3h' : h < 6 ? '3-6h' : '6h+' });
+    return ended;
+  };
   const [softAsk, askNotify] = useNotifySoftAsk();
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
@@ -582,6 +594,19 @@ function Live({ s }: { s: Session }) {
                     </View>
                   );
                 })()}
+                {after ? (
+                  <AfterFestivalSession
+                    s={s}
+                    after={after}
+                    prize={finish.cashOut}
+                    onReenter={() => {
+                      setEnding(false);
+                      rebuy();
+                    }}
+                    // Saved as it stands, then the next one starts: re-entry on a later flight, or a new session.
+                    onNext={(e) => startEvent(after.f, e, close())}
+                  />
+                ) : null}
                 <Row gap={S.sm}>
                   <Button kind="ghost" size="md" title={t('Voltar')} style={{ flex: 1 }} onPress={() => setEnding(false)} />
                   <Button
@@ -590,20 +615,7 @@ function Live({ s }: { s: Session }) {
                     style={{ flex: 1 }}
                     haptic={false}
                     onPress={() => {
-                      tap('success');
-                      const now = Date.now();
-                      saveSession({
-                        ...s,
-                        cashOut: finish.cashOut,
-                        finish: finish.place || undefined,
-                        field: finish.field || undefined,
-                        endedAt: now,
-                      tags: moods.length ? moods : undefined,
-                        breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
-                      });
-                      // No money in events: kind, hands saved in it and a duration bucket.
-                      const h = playedMs(s, now) / 3_600_000;
-                      track('session_closed', { kind: s.kind, hands: hands.filter((x) => x.sessionId === s.id).length, minutes_bucket: h < 1 ? '<1h' : h < 3 ? '1-3h' : h < 6 ? '3-6h' : '6h+' });
+                      close();
                       router.push({ pathname: '/summary/[id]', params: { id: s.id } });
                     }}
                   />

@@ -30,10 +30,11 @@ import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { autoFold, callerCandidates, checkAround, checkDownNext, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
 import { addSeat, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
@@ -67,13 +68,15 @@ export default function NewHand() {
     if (editing) return { hand: editing, posChosen: true };
     if (store.draft) return { hand: store.draft, posChosen: !!store.draft.actions.length || store.draft.button !== 0 || !!store.draft.players[0].cards };
     const last = hands[0] ?? null;
+    // A tournament's clock may have moved on since the session screen last saved: the hand gets today's level and blinds.
+    const live = activeSession && { ...activeSession, ...levelsDue(activeSession) };
     // Same table as the last hand: seats, stacks and the moved button are already right.
-    return { hand: newHand({ id: uid('h_'), session: activeSession, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, activeSession) };
+    return { hand: newHand({ id: uid('h_'), session: live, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, live) };
   });
   const [history, setHistory] = useState<Draft[]>([]);
   const [ctxOpen, setCtxOpen] = useState(false);
   const [seatEdit, setSeatEdit] = useState<number | null>(null);
-  const [pad, setPad] = useState(false);
+  const [pad, setPad] = useState<false | 'raise' | 'allin'>(false);
   const [inBB, setInBB] = useState(settings.inBB);
   // undefined: the picker opens by itself for the only opponent left; null: closed.
   const [area, setArea] = useState({ w: 0, h: 0 });
@@ -144,7 +147,7 @@ export default function NewHand() {
   useEffect(() => {
     const key = autoKey;
     if (phase !== 'action' || autoDone.current.has(key)) return;
-    const acts = autoFold(hand, s);
+    const acts = autoActions(hand, s);
     if (!acts.length) return;
     autoDone.current.add(key);
     update({ ...hand, actions: [...hand.actions, ...acts] }, draft.posChosen, hand.actions.length);
@@ -160,7 +163,7 @@ export default function NewHand() {
   };
 
   // After a limp, the chips are more limps: one tap each.
-  const limped = autoSeats.length > 0 && limpedPot(hand, draft.autoFrom);
+  const limped = autoSeats.length > 0 && s.street === 'preflop' && limpedPot(hand, draft.autoFrom);
   const overlimp = (seat: number) => {
     if (draft.autoFrom === undefined) return;
     const actions = limpIn(hand, draft.autoFrom, seat);
@@ -183,6 +186,14 @@ export default function NewHand() {
     autoDone.current.clear();
     update({ ...hand, button, actions: [] }, true);
   };
+  // Straddles change who acts first: the action starts over, as in the context sheet.
+  const toggleStraddle = () => {
+    tap('select');
+    const g = hand.game;
+    const game = g.straddles ? { ...g, straddles: undefined, straddleFrom: undefined } : { ...g, straddles: 1, straddleFrom: 'utg' as const };
+    autoDone.current.clear();
+    update({ ...hand, game, actions: [], board: [] });
+  };
   const pushActions = (acts: HandAction[]) => update({ ...hand, actions: [...hand.actions, ...acts] });
 
   const act = (kind: HandAction['kind'], to?: number) => {
@@ -196,6 +207,14 @@ export default function NewHand() {
       if (mem?.[m.spot] !== m.mult) store.setSettings({ sizes: { ...settings.sizes, [kindKey]: { ...mem, [m.spot]: m.mult } } });
     }
     pushActions([{ p: s.toAct, kind, to }]);
+  };
+
+  // "All-in" on the keypad: the amount is everything the seat had, so its stack follows.
+  const allIn = (to: number) => {
+    const next = allInFor(hand, s, to);
+    if (!next) return;
+    tap();
+    update(next);
   };
 
   const boardNeeded = s.street === 'flop' ? 3 : s.street === 'turn' ? 4 : 5;
@@ -304,6 +323,8 @@ export default function NewHand() {
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
   const callers = phase === 'action' ? callerCandidates(hand, s) : [];
   const checks = phase === 'action' ? checkAround(hand, s) : [];
+  // "Check até ao fim" on the flop and turn, also when the others already checked to hero.
+  const checkDown = phase === 'action' && (s.street === 'flop' || s.street === 'turn') ? checkDownNow(hand, s) : [];
   const levelUp = phase === 'hero' ? nextLevel(hand.game) : null;
   // Heads-up showdown: the picker for the opponent's cards is already open.
   const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
@@ -328,7 +349,9 @@ export default function NewHand() {
     phase !== 'action' || !l
       ? null
       : autoSeats.length
-        ? l.p === hand.hero
+        ? s.street !== 'preflop'
+          ? t('Check até ti')
+          : l.p === hand.hero
           ? t('Fold de todos até ti')
           : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
         : skips.length > 1
@@ -426,11 +449,15 @@ export default function NewHand() {
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
-              <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={8}>
-                <T v="small">
-                  {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
-                </T>
-              </Pressable>
+              <Row gap={10}>
+                {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
+                {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={8}>
+                  <T v="small">
+                    {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
+                  </T>
+                </Pressable>
+              </Row>
             </Row>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {positionOrder(n).map((label) => {
@@ -492,7 +519,7 @@ export default function NewHand() {
             {autoSeats.length > 0 && (
               <ChipRow>
                 <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
-                  {limped ? t('Mais limps?') : t('Alguém entrou?')}
+                  {limped ? t('Mais limps?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
                 </T>
                 {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
                 {[...autoSeats].reverse().map((i) => (
@@ -506,15 +533,15 @@ export default function NewHand() {
                 {t('Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.')}
               </T>
             ) : null}
-            {(callers.length > 0 || checks.length > 0) && (
+            {(callers.length > 0 || checkDown.length > 0) && (
               <ChipRow>
                 {callers.map((i) => (
                   <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
                 ))}
                 {callers.length > 0 && <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />}
                 {checks.length > 0 && <Chip big label={t('Todos check')} onPress={() => pushActions(checks)} />}
-                {checks.length > 0 && s.street !== 'river' && (
-                  <Chip big label={t('Check até ao fim')} onPress={() => update({ ...hand, actions: [...hand.actions, ...checks] }, draft.posChosen, undefined, hand.actions.length)} />
+                {checkDown.length > 0 && (
+                  <Chip big label={t('Check até ao fim')} onPress={() => update({ ...hand, actions: [...hand.actions, ...checkDown] }, draft.posChosen, undefined, hand.actions.length)} />
                 )}
               </ChipRow>
             )}
@@ -556,12 +583,18 @@ export default function NewHand() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('Outro valor')}
-                    onPress={() => setPad(true)}
+                    onPress={() => setPad('raise')}
                     style={({ pressed }) => ({ width: 46, minHeight: 58, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: pressed ? 0.7 : 1 })}>
                     <Ionicons name="keypad" size={18} color={C.text} />
                   </Pressable>
                 </Row>
               </View>
+            )}
+            {/* Facing more than the seat has: their all-in for less, with no trip to the seat sheet. */}
+            {presets.length === 0 && l.canCall && l.p !== hand.hero && (
+              <ChipRow>
+                <Chip label={t('All-in com menos')} onPress={() => setPad('allin')} />
+              </ChipRow>
             )}
             <Row gap={8}>
               {l.canCall ? <BigAction label="Fold" kind="fold" onPress={() => act('fold')} /> : null}
@@ -672,7 +705,8 @@ export default function NewHand() {
                         else if (cards.length < 2) cards.push(c);
                         else cards = [cards[1], c];
                         setPlayer(sdSeat, { ...p, cards });
-                        if (cards.length === 2) setShowdownFor(null);
+                        // Multiway: the next seat whose cards are still unknown opens by itself.
+                        if (cards.length === 2) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < 2) ?? null);
                       }}
                     />
                   )}
@@ -766,17 +800,22 @@ export default function NewHand() {
       />
       {l && (
         <AmountPad
-          visible={pad}
-          title={l.canBet ? 'Bet' : t('Raise para')}
+          visible={pad !== false}
+          title={pad === 'allin' ? t('All-in para') : l.canBet ? 'Bet' : t('Raise para')}
           bb={hand.game.bb}
           initialInBB={inBB}
-          min={l.minTo}
-          max={l.maxTo}
+          min={pad === 'allin' ? undefined : l.minTo}
+          max={pad === 'allin' ? undefined : l.maxTo}
           onClose={() => setPad(false)}
           onDone={(v) => {
             setPad(false);
+            if (pad === 'allin') return allIn(v);
             act(l.canBet ? 'bet' : 'raise', Math.max(v, l.minTo));
           }}
+          onAllIn={pad === 'raise' ? (v) => {
+            setPad(false);
+            allIn(v);
+          } : undefined}
         />
       )}
     </KeyboardAvoidingView>

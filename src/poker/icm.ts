@@ -54,6 +54,21 @@ export function chipChop(stacks: number[], payouts: number[]): number[] {
   return stacks.map((s) => floor + ((pool - floor * n) * s) / total);
 }
 
+/**
+ * A deal as money: each share cut to the cent (`digits` 0 for yen and the like), the cents
+ * left over to the first players in order, like a chopped pot. Adds up to the pool exactly.
+ */
+export function toCents(shares: number[], digits = 2): number[] {
+  const k = 10 ** digits;
+  const pool = Math.round(shares.reduce((a, b) => a + b, 0) * k);
+  const units = shares.map((x) => Math.floor(x * k + 1e-6));
+  let left = pool - units.reduce((a, b) => a + b, 0);
+  for (let i = 0; left > 0 && units.length; i = (i + 1) % units.length, left--) units[i]++;
+  // Float noise the other way: the extra cent comes off the last player.
+  for (let i = units.length - 1; left < 0 && i >= 0; i--, left++) units[i]--;
+  return units.map((u) => u / k);
+}
+
 // ── In the replayer: payout presets, the ICM price of a call, risk premium and PKO bounties ──
 
 export type PayoutPreset = 'satellite' | 'flat' | 'standard' | 'top';

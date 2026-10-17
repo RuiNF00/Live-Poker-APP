@@ -37,7 +37,7 @@ REVEJA NO REPLAYER
 
 COMPARTILHE E PEÇA OPINIÃO
 • Envie a mão por link: quem recebe vê o replayer no navegador, sem instalar nada
-• Comentários street a street e votos dos amigos; as mãos que mandam para você ficam em Mãos compartilhadas
+• Comentários street a street e votos dos amigos, com aviso quando alguém comenta; as mãos que mandam para você ficam em Mãos compartilhadas
 • Publique a mão nos Stories do Instagram
 
 CONTROLE DE BANCA PARA QUEM JOGA AO VIVO

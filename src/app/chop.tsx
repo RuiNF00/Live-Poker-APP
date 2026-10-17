@@ -10,7 +10,8 @@ import { Term } from '@/components/Term';
 import { Card, Chip, ChipRow, Divider, NumField, Row, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { chips, money } from '@/poker/format';
-import { chipChop, icm } from '@/poker/icm';
+import { chipChop, icm, toCents } from '@/poker/icm';
+import { decimalsOf } from '@/store/currencies';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -31,8 +32,9 @@ export default function ChopScreen() {
   const st = stacks.slice(0, n);
   const py = pays.slice(0, n);
   const ready = st.every((x) => x > 0) && py[0] > 0;
-  const e = ready ? icm(st, py) : [];
-  const c = ready ? chipChop(st, py) : [];
+  // To the cent and adding up to the prizes: 10 000 three ways is 3333,34 + 3333,33 + 3333,33.
+  const e = ready ? toCents(icm(st, py), decimalsOf(cur)) : [];
+  const c = ready ? toCents(chipChop(st, py), decimalsOf(cur)) : [];
   const total = st.reduce((a, b) => a + b, 0);
   const setAt = (list: number[], set: (l: number[]) => void, i: number, v: number) => set(list.map((x, k) => (k === i ? v : x)));
 
@@ -85,10 +87,10 @@ export default function ChopScreen() {
                       </T>
                     </View>
                     <T v="mono" style={{ flex: 1, textAlign: 'right' }}>
-                      {money(Math.round(e[i]), cur)}
+                      {money(e[i], cur)}
                     </T>
                     <T v="mono" color={C.textDim} style={{ flex: 1, textAlign: 'right' }}>
-                      {money(Math.round(c[i]), cur)}
+                      {money(c[i], cur)}
                     </T>
                   </Row>
                 </View>

@@ -18,6 +18,15 @@ export const BR: Record<string, ArticleText> = {
       'Embaixo ficam as abas Mãos, Sessão, Bankroll e Jogadores. As Configurações estão na engrenagem, no topo da aba Mãos.',
     ],
   },
+  'late-reg-reminder': {
+    slug: 'lembrete-late-reg',
+    title: 'Lembrete do late reg',
+    summary: 'Marque os torneios do festival e a gente avisa antes de fechar.',
+    body: [
+      'Sessão → Festivais → escolha o festival e toque nos eventos que você vai jogar. A gente avisa 30 min antes de cada um e antes de fechar o late reg.',
+      'Se o organizador não publicou o fechamento, toque em Horário do late reg no evento. Desative em Configurações → Notificações → Torneios planejados.',
+    ],
+  },
   'log-a-hand': {
     slug: 'registrar-uma-mao',
     title: 'Registrar uma mão rápido',
@@ -87,6 +96,15 @@ export const BR: Record<string, ArticleText> = {
       },
       'Compartilhar por link é ilimitado, também no plano grátis. Sem internet, o link fica pronto quando o sinal voltar.',
       { note: 'Para desativar um link: na página da mão, em Comentários, toque em Excluir compartilhamento. O link para de funcionar e os comentários são apagados; a mão continua no seu caderno.' },
+    ],
+  },
+  comments: {
+    slug: 'comentarios',
+    title: 'Comentários nas mãos compartilhadas',
+    summary: 'Quem abre o link comenta; você decide o que fica.',
+    body: [
+      'Os comentários aparecem na página da mão, em Comentários. Em cada um, Excluir tira esse comentário e Bloquear impede a pessoa de comentar de novo nessa mão (ela não é avisada).',
+      'Você recebe uma notificação por mão até abrir, só com a street. Entre 23h e 12h ela espera e chega às 12h. Ative ou desative em Configurações → Notificações → Comentários nas suas mãos.',
     ],
   },
   'what-a-link-shows': {
@@ -185,6 +203,8 @@ export const BR: Record<string, ArticleText> = {
       'Configurações → Backup → Ativar backup na nuvem. Você recebe um código de recuperação de 26 caracteres: guarde num lugar seguro. O backup é criptografado no celular com esse código antes de sair, e se atualiza sozinho.',
       { steps: ['No celular novo, instale o Sweatbook.', 'Vá em Configurações → Backup → Restaurar com código.', 'Cole o código e toque em Restaurar.'] },
       'Você também pode salvar um arquivo: Exportar tudo cria um .json com tudo, sempre grátis. Importar arquivo junta esse arquivo ao que você já tem, sem apagar nada.',
+      'O backup leva mãos, sessões, notas de jogadores, bankroll, staking e configurações. Os recibos ficam só no celular. Se aparecer "O backup é grande demais para a nuvem", use Exportar tudo.',
+      'Dois celulares com o mesmo código dividem um só backup, e o último a enviar substitui o anterior. No segundo, toque primeiro em Restaurar com código: ele junta tudo e fica a versão mais recente de cada item.',
       { note: 'Sem o código ninguém consegue ler o backup, nem nós. Se você perder o código, não há como recuperar.' },
     ],
   },

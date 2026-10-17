@@ -1,6 +1,6 @@
 // The player's plan for a festival: which events (flights) they'll play, when
 // late registration closes for each, and the session started from each one.
-// Kept apart from the main store: it's small, per-device, and never synced.
+// Kept apart from the main store: it's small and per-device; the backup carries it.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
@@ -185,11 +185,57 @@ export function plannedNow(f: Festival, plan: FestivalPlan, sessions: Session[],
 
 /** A Day 2 named after its flights ("2BC") only takes players bagged in those flights. */
 function day2Takes(f: Festival, plan: FestivalPlan, e: FestivalEvent, s: Session): boolean {
-  const from = e.flight?.slice(1) ?? '';
+  const from = e.takes ?? e.flight?.slice(1) ?? '';
   if (!from) return true;
   // After a re-entry every flight played maps to the session: it bagged in the last one.
   const last = f.events.filter((x) => x.number === e.number && !x.day2 && plan.sessions[x.id] === s.id).sort((a, b) => venueTime(f, b.start) - venueTime(f, a.start))[0];
-  return !last || from.includes(last.flight ?? '');
+  // "1A" and "1C Low Cost" are flights A and C.
+  return !last || from.includes((last.flight ?? '').replace(/^1/, '').split(' ')[0]);
+}
+
+/** What can follow a festival session that's ending: the same event again, the next planned one, or its Day 2. */
+export interface AfterSession {
+  f: Festival;
+  e: FestivalEvent;
+  /** Late reg is still open until then (the player's or the organiser's time): a re-entry instead of ending. */
+  reenterUntil?: number;
+  /** The next planned event still to start or still open; `now` when it can start straight away. */
+  next?: { e: FestivalEvent; start: number; now: boolean };
+  /** For a bagged session: the Day 2 it goes on to, and whether it's in the plan (its reminder is). */
+  day2?: { e: FestivalEvent; start: number; planned: boolean };
+}
+
+/** Where the session `s` sits in a festival plan, and what can follow it. Null for a session from no plan. */
+export function afterSession(festivals: Festival[], plans: Record<string, FestivalPlan>, sessions: Session[], s: Session, now = Date.now()): AfterSession | null {
+  for (const base of festivals) {
+    const plan = plans[base.id];
+    if (!plan) continue;
+    const f = withPlanEvents(base, plan);
+    // After a re-entry on a later flight, every flight played maps to the session: the last one counts.
+    const e = f.events.filter((x) => plan.sessions[x.id] === s.id).sort((a, b) => venueTime(f, b.start) - venueTime(f, a.start))[0];
+    if (!e) continue;
+    const start = venueTime(f, e.start);
+    const late = e.day2 ? undefined : lateRegOf(plan, e);
+    const closes = late ? start + late * 60_000 : 0;
+    const out: AfterSession = { f, e, reenterUntil: !isBagged(s) && now < closes ? closes : undefined };
+    if (isBagged(s)) {
+      const d2 = f.events.filter((x) => x.number === e.number && x.day2 && venueTime(f, x.start) > now && day2Takes(f, plan, x, s)).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))[0];
+      if (d2) out.day2 = { e: d2, start: venueTime(f, d2.start), planned: plan.picked.includes(d2.id) };
+      return out;
+    }
+    // As if this session had ended: a later flight of the same event becomes a re-entry.
+    const ended = sessions.map((x) => (x.id === s.id ? { ...x, endedAt: x.endedAt ?? now } : x));
+    for (const x of planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))) {
+      const at = venueTime(f, x.start);
+      if (x.id === e.id || now > at + (lateRegOf(plan, x) || LATE_DEFAULT_MIN) * 60_000) continue;
+      const a = eventAction(f, plan, ended, x);
+      if (!a || a.kind === 'view') continue;
+      out.next = { e: x, start: at, now: now >= at - 2 * 3_600_000 };
+      break;
+    }
+    return out;
+  }
+  return null;
 }
 
 export interface PlanReminder {
@@ -243,27 +289,26 @@ const KEY = 'rl.festivalPlans.v1';
 type Plans = Record<string, FestivalPlan>;
 
 let plans: Plans = {};
-let loaded = false;
+let loaded: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
 function emit() {
   for (const l of listeners) l();
 }
 
-function load() {
-  if (loaded) return;
-  loaded = true;
-  AsyncStorage.getItem(KEY)
+function load(): Promise<void> {
+  loaded ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
       if (!raw) return;
       plans = { ...JSON.parse(raw), ...plans };
       emit();
     })
     .catch(() => {});
+  return loaded;
 }
 
 function subscribe(l: () => void) {
-  load();
+  void load();
   listeners.add(l);
   return () => listeners.delete(l);
 }
@@ -272,6 +317,44 @@ function subscribe(l: () => void) {
 export function clearPlans() {
   plans = {};
   emit();
+}
+
+/** Every plan, for the backup. Starts reading the phone's copy if nothing has yet. */
+export function currentPlans(): Plans {
+  void load();
+  return plans;
+}
+
+/**
+ * One festival's plan after a restore: nothing on this phone goes away. Picks
+ * and added tournaments are joined; where both set a late reg, a session or a
+ * name, this phone's stays.
+ */
+export function mergePlan(local: FestivalPlan | undefined, incoming: FestivalPlan): FestivalPlan {
+  if (!local) return incoming;
+  const have = new Set((local.events ?? []).map((e) => e.id));
+  const events = [...(local.events ?? []), ...(incoming.events ?? []).filter((e) => !have.has(e.id))];
+  return {
+    ...incoming,
+    ...local,
+    picked: [...new Set([...local.picked, ...incoming.picked])],
+    lateReg: { ...incoming.lateReg, ...local.lateReg },
+    sessions: { ...incoming.sessions, ...local.sessions },
+    name: local.name?.trim() ? local.name : incoming.name,
+    ...(events.length ? { events } : {}),
+  };
+}
+
+/** Brings a backup's plans in (see mergePlan), after the phone's own are read so none is written over. */
+export async function importPlans(incoming: Plans): Promise<void> {
+  const ids = Object.keys(incoming);
+  if (!ids.length) return;
+  await load();
+  const next = { ...plans };
+  for (const id of ids) next[id] = mergePlan(plans[id], incoming[id]);
+  plans = next;
+  emit();
+  await AsyncStorage.setItem(KEY, JSON.stringify(plans)).catch(() => {});
 }
 
 export function getPlan(festivalId: string): FestivalPlan {
