@@ -49,6 +49,23 @@ export function autoBackup(c: CloudState | null, data: Counts, now: number): 'sk
   return uploadBlock(data, c) ? 'skip' : 'upload';
 }
 
+/** After a saved hand or a closed session, the copy waits this long for the next change... */
+export const CHANGE_DEBOUNCE_MS = 30_000;
+/** ...and goes out at most this often (a live session saves hand after hand). */
+export const CHANGE_GAP_MS = 10 * 60_000;
+
+/**
+ * When to copy after something changed: ms to wait, or null (no copy, or one
+ * that can't go out now). Never forces; a copy over the server limit goes back
+ * to the 6-hourly try, not one per hand.
+ */
+export function changeBackupIn(c: CloudState | null, data: Counts, now: number): number | null {
+  if (!c || uploadBlock(data, c)) return null;
+  const tooBig = c.failure === 'too_big' && !!c.failedAt && (!c.lastAt || c.failedAt > c.lastAt);
+  const at = tooBig ? c.failedAt! + AUTO_EVERY_MS : (c.lastAt ?? 0) + CHANGE_GAP_MS;
+  return Math.max(CHANGE_DEBOUNCE_MS, at - now);
+}
+
 /** A cloud copy older than this gets a warning (the launch auto-backup runs every 6 hours). */
 export const STALE_DAYS = 7;
 

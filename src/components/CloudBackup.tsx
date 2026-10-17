@@ -5,12 +5,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
-import { autoBackup, backupHealth, cloudAhead, countsOf, type Health } from '@/lib/cloud-guard';
+import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
 import { syncCloudExpiry } from '@/lib/cloud-expiry';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
@@ -297,6 +297,28 @@ export function AutoCloudBackup() {
     return () => clearTimeout(id);
     // On launch and on reconnect only (the store is read through the ref).
   }, [ready, online]);
+  // And after a hand is saved or a session closed: once things settle, at most every 10 minutes.
+  const closed = useMemo(() => store.sessions.reduce((n, s) => n + (s.endedAt ? 1 : 0), 0), [store.sessions]);
+  const changes = useRef(0);
+  useEffect(() => {
+    // The first run is the store loading, not a change (the launch copy above covers it).
+    if (!ready || changes.current++ === 0 || !online) return;
+    let live = true;
+    let id: ReturnType<typeof setTimeout> | undefined;
+    loadCloud().then((c) => {
+      const ms = live ? changeBackupIn(c, countsOf(buildBackup(latest.current)), Date.now()) : null;
+      if (ms === null) return;
+      id = setTimeout(async () => {
+        const now = await loadCloud();
+        const data = buildBackup(latest.current);
+        if (now && !uploadBlock(countsOf(data), now)) upload(now, data).catch(() => {});
+      }, ms);
+    });
+    return () => {
+      live = false;
+      clearTimeout(id);
+    };
+  }, [ready, online, store.hands, closed]);
   return null;
 }
 
