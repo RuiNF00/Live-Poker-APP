@@ -437,7 +437,7 @@ const es: Record<string, string> = {
   'Convidar um amigo': 'Invitar a un amigo',
   'Agora não': 'Ahora no',
   'Agora não · amanhã tens mais {n}': 'Ahora no · mañana tienes {n} más',
-  'Tudo desbloqueado. 0 a pagar.': 'Todo desbloqueado. 0 a pagar.',
+  'Tudo desbloqueado. 0 a pagar.': 'Todo desbloqueado. Nada que pagar.',
   'Começa: {price}': 'Empieza: {price}',
   'Antes disso': 'Antes de eso',
   'Cancela e não pagas nada.': 'Cancela y no pagas nada.',
