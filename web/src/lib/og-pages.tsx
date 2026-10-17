@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { brand } from '@/config/brand';
+import { formatMoney } from '@/lib/i18n';
 import { MARK_LINES, MARK_PATH } from '@/components/Brand';
 import { SUIT_PATHS } from '@/components/PlayingCard';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
@@ -214,9 +215,10 @@ export function inviteOgImage(days: number) {
   );
 }
 
-const fmt = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
+const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
 const num = (n: number) => fmt.format(n);
-const money = (n: number, cur: string) => `${n < 0 ? '−' : ''}${num(Math.abs(n))}${cur}`;
+// The live card is written in pt-PT: money as the app writes it there.
+const money = (n: number, cur: string) => formatMoney(n, cur, 'pt');
 
 /** A backer live page (/live/<id>): the session as it stands. Short cache, it changes. */
 export function liveOgImage(s: LiveSnapshot | null) {

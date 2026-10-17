@@ -1,4 +1,4 @@
-import { numberTag, withCurrency, type Locale } from '../../lib/i18n';
+import { numberTag, formatMoney, type Locale } from '../../lib/i18n';
 
 // Text for a festival action agreement (/o/<id>), in the same languages as the rest of
 // the site. Store policy (research/politicas-lojas-jogo.md §3): this is a record of a deal
@@ -118,10 +118,7 @@ export function offerFormat(locale: Locale) {
   const fixed2 = new Intl.NumberFormat(tag, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return {
     /** Whole amounts without cents; anything else always with two decimals. */
-    money: (n: number, cur: string) => {
-      const a = Number.isInteger(n) ? n2.format(n) : fixed2.format(n);
-      return withCurrency(a, cur, locale);
-    },
+    money: (n: number, cur: string) => formatMoney(n, cur, locale),
     pct: (n: number) => `${n2.format(n)}%`,
     markup: (n: number) => fixed2.format(n),
   };
