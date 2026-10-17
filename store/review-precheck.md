@@ -35,3 +35,6 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 - Description now says "records and accounts only, no money moves through the app, 18+"; staking line reworded (no "sell/buy" offer language). Review notes carry the record-keeping paragraph.
 - ~~Organizer links~~ fixed at e56594e (no wsop.com / worldpokertour.com urls left in src). Was: at 8eb59e3 the festival planner still opens organizer sites (`src/poker/festivals.ts` source urls: wsop.com and worldpokertour.com, both brands that run real-money gaming). Remove the outbound links or replace them with plain text before the build that goes to review. Still open at e56594e: "Vender ação" / "Sell action" in `src/components/StakeFields.tsx` and en.ts (Staking thread renaming it); recheck before the review build.
 - Keywords stay clear of casino, bet, aposta, slots, "win money".
+
+## Pending review-note change
+- When Replayer #121 merges: replace the sharing instruction in review-risks.md with "Home → \"Ver uma mão de exemplo\" → \"Partilhar com amigos\" (the sample link does not count towards the free share limit)".
