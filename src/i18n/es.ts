@@ -2562,6 +2562,7 @@ const es: Record<string, string> = {
   'A probabilidade de perderes o bankroll todo. Usamos o limite de baixo do teu win rate ({lo} BB/h, a média é {bb}) e o teu desvio padrão de {sd} BB/h: é a conta prudente.': 'La probabilidad de perder todo tu bankroll. Usamos el límite inferior de tu win rate ({lo} BB/h; la media es {bb}) y tu desviación estándar de {sd} BB/h: es la cuenta prudente.',
   'O teu win rate ainda pode ser zero ou negativo: com esta incerteza, o risco não fica limitado em nenhuma stake. Mais horas na tua stake tornam a conta mais firme.': 'Tu win rate aún puede ser cero o negativo: con esta incertidumbre, el riesgo no queda limitado en ninguna stake. Más horas en tu stake hacen la cuenta más firme.',
   '1 sessão em {stake}, resultado {amount}. Ainda podes perder {left} buy-ins antes de voltares.': '1 sesión en {stake}, resultado {amount}. Aún puedes perder {left} buy-ins antes de volver.',
+  'Mostrar mais ({n})': 'Mostrar más ({n})',
 };
 
 export default es;
