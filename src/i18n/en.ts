@@ -1972,6 +1972,8 @@ const en: Record<string, string> = {
   'Perdes dinheiro em todas as salas; em {best} perdes menos.': 'You lose money at every venue; at {best} you lose less.',
   'Perdes dinheiro em todas as stakes; a {best} perdes menos.': 'You lose money at every stake; at {best} you lose less.',
   'Onde ganhas e onde perdes': 'Where you win and where you lose',
+  'Salas, stakes, sono e tilt': 'Rooms, stakes, sleep and tilt',
+  'O teu downswing é normal?': 'Is your downswing normal?',
   'Com mais sessões mostramos-te onde ganhas e onde perdes: horas, dias, salas, stakes e o que acontece depois de uma perda grande.': 'With more sessions we show you where you win and where you lose: hours, days, venues, stakes and what happens after a big loss.',
   'Tens {n} sessões. As primeiras conclusões aparecem por volta das {m}.': 'You have {n} sessions. The first findings show up at around {m}.',
   'Ainda não há diferenças com sessões suficientes de cada lado.': 'No differences yet with enough sessions on each side.',

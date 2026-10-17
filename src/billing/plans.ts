@@ -183,6 +183,8 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'swaps', icon: 'swap-horizontal', title: t('Swaps'), body: t('Quem deve a quem') },
   { key: 'taxReport', icon: 'document-text', title: t('Relatório do ano'), body: t('Por país, com imposto') },
   { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },
+  { key: 'insights', icon: 'bulb', title: t('Onde ganhas e onde perdes'), body: t('Salas, stakes, sono e tilt') },
+  { key: 'downswingRead', icon: 'pulse', title: t('Azar ou sinal?'), body: t('O teu downswing é normal?') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
@@ -199,6 +201,8 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   swaps: 'swaps',
   taxReport: 'taxReport',
   homeTotal: 'homeTotal',
+  insights: 'insights',
+  downswingRead: 'downswingRead',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */
@@ -224,6 +228,7 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
     { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
     { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
+    { label: 'Onde ganhas e onde perdes', free: !PRO_ONLY.insights, pro: true },
   ];
 }
 
