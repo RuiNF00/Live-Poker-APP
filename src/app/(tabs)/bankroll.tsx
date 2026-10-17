@@ -50,6 +50,7 @@ import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/sto
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
+import { defaultMonth, monthName, monthRecap } from '@/store/month-recap';
 import type { Bankroll, Session, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
 
@@ -95,6 +96,10 @@ function BankrollTab() {
   const bal = balanceOf(scope, sessions, transfers, bankrolls);
   const tot = totals(list, cur);
   const wr = useMemo(() => winRate(cashDone(list, cur)), [list, cur]);
+  const lastMonth = useMemo(() => {
+    const k = defaultMonth(list);
+    return k ? monthRecap(list, k, cur) : null;
+  }, [list, cur]);
   const verdictNow = verdict(list, cur, (n) => fmt(n, cur));
   const pts = curve(list, cur).map((p) => p.v);
   const dd = drawdown(pts);
@@ -295,6 +300,15 @@ function BankrollTab() {
             ) : null}
             <ListGroup>
               {tot.itm !== null ? <ListItem icon="trophy-outline" iconColor={C.accent} title={t('Torneios')} subtitle={t('ROI por buy-in, festival e jogo, e o teu currículo')} onPress={() => router.push('/tournament-stats')} /> : null}
+              {lastMonth?.sessions ? (
+                <ListItem
+                  icon="calendar-outline"
+                  iconColor={C.accent}
+                  title={t('Resumo do mês')}
+                  subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: Math.round(lastMonth.hours) })}
+                  onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key } })}
+                />
+              ) : null}
               <ListItem
                 icon="trending-down"
                 iconColor={C.bad}

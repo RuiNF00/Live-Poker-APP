@@ -7,7 +7,7 @@ import { Button, Empty, Screen } from '@/components/ui';
 import { t } from '@/i18n';
 import { S } from '@/theme';
 
-const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer' } as const;
+const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar' } as const;
 
 /** True when this feature needs Pro and the player doesn't have it. */
 export function useLocked(feature: ProFeature): boolean {

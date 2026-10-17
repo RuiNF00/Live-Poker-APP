@@ -1030,6 +1030,21 @@ const ptBR: Record<string, string> = {
   'Sabe onde o teu win rate é real': 'Saiba onde seu win rate é real',
   'Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.': 'Intervalo de 95%: com estes resultados, seu win rate verdadeiro quase certamente está aqui dentro. Fica mais estreito com mais horas.',
   '{size}, o teu último tamanho': '{size}, seu último tamanho',
+  'Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.': 'Termine uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos você sobre o mês que passou.',
+  'Partilhar o mês': 'Compartilhar o mês',
+  'Vê se este mês foi melhor que os outros': 'Veja se este mês foi melhor que os outros',
+  'Onde ganhaste este mês': 'Onde você ganhou este mês',
+  'Vê as salas e stakes deste mês': 'Veja as salas e stakes deste mês',
+  'Permite as notificações da Sweatbook nas definições do telemóvel para receberes o aviso.': 'Permita as notificações da Sweatbook nos ajustes do celular para receber o aviso.',
+  'No dia 1 às {hour}:00, por exemplo: «{example}»': 'No dia 1 às {hour}:00, por exemplo: “{example}”',
+  'Sem salas registadas neste mês.': 'Nenhuma sala anotada neste mês.',
+  'Compara cada mês com os anteriores e vê onde ganhaste.': 'Compare cada mês com os anteriores e veja onde você ganhou.',
+  'O meu mês no póquer': 'Meu mês no pôquer',
+  'O resumo do teu mês está pronto. Toca para o veres.': 'O resumo do seu mês está pronto. Toque para ver.',
+  'Melhor sessão: {amount} em {venue}. Toca para veres o resumo do mês.': 'Melhor sessão: {amount} em {venue}. Toque para ver o resumo do mês.',
+  'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Melhor sessão: {amount}. Toque para ver o resumo do mês.',
+  'Toca para veres o resumo do mês.': 'Toque para ver o resumo do mês.',
+  'Torneios com prémio: {cashes} de {n}': 'Torneios com prêmio: {cashes} de {n}',
 };
 
 export default ptBR;
