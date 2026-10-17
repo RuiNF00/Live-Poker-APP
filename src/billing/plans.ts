@@ -33,11 +33,12 @@ export const PLANS: Record<PlanId, PlanInfo> = {
 /**
  * Offers in the cancel flow. Only ever offered there, never after onboarding.
  * The price the player sees always comes from the store offer itself; `pct`
- * and `months` are what to create in the stores. An empty id hides the offer.
+ * and `months` are what to create in the stores. Until an offer with this id
+ * exists there, the app hides it.
  */
 export const RETENTION = {
   /** "Não cabe no meu bankroll": App Store promotional offer / Google Play offer on the monthly plan. */
-  discount: { pct: 40, months: 3, ios: '', android: '' },
+  discount: { pct: 40, months: 3, ios: 'sweatbook_retention_40', android: 'sweatbook-retention-40' },
   /** Google Play lets subscribers pause; the App Store doesn't. */
   pauseMonths: 3,
 };
