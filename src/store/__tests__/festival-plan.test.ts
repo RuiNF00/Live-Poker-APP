@@ -100,8 +100,9 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   assert.equal(new Set(LV.events.map((e) => e.id)).size, LV.events.length);
   const starts = LV.events.map((e) => e.start);
   assert.deepEqual([...starts].sort(), starts);
-  assert.equal(LV.events[0].start, '2026-12-01T13:00');
-  assert.equal(LV.events.at(-1)!.start, '2026-12-21T12:00');
+  assert.equal(LV.events[0].start, '2026-11-27T12:00');
+  assert.equal(LV.events.at(-1)!.start, '2026-12-21T18:00');
+  assert.equal(LV.events.filter((e) => e.name.startsWith('Satellite')).length, 25);
   const wc = LV.events.filter((e) => e.name === 'Main Event');
   assert.deepEqual(wc.map((e) => [e.flight, e.buyIn, e.start]), [
     ['1A', 10400, '2026-12-13T11:00'],

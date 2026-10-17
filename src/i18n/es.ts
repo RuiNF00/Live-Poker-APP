@@ -1383,7 +1383,6 @@ const es: Record<string, string> = {
   'Horas locais de Las Vegas.': 'Horas locales de Las Vegas.',
   'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'El organizador no publicó el cierre del late reg (en el Main Event las inscripciones siguen abiertas hasta el Día 2): confírmalo en el mostrador del torneo.',
   'O Main Event não tem garantia publicada (o prémio adicionado não se aplica no Nevada).': 'El Main Event no tiene garantía publicada (el premio añadido no aplica en Nevada).',
-  'Só eventos de $1,000 ou mais; sem satélites.': 'Solo eventos de $1,000 o más; sin satélites.',
   'Las Vegas, dezembro 2026': 'Las Vegas, diciembre 2026',
   'Por continuar': 'Por continuar',
   'Dia {n} · {chips} no saco': 'Día {n} · {chips} en la bolsa',
@@ -3080,6 +3079,7 @@ const es: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} hasta ahora: {amount} en {h} h',
   'Começar: {name}': 'Empezar: {name}',
   'Às {time}': 'A las {time}',
+  'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Aún faltan los torneos de $600 y $800 con seis flights al inicio del festival: el organizador no ha publicado la hora de cada flight.',
 };
 
 export default es;
