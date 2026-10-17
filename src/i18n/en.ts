@@ -2885,6 +2885,8 @@ const en: Record<string, string> = {
   'Um código de oferta da {store}': 'An offer code from {store}',
   'Lembretes': 'Reminders',
   'Gerir': 'Manage',
+  'Partilhar imagem': 'Share image',
+  'Partilhar noutra app (X, WhatsApp…)': 'Share to another app (X, WhatsApp…)',
 };
 
 export default en;

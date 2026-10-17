@@ -2879,6 +2879,8 @@ const es: Record<string, string> = {
   'Um código de oferta da {store}': 'Un código de oferta de {store}',
   'Lembretes': 'Recordatorios',
   'Gerir': 'Gestionar',
+  'Partilhar imagem': 'Compartir imagen',
+  'Partilhar noutra app (X, WhatsApp…)': 'Compartir en otra app (X, WhatsApp…)',
 };
 
 export default es;

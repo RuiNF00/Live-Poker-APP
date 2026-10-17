@@ -1293,6 +1293,8 @@ const ptBR: Record<string, string> = {
   'Cancela quando quiseres na Google Play, em Pagamentos e subscrições.': 'Cancele quando quiser no Google Play, em Pagamentos e assinaturas.',
   'Renova automaticamente. Cancela na Google Play antes da data de renovação.': 'Renova automaticamente. Cancele no Google Play antes da data de renovação.',
   'Gerir': 'Gerenciar',
+  'Partilhar imagem': 'Compartilhar imagem',
+  'Partilhar noutra app (X, WhatsApp…)': 'Compartilhar em outro app (X, WhatsApp…)',
 };
 
 export default ptBR;
