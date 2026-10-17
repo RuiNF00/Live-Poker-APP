@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { clientIp, rateLimited } from '@/lib/ratelimit';
 import { cors } from '@/lib/cors';
+import { isOffensive } from '@/lib/moderation';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -27,6 +28,9 @@ export async function POST(req: Request, { params }: Ctx) {
   const stepIndex = Number.isInteger(step) && (step as number) >= 0 && (step as number) <= 500 ? (step as number) : null;
   if (!name || name.length > 40 || !text || text.length > 1000) {
     return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: cors });
+  }
+  if (isOffensive(name) || isOffensive(text)) {
+    return NextResponse.json({ error: 'offensive' }, { status: 422, headers: cors });
   }
   try {
     const comment = await getStore().addComment(id, { name, text, stepIndex });

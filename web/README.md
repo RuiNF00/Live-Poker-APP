@@ -38,6 +38,7 @@ O motor de replay, o avaliador e o conversor do `Hand` da app estão em `package
 ## Testes
 
 - `cd packages/hand-format && npm test` (motor de replay, potes, side pots, avaliador)
+- `cd web && npm test` (filtro de linguagem ofensiva)
 - `supabase/tests/run.sh` com um Postgres local (políticas RLS e funções)
 
 ## Páginas legais

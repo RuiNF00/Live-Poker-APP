@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { describeStep, streetLabel, type AmountMode, type ReplayStep } from '@livepoker/hand-format';
 import { t, type Dict, type Locale } from '@/lib/i18n';
 import type { HandComment } from '@/lib/types';
-import { readLocal, writeLocal } from '@/lib/local';
+import { readLocal, voterId, writeLocal } from '@/lib/local';
 
 interface Props {
   shareId: string;
@@ -31,7 +31,17 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
   const [attach, setAttach] = useState(true);
-  const [state, setState] = useState<'idle' | 'sending' | 'error' | 'limited'>('idle');
+  const [state, setState] = useState<'idle' | 'sending' | 'error' | 'limited' | 'offensive'>('idle');
+  const [reported, setReported] = useState<Set<string>>(new Set());
+
+  const report = async (commentId: string) => {
+    setReported((r) => new Set(r).add(commentId));
+    await fetch(`/api/hands/${shareId}/comments/${commentId}/report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reporterId: voterId() }),
+    }).catch(() => {});
+  };
 
   useEffect(() => setName(readLocal<string>('name') ?? ''), []);
 
@@ -57,7 +67,10 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
         }),
       });
       if (res.status === 429) return setState('limited');
-      if (!res.ok) return setState('error');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return setState(err.error === 'offensive' ? 'offensive' : 'error');
+      }
       const { comment } = await res.json();
       onAdded(comment);
       setBody('');
@@ -84,6 +97,13 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
                 </span>
                 <strong>{c.name}</strong>
                 <span className="muted">{ago(c.createdAt, d)}</span>
+                {reported.has(c.id) ? (
+                  <span className="report-done">{d.reported}</span>
+                ) : (
+                  <button className="report" onClick={() => report(c.id)}>
+                    {d.report}
+                  </button>
+                )}
               </div>
               {c.stepIndex !== null && steps[c.stepIndex] && (
                 <button className="anchor" onClick={() => onJump(c.stepIndex!)}>
@@ -128,6 +148,7 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
         </button>
         {state === 'error' && <p className="error">{d.commentError}</p>}
         {state === 'limited' && <p className="error">{d.rateLimited}</p>}
+        {state === 'offensive' && <p className="error">{d.offensive}</p>}
       </form>
     </section>
   );

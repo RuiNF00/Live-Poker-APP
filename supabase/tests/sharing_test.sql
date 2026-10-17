@@ -28,6 +28,14 @@ select string_agg(choice || '=' || votes, ',' order by choice) as votes from han
 select * from hand_votes;
 \set ON_ERROR_STOP on
 
+select id as comment_id from add_hand_comment(:'share_id', 'Troll', 'spam', null) \gset
+select report_hand_comment(:'comment_id', gen_random_uuid());
+select report_hand_comment(:'comment_id', '00000000-0000-0000-0000-000000000009');
+select report_hand_comment(:'comment_id', '00000000-0000-0000-0000-000000000009');
+select count(*) = 1 as visible_after_two_reports from hand_comments where id = :'comment_id';
+select report_hand_comment(:'comment_id', gen_random_uuid());
+select count(*) = 0 as hidden_after_three_reports from hand_comments where id = :'comment_id';
+
 select record_hand_view(:'share_id');
 select view_count = 1 as view_counted from shared_hands where id = :'share_id';
 

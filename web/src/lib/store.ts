@@ -29,6 +29,8 @@ export interface ShareStore {
   recordView(id: string): Promise<void>;
   listComments(id: string): Promise<HandComment[]>;
   addComment(id: string, c: NewComment): Promise<HandComment | null>;
+  /** Returns false when the comment does not exist. Hidden after 3 distinct reports. */
+  reportComment(commentId: string, reporterId: string): Promise<boolean>;
   vote(id: string, voterId: string, choice: VoteChoice): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
 }
@@ -131,6 +133,12 @@ class SupabaseStore implements ShareStore {
     return row ? toComment(row) : null;
   }
 
+  async reportComment(commentId: string, reporterId: string) {
+    const { data, error } = await this.db.rpc('report_hand_comment', { p_comment_id: commentId, p_reporter_id: reporterId });
+    if (error) throw error;
+    return !!data;
+  }
+
   async vote(id: string, voterId: string, choice: VoteChoice) {
     const { error } = await this.db.rpc('cast_hand_vote', { p_hand_id: id, p_voter_id: voterId, p_choice: choice });
     if (error) throw error;
@@ -151,6 +159,7 @@ interface LocalData {
   shares: Record<string, SharedHand & { editTokenHash: string }>;
   comments: Record<string, HandComment[]>;
   votes: Record<string, Record<string, VoteChoice>>;
+  reports?: Record<string, string[]>;
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -238,7 +247,17 @@ class LocalStore implements ShareStore {
   }
 
   async listComments(id: string) {
-    return (await this.read()).comments[id] ?? [];
+    const d = await this.read();
+    return (d.comments[id] ?? []).filter((c) => (d.reports?.[c.id]?.length ?? 0) < 3);
+  }
+
+  async reportComment(commentId: string, reporterId: string) {
+    return this.mutate((d) => {
+      if (!Object.values(d.comments).some((list) => list.some((c) => c.id === commentId))) return false;
+      const list = ((d.reports ??= {})[commentId] ??= []);
+      if (!list.includes(reporterId)) list.push(reporterId);
+      return true;
+    });
   }
 
   async addComment(id: string, c: NewComment) {
