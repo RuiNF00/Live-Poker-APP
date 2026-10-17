@@ -1565,6 +1565,11 @@ const ptBR: Record<string, string> = {
   'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Combine uma porcentagem com outro jogador. O app diz quem deve a quem.',
   'Partilha uma mão e os comentários aparecem aqui.': 'Compartilhe uma mão e os comentários aparecem aqui.',
   'Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.': 'Cada quadrado é um dia: verde cheio você ganhou, contorno vermelho você perdeu. Mais forte, mais dinheiro.',
+  'Calendário das últimas 15 semanas: 1 dia jogado, {won} a ganhar, {lost} a perder.': 'Calendário das últimas 15 semanas: 1 dia jogado, {won} no positivo, {lost} no negativo.',
+  'O teu melhor dia é {day}: {amount} em 1 sessão.': 'Seu melhor dia é {day}: {amount} em 1 sessão.',
+  'Cartão do mês a partilhar: {h} h, 1 sessão.': 'Card do mês para compartilhar: {h} h, 1 sessão.',
+  'Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.': 'Você tem 1 sessão. As primeiras conclusões aparecem por volta de {m}.',
+  'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Ainda observando (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.',
 };
 
 export default ptBR;

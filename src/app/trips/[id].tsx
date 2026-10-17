@@ -102,7 +102,7 @@ export default function TripScreen() {
           {s.skipped.length ? (
             <T v="tiny">
               {t('Fora das contas (sem câmbio): {list}.', {
-                list: s.skipped.map((k) => `${k.currency} · ${[k.sessions ? t('{n} sessões', { n: k.sessions }) : '', k.expenses ? t('{n} despesas', { n: k.expenses }) : ''].filter(Boolean).join(', ')}`).join('; '),
+                list: s.skipped.map((k) => `${k.currency} · ${[k.sessions ? (k.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: k.sessions })) : '', k.expenses ? (k.expenses === 1 ? t('1 despesa') : t('{n} despesas', { n: k.expenses })) : ''].filter(Boolean).join(', ')}`).join('; '),
               })}
             </T>
           ) : null}

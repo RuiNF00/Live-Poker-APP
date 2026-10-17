@@ -27,7 +27,7 @@ export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: stri
       accessibilityLabel={[
         `${t('Win rate em cash')}: ${t('{amount}/h', { amount: signed(Math.round(w.hourly), fmt) })}`,
         t('Provavelmente entre {lo} e {hi} por hora.', { lo: signed(Math.round(w.lo), fmt), hi: signed(Math.round(w.hi), fmt) }).replace(/\.$/, ''),
-        t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
+        w.sessions === 1 ? t('{h} h em 1 sessão', { h: Math.round(w.hours).toLocaleString(locale) }) : t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
       ].join('. ')}>
       <Row>
         <T v="label" style={{ flex: 1 }}>
@@ -44,7 +44,7 @@ export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: stri
         {[
           t('{bb} BB/h (entre {lo} e {hi})', { bb: (w.bbHourly > 0 ? '+' : '') + bb(w.bbHourly), lo: bb(w.bbLo), hi: bb(w.bbHi) }),
           t('desvio padrão {sd}/h', { sd: fmt(w.sd) }),
-          t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
+          w.sessions === 1 ? t('{h} h em 1 sessão', { h: Math.round(w.hours).toLocaleString(locale) }) : t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
         ].join(' · ')}
       </T>
       {w.small ? <WinRateSample w={w} /> : null}
