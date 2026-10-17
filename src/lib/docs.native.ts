@@ -40,6 +40,11 @@ export async function pickDoc(source: DocSource, id: string): Promise<{ file: st
   return { file, name };
 }
 
+/** Where the file is, to show it or read the text on it. */
+export function docUri(file: string): string {
+  return new File(dir(), file).uri;
+}
+
 /** False when the file was attached on another phone (a restored backup). */
 export function docExists(file: string): boolean {
   try {
