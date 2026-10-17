@@ -42,6 +42,7 @@ import {
   type Scope,
   type SessionFilter,
 } from '@/store/bankroll-math';
+import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
 import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
@@ -281,16 +282,33 @@ function BankrollTab() {
                 </T>
               </Card>
             ) : null}
-            <Card onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })} style={{ gap: S.xs }} accessibilityLabel={t('Calculadora de variância')}>
-              <Row>
-                <Ionicons name="pulse" size={18} color={C.accent} />
-                <T v="h3" style={{ flex: 1 }}>
-                  {t('Calculadora de variância')}
-                </T>
-                <Ionicons name="chevron-forward" size={17} color={C.muted} />
-              </Row>
-              <T v="small">{t('Quanto podes ganhar ou perder nas próximas horas ou torneios, com o teu win rate e desvio padrão.')}</T>
-            </Card>
+            <ListGroup>
+              <ListItem
+                icon="trending-down"
+                iconColor={C.bad}
+                title={t('Downswings')}
+                subtitle={dd.max ? t('Agora: {now} · maior: −{max}', { now: dd.current ? '−' + fmt(dd.current, cur) : t('no pico'), max: fmt(dd.max, cur) }) : t('A tua maior queda e se é normal')}
+                onPress={() => router.push({ pathname: '/downswing', params: { currency: cur } })}
+              />
+              <ListItem
+                icon="pulse-outline"
+                iconColor={C.accent}
+                title={t('Diário mental')}
+                subtitle={(() => {
+                  const n = list.filter((x) => x.mind).length;
+                  const top = isPro && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
+                  return top ? top.title : n ? t('{n} check-ins · só tu vês', { n }) : t('Sono, foco e tilt: o que mexem no teu resultado');
+                })()}
+                onPress={() => router.push({ pathname: '/mind', params: { currency: cur } })}
+              />
+              <ListItem
+                icon="stats-chart-outline"
+                iconColor={C.info}
+                title={t('Calculadora de variância')}
+                subtitle={t('Quanto podes ganhar ou perder nas próximas horas ou torneios')}
+                onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })}
+              />
+            </ListGroup>
           </>
         )}
         {history.length ? (

@@ -27,6 +27,8 @@ export interface Session {
   tips?: number;
   /** Hands dealt to you, when the player counts them (for hands per hour). */
   handsDealt?: number;
+  /** Mental game journal: a few taps before and after. Private: never in a share, link or statement. */
+  mind?: MindCheck;
   /** Action sold, in total: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%).
    *  Kept as the summary of `stakes` so older copies of the app still read it. */
   staking?: { sold: number; markup: number };
@@ -75,6 +77,21 @@ export interface Session {
   /** Receipts and tax forms, kept as files next to the app's data. */
   docs?: SessionDoc[];
   updatedAt?: number;
+}
+
+/** 1 to 5, tapped. */
+export type Scale = 1 | 2 | 3 | 4 | 5;
+
+/** Before the session: how the player arrives. After: how tilted it got, and one line. Every field is optional. */
+export interface MindCheck {
+  energy?: Scale;
+  focus?: Scale;
+  /** Hours slept the night before. */
+  sleep?: number;
+  mood?: string;
+  /** 1 calm, 5 full tilt. */
+  tilt?: Scale;
+  note?: string;
 }
 
 /** 'recover': asking it back (e.g. 1042-S with a treaty or an ITIN return); 'final': credited on your return or not recoverable. */
