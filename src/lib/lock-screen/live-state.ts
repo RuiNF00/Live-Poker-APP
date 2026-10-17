@@ -70,6 +70,22 @@ export function nextLevelAt(s: Session, now = Date.now()): number | undefined {
   return from + s.levelMinutes * 60_000 + paused;
 }
 
+/**
+ * A tournament whose level clock ran out moves up by itself: one level per
+ * elapsed length (several if the app was away), each starting when the last
+ * one ended, so the clock stays on the floor's time. Null when nothing is due.
+ */
+export function levelsDue(s: Session, now = Date.now()): Partial<Session> | null {
+  if (s.kind !== 'mtt') return null;
+  let cur: Session = s;
+  for (let i = 0; i < 30; i++) {
+    const at = nextLevelAt(cur, now);
+    if (at === undefined || at > now) break;
+    cur = { ...cur, ...levelAfter(cur, 1), levelStartedAt: at };
+  }
+  return cur === s ? null : { sb: cur.sb, bb: cur.bb, ante: cur.ante, level: cur.level, levelMinutes: cur.levelMinutes, levelStartedAt: cur.levelStartedAt };
+}
+
 /** The next break on a tournament's structure, timed from the level clock; null without one. */
 export function breakOf(s: Session, now = Date.now()): NextBreak | null {
   if (s.kind !== 'mtt') return null;

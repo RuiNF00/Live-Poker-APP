@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 
-import { Button, Row, T } from '@/components/ui';
+import { Button, Row, T, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { track } from '@/lib/events';
@@ -66,11 +66,12 @@ export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<
 }
 
 export function SoftAskSheet({ ask, onAnswer }: { ask: SoftAsk | null; onAnswer: (yes: boolean) => void }) {
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={!!ask} transparent animationType="fade" onRequestClose={() => onAnswer(false)}>
       <Pressable accessibilityLabel={t('Agora não')} onPress={() => onAnswer(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
         {ask ? (
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.lg }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
             <View
               accessible
               accessibilityLabel={`${t('Exemplo de aviso')}: ${ask.preview.title}. ${ask.preview.body}`}

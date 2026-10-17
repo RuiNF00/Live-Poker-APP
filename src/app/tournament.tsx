@@ -9,7 +9,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
-import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
+import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap, useSheetPad } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { askExactAlarms, exactAlarmsAllowed } from '@/lib/lock-screen/reminder';
@@ -461,10 +461,11 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
       setReading(false);
     }
   };
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
-        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
           <SheetHeader title={title} onClose={onClose} />
           <T v="small">{hint}</T>
           {photo ? (

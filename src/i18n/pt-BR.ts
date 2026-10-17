@@ -1443,7 +1443,6 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
-  'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou o horário de cada flight.',
   'Importar': 'Importar',
   'Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV': 'Cópia do Sweatbook ou de outro app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV',
   'O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.': 'O arquivo não diz se é cash ou torneio. Começamos pelo que você mais joga; você pode mudar cada sessão depois.',
@@ -1471,6 +1470,19 @@ const ptBR: Record<string, string> = {
   'A ler {done} de {total} linhas…': 'Lendo {done} de {total} linhas…',
   'Exportar sessões em CSV': 'Exportar sessões em CSV',
   'Todas, para o Excel ou para importar outra vez': 'Todas, para o Excel ou para importar de novo',
+  'Apagar torneio': 'Excluir torneio',
+  'Adicionar torneio': 'Adicionar torneio',
+  'Hora (local)': 'Horário (local)',
+  'São Paulo, novembro 2026': 'São Paulo, novembro de 2026',
+  'Torrelodones, novembro 2026': 'Torrelodones, novembro de 2026',
+  'Lisboa, novembro 2026': 'Lisboa, novembro de 2026',
+  'Peralada, novembro 2026': 'Peralada, novembro de 2026',
+  'Espinho, dezembro 2026': 'Espinho, dezembro de 2026',
+  'Praga, dezembro 2026': 'Praga, dezembro de 2026',
+  'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
+  'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
+  'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
+  'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
 };
 
 export default ptBR;
