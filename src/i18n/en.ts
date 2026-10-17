@@ -1513,6 +1513,7 @@ const en: Record<string, string> = {
   'Festival': 'Festival',
   'Flights 2A e 2BC do Main Event tratados como Dia 2 (sem novo buy-in).': 'Main Event flights 2A and 2BC are treated as Day 2 (no new buy-in).',
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'No signal right now: the invite is saved and turns on by itself when you’re back online.',
+  'O link é desligado assim que houver sinal.': 'The link turns off as soon as you’re back online.',
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',

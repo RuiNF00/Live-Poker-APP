@@ -57,6 +57,11 @@ export async function takeDirectShare(handId: string): Promise<Slot> {
   return slot;
 }
 
+/** Whether this hand's link is waiting for the network (so a failed direct upload must queue it again). */
+export async function isShareWaiting(handId: string): Promise<boolean> {
+  return (await load()).waiting.includes(handId);
+}
+
 /** True when the error means "no network" rather than "the server said no". */
 export function isNetworkError(e: unknown): boolean {
   return !/^upload \d+$/.test((e as Error)?.message ?? '');

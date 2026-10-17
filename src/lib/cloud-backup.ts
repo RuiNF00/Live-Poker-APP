@@ -10,11 +10,14 @@ import { parseBackup } from '@/store/backup';
 import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
-import { deriveKeys, sealAsync, unsealAsync } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 import { outcomeOf, queue, registerSender } from './sync';
+
+// The ciphers build their tables when loaded: only once a copy is actually sent or read, not at launch.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const crypto = () => require('./backup-crypto') as typeof import('./backup-crypto');
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
 
@@ -148,8 +151,8 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
   }
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
-  const { auth, enc } = deriveKeys(c.secret);
-  const body = await sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
+  const { auth, enc } = crypto().deriveKeys(c.secret);
+  const body = await crypto().sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
   // The server's limit: no point sending what it will refuse.
   if (body.length > MAX_BYTES) throw new Error('too_big');
   const res = await fetch(`${API}/api/backup/${c.id}`, {
@@ -174,17 +177,17 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
 }
 
 export async function download(c: CloudState): Promise<BackupData> {
-  const { auth, enc } = deriveKeys(c.secret);
+  const { auth, enc } = crypto().deriveKeys(c.secret);
   const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth }, signal: longSignal() });
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');
   // Encrypted with this code's key or nothing: never a plain copy someone put on the server.
-  return parseBackup(await unsealAsync(new Uint8Array(await res.arrayBuffer()), enc, undefined, true));
+  return parseBackup(await crypto().unsealAsync(new Uint8Array(await res.arrayBuffer()), enc, undefined, true));
 }
 
 export async function removeRemote(c: CloudState): Promise<void> {
-  const res = await fetch(`${API}/api/backup/${c.id}`, { method: 'DELETE', headers: { 'x-backup-key': deriveKeys(c.secret).auth } }).catch(() => null);
+  const res = await fetch(`${API}/api/backup/${c.id}`, { method: 'DELETE', headers: { 'x-backup-key': crypto().deriveKeys(c.secret).auth } }).catch(() => null);
   // 404: already gone. Anything else means the copy may still be on the server.
   if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : 'network');
 }
@@ -194,7 +197,7 @@ export async function removeRemote(c: CloudState): Promise<void> {
  * the queue: it can delete the copy but not read it.
  */
 export function queueCloudDelete(c: CloudState) {
-  queue('cloud-delete', { id: c.id, auth: deriveKeys(c.secret).auth }, c.id);
+  queue('cloud-delete', { id: c.id, auth: crypto().deriveKeys(c.secret).auth }, c.id);
 }
 
 registerSender('cloud-delete', async (p) => {

@@ -8,7 +8,7 @@ import { AppState } from 'react-native';
 
 import { useStore } from '@/store/store';
 
-import { onEraseAll } from './erase-all';
+import { onEraseAll } from './erase-hooks';
 import { parseFriendHands, parseSeen, remember, total, unseen, type FriendHand, type Seen } from './friend-hands-core';
 import { fetchCommentCounts } from './share-api';
 
