@@ -3,7 +3,7 @@
 // reads like a statement, not like the app. Pure, so it can be tested.
 
 import { locale, t } from '@/i18n';
-import { duration, money } from '@/poker/format';
+import { duration, rawMoney } from '@/poker/format';
 import { cost, playedMs, profit, type Breakdown } from '@/store/session-math';
 
 import type { CurrencyReport, Report } from './report';
@@ -12,7 +12,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 const hours = (h: number) => h.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + money(Math.round(n * 100) / 100, cur);
+const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n * 100) / 100, cur);
 const cls = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
 
 function period(r: Report): string {
@@ -32,7 +32,7 @@ function table(title: string, rows: Breakdown[], cur: string, label = (k: string
         ${rows
           .map(
             (b) =>
-              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${b.hours >= 0.25 ? esc(money(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
+              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${b.hours >= 0.25 ? esc(rawMoney(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
           )
           .join('')}
       </tbody>
@@ -51,7 +51,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const tiles: [string, string, string?][] = [
     [t('Resultado'), signed(tt.profit, cur), cls(tt.profit)],
     [t('Horas'), hours(tt.hours)],
-    [t('Por hora'), tt.hours >= 0.25 ? money(Math.round(tt.hourly), cur) : '—'],
+    [t('Por hora'), tt.hours >= 0.25 ? rawMoney(Math.round(tt.hourly), cur) : '—'],
     [t('Sessões'), String(tt.sessions)],
   ];
   if (c.mtt.sessions) {
@@ -59,10 +59,10 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
     tiles.push(['ITM', tt.itm === null ? '—' : `${tt.itm.toFixed(0)}%`]);
   }
   if (c.deposits || c.withdrawals) {
-    tiles.push([t('Depósitos'), money(c.deposits, cur)]);
-    tiles.push([t('Levantamentos'), money(c.withdrawals, cur)]);
+    tiles.push([t('Depósitos'), rawMoney(c.deposits, cur)]);
+    tiles.push([t('Levantamentos'), rawMoney(c.withdrawals, cur)]);
   }
-  if (c.owedToBackers) tiles.push([t('Pago a backers'), money(Math.round(c.owedToBackers * 100) / 100, cur)]);
+  if (c.owedToBackers) tiles.push([t('Pago a backers'), rawMoney(Math.round(c.owedToBackers * 100) / 100, cur)]);
 
   const split =
     c.cash.sessions && c.mtt.sessions
@@ -72,7 +72,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
             h: hours(c.cash.hours),
             p: signed(c.cash.profit, cur),
             m: c.mtt.sessions === 1 ? t('1 entrada') : t('{n} entradas', { n: c.mtt.sessions }),
-            b: money(Math.round(c.mtt.buyIns), cur),
+            b: rawMoney(Math.round(c.mtt.buyIns), cur),
             c: c.mtt.cashes === 1 ? t('1 prémio') : t('{n} prémios', { n: c.mtt.cashes }),
             q: signed(c.mtt.profit, cur),
           }),
@@ -82,7 +82,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const sessions = c.sessions
     .map(
       (s) =>
-        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${s.kind === 'mtt' && s.finish ? ` <span class="muted">· ${s.finish}º${s.field ? '/' + s.field : ''}</span>` : ''}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(money(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(money(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
+        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${s.kind === 'mtt' && s.finish ? ` <span class="muted">· ${s.finish}º${s.field ? '/' + s.field : ''}</span>` : ''}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td><td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
     )
     .join('');
 

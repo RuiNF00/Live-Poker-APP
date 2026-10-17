@@ -171,7 +171,7 @@ export interface Settings {
   shareNotes: boolean;
   /** Bankroll new sessions go to. */
   bankrollId?: string;
-  /** Bankroll tab shows ••• instead of amounts (for looking at it at the table). */
+  /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];

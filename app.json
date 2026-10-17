@@ -192,6 +192,13 @@
         }
       ],
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Sweatbook usa o Face ID para desbloquear a app, se ligares o bloqueio nas Definições."
+        }
+      ],
+      "expo-secure-store",
+      [
         "expo-notifications",
         {
           "color": "#FF6A3D"

@@ -1268,6 +1268,21 @@ const en: Record<string, string> = {
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
+  'Bloquear a app': 'Lock the app',
+  'Desbloquear': 'Unlock',
+  'Desbloquear o Sweatbook': 'Unlock Sweatbook',
+  'Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.': 'Across the app, ••• instead of money. For looking at it at the table.',
+  'Escolhe um PIN de 4 dígitos': 'Choose a 4-digit PIN',
+  'Escreve o PIN outra vez': 'Enter the PIN again',
+  'Escreve o teu PIN': 'Enter your PIN',
+  'Os PIN não são iguais. Escolhe outra vez.': "The PINs don't match. Choose again.",
+  'PIN errado': 'Wrong PIN',
+  'PIN guardado': 'PIN saved',
+  'Pede Face ID, impressão digital ou código ao abrir e depois de 30 s fora da app': 'Asks for Face ID, fingerprint or passcode on opening and after 30 s away',
+  'Se o esqueceres, não há forma de o recuperar neste telemóvel. Liga a cópia na nuvem para não perderes nada.': "If you forget it, there's no way to recover it on this phone. Turn on cloud backup so you don't lose anything.",
+  'Tenta outra vez daqui a {s} s': 'Try again in {s} s',
+  'Usar o código do telemóvel': "Use the phone's passcode",
+  '{n} de {m} dígitos': '{n} of {m} digits',
 };
 
 export default en;

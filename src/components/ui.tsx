@@ -27,6 +27,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/i18n';
+import { MASK, moneyMasked } from '@/poker/format';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -97,10 +98,12 @@ export const ts = StyleSheet.create<Record<TV, TextStyle>>({
 
 /** A signed money or chip amount, green when up and red when down. */
 export function Amount({ value, text, v = 'mono', style, neutral }: { value: number; text: string; v?: TV; style?: StyleProp<TextStyle>; neutral?: boolean }) {
-  const col = neutral || value === 0 ? C.textDim : value > 0 ? C.good : C.bad;
+  // Privacy mode: not even the colour says whether it was a win.
+  const hidden = moneyMasked();
+  const col = hidden || neutral || value === 0 ? C.textDim : value > 0 ? C.good : C.bad;
   return (
     <T v={v} color={col} style={style}>
-      {value > 0 && !text.startsWith('+') ? '+' + text : text}
+      {hidden ? MASK : value > 0 && !text.startsWith('+') ? '+' + text : text}
     </T>
   );
 }

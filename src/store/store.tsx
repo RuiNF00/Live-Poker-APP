@@ -11,6 +11,7 @@ import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { forgetHandShare } from '@/lib/share-queue';
 
+import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, type BackupData } from './backup';
@@ -178,6 +179,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // What screens see: each session with its makeup package cut (derived, never stored).
   const sessions = useMemo(() => withCuts(rawSessions, packages), [rawSessions, packages]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  // Privacy mode applies to every amount on screen, set before anything renders with it.
+  setMoneyMasked(!!settings.hideAmounts);
   // The draft changes on every tap of hand entry. Keeping it in a ref (and
   // re-rendering only when 'is there a draft worth resuming' flips) stops
   // every screen behind the entry modal from re-rendering on each tap.
