@@ -95,6 +95,7 @@ export default function RootLayout() {
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="year" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="session-card/[id]" options={{ title: t('Partilhar sessão'), presentation: 'modal' }} />
+            <Stack.Screen name="festival-card/[id]" options={{ title: t('Partilhar festival'), presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
