@@ -1940,7 +1940,7 @@ const en: Record<string, string> = {
   'Stakes': 'Stakes',
   'Torneio a decorrer': 'Tournament running',
   'Sessão a decorrer': 'Session running',
-  'Etapa nacional, Barcelona · março 2027': 'National series stop, Barcelona · March 2027',
+  'Barcelona, março 2027': 'Barcelona, March 2027',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.': "Dates to be confirmed: the organiser hasn't published the 2027 dates yet. The first stop is usually in March.",
   'O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.': "The organiser hasn't published the dates yet. Tournaments show up here once the schedule is out.",
   'Os avisos de nível podem chegar atrasados': 'Level reminders may arrive late',
@@ -1949,7 +1949,7 @@ const en: Record<string, string> = {
   'Datas a confirmar': 'Dates to be confirmed',
   'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': "The schedule isn't out yet. Tournaments show up here once the organiser publishes it; you can already create the trip.",
   'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Dates to be confirmed: so far the organiser has only published the festival days. Tournaments show up here once the schedule is out.',
-  'Série de verão, janeiro 2027': 'Summer series, January 2027',
+  'Bahia, janeiro 2027': 'Bahia, January 2027',
   'torneios': 'tournaments',
   'Níveis e intervalos': 'Levels and breaks',
   'Intervalo': 'Break',
@@ -3025,6 +3025,8 @@ const en: Record<string, string> = {
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em meados de maio.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs in mid-May.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from the last week of May to mid-July, with the Main Event in July.',
   'Ao comentar aceitas os': 'By commenting you accept the',
+  'Próximo: {name}': 'Next: {name}',
+  'Voos, hotel e resultado líquido': 'Flights, hotel and net result',
 };
 
 export default en;

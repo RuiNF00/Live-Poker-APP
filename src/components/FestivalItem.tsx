@@ -28,7 +28,7 @@ export function FestivalItem({ f }: { f: Festival }) {
       icon={f.own ? 'flag-outline' : 'calendar-outline'}
       iconColor={C.accent}
       title={festivalName(f, plan)}
-      subtitle={[f.venue, when].filter(Boolean).join(' · ')}
+      subtitle={[f.own ? f.venue : t(f.venue), when].filter(Boolean).join(' · ')}
       chevron
       onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
     />

@@ -28,7 +28,7 @@ import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
-import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
+import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -112,6 +112,9 @@ export default function SessionScreen() {
   const festivals = useFestivals();
   const [today] = useState(() => dayKey(Date.now()));
   const coming = useMemo(() => festivals.filter((f) => notOver(f, today)), [festivals, today]);
+  // The tab is for starting a session: one festival row only when it's on or a week away (design/simplificar.md).
+  const near = coming.find((f) => soon(f, today));
+  const next = coming.find((f) => f !== near);
 
   const startRef = useRef<(() => void) | null>(null);
   const [bar, onBarLayout] = useBarHeight();
@@ -130,10 +133,15 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: bar + S.lg }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
-          {coming.slice(0, 3).map((f) => (
-            <FestivalItem key={f.id} f={f} />
-          ))}
-          <ListItem icon="albums-outline" iconColor={C.textDim} title={t('Todos os festivais')} subtitle={t('Os do calendário e os que adicionares')} chevron onPress={() => router.push('/festivals')} />
+          {near ? <FestivalItem f={near} /> : null}
+          <ListItem
+            icon="calendar-outline"
+            iconColor={near ? C.textDim : C.accent}
+            title={t('Festivais')}
+            subtitle={next ? t('Próximo: {name}', { name: t(next.name) }) : t('Os do calendário e os que adicionares')}
+            chevron
+            onPress={() => router.push('/festivals')}
+          />
         </ListGroup>
         {bagged.length ? (
           <Section title={t('Por continuar')}>
