@@ -5,7 +5,6 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
@@ -187,12 +186,9 @@ export default function FestivalScreen() {
         ))}
 
         <View style={{ gap: 6, paddingHorizontal: 4 }}>
-          <Pressable onPress={() => void WebBrowser.openBrowserAsync(f.source.url).catch(() => {})} hitSlop={8} accessibilityRole="link">
-            <T v="tiny" color={C.textDim}>
-              {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
-              <T v="tiny" color={C.accent}>{'  ' + t('Abrir')}</T>
-            </T>
-          </Pressable>
+          <T v="tiny" color={C.textDim}>
+            {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+          </T>
           {f.notes.map((n) => (
             <T key={n} v="tiny">
               {t(n)}

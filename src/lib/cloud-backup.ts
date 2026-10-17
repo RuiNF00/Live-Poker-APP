@@ -8,7 +8,7 @@ import type { BackupData } from '@/store/backup';
 import { parseBackup } from '@/store/backup';
 import { BRAND } from '@/theme';
 
-import { deriveKeys, sealAsync, unseal } from './backup-crypto';
+import { deriveKeys, sealAsync, unsealAsync } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
@@ -80,7 +80,7 @@ export async function download(c: CloudState): Promise<BackupData> {
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');
-  return parseBackup(unseal(new Uint8Array(await res.arrayBuffer()), enc));
+  return parseBackup(await unsealAsync(new Uint8Array(await res.arrayBuffer()), enc));
 }
 
 export async function removeRemote(c: CloudState): Promise<void> {

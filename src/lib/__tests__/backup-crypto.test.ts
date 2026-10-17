@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { deriveKeys, fromB64, seal, sealAsync, toB64, unseal } from '../backup-crypto';
+import { deriveKeys, fromB64, seal, sealAsync, toB64, unseal, unsealAsync } from '../backup-crypto';
 
 const enc = (s: string) => new TextEncoder().encode(s);
 
@@ -55,4 +55,27 @@ test('sealAsync opens like seal, gzips in slices and never runs one slice too lo
     assert.equal(pauses, Math.max(0, Math.ceil(new TextEncoder().encode(body).length / 32768) - 1));
     assert.ok(worst < 200, `slice took ${worst} ms`);
   }
+});
+
+test('unsealAsync opens everything unseal opens, in short slices', async () => {
+  const { gzipSync } = await import('fflate');
+  const { enc: key } = deriveKeys('ABCDEFGHJKMNPQRS');
+  const { bigHistory } = await import('../../store/__tests__/fake-storage');
+  const big = JSON.stringify({ app: 'sweatbook', v: 1, hands: bigHistory(600) });
+  const inputs = ['', '{"app":"sweatbook","v":1}', big].flatMap((body) => {
+    const sealed = enc(seal(body, key, new Uint8Array(12).fill(5)));
+    return [sealed, gzipSync(sealed), enc(body)]; // as stored, gzipped in transit, an older plain copy
+  });
+  for (const raw of inputs) {
+    let worst = 0;
+    let since = performance.now();
+    const out = await unsealAsync(raw, key, async () => {
+      worst = Math.max(worst, performance.now() - since);
+      await new Promise((r) => setTimeout(r, 0));
+      since = performance.now();
+    });
+    assert.equal(out, unseal(raw, key));
+    assert.ok(worst < 200, `slice took ${worst} ms`);
+  }
+  await assert.rejects(unsealAsync(enc(seal(big, key, new Uint8Array(12))), deriveKeys('ZZZZZZZZZZZZZZZZ').enc), /forbidden/);
 });

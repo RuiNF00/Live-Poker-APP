@@ -42,6 +42,11 @@ export interface ReplayStep {
   /** Amount the acting player had to call before acting (decision spots). */
   facing?: number;
   winners?: { seat: number; amount: number; handLabel?: string }[];
+  /**
+   * Run it twice (showdown step only): each run's full board and what it paid.
+   * `winners` above holds the totals.
+   */
+  runs?: { board: Card[]; winners: { seat: number; amount: number; handLabel?: string }[] }[];
 }
 
 // Same labels as the app (src/poker/engine.ts positions()).
@@ -243,6 +248,12 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
   };
 
   runStreet('preflop', rest);
+  // Board cards out when betting closed with two or more players still in (an all-in).
+  let runoutFrom: number | null = null;
+  const markRunout = () => {
+    if (runoutFrom === null && live().length >= 2 && canAct().length < 2) runoutFrom = board.length;
+  };
+  markRunout();
 
   for (const street of STREETS.slice(1) as Street[]) {
     if (live().length < 2) break;
@@ -255,6 +266,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     if (canAct().length < 2) for (const s of live()) if (s.cards) s.showCards = true;
     push('street', street);
     runStreet(street, indexed(hand.actions[street] ?? []));
+    markRunout();
   }
 
   // Resolution
@@ -272,38 +284,75 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
   }
 
   for (const s of contenders) if (s.cards) s.showCards = true;
-  const values = new Map<number, HandValue | null>();
-  for (const s of contenders) {
-    const v = s.cards ? bestHand(s.cards, board, hand.game) : null;
-    values.set(s.seat, v);
-    if (v) s.handLabel = categoryLabel(v.category, opts.locale);
-  }
+  const second = secondBoard(hand, board, runoutFrom);
+  const evaluateOn = (b: Card[], manual: number[] | undefined, label: boolean) => {
+    const values = new Map<number, HandValue | null>();
+    const labels = new Map<number, string>();
+    for (const s of contenders) {
+      const v = s.cards ? bestHand(s.cards, b, hand.game) : null;
+      values.set(s.seat, v);
+      if (v) labels.set(s.seat, categoryLabel(v.category, opts.locale));
+      if (v && label) s.handLabel = labels.get(s.seat);
+    }
+    // Manually picked winners outrank any evaluated hand.
+    if (manual?.length)
+      for (const s of contenders) if (manual.includes(s.seat)) values.set(s.seat, { score: Number.MAX_SAFE_INTEGER, category: 'high_card', cards: [] });
+    return { values, labels };
+  };
+  const first = evaluateOn(board, hand.winnerSeats, true);
 
   let winners: { seat: number; amount: number; handLabel?: string }[];
+  let runs: ReplayStep['runs'];
   if (hand.winners?.length) {
     winners = hand.winners.map((w) => ({ ...w, handLabel: seatState(w.seat).handLabel }));
+  } else if (second) {
+    const two = evaluateOn(second, hand.winnerSeats2, false);
+    const halves = awardRuns(seats, [first.values, two.values], pot);
+    const named = (list: { seat: number; amount: number }[], labels: Map<number, string>) =>
+      list.map((w) => ({ ...w, handLabel: labels.get(w.seat) }));
+    runs = [
+      { board: board.slice(), winners: named(halves[0], first.labels) },
+      { board: second, winners: named(halves[1], two.labels) },
+    ];
+    const total = new Map<number, number>();
+    for (const run of halves) for (const w of run) total.set(w.seat, (total.get(w.seat) ?? 0) + w.amount);
+    winners = [...total].map(([seat, amount]) => ({ seat, amount, handLabel: seatState(seat).handLabel }));
   } else {
-    if (hand.winnerSeats?.length) {
-      // Manually picked winners outrank any evaluated hand.
-      for (const s of contenders) if (hand.winnerSeats.includes(s.seat)) values.set(s.seat, { score: Number.MAX_SAFE_INTEGER, category: 'high_card', cards: [] });
-    }
-    winners = awardPots(seats, values, pot);
+    winners = awardPots(seats, first.values, pot);
   }
   for (const w of winners) {
     const s = seatState(w.seat);
     s.stack += w.amount;
     s.won = (s.won ?? 0) + w.amount;
   }
-  push('showdown', lastStreet, { winners });
+  push('showdown', lastStreet, { winners, ...(runs ? { runs } : {}) });
   return steps;
+}
+
+/**
+ * Run it twice: the second run's full board (the cards both runs share, then `board2`),
+ * or null when the hand wasn't run twice. Only an all-in before the river counts.
+ */
+export function secondBoard(hand: HandRecord, board: Card[], runoutFrom: number | null): Card[] | null {
+  const extra = hand.board2 ?? [];
+  if (runoutFrom === null || runoutFrom >= 5 || board.length !== 5 || extra.length < 5 - runoutFrom) return null;
+  return [...board.slice(0, runoutFrom), ...extra.slice(0, 5 - runoutFrom)];
 }
 
 /** Splits the pot into main/side pots by investment and awards each to the best eligible hand. */
 export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number) {
+  return awardRuns(seats, [values], totalPot)[0];
+}
+
+/**
+ * Same, once per run: each pot is split evenly between the runs (the odd chip goes with
+ * the first, like the app) and each run's share goes to the best hand on that run's board.
+ */
+export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null>[], totalPot: number) {
   const levels = [...new Set(seats.map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
   // Only dead money in the pot (a bomb pot checked down): one pot for everyone still in.
   if (!levels.length) levels.push(0);
-  const won = new Map<number, number>();
+  const won = runs.map(() => new Map<number, number>());
   // Antes are dead money and belong to the main pot.
   let dead = totalPot - seats.reduce((n, s) => n + s.invested, 0);
   let prev = 0;
@@ -313,18 +362,24 @@ export function awardPots(seats: SeatState[], values: Map<number, HandValue | nu
     const eligible = seats.filter((s) => !s.folded && s.invested >= level);
     prev = level;
     if (!amount || !eligible.length) continue;
-    const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
-    const top = Math.max(...scored.map((x) => x.score));
-    const best = scored.filter((x) => x.score === top);
-    const share = Math.floor(amount / best.length);
-    best.forEach((b, i) => {
-      const extra = i === 0 ? amount - share * best.length : 0;
-      won.set(b.seat, (won.get(b.seat) ?? 0) + share + extra);
+    const part = Math.floor(amount / runs.length);
+    runs.forEach((values, k) => {
+      const runAmount = part + (k === 0 ? amount - part * runs.length : 0);
+      const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
+      const top = Math.max(...scored.map((x) => x.score));
+      const best = scored.filter((x) => x.score === top);
+      const share = Math.floor(runAmount / best.length);
+      best.forEach((b, i) => {
+        const extra = i === 0 ? runAmount - share * best.length : 0;
+        won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + share + extra);
+      });
     });
   }
-  return [...won.entries()].map(([seat, amount]) => ({
-    seat,
-    amount,
-    handLabel: seats.find((s) => s.seat === seat)?.handLabel,
-  }));
+  return won.map((m) =>
+    [...m.entries()].map(([seat, amount]) => ({
+      seat,
+      amount,
+      handLabel: seats.find((s) => s.seat === seat)?.handLabel,
+    })),
+  );
 }

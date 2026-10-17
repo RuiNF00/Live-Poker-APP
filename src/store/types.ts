@@ -32,6 +32,8 @@ export interface Session {
   live?: { id: string; token: string; showVenue?: boolean };
   /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
   makeupCut?: number;
+  /** What swaps add to (their share of the other player's prizes) or take from (your share given away) this session. Derived (withSwaps). */
+  swapNet?: number;
   // Live table state, used to pre-fill every new hand.
   sb: number;
   bb: number;
@@ -94,6 +96,21 @@ export interface Bankroll {
   currency: string;
   createdAt: number;
   updatedAt?: number;
+  /** The player's own limits for this bankroll. */
+  rules?: BankrollRules;
+}
+
+/** Bankroll rules; every amount is in the bankroll's currency. */
+export interface BankrollRules {
+  /** Buy-ins (100 big blinds each) the bankroll must hold to play a cash stake. */
+  cashBuyIns: number;
+  /** Buy-ins it must hold to play a tournament. */
+  mttBuyIns: number;
+  /** Stop after losing this much; 0 is off. */
+  stopLoss: number;
+  stopLossPer: 'session' | 'day';
+  /** Balance to reach; 0 is off. */
+  target: number;
 }
 
 /** Money moved into or out of a bankroll (not poker results). */
@@ -251,6 +268,8 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Count swaps in results (Session.swapNet). Missing = yes. */
+  includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
 }

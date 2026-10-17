@@ -1,7 +1,7 @@
 // "Delete all my data" (Settings): the phone forgets everything, and every public
-// copy goes too: share links, backer live pages, the cloud copy, and whatever a
-// feature registers with onEraseAll (public profile). Server
-// deletes go through the outbox, so they also work without signal.
+// copy goes too: share links, backer live pages, the cloud copy, the public profile,
+// and whatever a feature registers with onEraseAll. Server deletes go through the
+// outbox, so they also work without signal.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -15,6 +15,7 @@ import { keysToErase } from './erase-core';
 import { queueLiveDelete } from './live-cleanup';
 import { notifications } from './lock-screen/reminder';
 import { queueAgreementDelete } from './offer-api';
+import { queueProfileDelete } from './public-profile';
 import { forgetHandShare } from './share-queue';
 
 type Eraser = () => void | Promise<void>;
@@ -42,6 +43,7 @@ export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'sha
     queueCloudDelete(cloud);
     await saveCloud(null).catch(() => {});
   }
+  await queueProfileDelete().catch(() => {});
   for (const fn of erasers) await Promise.resolve(fn()).catch(() => {});
 }
 

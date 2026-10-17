@@ -11,6 +11,9 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
+import { SwapsEntry } from '@/components/swaps/SwapsEntry';
+import { Insights } from '@/components/Insights';
+import { RulesCard, RulesForm } from '@/components/BankrollRules';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -153,6 +156,8 @@ function BankrollTab() {
           </Row>
         </Card>
 
+        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} /> : null}
+
         {/* Filters only once there is something to filter. */}
         {scoped.some((x) => x.endedAt) || nFilters ? (
           <View style={{ gap: S.sm }}>
@@ -193,6 +198,7 @@ function BankrollTab() {
 
         <StakingEntry />
         <TripsEntry />
+        <SwapsEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (
@@ -250,6 +256,7 @@ function BankrollTab() {
               <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
             </StatGrid>
             <Calendar list={list} cur={cur} />
+            <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
             <Breakdowns list={list} cur={cur} />
             {!isPro ? (
               <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
@@ -362,6 +369,27 @@ function BankrollTab() {
         ) : null}
       </Sheet>
 
+      <Sheet visible={sheet?.type === 'rules'} title={t('Regras de bankroll')} onClose={() => setSheet(null)}>
+        {sheet?.type === 'rules' ? (
+          <RulesForm
+            bankroll={sheet.b}
+            balance={bal.balance}
+            onSave={(rules) => {
+              saveBankroll({ ...sheet.b, rules });
+              setSheet(null);
+            }}
+            onRemove={
+              sheet.b.rules
+                ? () => {
+                    saveBankroll({ ...sheet.b, rules: undefined });
+                    setSheet(null);
+                  }
+                : undefined
+            }
+          />
+        ) : null}
+      </Sheet>
+
       <Sheet visible={sheet?.type === 'filters'} title={t('Filtros')} onClose={() => setSheet(null)}>
         <FilterForm
           preset={preset}
@@ -385,7 +413,8 @@ type SheetState =
   | { type: 'session'; s: Session | 'new' }
   | { type: 'transfer'; x: Transfer; isNew: boolean }
   | { type: 'bankroll'; b?: Bankroll }
-  | { type: 'filters' };
+  | { type: 'filters' }
+  | { type: 'rules'; b: Bankroll };
 
 function BankrollEditor({
   b,
