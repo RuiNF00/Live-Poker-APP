@@ -71,6 +71,7 @@ export const APP_EVENTS = [
   'session_closed',
   'notify_permission',
   'replay_opened',
+  'review_prompt',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 
