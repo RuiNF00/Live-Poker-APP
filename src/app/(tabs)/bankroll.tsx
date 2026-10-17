@@ -246,7 +246,7 @@ function BankrollTab() {
           <>
             <Card style={{ gap: S.sm, paddingBottom: S.md }}>
               <Row>
-                <T v="label" style={{ flex: 1 }} numberOfLines={1}>
+                <T v="label" style={{ flex: 1 }} numberOfLines={2}>
                   {t('Resultado de póquer') + ' · ' + (preset === 'all' ? t('Tudo') : rangeLabel(preset, custom)).toLowerCase()}
                 </T>
                 <Dots results={last5} />
