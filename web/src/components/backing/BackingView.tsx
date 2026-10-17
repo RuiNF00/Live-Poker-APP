@@ -17,7 +17,7 @@ import '@/components/live/live.css';
 import './backing.css';
 
 /** How often an open fixed link asks for the player's latest (only while the tab is in view). */
-const POLL_MS = 60000;
+const POLL_MS = 10000;
 
 /**
  * A backer's statement. The numbers come from the URL fragment, read here in the

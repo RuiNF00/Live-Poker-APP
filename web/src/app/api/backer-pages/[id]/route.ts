@@ -16,7 +16,7 @@ export function OPTIONS() {
 /** The sealed page, polled by /b (every 60 s per open tab). Only someone with the link's key can read it. */
 export async function GET(req: Request, { params }: Ctx) {
   const { id } = await params;
-  if (rateLimited(`page-read:${clientIp(req)}`, 600, 3600 * 1000)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: noStore });
+  if (rateLimited(`page-read:${clientIp(req)}`, 2000, 3600 * 1000)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: noStore });
   const rec = validId(id) ? await pageStore().get(id) : null;
   if (!rec) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: noStore });
   return NextResponse.json({ sealed: rec.sealed, updatedAt: rec.updatedAt }, { headers: noStore });
