@@ -222,7 +222,9 @@ const money = (n: number, cur: string) => `${n < 0 ? '−' : ''}${num(Math.abs(n
 export function liveOgImage(s: LiveSnapshot | null) {
   if (!s) return siteOgImage();
   const mtt = s.kind === 'mtt';
-  const ended = !!s.endedAt;
+  // A bagged day shows its stack, like a running one: there is no result yet.
+  const bagged = !!s.endedAt && s.bagged;
+  const ended = !!s.endedAt && !bagged;
   const kind = mtt ? 'Torneio' : 'Cash game';
   const title = s.name || kind;
   const sub = [s.player, s.venue].filter(Boolean).join(' · ');
@@ -240,7 +242,7 @@ export function liveOgImage(s: LiveSnapshot | null) {
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo />
-          <Eyebrow label={ended ? 'Terminada' : s.paused ? 'Em pausa' : 'Em direto'} color={ended ? K.muted : s.paused ? K.warn : K.good} />
+          <Eyebrow label={ended ? 'Terminada' : bagged ? `Ensacado · Dia ${s.day}` : s.paused ? 'Em pausa' : 'Em direto'} color={ended ? K.muted : bagged || s.paused ? K.warn : K.good} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', fontSize: 58, fontWeight: 800, letterSpacing: -2, lineHeight: 1.05, maxWidth: 1056 }}>{title.slice(0, 48)}</div>

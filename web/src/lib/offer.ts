@@ -31,6 +31,8 @@ export interface Agreement {
 }
 
 export const MAX_EVENTS = 40;
+/** Events are a festival's schedule: nothing dated more than two years ahead (it would dodge the purge). */
+export const MAX_AHEAD_MS = 2 * 366 * 864e5;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const num = (v: unknown, min: number, max: number): number | null => {
@@ -45,7 +47,7 @@ function parseEvent(x: unknown): AgreementEvent | null {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
   const o = x as Record<string, unknown>;
   if (typeof o.id !== 'string' || !EVENT_ID.test(o.id)) return null;
-  const d = typeof o.d === 'number' && Number.isFinite(o.d) && o.d >= 1 && o.d <= 1e13 ? Math.round(o.d) : null;
+  const d = typeof o.d === 'number' && Number.isFinite(o.d) && o.d >= 1 && o.d <= Date.now() + MAX_AHEAD_MS ? Math.round(o.d) : null;
   const b = num(o.b, 0.01, 1e7);
   const p = num(o.p, 0.01, 100);
   if (d === null || b === null || p === null) return null;
@@ -88,7 +90,7 @@ export function agreementCost(a: Agreement): number {
   return round2(a.events.reduce((t, e) => t + (e.p / 100) * e.b * a.markup, 0));
 }
 
-/** New terms (markup or events) need the backer to confirm again. */
+/** New terms (markup, events, currency, or who the backer is) need the backer to confirm again. */
 export function termsChanged(prev: Agreement, next: Agreement): boolean {
-  return prev.markup !== next.markup || JSON.stringify(prev.events) !== JSON.stringify(next.events);
+  return prev.markup !== next.markup || prev.cur !== next.cur || prev.backer !== next.backer || JSON.stringify(prev.events) !== JSON.stringify(next.events);
 }
