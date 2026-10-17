@@ -7,7 +7,7 @@ import type { Hand } from '@/poker/types';
 import { gameKey, gridCombo, heroPosition, NO_FILTER, STACK_BANDS, type HandFilter, type HandSort } from '@/store/hand-filters';
 import { C, S, ff, F } from '@/theme';
 
-import { Button, Chip, Row, SheetHeader, T, tap } from './ui';
+import { Button, Chip, Row, SheetHeader, T, tap, useSheetPad } from './ui';
 
 const POS_ORDER = ['UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
 export const SORTS: { key: HandSort; label: string }[] = [
@@ -30,6 +30,7 @@ export function filterPills(f: HandFilter): { key: string; label: string; clear:
 /** "Filtrar mãos": position, stack, game, the 13×13 grid and sorting. */
 export function HandFilterSheet({ visible, onClose, value, onChange, hands }: { visible: boolean; onClose: () => void; value: HandFilter; onChange: (f: HandFilter) => void; hands: Hand[] }) {
   // Only offer what the player's hands actually have.
+  const sheetPad = useSheetPad(S.xxl);
   const { posList, games } = useMemo(() => {
     const p = new Set(hands.map(heroPosition));
     const g = new Map<string, number>();
@@ -50,7 +51,7 @@ export function HandFilterSheet({ visible, onClose, value, onChange, hands }: { 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
           <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' }}>
-            <ScrollView contentContainerStyle={{ padding: S.lg, paddingBottom: S.xxl, gap: S.lg }}>
+            <ScrollView contentContainerStyle={{ padding: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
               <SheetHeader title={t('Filtrar mãos')} onClose={onClose} />
 
               <Group label={t('Ordenar')}>
