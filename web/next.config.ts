@@ -7,6 +7,9 @@ const repoRoot = path.join(__dirname, '..');
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@livepoker/hand-format'],
+  // Shared links open on casino Wi-Fi and in chat apps: the CSS (~10 KB) rides in the HTML instead of
+  // costing two more round trips before the first paint.
+  experimental: { inlineCss: true },
   turbopack: { root: repoRoot },
   outputFileTracingRoot: repoRoot,
   // Voice stories run ffmpeg as a child process; ship its binary with that route.

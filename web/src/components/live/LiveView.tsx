@@ -72,9 +72,10 @@ export function LiveView({
     };
   }, [id, s.endedAt, gone]);
 
-  // Chip counts as the app writes them (pt-PT: 2500, 12 345).
+  // Chip counts as the app writes them (pt-PT: 2500, 12 345). The group space is always the narrow
+  // one: Node and browsers disagree on it, and the mono font draws a plain no-break space a full cell wide.
   const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 });
-  const num = (n: number) => fmt.format(n);
+  const num = (n: number) => fmt.format(n).replace(/[\u00a0\u202f]/g, '\u202f');
   const money = (n: number) => formatMoney(n, s.currency, locale);
   const time = (t: number) => new Date(t).toLocaleTimeString(intlTag(locale), { hour: '2-digit', minute: '2-digit' });
 
