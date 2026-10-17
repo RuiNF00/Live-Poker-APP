@@ -56,6 +56,8 @@ export const FREE = {
   bankrollFilters: false,
   /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
   bankrolls: 1 as number | null,
+  /** Trips (festivals) with expenses. The first is free so a player sees it work on a real trip. */
+  trips: 1 as number | null,
 };
 
 export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'plan' | 'generic';

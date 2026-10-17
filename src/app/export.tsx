@@ -39,7 +39,7 @@ const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-di
 
 export default function ExportScreen() {
   const store = useStore();
-  const { sessions, transfers, bankrolls, hands, players, settings } = store;
+  const { sessions, transfers, bankrolls, trips, hands, settings } = store;
   const pro = usePro();
   const [now] = useState(() => Date.now());
   const [period, setPeriod] = useState<Period>('year');
@@ -55,7 +55,7 @@ export default function ExportScreen() {
     return { from: f ?? undefined, to: to !== null ? endOfDay(to) : undefined };
   }, [fromText, toText, now]);
   const range = useMemo(() => rangeOf(period, now, custom), [period, now, custom]);
-  const report = useMemo(() => buildReport({ sessions, transfers, bankrolls, scope, range }), [sessions, transfers, bankrolls, scope, range]);
+  const report = useMemo(() => buildReport({ sessions, transfers, bankrolls, scope, range, trips }), [sessions, transfers, bankrolls, scope, range, trips]);
   const main = report.currencies[0];
   const ids = scope ? scopeIds(scope, bankrolls) : null;
   const handsIn = hands.filter((h) => inRange(h.createdAt, range)).length;
@@ -79,10 +79,11 @@ export default function ExportScreen() {
     run('sessions', true, () => {
       const list = report.currencies.flatMap((c) => c.sessions);
       const tx = transfers.filter((x) => (!ids || ids.has(x.bankrollId)) && inRange(x.at, range));
-      return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx), 'text/csv');
+      const spent = trips.flatMap((trip) => trip.expenses.filter((x) => inRange(x.at, range)).map((x) => ({ trip, x })));
+      return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx, spent), 'text/csv');
     });
   const handsFile = () => run('hands', true, () => saveTextFile(`sweatbook-maos-${stamp}.csv`, handsCsv(hands, sessions, range, BRAND.webUrl), 'text/csv'));
-  const backup = () => run('json', false, () => saveTextFile(`sweatbook-${new Date(now).toISOString().slice(0, 10)}.json`, JSON.stringify(buildBackup({ hands, sessions, players, bankrolls, transfers, settings })), 'application/json'));
+  const backup = () => run('json', false, () => saveTextFile(`sweatbook-${new Date(now).toISOString().slice(0, 10)}.json`, JSON.stringify(buildBackup(store)), 'application/json'));
 
   const lock = pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />;
   const periods: [Period, string][] = [
@@ -137,8 +138,8 @@ export default function ExportScreen() {
 
         <Section title={t('Exportar')}>
           <ListGroup>
-            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala e mês, e todas as sessões')} right={lock} onPress={pdf} />
-            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos e levantamentos, para Excel ou Google Sheets')} right={lock} onPress={sessionsFile} />
+            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala e mês, viagens e todas as sessões')} right={lock} onPress={pdf} />
+            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')} right={lock} onPress={sessionsFile} />
             <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={t('Posição, cartas, board, resultado, tags e notas')} right={lock} onPress={handsFile} />
             <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')} onPress={backup} />
           </ListGroup>
