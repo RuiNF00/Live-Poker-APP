@@ -45,6 +45,8 @@ cd store/screenshots && npm i playwright && node render.mjs http://localhost:417
 
 A frame can list `hide` strings: web-only hints ("Open the app on your phone to post to Instagram") that the phone never shows are hidden before the shot.
 
+Coordinator rule (17 Oct): a frame that opens the hand search must hide the chip row under the box ("Ganhei / Perdi", es "Gané / Perdí", en "Won / Lost"); a frame of the festival session end must hide or crop the amount on "Re-entrar · {valor}". The current 10 frames show neither (frame 4 is the hand list with search closed).
+
 ## Feature graphic (Play)
 
 Brand logo + "Log live poker hands in seconds" on brand background, no device frame, nothing important within 15% of the edges.
