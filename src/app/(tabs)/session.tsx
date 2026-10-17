@@ -263,6 +263,8 @@ function Live({ s }: { s: Session }) {
                       breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
                     });
                     router.push('/bankroll');
+                    // The highlights, ready to share while the session is fresh.
+                    router.push(`/session-card/${s.id}`);
                   }}
                 />
               </Row>

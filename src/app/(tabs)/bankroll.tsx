@@ -614,6 +614,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: fmt(s.expenses, s.currency) }) : ''}
           </T>
           <Row gap={S.sm}>
+            <Button size="sm" kind="secondary" icon="share-outline" title={t('Partilhar')} onPress={() => router.push(`/session-card/${s.id}`)} />
             <Button size="sm" kind="secondary" icon="pencil" title={t('Editar')} onPress={onEdit} />
             <Button size="sm" kind="danger" icon="trash-outline" title={t('Apagar')} onPress={onDelete} />
           </Row>

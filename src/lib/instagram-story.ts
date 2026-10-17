@@ -48,3 +48,11 @@ export async function renderReplayVideo(
 export async function shareVideo(_file: string, _link: string): Promise<void> {
   throw new Error('Hand videos need the iOS or Android app');
 }
+
+export async function captureSticker(_ref: React.RefObject<React.ComponentRef<typeof View> | null>, _w: number, _h: number): Promise<string> {
+  throw new Error('Stickers need the iOS or Android app');
+}
+
+export async function shareSticker(_file: string, _link: string): Promise<StoryTarget> {
+  throw new Error('Stickers need the iOS or Android app');
+}
