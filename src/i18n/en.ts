@@ -35,6 +35,7 @@ const en: Record<string, string> = {
   'Pré-flop': 'Preflop',
   'PRÉ-FLOP': 'PREFLOP',
   'Pote': 'Pot',
+  '{size}, o teu último tamanho': '{size}, your last size',
   // Poker: hand names, stages, tags
   'Carta alta': 'High card',
   'Par': 'Pair',

@@ -2367,6 +2367,7 @@ const es: Record<string, string> = {
   'Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.': 'Intervalo del 95 %: con estos resultados, tu win rate real está casi seguro aquí dentro. Se estrecha con más horas.',
   'Amostra pequena': 'Muestra pequeña',
   'Amostra pequena: menos de 50 h ou 10 sessões. Por agora é uma pista, não uma conclusão.': 'Muestra pequeña: menos de 50 h o 10 sesiones. Por ahora es una pista, no una conclusión.',
+  '{size}, o teu último tamanho': '{size}, tu último tamaño',
 };
 
 export default es;

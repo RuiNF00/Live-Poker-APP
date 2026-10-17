@@ -1029,6 +1029,7 @@ const ptBR: Record<string, string> = {
   '±5 BB/h chega para decidir se sobes de stake ou que jogos escolher. Quanto mais variância tens, mais horas são precisas.': '±5 BB/h basta para decidir se você sobe de stake ou que jogos escolher. Quanto mais variância você tem, mais horas são necessárias.',
   'Sabe onde o teu win rate é real': 'Saiba onde seu win rate é real',
   'Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.': 'Intervalo de 95%: com estes resultados, seu win rate verdadeiro quase certamente está aqui dentro. Fica mais estreito com mais horas.',
+  '{size}, o teu último tamanho': '{size}, seu último tamanho',
 };
 
 export default ptBR;
