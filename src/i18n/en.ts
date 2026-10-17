@@ -3086,6 +3086,9 @@ const en: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} so far: {amount} in {h} h',
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
+  'Importar': 'Import',
+  'Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV': 'Sweatbook copy or another app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV',
+  'O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.': 'The file doesn\'t say cash or tournament. We started with what you play most; you can change each session later.',
 };
 
 export default en;

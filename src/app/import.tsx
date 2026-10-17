@@ -326,7 +326,8 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
   const pro = usePro();
   const [mapping, setMapping] = useState<Mapping>(file.mapping);
   const [order, setOrder] = useState<DateOrder | undefined>(undefined);
-  const [defaultKind, setDefaultKind] = useState<'cash' | 'mtt'>('cash');
+  // A file that doesn't say cash or tournament: start from what this player mostly plays.
+  const [defaultKind, setDefaultKind] = useState<'cash' | 'mtt'>(() => (local.filter((s) => s.kind === 'mtt').length * 2 > local.length ? 'mtt' : 'cash'));
   const [editing, setEditing] = useState<Field | null>(null);
   const [showAll, setShowAll] = useState(file.source === 'generic' || file.source === 'pokeranalytics');
 
@@ -437,7 +438,7 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
         ) : null}
 
         {!r.kindKnown && r.sessions.length ? (
-          <Section title={t('Estas sessões são')} hint={t('O ficheiro não diz se é cash ou torneio. Podes mudar cada sessão depois.')}>
+          <Section title={t('Estas sessões são')} hint={local.length ? t('O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.') : t('O ficheiro não diz se é cash ou torneio. Podes mudar cada sessão depois.')}>
             <Segmented options={[{ key: 'cash', label: 'Cash' }, { key: 'mtt', label: t('Torneios') }]} value={defaultKind} onChange={setDefaultKind} />
           </Section>
         ) : null}

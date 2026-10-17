@@ -1425,6 +1425,9 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
+  'Importar': 'Importar',
+  'Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV': 'Cópia do Sweatbook ou de outro app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV',
+  'O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.': 'O arquivo não diz se é cash ou torneio. Começamos pelo que você mais joga; você pode mudar cada sessão depois.',
 };
 
 export default ptBR;
