@@ -24,12 +24,13 @@ async function capture(locale) {
   await ctx.addInitScript((s) => {
     if (localStorage.getItem('rl.hands.v1')) return;
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1' });
+  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'sweatbook.replayer.tips.v1': '1' });
   const page = await ctx.newPage();
   const shots = [];
   for (const f of frames) {
     // Opening the hand editor leaves a draft banner on other screens; clear it.
-    // rl.offer.welcome.v1 (seeded above) stops the one-time welcome paywall from covering the hand list.
+    // rl.offer.welcome.v1 and sweatbook.replayer.tips.v1 (seeded above) stop the one-time welcome paywall
+    // and the replayer's first-open tip from covering their frames.
     await page.evaluate(() => localStorage.removeItem('rl.draft.v1')).catch(() => {});
     await page.goto(appUrl + f.route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
