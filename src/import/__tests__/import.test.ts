@@ -228,3 +228,48 @@ test('leaving or changing a column midway gives nothing, so nothing is half impo
   assert.equal(r, null);
   assert.equal(steps, 3);
 });
+
+test('Sweatbook CSV round trip: export, import, and import again into the same phone', async () => {
+  const { place } = await import('../bankrolls');
+  const { mergeById } = await import('../../store/backup');
+  const brs = [
+    { id: 'b1', name: 'Principal', currency: '€', createdAt: 1 },
+    { id: 'b2', name: 'Viagens', currency: '€', createdAt: 2 },
+  ];
+  const start = new Date(2026, 2, 29, 1, 30, 17).getTime(); // the night the clocks change in Portugal
+  const mk = (i: number, x: Partial<Session> = {}): Session => ({
+    id: 's' + i, kind: 'cash', name: 'NLH 1/2', venue: 'Estoril, "sala 2"', currency: '€', startedAt: start + i * 86_400_000, endedAt: start + i * 86_400_000 + 5 * 3_600_000 + 41_000,
+    breaks: [{ start: start + i * 86_400_000 + 3_600_000, end: start + i * 86_400_000 + 3_600_000 + 25 * 60_000 }],
+    buyIn: 200.37, entries: 1, addOn: 0, cashOut: 455.1, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: 'a, b\n"c"', bankrollId: 'b2', ...x,
+  });
+  const list = [mk(0), mk(1, { kind: 'mtt', name: 'Main Event', buyIn: 1100, entries: 2, cashOut: 0, finish: 40, field: 900, day: 2, country: 'US', currency: '$', bankrollId: undefined, sb: 0, bb: 0 }), mk(2, { bankrollId: 'b1', format: 'online', tips: 4.5 })];
+  const tx = [{ id: 't1', bankrollId: 'b2', kind: 'deposit' as const, amount: 500.5, at: start - 86_400_000, note: '' }];
+  const trip = { id: 'tr', name: 'Vegas', venue: 'Bellagio', currency: '$', from: start, to: start + 3 * 86_400_000, expenses: [], createdAt: 0 };
+  const csv = sessionsCsv(list, brs, tx, [{ trip, x: { id: 'e', kind: 'hotel', amount: 200, currency: '$', at: start, note: '' } }]);
+  const r = run(csv);
+  assert.equal(r.source, 'sweatbook');
+  assert.equal(r.sessions.length, 3, 'the trip expense does not become a session');
+  const back = place(r, { '€': 'b1', $: 'new' }, { source: r.source, appName: 'Sweatbook', bankrolls: brs, names: r.bankrollNames });
+  for (const s of list) {
+    const o = back.sessions.find((x) => x.id === s.id)!;
+    assert.ok(o, s.id);
+    assert.equal(Math.round(profit(o) * 100), Math.round(profit(s) * 100));
+    assert.equal(o.currency, s.currency);
+    assert.equal(o.kind, s.kind);
+    assert.equal(o.startedAt, s.startedAt);
+    assert.equal(o.endedAt, s.endedAt);
+    assert.ok(Math.abs(playedMs(o) - playedMs(s)) <= 18_000, 'hours are written to 2 decimals');
+    assert.equal(o.notes, s.notes);
+    assert.equal(o.format ?? 'live', s.format ?? 'live');
+    assert.equal(o.finish, s.finish);
+    assert.equal(o.day, s.day);
+    assert.equal(o.country, s.country);
+  }
+  assert.equal(back.sessions[0].bankrollId, 'b2', 'back to the bankroll of the same name');
+  assert.equal(back.transfers[0].id, 't1');
+  assert.equal(back.transfers[0].bankrollId, 'b2');
+  assert.equal(mergeById(list, back.sessions).added, 0, 'importing it again adds nothing');
+  // A file from before the exact-time columns still reads.
+  const old = sessionsCsv([mk(3, { venue: 'Estoril', notes: '' })]).trim().split('\n').map((l) => l.split(',').slice(0, -3).join(','));
+  assert.equal(run(old.join('\n')).sessions[0].startedAt, mk(3).startedAt - 17_000, 'to the minute, as before');
+});

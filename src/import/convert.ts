@@ -58,6 +58,8 @@ export interface ImportResult {
   kindKnown: boolean;
   /** Some dates read differently day-first and month-first. */
   ambiguousDates: boolean;
+  /** Bankroll name per session or move id, from Sweatbook's own CSV: goes back to the bankroll of that name. */
+  bankrollNames: Record<string, string>;
 }
 
 /** Everything the import screen needs after a file is picked. */
@@ -341,11 +343,16 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   let unreadable = 0;
   const failed: FailedRow[] = [];
   const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
+  const bankrollNames: Record<string, string> = {};
 
   for (let ri = 0; ri < table.rows.length; ri++) {
     if (ri && ri % CHUNK === 0) yield ri;
     const r = table.rows[ri];
     const line = table.lines?.[ri] ?? ri + 2;
+    // Trip expenses in Sweatbook's CSV belong to a trip, not to the sessions.
+    if (opt.source === 'sweatbook' && /^expense$/i.test(get(r, 'kind'))) continue;
+    // Sweatbook's own id: importing the same file again merges instead of doubling.
+    const own = opt.source === 'sweatbook' && /^[\w.-]{1,80}$/.test(get(r, 'id')) ? get(r, 'id') : '';
     const k = kindUseful ? kindOf(get(r, 'kind')) : null;
     const nameRaw = get(r, 'name');
     const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
@@ -355,7 +362,9 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       if (m) {
         const dup = seen.get(m.id) ?? 0;
         seen.set(m.id, dup + 1);
-        moves.push(dup ? { ...m, id: m.id + '_' + dup } : m);
+        if (own) m.id = own;
+        if (get(r, 'bankroll')) bankrollNames[m.id] = get(r, 'bankroll');
+        moves.push(dup && !own ? { ...m, id: m.id + '_' + dup } : m);
       } else {
         transfers++;
         failed.push({ line, reason: startP ? 'badMove' : get(r, 'start') ? 'badDate' : 'noDate', value: startP ? preview(r) : get(r, 'start') || preview(r) });
@@ -439,7 +448,9 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     if (end < start && start - end < 86400000) end += 86400000;
     if (end < start) end = start;
     const breaks: Session['breaks'] = [];
-    const played = parseNum(get(r, 'minutes'));
+    // Minutes played, or hours: next to an end time, the difference is the breaks.
+    const hrs = mapping.minutes === undefined && endP ? parseHours(get(r, 'hours')) : null;
+    const played = parseNum(get(r, 'minutes')) ?? (hrs === null ? null : hrs * 60);
     const brk = endP && played !== null ? (end - start) / 60000 - played : parseNum(get(r, 'breakMinutes'));
     if (brk && brk > 0.5 && brk * 60000 < end - start) breaks.push({ start: end - brk * 60000, end });
 
@@ -465,8 +476,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     const dup = seen.get(base) ?? 0;
     seen.set(base, dup + 1);
 
+    const id = own || 'imp_' + hash(base + (dup ? '#' + dup : ''));
+    if (get(r, 'bankroll')) bankrollNames[id] = get(r, 'bankroll');
+    const country = get(r, 'country').toUpperCase();
+    const day = parseNum(get(r, 'day'));
     sessions.push({
-      id: 'imp_' + hash(base + (dup ? '#' + dup : '')),
+      id,
       kind,
       name,
       venue,
@@ -493,10 +508,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       roster: [],
       notes,
       ...(format ? { format } : null),
+      ...(/^[A-Z]{2}$/.test(country) ? { country } : null),
+      ...(kind === 'mtt' && day && day > 1 ? { day: Math.round(day) } : null),
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
-  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */
@@ -506,4 +523,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day');

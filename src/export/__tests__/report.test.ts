@@ -92,7 +92,7 @@ test('trips in the range get their own table, after expenses, and expenses go to
   assert.equal(csv.length, 2);
   assert.ok(csv[1].startsWith(`${dayKey(at(5, 2))},,expense,`), csv[1]);
   assert.ok(csv[1].includes(',-200,'));
-  assert.ok(csv[1].endsWith('hotel: 3 nights'));
+  assert.ok(csv[1].endsWith('hotel: 3 nights,,,'), 'no import columns on an expense');
 });
 
 test('a multi-day tournament row says its day and when it is in the bag', () => {

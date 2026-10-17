@@ -35,7 +35,7 @@ export function defaultPlacement(currencies: string[], bankrolls: Bankroll[], pr
 export function place(
   r: { sessions: Session[]; moves: ImportedMove[] },
   placement: Placement,
-  opt: { source: string; appName: string; bankrolls: Bankroll[]; now?: number },
+  opt: { source: string; appName: string; bankrolls: Bankroll[]; now?: number; names?: Record<string, string> },
 ): { sessions: Session[]; transfers: Transfer[]; bankrolls: Bankroll[] } {
   const now = opt.now ?? Date.now();
   const made: Bankroll[] = [];
@@ -48,9 +48,14 @@ export function place(
       made.push({ id, name: currencies.length > 1 ? `${opt.appName} ${c}` : opt.appName, currency: c, createdAt: now + made.length });
     return id;
   };
+  // Sweatbook's own CSV names the bankroll: one with that name and currency here takes it back.
+  const named = (id: string, c: string): string | undefined => {
+    const n = opt.names?.[id]?.trim().toLowerCase();
+    return n ? opt.bankrolls.find((b) => b.currency === c && b.name.trim().toLowerCase() === n)?.id : undefined;
+  };
   return {
-    sessions: r.sessions.map((s) => ({ ...s, bankrollId: idFor(s.currency) })),
-    transfers: r.moves.map((m) => ({ id: m.id, bankrollId: idFor(m.currency), kind: m.kind, amount: m.amount, at: m.at, note: m.note })),
+    sessions: r.sessions.map((s) => ({ ...s, bankrollId: named(s.id, s.currency) ?? idFor(s.currency) })),
+    transfers: r.moves.map((m) => ({ id: m.id, bankrollId: named(m.id, m.currency) ?? idFor(m.currency), kind: m.kind, amount: m.amount, at: m.at, note: m.note })),
     bankrolls: made,
   };
 }

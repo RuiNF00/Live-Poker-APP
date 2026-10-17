@@ -256,7 +256,7 @@ export default function ImportScreen() {
           bottom={insets.bottom}
           onBack={() => setStep({ at: 'pick' })}
           onImport={(r, placement) => {
-            const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls });
+            const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls, names: r.bankrollNames });
             const before = new Set(store.transfers.map((x) => x.id));
             const had = new Set(store.sessions.map((s) => s.id));
             const n = store.importData({ app: 'sweatbook', v: 1, exportedAt: Date.now(), hands: [], sessions: p.sessions, players: [], bankrolls: p.bankrolls, transfers: p.transfers });

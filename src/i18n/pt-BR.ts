@@ -1469,6 +1469,8 @@ const ptBR: Record<string, string> = {
   'Nada neste bankroll': 'Nada neste bankroll',
   'A atualizar…': 'Atualizando…',
   'A ler {done} de {total} linhas…': 'Lendo {done} de {total} linhas…',
+  'Exportar sessões em CSV': 'Exportar sessões em CSV',
+  'Todas, para o Excel ou para importar outra vez': 'Todas, para o Excel ou para importar de novo',
 };
 
 export default ptBR;

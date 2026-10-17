@@ -3126,6 +3126,8 @@ const en: Record<string, string> = {
   'Nada neste bankroll': 'Nothing in this bankroll',
   'A atualizar…': 'Updating…',
   'A ler {done} de {total} linhas…': 'Reading {done} of {total} rows…',
+  'Exportar sessões em CSV': 'Export sessions as CSV',
+  'Todas, para o Excel ou para importar outra vez': 'All of them, for Excel or to import again',
 };
 
 export default en;
