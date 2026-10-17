@@ -8,6 +8,7 @@ import { Alert, Platform, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
+import { autoBackup, countsOf } from '@/lib/cloud-guard';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary } from '@/store/backup';
 import { useStore } from '@/store/store';
@@ -27,6 +28,7 @@ const ERR: Record<string, string> = {
   too_big: 'A cópia é grande demais para a nuvem. Exporta para ficheiro.',
   quota: 'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.',
   disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
+  would_shrink: 'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.',
 };
 const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
 
@@ -47,21 +49,27 @@ export function CloudBackup() {
     tap('medium');
     setBusy(true);
     try {
-      setCloud(await upload(newCloud(), data()));
+      // A new random code: there is no server copy to protect yet.
+      setCloud(await upload(newCloud(), data(), { force: true }));
     } catch (e) {
       note(t('Não deu para ativar'), errText(e));
     } finally {
       setBusy(false);
     }
   };
-  const backupNow = async () => {
+  const backupNow = async (force = false) => {
     if (!cloud) return;
     tap();
     setBusy(true);
     try {
-      setCloud(await upload(cloud, data()));
+      setCloud(await upload(cloud, data(), { force }));
     } catch (e) {
-      note(t('Não deu para fazer a cópia'), errText(e));
+      if ((e as Error)?.message !== 'would_shrink' || Platform.OS === 'web') note(t('Não deu para fazer a cópia'), errText(e));
+      else
+        Alert.alert(t('Substituir a cópia na nuvem?'), t('A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.'), [
+          { text: t('Cancelar'), style: 'cancel' },
+          { text: t('Substituir'), style: 'destructive', onPress: () => backupNow(true) },
+        ]);
     } finally {
       setBusy(false);
     }
@@ -72,10 +80,13 @@ export function CloudBackup() {
     tap('medium');
     setBusy(true);
     try {
-      const n = store.importData(await download(c));
+      const remote = await download(c);
+      const n = store.importData(remote);
       // From now on this phone keeps the same cloud copy up to date. It was
-      // just downloaded, so the launch auto-backup has nothing new to send.
-      const next = { ...c, lastAt: Date.now() };
+      // just downloaded, so the launch auto-backup has nothing new to send,
+      // and no upload may send less than it holds (counts), even if the app
+      // is closed before the restored hands reach the phone's storage.
+      const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(remote) };
       await saveCloud(next);
       setCloud(next);
       setRestoring(false);
@@ -135,7 +146,7 @@ export function CloudBackup() {
           </Pressable>
           <T v="small">{t('Guarda este código: é a única chave da tua cópia. Num telemóvel novo, usa «Recuperar com código».')}</T>
           <Row gap={S.sm}>
-            <Button size="sm" kind="secondary" icon="refresh" title={busy ? t('A copiar…') : t('Copiar agora')} style={{ flex: 1 }} disabled={busy} onPress={backupNow} />
+            <Button size="sm" kind="secondary" icon="refresh" title={busy ? t('A copiar…') : t('Copiar agora')} style={{ flex: 1 }} disabled={busy} onPress={() => backupNow()} />
             <Button size="sm" kind="ghost" title={t('Desligar')} onPress={turnOff} />
           </Row>
         </>
@@ -172,11 +183,9 @@ export function AutoCloudBackup() {
     if (!ready) return;
     const id = setTimeout(async () => {
       const c = await loadCloud();
-      if (!c || (c.lastAt && Date.now() - c.lastAt < 6 * 3600000)) return;
       const data = buildBackup(latest.current);
-      // Never replace a cloud copy with an empty phone's data.
-      if (!data.hands.length && !data.sessions.length && !data.players.length) return;
-      upload(c, data).catch(() => {});
+      // Never replaces a cloud copy with an empty or smaller phone (see cloud-guard).
+      if (c && autoBackup(c, countsOf(data), Date.now()) === 'upload') upload(c, data).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
     // Only on launch: the store object changes on every edit.

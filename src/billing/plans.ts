@@ -47,40 +47,40 @@ export const FREE = {
 
 export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'generic';
 
-/** Headline per trigger: the paywall talks about what the player just tried to do. */
+/** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
-    title: t('Esta mão não se perde'),
-    body: t('Já guardaste as 3 mãos grátis de hoje, por isso fica como rascunho. Com Pro guardas todas as mãos da sessão, sem contar.'),
+    title: t('Mão guardada como rascunho'),
+    body: t('Com Pro, guardas mãos sem limite.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
-    body: t('Com Pro partilhas todas as mãos que quiseres com os teus amigos.'),
+    body: t('Com Pro, partilhas sem limite.'),
   },
   stats: {
-    title: t('Vê o teu bankroll a fundo'),
-    body: t('Várias bankrolls, filtros por datas e stakes, em que salas e jogos ganhas, e as sessões em CSV.'),
+    title: t('Conhece o teu bankroll'),
+    body: t('Várias bankrolls, filtros, salas, jogos e CSV.'),
   },
   story: {
     title: t('Stories com a tua voz'),
-    body: t('Explica a mão com a tua voz e partilha no Instagram em vídeo, sem a marca Sweatbook.'),
+    body: t('Vídeo com voz, sem marca de água.'),
   },
   welcome: {
-    title: t('A tua primeira mão já está no caderno'),
-    body: t('Numa sessão ao vivo jogas dezenas de mãos que vale a pena rever. Com Pro guardas todas, sem limite diário.'),
+    title: t('Primeira mão feita'),
+    body: t('Com Pro, guardas todas as mãos da sessão.'),
   },
   generic: {
     title: 'Sweatbook Pro',
-    body: t('Regista todas as mãos que jogas ao vivo e percebe onde ganhas e onde perdes dinheiro.'),
+    body: t('Todas as mãos. Todo o bankroll.'),
   },
 };
 
 export type FeatureKey = 'hands' | 'story' | 'stats';
 
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
-  { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Guarda todas as mãos da sessão, não só 3 por dia.') },
-  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls, filtros por datas e stakes, resultados por sala e jogo, export CSV.') },
-  { key: 'story', icon: 'logo-instagram', title: t('Stories com a tua voz'), body: t('Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.') },
+  { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Sem limite diário') },
+  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls, filtros, CSV') },
+  { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
 ];
 
 /** Features in paywall order: the one the player just reached for comes first. */

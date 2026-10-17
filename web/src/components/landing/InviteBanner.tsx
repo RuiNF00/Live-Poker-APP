@@ -3,43 +3,78 @@
 import { useEffect, useState } from 'react';
 import { brand } from '@/config/brand';
 import { writeLocal } from '@/lib/local';
-import type { Locale } from '@/lib/i18n';
-import { REWARD_DAYS_PUBLIC } from './copy';
+import { REWARD_DAYS_PUBLIC, type LandingCopy } from './copy';
+import { MainCta } from './Cta';
+import type { StoreLinks } from './StoreButtons';
 
 /**
- * The friend's side of an invite. Android picks the code up from the Play referrer; on iPhone
- * the friend comes back to this link after installing, and the universal link (or the button)
- * opens the app with the code.
+ * The friend's side of an invite (/r/<code>). Android picks the code up from the Play
+ * referrer; on iPhone the friend comes back to this link after installing, and the universal
+ * link (or the button) opens the app with the code. The code is also easy to copy.
  */
-export function InviteBanner({ code, locale }: { code: string; locale: Locale }) {
+export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; stores: StoreLinks }) {
   const [ios, setIos] = useState(false);
+  const [copied, setCopied] = useState(false);
   useEffect(() => {
     setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent));
     writeLocal('invite', code);
   }, [code]);
-  const pt = locale === 'pt';
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Older browsers: the code is on screen to type.
+    }
+  };
   return (
-    <div className="lp-invite" role="note">
-      <span className="lp-invite-gift" aria-hidden>
-        🎁
+    <section className="lp-invite" aria-labelledby="invite-title">
+      <span className="lp-eyebrow">
+        <GiftIcon /> {c.invite.eyebrow}
       </span>
-      <div>
-        <b>{pt ? 'Tens um convite para o Sweatbook' : "You're invited to Sweatbook"}</b>
-        <p>
-          {pt
-            ? `Instala a app e guarda a tua primeira mão: tu e o amigo que te convidou ganham ${REWARD_DAYS_PUBLIC} dias de Pro.`
-            : `Install the app and save your first hand: you and your friend both get ${REWARD_DAYS_PUBLIC} days of Pro.`}
-        </p>
-        {ios && (
-          <p className="lp-invite-ios">
-            {pt ? 'Já instalaste? ' : 'Already installed? '}
-            <a href={`${brand.appScheme}://r/${code}`}>{pt ? 'Ativar o convite na app' : 'Activate the invite in the app'}</a>
-          </p>
-        )}
-        <span className="lp-invite-code">
-          {pt ? 'Código' : 'Code'} <code>{code}</code>
-        </span>
+      <h1 id="invite-title">{c.invite.title}</h1>
+      <p className="lp-lede">{c.invite.body}</p>
+
+      <div className="lp-code-card">
+        <div>
+          <small>{c.invite.code}</small>
+          <code>{code}</code>
+        </div>
+        <button type="button" className="lp-copy" onClick={copy}>
+          {copied ? c.invite.copied : c.invite.copy}
+        </button>
+        <div className="lp-reward">
+          <span className="lp-reward-n">+{REWARD_DAYS_PUBLIC}</span>
+          <span>{c.invite.days}</span>
+        </div>
       </div>
-    </div>
+
+      <ol className="lp-steps">
+        {c.invite.steps.map((s, i) => (
+          <li key={s}>
+            <span>{i + 1}</span>
+            {s}
+          </li>
+        ))}
+      </ol>
+
+      <div id="hero-cta" className="lp-hero-actions">
+        <MainCta label={c.ctaFree} stores={stores} from="invite" />
+        {ios && (
+          <a className="lp-btn ghost" href={`${brand.appScheme}://r/${code}`}>
+            {c.invite.open}
+          </a>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function GiftIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z" />
+    </svg>
   );
 }
