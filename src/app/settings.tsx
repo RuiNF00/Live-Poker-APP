@@ -4,15 +4,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CloudBackup } from '@/components/CloudBackup';
 import { inputStyle } from '@/components/entry/ContextSheet';
-import { Chip, Panel, Row, T, tap } from '@/components/ui';
+import { Button, Chip, Panel, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { pickTextFile, saveTextFile } from '@/lib/files';
+import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, parseBackup, sessionsCsv } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { BRAND, C } from '@/theme';
@@ -55,7 +56,7 @@ export default function SettingsScreen() {
       const text = await pickTextFile();
       if (text === null) return;
       const n = store.importData(parseBackup(text));
-      note(t('Cópia importada'), t('{h} mãos, {s} sessões e {p} jogadores novos. O que já tinhas ficou.', { h: n.hands, s: n.sessions, p: n.players }));
+      note(t('Cópia importada'), t('Novos: {h} mãos · {s} sessões · {p} jogadores. O que já tinhas ficou.', { h: n.hands, s: n.sessions, p: n.players }));
     } catch {
       note(t('Ficheiro inválido'), t('Escolhe um ficheiro .json exportado pelo Sweatbook.'));
     } finally {
@@ -107,8 +108,10 @@ export default function SettingsScreen() {
 
         <T v="h2">{t('Ferramentas')}</T>
         <Panel style={{ gap: 0, padding: 0 }}>
+          <Item icon="gift-outline" label={t('Convidar amigos')} hint={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
           <Item icon="pie-chart-outline" label={t('Calculadora de deal (ICM)')} hint={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} last />
         </Panel>
+        <InviteCodeField />
 
         <T v="h2">{t('Conta')}</T>
         <Panel style={{ gap: 0, padding: 0 }}>
@@ -127,6 +130,46 @@ export default function SettingsScreen() {
         </Panel>
       </ScrollView>
     </>
+  );
+}
+
+const CLAIM_COPY: Partial<Record<ClaimResult, string>> = {
+  ok: 'Convite ativado. Guarda uma mão e ganham os dois 7 dias de Pro.',
+  already: 'Já tens um convite ativo.',
+  self: 'Esse é o teu próprio código.',
+  too_late: 'Os convites só contam nos 7 dias depois de instalar.',
+  unknown_code: 'Não encontrámos esse código.',
+  disabled: 'Os convites ainda não estão disponíveis.',
+};
+
+/** Shown only in the first 7 days, until a code is accepted. */
+function InviteCodeField() {
+  const [show, setShow] = useState(false);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    canEnterCode().then(setShow);
+  }, []);
+  if (!show) return null;
+  return (
+    <Panel style={{ gap: 8 }}>
+      <T v="label">{t('Tenho um código de convite')}</T>
+      <Row gap={8}>
+        <TextInput value={code} onChangeText={setCode} autoCapitalize="none" autoCorrect={false} placeholder="a1b2c3d4e5" placeholderTextColor={C.muted} style={[inputStyle, { flex: 1 }]} />
+        <Button
+          small
+          title={busy ? '…' : t('Usar')}
+          disabled={busy || !code.trim()}
+          onPress={async () => {
+            setBusy(true);
+            const r = await claimInvite(code, 'manual');
+            setBusy(false);
+            note(t(CLAIM_COPY[r] ?? 'Sem ligação. Tenta outra vez quando tiveres rede.'));
+            if (r === 'ok' || r === 'already') setShow(false);
+          }}
+        />
+      </Row>
+    </Panel>
   );
 }
 

@@ -121,3 +121,13 @@ export async function identify(userId: string): Promise<void> {
   if (!LIVE) return;
   await Purchases.logIn(userId).catch(() => {});
 }
+
+/** RevenueCat's user id for this install (anonymous or signed in), so server-side grants find it. */
+export async function appUserId(): Promise<string | undefined> {
+  if (!LIVE) return undefined;
+  try {
+    return await Purchases.getAppUserID();
+  } catch {
+    return undefined;
+  }
+}

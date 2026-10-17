@@ -21,10 +21,11 @@ export type FunnelEvent =
   | 'share_created'
   | 'story_shared'
   | 'link_shared'
-  | 'link_opened';
+  | 'link_opened'
+  | 'invite_claimed';
 
 let install: Promise<string> | null = null;
-function installId() {
+export function installId(): Promise<string> {
   install ??= AsyncStorage.getItem(KEY)
     .then(async (v) => {
       if (v) return v;

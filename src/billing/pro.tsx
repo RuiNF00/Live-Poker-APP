@@ -9,6 +9,7 @@ import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } fro
 import { FREE, type PaywallReason, type PlanId } from './plans';
 import * as store from './purchases';
 import { track } from '@/lib/events';
+import { activateInvite } from '@/lib/referrals';
 
 const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1' };
 
@@ -53,12 +54,17 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   const record = useCallback((kind: UsageKind) => {
     track(kind === 'hand' ? 'hand_saved' : 'share_created');
+    // Came through an invite? The first saved hand turns on both players' Pro days.
+    if (kind === 'hand')
+      activateInvite().then((granted) => {
+        if (granted) store.getIsPro().then((v) => v !== null && setPro(v));
+      });
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
       AsyncStorage.setItem(KEYS.usage, JSON.stringify(next)).catch(() => {});
       return next;
     });
-  }, []);
+  }, [setPro]);
 
   const canSaveHand = useCallback(() => canUse(usage, 'hand', FREE.handsPerDay, isPro), [usage, isPro]);
   const canShare = useCallback(() => canUse(usage, 'share', FREE.sharesPerDay, isPro), [usage, isPro]);

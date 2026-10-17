@@ -58,6 +58,11 @@
               "scheme": "https",
               "host": "sweatbook.poker",
               "pathPrefix": "/h/"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/r/"
             }
           ],
           "category": [

@@ -18,6 +18,7 @@ import { ProProvider } from '@/billing/pro';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { bootReferrals } from '@/lib/referrals';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 
@@ -38,7 +39,10 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   });
-  useEffect(() => track('app_open'), []);
+  useEffect(() => {
+    track('app_open');
+    bootReferrals().catch(() => {});
+  }, []);
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
@@ -66,6 +70,8 @@ export default function RootLayout() {
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
+            <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
+            <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
           </Stack>
           </ProProvider>
         </StoreProvider>

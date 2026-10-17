@@ -26,6 +26,7 @@ const ERR: Record<string, string> = {
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia é grande demais para a nuvem. Exporta para ficheiro.',
+  disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
 };
 const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
 
@@ -77,7 +78,7 @@ export function CloudBackup() {
       setCloud(c);
       setRestoring(false);
       setCode('');
-      note(t('Cópia recuperada'), t('{h} mãos, {s} sessões e {p} jogadores novos. O que já tinhas ficou.', { h: n.hands, s: n.sessions, p: n.players }));
+      note(t('Cópia recuperada'), t('Novos: {h} mãos · {s} sessões · {p} jogadores. O que já tinhas ficou.', { h: n.hands, s: n.sessions, p: n.players }));
     } catch (e) {
       note(t('Não deu para recuperar'), errText(e));
     } finally {
