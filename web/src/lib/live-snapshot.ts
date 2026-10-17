@@ -101,11 +101,12 @@ export const RESULT_DELAY_MS = 3600_000;
 
 /**
  * What the public sees: a session that has just ended shows that it ended, but not
- * the prize, place or cash-out until an hour later. Anyone with a forwarded link
+ * the prize, place or cash-out until an hour later, nor the final stack and its
+ * history (a cash game's last stack is its cash-out). Anyone with a forwarded link
  * would otherwise know who just won how much, and where.
  */
 export function holdResult(s: LiveSnapshot, now = Date.now()): LiveSnapshot {
   // A bagged day has no result to hold: the stack is what backers want to see.
   if (!s.endedAt || s.bagged || now - s.endedAt >= RESULT_DELAY_MS) return s;
-  return { ...s, cashOut: 0, finish: null, field: null, heldUntil: s.endedAt + RESULT_DELAY_MS };
+  return { ...s, cashOut: 0, finish: null, field: null, stack: 0, stackLog: [], heldUntil: s.endedAt + RESULT_DELAY_MS };
 }

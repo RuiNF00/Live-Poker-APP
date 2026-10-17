@@ -60,6 +60,9 @@ describe('holdResult', () => {
     expect(s.cashOut).toBe(0);
     expect(s.finish).toBe(null);
     expect(s.field).toBe(null);
+    // A cash game's last stack is its cash-out: that waits too.
+    expect(s.stack).toBe(0);
+    expect(s.stackLog).toEqual([]);
     expect(s.heldUntil).toBe(ended.endedAt! + RESULT_DELAY_MS);
   });
   it('never holds a bagged day: there is no result yet, only the stack', () => {

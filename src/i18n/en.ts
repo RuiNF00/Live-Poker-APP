@@ -702,7 +702,7 @@ const en: Record<string, string> = {
   'Bankroll e viagens': 'Bankroll and trips',
   'Resultados por sala e jogo, despesas de viagem, impostos por país e PDF para o contabilista.': 'Results by venue and game, trip expenses, taxes by country and a PDF for your accountant.',
   'Staking e swaps': 'Staking and swaps',
-  'Vende ações, faz swaps confirmados por link e acerta contas no fim.': 'Sell action, make swaps confirmed by link and settle up at the end.',
+  'Regista a ação que vendes, faz swaps confirmados por link e acerta contas no fim.': 'Log the action you sell, make swaps confirmed by link and settle up at the end.',
   'Bloqueio com Face ID e modo que esconde os valores em toda a app.': 'Face ID lock and a mode that hides amounts across the app.',
   'Idioma': 'Language',
   'No telemóvel': 'In phone settings',
