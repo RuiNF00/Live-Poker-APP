@@ -18,6 +18,7 @@ import { filterPills, HandFilterSheet } from '@/components/HandFilters';
 import { activeFilters, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
+import { openInGtoWizard } from '@/lib/gto-wizard';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { ProMoment, useProMoment } from '@/components/ProMoment';
@@ -300,7 +301,7 @@ export default function HandsScreen() {
               setPicked(new Set());
             }}
           />
-          <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
+          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro ? toSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton
@@ -644,6 +645,17 @@ function FilterPill({ label, onClear }: { label: string; onClear: () => void }) 
   );
 }
 
+
+/** Picked hands to GTO Wizard in one go, or as one PokerStars .txt for other solvers and trackers. */
+function toSolver(list: Hand[]) {
+  tap();
+  if (Platform.OS === 'web') return openInGtoWizard(list);
+  Alert.alert(t('Exportar {n} mãos', { n: list.length }), t('Formato PokerStars: GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+    { text: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard(list) },
+    { text: t('Guardar ficheiro .txt'), onPress: () => exportSolver(list) },
+    { text: t('Cancelar'), style: 'cancel' },
+  ]);
+}
 
 /** Picked hands as one PokerStars file; unfinished hands are left out, and the player is told. */
 function exportSolver(list: Hand[]) {

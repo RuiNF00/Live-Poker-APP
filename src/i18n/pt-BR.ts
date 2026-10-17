@@ -1065,6 +1065,13 @@ const ptBR: Record<string, string> = {
   'Já mudaste de app': 'Você já trocou de app',
   'Mudar de app em 1 minuto': 'Troque de app em 1 minuto',
   'Já uso outra app: mudar em 1 minuto': 'Já uso outro app: trocar em 1 minuto',
+  // Replayer: ICM, hero bar; GTO Wizard
+  'Precisas de': 'Você precisa de',
+  'Prémios em percentagem do prize pool.': 'Prêmios em porcentagem do prize pool.',
+  'No GTO Wizard, em Analyze › Upload, cola o texto e carrega em Upload.': 'No GTO Wizard, em Analyze › Upload, cole o texto e toque em Upload.',
+  'Aposta': 'Bet',
+  'HERO APOSTA': 'HERO DÁ BET',
+  'Passar ou apostar': 'Check ou bet',
 };
 
 export default ptBR;

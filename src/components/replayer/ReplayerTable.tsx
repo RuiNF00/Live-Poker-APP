@@ -2,8 +2,8 @@
 // seats placed by hand for every table size (layout.ts), ivory cards, chip stacks
 // and an action badge on each plate. Visual base: the stats-app replayer.
 
-import React, { useEffect, useState } from 'react';
-import { Animated, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { t } from '@/i18n';
@@ -13,6 +13,8 @@ import { BRAND, C, F, ff, posColor } from '@/theme';
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
 import type { BadgeKind, RpSeat, RpView } from './model';
+import type { Street } from '@/poker/types';
+import { FlyingChips, RiseIn, useReduceMotion, type Flight } from './motion';
 import { RpCard } from './RpCard';
 
 
@@ -26,11 +28,13 @@ export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
 };
 
 
+const STREET_NO: Record<Street, number> = { preflop: 0, flop: 1, turn: 2, river: 3 };
+
 /** Same marks as the tags beside the two boards. */
 const RUN_MARK = { 1: '①', 2: '②' } as const;
 
 /** Run it twice: both boards stacked, smaller, each tagged with its number. */
-function RunBoards({ boards, k, top }: { boards: string[][]; k: number; top: number }) {
+function RunBoards({ boards, k, top, reduce }: { boards: string[][]; k: number; top: number; reduce: boolean }) {
   const cw = SIZE.boardCardW * 0.76 * k;
   const ch = SIZE.boardCardH * 0.76 * k;
   const gap = 3 * k;
@@ -54,23 +58,14 @@ function RunBoards({ boards, k, top }: { boards: string[][]; k: number; top: num
             <Text style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>{j + 1}</Text>
           </View>
           {b.map((c, i) => (
-            <Appear key={`${i}-${c}`}>
+            <RiseIn key={`${i}-${c}`} reduce={reduce}>
               <RpCard card={c} w={cw} h={ch} />
-            </Appear>
+            </RiseIn>
           ))}
         </View>
       ))}
     </View>
   );
-}
-
-/** Fades a card or chip in when it first appears. */
-function Appear({ children, style }: { children: React.ReactNode; style?: object }) {
-  const [o] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    Animated.timing(o, { toValue: 1, duration: 220, useNativeDriver: true }).start();
-  }, [o]);
-  return <Animated.View style={[style, { opacity: o, transform: [{ translateY: o.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>{children}</Animated.View>;
 }
 
 export function ReplayerTable({
@@ -79,8 +74,11 @@ export function ReplayerTable({
   button,
   onTapLeft,
   onTapRight,
+  animate = false,
 }: {
   view: RpView;
+  /** Live motion between steps (the in-app replayer). Off for still renders such as Story frames. */
+  animate?: boolean;
   heroIndex: number;
   button: number;
   onTapLeft?: () => void;
@@ -95,6 +93,7 @@ export function ReplayerTable({
 
   const onLayout = (e: LayoutChangeEvent) => setW(Math.round(e.nativeEvent.layout.width));
 
+
   const bestEquity = Math.max(-1, ...view.seats.map((s) => s.equity ?? -1));
   const boardW = SIZE.boardCardW * k * boardScale(n);
   const boardH = SIZE.boardCardH * k * boardScale(n);
@@ -103,6 +102,35 @@ export function ReplayerTable({
     const c = seatCenter(map.seats[vis(i)], w);
     return { x: (c.x / w) * 100, y: map.seats[vis(i)].y };
   };
+
+  // Motion between steps: bets gather into the pot when a street is dealt, the pot slides to the winner.
+  const reduce = useReduceMotion() || !animate;
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const prev = useRef<RpView | null>(null);
+  const land = useCallback((id: string) => setFlights((fs) => fs.filter((f) => f.id !== id)), []);
+  useEffect(() => {
+    const before = prev.current;
+    prev.current = view;
+    if (!before || reduce || !w) return;
+    const potAt = { x: w / 2, y: (POT_Y / 100) * h };
+    const next: Flight[] = [];
+    const tag = Date.now().toString(36);
+    // The action that closes a street sweeps every bet into the middle (only going forward).
+    if (view.pot > before.pot && STREET_NO[view.street] >= STREET_NO[before.street] && !view.seats.some((s) => s.won)) {
+      for (const s of before.seats)
+        if (s.bet > 0 && view.seats[s.i].bet === 0) next.push({ id: `${tag}g${s.i}`, amount: s.bet, from: { x: (map.bets[vis(s.i)].x / 100) * w, y: (map.bets[vis(s.i)].y / 100) * h }, to: potAt });
+    }
+    const winners = view.seats.filter((s) => s.won);
+    if (winners.length && !before.seats.some((s) => s.won) && view.pot > 0) {
+      winners.forEach((s, j) => {
+        const p = seatPt(s.i);
+        next.push({ id: `${tag}w${s.i}`, amount: view.pot / winners.length, from: potAt, to: { x: (p.x / 100) * w, y: (p.y / 100) * h }, delay: j * 90 });
+      });
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (next.length) setFlights((fs) => [...fs, ...next]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   return (
     <View onLayout={onLayout} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO }}>
@@ -130,14 +158,14 @@ export function ReplayerTable({
           </Text>
           {/* board */}
           {view.board2 ? (
-            <RunBoards boards={[view.board, view.board2]} k={k} top={(BOARD_Y / 100) * h} />
+            <RunBoards boards={[view.board, view.board2]} k={k} top={(BOARD_Y / 100) * h} reduce={reduce} />
           ) : (
           <View style={{ position: 'absolute', left: 0, right: 0, top: (BOARD_Y / 100) * h - boardH / 2, flexDirection: 'row', justifyContent: 'center', gap: SIZE.boardGap * k * boardScale(n) }}>
             {[0, 1, 2, 3, 4].map((c) =>
               view.board[c] ? (
-                <Appear key={view.board[c]}>
+                <RiseIn key={view.board[c]} reduce={reduce} delay={c < 3 ? c * 80 : 0}>
                   <RpCard card={view.board[c]} w={boardW} h={boardH} />
-                </Appear>
+                </RiseIn>
               ) : (
                 <View key={'slot' + c} style={{ width: boardW, height: boardH, borderRadius: boardW * 0.14, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(245,237,216,0.12)' }} />
               ),
@@ -202,6 +230,10 @@ export function ReplayerTable({
               </View>
             );
           })()}
+
+          {flights.map((f) => (
+            <FlyingChips key={f.id} f={f} size={12 * k} onDone={land} />
+          ))}
 
           {/* seats */}
           {view.seats.map((s) => (
@@ -339,6 +371,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y:
 
       {s.equity != null ? (
         <View
+          accessibilityLabel={`Equity ${pct(s.equity)}${s.equity >= bestEquity ? `, ${t('a melhor')}` : ''}`}
           style={{
             position: 'absolute',
             ...(s.hero ? { right: pw + 4, top: ch * cardShow(s.hero) + ph / 2 - 8 * k } : { top: ch * cardShow(s.hero) + ph - 7 * k }),
@@ -350,6 +383,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y:
             zIndex: 3,
           }}>
           <Text allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
+            {s.equity >= bestEquity ? '★ ' : ''}
             {pct(s.equity)}
           </Text>
         </View>

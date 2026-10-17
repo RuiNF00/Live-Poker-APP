@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReplay, fromAppHand, livePosts, validateHand, type AppHand } from '../src';
+import { buildReplay, fromAppHand, livePosts, stakesText, validateHand, type AppHand } from '../src';
 
 // A 6-handed 2/5 cash game; button on player 0, so SB = 1, BB = 2, UTG = 3, HJ = 4, CO = 5.
 const base = (game: Partial<AppHand['game']>, actions: AppHand['actions'], board: string[] = []): AppHand => ({
@@ -99,6 +99,14 @@ describe('live cases', () => {
     expect(last.winners?.map((w) => [w.seat, w.amount])).toEqual([[1, 120]]);
   });
 
+  it('the header names the bomb pot and the button ante', () => {
+    const bomb = fromAppHand(base({ bombPot: 20 }, [{ p: 1, kind: 'check' }])).hand;
+    expect(stakesText(bomb.blinds)).toBe('2/5 · bomb pot 20');
+    const btn = fromAppHand(base({ ante: 5, anteType: 'btn' }, [{ p: 3, kind: 'fold' }])).hand;
+    expect(stakesText(btn.blinds)).toBe('2/5 · ante BTN 5');
+    expect(stakesText(fromAppHand(base({ ante: 5, anteType: 'bb' }, [])).hand.blinds)).toBe('2/5 · ante 5');
+  });
+
   it('a straddle keeps the action map pointing at the right step', () => {
     const h = base({ straddles: 1 }, [{ p: 4, kind: 'raise', to: 30 }, { p: 5, kind: 'fold' }]);
     const { hand, actionMap } = fromAppHand(h);
@@ -171,5 +179,20 @@ describe('run it twice in the action log', () => {
     h.board2 = ['Ks', '4h', '8d', 'Qc', '5s'];
     const text = describeStep(end(h), 5, 'chips', 'pt');
     expect(text).toMatch(/^Board 1: BTN ganha 1004 .* · Board 2: CO ganha 1003 /);
+  });
+});
+
+describe('labels in four languages', () => {
+  it('pt-BR and es name the streets, the start and the hands their own way', async () => {
+    const { categoryLabel, streetLabel, formatChips } = await import('../src');
+    expect(categoryLabel('trips', 'pt')).toBe('Trio');
+    expect(categoryLabel('trips', 'pt-BR')).toBe('Trinca');
+    expect(categoryLabel('quads', 'pt-BR')).toBe('Quadra');
+    expect(categoryLabel('two_pair', 'es')).toBe('Doble pareja');
+    expect(streetLabel('preflop', 'es')).toBe('Preflop');
+    expect(streetLabel('preflop', 'pt-BR')).toBe('Pré-flop');
+    expect(formatChips(9500, 'pt-BR')).toBe('9.500');
+    const steps = buildReplay(fromAppHand(base({}, [{ p: 3, kind: 'fold' }])).hand, { locale: 'es' });
+    expect(steps.length).toBeGreaterThan(0);
   });
 });

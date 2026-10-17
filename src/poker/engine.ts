@@ -593,7 +593,8 @@ export function autoTags(hand: Hand, r: Replay): string[] {
   }
   if (maxPf >= 3) tags.push('4-bet pot');
   else if (maxPf === 2) tags.push('3-bet pot');
-  else if (maxPf === 0 && r.final.street !== 'preflop') tags.push('Limped');
+  // A bomb pot has no preflop betting at all: that isn't a limp.
+  else if (maxPf === 0 && r.final.street !== 'preflop' && !(hand.game.bombPot && hand.game.bombPot > 0)) tags.push('Limped');
   if (sawFlop >= 3) tags.push('Multiway');
   if (allIn) tags.push('All-in');
   if (r.result && !r.final.foldWin) tags.push('Showdown');
