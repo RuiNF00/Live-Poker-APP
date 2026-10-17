@@ -3,12 +3,12 @@
 // biggest scores. "O teu resultado" is after staking, swaps and expenses and
 // matches the Bankroll tab; "Ação total" is the tournaments as played.
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { ProBlur } from '@/components/ProGate';
 import { SmallSample } from '@/components/SmallSample';
 import { Button, Card, Chip, ChipRow, Divider, Empty, ListGroup, ListItem, Row, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -119,18 +119,12 @@ export default function TournamentStatsScreen() {
             <Breakdown title={t('Por festival')} rows={festivals} currency={currency} hidden={hidden} />
             <Breakdown title={t('Por jogo')} rows={games} currency={currency} hidden={hidden} />
           </>
-        ) : (
-          <Card tone="accent" onPress={() => pro.paywall('stats')} style={{ gap: S.sm }}>
-            <Row>
-              <Ionicons name="lock-closed" size={16} color={C.accent} />
-              <T v="h3" style={{ flex: 1 }}>
-                {t('ROI e ITM por buy-in, festival e jogo')}
-              </T>
-              <Ionicons name="chevron-forward" size={16} color={C.muted} />
-            </Row>
-            <T v="small">{t('Vê onde ganhas e onde perdes, com Pro.')}</T>
-          </Card>
-        )}
+        ) : [bands, festivals, games].some((g) => g.length >= 2) ? (
+          // Locked: the first breakdown with something in it, blurred, so the lock never covers an empty card.
+          <ProBlur feature="mttStats" locked title={t('ROI e ITM por buy-in, festival e jogo')}>
+            <Breakdown title={t('Por buy-in')} rows={[bands, festivals, games].find((g) => g.length >= 2)!} currency={currency} hidden />
+          </ProBlur>
+        ) : null}
 
         <Button title={t('Partilhar o meu currículo')} icon="share-outline" kind="secondary" onPress={() => router.push({ pathname: '/tournament-card', params: { cur: currency, view } })} />
       </ScrollView>

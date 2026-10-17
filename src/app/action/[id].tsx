@@ -12,6 +12,7 @@ import { Alert, Platform, Pressable, Share, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { Sheet } from '@/components/BankrollSheets';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { ProRow } from '@/components/ProGate';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { markupLabel } from '@/components/staking/sheets';
 import { balanceLabel } from '@/components/staking/use-staking';
@@ -212,7 +213,7 @@ export default function ActionPackageScreen() {
   const send = async (l: PackageLine) => {
     if (!settings.nickname.trim()) return setError(t('Escreve o teu nome para o backer saber de quem é o link.'));
     // Free: links for one package. More is Pro.
-    if (!l.remote && !pro.isPro && getOffers().some((x) => x.id !== o.id && x.lines.some((y) => y.remote))) return pro.paywall('generic');
+    if (!l.remote && !pro.isPro && getOffers().some((x) => x.id !== o.id && x.lines.some((y) => y.remote))) return pro.paywall('staking');
     setBusy(l.id);
     setError(null);
     tap('medium');
@@ -288,13 +289,7 @@ export default function ActionPackageScreen() {
                   <SettleCard key={l.id} name={nameOf(l)} st={st} cur={f.currency} onOpen={() => router.push(`/staking/${l.backerId}`)} onSend={() => void sendSettlement(l, st)} />
                 ))
               ) : (
-                <Card onPress={() => pro.paywall('staking')} accessibilityLabel={t('Ver contas')} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                  <Ionicons name="lock-closed" size={20} color={C.accent} />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <T v="h3">{t('Ver contas')}</T>
-                    <T v="small">{t('Quanto acertas com cada backer, já calculado. Com o Pro.')}</T>
-                  </View>
-                </Card>
+                <ProRow feature="staking" title={t('Ver contas')} body={t('Quanto acertas com cada backer, já calculado. Com o Pro.')} />
               )}
             </View>
           </Section>

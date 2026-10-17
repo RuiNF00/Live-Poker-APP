@@ -2,25 +2,22 @@
 // each with the bars and the sample behind it. Free players see the strongest
 // one blurred, with the way to Pro.
 
-import { BlurView } from 'expo-blur';
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
-import { useLocked } from '@/components/ProGate';
+import { ProBlur, useLocked } from '@/components/ProGate';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
 import { insights, MIND_IDS, MIN_SESSIONS, type Insight, type MindId } from '@/store/insights-math';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
-import { Button, Card, Row, Section, T } from './ui';
+import { Card, Row, Section, T } from './ui';
 
 /** About how many sessions it takes before the first card can appear. */
 const FIRST_AT = 4 * MIN_SESSIONS;
 
 export function Insights({ list, cur, hidden, result, mind }: { list: Session[]; cur: string; hidden: boolean; result?: (s: Session) => number; /** The mental game journal's cards (its own screen); without it, every other card. */ mind?: boolean }) {
-  const { paywall } = usePro();
   const locked = useLocked('insights');
   const fmt = useMemo(() => (n: number) => (hidden ? '•••' : money(n, cur)), [hidden, cur]);
   const all = useMemo(() => insights(list, (n) => fmt(Math.round(n)), { result }).filter((x) => !!mind === MIND_IDS.includes(x.id as MindId)), [list, fmt, result, mind]);
@@ -51,15 +48,9 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
   if (locked) {
     return (
       <Section title={mind ? t('O que o diário já diz') : t('Onde ganhas e onde perdes')}>
-        <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
+        <ProBlur feature="insights" locked title={all.length === 1 ? t('Encontrámos 1 padrão nas tuas sessões') : t('Encontrámos {n} padrões nas tuas sessões', { n: all.length })}>
           <InsightCard x={all[0]} fmt={fmt} />
-          <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
-            <T v="h3" style={{ textAlign: 'center' }}>
-              {all.length === 1 ? t('Encontrámos 1 padrão nas tuas sessões') : t('Encontrámos {n} padrões nas tuas sessões', { n: all.length })}
-            </T>
-            <Button size="md" icon="lock-closed" title={t('Vê onde perdes dinheiro')} onPress={() => paywall('insights')} />
-          </BlurView>
-        </View>
+        </ProBlur>
       </Section>
     );
   }

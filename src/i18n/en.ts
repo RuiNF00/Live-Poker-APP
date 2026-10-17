@@ -2921,6 +2921,21 @@ const en: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'It has the dates, venues and results in it. Nothing else from your Sweatbook goes with it. You send it yourself, from your email app.',
   'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
   'Abrir o email': 'Open email',
+  // Pro gates (paywall leads)
+  'ROI e ITM onde jogas': 'ROI and ITM where you play',
+  'Por buy-in, festival e jogo: onde os teus torneios dão lucro.': 'By buy-in, festival and game: where your tournaments make money.',
+  'A variância com os teus números': 'Variance with your own numbers',
+  'O teu win rate e desvio padrão, já preenchidos, em vez de exemplos.': 'Your win rate and standard deviation, filled in, instead of examples.',
+  'Win rate a sério': 'Win rate you can trust',
+  'Por jogo, stake e sala': 'By game, stake and room',
+  'Mês a mês': 'Month by month',
+  'Compara com os anteriores': 'Compare with earlier months',
+  'Subir de stake': 'Moving up',
+  'Risco de ruína e plano': 'Risk of ruin and a plan',
+  'Torneios a fundo': 'Tournaments in depth',
+  'ROI e ITM por buy-in e festival': 'ROI and ITM by buy-in and festival',
+  'A tua variância': 'Your variance',
+  'Com os teus números': 'With your numbers',
 };
 
 export default en;

@@ -1316,6 +1316,13 @@ const ptBR: Record<string, string> = {
   'Só vai este ficheiro': 'Só vai este arquivo',
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
+  // Pro gates (paywall leads)
+  'ROI e ITM onde jogas': 'ROI e ITM onde você joga',
+  'Por buy-in, festival e jogo: onde os teus torneios dão lucro.': 'Por buy-in, festival e jogo: onde seus torneios dão lucro.',
+  'A variância com os teus números': 'A variância com os seus números',
+  'O teu win rate e desvio padrão, já preenchidos, em vez de exemplos.': 'Seu win rate e desvio padrão, já preenchidos, em vez de exemplos.',
+  'A tua variância': 'Sua variância',
+  'Com os teus números': 'Com os seus números',
 };
 
 export default ptBR;
