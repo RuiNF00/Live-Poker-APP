@@ -130,6 +130,10 @@ function FestivalView({ f }: { f: Festival }) {
                 accessibilityLabel={t('Nome do festival')}
                 returnKeyType="done"
                 maxLength={60}
+                // Wraps instead of cutting a long name at 360 px or large text; Enter still just closes the keyboard.
+                multiline
+                scrollEnabled={false}
+                submitBehavior="blurAndSubmit"
                 style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
               />
               <Ionicons name="pencil" size={16} color={C.textDim} />
@@ -331,15 +335,15 @@ function EventRow({
   return (
     <Card tone={on ? 'accent' : 'default'} padded={false}>
       <Pressable onPress={onToggle} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md }}>
-        <View style={{ width: 48 }}>
+        <View style={{ minWidth: 48 }}>
           <T v="mono">{e.start.slice(11)}</T>
           <T v="tiny">{e.game}</T>
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3" numberOfLines={2}>
+          <T v="h3">
             {eventTitle(e)}
           </T>
-          <T v="small" numberOfLines={1}>
+          <T v="small">
             {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
