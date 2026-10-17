@@ -25,14 +25,16 @@ export function NetStatus() {
     <View
       pointerEvents="none"
       accessibilityLiveRegion="polite"
-      accessibilityLabel={t('Tudo guardado no telemóvel. Envia quando houver sinal.')}
+      accessibilityLabel={(pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')) + '. ' + t('Tudo guardado no telemóvel. Envia quando houver sinal.')}
       style={{ position: 'absolute', top: insets.top + 2, left: 0, right: 0, alignItems: 'center', zIndex: 50 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: 0.95 }}>
-        <Ionicons name="cloud-offline-outline" size={12} color={C.textDim} />
-        {/* It floats over the header: at the largest text sizes it would cover the first rows. */}
-        <T v="tiny" color={C.textDim} maxFontSizeMultiplier={1.2} numberOfLines={1}>
-          {pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')}
-        </T>
+      {/* Icon only (and what's waiting to go out): a text pill at the top centre ran over long titles at 375 px. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 26, height: 26, justifyContent: 'center', paddingHorizontal: pending > 0 ? 8 : 0, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: 0.95 }}>
+        <Ionicons name="cloud-offline-outline" size={13} color={C.textDim} />
+        {pending > 0 ? (
+          <T v="tiny" color={C.textDim} maxFontSizeMultiplier={1.2} numberOfLines={1}>
+            {pending}
+          </T>
+        ) : null}
       </View>
     </View>
   );
