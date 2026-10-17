@@ -901,14 +901,10 @@ export function Banner({
           <Ionicons name={icon} size={18} color={col} />
         ) : null}
         <View style={{ flex: 1, gap: 1 }}>
-          <T v="h3" color={col} numberOfLines={1}>
+          <T v="h3" color={col}>
             {title}
           </T>
-          {body ? (
-            <T v="small" numberOfLines={2}>
-              {body}
-            </T>
-          ) : null}
+          {body ? <T v="small">{body}</T> : null}
         </View>
         {action ? (
           <T v="small" color={col} style={{ fontFamily: ff(800) }}>

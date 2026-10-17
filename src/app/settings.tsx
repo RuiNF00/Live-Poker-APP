@@ -155,6 +155,7 @@ export default function SettingsScreen() {
           </Card>
           <ListGroup>
             <ToggleItem icon="calculator-outline" title={t('Valores em big blinds')} subtitle={t('Nas mãos, em vez de fichas')} value={settings.inBB} onChange={(inBB) => setSettings({ inBB })} />
+            <ToggleItem icon="pulse-outline" title={t('Diário mental')} subtitle={t('Como chegas e como sais de cada sessão. Só tu vês.')} value={settings.mindAsk !== false} onChange={(mindAsk) => setSettings({ mindAsk })} />
             <ToggleItem icon="phone-portrait-outline" title={t('Vibração')} subtitle={t('Só quando conta: guardar uma mão, fechar uma sessão')} value={settings.haptics !== false} onChange={(haptics) => setSettings({ haptics })} />
             <ListItem icon="language-outline" title={t('Idioma')} subtitle={VARIANT_NAME[variant]} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
           </ListGroup>
