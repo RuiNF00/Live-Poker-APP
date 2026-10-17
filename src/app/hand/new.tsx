@@ -103,16 +103,20 @@ export default function NewHand() {
   // opponent who comes in before hero. Once per state, so undo or a rewind
   // never folds the same seats again. A reopened draft or an edited hand keeps
   // what was entered: none of its states folds again, even after undo.
-  const autoDone = useRef(new Set<string>(hand.actions.length ? Array.from({ length: hand.actions.length + 1 }, (_, k) => `${hand.id}:${hand.button}:${k}`) : []));
+  // Keyed on the actions themselves: after undo, a different line of the same
+  // length is a new state and still folds.
+  const stateKey = (h: Hand, upTo = h.actions.length) => `${h.id}:${h.button}:` + h.actions.slice(0, upTo).map((a) => `${a.p}${a.kind[0]}${a.to ?? ''}`).join(',');
+  const autoDone = useRef(new Set<string>(hand.actions.length ? Array.from({ length: hand.actions.length + 1 }, (_, k) => stateKey(hand, k)) : []));
+  const autoKey = stateKey(hand);
   useEffect(() => {
-    const key = `${hand.id}:${hand.button}:${hand.actions.length}`;
+    const key = autoKey;
     if (phase !== 'action' || autoDone.current.has(key)) return;
     const acts = autoFold(hand, s);
     if (!acts.length) return;
     autoDone.current.add(key);
     update({ ...hand, actions: [...hand.actions, ...acts] }, draft.posChosen, hand.actions.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, hand.actions.length, hand.button]);
+  }, [phase, autoKey]);
   const autoSeats = draft.autoFrom !== undefined && phase === 'action' ? hand.actions.slice(draft.autoFrom).map((a) => a.p) : [];
   const rewind = (seat: number) => {
     if (draft.autoFrom === undefined) return;
@@ -269,7 +273,8 @@ export default function NewHand() {
             accessibilityLabel={t('Subiram as blinds? Toca para {blinds}', { blinds: blindsLabel({ ...hand, game: levelUp }) })}
             onPress={() => {
               tap();
-              update(hand.sessionId ? { ...hand, game: levelUp } : rescaleStacks(hand, levelUp));
+              // Tournament stacks don't grow with the level: only the blinds change.
+              update({ ...hand, game: levelUp });
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 }}>
