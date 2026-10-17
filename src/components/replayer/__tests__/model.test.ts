@@ -6,7 +6,8 @@ import { replay } from '@/poker/engine';
 import type { Hand } from '@/poker/types';
 import { sampleHand } from '@/poker/sample';
 
-import { timeline, viewAt } from '../model';
+import { spokenTable, timeline, viewAt } from '../model';
+import { handClassName } from '@/poker/card-name';
 
 const opts = { inBB: false, reveal: false, atEnd: false };
 
@@ -142,4 +143,17 @@ test('hero bets half pot: bluff needs 33%, villain gets 25% pot odds', () => {
   assert.ok(Math.abs(v.heroBet!.bluffBE - 1 / 3) < 1e-9);
   assert.ok(Math.abs(v.heroBet!.vb - 3) < 1e-9);
   assert.ok(Math.abs(v.heroBet!.vsPotOdds - 0.25) < 1e-9);
+});
+
+test('screen reader: the table as one sentence, and grid cells by name', () => {
+  const hand = sampleHand('sample');
+  const r = replay(hand);
+  const v = viewAt(hand, r, r.steps.length - 1, opts);
+  const said = spokenTable(v);
+  assert.match(said, /Pote /);
+  assert.match(said, /\(tu\)/);
+  assert.ok(!/[♠♥♦♣]/.test(said), 'cards are words, not suit glyphs');
+  assert.equal(handClassName('AKs'), 'Ás e Rei, mesmo naipe');
+  assert.equal(handClassName('T9o'), 'Dez e Nove, naipes diferentes');
+  assert.equal(handClassName('77'), 'Par, Sete');
 });

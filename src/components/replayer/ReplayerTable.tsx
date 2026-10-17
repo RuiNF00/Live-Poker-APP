@@ -12,7 +12,7 @@ import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
-import type { BadgeKind, RpSeat, RpView } from './model';
+import { spokenTable, type BadgeKind, type RpSeat, type RpView } from './model';
 import { FlyingChips, RiseIn, useReduceMotion, type Flight } from './motion';
 import { progressAt, type MotionAnim, type MotionStep } from './timeline';
 import { RpCard } from './RpCard';
@@ -143,8 +143,10 @@ export function ReplayerTable({
         <Pressable
           style={{ flex: 1 }}
           onPress={(e) => (e.nativeEvent.locationX < w * 0.35 ? onTapLeft?.() : onTapRight?.())}
-          accessibilityRole="button"
-          accessibilityLabel={t('Mesa')}>
+          accessibilityLabel={spokenTable(view)}
+          accessibilityHint={onTapRight ? t('Toca duas vezes para avançar.') : undefined}
+          accessibilityActions={[{ name: 'activate' }]}
+          onAccessibilityAction={() => onTapRight?.()}>
           <Felt w={w} h={h} />
 
           <Text

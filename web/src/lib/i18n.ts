@@ -88,6 +88,7 @@ export function pickLocale(acceptLanguage: string | null | undefined): Locale {
 }
 
 const pt = {
+  stepLabel: 'Posição na mão',
   sharedBy: 'Mão partilhada',
   level: 'Nível',
   playersLeft: 'restantes',
@@ -175,6 +176,7 @@ const pt = {
 export type Dict = typeof pt;
 
 const en: Dict = {
+  stepLabel: 'Position in the hand',
   sharedBy: 'Shared hand',
   level: 'Level',
   playersLeft: 'left',
@@ -260,6 +262,7 @@ const en: Dict = {
 };
 
 const ptBR: Dict = {
+  stepLabel: 'Posição na mão',
   sharedBy: 'Mão compartilhada',
   level: 'Nível',
   playersLeft: 'restantes',
@@ -345,6 +348,7 @@ const ptBR: Dict = {
 };
 
 const es: Dict = {
+  stepLabel: 'Posición en la mano',
   sharedBy: 'Mano compartida',
   level: 'Nivel',
   playersLeft: 'restantes',

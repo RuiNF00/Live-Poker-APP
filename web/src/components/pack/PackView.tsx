@@ -77,7 +77,7 @@ export function PackView({ title, hands, hideAmounts, locale, siteUrl, invite, u
           return (
             <button key={h.shareId} role="tab" aria-selected={n === i} className={`pk-tab${n === i ? ' on' : ''}`} onClick={() => go(n)}>
               <span className="pk-tab-n">{n + 1}</span>
-              <span className="pk-tab-cards">{hero?.cards?.length ? hero.cards.map((cd) => <PlayingCard key={cd} card={cd} size="xs" />) : '—'}</span>
+              <span className="pk-tab-cards">{hero?.cards?.length ? hero.cards.map((cd) => <PlayingCard key={cd} card={cd} size="xs" locale={locale} />) : '—'}</span>
             </button>
           );
         })}

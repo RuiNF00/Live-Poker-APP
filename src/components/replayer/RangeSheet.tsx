@@ -6,6 +6,7 @@ import { Modal, PanResponder, Pressable, Text, useWindowDimensions, View, type G
 
 import { t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
+import { handClassName } from '@/poker/card-name';
 import { pct } from '@/poker/format';
 import { combosOf, GRID_RANKS, gridClass, HAND_ORDER, rangePct, topClasses } from '@/poker/ranges';
 import type { CardCode } from '@/poker/types';
@@ -117,7 +118,7 @@ export function RangeSheet({
   return (
     <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
-      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: 34, gap: S.md }}>
+      <View accessibilityViewIsModal style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: 34, gap: S.md }}>
         <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -4 }} />
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View style={{ gap: 2 }}>
@@ -158,7 +159,7 @@ export function RangeSheet({
                     accessible
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: on }}
-                    accessibilityLabel={c}
+                    accessibilityLabel={handClassName(c)}
                     accessibilityActions={[{ name: 'activate' }]}
                     onAccessibilityAction={() => toggle(c)}
                     style={{

@@ -275,7 +275,7 @@ export function Replayer({
         <Ctrl icon="play-forward" label={t('Próxima street')} onPress={nextStreet} />
         <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={() => setSpeed((s) => (s + 1) % SPEEDS.length)} />
         <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => setInBB((b) => !b)} />
-        <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} onPress={() => setReveal((x) => !x)} />
+        <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} toggle onPress={() => setReveal((x) => !x)} />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -549,12 +549,15 @@ function Ctrl({
   label,
   onPress,
   active,
+  toggle,
 }: {
   icon?: React.ComponentProps<typeof Ionicons>['name'];
   text?: string;
   label: string;
   onPress: () => void;
   active?: boolean;
+  /** The label stays the same and `active` says whether it's on (read as "selected"). */
+  toggle?: boolean;
 }) {
   return (
     <Pressable
@@ -562,6 +565,7 @@ function Ctrl({
       hitSlop={4}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={toggle ? { selected: !!active } : undefined}
       style={({ pressed }) => ({
         flex: 1,
         height: 46,

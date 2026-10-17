@@ -124,7 +124,7 @@ export function CoachView(props: Props) {
             <button key={h.id} className={`cv-tab${i === at ? ' on' : ''}`} onClick={() => pick(i)} aria-current={i === at}>
               <span className="cv-tab-n">{i + 1}</span>
               <span className="cv-tab-cards">
-                {hero.length ? hero.map((x) => <PlayingCard key={x} card={x} size="xs" />) : null}
+                {hero.length ? hero.map((x) => <PlayingCard key={x} card={x} size="xs" locale={locale} />) : null}
               </span>
               {n ? <span className="cv-tab-count">{n}</span> : null}
             </button>
@@ -475,7 +475,7 @@ function Log({
                     {streetLabel(s.street, locale)}
                     <span className="log-board">
                       {(s.street === 'flop' ? s.board.slice(0, 3) : s.board.slice(-1)).map((x) => (
-                        <PlayingCard key={x} card={x} size="xs" />
+                        <PlayingCard key={x} card={x} size="xs" locale={locale} />
                       ))}
                     </span>
                   </>

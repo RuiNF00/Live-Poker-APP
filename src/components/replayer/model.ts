@@ -4,7 +4,7 @@ import { t } from '@/i18n';
 import { positions, totalPot, type HandResult, type Replay, type Step } from '@/poker/engine';
 import { equity } from '@/poker/equity';
 import { evaluate } from '@/poker/evaluator';
-import { amount, decimal } from '@/poker/format';
+import { amount, decimal, pct } from '@/poker/format';
 import { equityVsRange, rangeOf, rangePct, rangePctForRaises, topClasses } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
@@ -145,6 +145,33 @@ export function cachedRangeEquity(hero: CardCode[], board: CardCode[], classes: 
     rangeCache.set(key, equityVsRange(hero, rangeOf(classes), board));
   }
   return rangeCache.get(key)!;
+}
+
+/**
+ * The whole table as one sentence for a screen reader: what just happened, the pot, the board,
+ * then each player still in the hand (name, position, stack, bet, cards) and who folded.
+ */
+export function spokenTable(v: RpView): string {
+  const parts: string[] = [];
+  if (v.narration) parts.push(v.narration);
+  parts.push(`${t('Pote')} ${v.potLabel}`);
+  if (v.board.length) parts.push(`Board: ${v.board.map(spokenCard).join(', ')}`);
+  for (const s of v.seats) {
+    if (s.folded) continue;
+    const bits = [s.hero ? `${s.name} (${t('tu')})` : s.name, s.pos, s.stack];
+    const did = s.badge?.label ?? s.betLabel;
+    if (did) bits.push(did);
+    if (s.allIn) bits.push('all-in');
+    if (s.cards) bits.push(s.cards.map(spokenCard).join(' e '));
+    else if (s.cards === null) bits.push(t('cartas tapadas'));
+    if (s.handName) bits.push(s.handName);
+    if (s.equity != null) bits.push(`equity ${pct(s.equity)}`);
+    if (s.won) bits.push(`${t('ganha')} ${s.won}`);
+    parts.push(bits.filter(Boolean).join(', '));
+  }
+  const folded = v.seats.filter((s) => s.folded).map((s) => s.name);
+  if (folded.length) parts.push(`Fold: ${folded.join(', ')}`);
+  return parts.join('. ');
 }
 
 /** The view at step `k` of the replay. `reveal` shows every known hand. */

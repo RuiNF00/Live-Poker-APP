@@ -210,7 +210,7 @@ export function ShareView(props: Props) {
               setPlaying(false);
               goTo(Number(e.target.value));
             }}
-            aria-label="Passo"
+            aria-label={d.stepLabel}
           />
           <div className="scrub-marks">
             {[...commentSteps].map((i) => (
@@ -466,7 +466,7 @@ function ActionLog({
             {g.cards.length > 0 && (
               <span className="log-board">
                 {g.cards.map((c) => (
-                  <PlayingCard key={c} card={c} size="xs" />
+                  <PlayingCard key={c} card={c} size="xs" locale={locale} />
                 ))}
               </span>
             )}

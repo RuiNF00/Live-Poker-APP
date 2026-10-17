@@ -1,4 +1,6 @@
 import type { Card } from '@livepoker/hand-format';
+import { cardLabel, hiddenCardLabel } from '@/lib/card-name';
+import type { Locale } from '@/lib/i18n';
 
 export const SUIT_PATHS: Record<string, string> = {
   h: 'M50 90C20 66 5 49 5 30 5 15 17 5 30 5c10 0 17 6 20 13 3-7 10-13 20-13 13 0 25 10 25 25 0 19-15 36-45 60Z',
@@ -23,7 +25,6 @@ export function SuitIcon({ suit, size = 14 }: { suit: string; size?: number }) {
   );
 }
 
-const SUIT_NAME: Record<string, string> = { s: 'espadas', h: 'copas', d: 'ouros', c: 'paus' };
 
 export function PlayingCard({
   card,
@@ -31,15 +32,18 @@ export function PlayingCard({
   faceDown = false,
   dim = false,
   highlight = false,
+  locale = 'pt',
 }: {
   card?: Card | null;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   faceDown?: boolean;
   dim?: boolean;
   highlight?: boolean;
+  /** Language of the card's spoken name. */
+  locale?: Locale;
 }) {
   if (!card || faceDown) {
-    return <span className={`card card-${size} card-back${dim ? ' card-dim' : ''}`} aria-label="carta escondida" />;
+    return <span className={`card card-${size} card-back${dim ? ' card-dim' : ''}`} aria-label={hiddenCardLabel(locale)} />;
   }
   const rank = card[0] === 'T' ? '10' : card[0];
   const suit = card[1];
@@ -47,7 +51,7 @@ export function PlayingCard({
     <span
       className={`card card-${size}${dim ? ' card-dim' : ''}${highlight ? ' card-hi' : ''}`}
       style={{ background: SUIT_COLORS[suit] }}
-      aria-label={`${rank} de ${SUIT_NAME[suit]}`}
+      aria-label={cardLabel(card, locale)}
     >
       <span className="card-rank">{rank}</span>
       <span className="card-suit">
