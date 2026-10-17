@@ -3088,7 +3088,6 @@ const es: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} hasta ahora: {amount} en {h} h',
   'Começar: {name}': 'Empezar: {name}',
   'Às {time}': 'A las {time}',
-  'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Aún faltan los torneos de $600 y $800 con seis flights al inicio del festival: el organizador no ha publicado la hora de cada flight.',
   'Apagar torneio': 'Borrar torneo',
   'Adicionar torneio': 'Añadir torneo',
   'Ex.: Main Event': 'Ej.: Main Event',
@@ -3129,12 +3128,12 @@ const es: Record<string, string> = {
   'Peralada, novembro 2026': 'Peralada, noviembre 2026',
   'Espinho, dezembro 2026': 'Espinho, diciembre 2026',
   'Praga, dezembro 2026': 'Praga, diciembre 2026',
-  'O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.': 'El Día 1B del #94, el 28 de noviembre, aún no tiene hora publicada.',
-  'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': 'Falta el #7 (PKO Turbo, 27 de noviembre a las 22:00): el organizador aún no ha publicado el buy-in.',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: 550 €, stack inicial de 40.000, niveles de 45 minutos. El organizador aún no ha publicado los días y las horas de los flights.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'El organizador publica el stack inicial de cada torneo, pero no la duración de los niveles, salvo en algunos.',
   'Lisboa': 'Lisboa',
   'Praga': 'Praga',
+  'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
+  'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
 };
 
 export default es;

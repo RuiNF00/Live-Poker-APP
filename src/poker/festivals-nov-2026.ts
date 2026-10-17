@@ -1,18 +1,15 @@
 // The November and early December 2026 festivals with a published schedule:
-// São Paulo, Torrelodones, Lisbon and Prague, plus Peralada and Espinho with dates only.
+// São Paulo, Torrelodones, Lisbon, Punta del Este and Prague, plus Peralada and Espinho with dates only.
 // Transcribed by the research thread from each organiser's own schedule
 // (research/horarios-festivais/ in the project files, read 2026-10-17) and
 // generated from those files: only rows marked official, stack and levels as
 // published. Generic names (App Review 5.2.1): no organiser, venue or brand.
 // Day 3+ and final tables aren't rows, as in Las Vegas: a bagged tournament
-// carries on from the Sessão tab. A Turbo flight runs its own structure, not given.
+// carries on from the Sessão tab. A Turbo flight runs its own structure: shown only when published.
 
 import type { Festival } from './festivals';
 
-/**
- * São Paulo, 13–28 November 2026, events #1–#105. Times are local (UTC−3).
- * The 28 Nov Day 1B of #94 has no time published yet and is left out.
- */
+/** São Paulo, 13–28 November 2026, events #1–#105. Times are local (UTC−3). */
 export const SAO_PAULO_NOV_2026: Festival = {
   id: 'sao-paulo-nov-2026',
   name: 'São Paulo, novembro 2026',
@@ -22,7 +19,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
   utcOffset: -180,
   // https://bsop.com.br/bsop-millions/ and the per-event structure PDFs linked from it
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
-  notes: ['O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.'],
+  notes: [],
   events: [
     { id: '1-1A', number: 1, name: 'Mystery Bounty', flight: '1A', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-13T12:00', stack: 30000, levelMinutes: 30 },
     { id: '2', number: 2, name: 'High Roller', game: 'NLH', buyIn: 25000, guarantee: 0, start: '2026-11-13T14:00', stack: 200000, levelMinutes: 30 },
@@ -172,8 +169,9 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '97', number: 97, name: 'PLO PKO', game: 'PLO', buyIn: 2500, guarantee: 0, start: '2026-11-27T15:00', stack: 50000, levelMinutes: 30 },
     { id: '98', number: 98, name: "No Limit Hold'em", game: 'NLH', buyIn: 1000, guarantee: 0, start: '2026-11-27T18:00', stack: 25000, levelMinutes: 20 },
     { id: '99', number: 99, name: 'PLO5 High Roller', game: 'PLO', buyIn: 25000, guarantee: 0, start: '2026-11-27T19:00', stack: 200000, levelMinutes: 30 },
+    { id: '94-1B', number: 94, name: "No Limit Hold'em", flight: '1B', game: 'NLH', buyIn: 2500, guarantee: 1_000_000, start: '2026-11-27T20:00', stack: 30000, levelMinutes: 25 },
     { id: '100', number: 100, name: 'Turbo', game: 'NLH', buyIn: 4000, guarantee: 0, start: '2026-11-27T22:00', stack: 25000, levelMinutes: 15 },
-    { id: '101', number: 101, name: "No Limit Hold'em", game: 'NLH', buyIn: 1000, guarantee: 0, start: '2026-11-28T14:00', stack: 50000, levelMinutes: 25 },
+    { id: '101', number: 101, name: "No Limit Hold'em", game: 'NLH', buyIn: 1000, guarantee: 500_000, start: '2026-11-28T14:00', stack: 50000, levelMinutes: 25 },
     { id: '102', number: 102, name: "Dealer's Choice", game: 'Mix', buyIn: 2500, guarantee: 0, start: '2026-11-28T14:00', stack: 40000, levelMinutes: 30 },
     { id: '103', number: 103, name: 'PKO', game: 'NLH', buyIn: 4000, guarantee: 0, start: '2026-11-28T14:00', stack: 30000, levelMinutes: 20 },
     { id: '104', number: 104, name: 'High Roller PKO', game: 'NLH', buyIn: 10000, guarantee: 0, start: '2026-11-28T16:00', stack: 100000, levelMinutes: 25 },
@@ -227,10 +225,7 @@ export const TORRELODONES_NOV_2026: Festival = {
   ],
 };
 
-/**
- * Lisbon, 23–29 November 2026, events #1–#10 and two satellites. #7 is left
- * out until its buy-in is published.
- */
+/** Lisbon, 23–29 November 2026, events #1–#10 and two satellites. */
 export const LISBOA_NOV_2026: Festival = {
   id: 'lisboa-nov-2026',
   name: 'Lisboa, novembro 2026',
@@ -240,28 +235,81 @@ export const LISBOA_NOV_2026: Festival = {
   utcOffset: 0,
   // https://www.vamospokertour.com/es/festivals/lisboa-2026/ (official schedule image)
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
-  notes: ['Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.'],
+  notes: [],
   events: [
     { id: '1', number: 1, name: 'Warm Up', game: 'NLH', buyIn: 200, guarantee: 50_000, start: '2026-11-23T18:00', stack: 100000, levelMinutes: 30 },
     { id: '2-1A', number: 2, name: 'Main Event', flight: '1A', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-24T17:30', stack: 60000, levelMinutes: 35 },
     { id: '11-242130', number: 11, name: 'Satellite to High Roller', unnumbered: true, game: 'NLH', buyIn: 110, guarantee: 0, start: '2026-11-24T21:30', stack: 25000, levelMinutes: 30 },
-    { id: '11-251515', number: 11, name: 'Satellite to High Roller', unnumbered: true, game: 'NLH', buyIn: 110, guarantee: 0, start: '2026-11-25T15:15', stack: 25000, levelMinutes: 30 },
+    { id: '11-251515', number: 11, name: 'Satellite to High Roller', unnumbered: true, game: 'NLH', buyIn: 110, guarantee: 0, start: '2026-11-25T15:15', stack: 25000, levelMinutes: 25 },
     { id: '2-1B', number: 2, name: 'Main Event', flight: '1B', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-25T17:30', stack: 60000, levelMinutes: 35 },
     { id: '3', number: 3, name: 'High Roller', game: 'NLH', buyIn: 700, guarantee: 100_000, start: '2026-11-25T18:00', stack: 100000, levelMinutes: 40 },
     { id: '12-252130', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-25T21:30', stack: 25000, levelMinutes: 30 },
     { id: '3-2', number: 3, name: 'High Roller', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 100_000, start: '2026-11-26T15:30' },
-    { id: '12-261530', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T15:30', stack: 25000, levelMinutes: 30 },
+    { id: '12-261530', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T15:30', stack: 25000, levelMinutes: 25 },
     { id: '2-1C', number: 2, name: 'Main Event', flight: '1C', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-26T17:30', stack: 60000, levelMinutes: 35 },
     { id: '4', number: 4, name: 'PLO Knockout', game: 'PLO', buyIn: 550, guarantee: 20_000, start: '2026-11-26T18:30', stack: 40000, levelMinutes: 20 },
     { id: '12-262100', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T21:00', stack: 25000, levelMinutes: 30 },
     { id: '5', number: 5, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-26T22:00', stack: 40000, levelMinutes: 12 },
     { id: '2-1D', number: 2, name: 'Main Event', flight: '1D', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T15:30', stack: 60000, levelMinutes: 35 },
     { id: '6', number: 6, name: 'Deepstack', game: 'NLH', buyIn: 150, guarantee: 20_000, start: '2026-11-27T16:30', stack: 60000, levelMinutes: 20 },
-    { id: '2-1E', number: 2, name: 'Main Event', flight: '1E Turbo', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T23:30' },
+    { id: '7', number: 7, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-27T22:00', stack: 40000, levelMinutes: 12 },
+    { id: '2-1E', number: 2, name: 'Main Event', flight: '1E Turbo', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T23:30', stack: 60000, levelMinutes: 15 },
     { id: '2-2', number: 2, name: 'Main Event', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 200_000, start: '2026-11-28T15:30' },
     { id: '8', number: 8, name: 'Mini Main Event', game: 'NLH', buyIn: 250, guarantee: 50_000, start: '2026-11-28T18:30', stack: 60000, levelMinutes: 30 },
     { id: '9', number: 9, name: 'Super High Roller Knockout', game: 'NLH', buyIn: 1100, guarantee: 25_000, start: '2026-11-28T19:30', stack: 200000, levelMinutes: 20 },
     { id: '10', number: 10, name: 'PKO', game: 'NLH', buyIn: 250, guarantee: 20_000, start: '2026-11-29T17:00', stack: 40000, levelMinutes: 25 },
+  ],
+};
+
+/**
+ * Punta del Este, 3–9 December 2026, from the organiser's official PDF
+ * calendar. Satellites with several start times are one numbered event each, as published.
+ */
+export const PUNTA_DEL_ESTE_DEC_2026: Festival = {
+  id: 'punta-del-este-dez-2026',
+  name: 'Punta del Este, dezembro 2026',
+  venue: 'Punta del Este',
+  city: 'Uruguai',
+  currency: '$',
+  utcOffset: -180,
+  // https://enjoypuntadeleste.uy/wp-content/uploads/2026/09/Calendario-Poker-Diciembre-2026-V3.pdf
+  source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
+  notes: [],
+  events: [
+    { id: '1', number: 1, name: 'Open', game: 'NLH', buyIn: 440, guarantee: 30_000, start: '2026-12-03T12:00', stack: 20000, levelMinutes: 30 },
+    { id: '2', number: 2, name: 'Satellite to #7 Seniors', game: 'NLH', buyIn: 165, guarantee: 0, start: '2026-12-03T12:00', stack: 10000, levelMinutes: 15 },
+    { id: '3', number: 3, name: 'Satellite to #4 High Roller', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-03T17:00', stack: 10000, levelMinutes: 15 },
+    { id: '4', number: 4, name: 'High Roller', game: 'NLH', buyIn: 3300, guarantee: 200_000, start: '2026-12-03T18:00', stack: 60000, levelMinutes: 40 },
+    { id: '5', number: 5, name: 'Satellite to #8 Main Event', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-03T20:00', stack: 10000, levelMinutes: 15 },
+    { id: '4-2', number: 4, name: 'High Roller', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 200_000, start: '2026-12-04T12:00' },
+    { id: '6', number: 6, name: 'Satellite to #8 Main Event', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-04T12:00', stack: 10000, levelMinutes: 15 },
+    { id: '7', number: 7, name: 'Seniors', game: 'NLH', buyIn: 1100, guarantee: 50_000, start: '2026-12-04T14:30', stack: 30000, levelMinutes: 20 },
+    { id: '8-1A', number: 8, name: 'Main Event', flight: '1A', game: 'NLH', buyIn: 2750, guarantee: 750_000, start: '2026-12-04T20:00', stack: 20000, levelMinutes: 30 },
+    { id: '9', number: 9, name: 'Satellite to #13 Super High Roller', game: 'NLH', buyIn: 550, guarantee: 0, start: '2026-12-04T20:00', stack: 10000, levelMinutes: 15 },
+    { id: '11', number: 11, name: 'Mini Main Event', game: 'NLH', buyIn: 660, guarantee: 50_000, start: '2026-12-05T12:00', stack: 30000, levelMinutes: 30 },
+    { id: '10', number: 10, name: 'Satellite to #13 Super High Roller', game: 'NLH', buyIn: 550, guarantee: 0, start: '2026-12-05T12:00', stack: 10000, levelMinutes: 15 },
+    { id: '12', number: 12, name: 'Knockout', game: 'NLH', buyIn: 660, guarantee: 0, start: '2026-12-05T17:00', stack: 20000, levelMinutes: 20 },
+    { id: '13', number: 13, name: 'Super High Roller', game: 'NLH', buyIn: 5500, guarantee: 250_000, start: '2026-12-05T18:00', stack: 60000, levelMinutes: 40 },
+    { id: '14', number: 14, name: 'Satellite to #8 Main Event', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-05T20:00', stack: 10000, levelMinutes: 15 },
+    { id: '13-2', number: 13, name: 'Super High Roller', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 250_000, start: '2026-12-06T12:00' },
+    { id: '15', number: 15, name: 'Satellite to #8 Main Event', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-06T12:30', stack: 10000, levelMinutes: 15 },
+    { id: '8-1B', number: 8, name: 'Main Event', flight: '1B', game: 'NLH', buyIn: 2750, guarantee: 750_000, start: '2026-12-06T15:00', stack: 20000, levelMinutes: 30 },
+    { id: '16', number: 16, name: 'Turbo', game: 'NLH', buyIn: 440, guarantee: 0, start: '2026-12-06T17:00', stack: 20000, levelMinutes: 20 },
+    { id: '8-1C', number: 8, name: 'Main Event', flight: '1C', game: 'NLH', buyIn: 2750, guarantee: 750_000, start: '2026-12-06T20:00', stack: 20000, levelMinutes: 30 },
+    { id: '17', number: 17, name: 'Satellite to #8 Main Event', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-06T20:00', stack: 10000, levelMinutes: 15 },
+    { id: '18', number: 18, name: 'Satellite to #8 Main Event', game: 'NLH', buyIn: 330, guarantee: 0, start: '2026-12-07T12:00', stack: 10000, levelMinutes: 15 },
+    { id: '8-1D', number: 8, name: 'Main Event', flight: '1D', game: 'NLH', buyIn: 2750, guarantee: 750_000, start: '2026-12-07T13:00', stack: 20000, levelMinutes: 30 },
+    { id: '19', number: 19, name: 'Deepstack Turbo', game: 'NLH', buyIn: 550, guarantee: 0, start: '2026-12-07T16:00', stack: 30000, levelMinutes: 20 },
+    { id: '8-1E', number: 8, name: 'Main Event', flight: '1E', game: 'NLH', buyIn: 2750, guarantee: 750_000, start: '2026-12-07T20:00', stack: 20000, levelMinutes: 30 },
+    { id: '20', number: 20, name: 'Satellite to #25 Seniors', game: 'NLH', buyIn: 165, guarantee: 0, start: '2026-12-07T20:00', stack: 10000, levelMinutes: 15 },
+    { id: '8-2', number: 8, name: 'Main Event', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 750_000, start: '2026-12-08T12:00' },
+    { id: '21', number: 21, name: 'Satellite to #25 Seniors', game: 'NLH', buyIn: 165, guarantee: 0, start: '2026-12-08T12:00', stack: 10000, levelMinutes: 15 },
+    { id: '22', number: 22, name: 'Second Chance', game: 'NLH', buyIn: 1100, guarantee: 50_000, start: '2026-12-08T13:00', stack: 25000, levelMinutes: 30 },
+    { id: '23', number: 23, name: 'PKO', game: 'NLH', buyIn: 440, guarantee: 0, start: '2026-12-08T18:00', stack: 20000, levelMinutes: 20 },
+    { id: '24', number: 24, name: 'Satellite to #25 Seniors', game: 'NLH', buyIn: 165, guarantee: 0, start: '2026-12-08T20:00', stack: 10000, levelMinutes: 15 },
+    { id: '25', number: 25, name: 'Seniors', game: 'NLH', buyIn: 1100, guarantee: 75_000, start: '2026-12-09T12:00', stack: 30000, levelMinutes: 20 },
+    { id: '26', number: 26, name: 'PLO Knockout', game: 'PLO', buyIn: 440, guarantee: 0, start: '2026-12-09T13:00', stack: 20000, levelMinutes: 20 },
+    { id: '27', number: 27, name: 'PKO', game: 'NLH', buyIn: 880, guarantee: 0, start: '2026-12-09T16:00', stack: 25000, levelMinutes: 20 },
   ],
 };
 
