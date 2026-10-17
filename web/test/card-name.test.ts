@@ -8,5 +8,6 @@ describe('spoken card names on the web pages', () => {
     expect(cardLabel('Th', 'en')).toBe('Ten of hearts');
     expect(cardLabel('Ac', 'es')).toBe('As de tréboles');
     expect(hiddenCardLabel('en')).toBe('face-down card');
+    expect(hiddenCardLabel('pt-BR')).toBe('carta fechada');
   });
 });
