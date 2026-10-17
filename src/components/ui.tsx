@@ -903,11 +903,15 @@ export const inputStyle = {
   fontFamily: ff(600),
 };
 
-export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInputProps & { label?: string; hint?: string; inputStyle?: StyleProp<TextStyle>; ref?: React.Ref<React.ComponentRef<typeof TextInput>> }) {
+export function Field({ label, oneLineLabel, style, inputStyle: ist, hint, ...rest }: TextInputProps & { label?: string; oneLineLabel?: boolean; hint?: string; inputStyle?: StyleProp<TextStyle>; ref?: React.Ref<React.ComponentRef<typeof TextInput>> }) {
   const [focus, setFocus] = React.useState(false);
   return (
     <View style={[{ gap: 6, flex: rest.multiline ? undefined : undefined }, style as StyleProp<ViewStyle>]}>
-      {label ? <T v="label">{label}</T> : null}
+      {label ? (
+        <T v="label" numberOfLines={oneLineLabel ? 1 : undefined} adjustsFontSizeToFit={oneLineLabel} minimumFontScale={0.6}>
+          {label}
+        </T>
+      ) : null}
       <TextInput
         placeholderTextColor={C.muted}
         selectionColor={C.accent}
@@ -946,9 +950,12 @@ export function KeyboardDoneBar() {
 /** `selectOnFocus`: the number is selected when the field opens, so typing replaces it (correcting a typo). */
 export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean; selectOnFocus?: boolean }) {
   return (
+    // Side by side in rows of 2-3: with big system text a label shrinks to one line instead of
+    // breaking mid-word ("INSCRITO/S") and pushing its box below the others.
     <Field
       label={label}
-      style={{ flex: 1 }}
+      oneLineLabel
+      style={{ flex: 1, justifyContent: 'flex-end' }}
       value={value ? String(value) : ''}
       onChangeText={(x) => onChange(parseInt(x.replace(/\D/g, ''), 10) || 0)}
       keyboardType="number-pad"

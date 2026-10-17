@@ -497,7 +497,8 @@ a {
 
 .rt-fold {
   margin-bottom: calc(var(--k) * var(--cw) * 1.39 * var(--tuck) + 2px);
-  color: #7f8d87;
+  /* 4.5:1 on the felt (was #7f8d87, 2.9:1). */
+  color: #a3b5ad;
   font-weight: 800;
   font-size: calc(var(--k) * 11);
   letter-spacing: 1px;
@@ -626,7 +627,8 @@ a {
 
 .rt-badge-allin {
   background: #e74c3c;
-  color: #fff;
+  /* Dark ink: 5.5:1 (white was 3.8:1 at this small size). */
+  color: #0a0c0b;
 }
 
 .rt-badge-post_sb,
