@@ -47,6 +47,7 @@ test('totals keep currencies apart and count unconfirmed swaps separately', () =
     swap({ id: '2', terms: { ...terms, currency: '€' }, entries: [e('a', 'result', 10000)] }),
     swap({ id: '3', confirmedAt: undefined }),
     swap({ id: '4', archived: true, entries: [e('b', 'result', 1e6)] }),
+    swap({ id: '5', gone: true, entries: [e('b', 'result', 1e6)] }),
   ]);
   assert.deepEqual(t.byCurrency.get('$'), { owedToMe: 3000, iOwe: 0, net: 3000 });
   assert.deepEqual(t.byCurrency.get('€'), { owedToMe: 0, iOwe: 500, net: -500 });
@@ -153,4 +154,19 @@ test("only the other player's new entries are news", () => {
   const after = { ...before, entries: [...before.entries, e('b', 'result', 5000, { id: 'new' }), e('a', 'payment', 50, { id: 'mine' })] };
   assert.deepEqual(newFromOther(before, after).map((x) => x.id), ['new']);
   assert.deepEqual(newFromOther(undefined, after), []);
+});
+
+test('unsettled swaps: confirmed, money still owed, not left, archived or gone', async () => {
+  const { unsettledSwaps } = await import('../swaps');
+  const owing = swap({ entries: [e('b', 'result', 10000)] });
+  assert.equal(unsettledSwaps([owing, swap({}), swap({ entries: [e('b', 'result', 10000)], archived: true }), swap({ entries: [e('b', 'result', 10000)], left: 'b' })], []), 1);
+});
+
+test('the other side leaving is kept from the server copy', () => {
+  const remote: RemoteSwap = { id: 's1', terms: { ...terms, b: { name: '-', pct: 3 } }, confirmedAt: new Date(10).toISOString(), confirmedName: '-', entries: [], code: null, you: 'a', updatedAt: new Date(20).toISOString(), leftSide: 'b' };
+  const m = mergeRemote(swap({ confirmedName: 'João' }), remote);
+  assert.equal(m.left, 'b');
+  assert.equal(m.terms.b.name, 'João', 'this phone keeps the name it already had');
+  assert.equal(m.confirmedName, 'João');
+  assert.equal(mergeRemote(swap({ terms: { ...terms, b: { name: '-', pct: 3 } } }), remote).terms.b.name, '-');
 });

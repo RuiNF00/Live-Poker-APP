@@ -69,9 +69,10 @@ export async function removeSwapEntry(id: string, token: string, entryId: string
   return j.swap;
 }
 
-export async function deleteSwap(id: string, token: string): Promise<void> {
+/** `leave` ("Delete all my data"): only my side goes; the other player keeps a read-only record. */
+export async function deleteSwap(id: string, token: string, leave = false): Promise<void> {
   try {
-    await call(`/${encodeURIComponent(id)}`, { method: 'DELETE', token });
+    await call(`/${encodeURIComponent(id)}${leave ? '?leave=1' : ''}`, { method: 'DELETE', token });
   } catch (e) {
     if (!(e instanceof SwapError && e.status === 404)) throw e;
   }
