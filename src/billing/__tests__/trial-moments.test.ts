@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { parsePaywallConfig } from '../experiments';
 import { addBlocked, sessionEndCard } from '../session-limit';
-import { ENDED_DAYS, inQuietHours, proEndNotice, sessionStartOffer, trialNotice } from '../trial-moments';
+import { billingNotice, ENDED_DAYS, inQuietHours, proEndNotice, sessionStartOffer, trialNotice } from '../trial-moments';
 
 const DAY = 86_400_000;
 const now = 1_800_000_000_000;
@@ -82,4 +82,11 @@ test('the one-time screens wait out the quiet hours, 23:00 to 12:00', () => {
     [0, 8, 11, 12, 18, 22, 23].map(inQuietHours),
     [true, true, true, false, false, false, true],
   );
+});
+
+test('a failed store charge is told once per billing issue', () => {
+  assert.equal(billingNotice(null, null), false);
+  assert.equal(billingNotice(1000, null), true);
+  assert.equal(billingNotice(1000, 1000), false);
+  assert.equal(billingNotice(2000, 1000), true);
 });

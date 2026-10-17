@@ -44,7 +44,9 @@ interface ProValue {
   paywall: (reason?: PaywallReason, then?: () => void) => void;
   /** The paywall takes the pending `then` (once) when Pro arrives, or drops it when closed. */
   takeResume: () => (() => void) | null;
-  purchase: (plan: PlanId, reason?: PaywallReason) => Promise<store.BuyResult>;
+  purchase: (plan: PlanId, reason?: PaywallReason, replacing?: string) => Promise<store.BuyResult>;
+  /** The store couldn't charge the last renewal and is retrying (Pro still on, in its grace period). */
+  billingIssue: boolean;
   restore: () => Promise<store.RestoreResult>;
   /** Re-plan the trial and come-back notifications (after the player allows them). */
   refreshNudges: () => void;
@@ -62,6 +64,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
   const [plansFailed, setPlansFailed] = useState(false);
+  const [billingIssue, setBillingIssue] = useState(false);
+  const checkBilling = useCallback(() => void store.getBillingIssue().then((b) => setBillingIssue(!!b)), []);
   const reloadPlans = useCallback(() => {
     setPlansFailed(false);
     store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
@@ -87,12 +91,16 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
         if (u) setUsage(pruneLog(JSON.parse(u) as UsageEvent[]));
       })
       .catch(() => {});
-    const off = store.configure(setPro);
+    const off = store.configure((v) => {
+      setPro(v);
+      checkBilling();
+    });
+    checkBilling();
     store.getIsPro().then((v) => v !== null && setPro(v));
     store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
     store.getPaywallConfig().then(setPaywallConfig);
     return off;
-  }, [setPro]);
+  }, [setPro, checkBilling]);
 
   const record = useCallback((kind: UsageKind, props?: Record<string, string | number | boolean>) => {
     track(kind === 'hand' ? 'hand_saved' : 'share_created', props);
@@ -129,10 +137,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [trialDays, paywallConfig]);
 
   const purchase = useCallback(
-    async (id: PlanId, reason: PaywallReason = 'generic') => {
+    async (id: PlanId, reason: PaywallReason = 'generic', replacing?: string) => {
       const plan = plans.find((p) => p.id === id);
       if (!plan) return 'unavailable' as const;
-      const res = await store.buy(plan);
+      const res = await store.buy(plan, replacing);
       if (res === 'error') noteVisibleError();
       if (res === 'ok') {
         setPro(true);
@@ -178,10 +186,11 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     const sub = AppState.addEventListener('change', (st) => {
       if (st !== 'active') return;
       refreshNudges();
+      checkBilling();
       inviteNews();
     });
     return () => sub.remove();
-  }, [refreshNudges, inviteNews]);
+  }, [refreshNudges, inviteNews, checkBilling]);
   const annualPrice = plans.find((p) => p.id === 'annual')?.priceString ?? '';
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -191,8 +200,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession]);
 
   const value = useMemo(
-    () => ({ isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),
-    [isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges],
+    () => ({ isPro, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),
+    [isPro, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

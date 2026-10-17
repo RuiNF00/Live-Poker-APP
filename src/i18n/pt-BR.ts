@@ -1576,6 +1576,8 @@ const ptBR: Record<string, string> = {
   'Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.': 'Você tem 1 sessão. As primeiras conclusões aparecem por volta de {m}.',
   'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Ainda observando (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.',
   'Enviar o meu resultado para o swap': 'Enviar meu resultado para o swap',
+  'A {store} não conseguiu cobrar': 'A {store} não conseguiu cobrar',
+  'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Seu Pro continua por enquanto. Atualize o pagamento na {store} para não perder.',
 };
 
 export default ptBR;

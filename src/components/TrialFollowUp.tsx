@@ -4,11 +4,12 @@
 
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
 
 import { currentTrial } from '@/billing/nudges-sync';
+import { getBillingIssue, manageSubscription } from '@/billing/purchases';
 import { usePro } from '@/billing/pro';
-import { deferState, inQuietHours, markNotice, markProEndSeen, markSessionOffer, proEnded, proEndNotice, proEndSeen, seenNotices, sessionStartOffer, trialNotice, withLastTrial } from '@/billing/trial-moments';
+import { billingNotice, billingSeen, deferState, inQuietHours, markBillingSeen, markNotice, markProEndSeen, markSessionOffer, proEnded, proEndNotice, proEndSeen, seenNotices, sessionStartOffer, trialNotice, withLastTrial } from '@/billing/trial-moments';
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
 import { claimState } from '@/lib/referrals';
@@ -62,6 +63,17 @@ export function TrialFollowUp() {
       if (live && trial && kind) {
         await markNotice(kind, trial.start);
         if (live) router.push({ pathname: '/trial', params: { kind, end: String(trial.end) } });
+        return;
+      }
+      // A renewal the store couldn't charge: Pro stays on while it retries; say it once, with the way to fix it.
+      const issue = await getBillingIssue();
+      if (live && issue && billingNotice(issue.since, await billingSeen())) {
+        await markBillingSeen(issue.since);
+        const storeName = Platform.OS === 'android' ? 'Google Play' : 'App Store';
+        const title = t('A {store} não conseguiu cobrar', { store: storeName });
+        const body = t('O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.', { store: storeName });
+        if (Platform.OS === 'web') notice(title, body);
+        else Alert.alert(title, body, [{ text: t('Agora não'), style: 'cancel' }, { text: t('Atualizar pagamento'), onPress: () => void manageSubscription() }]);
         return;
       }
       // Pro that ended another way (invite days, a cancelled subscription): one calm line, nothing to buy.

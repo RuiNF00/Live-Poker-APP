@@ -3251,6 +3251,10 @@ const es: Record<string, string> = {
   'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Aún observando (1 sesión): el veredicto aparece con 100 h de cash o 50 torneos.',
   'Enviar o meu resultado para o swap': 'Enviar mi resultado al swap',
   '{n} torneios, {c} cashes.': '{n} torneos, {c} cashes.',
+  'Pagamento por atualizar na loja': 'Pago pendiente de actualizar en la tienda',
+  'A {store} não conseguiu cobrar': '{store} no pudo cobrarte',
+  'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Tu Pro sigue activo por ahora. Actualiza el pago en {store} para no perderlo.',
+  'Atualizar pagamento': 'Actualizar pago',
 };
 
 export default es;

@@ -11,3 +11,6 @@ export function buyError(e: unknown): BuyResult {
 
 /** 'pending': the store took the request but hasn't charged yet; Pro turns on through the listener when it does. */
 export type BuyResult = 'ok' | 'cancelled' | 'pending' | 'unavailable' | 'error';
+
+/** Google Play reports a product as `subscription:baseplan`; a plan change names only the subscription. */
+export const playSubscriptionId = (product: string) => product.split(':')[0];

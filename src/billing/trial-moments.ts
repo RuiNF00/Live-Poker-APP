@@ -12,7 +12,7 @@ import { QUIET_FROM, QUIET_TO } from '../lib/notify-policy';
 import type { Trial } from './nudges';
 
 const DAY = 86_400_000;
-const KEYS = { defer: 'rl.trial.defer.v1', seen: 'rl.trial.seen.v1', last: 'rl.trial.last.v1', proEnded: 'rl.pro.ended.v1', proEndSeen: 'rl.pro.endSeen.v1' };
+const KEYS = { defer: 'rl.trial.defer.v1', seen: 'rl.trial.seen.v1', last: 'rl.trial.last.v1', proEnded: 'rl.pro.ended.v1', proEndSeen: 'rl.pro.endSeen.v1', billingSeen: 'rl.pro.billingSeen.v1' };
 
 /** "O que fica grátis" still shows if the app is opened up to this long after the trial ended. */
 export const ENDED_DAYS = 14;
@@ -90,3 +90,8 @@ export const markProEnded = (now = Date.now()) => write(KEYS.proEnded, now);
 export const proEnded = () => read<number>(KEYS.proEnded);
 export const proEndSeen = () => read<number>(KEYS.proEndSeen);
 export const markProEndSeen = (at: number) => write(KEYS.proEndSeen, at);
+
+/** A failed renewal is said once per issue (the store's own emails and sheet do the rest). */
+export const billingNotice = (since: number | null, seen: number | null) => !!since && since !== seen;
+export const billingSeen = () => read<number>(KEYS.billingSeen);
+export const markBillingSeen = (since: number) => write(KEYS.billingSeen, since);

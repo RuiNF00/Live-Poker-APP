@@ -225,8 +225,9 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
-              onPress={() => (pro.isPro ? router.push('/cancel') : manageSubscription())}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.billingIssue ? t('Pagamento por atualizar na loja') : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              // A failed renewal goes straight to the store's page, where the card is changed.
+              onPress={() => (pro.billingIssue ? manageSubscription() : pro.isPro ? router.push('/cancel') : manageSubscription())}
             />
             <ListItem
               icon="refresh-outline"
