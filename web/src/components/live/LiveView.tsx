@@ -151,7 +151,12 @@ export function LiveView({
               </span>
             ) : null}
           </p>
-          {s.stackLog.length > 1 ? <Spark points={s.stackLog.map((p) => p.stack)} label={c.chart} /> : null}
+          {s.stackLog.length > 1 ? (
+            <Spark
+              points={s.stackLog.map((p) => p.stack)}
+              label={c.chartSummary(num(first), num(s.stack), num(Math.max(...s.stackLog.map((p) => p.stack))))}
+            />
+          ) : null}
           {bagged ? <p className="live-note">{c.nextDay}</p> : null}
         </section>
       )}

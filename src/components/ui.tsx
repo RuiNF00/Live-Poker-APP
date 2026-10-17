@@ -325,6 +325,7 @@ export function ListItem({
   destructive,
   left,
   numberOfLines = 1,
+  accessibilityLabel,
 }: {
   icon?: IconName;
   iconColor?: string;
@@ -338,6 +339,8 @@ export function ListItem({
   destructive?: boolean;
   left?: React.ReactNode;
   numberOfLines?: number;
+  /** What VoiceOver reads for the row, when the visible text alone reads out of order. */
+  accessibilityLabel?: string;
 }) {
   const body = (
     <>
@@ -375,10 +378,16 @@ export function ListItem({
     </>
   );
   const st: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingHorizontal: S.lg, paddingVertical: 12, minHeight: 52 };
-  if (!onPress) return <View style={st}>{body}</View>;
+  if (!onPress)
+    return (
+      <View style={st} accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel}>
+        {body}
+      </View>
+    );
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={() => {
         tap();
         onPress();
