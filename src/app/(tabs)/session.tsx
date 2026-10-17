@@ -5,8 +5,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -14,7 +14,7 @@ import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { StakeFields } from '@/components/StakeFields';
-import { Button, Card, Chip, ChipRow, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { askNotificationPermission } from '@/lib/lock-screen/reminder';
@@ -90,6 +90,7 @@ function Live({ s }: { s: Session }) {
   const { saveSession, hands } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout'>(null);
   const [ending, setEnding] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
@@ -120,172 +121,247 @@ function Live({ s }: { s: Session }) {
     else save({ breaks: [...s.breaks, { start: now }] });
   };
 
+  const rebuy = () => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }));
+
   return (
-    <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg }}>
-      <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
-        <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
-        <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
-          {clock(playedMs(s, now))}
-        </T>
-        <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
-        <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
-          <Button size="md" kind="secondary" style={{ flex: 1 }} title={paused ? t('Retomar') : t('Pausa')} icon={paused ? 'play' : 'pause'} onPress={togglePause} />
-          <Button size="md" style={{ flex: 1 }} title={t('Nova mão')} icon="add" onPress={() => router.push('/hand/new')} />
-        </Row>
-      </Card>
-
-      <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
-        <Card onPress={() => setPad('stack')} style={{ flex: 1, gap: 4 }} accessibilityLabel={t('Atualizar stack')}>
-          <Row>
-            <T v="label" style={{ flex: 1 }}>
-              Stack
-            </T>
-            <Ionicons name="pencil" size={13} color={C.accent} />
-          </Row>
-          <T v="monoL">{chips(s.stack)}</T>
-          <Row gap={6}>
-            <T v="monoS">{bbs(s.stack, s.bb)}</T>
-            {delta ? (
-              <T v="monoS" color={delta > 0 ? C.good : C.bad}>
-                {(delta > 0 ? '+' : '') + chips(delta)}
-              </T>
-            ) : null}
-          </Row>
-        </Card>
-        <Card style={{ flex: 1, gap: 4 }}>
-          <T v="label">{s.level ? t('Nível {n}', { n: s.level }) : 'Blinds'}</T>
-          <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
-            {chips(s.sb)}/{chips(s.bb)}
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
+        <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
+          <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
+          <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
+            {clock(playedMs(s, now))}
           </T>
-          <Row gap={S.sm} style={{ marginTop: 2 }}>
-            <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
-            <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
-          </Row>
-          <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
-            <Row gap={4} style={{ marginTop: 2 }}>
-              <Ionicons name="alarm-outline" size={13} color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted} />
-              <T v="monoS" color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted}>
-                {!nextAt ? t('Aviso de nível') : levelDue ? t('{min} min · subir nível', { min: s.levelMinutes! }) : t('{min} min · sobe em {time}', { min: s.levelMinutes!, time: mmss(nextAt - now) })}
-              </T>
-            </Row>
-          </Pressable>
+          <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
         </Card>
-      </Row>
 
-      {s.stackLog.length > 1 && (
-        <Section title={t('Stack ao longo da sessão')}>
-          <Card style={{ paddingHorizontal: S.md }}>
-            <LineChart values={s.stackLog.map((x) => x.stack)} height={120} zeroLine={false} />
-          </Card>
-        </Section>
-      )}
-
-      <TableReads roster={s.roster} />
-
-      {mtt && (
-        <Section title={t('Fase do torneio')}>
-          <ChipRow>
-            {STAGES.map((st) => (
-              <Chip key={st.id} label={st.label} active={s.stage === st.id} onPress={() => save({ stage: st.id })} />
-            ))}
-          </ChipRow>
-        </Section>
-      )}
-
-      <Section title={t('Dinheiro')}>
-        <ListGroup>
-          <ListItem icon="wallet-outline" title={t('Investido')} value={money(cost(s), s.currency)} />
-          <ListItem
-            icon="add-circle-outline"
-            iconColor={C.accent}
-            title={mtt ? 'Re-entry' : 'Rebuy'}
-            subtitle={money(s.buyIn, s.currency)}
-            onPress={() => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }))}
-          />
-          {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={money(s.buyIn, s.currency)} onPress={() => confirm('Add-on?', `${money(s.buyIn, s.currency)}`, () => save({ addOn: (s.addOn || 0) + s.buyIn }))} /> : null}
-          {mtt ? <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} onPress={() => router.push('/chop')} /> : null}
-        </ListGroup>
-      </Section>
-
-      <Section title="Staking" action={t('Backers')} onAction={() => router.push('/staking')}>
-        <BackerLiveCard s={s} />
-        <StakeFields s={s} onChange={save} expenses={false} />
-      </Section>
-
-      {!ending ? (
-        <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
-      ) : (
-        <Section title={t('Terminar sessão')}>
-          <Card style={{ gap: S.md }}>
-            <Row gap={S.sm}>
-              <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
-              {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
-              {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
+        <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+          <Card onPress={() => setPad('stack')} style={{ flex: 1, gap: 4 }} accessibilityLabel={t('Atualizar stack')}>
+            <Row>
+              <T v="label" style={{ flex: 1 }}>
+                Stack
+              </T>
+              <Ionicons name="pencil" size={13} color={C.accent} />
             </Row>
-            <StakeFields s={s} onChange={save} />
-            {(() => {
-              const end = { ...s, cashOut: finish.cashOut };
-              const owed = owedToBackers(end);
-              const p = profit(end);
-              return (
-                <View style={{ gap: 6, paddingTop: S.xs }}>
-                  {owed > 0 ? (
+            <T v="monoL">{chips(s.stack)}</T>
+            <Row gap={6}>
+              <T v="monoS">{bbs(s.stack, s.bb)}</T>
+              {delta ? (
+                <T v="monoS" color={delta > 0 ? C.good : C.bad}>
+                  {(delta > 0 ? '+' : '') + chips(delta)}
+                </T>
+              ) : null}
+            </Row>
+          </Card>
+          <Card style={{ flex: 1, gap: 4 }}>
+            <T v="label">{s.level ? t('Nível {n}', { n: s.level }) : 'Blinds'}</T>
+            <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+              {chips(s.sb)}/{chips(s.bb)}
+            </T>
+            <Row gap={S.sm} style={{ marginTop: 2 }}>
+              <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
+              <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
+            </Row>
+            <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
+              <Row gap={4} style={{ marginTop: 2 }}>
+                <Ionicons name="alarm-outline" size={13} color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted} />
+                <T v="monoS" color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted}>
+                  {!nextAt ? t('Aviso de nível') : levelDue ? t('{min} min · subir nível', { min: s.levelMinutes! }) : t('{min} min · sobe em {time}', { min: s.levelMinutes!, time: mmss(nextAt - now) })}
+                </T>
+              </Row>
+            </Pressable>
+          </Card>
+        </Row>
+
+        {s.stackLog.length > 1 && (
+          <Section title={t('Stack ao longo da sessão')}>
+            <Card style={{ paddingHorizontal: S.md }}>
+              <LineChart values={s.stackLog.map((x) => x.stack)} height={120} zeroLine={false} />
+            </Card>
+          </Section>
+        )}
+
+        <TableReads roster={s.roster} />
+
+        {mtt && (
+          <Section title={t('Fase do torneio')}>
+            <ChipRow>
+              {STAGES.map((st) => (
+                <Chip key={st.id} label={st.label} active={s.stage === st.id} onPress={() => save({ stage: st.id })} />
+              ))}
+            </ChipRow>
+          </Section>
+        )}
+
+        <Section title={t('Dinheiro')}>
+          <ListGroup>
+            <ListItem icon="wallet-outline" title={t('Investido')} value={money(cost(s), s.currency)} />
+            <ListItem
+              icon="add-circle-outline"
+              iconColor={C.accent}
+              title={mtt ? 'Re-entry' : 'Rebuy'}
+              subtitle={money(s.buyIn, s.currency)}
+              onPress={rebuy}
+            />
+            {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={money(s.buyIn, s.currency)} onPress={() => confirm('Add-on?', `${money(s.buyIn, s.currency)}`, () => save({ addOn: (s.addOn || 0) + s.buyIn }))} /> : null}
+            {mtt ? <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} onPress={() => router.push('/chop')} /> : null}
+          </ListGroup>
+        </Section>
+
+        <Section title="Staking" action={t('Backers')} onAction={() => router.push('/staking')}>
+          <BackerLiveCard s={s} />
+          <StakeFields s={s} onChange={save} expenses={false} />
+        </Section>
+
+        {!ending ? (
+          <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+        ) : (
+          <Section title={t('Terminar sessão')}>
+            <Card style={{ gap: S.md }}>
+              <Row gap={S.sm}>
+                <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
+                {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
+                {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
+              </Row>
+              <StakeFields s={s} onChange={save} />
+              {(() => {
+                const end = { ...s, cashOut: finish.cashOut };
+                const owed = owedToBackers(end);
+                const p = profit(end);
+                return (
+                  <View style={{ gap: 6, paddingTop: S.xs }}>
+                    {owed > 0 ? (
+                      <Row style={{ justifyContent: 'space-between' }}>
+                        <T v="small">{t('A pagar aos backers')}</T>
+                        <T v="mono">{money(owed, s.currency)}</T>
+                      </Row>
+                    ) : null}
                     <Row style={{ justifyContent: 'space-between' }}>
-                      <T v="small">{t('A pagar aos backers')}</T>
-                      <T v="mono">{money(owed, s.currency)}</T>
+                      <T v="h3">{s.stakes?.length || s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
+                      <T v="monoL" color={p >= 0 ? C.good : C.bad}>
+                        {(p > 0 ? '+' : '') + money(p, s.currency)}
+                      </T>
                     </Row>
-                  ) : null}
-                  <Row style={{ justifyContent: 'space-between' }}>
-                    <T v="h3">{s.stakes?.length || s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
-                    <T v="monoL" color={p >= 0 ? C.good : C.bad}>
-                      {(p > 0 ? '+' : '') + money(p, s.currency)}
-                    </T>
-                  </Row>
-                </View>
-              );
-            })()}
-            <Row gap={S.sm}>
-              <Button kind="ghost" size="md" title={t('Voltar')} style={{ flex: 1 }} onPress={() => setEnding(false)} />
-              <Button
-                size="md"
-                title={t('Guardar')}
-                style={{ flex: 1 }}
-                haptic={false}
-                onPress={() => {
-                  tap('success');
-                  const now = Date.now();
-                  saveSession({
-                    ...s,
-                    cashOut: finish.cashOut,
-                    finish: finish.place || undefined,
-                    field: finish.field || undefined,
-                    endedAt: now,
-                    breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
-                  });
-                  router.push('/bankroll');
-                }}
-              />
-            </Row>
-          </Card>
-        </Section>
-      )}
+                  </View>
+                );
+              })()}
+              <Row gap={S.sm}>
+                <Button kind="ghost" size="md" title={t('Voltar')} style={{ flex: 1 }} onPress={() => setEnding(false)} />
+                <Button
+                  size="md"
+                  title={t('Guardar')}
+                  style={{ flex: 1 }}
+                  haptic={false}
+                  onPress={() => {
+                    tap('success');
+                    const now = Date.now();
+                    saveSession({
+                      ...s,
+                      cashOut: finish.cashOut,
+                      finish: finish.place || undefined,
+                      field: finish.field || undefined,
+                      endedAt: now,
+                      breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
+                    });
+                    router.push('/bankroll');
+                  }}
+                />
+              </Row>
+            </Card>
+          </Section>
+        )}
 
-      <AmountPad
-        visible={pad === 'stack'}
-        title={t('Stack atual')}
-        bb={s.bb}
-        onClose={() => setPad(null)}
-        onDone={(v) => {
-          setPad(null);
-          save({ stack: v, stackLog: [...s.stackLog, { t: Date.now(), stack: v, level: s.level }] });
+        <AmountPad
+          visible={pad === 'stack'}
+          title={t('Stack atual')}
+          bb={s.bb}
+          onClose={() => setPad(null)}
+          onDone={(v) => {
+            setPad(null);
+            save({ stack: v, stackLog: [...s.stackLog, { t: Date.now(), stack: v, level: s.level }] });
+          }}
+        />
+        <T v="tiny" style={{ textAlign: 'center' }}>
+          {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(profit(s), s.currency) })}
+        </T>
+      </Screen>
+      {/* Everything you do between hands, within reach of the thumb. */}
+      <View style={styles.thumbBar}>
+        <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
+        <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
+        <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
+        <Button size="md" style={{ flex: 1.6 }} title={t('Nova mão')} icon="add" onPress={() => router.push('/hand/new')} />
+      </View>
+      <NoteSheet
+        visible={noteOpen}
+        value={s.notes}
+        onClose={() => setNoteOpen(false)}
+        onSave={(notes) => {
+          setNoteOpen(false);
+          save({ notes });
         }}
       />
-      <T v="tiny" style={{ textAlign: 'center' }}>
-        {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(profit(s), s.currency) })}
-      </T>
-    </Screen>
+    </View>
   );
 }
+
+/** Square icon-and-label button for the bar at the bottom of a live session. */
+function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; active?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.thumb, { opacity: pressed ? 0.7 : 1, borderColor: active ? C.warn : C.border }]}>
+      <Ionicons name={icon} size={20} color={active ? C.warn : C.text} />
+      <T v="tiny" numberOfLines={1} maxFontSizeMultiplier={1.2} color={active ? C.warn : C.textDim}>
+        {label}
+      </T>
+    </Pressable>
+  );
+}
+
+/** A free note on the session: table dynamics, how you felt, anything to remember. */
+function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; value: string; onClose: () => void; onSave: (v: string) => void }) {
+  const [text, setText] = useState(value);
+  const [shownFor, setShownFor] = useState(visible);
+  // Start from the saved note each time the sheet opens.
+  if (visible !== shownFor) {
+    setShownFor(visible);
+    if (visible) setText(value);
+  }
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <SheetHeader title={t('Nota da sessão')} onClose={onClose} />
+          <Field value={text} onChangeText={setText} placeholder={t('A mesa, como te sentes, o que queres lembrar…')} multiline autoFocus inputStyle={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
+          <Button title={t('Guardar')} icon="checkmark" onPress={() => onSave(text.trim())} />
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  thumbBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: S.sm,
+    paddingHorizontal: S.gutter,
+    paddingVertical: S.sm,
+    backgroundColor: C.bgDeep,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.border,
+  },
+  thumb: { flex: 1, minHeight: 52, borderRadius: 14, borderWidth: 1, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', gap: 2 },
+});
 
 /** Who's at your table, with your notes on them: a glance between hands. */
 function TableReads({ roster }: { roster: string[] }) {
