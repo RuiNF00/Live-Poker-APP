@@ -6,13 +6,14 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, ScrollView, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { OpponentStatsRow } from '@/components/OpponentStats';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
 import type { Hand } from '@/poker/types';
-import { handCounts } from '@/store/queries';
+import { handCounts, opponentStats, SMALL_SAMPLE } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
 import { C, S } from '@/theme';
@@ -34,6 +35,7 @@ export default function PlayersScreen() {
   }, [players, q]);
 
   const counts = useMemo(() => handCounts(hands, players), [hands, players]);
+  const stats = useMemo(() => opponentStats(hands, players), [hands, players]);
 
   const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
 
@@ -65,6 +67,7 @@ export default function PlayersScreen() {
         }
         renderItem={({ item }) => {
           const n = counts.get(item.id) ?? 0;
+          const st = stats.get(item.id);
           return (
             <Card onPress={() => setEdit(item)} style={{ gap: S.sm, paddingVertical: S.md }}>
               <Row gap={12}>
@@ -87,6 +90,11 @@ export default function PlayersScreen() {
                     <Pill key={x} label={t(x)} color={tagColor(x)} />
                   ))}
                 </Row>
+              ) : null}
+              {st?.hands ? (
+                <T v="monoS" color={st.hands < SMALL_SAMPLE ? C.muted : C.textDim} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
+                  {`VPIP ${pct(st.vpip, st.hands)} · PFR ${pct(st.pfr, st.hands)} · 3-bet ${pct(st.threeBet, st.threeBetOpp)}`}
+                </T>
               ) : null}
               {item.notes ? (
                 <T v="callout" numberOfLines={2} style={{ color: C.text }}>
@@ -145,6 +153,11 @@ function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; 
           ))}
         </Row>
       </Section>
+      {p.name ? (
+        <Section title={t('Estatísticas')}>
+          <OpponentStatsRow stats={opponentStats(hands, [p]).get(p.id)} />
+        </Section>
+      ) : null}
       <Field label={t('Notas')} value={x.notes} onChangeText={(notes) => setX({ ...x, notes })} placeholder={t('Tendências, tells, sizings…')} multiline />
       <Button title={t('Guardar')} icon="checkmark" disabled={!x.name.trim()} onPress={() => onSave(x)} />
       {hands.length > 0 && (
@@ -169,3 +182,5 @@ function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; 
     </ScrollView>
   );
 }
+
+const pct = (n: number, d: number) => (d ? String(Math.round((100 * n) / d)) : '—');
