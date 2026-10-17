@@ -6,7 +6,8 @@
 
 import { inRange, type DateRange } from '@/store/bankroll-math';
 import { profit } from '@/store/session-math';
-import type { Session } from '@/store/types';
+import { EXPENSE_KINDS, type TripSummary } from '@/store/trip-math';
+import type { ExpenseKind, Session } from '@/store/types';
 
 export interface TaxRow {
   country: string;
@@ -41,6 +42,8 @@ export interface TaxReport {
   us: UsLosses[] | null;
   /** Withheld and still to recover, per currency. */
   pending: { currency: string; amount: number }[];
+  /** Poker expenses per currency: trip expenses by kind, plus the expenses typed on sessions. */
+  expenses: { currency: string; byKind: Record<ExpenseKind, number>; sessions: number; total: number }[];
 }
 
 /** The gambling result of a session: your share, before travel and other expenses (those are listed apart). */
@@ -55,7 +58,8 @@ export function usLossShare(year: number): number {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-export function taxReport(sessions: Session[], range: DateRange): TaxReport {
+/** `trips`: the summaries of the trips in the range (from the report), for their expenses. */
+export function taxReport(sessions: Session[], range: DateRange, trips: { summary: TripSummary }[] = []): TaxReport {
   const list = sessions.filter((s) => s.endedAt && inRange(s.startedAt, range));
   const rows = new Map<string, TaxRow>();
   for (const s of list) {
@@ -100,5 +104,23 @@ export function taxReport(sessions: Session[], range: DateRange): TaxReport {
 
   const pend = new Map<string, number>();
   for (const s of list) if (s.withheld?.status === 'recover' && s.withheld.amount) pend.set(s.currency, (pend.get(s.currency) ?? 0) + s.withheld.amount);
-  return { rows: out, us, pending: [...pend.entries()].map(([currency, amount]) => ({ currency, amount: r2(amount) })) };
+  const exp = new Map<string, TaxReport['expenses'][number]>();
+  const bucket = (currency: string) =>
+    exp.get(currency) ?? exp.set(currency, { currency, byKind: Object.fromEntries(EXPENSE_KINDS.map((k) => [k, 0])) as Record<ExpenseKind, number>, sessions: 0, total: 0 }).get(currency)!;
+  for (const { summary } of trips)
+    for (const k of EXPENSE_KINDS)
+      if (summary.byKind[k]) {
+        const b = bucket(summary.currency);
+        b.byKind[k] += summary.byKind[k];
+        b.total += summary.byKind[k];
+      }
+  for (const s of list)
+    if (s.expenses) {
+      const b = bucket(s.currency);
+      b.sessions += s.expenses;
+      b.total += s.expenses;
+    }
+  const expenses = [...exp.values()].map((b) => ({ ...b, sessions: r2(b.sessions), total: r2(b.total), byKind: Object.fromEntries(EXPENSE_KINDS.map((k) => [k, r2(b.byKind[k])])) as Record<ExpenseKind, number> }));
+
+  return { rows: out, us, pending: [...pend.entries()].map(([currency, amount]) => ({ currency, amount: r2(amount) })), expenses };
 }

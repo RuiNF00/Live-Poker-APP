@@ -7,6 +7,8 @@ import { duration, rawMoney } from '@/poker/format';
 import { cost, playedMs, profit, type Breakdown } from '@/store/session-math';
 
 import { countryName, flag } from '@/tax/countries';
+import { EXPENSE_KINDS } from '@/store/trip-math';
+import type { ExpenseKind } from '@/store/types';
 import type { TaxReport } from '@/tax/tax-math';
 
 import type { CurrencyReport, Report } from './report';
@@ -131,8 +133,25 @@ function tripsBlock(r: Report): string {
     </section>`;
 }
 
+const EXPENSE_LABEL: Record<ExpenseKind, string> = { flight: 'Voo', hotel: 'Hotel', food: 'Comida', coaching: 'Coaching', software: 'Software', other: 'Outros' };
+
+function expensesTable(x: TaxReport): string {
+  if (!x.expenses.length) return '';
+  const kinds = EXPENSE_KINDS.filter((k) => x.expenses.some((e) => e.byKind[k]));
+  const onSessions = x.expenses.some((e) => e.sessions);
+  const cell = (n: number, cur: string) => `<td class="n">${n ? esc(rawMoney(n, cur)) : '—'}</td>`;
+  return `
+    <h3>${esc(t('Despesas de póquer por tipo'))}</h3>
+    <table>
+      <thead><tr><th></th>${kinds.map((k) => `<th class="n">${esc(k === 'software' ? 'Software' : t(EXPENSE_LABEL[k]))}</th>`).join('')}${onSessions ? `<th class="n">${esc(t('Nas sessões'))}</th>` : ''}<th class="n">${esc(t('Total'))}</th></tr></thead>
+      <tbody>${x.expenses.map((e) => `<tr><td>${esc(e.currency)}</td>${kinds.map((k) => cell(e.byKind[k], e.currency)).join('')}${onSessions ? cell(e.sessions, e.currency) : ''}<td class="n">${esc(rawMoney(e.total, e.currency))}</td></tr>`).join('')}</tbody>
+    </table>
+    <p class="muted">${esc(t('Quem declara como profissional pode deduzir viagens, coaching e software em muitos países. As despesas nas sessões já estão no resultado de cada sessão.'))}</p>`;
+}
+
 function taxBlock(x: TaxReport): string {
-  if (!x.rows.some((r) => r.country || r.withheld)) return '';
+  const byCountry = x.rows.some((r) => r.country || r.withheld);
+  if (!byCountry && !x.us) return '';
   const rows = x.rows
     .map(
       (r) =>
@@ -156,12 +175,13 @@ function taxBlock(x: TaxReport): string {
   return `
     <section>
       <h2>${esc(t('Impostos por país'))}</h2>
-      <table>
+      ${byCountry ? `<table>
         <thead><tr><th>${esc(t('País'))}</th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Resultado'))}</th><th class="n">${esc(t('Retido'))}</th><th class="n">${esc(t('A recuperar'))}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}</p>
+      <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}</p>` : ''}
       ${us}
+      ${expensesTable(x)}
       <p class="note">${esc(t('Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.'))}</p>
     </section>`;
 }
