@@ -273,7 +273,8 @@ function Live({ s }: { s: Session }) {
   const nHands = useMemo(() => hands.filter((h) => h.sessionId === s.id).length, [hands, s.id]);
   const save = (p: Partial<Session>) => saveSession({ ...s, ...p });
   const first = s.stackLog[0]?.stack ?? s.stack;
-  const delta = s.stack - first;
+  // Cash: against what went in, so a rebuy's chips don't read as a win. Tournament: chips since the start.
+  const delta = mtt ? s.stack - first : s.stack - cost(s);
 
   const bumpLevel = (dir: 1 | -1) => {
     tap();
@@ -296,7 +297,12 @@ function Live({ s }: { s: Session }) {
     else save({ breaks: [...s.breaks, { start: now }] });
   };
 
-  const rebuy = () => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }));
+  // The new chips go on the stack too (cash: the buy-in; tournament: a fresh starting stack), so nobody has to type it.
+  const rebuy = () =>
+    confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => {
+      const stack = mtt ? s.tourney?.startStack || first : s.stack + s.buyIn;
+      save({ entries: s.entries + 1, stack, stackLog: [...s.stackLog, { t: Date.now(), stack, level: s.level }] });
+    });
 
   const [bar, onBarLayout] = useBarHeight();
   // First live session: a three-step tour of what matters between hands.

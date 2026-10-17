@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { breakdown, owedToBackers, parseDay, profit, totals } from '../session-math';
+import { breakdown, lastTimeAt, owedToBackers, parseDay, profit, totals } from '../session-math';
 import type { Session } from '../types';
 
 function mk(over: Partial<Session> = {}): Session {
@@ -79,4 +79,18 @@ test('start time and duration as players type them', async () => {
   assert.equal(parseDuration('4'), 240);
   assert.equal(parseDuration('0'), null);
   assert.equal(parseDuration('60'), null);
+});
+
+test('lastTimeAt: a name played before brings its buy-in, blinds and starting stack', () => {
+  const old = mk({ name: 'Deepstack', buyIn: 250, sb: 200, bb: 400, ante: 400, stack: 1, stackLog: [{ t: 0, stack: 40000 }] });
+  const form = mk({ id: 'n', name: '', venue: '', buyIn: 100, endedAt: undefined });
+  assert.deepEqual(lastTimeAt('Deepstack', form, [old]), { name: 'Deepstack', venue: 'Estoril', sb: 200, bb: 400, ante: 400, anteType: 'bb', buyIn: 250, stack: 40000 });
+  // Another currency: blinds only; a venue already typed stays.
+  const usd = lastTimeAt('Deepstack', { ...form, currency: '$', venue: 'Vegas' }, [old]);
+  assert.equal(usd.buyIn, undefined);
+  assert.equal(usd.venue, 'Vegas');
+  // Cash: the stack is the buy-in; another kind or a new name only sets the name.
+  const cash = mk({ kind: 'cash', name: 'NLH 1/2', buyIn: 300, sb: 1, bb: 2 });
+  assert.equal(lastTimeAt('NLH 1/2', { ...form, kind: 'cash' }, [cash]).stack, 300);
+  assert.deepEqual(lastTimeAt('NLH 1/2', form, [cash]), { name: 'NLH 1/2' });
 });

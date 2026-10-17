@@ -5,7 +5,7 @@ import { locale, t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { countryOfVenue } from '@/tax/countries';
@@ -142,7 +142,7 @@ export function SessionForm({
           {recentNames.length > 0 && (
             <ChipRow style={{ marginHorizontal: -S.lg }}>
               {recentNames.map((n) => (
-                <Chip key={n} label={n} active={s.name === n} onPress={() => set({ name: n })} />
+                <Chip key={n} label={n} active={s.name === n} onPress={() => set(lastTimeAt(n, s, sessions))} />
               ))}
             </ChipRow>
           )}
