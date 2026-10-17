@@ -40,6 +40,8 @@ interface ReferralBackend {
   pending(installId: string): Promise<Grant[]>;
   markGranted(installId: string, until: string): Promise<void>;
   status(installId: string): Promise<ReferralStatus | null>;
+  /** "Delete all my data": this install's code, the invite it accepted and the ones it sent. */
+  erase(installId: string): Promise<void>;
 }
 
 export function newCode(): string {
@@ -82,6 +84,9 @@ class SupabaseReferrals implements ReferralBackend {
     );
     const r = rows?.[0];
     return r ? { code: r.code, invited: r.invited, activated: r.activated, daysEarned: r.days_earned, proUntil: r.pro_until } : null;
+  }
+  async erase(installId: string) {
+    await this.rpc('erase_referrals', { p_install_id: installId });
   }
 }
 
@@ -192,6 +197,14 @@ class LocalBackend implements ReferralBackend {
       daysEarned: rewards.reduce((n, w) => n + w.days, 0),
       proUntil: rewards.map((w) => w.proUntil).sort().at(-1) ?? null,
     };
+  }
+  async erase(installId: string) {
+    await this.mutate((d) => {
+      const gone = new Set(Object.entries(d.referrals).filter(([f, r]) => f === installId || r.referrer === installId).map(([f]) => f));
+      for (const f of gone) delete d.referrals[f];
+      delete d.codes[installId];
+      d.rewards = d.rewards.filter((w) => !gone.has(w.friend));
+    });
   }
 }
 

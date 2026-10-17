@@ -71,7 +71,7 @@ h1 span{color:${ACCENT}}
 <div class="phone"><img src="data:image/png;base64,${shot}"></div></body></html>`;
 }
 
-for (const [locale, key] of [['pt-PT', 'pt'], ['en-US', 'en']]) {
+for (const [locale, key] of [['pt-PT', 'pt'], ['en-US', 'en'], ['pt-BR', 'pt-BR'], ['es-ES', 'es']]) {
   const shots = await capture(locale);
   for (const t of TARGETS) {
     const dir = path.join(outDir, t.store, key);

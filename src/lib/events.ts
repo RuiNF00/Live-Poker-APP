@@ -3,9 +3,9 @@
 // dropped so nothing here can break the app.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
-import { attribution } from './attribution';
+import { attribution, profile } from './attribution';
 import { anonId } from './share-api';
 import { outcomeOf, queue, registerSender } from './sync';
 import { BRAND } from '@/theme';
@@ -31,7 +31,12 @@ export type FunnelEvent =
   | 'paywall_closed'
   | 'trial_start'
   | 'lifetime_offer_shown'
-  | 'lifetime_purchased';
+  | 'lifetime_purchased'
+  | 'session_started'
+  | 'session_closed'
+  | 'notify_permission'
+  | 'replay_opened'
+  | 'review_prompt';
 
 // The install id also lives in the keychain, which survives deleting the app on iOS: a
 // reinstall is the same install, so it can't claim the friend's 7 Pro days again.
@@ -91,6 +96,26 @@ export async function setRefCode(code: string): Promise<void> {
 
 /** Events that carry where the install came from and what was going on (attribution.ts). */
 const ATTRIBUTED: FunnelEvent[] = ['app_open', 'hand_saved', 'trial_start'];
+/** Paywall events that carry the onboarding answers, to split the funnel by player type. */
+const PROFILED: FunnelEvent[] = ['paywall_shown', 'paywall_closed', 'trial_start', 'purchase'];
+
+let build: Record<string, string> | null = null;
+/** Build version and release channel on every event, so beta testers don't mix with launch players. */
+function buildInfo(): Record<string, string> {
+  if (build) return build;
+  let version = '';
+  // Set per EAS build profile (testflight, play-test); store builds fall back to their update channel.
+  let channel = process.env.EXPO_PUBLIC_BUILD_CHANNEL ?? '';
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    version = (require('expo-constants') as typeof import('expo-constants')).default.expoConfig?.version ?? '';
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    if (!channel) channel = (require('expo-updates') as typeof import('expo-updates')).channel ?? '';
+  } catch {
+    // Node tests and web: no native modules.
+  }
+  return (build = { app_version: version, channel });
+}
 
 export function track(event: FunnelEvent, props?: Record<string, string | number | boolean>) {
   if (__DEV__) return;
@@ -104,6 +129,8 @@ export function track(event: FunnelEvent, props?: Record<string, string | number
         if (first) await new Promise((r) => setTimeout(r, 2000));
         all = { ...props, ...(await attribution()), ...(first ? { first: true } : {}) };
       }
+      if (PROFILED.includes(event)) all = { ...all, ...(await profile()) };
+      all = { ...buildInfo(), ...all };
       queue('event', { event, installId: id, platform: Platform.OS, props: all });
     })
     .catch(() => {});
@@ -117,3 +144,17 @@ registerSender('event', async (body) => {
   });
   return outcomeOf(res.status);
 });
+
+const RESUME_AFTER = 30 * 60_000;
+/** iOS keeps the app in memory for days: a return after 30 min in the background counts as an open too. */
+export function watchResume(): () => void {
+  let away = 0;
+  const sub = AppState.addEventListener('change', (st) => {
+    if (st === 'background') away = Date.now();
+    else if (st === 'active' && away && Date.now() - away > RESUME_AFTER) {
+      away = 0;
+      track('app_open', { resume: true });
+    }
+  });
+  return () => sub.remove();
+}

@@ -58,3 +58,16 @@ export async function attribution(now = Date.now()): Promise<Record<string, stri
   const s = await load();
   return { source: s?.source ?? 'direct', ...(s?.campaign ? { campaign: s.campaign } : {}), live_session_open: live, festival_on: festivalOn(now) };
 }
+
+const ONBOARDING = 'rl.onboarding.v1';
+
+/** The onboarding answers that split the paywall funnel by player type (quiz answers, nothing personal). */
+export async function profile(): Promise<Record<string, string>> {
+  try {
+    const v = await AsyncStorage.getItem(ONBOARDING);
+    const a = v ? (JSON.parse(v) as { volume?: unknown; plays?: unknown }) : {};
+    return { volume: typeof a.volume === 'string' ? a.volume : '', plays: typeof a.plays === 'string' ? a.plays : '' };
+  } catch {
+    return { volume: '', plays: '' };
+  }
+}

@@ -64,7 +64,9 @@ export function packageStates(sessions: Session[], packages: StakePackage[]): Pa
     // A session with two pieces in the same package counts as one combined piece.
     const rows = merge(byPkg.get(pkg.id) ?? []).sort((a, b) => byEnd(a.s, b.s));
     const st: PackageState = { pkg, sessions: rows.length, live: 0, invested: 0, net: 0, makeup: 0, cut: 0 };
-    let cum = 0;
+    // Makeup carried over from the previous package is won back first, like this package's own losses.
+    const carried = pkg.kind === 'makeup' ? Math.max(0, pkg.makeupIn ?? 0) : 0;
+    let cum = -carried;
     for (const { s, x } of rows) {
       st.invested += stakeCost(s, x);
       if (!s.endedAt) {
@@ -80,7 +82,7 @@ export function packageStates(sessions: Session[], packages: StakePackage[]): Pa
       }
       cum += net;
     }
-    st.net = cum;
+    st.net = cum + carried;
     st.makeup = pkg.kind === 'makeup' ? Math.max(0, -cum) : 0;
     states.set(pkg.id, st);
   }
@@ -94,6 +96,28 @@ function merge(rows: { s: Session; x: Stake }[]): { s: Session; x: Stake }[] {
     out.set(r.s.id, cur ? { s: r.s, x: { ...cur.x, share: cur.x.share + r.x.share } } : r);
   }
   return [...out.values()];
+}
+
+/**
+ * Closing a makeup package that still has makeup: the player and backer either
+ * forgive it (it ends with the package) or carry it to a new package on the same
+ * terms, where it is won back first. Returns the closed package and the new one.
+ */
+export function closePackage(p: StakePackage, makeup: number, carry: boolean, newId: string, now = Date.now()): { closed: StakePackage; next: StakePackage | null } {
+  const closed = { ...p, closedAt: now };
+  if (!carry || p.kind !== 'makeup' || makeup < 0.5) return { closed, next: null };
+  const next: StakePackage = {
+    id: newId,
+    backerId: p.backerId,
+    name: p.name,
+    kind: 'makeup',
+    share: p.share,
+    markup: 1,
+    playerCut: p.playerCut,
+    makeupIn: Math.round(makeup * 100) / 100,
+    createdAt: now,
+  };
+  return { closed, next };
 }
 
 export interface BackerLedgerRow {

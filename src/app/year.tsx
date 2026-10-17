@@ -24,6 +24,7 @@ const CARD_TITLE: Record<YearCardKind, string> = {
   year: t('O teu ano'),
   best: t('Melhor sessão'),
   stakes: t('As tuas stakes'),
+  bankroll: t('O ano na bankroll'),
   pot: t('Maior pote do ano'),
   streak: t('Semanas seguidas a registar'),
 };
@@ -203,7 +204,7 @@ function LockedCard({ title, onUnlock }: { title: string; onUnlock: () => void }
         {title}
       </T>
       <T v="callout" style={{ textAlign: 'center' }}>
-        {t('As stakes onde ganhaste mais, o maior pote e a tua sequência estão no Pro.')}
+        {t('As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.')}
       </T>
       <Button kind="outline" size="sm" title={t('Desbloquear')} onPress={onUnlock} />
     </View>

@@ -22,7 +22,8 @@ export async function rememberTrial(days: number, now = Date.now()): Promise<voi
   await AsyncStorage.setItem(LOCAL_TRIAL, JSON.stringify(trial)).catch(() => {});
 }
 
-async function currentTrial(): Promise<Trial | null> {
+/** The running trial: from the store, or the one remembered by the demo store. */
+export async function currentTrial(): Promise<Trial | null> {
   const fromStore = await getTrial();
   if (fromStore !== undefined) return fromStore;
   try {

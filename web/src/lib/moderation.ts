@@ -1,9 +1,15 @@
 // Basic profanity filter for public comments (App Store guideline 1.2). Deliberately
-// short: blocks the common slurs and insults in PT and EN; reports catch the rest.
+// short: blocks the common slurs and insults in PT-PT, pt-BR, es and EN; reports catch the rest.
 const BLOCKED = [
   // pt
   'caralho', 'foda-se', 'fodase', 'puta', 'putas', 'cabrão', 'cabrao', 'paneleiro', 'filho da puta', 'fdp', 'cona',
   'merdoso', 'otário', 'otario', 'atrasado mental', 'preto de merda', 'macaco',
+  // pt-BR
+  'viado', 'viadinho', 'arrombado', 'arrombada', 'cuzão', 'cuzao', 'buceta', 'vagabunda', 'vadia', 'retardado',
+  'vai tomar no cu', 'vtnc', 'tnc', 'macaca',
+  // es
+  'hijo de puta', 'hijoputa', 'maricón', 'maricon', 'joto', 'pendejo', 'gilipollas', 'cabrón', 'culero',
+  'chinga tu madre', 'concha de tu madre', 'retrasado mental', 'mongólico', 'sudaca', 'negro de mierda',
   // en
   'fuck', 'fucking', 'cunt', 'nigger', 'nigga', 'faggot', 'retard', 'whore', 'slut', 'motherfucker',
 ];

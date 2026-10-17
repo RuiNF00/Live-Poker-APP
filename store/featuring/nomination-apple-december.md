@@ -14,17 +14,17 @@ Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations 
 | End date | 2026-12-17 | |
 | Countries | All launch countries in `store/availability.md` (everything except France, mainland China, Russia and the default exclusions listed there). Priority: United States, United Kingdom, Canada, Australia, Portugal, Brazil | |
 | Platform | iOS (iPhone) | |
-| Languages | English (U.S.), Portuguese (Portugal) | |
+| Languages | English (U.S.), Portuguese (Portugal), Portuguese (Brazil), Spanish (Spain), Spanish (Mexico) | |
 | Pre-order | No | |
 | Linked In-App Event | "Your festival diary" (below) | |
 
-**Description** (953/1000):
+**Description** (932/1000):
 
-> Sweatbook is a new notebook for people who play poker live, in casinos and at festivals, where there is no hand history. It launches in early December, when thousands of players travel to the winter festival season, including a two-week high-stakes series in the Bahamas. Players log a hand in a few taps between levels, replay it street by street with pot and stack sizes, and share it as a link that opens a replayer in any browser, so friends and coaches can comment without installing anything. Around that, Sweatbook keeps the whole trip: sessions, a tournament clock with blinds and M, tournament ROI and ITM, bankroll in several currencies, travel expenses, and records of the deals players make in person with backers and friends. It is records and study only: no money moves through the app, there is no gameplay and no betting. Built in Portugal, it launches in English and European Portuguese, with Brazilian Portuguese and Spanish to follow.
+> Sweatbook is a new notebook for people who play poker live, in casinos and at festivals, where there is no hand history. It launches in early December, when thousands of players travel to the winter festival season, including a two-week high-stakes series in the Bahamas. Players log a hand in a few taps between levels, replay it street by street with pot and stack sizes, and share it as a link that opens a replayer in any browser, so friends and coaches can comment without installing anything. Around that, Sweatbook keeps the whole trip: sessions, a tournament clock with blinds and M, tournament ROI and ITM, bankroll in several currencies, travel expenses, and records of the deals players make in person with backers and friends. It is records and study only: no money moves through the app, there is no gameplay and no betting. Built in Portugal, it launches in English, Spanish and both European and Brazilian Portuguese.
 
-**Helpful details** (323/500):
+**Helpful details** (355/500):
 
-> Built by a live player to use on festival trips. A Live Activity on the Lock Screen and Home Screen widgets show the running session; hands become shareable replays and Instagram Stories; VoiceOver labels; works offline at the table; no account needed. 18+ rating. The free tier logs 3 hands a day and shares without limit.
+> Built by a live player to use on festival trips. A Live Activity on the Lock Screen and Home Screen widgets show the running session; hands become shareable replays and Instagram Stories; text scales with the system text size up to 200%; works offline at the table; no account needed. 18+ rating. The free tier logs 3 hands a day and shares without limit.
 
 **Supporting materials** (up to 5 URLs, no login): add only what is live on submission day.
 1. `https://sweatbook.poker` (after Rui's site steps 5 to 9).
@@ -50,10 +50,22 @@ Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations 
 ## Checks before submitting
 
 - **Bahamas** names a place, not an event. If Rui prefers, use "a two-week high-stakes series in the Caribbean" (the description stays under 1000).
-- Claims verified at 179da6c: tournament mode with blinds/level clock and M (`src/app/tournament.tsx`, session screen), tournament ROI/ITM (`src/app/tournament-stats.tsx`, #127), Live Activity and home widget (`src/lib/lock-screen/`, `src/lib/home-widget/`), multi-currency bankroll, trip expenses (`src/app/trips/`), festival recap Story (#135), free tier 3 hands/day and unlimited shares (`src/billing/plans.ts` `handsPerDay: 3`, `sharesPerDay: null`), VoiceOver labels (`accessibilityLabel` across components).
-- Not claimed: "about ten taps" (waiting for the hand-entry tap audit) and Reduce Motion support (not in the code yet). "Dynamic Type" is left out until someone checks the large text sizes on an iPhone.
-- Spanish and Brazilian Portuguese are "to follow" in the text. If #131 ships pt-BR and es in the launch build, change the last sentence to "launches in English, European and Brazilian Portuguese, and Spanish" and add those languages.
+- Claims verified at 179da6c: tournament mode with blinds/level clock and M (`src/app/tournament.tsx`, session screen), tournament ROI/ITM (`src/app/tournament-stats.tsx`, #127), Live Activity and home widget (`src/lib/lock-screen/`, `src/lib/home-widget/`), multi-currency bankroll, trip expenses (`src/app/trips/`), festival recap Story (#135), free tier 3 hands/day and unlimited shares (`src/billing/plans.ts` `handsPerDay: 3`, `sharesPerDay: null`).
+- Reduce Motion (#144, at 8147048) only switches screen transitions to a fade (`src/lib/motion.ts`, `_layout.tsx`); the replayer animations do not follow it yet, so it stays out of the text.
+- Larger text: #144 (merged at 517b3cc) scales text with the iOS text size up to 200% (`maxFontSizeMultiplier` across the UI). Check it on an iPhone at the largest size before submitting; if a key screen breaks, drop that phrase. VoiceOver stays out until the audit's hand-entry fix lands.
+- "About ten taps": #137 measured 11 taps, so the description says "a few taps".
+- pt-BR and es shipped with #131 (merged at 174ec64), so the text says the app launches in all four. Countries with priority can add Brazil, Spain and Mexico's local editorial teams.
 - A nomination does not guarantee featuring and does not affect App Review.
+
+## Timeline after December (Brazilian Portuguese update)
+
+| By | What | Draft |
+|---|---|---|
+| end of December 2026 | App Store "App Enhancements" nomination for the pt-BR update | `launch/destaque-lojas.md` §5 |
+| D−21 before the Brazilian summer festival | pt-BR In-App Event submitted (Special Event, never Competition) | `marketing/lancamento-brasil.md` §5 |
+| about 1 January 2027 | Google Play featuring form for the pt-BR update (3 weeks' notice) | `launch/destaque-lojas.md` §5 |
+
+The festival date comes from `research/calendario-festivais.md` once it's official. Each submission needs Rui's yes, like step 36.
 
 ## Google Play
 

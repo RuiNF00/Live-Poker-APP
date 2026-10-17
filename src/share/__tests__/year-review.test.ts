@@ -84,7 +84,28 @@ test('biggest pot of the year and the longest logging streak', () => {
 
 test('cards with nothing real to show are left out', () => {
   const r = yearReview(2026, [mk({ cashOut: 0 }), mk({ cashOut: 0, startedAt: at(2026, 5, 1) })], []);
-  assert.deepEqual(yearCards(r), ['year', 'stakes']);
+  // Two losing months: no best month, but the fall is real, so the bankroll card stays.
+  assert.deepEqual(yearCards(r), ['year', 'stakes', 'bankroll']);
+  assert.deepEqual(yearCards(yearReview(2026, [mk({ cashOut: 0 }), mk({ cashOut: 0 })], [])), ['year', 'stakes']);
+});
+
+test('months, best month and the deepest fall of the year', () => {
+  const list = [
+    mk({ startedAt: at(2025, 11, 20), cashOut: 9000 }), // last year: not counted
+    mk({ startedAt: at(2026, 0, 5), cashOut: 2000 }), // +1000
+    mk({ startedAt: at(2026, 1, 5), cashOut: 0 }), // −1000
+    mk({ startedAt: at(2026, 1, 9), cashOut: 500 }), // −500: 1500 under the high
+    mk({ startedAt: at(2026, 3, 2), cashOut: 3000 }), // +2000: back above it
+    mk({ startedAt: at(2026, 3, 9), cashOut: 1500 }), // +500
+  ];
+  const r = yearReview(2026, list, []);
+  assert.equal(r.months.length, 12);
+  assert.deepEqual(r.months.slice(0, 4).map((m) => m.profit), [1000, -1500, 0, 2500]);
+  assert.deepEqual(r.bestMonth, { month: 3, profit: 2500 });
+  assert.equal(r.downswing!.depth, 1500);
+  assert.equal(r.downswing!.sessions, 2);
+  assert.equal(r.downswing!.recovered, list[4].endedAt);
+  assert.ok(yearCards(r).includes('bankroll'));
 });
 
 test('opens on last year through January, otherwise this year', () => {

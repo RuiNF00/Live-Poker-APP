@@ -10,12 +10,15 @@ import { locale, t } from '@/i18n';
 import { useRates } from '@/lib/fx';
 import { money } from '@/poker/format';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
-import { homeTotals, latestDay } from '@/store/fx-math';
+import { homeTotals, latestDay, type HomeTotals } from '@/store/fx-math';
 import { useStore } from '@/store/store';
-import { C, S } from '@/theme';
+import { C, R, S } from '@/theme';
 
 import { CURRENCIES, Sheet } from './BankrollSheets';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, T } from './ui';
+
+/** One colour per currency in the share bar, biggest first. */
+const PART_COLORS = [C.accent, C.info, C.good, C.warn, '#B07CFF', C.muted];
 
 export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
   const { sessions, transfers, bankrolls, settings, setSettings } = useStore();
@@ -73,6 +76,7 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
             <T v="small">
               {[t('Póquer em {year}: {amount}', { year, amount: show(h.profit, true) }), h.roi !== null ? t('ROI {pct}%', { pct: Math.round(h.roi) }) : ''].filter(Boolean).join(' · ')}
             </T>
+            {h.parts.length > 1 ? <Parts parts={h.parts} home={home} hidden={hidden} /> : null}
             <T v="tiny">
               {latest ? t('Câmbio do BCE de {date}. Cada sessão conta ao câmbio do seu dia.', { date: new Date(latest + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short' }) }) : ''}
               {h.missing.length ? ' ' + t('Sem câmbio para {list}: fica de fora.', { list: h.missing.join(', ') }) : ''}
@@ -115,6 +119,29 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
         </View>
       </Sheet>
     </>
+  );
+}
+
+/** Each currency's part of the total: a bar, then one row per currency. */
+function Parts({ parts, home, hidden }: { parts: HomeTotals['parts']; home: string; hidden: boolean }) {
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  return (
+    <View style={{ gap: S.sm, marginTop: S.xs }}>
+      <View style={{ flexDirection: 'row', height: 8, borderRadius: R.pill, overflow: 'hidden', backgroundColor: C.surface3, gap: 2 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {parts.map((x, i) => (x.share ? <View key={x.currency} style={{ flex: x.share, backgroundColor: PART_COLORS[Math.min(i, PART_COLORS.length - 1)] }} /> : null))}
+      </View>
+      {parts.map((x, i) => (
+        <View key={x.currency} style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }} accessible accessibilityLabel={[x.currency, hidden ? '' : money(Math.round(x.amount), x.currency), x.share !== null ? pct(x.share) : ''].filter(Boolean).join(', ')}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: x.share ? PART_COLORS[Math.min(i, PART_COLORS.length - 1)] : C.surface3 }} />
+          <T v="small" style={{ flex: 1 }} numberOfLines={1}>
+            {hidden ? x.currency : x.currency === home ? money(Math.round(x.amount), x.currency) : t('{amount} ≈ {home}', { amount: money(Math.round(x.amount), x.currency), home: money(Math.round(x.home), home) })}
+          </T>
+          <T v="small" color={x.home < 0 ? C.bad : C.textDim}>
+            {x.share !== null ? pct(x.share) : '—'}
+          </T>
+        </View>
+      ))}
+    </View>
   );
 }
 

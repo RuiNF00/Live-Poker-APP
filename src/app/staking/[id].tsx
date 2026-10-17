@@ -17,7 +17,7 @@ import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
-import type { BackerLedgerRow } from '@/store/staking';
+import { closePackage, type BackerLedgerRow } from '@/store/staking';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
 import { withPro } from '@/components/ProGate';
@@ -188,7 +188,8 @@ function BackerScreen() {
                     }
                     subtitle={[packageTerms(p), st?.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: st?.sessions ?? 0 })].join(' · ')}
                     right={
-                      st?.makeup ? (
+                      // A closed package's makeup was forgiven or carried to the next one: only open ones show it.
+                      st?.makeup && !p.closedAt ? (
                         <T v="mono" color={C.warn} style={{ fontSize: 14 }}>
                           {t('makeup {amount}', { amount: money(st.makeup, cur) })}
                         </T>
@@ -285,9 +286,14 @@ function BackerScreen() {
       />
       <PackageSheet
         pkg={pkg}
+        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, cur) : null}
         onClose={() => setPkg(null)}
-        onSave={(p) => {
-          savePackage(p);
+        onSave={(p, carry) => {
+          if (carry) {
+            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'));
+            savePackage(closed);
+            if (next) savePackage(next);
+          } else savePackage(p);
           setPkg(null);
         }}
         onDelete={

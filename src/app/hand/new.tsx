@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
+import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
 import { ContextSheet } from '@/components/entry/ContextSheet';
@@ -223,6 +224,7 @@ export default function NewHand() {
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
     if (!isEdit && !pro.canSaveHand()) {
       if (over) update(hand);
+      if (activeSession) void noteBlocked(activeSession.id, hand.id);
       pro.paywall(activeSession ? 'handsLive' : 'hands');
       return;
     }

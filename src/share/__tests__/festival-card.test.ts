@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { sampleHand } from '../../poker/sample';
 import type { Session, Trip } from '../../store/types';
-import { bestHandOf, festivalRecap, moneyLabel, recapStats, resultLabel } from '../festival-card';
+import { bestHandOf, biLabel, carouselCaption, carouselSlides, dayKey, eventRows, festivalRecap, moneyLabel, recapStats, resultLabel, tripWeeks } from '../festival-card';
 
 const H = 3_600_000;
 const D = 24 * H;
@@ -77,4 +77,41 @@ test('best hand: the trip hand where hero won the most big blinds', () => {
   assert.equal(r.bestHand?.hand.id, 'a');
   // A hand that doesn't replay is skipped, not a crash.
   assert.equal(bestHandOf([{ ...h, actions: [{ p: 99, kind: 'call' }] } as never]), null);
+});
+
+test('carousel: events, days cashed, slides and the caption without amounts', () => {
+  const sessions = [
+    mk({ id: 'a', name: 'Opener', cashOut: 0 }),
+    mk({ id: 'b', name: 'Main', startedAt: T0 + D + 12 * H, endedAt: T0 + 2 * D + 20 * H, cashOut: 5200, finish: 9, field: 412 }),
+    mk({ id: 'k', kind: 'cash', startedAt: T0 + 3 * D, endedAt: T0 + 3 * D + 4 * H, bb: 5 }),
+  ];
+  const r = festivalRecap(trip, sessions, []);
+  assert.deepEqual([...r.cashedOn], [dayKey(T0 + 2 * D + 20 * H)]);
+
+  const ev = eventRows(trip, sessions);
+  assert.deepEqual(ev.map((e) => [e.name, e.cashed, e.bi]), [['Opener', false, -1], ['Main', true, 4.2]]);
+  assert.equal(biLabel(4.2), '+4,2 bi');
+  // Only the best `max`, still in the order played.
+  assert.deepEqual(eventRows(trip, sessions, 1).map((e) => e.id), ['b']);
+
+  assert.deepEqual(carouselSlides(r, ev, { showHand: true, brand: true }), ['summary', 'events', 'days', 'close']);
+  assert.deepEqual(carouselSlides(r, [], { showHand: true, brand: false }), ['summary', 'days']);
+
+  const link = 'https://sweatbook.poker/r/abc?utm_medium=carousel';
+  const cap = carouselCaption(r, link, { showResult: true, showMoney: false });
+  assert.ok(cap.startsWith('Bahamas, dezembro 2026: 2 eventos, 1/2 nos prémios, melhor lugar 9º/412'));
+  assert.ok(cap.includes(link));
+  assert.ok(!cap.includes('$'));
+  assert.ok(!cap.includes('Casino'));
+  assert.ok(carouselCaption(r, link, { showResult: true, showMoney: true }).includes('$'));
+  assert.ok(!carouselCaption(r, link, { showResult: false, showMoney: false }).includes('buy-in'));
+});
+
+test('trip weeks start on Monday and pad the days outside the trip', () => {
+  // 2 Dec 2026 is a Wednesday; 17 Dec a Thursday.
+  const w = tripWeeks(T0, T0 + 16 * D - 1);
+  assert.equal(w.length, 3);
+  assert.deepEqual(w[0].slice(0, 3).map((x) => x === null), [true, true, false]);
+  assert.equal(new Date(w[0][2]!).getDate(), 2);
+  assert.equal(w.flat().filter((x) => x !== null).length, 16);
 });
