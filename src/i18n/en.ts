@@ -1983,6 +1983,23 @@ const en: Record<string, string> = {
   'As tuas notas': 'Your notes',
   'Uma nota por rua, só tu vês. Nunca sai do telemóvel.': 'One note per street, only you see it. It never leaves your phone.',
   'Nota privada sobre o {s} (só tu vês)': 'Private note on the {s} (only you see it)',
+  'Swap: como acabaste?': 'Swap: how did you finish?',
+  'Contas do swap': 'Swap balance',
+  'Cobraste {amount}{place}.': 'You cashed {amount}{place}.',
+  'Não cobraste.': "You didn't cash.",
+  'Deves {amount} a {name}': 'You owe {name} {amount}',
+  'Não deves nada a {name}': "You don't owe {name} anything",
+  'Confirmo: cobrei {amount}': 'Confirm: I cashed {amount}',
+  'Confirmo: não cobrei': "Confirm: I didn't cash",
+  'Fica registado no swap e o outro jogador vê as contas. Se o resultado estiver errado, corrige a sessão e regista no swap.': "It's recorded in the swap and the other player sees the balance. If the result is wrong, fix the session and record it in the swap.",
+  'Swap com {name}': 'Swap with {name}',
+  'Ver swap': 'View swap',
+  '{name} registou um pagamento de {amount}.': '{name} recorded a payment of {amount}.',
+  '{name} cobrou {amount}: deve-te {owed}.': '{name} cashed {amount}: owes you {owed}.',
+  '{name} não cobrou no {event}.': "{name} didn't cash in {event}.",
+  'E tu, como acabaste?': 'How did you finish?',
+  'Quando {name} registar o resultado, recebes um aviso com as contas.': "When {name} records their result, you'll get a notification with the balance.",
+  'Envia o link só a {name}: quem o abrir primeiro pode confirmar.': 'Send the link only to {name}: whoever opens it first can confirm.',
 };
 
 export default en;

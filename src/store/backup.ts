@@ -8,7 +8,7 @@ import type { Hand } from '@/poker/types';
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
 import { dayKey } from './fx-math';
-import type { Swap } from './swaps';
+import { validSwapId, validSwapToken, type Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
@@ -102,7 +102,7 @@ export function parseBackup(text: string): BackupData {
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
   const swaps = arr('swaps').filter(
-    (x) => isObj(x) && typeof x.token === 'string' && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+    (x) => isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
   ) as unknown as Swap[];
   return {
     app: 'sweatbook',
