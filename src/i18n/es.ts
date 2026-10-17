@@ -3125,6 +3125,8 @@ const es: Record<string, string> = {
   'Já jogaste? Junta uma sessão passada': '¿Ya jugaste? Añade una sesión pasada',
   'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Empieza una sesión cuando te sientes. El beneficio, el €/hora y el ROI aparecen aquí.',
   'Nada neste bankroll': 'Nada en este bankroll',
+  'Check até ao fim': 'Check hasta el final',
+  'Mais limps?': '¿Más limps?',
   'São Paulo, novembro 2026': 'São Paulo, noviembre 2026',
   'Torrelodones, novembro 2026': 'Torrelodones, noviembre 2026',
   'Lisboa, novembro 2026': 'Lisboa, noviembre 2026',

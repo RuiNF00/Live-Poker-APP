@@ -8,6 +8,7 @@ import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
 import { CommentsList, PrivateStreetNotes } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
+import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
 import { sameTable } from '@/poker/factory';
 import { sampleHand } from '@/poker/sample';
@@ -30,7 +31,6 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
-import { notice } from '@/lib/notice';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
@@ -156,7 +156,7 @@ export default function HandScreen() {
         return slot.link.shareId;
       }
       if (slot.kind === 'busy') {
-        Alert.alert(t('Link quase pronto'), t('Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.'));
+        notice(t('Link quase pronto'), t('Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.'));
         return null;
       }
       const asked = { ...hand, ask: ask.trim().slice(0, 140) || undefined };
@@ -167,8 +167,8 @@ export default function HandScreen() {
       if (isNetworkError(e)) {
         const opts = { names: settings.shareNames, notes: settings.shareNotes };
         queueShare({ ...hand, ask: ask.trim().slice(0, 140) || undefined }, opts);
-        Alert.alert(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
-      } else Alert.alert(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
+        notice(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
+      } else notice(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
     } finally {
       setBusy(false);
@@ -231,7 +231,7 @@ ${link}`;
       track('link_shared', { channel: 'text', share_id: shareId, ref });
     }
     await Clipboard.setStringAsync(forumText(hand, { link, brand: !pro.isPro, notes: settings.shareNotes }));
-    Alert.alert(t('Texto copiado'), t('Cola no fórum, no Reddit ou no grupo de WhatsApp.'));
+    notice(t('Texto copiado'), t('Cola no fórum, no Reddit ou no grupo de WhatsApp.'));
   };
 
   const askCopyText = () => {
@@ -248,10 +248,10 @@ ${link}`;
   const exportSolver = () => {
     tap();
     if (!isComplete(hand)) {
-      Alert.alert(t('Mão por completar'), t('Os solvers só leem mãos completas. Acaba a mão primeiro.'));
+      notice(t('Mão por completar'), t('Os solvers só leem mãos completas. Acaba a mão primeiro.'));
       return;
     }
-    const save = () => saveSolverFile([hand]).catch(() => Alert.alert(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
+    const save = () => saveSolverFile([hand]).catch(() => notice(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
     if (Platform.OS === 'web') return save();
     Alert.alert(t('Exportar para solver'), t('Formato hand history (.txt): GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
       {
@@ -275,7 +275,7 @@ ${link}`;
       if (block) loadComments();
       else setComments((x) => x.filter((y) => y.id !== c.id));
     } catch {
-      Alert.alert(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
+      notice(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
     } finally {
       setPending((p) => without(p, c.id));
     }
@@ -316,7 +316,7 @@ ${link}`;
         saveHand({ ...hand, shareId: undefined, shareToken: undefined });
         setComments([]);
       } catch {
-        Alert.alert(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
+        notice(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
       }
     };
     // Asks on the web too: one tap would end the link and every comment.

@@ -7,7 +7,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -17,6 +17,7 @@ import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureSlide, shareCarousel, sharePost } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { carouselCaption, carouselSlides, eventRows, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
@@ -74,7 +75,7 @@ export default function FestivalCarouselScreen() {
       setCopied(true);
       track('story_shared', { target: String(target), kind: 'festival_carousel', slides: slides.length, money: showMoney, result: showResult, hand: slides.includes('hand') });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -91,7 +92,7 @@ export default function FestivalCarouselScreen() {
       await sharePost(files, carouselCaption(recap, link, { showResult, showMoney }), to);
       track('story_shared', { target: to, kind: 'festival_carousel', slides: files.length, money: showMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

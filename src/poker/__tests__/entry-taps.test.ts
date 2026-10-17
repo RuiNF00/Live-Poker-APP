@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { autoFold, callerCandidates, checkAround, checkDownNext, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -101,6 +101,14 @@ class Entry {
     this.taps++;
     this.set(actions);
   }
+  /** After a limp, the "Mais limps?" chip: that seat limps in one tap. */
+  limp(label: string) {
+    assert.ok(limpedPot(this.hand, this.autoFrom), '"mais limps?" not shown');
+    const actions = limpIn(this.hand, this.autoFrom!, this.seat(label));
+    assert.ok(actions);
+    this.taps++;
+    this.set(actions);
+  }
   skip(label: string) {
     const target = label === 'Hero' ? this.hand.hero : this.seat(label);
     this.push(skipTo(this.hand, this.s, target));
@@ -108,11 +116,24 @@ class Entry {
   checkAround() {
     this.push(checkAround(this.hand, this.s));
   }
+  /** "Check até ao fim": this street now, every later street once its card is in. */
+  checkDown() {
+    this.push(checkAround(this.hand, this.s));
+    this.down = true;
+  }
+  private down = false;
   board(...cards: string[]) {
     assert.ok(this.s.needsBoard);
     this.taps += cards.length;
     this.hand = { ...this.hand, board: [...this.hand.board, ...cards] };
+    if (this.down) this.hand = { ...this.hand, actions: [...this.hand.actions, ...checkDownNext(this.hand)] };
     this.settle();
+  }
+  /** Showdown with no cards shown: one tap on the winner. */
+  winner(label: string) {
+    this.taps++;
+    const i = label === 'Hero' ? this.hand.hero : this.seat(label);
+    this.hand = { ...this.hand, winners: [i] };
   }
   shows(label: string, cards: string[]) {
     // Heads-up showdown: the picker is already open, two taps.
@@ -471,4 +492,81 @@ test('the store copy hand: open, call, checked down to the river, winner picked,
   e.taps++; // "Quem ganhou?": one chip (or two taps for the villain's cards)
   e.save();
   assert.equal(e.taps, 15);
+});
+
+// Round 3 (Rui: "o menos trabalho possível"): three typical live hands, from position to saved.
+test('round 3 · open, call, c-bet, fold — 11 taps (10 at the same table)', () => {
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.size('⅓');
+  e.act('fold');
+  e.save();
+  assert.equal(e.taps, 11);
+});
+
+test('round 3 · 3-bet pot to showdown, checked down from the turn — 19 taps (was 20)', () => {
+  const run = (down: boolean) => {
+    const e = new Entry('BTN', ['Qs', 'Qc']);
+    e.entered('CO');
+    e.size('2.5x');
+    e.size('3x');
+    e.only('CO');
+    e.board('Jh', '8c', '3d');
+    e.act('check');
+    e.size('⅓');
+    e.act('call');
+    e.board('2s');
+    if (down) e.checkDown();
+    else e.checkAround();
+    e.board('7d');
+    if (!down) e.checkAround();
+    e.shows('CO', ['Ad', 'Jd']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return e.taps;
+  };
+  assert.equal(run(false), 20);
+  assert.equal(run(true), 19);
+});
+
+test('round 3 · limped pot checked down to the river — 16 taps (was 20)', () => {
+  const run = (now: boolean) => {
+    const e = new Entry('BB', ['9c', '5c']);
+    e.entered('UTG');
+    e.act('call');
+    if (now) {
+      e.limp('BTN');
+      e.limp('SB');
+    } else {
+      e.entered('BTN');
+      e.act('call');
+      e.entered('SB');
+      e.act('call');
+    }
+    assert.equal(e.s.toAct, e.hand.hero);
+    e.act('check');
+    e.board('Td', '6h', '2c');
+    if (now) e.checkDown();
+    else e.checkAround();
+    e.board('Ks');
+    if (!now) e.checkAround();
+    e.board('3h');
+    if (!now) e.checkAround();
+    assert.equal(e.s.toAct, null, 'river checked through');
+    e.winner('Hero');
+    e.save();
+    return e.taps;
+  };
+  assert.equal(run(false), 20);
+  assert.equal(run(true), 16);
+});
+
+test('mais limps: only after a limp and before any raise', () => {
+  const e = new Entry('BB', ['9c', '5c']);
+  assert.equal(limpedPot(e.hand, e.autoFrom), false, 'nobody limped yet: a chip gives the seat its turn');
+  e.entered('UTG');
+  e.size('2.5x');
+  assert.equal(limpedPot(e.hand, e.autoFrom), false, 'after an open the chip gives the seat its turn');
 });

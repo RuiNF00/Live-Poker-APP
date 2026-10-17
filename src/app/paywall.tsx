@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
@@ -13,6 +13,7 @@ import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
@@ -65,8 +66,8 @@ export default function Paywall() {
     if (res === 'ok') {
       setWelcomed(true);
       setStarted(trial);
-    } else if (res === 'unavailable') Alert.alert(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
-    else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
+    else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
   const onRestore = async () => {
@@ -74,7 +75,7 @@ export default function Paywall() {
     const ok = await restore();
     setBusy(null);
     if (ok) setWelcomed(true);
-    else Alert.alert(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+    else notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
   };
 
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';

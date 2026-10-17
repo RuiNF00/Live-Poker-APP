@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Share, View } from 'react-native';
 
 import { useLocked } from '@/components/ProGate';
 import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, PAIR, pctLabel, Seal, SwapBadge, TermsCard, useSettledReview, type EntryDraft } from '@/components/swaps/parts';
@@ -14,9 +14,9 @@ import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Scre
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
-import { notice } from '@/lib/notice';
 import { useStore } from '@/store/store';
 import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
@@ -91,7 +91,7 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
       tap('success');
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
-      Alert.alert(
+      notice(
         t('Não foi possível confirmar'),
         code === 'already_confirmed' ? t('Este swap já foi confirmado.') : code === 'offensive' ? t('Esse nome não é permitido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'),
       );
@@ -188,7 +188,7 @@ function OwnSwap({ s }: { s: Swap }) {
   function onEntry(e: SwapEntry) {
     if (e.side !== s.side) return;
     confirmAction(t('Apagar registo?'), t('{name} deixa de o ver. Usa isto só para corrigir um erro.', { name: them }), t('Apagar'), async () => {
-      if (!(await removeEntry(s.id, e))) Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (!(await removeEntry(s.id, e))) notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
     });
   }
 
@@ -316,7 +316,7 @@ function OwnSwap({ s }: { s: Swap }) {
                 t('Apagar'),
                 async () => {
                   if (await deleteSwapEverywhere(s.id)) router.back();
-                  else Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+                  else notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
                 },
               )
             }
