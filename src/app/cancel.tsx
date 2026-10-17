@@ -6,7 +6,7 @@ import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, type CancelReason } from '@/billing/cancel';
-import { annualSavingPct, formatPrice, LIFETIME, perMonth, RETENTION } from '@/billing/plans';
+import { annualSavingPct, formatPrice, perMonth, RETENTION } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } from '@/billing/purchases';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
@@ -26,7 +26,8 @@ export default function Cancel() {
   const [plan, setPlan] = useState<'monthly' | 'annual' | null>(null);
   const [offer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<Offer>(null);
-  const CANCEL_REASONS = cancelReasons(LIFETIME.enabled);
+  // The reason shows only when there's a one-time Pro in the store to offer for it.
+  const CANCEL_REASONS = cancelReasons(!!lifetime);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
@@ -35,10 +36,10 @@ export default function Cancel() {
   useEffect(() => {
     track('cancel_flow', { step: 'open' });
     getSubscription().then((s) => setPlan(s?.plan ?? null));
+    lifetimeOffer().then(setLifetime);
   }, []);
   useEffect(() => {
     if (reason === 'bankroll') retentionOffer(plans).then(setOffer);
-    if (reason === 'noSubscription') lifetimeOffer().then(setLifetime);
   }, [reason, plans]);
 
   const pick = (r: CancelReason) => {

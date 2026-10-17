@@ -45,12 +45,14 @@ export const RETENTION = {
 
 /**
  * One-time Pro, offered only in the cancel flow to players who don't want a
- * subscription. Off until Rui decides. Create `product` in both stores as a
+ * subscription (Rui, 17 Oct). Never on the paywall. Without a release, turn it
+ * off by removing the Lifetime package from the RevenueCat offering or by
+ * setting `"lifetime": false` in its metadata. Create `product` in both stores as a
  * non-consumable granting the `pro` entitlement, in RevenueCat's offering as
  * the Lifetime package. The price shown always comes from the store; `usd`
  * is what to set there.
  */
-export const LIFETIME = { enabled: false, product: 'sweatbook_lifetime', usd: 499 };
+export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499 };
 
 /** Free plan. `null` means no limit. */
 export const FREE = {

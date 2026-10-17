@@ -183,8 +183,9 @@ export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
 export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
   if (!LIVE || !LIFETIME.enabled) return null;
   try {
-    const pkgs = (await Purchases.getOfferings()).current?.availablePackages ?? [];
-    const pkg = pkgs.find((p) => p.product.identifier === LIFETIME.product || p.packageType === 'LIFETIME');
+    const cur = (await Purchases.getOfferings()).current;
+    if (!cur || cur.metadata?.lifetime === false) return null;
+    const pkg = cur.availablePackages.find((p) => p.product.identifier === LIFETIME.product || p.packageType === 'LIFETIME');
     return pkg ? { priceString: pkg.product.priceString, buy: () => attempt(() => Purchases.purchasePackage(pkg)) } : null;
   } catch {
     return null;
