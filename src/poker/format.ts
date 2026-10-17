@@ -1,5 +1,5 @@
 import { FORMAT, locale, type LocaleFormat } from '../i18n';
-import { decimalsOf, symbolOf } from '../store/currencies';
+import { moneyIn as sharedMoneyIn } from '../../packages/hand-format/src/money';
 
 import type { ActionKind, Hand } from './types';
 
@@ -61,21 +61,9 @@ export function rawMoney(n: number, currency = '€'): string {
   return moneyIn(FORMAT, n, currency, numFmt);
 }
 
-/**
- * Money as one language writes it: "370€" and "1234,50€" in Portugal, "R$ 1.234,50"
- * in Brazil, "1234,50 €" in Spain, "$1,234.50" in English and Mexico. Whole amounts
- * stay short; cents always show two digits, never a bare JS decimal point.
- */
-export function moneyIn(f: LocaleFormat, n: number, currency: string, num: (digits?: number) => Intl.NumberFormat = (d) => new Intl.NumberFormat(f.locale, d === undefined ? undefined : { minimumFractionDigits: d, maximumFractionDigits: d })): string {
-  // Yen, won and the like have no cents: always whole.
-  const a = decimalsOf(currency) ? Math.abs(n) : Math.round(Math.abs(n));
-  const sign = n < 0 && a > 0 ? '−' : '';
-  const cents = Math.round(a * 100);
-  const s = a >= 1000 ? num().format(Math.round(a)) : cents % 100 === 0 ? String(cents / 100) : num(2).format(cents / 100);
-  const sym = symbolOf(currency);
-  // Letter codes (CHF, SEK) always need a space; symbols follow the language.
-  const gap = /^[A-Za-z]{2,}$/.test(sym) ? ' ' : f.currencySpace;
-  return f.currencyAfter ? `${sign}${s}${gap}${sym}` : `${sign}${sym}${gap}${s}`;
+/** Money as one language writes it (shared with the web pages: packages/hand-format/src/money.ts). */
+export function moneyIn(f: LocaleFormat, n: number, currency: string, num?: (digits?: number) => Intl.NumberFormat): string {
+  return sharedMoneyIn(f, n, currency, num);
 }
 
 /** A plain decimal in the app's language: 3,5 in Portuguese and Spain, 3.5 in English. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { intlTag, isPt, LOCALES, numberTag, pickLocale, t, withCurrency, type Locale } from '../src/lib/i18n';
+import { intlTag, isPt, LOCALES, numberTag, pickLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
 import { backingCopy } from '../src/components/backing/copy';
 import { coachCopy } from '../src/components/coach/copy';
 import { landingCopy } from '../src/components/landing/copy';
@@ -47,10 +47,21 @@ describe('locale helpers', () => {
     expect(LOCALES.filter(isPt)).toEqual(['pt', 'pt-BR']);
   });
   it('places the currency per locale', () => {
-    expect(withCurrency('1.500', '€', 'pt')).toBe('1.500€');
-    expect(withCurrency('1.500', '$', 'pt-BR', '−')).toBe('−$1.500');
-    expect(withCurrency('1,500', '$', 'en')).toBe('$1,500');
-    expect(withCurrency('1.500', '€', 'es')).toBe('1.500€');
+    // Same strings as the app (src/poker/__tests__/locale-format.test.ts).
+    const NB = '\u00a0';
+    expect(formatMoney(2500, '$', 'pt')).toBe('2500$');
+    expect(formatMoney(370, '€', 'pt')).toBe('370€');
+    expect(formatMoney(12.5, '€', 'pt')).toBe('12,50€');
+    expect(formatMoney(2500, 'R$', 'pt-BR')).toBe(`R$${NB}2.500`);
+    expect(formatMoney(-370, 'R$', 'pt-BR')).toBe(`−R$${NB}370`);
+    expect(formatMoney(2500, '€', 'es')).toBe(`2500${NB}€`);
+    expect(formatMoney(12345, '€', 'es')).toBe(`12.345${NB}€`);
+    expect(formatMoney(2500, '$', 'en')).toBe('$2,500');
+    expect(formatMoney(12.5, '£', 'en')).toBe('£12.50');
+    expect(formatMoney(150, 'CHF', 'en')).toBe('CHF 150');
+    expect(formatMoney(3000, 'JPY', 'en')).toBe('¥3,000');
+    expect(formatMoney(20, '€', 'pt', true)).toBe('+20€');
+    expect(formatMoney(0, '€', 'pt', true)).toBe('0€');
   });
 });
 
