@@ -33,7 +33,7 @@ import { t } from '@/i18n';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoFold, callerCandidates, checkAround, checkDownNext, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
 import { addSeat, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
@@ -144,7 +144,7 @@ export default function NewHand() {
   useEffect(() => {
     const key = autoKey;
     if (phase !== 'action' || autoDone.current.has(key)) return;
-    const acts = autoFold(hand, s);
+    const acts = autoActions(hand, s);
     if (!acts.length) return;
     autoDone.current.add(key);
     update({ ...hand, actions: [...hand.actions, ...acts] }, draft.posChosen, hand.actions.length);
@@ -160,7 +160,7 @@ export default function NewHand() {
   };
 
   // After a limp, the chips are more limps: one tap each.
-  const limped = autoSeats.length > 0 && limpedPot(hand, draft.autoFrom);
+  const limped = autoSeats.length > 0 && s.street === 'preflop' && limpedPot(hand, draft.autoFrom);
   const overlimp = (seat: number) => {
     if (draft.autoFrom === undefined) return;
     const actions = limpIn(hand, draft.autoFrom, seat);
@@ -320,6 +320,8 @@ export default function NewHand() {
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
   const callers = phase === 'action' ? callerCandidates(hand, s) : [];
   const checks = phase === 'action' ? checkAround(hand, s) : [];
+  // "Check até ao fim" on the flop and turn, also when the others already checked to hero.
+  const checkDown = phase === 'action' && (s.street === 'flop' || s.street === 'turn') ? checkDownNow(hand, s) : [];
   const levelUp = phase === 'hero' ? nextLevel(hand.game) : null;
   // Heads-up showdown: the picker for the opponent's cards is already open.
   const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
@@ -344,7 +346,9 @@ export default function NewHand() {
     phase !== 'action' || !l
       ? null
       : autoSeats.length
-        ? l.p === hand.hero
+        ? s.street !== 'preflop'
+          ? t('Check até ti')
+          : l.p === hand.hero
           ? t('Fold de todos até ti')
           : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
         : skips.length > 1
@@ -512,7 +516,7 @@ export default function NewHand() {
             {autoSeats.length > 0 && (
               <ChipRow>
                 <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
-                  {limped ? t('Mais limps?') : t('Alguém entrou?')}
+                  {limped ? t('Mais limps?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
                 </T>
                 {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
                 {[...autoSeats].reverse().map((i) => (
@@ -526,15 +530,15 @@ export default function NewHand() {
                 {t('Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.')}
               </T>
             ) : null}
-            {(callers.length > 0 || checks.length > 0) && (
+            {(callers.length > 0 || checkDown.length > 0) && (
               <ChipRow>
                 {callers.map((i) => (
                   <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
                 ))}
                 {callers.length > 0 && <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />}
                 {checks.length > 0 && <Chip big label={t('Todos check')} onPress={() => pushActions(checks)} />}
-                {checks.length > 0 && s.street !== 'river' && (
-                  <Chip big label={t('Check até ao fim')} onPress={() => update({ ...hand, actions: [...hand.actions, ...checks] }, draft.posChosen, undefined, hand.actions.length)} />
+                {checkDown.length > 0 && (
+                  <Chip big label={t('Check até ao fim')} onPress={() => update({ ...hand, actions: [...hand.actions, ...checkDown] }, draft.posChosen, undefined, hand.actions.length)} />
                 )}
               </ChipRow>
             )}

@@ -3147,6 +3147,8 @@ const en: Record<string, string> = {
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'No exchange rate for {list}: approximate until you are back online.',
   'All-in com menos': 'All-in for less',
   'All-in para': 'All-in to',
+  'Alguém fez bet?': 'Did someone bet?',
+  'Check até ti': 'Checked to you',
 };
 
 export default en;
