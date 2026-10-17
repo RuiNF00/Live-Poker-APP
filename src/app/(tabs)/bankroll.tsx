@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FREE } from '@/billing/plans';
+import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { Button, Chip, Empty, Panel, Row, T } from '@/components/ui';
@@ -17,6 +19,7 @@ type Period = 30 | 90 | 365 | 0;
 export default function BankrollScreen() {
   const insets = useSafeAreaInsets();
   const { sessions, saveSession, deleteSession, settings } = useStore();
+  const { isPro, paywall } = usePro();
   const [kind, setKind] = useState<Kind>('all');
   const [period, setPeriod] = useState<Period>(0);
   const [adding, setAdding] = useState(false);
@@ -43,7 +46,7 @@ export default function BankrollScreen() {
           <Chip label="Cash" active={kind === 'cash'} onPress={() => setKind('cash')} />
           <View style={{ width: 8 }} />
           {([[30, '30d'], [90, '90d'], [365, '1 ano'], [0, 'Sempre']] as [Period, string][]).map(([p, l]) => (
-            <Chip key={l} label={l} active={period === p} onPress={() => setPeriod(p)} />
+            <Chip key={l} label={p && !isPro && !FREE.bankrollFilters ? l + ' · Pro' : l} active={period === p} onPress={() => (p && !isPro && !FREE.bankrollFilters ? paywall('stats') : setPeriod(p))} />
           ))}
         </Row>
 
