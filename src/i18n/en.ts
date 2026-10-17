@@ -664,6 +664,7 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Versão {v}': 'Version {v}',
   'Este ecrã não existe': 'This screen does not exist',
   'O link pode ser antigo. As tuas mãos e sessões estão todas no sítio.': 'The link may be old. Your hands and sessions are all where you left them.',
   'Ir para as mãos': 'Go to hands',
@@ -785,7 +786,8 @@ const en: Record<string, string> = {
   'Nas mãos, em vez de fichas': 'In hands, instead of chips',
   'Mãos que partilhas': 'Hands you share',
   'Nomes dos adversários': 'Opponents\' names',
-  'Desligado, aparecem como posições. As tuas alcunhas nunca saem do telemóvel.': 'Off, they show as positions. Your nicknames never leave your phone.',
+  'Os nomes que lhes deste aparecem no link': 'The names you gave them show on the link',
+  'Aparecem como BTN, SB, BB…': 'They show as BTN, SB, BB…',
   'As minhas notas da mão': 'My notes on the hand',
   'Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.': 'Everything is stored on this phone. Back it up so you lose nothing when you switch.',
   'Exportar tudo': 'Export everything',
