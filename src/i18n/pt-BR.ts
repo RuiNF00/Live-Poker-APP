@@ -1440,6 +1440,9 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
+  'Já jogaste? Junta uma sessão passada': 'Já jogou? Adicione uma sessão passada',
+  'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Comece uma sessão quando se sentar. O lucro, o €/hora e o ROI aparecem aqui.',
+  'Nada neste bankroll': 'Nada neste bankroll',
 };
 
 export default ptBR;

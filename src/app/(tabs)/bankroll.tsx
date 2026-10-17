@@ -117,6 +117,8 @@ function BankrollTab() {
   const history = useMemo(() => ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range))), [list, onlyResults, scopedTx, range]);
   const { shown: shownHistory, more: moreHistory } = usePaged(history);
   const nFilters = activeFilters(filter);
+  // Nothing played yet in this bankroll: one next action, near the top.
+  const fresh = !nFilters && !scoped.some((x) => x.endedAt);
   const scopeBankrolls = bankrolls.filter((b) => inScope.has(b.id));
   const single = 'bankrollId' in scope ? bankrolls.find((b) => b.id === scope.bankrollId) : undefined;
   const scopeName = single?.name ?? t('Todas {currency}', { currency: cur });
@@ -190,7 +192,22 @@ function BankrollTab() {
           </Row>
         </Card>
 
-        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} onWithdraw={withdraw} /> : null}
+        {fresh ? (
+          // A new player's one next step sits right under the balance, not below rules and tools.
+          <Empty
+            icon="stats-chart"
+            title={t('Ainda sem sessões')}
+            body={t('Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.')}
+            action={
+              <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
+                <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />
+                <Button title={t('Já jogaste? Junta uma sessão passada')} kind="plain" size="sm" onPress={() => setSheet({ type: 'session', s: 'new' })} />
+              </View>
+            }
+          />
+        ) : null}
+
+        {single && !(fresh && !bal.deposits) ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} onWithdraw={withdraw} /> : null}
 
         <MoreTools />
 
@@ -238,17 +255,7 @@ function BankrollTab() {
           nFilters ? (
             <Empty icon="funnel-outline" title={t('Nada com estes filtros')} body={t('Nenhuma sessão terminada encaixa no que escolheste.')} action={<Button title={t('Limpar filtros')} kind="secondary" size="md" onPress={clearFilters} />} />
           ) : (
-            <Empty
-              icon="stats-chart"
-              title={t('Ainda sem sessões')}
-              body={t('Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o €/hora e o ROI aparecem aqui.')}
-              action={
-                <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
-                  <Button title={t('Juntar sessão passada')} icon="add" kind="secondary" size="md" onPress={() => setSheet({ type: 'session', s: 'new' })} />
-                  <Button title={t('Importar de outra app')} icon="download-outline" kind="ghost" size="md" onPress={() => router.push('/import')} />
-                </View>
-              }
-            />
+            fresh ? null : <Empty icon="stats-chart" title={t('Nada neste bankroll')} />
           )
         ) : (
           <>

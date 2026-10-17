@@ -3,6 +3,7 @@
 // are linked to it and keep its stack up to date.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,7 +13,7 @@ import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
-import { blankSession, SessionForm } from '@/components/SessionForm';
+import { blankSession, firstSession, SessionForm } from '@/components/SessionForm';
 import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
@@ -31,6 +32,7 @@ import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
+import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -131,7 +133,17 @@ export default function SessionScreen() {
   // "Como chegas?" between Começar agora and the clock, unless turned off.
   const [arriving, setArriving] = useState<Session | null>(null);
   // Once a day is enough (answered or skipped): a second flight or a cash game after the tournament starts straight away.
-  const askedToday = sessions.some((x) => dayKey(x.startedAt) === today);
+  // The very first session doesn't ask either: the trial offer already follows it.
+  const askedToday = !sessions.length || sessions.some((x) => dayKey(x.startedAt) === today);
+  // First session ever: game and stakes from the first-run answers, so nothing needs typing.
+  const [plays, setPlays] = useState<string | null>(null);
+  useEffect(() => {
+    if (sessions.length) return;
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((raw) => setPlays(raw ? ((JSON.parse(raw) as { plays?: string | null }).plays ?? null) : null))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const begin = (s: Session) => {
     tap('success');
     saveSession(s);
@@ -193,7 +205,13 @@ export default function SessionScreen() {
           )}
         </ListGroup>
         <SessionForm
-          initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
+          key={plays ?? ''}
+          initial={{
+            ...((!sessions.length && firstSession(plays, defaultBankroll.currency, settings.defaultTableSize)) ||
+              blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize)),
+            format: sessions[0]?.format,
+            bankrollId: defaultBankroll.id,
+          }}
           bankrolls={bankrolls}
           recentNames={recentNames}
           recentVenues={recentVenues}

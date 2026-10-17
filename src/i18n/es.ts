@@ -3091,6 +3091,9 @@ const es: Record<string, string> = {
   '−1 órbita': '−1 vuelta',
   'Mais detalhes': 'Más detalles',
   'Menos detalhes': 'Menos detalles',
+  'Já jogaste? Junta uma sessão passada': '¿Ya jugaste? Añade una sesión pasada',
+  'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Empieza una sesión cuando te sientes. El beneficio, el €/hora y el ROI aparecen aquí.',
+  'Nada neste bankroll': 'Nada en este bankroll',
 };
 
 export default es;
