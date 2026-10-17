@@ -85,6 +85,28 @@ const ARTICLES: Article[] = [
     },
   },
   {
+    id: 'late-reg-reminder',
+    cat: 'start',
+    pt: {
+      slug: 'lembrete-late-reg',
+      title: 'Lembrete do late reg',
+      summary: 'Marca os torneios do festival e avisamos-te antes de fechar.',
+      body: [
+        'Sessão → Festivais → escolhe o festival e toca nos eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.',
+        'Se o organizador não publicou o fecho, toca em Hora do late reg no evento. Desliga em Definições → Notificações → Torneios planeados.',
+      ],
+    },
+    en: {
+      slug: 'late-reg-reminder',
+      title: 'Late reg reminder',
+      summary: "Mark the festival's tournaments and we remind you before it closes.",
+      body: [
+        "Session → Festivals → pick the festival and tap the events you'll play. We remind you 30 min before each one and before late reg closes.",
+        "If the organiser hasn't published the close, tap Late reg time on the event. Turn it off in Settings → Notifications → Planned tournaments.",
+      ],
+    },
+  },
+  {
     id: 'log-a-hand',
     cat: 'hands',
     pt: {
@@ -255,6 +277,28 @@ const ARTICLES: Article[] = [
         },
         'Link sharing is unlimited, on the free plan too. Offline, the link is ready once you have signal.',
         { note: 'To turn a link off: on the hand page, under Comments, tap Delete share. The link stops working and the comments are deleted; the hand stays in your notebook.' },
+      ],
+    },
+  },
+  {
+    id: 'comments',
+    cat: 'sharing',
+    pt: {
+      slug: 'comentarios',
+      title: 'Comentários nas mãos partilhadas',
+      summary: 'Quem abre o link comenta; tu decides o que fica.',
+      body: [
+        'Os comentários aparecem na página da mão, em Comentários. Em cada um, Apagar tira esse comentário e Bloquear impede a pessoa de voltar a comentar nesta mão (ela não é avisada).',
+        'Recebes uma notificação por mão até a abrires, só com a street. Entre as 23h e as 12h fica à espera e chega às 12h. Liga ou desliga em Definições → Notificações → Comentários nas tuas mãos.',
+      ],
+    },
+    en: {
+      slug: 'comments',
+      title: 'Comments on shared hands',
+      summary: 'Whoever opens the link can comment; you decide what stays.',
+      body: [
+        'Comments show on the hand page, under Comments. On each one, Delete removes that comment and Block stops that person commenting on this hand again (they are not told).',
+        'You get one notification per hand until you open it, naming only the street. Between 11 pm and 12 noon it waits and arrives at noon. Turn it on or off in Settings → Notifications → Comments on your hands.',
       ],
     },
   },
@@ -490,6 +534,8 @@ const ARTICLES: Article[] = [
           ],
         },
         'Também podes guardar um ficheiro: Exportar tudo cria um .json com tudo, sempre grátis. Importar ficheiro junta esse ficheiro ao que já tens, sem apagar nada.',
+        'A cópia leva mãos, sessões, notas de jogadores, bankroll, staking e definições. Os recibos ficam só no telemóvel. Se aparecer «A cópia é grande demais para a nuvem», usa Exportar tudo.',
+        'Dois telemóveis com o mesmo código partilham uma só cópia, e o último a enviar substitui a anterior. No segundo, toca primeiro em Recuperar com código: junta tudo e fica a versão mais recente de cada item.',
         { note: 'Sem o código ninguém consegue ler a cópia, nem nós. Se o perderes, não há forma de a recuperar.' },
       ],
     },
@@ -507,6 +553,8 @@ const ARTICLES: Article[] = [
           ],
         },
         'You can also keep a file: Export everything creates a .json with all your data, always free. Import file adds that file to what you already have, without deleting anything.',
+        'The backup holds hands, sessions, player notes, bankroll, staking and settings. Receipts stay on the phone only. If you see "The backup is too big for the cloud", use Export everything.',
+        'Two phones with the same code share one backup, and the last one to upload replaces it. On the second phone, tap Restore with code first: it merges everything and keeps the newest version of each item.',
         { note: "Without the code nobody can read the backup, us included. If you lose it, the backup can't be recovered." },
       ],
     },
