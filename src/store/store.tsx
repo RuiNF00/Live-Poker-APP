@@ -17,7 +17,7 @@ import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
-import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
+import { bankrollOf, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
@@ -477,7 +477,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setHands(h.list);
       setSessions(s.list);
       setPlayers(p.list);
-      setBankrolls(br.list);
+      setBankrolls(dropUnusedAuto(br.list, b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }));
       setTransfers(tx.list);
       setBackers(bk.list);
       setPackages(mergeById(packages, b.packages ?? []).list);
