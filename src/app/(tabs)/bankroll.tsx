@@ -1,13 +1,147 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Empty } from '@/components/ui';
-import { C } from '@/theme';
+import { LineChart } from '@/components/LineChart';
+import { blankSession, SessionForm } from '@/components/SessionForm';
+import { Button, Chip, Empty, Panel, Row, T } from '@/components/ui';
+import { duration, money, shortDate } from '@/poker/format';
+import { curve, playedMs, profit, totals } from '@/store/session-math';
+import { useStore } from '@/store/store';
+import type { Session } from '@/store/types';
+import { C, R } from '@/theme';
 
-export default function Screen() {
+type Kind = 'all' | 'mtt' | 'cash';
+type Period = 30 | 90 | 365 | 0;
+
+export default function BankrollScreen() {
+  const insets = useSafeAreaInsets();
+  const { sessions, saveSession, deleteSession, settings } = useStore();
+  const [kind, setKind] = useState<Kind>('all');
+  const [period, setPeriod] = useState<Period>(0);
+  const [adding, setAdding] = useState(false);
+  const cur = settings.currency;
+
+  const list = useMemo(() => {
+    const since = period ? Date.now() - period * 86400000 : 0;
+    return sessions.filter((s) => (kind === 'all' || s.kind === kind) && s.startedAt >= since);
+  }, [sessions, kind, period]);
+  const t = totals(list);
+  const pts = curve(list).map((p) => p.v);
+  const done = list.filter((s) => s.endedAt).sort((a, b) => b.startedAt - a.startedAt);
+
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: 60 }}>
-      <Empty title="Em breve" />
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, padding: 14, gap: 14, paddingBottom: 60 }}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <T v="title">Bankroll</T>
+          <Button small kind="secondary" title="+ Sessão passada" onPress={() => setAdding(true)} />
+        </Row>
+        <Row gap={6} style={{ flexWrap: 'wrap' }}>
+          <Chip label="Tudo" active={kind === 'all'} onPress={() => setKind('all')} />
+          <Chip label="Torneios" active={kind === 'mtt'} onPress={() => setKind('mtt')} />
+          <Chip label="Cash" active={kind === 'cash'} onPress={() => setKind('cash')} />
+          <View style={{ width: 8 }} />
+          {([[30, '30d'], [90, '90d'], [365, '1 ano'], [0, 'Sempre']] as [Period, string][]).map(([p, l]) => (
+            <Chip key={l} label={l} active={period === p} onPress={() => setPeriod(p)} />
+          ))}
+        </Row>
+
+        {t.sessions === 0 ? (
+          <Empty title="Ainda sem sessões terminadas" body="Começa uma sessão no separador Sessão ou adiciona uma sessão passada para ver lucro, hora a hora e ROI." />
+        ) : (
+          <>
+            <Panel style={{ gap: 4 }}>
+              <T v="label">Lucro</T>
+              <T style={{ fontSize: 38, fontWeight: '800', color: t.profit >= 0 ? C.accent : C.danger }}>{money(t.profit, cur)}</T>
+              <LineChart values={pts} />
+            </Panel>
+            <Row gap={10} style={{ flexWrap: 'wrap' }}>
+              <Stat label="Por hora" value={money(Math.round(t.hourly), cur)} />
+              <Stat label="Horas" value={t.hours.toFixed(1)} />
+              <Stat label="Sessões" value={String(t.sessions)} />
+              {t.roi !== null ? <Stat label="ROI torneios" value={`${t.roi.toFixed(0)}%`} /> : null}
+              {t.itm !== null ? <Stat label="ITM" value={`${t.itm.toFixed(0)}%`} /> : null}
+              <Stat label="Investido" value={money(t.invested, cur)} />
+              <Stat label="Melhor" value={money(t.best, cur)} />
+              <Stat label="Pior" value={money(t.worst, cur)} />
+            </Row>
+            <T v="h2">Histórico</T>
+            {done.map((s) => (
+              <SessionRow key={s.id} s={s} onDelete={() => deleteSession(s.id)} />
+            ))}
+          </>
+        )}
+      </ScrollView>
+      <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)} presentationStyle="pageSheet">
+        <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingTop: 24 }} keyboardShouldPersistTaps="handled">
+          <Row style={{ justifyContent: 'space-between' }}>
+            <T v="h1">Sessão passada</T>
+            <Pressable onPress={() => setAdding(false)}>
+              <T v="body" color={C.textDim}>
+                Fechar
+              </T>
+            </Pressable>
+          </Row>
+          <SessionForm
+            past
+            initial={blankSession('mtt', cur)}
+            recentNames={[...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8)}
+            recentVenues={[...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8)}
+            submitLabel="Guardar sessão"
+            onSubmit={(s) => {
+              saveSession(s);
+              setAdding(false);
+            }}
+          />
+        </ScrollView>
+      </Modal>
     </View>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flexGrow: 1, minWidth: '30%', backgroundColor: C.surface, borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: C.border, gap: 2 }}>
+      <T v="label">{label}</T>
+      <T v="h2">{value}</T>
+    </View>
+  );
+}
+
+function SessionRow({ s, onDelete }: { s: Session; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const p = profit(s);
+  return (
+    <Pressable onPress={() => setOpen((o) => !o)} style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: C.border, gap: 6 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <View style={{ flex: 1 }}>
+          <T v="body" style={{ fontWeight: '700' }} numberOfLines={1}>
+            {s.name || (s.kind === 'mtt' ? 'Torneio' : 'Cash')}
+          </T>
+          <T v="tiny">
+            {shortDate(s.startedAt)} · {duration(playedMs(s))}
+            {s.venue ? ' · ' + s.venue : ''}
+            {s.finish ? ` · ${s.finish}º${s.field ? '/' + s.field : ''}` : ''}
+          </T>
+        </View>
+        <T v="mono" color={p >= 0 ? C.accent : C.danger}>
+          {money(p, s.currency)}
+        </T>
+      </Row>
+      {open && (
+        <Row style={{ justifyContent: 'space-between' }}>
+          <T v="small">
+            {s.entries} × {money(s.buyIn, s.currency)}
+            {s.addOn ? ` + add-on ${money(s.addOn, s.currency)}` : ''} → {money(s.cashOut, s.currency)}
+          </T>
+          <Pressable onPress={onDelete} hitSlop={8}>
+            <T v="small" color={C.danger}>
+              Apagar
+            </T>
+          </Pressable>
+        </Row>
+      )}
+    </Pressable>
   );
 }

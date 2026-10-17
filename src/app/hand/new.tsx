@@ -125,7 +125,16 @@ export default function NewHand() {
 
   const save = () => {
     tap('medium');
-    const final = { ...hand, updatedAt: Date.now() };
+    // Named villains go into the player notes, so the next time they are one tap away.
+    const players = hand.players.map((p, i) => {
+      if (i === hand.hero || !p.name.trim() || p.playerId) return p;
+      const existing = store.players.find((k) => k.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+      if (existing) return { ...p, playerId: existing.id };
+      const note = { id: uid('p_'), name: p.name.trim(), look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() };
+      store.savePlayer(note);
+      return { ...p, playerId: note.id };
+    });
+    const final = { ...hand, players, updatedAt: Date.now() };
     store.saveHand(final);
     // Keep the session's live table state in sync, so the next hand is pre-filled.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
