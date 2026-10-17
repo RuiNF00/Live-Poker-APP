@@ -4,7 +4,13 @@ Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, n
 
 ## Apple: App Privacy ("nutrition label")
 
-Data used to track you: **None**. Data linked to you: **None**.
+Data used to track you: **None**.
+
+Data linked to you (over-declared on purpose, per the data audit `/mnt/project-files/launch/auditoria-dados-privacidade.md` #10):
+
+| Category → type | Purpose |
+|---|---|
+| Contact Info → Name (a nickname the user types for comments, the backer page, a public profile, swaps or coaching links; optional; it sits next to that player's data on a page, so we declare it linked) | App Functionality |
 
 Data not linked to you:
 
@@ -15,10 +21,9 @@ Data not linked to you:
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
-| User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | App Functionality |
-| Contact Info → Name (a nickname the user types for comments, the backer page or a public profile; optional, not tied to identity) | App Functionality |
+| User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup; not linked: the backup has no account and we cannot read it) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
-| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
+| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward) | Analytics, App Functionality |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 
 Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
@@ -76,7 +81,7 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
-| App activity → App interactions (first-party usage events) | Yes | No | Analytics |
+| App activity → App interactions (first-party usage events; also the referral check) | Yes | No | Analytics, App functionality |
 
 Processed ephemerally: No, except audio (Yes).
 

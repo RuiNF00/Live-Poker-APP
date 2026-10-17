@@ -57,6 +57,16 @@ Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations 
 - pt-BR and es shipped with #131 (merged at 174ec64), so the text says the app launches in all four. Countries with priority can add Brazil, Spain and Mexico's local editorial teams.
 - A nomination does not guarantee featuring and does not affect App Review.
 
+## Timeline after December (Brazilian Portuguese update)
+
+| By | What | Draft |
+|---|---|---|
+| end of December 2026 | App Store "App Enhancements" nomination for the pt-BR update | `launch/destaque-lojas.md` §5 |
+| D−21 before the Brazilian summer festival | pt-BR In-App Event submitted (Special Event, never Competition) | `marketing/lancamento-brasil.md` §5 |
+| about 1 January 2027 | Google Play featuring form for the pt-BR update (3 weeks' notice) | `launch/destaque-lojas.md` §5 |
+
+The festival date comes from `research/calendario-festivais.md` once it's official. Each submission needs Rui's yes, like step 36.
+
 ## Google Play
 
 Not for December (new apps need 8 weeks' notice, the build must already be in the Play Console and there are no ratings yet). The Play nomination goes with the pt-BR update at the end of January, submitted around **1 January 2027**; draft in `/mnt/project-files/launch/destaque-lojas.md` §5.

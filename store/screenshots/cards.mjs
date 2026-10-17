@@ -22,10 +22,12 @@ const items = [
   { name: 'swap', route: '/swap/Demo7Swap' },
   { name: 'planeador', route: '/festival' },
 ];
-const hide = ['Abre a app no telemóvel', 'Open the app on your phone'];
+const hide = ['Abre a app no telemóvel', 'Open the app on your phone', 'Abra o app no celular', 'Abre la app en tu teléfono'];
 const exe = fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined;
 const browser = await chromium.launch({ executablePath: exe });
-for (const [locale, key] of [['pt-PT', 'pt'], ['en-US', 'en']]) {
+// LOCALES=pt-BR:pt-br,es-ES:es picks other languages (default pt-PT and en-US).
+const LOCALES = (process.env.LOCALES ?? 'pt-PT:pt,en-US:en').split(',').map((x) => x.split(':'));
+for (const [locale, key] of LOCALES) {
   const ctx = await browser.newContext({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3, locale });
   await ctx.addInitScript((s) => {
     const get = Storage.prototype.getItem;
