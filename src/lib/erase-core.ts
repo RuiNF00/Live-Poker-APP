@@ -16,6 +16,8 @@ export const KEEP_KEYS = [
   'sweatbook.share-queue.v1',
   'rl.usage.v1',
   'rl.pro.v1',
+  // The player's "no crash reports" choice: erasing data must not switch reports back on.
+  'rl.crash.v1',
   'rl.trial.v1',
   'rl.install.v1',
   'rl.ref.v1',

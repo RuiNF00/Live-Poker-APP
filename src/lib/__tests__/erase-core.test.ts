@@ -32,3 +32,7 @@ test('every storage key the app writes is one "delete all my data" knows about',
   const unknown = [...keys].filter((k) => !APP_PREFIXES.some((p) => k.startsWith(p)));
   assert.deepEqual(unknown, [], 'a key outside APP_PREFIXES would survive "Apagar todos os meus dados"');
 });
+
+test('apagar tudo não volta a ligar os relatórios de erros', () => {
+  assert.ok(!keysToErase(['rl.crash.v1', 'rl.hands.v2']).includes('rl.crash.v1'));
+});

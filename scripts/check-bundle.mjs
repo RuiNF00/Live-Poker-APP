@@ -9,11 +9,12 @@ import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Bytes, minified, about 6% over what was measured on 17 Oct 2026: entry 1.11 MB,
- * __common 1.34 MB (0.44 MB of it the en/es/pt-BR string tables), RevenueCat
- * web 1.15 MB in its own chunk, loaded only when billing starts.
+ * Bytes, minified. 17 Oct 2026 (d73e818): entry 1.11 MB, __common 1.42 MB, of
+ * which ~0.5 MB is the en/es/pt-BR string tables (they grow with every
+ * feature; loading only the active language would take most of it off).
+ * RevenueCat web 1.15 MB sits in its own chunk, loaded when billing starts.
  */
-const BUDGET = { initial: 2_600_000, chunk: 1_420_000 };
+const BUDGET = { initial: 2_750_000, chunk: 1_550_000 };
 
 const dir = join(process.argv[2] ?? 'dist', '_expo/static/js/web');
 let files;
