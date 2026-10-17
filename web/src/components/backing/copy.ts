@@ -1,0 +1,56 @@
+import type { Locale } from '@/lib/i18n';
+
+// Text for a backer's statement page, in the same two languages as the rest of the site.
+const pt = {
+  eyebrow: 'Staking',
+  title: (player: string) => (player ? `As tuas contas com ${player}` : 'As tuas contas'),
+  sent: (date: string) => `Enviadas a ${date}`,
+  owesYou: (player: string) => (player ? `${player} deve-te` : 'Deve-te'),
+  youOwe: (player: string) => (player ? `Deves a ${player}` : 'Deves'),
+  square: 'Estão acertados',
+  invested: 'Investiste',
+  result: 'O teu resultado',
+  makeup: 'Makeup',
+  sessions: 'Sessões',
+  running: 'A decorrer',
+  unpaid: 'Por pagar',
+  follow: 'Seguir em direto',
+  youPaid: (amount: string) => `pagaste ${amount}`,
+  saveTitle: 'Segue todos os jogadores que bancas',
+  saveBody: 'Guarda estas contas na Sweatbook: vês a ação em aberto, o que te devem, o makeup e as sessões em direto de cada jogador, num só sítio.',
+  save: 'Guardar na minha Sweatbook',
+  noApp: 'Ainda não tens a app?',
+  privacy: 'Estas contas vêm no próprio link e não passam pelos nossos servidores.',
+  invalid: 'Este link não tem contas',
+  invalidBody: 'Confirma que abriste o link completo que o jogador te enviou.',
+  metaTitle: 'Contas de staking · Sweatbook',
+  metaDescription: 'A tua parte, o que te devem e as sessões em direto.',
+};
+
+const en: typeof pt = {
+  eyebrow: 'Staking',
+  title: (player: string) => (player ? `Your statement with ${player}` : 'Your statement'),
+  sent: (date: string) => `Sent on ${date}`,
+  owesYou: (player: string) => (player ? `${player} owes you` : 'Owes you'),
+  youOwe: (player: string) => (player ? `You owe ${player}` : 'You owe'),
+  square: "You're square",
+  invested: 'You put in',
+  result: 'Your result',
+  makeup: 'Makeup',
+  sessions: 'Sessions',
+  running: 'Running',
+  unpaid: 'Unpaid',
+  follow: 'Follow live',
+  youPaid: (amount: string) => `you paid ${amount}`,
+  saveTitle: 'Follow every player you back',
+  saveBody: 'Save this statement in Sweatbook: open action, what you are owed, makeup and live sessions for every player, in one place.',
+  save: 'Save to my Sweatbook',
+  noApp: "Don't have the app yet?",
+  privacy: 'This statement lives in the link itself and never goes through our servers.',
+  invalid: 'This link has no statement',
+  invalidBody: 'Check you opened the whole link the player sent you.',
+  metaTitle: 'Staking statement · Sweatbook',
+  metaDescription: 'Your piece, what you are owed and live sessions.',
+};
+
+export const backingCopy = (locale: Locale) => (locale === 'pt' ? pt : en);

@@ -12,6 +12,9 @@ import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { buildStatement, statementUrl } from '@/lib/backing-link';
+import { track } from '@/lib/events';
+import { shareRef } from '@/lib/referrals';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
 import type { BackerLedgerRow } from '@/store/staking';
@@ -25,7 +28,7 @@ function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')
 
 export default function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
+  const { sessions, backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
   const { pk, ledgers } = useStaking();
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
@@ -91,14 +94,20 @@ export default function BackerScreen() {
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
           : t('Deves-me {amount}.', { amount: money(-l.balance, cur) }),
     ].filter((x) => x !== '');
-    const msg = lines.join('\n');
+    // The statement as a link they can open, or save in their own Sweatbook to follow every session.
+    // It carries only this backer's own pieces (see lib/backing-link).
+    const key = backer.shareKey ?? uid('k');
+    const ref = await shareRef().catch(() => '');
+    const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments);
+    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
     if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
     else {
       const r = await Share.share({ message: msg });
       if (r.action === Share.dismissedAction) return;
     }
     // Keep a record of when they were sent the statement and what it said.
-    saveBacker({ ...backer, reminders: [...(backer.reminders ?? []), { at: Date.now(), balance: l.balance }].slice(-20) });
+    saveBacker({ ...backer, shareKey: key, reminders: [...(backer.reminders ?? []), { at: Date.now(), balance: l.balance }].slice(-20) });
+    track('link_shared', { channel: 'backer_statement' });
   };
 
   type Hist = { kind: 'pay'; at: number; p: (typeof pays)[number] } | { kind: 'sent'; at: number; balance: number };

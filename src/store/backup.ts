@@ -2,11 +2,12 @@
 // export/import and by the cloud backup. Pure, so it can be tested.
 
 import { t } from '@/i18n';
+import { checkStatement } from '@/lib/backing-link';
 import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
-import type { Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
+import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
   app: 'sweatbook';
@@ -19,6 +20,7 @@ export interface BackupData {
   backers?: Backer[];
   packages?: StakePackage[];
   payments?: BackerPayment[];
+  backing?: BackedPlayer[];
   /** Missing in backups made before bankrolls existed. */
   bankrolls?: Bankroll[];
   transfers?: Transfer[];
@@ -38,6 +40,7 @@ export function buildBackup(
     packages?: StakePackage[];
     payments?: BackerPayment[];
     trips?: Trip[];
+    backing?: BackedPlayer[];
     settings: Settings;
   },
   now = Date.now(),
@@ -55,6 +58,7 @@ export function buildBackup(
     packages: d.packages ?? [],
     payments: d.payments ?? [],
     trips: d.trips ?? [],
+    backing: d.backing ?? [],
     settings: d.settings,
   };
 }
@@ -77,6 +81,9 @@ export function parseBackup(text: string): BackupData {
   const players = arr('players').filter((p) => isObj(p) && typeof p.name === 'string') as unknown as PlayerNote[];
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];
+  const backing = arr('backing')
+    .map((x) => (isObj(x) && typeof x.id === 'string' ? decodeBacked(x) : null))
+    .filter((x): x is BackedPlayer => !!x);
   const payments = arr('payments').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.amount === 'number') as unknown as BackerPayment[];
   const bankrolls = arr('bankrolls').filter((b) => isObj(b) && typeof b.name === 'string' && typeof b.currency === 'string' && typeof b.createdAt === 'number') as unknown as Bankroll[];
   const transfers = arr('transfers').filter(
@@ -98,6 +105,7 @@ export function parseBackup(text: string): BackupData {
     backers,
     packages,
     payments,
+    backing,
     bankrolls,
     transfers,
     trips,
@@ -198,4 +206,11 @@ export function importSummary(n: { hands: number; sessions: number; players: num
   if (n.transfers) parts.push(n.transfers === 1 ? t('1 movimento') : t('{n} movimentos', { n: n.transfers }));
   if (n.trips) parts.push(n.trips === 1 ? t('1 viagem') : t('{n} viagens', { n: n.trips }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
+}
+
+/** A backed player from a backup, with the statement re-checked like a fresh link. */
+function decodeBacked(x: Record<string, unknown>): BackedPlayer | null {
+  const st = isObj(x.statement) ? checkStatement(x.statement) : null;
+  if (!st || st.id !== x.id) return null;
+  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, updatedAt: typeof x.updatedAt === 'number' ? x.updatedAt : undefined };
 }
