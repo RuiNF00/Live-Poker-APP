@@ -79,6 +79,7 @@ export default function RootLayout() {
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
+            <Stack.Screen name="export" options={{ title: t('Exportar') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
           </Stack>
           </ProProvider>
