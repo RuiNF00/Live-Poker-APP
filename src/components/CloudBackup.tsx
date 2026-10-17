@@ -124,7 +124,7 @@ export function CloudBackup() {
             </T>
             <Ionicons name="copy-outline" size={18} color={C.textDim} />
           </Pressable>
-          <T v="tiny">{t('A cópia atualiza-se sozinha quando abres a app.')}</T>
+          <T v="tiny">{t('A cópia atualiza-se sozinha quando abres a app. Usa o código num telemóvel de cada vez: o último a copiar substitui a cópia.')}</T>
           <Row gap={8}>
             <Button small title={busy ? t('A copiar…') : t('Fazer cópia agora')} style={{ flex: 1 }} disabled={busy} onPress={backupNow} />
             <Button small kind="ghost" title={t('Desligar')} onPress={turnOff} />

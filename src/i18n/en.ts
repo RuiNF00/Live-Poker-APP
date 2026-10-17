@@ -436,6 +436,7 @@ const en: Record<string, string> = {
   'Hoje': 'Today',
   'Ontem': 'Yesterday',
   'Outra data: dd/mm/aaaa': 'Other date: dd/mm/yyyy',
+  'A cópia atualiza-se sozinha quando abres a app. Usa o código num telemóvel de cada vez: o último a copiar substitui a cópia.': 'The backup updates itself when you open the app. Use the code on one phone at a time: the last one to back up replaces the copy.',
 };
 
 export default en;

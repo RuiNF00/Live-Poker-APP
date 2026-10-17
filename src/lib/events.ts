@@ -55,6 +55,12 @@ export function refCode(): Promise<string> {
   return ref;
 }
 
+/** Adopt the server's code when it differs (e.g. it was assigned before ours was registered). */
+export async function setRefCode(code: string): Promise<void> {
+  ref = Promise.resolve(code);
+  await AsyncStorage.setItem(REF_KEY, code).catch(() => {});
+}
+
 export function track(event: FunnelEvent, props?: Record<string, string | number | boolean>) {
   if (__DEV__) return;
   installId()

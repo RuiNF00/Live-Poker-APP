@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 import { appUserId } from '@/billing/purchases';
 import { BRAND } from '@/theme';
 
-import { installId, refCode, track } from './events';
+import { installId, refCode, setRefCode, track } from './events';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', claim: 'rl.claim.v1' };
@@ -62,16 +62,25 @@ export async function canEnterCode(): Promise<boolean> {
   return Date.now() - first < WINDOW && !(c && (c.result === 'ok' || c.result === 'already'));
 }
 
+/**
+ * Register our code before anything else can make the server assign one. If the
+ * server already holds a different code for this install, links switch to it.
+ */
+async function ensureRegistered(): Promise<void> {
+  if (await getJSON<boolean>(K.registered)) return;
+  try {
+    const r = await post<{ code: string }>('code', { code: await refCode() });
+    if (!r) return;
+    if (r.code && r.code !== (await refCode())) await setRefCode(r.code);
+    await AsyncStorage.setItem(K.registered, 'true');
+  } catch {}
+}
+
 /** On launch: register our code (first registration wins) and, on Android's first run, read the Play referrer. */
 export async function bootReferrals(): Promise<void> {
   const firstRun = !(await getJSON<number>(K.first));
   await firstOpenAt();
-  if (!(await getJSON<boolean>(K.registered))) {
-    try {
-      const r = await post<{ code: string }>('code', { code: await refCode() });
-      if (r) await AsyncStorage.setItem(K.registered, 'true');
-    } catch {}
-  }
+  await ensureRegistered();
   if (firstRun && Platform.OS === 'android') {
     try {
       const { getInstallReferrerAsync } = await import('expo-application');
@@ -126,7 +135,10 @@ export interface InviteStatus {
 /** null when invites are switched off on the server. */
 export async function inviteStatus(): Promise<InviteStatus | null> {
   try {
-    return await post<InviteStatus>('status', {});
+    await ensureRegistered();
+    const s = await post<InviteStatus>('status', { myCode: await refCode() });
+    if (s?.code && s.code !== (await refCode())) await setRefCode(s.code);
+    return s;
   } catch {
     return null;
   }
