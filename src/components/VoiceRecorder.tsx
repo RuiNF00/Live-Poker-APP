@@ -34,7 +34,8 @@ export function VoiceRecorder({
   onLocked,
 }: {
   uri: string | null;
-  onChange: (uri: string | null) => void;
+  /** The new note and its length in ms (null when deleted). */
+  onChange: (uri: string | null, ms?: number) => void;
   /** Free plan: the button opens the paywall instead. */
   locked: boolean;
   onLocked: () => void;
@@ -44,12 +45,16 @@ export function VoiceRecorder({
   const player = useAudioPlayer(uri ?? undefined);
   const playing = useAudioPlayerStatus(player);
   const was = useRef(false);
+  const took = useRef(0);
+  useEffect(() => {
+    if (rec.isRecording) took.current = rec.durationMillis;
+  }, [rec.isRecording, rec.durationMillis]);
 
   // Recording also stops on its own at 30 s; pick up the file either way.
   useEffect(() => {
     if (was.current && !rec.isRecording) {
       setAudioModeAsync({ allowsRecording: false }).catch(() => {});
-      if (recorder.uri) onChange(recorder.uri);
+      if (recorder.uri) onChange(recorder.uri, took.current);
     }
     was.current = rec.isRecording;
   }, [rec.isRecording, recorder, onChange]);

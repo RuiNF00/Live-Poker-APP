@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { ffmpegArgs, parseSlot, renderStoryVideo } from '../src/lib/story-video';
+import { ffmpegArgs, parseDurations, parseSlot, renderReplayVideo, renderStoryVideo, replayArgs } from '../src/lib/story-video';
 
 describe('parseSlot', () => {
   it('accepts a slot inside the frame and rounds to even sizes', () => {
@@ -61,5 +61,61 @@ describe('renderStoryVideo', () => {
     expect(probe).toBeDefined();
     const plain = await renderStoryVideo({ frame: readFileSync(png), voice: readFileSync(m4a), voiceExt: 'm4a', slot: null });
     expect(plain.subarray(4, 8).toString()).toBe('ftyp');
+  }, 60_000);
+});
+
+describe('parseDurations', () => {
+  it('takes one sane duration per frame, 30 s at most in total', () => {
+    expect(parseDurations([1, 1.5, 3], 3)).toEqual([1, 1.5, 3]);
+    expect(parseDurations([1, 1], 3)).toBeNull();
+    expect(parseDurations([0.1, 2], 2)).toBeNull();
+    expect(parseDurations([12, 12, 12], 3)).toBeNull();
+    expect(parseDurations(['1'], 1)).toBeNull();
+  });
+});
+
+describe('replayArgs', () => {
+  it('crossfades frames at their cumulative times and forces a demuxer per frame', () => {
+    const args = replayArgs(['/t/a.jpg', '/t/b.jpg', '/t/c.jpg'], [1, 2, 3], null, '/t/o.mp4', null);
+    const filter = args[args.indexOf('-filter_complex') + 1];
+    expect(filter).toContain('offset=1.00');
+    expect(filter).toContain('offset=3.00');
+    expect(filter).toContain('anullsrc');
+    expect(args[args.indexOf('-t', args.indexOf('-filter_complex')) + 1]).toBe('6.00');
+    expect(args.filter((a) => a === 'mjpeg')).toHaveLength(3);
+    expect(args.filter((a) => a === '-protocol_whitelist')).toHaveLength(3);
+  });
+  it('draws the waveform over the voice only with a slot', () => {
+    expect(replayArgs(['a.jpg'], [2], 'v.m4a', 'o.mp4', { x: 10, y: 20, w: 300, h: 60 }).join(' ')).toContain('showwaves=s=300x60');
+    expect(replayArgs(['a.jpg'], [2], 'v.m4a', 'o.mp4', null).join(' ')).not.toContain('showwaves');
+  });
+});
+
+describe('renderReplayVideo', () => {
+  it('renders the frames for the total of their durations, with or without voice', async () => {
+    const ff = (process.env.FFMPEG_PATH || require('ffmpeg-static')) as string;
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'replay-test-'));
+    const jpg = (c: string) => {
+      const p = path.join(dir, c + '.jpg');
+      execFileSync(ff, ['-loglevel', 'error', '-f', 'lavfi', '-i', `color=c=0x${c}:s=1080x1920`, '-frames:v', '1', p]);
+      return readFileSync(p);
+    };
+    const m4a = path.join(dir, 'v.m4a');
+    execFileSync(ff, ['-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=2', '-c:a', 'aac', m4a]);
+    const frames = [jpg('0C1311'), jpg('141D1A'), jpg('FF6A3D')];
+    const length = (mp4: Buffer) => {
+      const out = path.join(dir, 'o.mp4');
+      require('node:fs').writeFileSync(out, mp4);
+      const log = require('node:child_process').spawnSync(ff, ['-i', out, '-f', 'null', '-'], { encoding: 'utf8' }).stderr as string;
+      const m = /time=(\d+):(\d+):([\d.]+)/g;
+      let last = 0;
+      for (const x of log.matchAll(m)) last = +x[1] * 3600 + +x[2] * 60 + +x[3];
+      return last;
+    };
+    const silent = await renderReplayVideo({ frames, durations: [1, 1, 2], voice: null, voiceExt: 'm4a', slot: null });
+    expect(silent.subarray(4, 8).toString()).toBe('ftyp');
+    expect(length(silent)).toBeCloseTo(4, 0);
+    const voiced = await renderReplayVideo({ frames, durations: [1, 1, 2], voice: readFileSync(m4a), voiceExt: 'm4a', slot: { x: 648, y: 219, w: 342, h: 48 } });
+    expect(length(voiced)).toBeCloseTo(4, 0);
   }, 60_000);
 });

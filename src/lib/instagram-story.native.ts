@@ -83,6 +83,44 @@ export async function renderVoiceStory(frame: string, voice: string, slot: { x: 
   return out.uri;
 }
 
+/** One replay frame for the hand video. JPEG keeps a 20-frame upload under the server's limit. */
+export async function captureFrame(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  return captureRef(ref, { format: 'jpg', quality: 0.82, width: 1080, height: 1920, result: 'tmpfile' });
+}
+
+/**
+ * Hand video (Reels, TikTok, WhatsApp status): the server (web/src/app/api/replay-video)
+ * holds each frame for its duration with a crossfade, over the voice note when
+ * there is one. Returns a local MP4.
+ */
+export async function renderReplayVideo(
+  frames: string[],
+  durations: number[],
+  voice: string | null,
+  slot: { x: number; y: number; w: number; h: number } | null,
+): Promise<string> {
+  const form = new FormData();
+  frames.forEach((uri, i) => form.append('frame' + i, { uri, name: `f${i}.jpg`, type: 'image/jpeg' } as unknown as Blob));
+  form.append('durations', JSON.stringify(durations));
+  if (voice) {
+    form.append('voice', { uri: voice, name: 'voice.m4a', type: 'audio/mp4' } as unknown as Blob);
+    if (slot) form.append('slot', JSON.stringify(slot));
+    const rcUserId = await appUserId();
+    if (rcUserId) form.append('rcUserId', rcUserId);
+  }
+  const res = await fetch(`${API}/api/replay-video`, { method: 'POST', body: form });
+  if (!res.ok) throw new Error('replay-video ' + res.status);
+  const out = new File(Paths.cache, `sweatbook-mao-${Date.now()}.mp4`);
+  await out.write(new Uint8Array(await res.arrayBuffer()));
+  return out.uri;
+}
+
+/** The system share sheet: Reels, TikTok, WhatsApp and the rest pick up an MP4 from here. */
+export async function shareVideo(file: string, link: string): Promise<void> {
+  await Clipboard.setStringAsync(link).catch(() => {});
+  await Sharing.shareAsync(file, { mimeType: 'video/mp4', UTI: 'public.mpeg-4', dialogTitle: t('Partilhar vídeo da mão') });
+}
+
 /**
  * Opens Instagram's story editor with the image. The link is also copied, so
  * if Instagram drops the pre-filled sticker the player pastes it into a Link

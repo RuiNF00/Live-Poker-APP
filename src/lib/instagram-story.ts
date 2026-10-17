@@ -31,3 +31,20 @@ export async function renderVoiceStory(_frame: string, _voice: string, _slot: { 
 export async function shareStory(_file: string, _link: string, _kind: 'image' | 'video' = 'image'): Promise<StoryTarget> {
   throw new Error('Story sharing needs the iOS or Android app');
 }
+
+export async function captureFrame(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  throw new Error('Hand videos need the iOS or Android app');
+}
+
+export async function renderReplayVideo(
+  _frames: string[],
+  _durations: number[],
+  _voice: string | null,
+  _slot: { x: number; y: number; w: number; h: number } | null,
+): Promise<string> {
+  throw new Error('Hand videos need the iOS or Android app');
+}
+
+export async function shareVideo(_file: string, _link: string): Promise<void> {
+  throw new Error('Hand videos need the iOS or Android app');
+}
