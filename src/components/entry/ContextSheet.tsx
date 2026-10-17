@@ -71,7 +71,7 @@ export function ContextSheet({
             <ChipRow>
               {levels.map(([sb, bb]) => (
                 <Chip
-                  key={bb}
+                  key={`${sb}/${bb}`}
                   label={`${chips(sb)}/${chips(bb)}`}
                   active={game.sb === sb && game.bb === bb}
                   onPress={() => set({ sb, bb, ante: game.kind === 'mtt' && game.anteType !== 'none' ? (game.anteType === 'bb' ? bb : Math.round(bb / 8)) : 0 })}
