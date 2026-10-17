@@ -3185,6 +3185,7 @@ const es: Record<string, string> = {
   'Hora oficial': 'Hora oficial',
   'Punta Cana, janeiro 2027': 'Punta Cana, enero 2027',
   'República Dominicana': 'República Dominicana',
+  'Mais formas de partilhar': 'Más formas de compartir',
 };
 
 export default es;
