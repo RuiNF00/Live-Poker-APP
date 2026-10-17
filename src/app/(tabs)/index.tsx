@@ -266,12 +266,21 @@ export default function HandsScreen() {
           hands.length === 0 ? (
             <FirstRun />
           ) : (
-            <Empty
-              icon="search"
-              title={t('Nada encontrado')}
-              body={t('Tenta outro nome, torneio ou mão.')}
-              action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false), setFilter(NO_FILTER))} />}
-            />
+            pills.length && !q.trim() ? (
+              <Empty
+                icon="options-outline"
+                title={t('Nenhuma mão com estes filtros')}
+                body={t('Tira um filtro ou limpa todos para voltares a ver as mãos.')}
+                action={<Button title={t('Limpar filtros')} kind="secondary" size="md" onPress={() => setFilter(NO_FILTER)} />}
+              />
+            ) : (
+              <Empty
+                icon="search"
+                title={t('Nada encontrado')}
+                body={t('Tenta outro nome, torneio ou mão.')}
+                action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false), setFilter(NO_FILTER))} />}
+              />
+            )
           )
         }
         renderItem={renderItem}

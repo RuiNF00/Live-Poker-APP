@@ -2470,6 +2470,12 @@ const es: Record<string, string> = {
   'Abrir GTO Wizard': 'Abrir GTO Wizard',
   'Satélite': 'Satélite',
   'Média': 'Estándar',
+  'Nenhuma mão com estes filtros': 'Ninguna mano con estos filtros',
+  'Tira um filtro ou limpa todos para voltares a ver as mãos.': 'Quita un filtro o bórralos todos para volver a ver las manos.',
+  'Antes de começar': 'Antes de empezar',
+  'Não perguntar mais': 'No volver a preguntar',
+  'Como chegas e como sais de cada sessão. Só tu vês.': 'Cómo llegas y cómo sales de cada sesión. Solo lo ves tú.',
+  'Sessão em pausa · {time}': 'Sesión en pausa · {time}',
   'Ás': 'As',
   'Rei': 'Rey',
   'Dama': 'Reina',
@@ -2596,6 +2602,8 @@ const es: Record<string, string> = {
   'O torneio acabou. Regista o resultado para fechar as contas.': 'El torneo terminó. Registra el resultado para cerrar las cuentas.',
   'Acerto: {title}': 'Cuentas: {title}',
   'Swaps e staking': 'Swaps y staking',
+  'fez fold': 'foldeó',
+  'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} a {to}; el máximo fue {max}.',
 };
 
 export default es;

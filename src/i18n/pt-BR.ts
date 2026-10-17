@@ -1130,6 +1130,10 @@ const ptBR: Record<string, string> = {
   'Vendida a 1 backer por {price}. Pões {out} do teu bolso.': 'Vendida a 1 backer por {price}. Você coloca {out} do seu bolso.',
   'Avisamos-te no dia a seguir a cada torneio para fechares as contas': 'Avisamos você no dia seguinte a cada torneio para fechar as contas',
   'O torneio acabou. Regista o resultado para fechar as contas.': 'O torneio acabou. Registre o resultado para fechar as contas.',
+  'Tira um filtro ou limpa todos para voltares a ver as mãos.': 'Tire um filtro ou limpe todos para voltar a ver as mãos.',
+  'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
+  'fez fold': 'deu fold',
+  'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
 };
 
 export default ptBR;
