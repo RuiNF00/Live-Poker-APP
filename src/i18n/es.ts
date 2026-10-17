@@ -3134,6 +3134,10 @@ const es: Record<string, string> = {
   'Praga': 'Praga',
   'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
+  'Sem acesso à câmara ou ao microfone': 'Sin acceso a la cámara o al micrófono',
+  'Liga-os nas Definições para gravares a tua cara.': 'Actívalos en Ajustes para grabar tu cara.',
+  'Abrir Definições': 'Abrir Ajustes',
+  'Pára antes da tua decisão, para quem vê votar no link.': 'Se detiene antes de tu decisión, para que quien la vea vote en el link.',
 };
 
 export default es;

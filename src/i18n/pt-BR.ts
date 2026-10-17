@@ -1479,6 +1479,10 @@ const ptBR: Record<string, string> = {
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
   'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
+  'Sem acesso à câmara ou ao microfone': 'Sem acesso à câmera ou ao microfone',
+  'Liga-os nas Definições para gravares a tua cara.': 'Ative nas Configurações para gravar seu rosto.',
+  'Abrir Definições': 'Abrir Configurações',
+  'Pára antes da tua decisão, para quem vê votar no link.': 'Para antes da sua decisão, para quem vê votar no link.',
 };
 
 export default ptBR;
