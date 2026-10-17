@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
@@ -362,7 +362,7 @@ function rowSummary(hand: Hand) {
 
 const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void }) {
   const { net, done } = rowSummary(hand);
-  const pos = positions(hand.players.length, hand.button);
+  const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   const hero = hand.players[hand.hero];
   return (
     <Pressable
@@ -371,31 +371,22 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
       onPress={() => (picking ? onPick(hand.id) : router.push({ pathname: '/hand/[id]', params: { id: hand.id } }))}
       onLongPress={() => onPick(hand.id)}
       delayLongPress={350}
-      style={({ pressed }) => ({
-        backgroundColor: picked ? C.accentSoft : pressed ? C.surface2 : C.surface,
-        borderRadius: R.lg,
-        borderWidth: 1,
-        borderColor: picked ? C.accentLine : C.border,
-        paddingVertical: 12,
-        paddingHorizontal: 12,
-        gap: 10,
-        ...SHADOW,
-      })}>
+      style={({ pressed }) => (picked ? rowSt.picked : pressed ? rowSt.pressed : rowSt.row)}>
       <Row gap={12}>
         {picking ? <Ionicons name={picked ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={picked ? C.accent : C.muted} /> : null}
-        {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" gap={2} /> : <View style={{ width: 62, height: 42, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.borderStrong }} />}
-        <View style={{ flex: 1, gap: 3 }}>
+        {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" gap={2} /> : <View style={rowSt.noCards} />}
+        <View style={rowSt.main}>
           <Row gap={6}>
-            <T v="h3" numberOfLines={1} style={{ fontSize: 16 }}>
+            <T v="h3" numberOfLines={1} style={rowSt.combo}>
               {comboLabel(hero.cards) || t('Sem cartas')}
             </T>
-            <Badge label={pos[hand.hero]} />
+            <Badge label={heroPos} />
           </Row>
           <T v="small" numberOfLines={1}>
             {(hand.game.name || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ' · ' + blindsLabel(hand)}
           </T>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+        <View style={rowSt.side}>
           {net !== undefined ? (
             <T v="mono" color={net > 0 ? C.good : net < 0 ? C.bad : C.textDim}>
               {(net > 0 ? '+' : '') + amount(net, hand, inBB)}
@@ -409,9 +400,9 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
         </View>
       </Row>
       {hand.board.length || hand.tags.length || !done || hand.shareId ? (
-        <Row gap={6} style={{ flexWrap: 'wrap' }}>
+        <Row gap={6} style={rowSt.wrap}>
           {hand.board.length ? (
-            <Row gap={2} style={{ marginRight: 4 }}>
+            <Row gap={2} style={rowSt.board}>
               {hand.board.map((c, i) => (
                 <PlayingCard key={c + i} card={c} size="xs" />
               ))}
@@ -427,6 +418,19 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
       ) : null}
     </Pressable>
   );
+});
+
+const rowBase = { backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 12, gap: 10, ...SHADOW };
+const rowSt = StyleSheet.create({
+  row: rowBase,
+  pressed: { ...rowBase, backgroundColor: C.surface2 },
+  picked: { ...rowBase, backgroundColor: C.accentSoft, borderColor: C.accentLine },
+  noCards: { width: 62, height: 42, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.borderStrong },
+  main: { flex: 1, gap: 3 },
+  side: { alignItems: 'flex-end', gap: 4 },
+  combo: { fontSize: 16 },
+  wrap: { flexWrap: 'wrap' },
+  board: { marginRight: 4 },
 });
 
 const INCOMPLETE = '__incomplete';
