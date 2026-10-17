@@ -80,6 +80,12 @@ export function scrubEvent<E extends object>(event: E): E {
       delete d.id;
       c.device = d;
     }
+    // iOS puts a fixed per-phone hash here: an install id the privacy forms don't allow.
+    if (c.app && typeof c.app === 'object') {
+      const a = { ...(c.app as Obj) };
+      delete a.device_app_hash;
+      c.app = a;
+    }
     // Any other context (React's component stack, app, os) goes through the same string filter.
     for (const k of Object.keys(c)) if (k !== 'device') c[k] = deep(c[k], 0, !SDK_CONTEXTS.includes(k));
     e.contexts = c;

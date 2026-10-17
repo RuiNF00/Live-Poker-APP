@@ -76,7 +76,7 @@ test('as variáveis locais das linhas da pilha não saem; ficheiro e linha ficam
 test('chaves com nomes, notas e tokens saem inteiras de extra e contexts; o sistema fica', () => {
   const e = scrubEvent({
     extra: { name: 'Rui', note: 'jogou mal', edit_token: 'x1', player_name: 'Gil', level: 8, nested: { nickname: 'R' } },
-    contexts: { session: { name: 'Main Event', notes: 'cansado' }, os: { name: 'iOS', version: '18.1' }, app: { app_name: 'Sweatbook' } },
+    contexts: { session: { name: 'Main Event', notes: 'cansado' }, os: { name: 'iOS', version: '18.1' }, app: { app_name: 'Sweatbook', device_app_hash: 'f00d' } },
     logentry: { message: 'saved for rui@exemplo.pt', params: ['AhKd'] },
     threads: { values: [{ id: 1, stacktrace: { frames: [{ filename: 'a.js', lineno: 1, vars: { hand: 'AhKd' } }] } }] },
   }) as Record<string, any>;
