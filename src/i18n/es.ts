@@ -2395,6 +2395,16 @@ const es: Record<string, string> = {
   'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.': 'Resultados registrados por el jugador en Sweatbook. El resultado de cada sesión ya descuenta buy-ins, gastos, propinas y la parte de los backers.',
   'Dados recuperados': 'Datos recuperados',
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estaban guardados aparte se volvieron a abrir y están de vuelta en la app.',
+  'Guardar mão': 'Guardar mano',
+  'Contexto da mão: {context}. Toca para mudar': 'Contexto de la mano: {context}. Toca para cambiar',
+  '{action} para {amount}': '{action} a {amount}',
+  'stack {stack}': 'stack {stack}',
+  'fichas na mesa {amount}': 'fichas en la mesa {amount}',
+  'a jogar': 'le toca',
+  'Editar lugar': 'Editar asiento',
+  '{rank} de {suit}': '{rank} de {suit}',
+  'Ás': 'As', 'Rei': 'Rey', 'Dama': 'Reina', 'Valete': 'Jota', 'Dez': 'Diez', 'Nove': 'Nueve', 'Oito': 'Ocho', 'Sete': 'Siete', 'Seis': 'Seis', 'Cinco': 'Cinco', 'Quatro': 'Cuatro', 'Três': 'Tres', 'Dois': 'Dos',
+  'espadas': 'picas', 'copas': 'corazones', 'ouros': 'diamantes', 'paus': 'tréboles',
 };
 
 export default es;
