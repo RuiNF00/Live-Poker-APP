@@ -376,7 +376,7 @@ export function landingCopy(locale: Locale) {
       proTag: `${PRICES.trialDays} días gratis`,
       proFeatures: [
         'Manos ilimitadas',
-        'Staking, ajuste de swaps e informe de impuestos',
+        'Staking, liquidación de swaps y informe de impuestos',
         'Stories de Instagram con tu voz, sin marca de agua',
         'Bankroll completo: 30 días, 90 días, año, ROI e ITM',
         'Todo lo del plan Gratis',

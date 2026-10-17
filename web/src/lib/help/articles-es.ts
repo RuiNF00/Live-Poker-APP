@@ -165,7 +165,7 @@ export const ES: Record<string, ArticleText> = {
       },
       'Cuando alguien cobra, toca Cobré y registra el premio. La app indica quién debe cuánto a quién; cuando pagues, regístralo en Pagué. Compartir las cuentas envía el resumen al otro jugador.',
       'Si vendiste acción, el swap sale solo de tu parte: tus backers siguen con su porcentaje del premio entero.',
-      'Crear swaps y registrar resultados es gratis. El ajuste (quién le debe a quién) y el historial son parte del Pro. Confirmar un swap por link siempre es gratis.',
+      'Crear swaps y registrar resultados es gratis. La liquidación (quién le debe a quién) y el historial son parte del Pro. Confirmar un swap por link siempre es gratis.',
       { note: 'Solo registro y cuentas: ningún dinero pasa por Sweatbook, los pagos se hacen entre ustedes. Solo para mayores de 18 años.' },
     ],
   },
@@ -246,7 +246,7 @@ export const ES: Record<string, ArticleText> = {
           'Exportar una mano para solver, todas las sesiones en CSV y la copia completa en .json.',
         ],
       },
-      'El Pro quita el límite de manos y añade: la gestión del staking (cuentas y extractos de los backers), el ajuste y el historial de los swaps, el informe de impuestos, el total en varias monedas, varios bankrolls con filtros, las lecturas del bankroll (varianza, comparación de meses y riesgo de ruina), el rango editable, el informe PDF y el CSV por periodo y de las manos, exportar varias manos, viajes ilimitados y Stories con tu voz o tu cara y sin marca.',
+      'El Pro quita el límite de manos y añade: la gestión del staking (cuentas y extractos de los backers), la liquidación y el historial de los swaps, el informe de impuestos, el total en varias monedas, varios bankrolls con filtros, las lecturas del bankroll (varianza, comparación de meses y riesgo de ruina), el rango editable, el informe PDF y el CSV por periodo y de las manos, exportar varias manos, viajes ilimitados y Stories con tu voz o tu cara y sin marca.',
     ],
   },
   pro: {

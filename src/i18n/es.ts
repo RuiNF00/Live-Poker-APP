@@ -3179,7 +3179,7 @@ const es: Record<string, string> = {
   'Até {amount}': 'Hasta {amount}',
   'Nenhum torneio com estes filtros.': 'Ningún torneo con estos filtros.',
   'Coincide com {name} às {time}': 'Coincide con {name} a las {time}',
-  'Registo do {event} fecha às {time}': 'El registro de {event} cierra a las {time}',
+  'Registo do {event} fecha às {time}': 'Las inscripciones de {event} cierran a las {time}',
   'Ainda dá para entrar. Toca para começar a sessão.': 'Todavía puedes entrar. Toca para empezar la sesión.',
   'Avisamos-te {n} min antes de fechar.': 'Te avisamos {n} min antes del cierre.',
   'Hora oficial': 'Hora oficial',
