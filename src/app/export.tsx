@@ -130,7 +130,7 @@ export default function ExportScreen() {
           </Section>
         ) : null}
 
-        <Section title={t('No relatório')} hint={report.currencies.length > 1 ? t('Mais {n} moedas, cada uma com o seu resumo.', { n: report.currencies.length - 1 }) : undefined}>
+        <Section title={t('No relatório')} hint={report.currencies.length > 1 ? report.currencies.length === 2 ? t('Mais 1 moeda, com o seu resumo.') : t('Mais {n} moedas, cada uma com o seu resumo.', { n: report.currencies.length - 1 }) : undefined}>
           <StatGrid cols={3}>
             <Stat label={t('Resultado')} value={main ? (main.totals.profit > 0 ? '+' : '') + money(main.totals.profit, main.currency) : '—'} tone={main ? (main.totals.profit >= 0 ? 'good' : 'bad') : undefined} />
             <Stat label={t('Sessões')} value={String(main?.totals.sessions ?? 0)} />

@@ -1601,6 +1601,14 @@ const en: Record<string, string> = {
   'O ficheiro tem os teus dados de póquer': 'The file has your poker data',
   'Datas, salas e resultados. Só sai do telemóvel se o enviares tu, por email ou outra app à tua escolha. Nada é enviado sozinho.': 'Dates, card rooms and results. It only leaves your phone if you send it, by email or any app you pick. Nothing is sent on its own.',
   'Escolher como enviar': 'Choose how to send',
+  'Mais 1 moeda, com o seu resumo.': 'Plus 1 more currency, with its own summary.',
+  '1 pacote de staking': '1 staking package',
+  '{n} pacotes de staking': '{n} staking packages',
+  '1 pagamento a backers': '1 payment to backers',
+  '{n} pagamentos a backers': '{n} payments to backers',
+  '1 jogador que apoias': '1 player you back',
+  '{n} jogadores que apoias': '{n} players you back',
+  'no saco': 'bagged',
 };
 
 export default en;
