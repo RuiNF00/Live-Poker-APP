@@ -40,34 +40,38 @@ export function ShareView(props: Props) {
   const { hand, locale, quiz } = props;
   const d = t(locale);
   const steps = useMemo(() => buildReplay(hand, { revealAll: props.revealAll, locale }), [hand, props.revealAll, locale]);
-  const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [mode, setMode] = useState<AmountMode>('chips');
-  const [comments, setComments] = useState(props.initialComments);
-
   const quizStep = useMemo(
     () => (quiz ? steps.findIndex((s) => s.action && s.street === quiz.street && s.action.index === quiz.actionIndex) : -1),
     [steps, quiz],
   );
-  const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>('pending');
+  // A challenge opens straight on hero's decision: the table as it stands, question on screen.
+  const [index, setIndex] = useState(quizStep > 0 ? quizStep - 1 : 0);
+  const [playing, setPlaying] = useState(false);
+  const [mode, setMode] = useState<AmountMode>('chips');
+  const [comments, setComments] = useState(props.initialComments);
+  const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>(quizStep > 0 ? 'open' : 'pending');
   // Until the friend has voted, nothing may give the answer away: notes, tags, later actions, comments.
   const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
 
   useEffect(() => {
     const saved = readLocal<AmountMode>('amountMode');
     if (saved === 'bb' || saved === 'chips') setMode(saved);
-    if (readLocal<string>(`quiz:${props.shareId}`)) setQuizState('done');
     track('share_viewed', { shareId: props.shareId });
+    const voted = !!readLocal<string>(`quiz:${props.shareId}`);
+    if (voted) {
+      setQuizState('done');
+      setIndex(0);
+    } else if (quizStep > 0) return; // waiting on the friend's vote
     // Friends open the link from a chat: start playing right away.
     const id = setTimeout(() => setPlaying(true), 700);
     return () => clearTimeout(id);
-  }, [props.shareId]);
+  }, [props.shareId, quizStep]);
 
   /** Moves to a step, stopping at the quiz spot the first time it is reached. */
   const goTo = useCallback(
     (next: number) => {
       const target = Math.max(0, Math.min(steps.length - 1, next));
-      if (quizStep > 0 && quizState === 'pending' && target >= quizStep) {
+      if (quizStep > 0 && quizState !== 'done' && target >= quizStep) {
         setIndex(quizStep - 1);
         setPlaying(false);
         setQuizState('open');
@@ -133,6 +137,11 @@ export function ShareView(props: Props) {
       <section className="replayer" aria-label="Replayer">
         <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
 
+        <div className="step-line" aria-live="polite">
+          <span className={`street-pill street-${step.street}`}>{streetLabel(step.street, locale)}</span>
+          <span className="step-text">{describeStep(step, bb, mode, locale)}</span>
+        </div>
+
         {quizState === 'open' && quizStep > 0 && (
           <Quiz
             shareId={props.shareId}
@@ -143,11 +152,6 @@ export function ShareView(props: Props) {
             onDone={finishQuiz}
           />
         )}
-
-        <div className="step-line" aria-live="polite">
-          <span className={`street-pill street-${step.street}`}>{streetLabel(step.street, locale)}</span>
-          <span className="step-text">{describeStep(step, bb, mode, locale)}</span>
-        </div>
 
         <div className="scrub">
           <input
@@ -263,8 +267,8 @@ export function ShareView(props: Props) {
 function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers: boolean }) {
   const d = t(locale);
   const tour = hand.tournament;
-  const stakes = `${formatAmount(hand.blinds.sb, hand.blinds.bb)}/${formatAmount(hand.blinds.bb, hand.blinds.bb)}${
-    hand.blinds.ante ? ` · ante ${formatAmount(hand.blinds.ante, hand.blinds.bb)}` : ''
+  const stakes = `${formatAmount(hand.blinds.sb, hand.blinds.bb, 'chips', locale)}/${formatAmount(hand.blinds.bb, hand.blinds.bb, 'chips', locale)}${
+    hand.blinds.ante ? ` · ante ${formatAmount(hand.blinds.ante, hand.blinds.bb, 'chips', locale)}` : ''
   }`;
   const meta = [
     hand.format === 'tournament' ? tour?.name || d.tournament : d.cash,

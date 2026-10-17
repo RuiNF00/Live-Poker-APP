@@ -57,11 +57,11 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
           {facing > 0 && (
             <>
               {' · '}
-              {d.quizFacing} {formatAmount(facing, bb, mode)}
+              {d.quizFacing} {formatAmount(facing, bb, mode, locale)}
             </>
           )}
           {' · '}
-          {d.pot} {formatAmount(step.totalPot - (step.action?.paid ?? 0), bb, mode)}
+          {d.pot} {formatAmount(step.totalPot - (step.action?.paid ?? 0), bb, mode, locale)}
         </div>
         <div className="quiz-choices">
           {choices.map((c) => {

@@ -599,28 +599,19 @@ a {
 
 /* ---------- quiz ---------- */
 
+/* Docked under the table so the friend decides with the whole spot in view. */
 .quiz {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(5, 8, 12, 0.6);
-  backdrop-filter: blur(3px);
-  border-radius: 20px;
+  margin: 12px 0 4px;
 }
 
 .quiz-card {
   width: 100%;
-  max-width: 360px;
   background: var(--surface);
   border: 1px solid rgba(255, 106, 61, 0.4);
   border-radius: 18px;
   padding: 18px;
   text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 4px rgba(255, 106, 61, 0.08);
 }
 
 .quiz-title {

@@ -3,19 +3,29 @@ import type { ActionType, Card, HandRecord, Street } from './types';
 
 export type AmountMode = 'chips' | 'bb';
 
-export function formatChips(n: number): string {
-  if (n >= 1_000_000) return `${trim(n / 1_000_000)}M`;
-  if (n >= 10_000) return `${trim(n / 1000)}k`;
-  return n.toLocaleString('en-US');
+/**
+ * Same rules as the app (src/poker/format.ts chips()): plain number under 10k in the page's
+ * locale (pt-PT: 1380, 9 500), then 12.5k / 250k / 1.25M.
+ */
+export function formatChips(n: number, locale: 'pt' | 'en' = 'pt'): string {
+  const a = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (a < 10_000) return sign + Math.round(a).toLocaleString(locale === 'pt' ? 'pt-PT' : 'en-US').replace(/\s/g, ' ');
+  if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0) + 'k';
+  return sign + fixed(a / 1_000_000, 2) + 'M';
+}
+
+function fixed(x: number, digits: number): string {
+  return x.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
 }
 
 function trim(x: number): string {
   return (Math.round(x * 10) / 10).toString();
 }
 
-export function formatAmount(n: number, bb: number, mode: AmountMode = 'chips'): string {
+export function formatAmount(n: number, bb: number, mode: AmountMode = 'chips', locale: 'pt' | 'en' = 'pt'): string {
   if (mode === 'bb') return `${trim(n / bb)} BB`;
-  return formatChips(n);
+  return formatChips(n, locale);
 }
 
 const ACTION_LABEL: Record<'pt' | 'en', Record<ActionType, string>> = {
@@ -78,7 +88,7 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
     const amount =
       a.type === 'fold' || a.type === 'check'
         ? ''
-        : ` ${formatAmount(a.type === 'call' ? a.paid : a.toAmount, bb, mode)}`;
+        : ` ${formatAmount(a.type === 'call' ? a.paid : a.toAmount, bb, mode, locale)}`;
     return `${seat.name} ${actionLabel(a.type, locale)}${amount}`;
   }
   const winners = step.winners ?? [];
@@ -86,7 +96,7 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
     .map((w) => {
       const s = step.seats.find((x) => x.seat === w.seat)!;
       const verb = locale === 'pt' ? 'ganha' : 'wins';
-      return `${s.name} ${verb} ${formatAmount(w.amount, bb, mode)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
+      return `${s.name} ${verb} ${formatAmount(w.amount, bb, mode, locale)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
     })
     .join(' · ');
 }
