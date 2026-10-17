@@ -94,3 +94,17 @@ test('online state follows what requests do, and reconnect fires once', async ()
   off();
   reportNetwork(true);
 });
+
+test('a job about something deleted can be forgotten before it goes out', async () => {
+  const kv = mem();
+  const sent: unknown[] = [];
+  const box = createOutbox(kv, { 'share-upload': async (p) => (sent.push(p), 'done') });
+  await box.enqueue('share-upload', { hand: 'a' }, 'a');
+  await box.enqueue('share-upload', { hand: 'b' }, 'b');
+  assert.equal(await box.cancel('share-upload', 'a'), true);
+  assert.equal(await box.cancel('share-upload', 'a'), false);
+  await box.drain();
+  assert.deepEqual(sent, [{ hand: 'b' }]);
+  // Gone from storage too, so a restart doesn't bring it back.
+  assert.equal(await createOutbox(kv, {}).size(), 0);
+});

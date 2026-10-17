@@ -124,8 +124,7 @@ ${link}`;
 
   const remove = () => {
     const doIt = () => {
-      // The public link goes with the hand.
-      if (hand.shareId && hand.shareToken) deleteShare(hand.shareId, hand.shareToken).catch(() => {});
+      // The public link goes with the hand (the store queues it until there's signal).
       dropVoiceNote(hand.voiceNote);
       deleteHand(hand.id);
       router.back();
