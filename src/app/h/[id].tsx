@@ -2,7 +2,7 @@
 // the link (no app needed); in the app, the same link opens here too.
 
 import { Link, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { CommentsList } from '@/components/Comments';
@@ -17,6 +17,7 @@ import { blockCommenter, forgetFriendHand, hideFriendHand, markCommentsSeen, rem
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import { comboLabel } from '@/poker/cards';
+import { replay } from '@/poker/engine';
 import { blindsLabel } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { useStore } from '@/store/store';
@@ -61,6 +62,13 @@ export default function SharedHand() {
     if (id && comments) markCommentsSeen(id, comments.length);
   }, [id, comments]);
   const [seek, setSeek] = useState<{ street: Street; n: number }>();
+  // The street on screen: a new comment is about it unless unticked, like on your own hand.
+  const [street, setStreet] = useState<Street>('preflop');
+  const streets = useMemo(() => {
+    if (!hand) return [];
+    const seen = new Set(replay(hand).steps.map((s) => s.street));
+    return (['preflop', 'flop', 'turn', 'river'] as Street[]).filter((x) => seen.has(x));
+  }, [hand]);
   const opened = useRef(false);
   useEffect(() => {
     if (opened.current || !comments?.length || !hand) return;
@@ -95,6 +103,7 @@ export default function SharedHand() {
             hand={hand}
             autoPlay={!seek}
             seek={seek}
+            onStreet={setStreet}
             quiz={q === '1'}
             onVote={(choice) =>
               postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
@@ -112,7 +121,11 @@ export default function SharedHand() {
             </Link>
           </View>
           <T v="h2">{t('Comentários')}</T>
-          <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block} />
+          <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block}
+            streets={streets}
+            street={street}
+            onJumpStreet={(st) => setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }))}
+          />
           <Pressable
             disabled={reported}
             hitSlop={8}

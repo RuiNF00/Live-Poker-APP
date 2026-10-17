@@ -71,15 +71,16 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !body.trim() || state === 'sending') return;
+    if (!body.trim() || state === 'sending') return;
     setState('sending');
-    writeLocal('name', name.trim());
+    // The name is optional: one tap less for a friend commenting for the first time.
+    if (name.trim()) writeLocal('name', name.trim());
     try {
       const res = await fetch(`/api/hands/${shareId}/comments`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
+          name: name.trim() || d.anonymous,
           text: body.trim(),
           stepIndex: attach && currentStep > 0 ? currentStep : null,
           // So the player who shared can block this browser (only a hash is kept).
@@ -154,14 +155,14 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
       <form className="comment-form" onSubmit={submit}>
         <input
           className="input"
-          placeholder={d.yourName}
+          placeholder={d.nameOptional}
           value={name}
           maxLength={40}
           onChange={(e) => setName(e.target.value)}
           autoComplete="nickname"
-          required
         />
         <textarea
+          id="comment-text"
           className="input"
           placeholder={d.commentPlaceholder}
           value={body}

@@ -147,7 +147,7 @@ export default function HandScreen() {
     }
   };
 
-  const share = async (quiz = false, to?: 'x') => {
+  const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
     tap('medium');
     const isNew = !hand.shareId;
     if (isNew && !pro.canShare()) {
@@ -167,6 +167,13 @@ ${link}`;
     if (to === 'x') {
       // Straight to a new post on X (the app if installed, else the browser); the link shows the replay card.
       await Linking.openURL(`https://x.com/intent/post?text=${encodeURIComponent(head)}&url=${encodeURIComponent(link)}`).catch(() => Share.share({ message: msg }));
+      return;
+    }
+    if (to === 'whatsapp') {
+      // Straight to WhatsApp's chat picker: one tap less than the system sheet. Without WhatsApp, the usual sheet.
+      const text = encodeURIComponent(msg);
+      const url = Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`;
+      await Linking.openURL(url).catch(() => Share.share({ message: msg }));
       return;
     }
     if (Platform.OS === 'web') {
@@ -369,9 +376,10 @@ ${link}`;
         groups={[
           {
             options: [
-              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id } }) },
+              { icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
+              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram' } }) },
               { icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
-              { icon: 'share-outline', label: t('Outras apps'), sub: t('WhatsApp, Mensagens, Telegram…'), onPress: () => share() },
+              { icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
               { icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
             ],
           },

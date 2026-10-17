@@ -2682,7 +2682,7 @@ const es: Record<string, string> = {
   'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': '¿Sin tiempo? Posición y cartas bastan: «Guardar ya» y la completas después.',
   'O teu stack: {amount}. Toca para mudar': 'Tu stack: {amount}. Toca para cambiar',
   'Outras apps': 'Otras apps',
-  'WhatsApp, Mensagens, Telegram…': 'WhatsApp, Mensajes, Telegram…',
+  'Mensagens, Telegram…': 'Mensajes, Telegram…',
   'Os amigos votam antes de ver o resultado': 'Tus amigos votan antes de ver el resultado',
   'Texto para fórum': 'Texto para foros',
   'TwoPlusTwo, Reddit, grupos': 'TwoPlusTwo, Reddit, grupos',

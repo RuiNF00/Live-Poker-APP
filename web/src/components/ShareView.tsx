@@ -322,7 +322,13 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
       <div className="end-title">{d.endTitle}</div>
       <div className="end-actions">
         {allowComments && (
-          <button className="btn btn-ghost btn-sm" onClick={() => scroll('comments')}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              // Straight into the comment box (keyboard up): type, then Enviar.
+              scroll('comments');
+              document.getElementById('comment-text')?.focus({ preventScroll: true });
+            }}>
             {d.endComment}
           </button>
         )}

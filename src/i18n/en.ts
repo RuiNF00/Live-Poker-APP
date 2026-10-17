@@ -2808,7 +2808,7 @@ const en: Record<string, string> = {
   'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'No time? Position and cards are enough: tap “Save now” and finish it later.',
   'O teu stack: {amount}. Toca para mudar': 'Your stack: {amount}. Tap to change',
   'Outras apps': 'Other apps',
-  'WhatsApp, Mensagens, Telegram…': 'WhatsApp, Messages, Telegram…',
+  'Mensagens, Telegram…': 'Messages, Telegram…',
   'Os amigos votam antes de ver o resultado': 'Friends vote before they see the result',
   'Texto para fórum': 'Text for forums',
   'TwoPlusTwo, Reddit, grupos': 'TwoPlusTwo, Reddit, groups',
