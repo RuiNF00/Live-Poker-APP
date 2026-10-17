@@ -7,6 +7,7 @@ import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { manageSubscription } from '@/billing/purchases';
@@ -74,6 +75,7 @@ export default function SettingsScreen() {
   const store = useStore();
   const { settings, setSettings, hands, sessions, players } = store;
   const pro = usePro();
+  const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
   const stamp = new Date().toISOString().slice(0, 10);
 
@@ -124,7 +126,7 @@ export default function SettingsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Definições') }} />
-      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: insets.bottom + 60 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {!pro.isPro ? (
           <Card tone="accent" onPress={() => pro.paywall('generic')} style={{ gap: 4 }}>
             <Row gap={10}>
