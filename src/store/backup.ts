@@ -122,6 +122,33 @@ export function parseBackup(text: string): BackupData {
   };
 }
 
+/**
+ * Settings after a restore. On a phone with nothing on it yet (a new phone, a reinstall)
+ * the backup's preferences come back: currency, default bankroll, privacy mode and the
+ * rest. On a phone already in use, its own choices stay and only an empty nickname is filled.
+ */
+export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean): Settings {
+  if (!incoming) return cur;
+  if (!fresh) return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : '') };
+  const pick = <K extends keyof Settings>(k: K, ok: (v: unknown) => boolean): Partial<Settings> => (ok(incoming[k]) ? { [k]: incoming[k] } : {});
+  const isStr = (v: unknown) => typeof v === 'string';
+  const isBool = (v: unknown) => typeof v === 'boolean';
+  return {
+    ...cur,
+    ...pick('currency', (v) => isStr(v) && (v as string).length > 0 && (v as string).length <= 4),
+    ...pick('nickname', isStr),
+    ...pick('inBB', isBool),
+    ...pick('defaultTableSize', (v) => typeof v === 'number' && Number.isInteger(v) && v >= 2 && v <= 10),
+    ...pick('shareNames', isBool),
+    ...pick('shareNotes', isBool),
+    ...pick('bankrollId', isStr),
+    ...pick('hideAmounts', isBool),
+    ...pick('includeSwaps', isBool),
+    // Onboarding stays done: the restore itself happens after it.
+    onboarded: cur.onboarded || incoming.onboarded === true,
+  };
+}
+
 /** Union by id; the copy with the later updatedAt wins, ties keep the local one. */
 export function mergeById<T extends { id: string; updatedAt?: number }>(local: T[], incoming: T[]): { list: T[]; added: number } {
   const byId = new Map(local.map((x) => [x.id, x]));

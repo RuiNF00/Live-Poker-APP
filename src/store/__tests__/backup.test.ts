@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildBackup, importSummary, mergeById, parseBackup, sessionsCsv } from '../backup';
+import { buildBackup, importSummary, mergeById, parseBackup, restoredSettings, sessionsCsv } from '../backup';
 import { DEFAULT_SETTINGS, type Session } from '../types';
 
 const sess = (over: Partial<Session> = {}): Session => ({
@@ -55,4 +55,23 @@ test('players you back go through a backup and come back validated, next to trip
   const bad = JSON.parse(JSON.stringify(b));
   bad.backing.push({ id: 'x', statement: { v: 9 } });
   assert.equal(parseBackup(JSON.stringify(bad)).backing?.length, 1);
+});
+
+test('a restore on an empty phone brings the preferences back; a phone in use keeps its own', () => {
+  const saved = { ...DEFAULT_SETTINGS, currency: '$', bankrollId: 'b1', hideAmounts: true, nickname: 'Rui', onboarded: true };
+  const parsed = parseBackup(JSON.stringify(buildBackup({ hands: [], sessions: [], players: [], settings: saved })));
+  const fresh = restoredSettings({ ...DEFAULT_SETTINGS, onboarded: true }, parsed.settings, true);
+  assert.equal(fresh.currency, '$');
+  assert.equal(fresh.bankrollId, 'b1');
+  assert.equal(fresh.hideAmounts, true);
+  assert.equal(fresh.nickname, 'Rui');
+  assert.equal(fresh.onboarded, true);
+  const inUse = restoredSettings({ ...DEFAULT_SETTINGS, currency: '£', onboarded: true }, parsed.settings, false);
+  assert.equal(inUse.currency, '£');
+  assert.equal(inUse.bankrollId, undefined);
+  assert.equal(inUse.nickname, 'Rui');
+  // Junk in the file never lands in settings.
+  const junk = restoredSettings(DEFAULT_SETTINGS, { currency: 42 as unknown as string, defaultTableSize: 99 }, true);
+  assert.equal(junk.currency, DEFAULT_SETTINGS.currency);
+  assert.equal(junk.defaultTableSize, DEFAULT_SETTINGS.defaultTableSize);
 });
