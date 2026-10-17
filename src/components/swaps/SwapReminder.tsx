@@ -67,7 +67,7 @@ export function SwapReminder() {
 
   // The tournament to ask about: finished recently, in a swap, not asked before. Shown a
   // moment later, so the end-of-session screen lands first.
-  const [shown, setShown] = useState<{ session: Session; swaps: Swap[]; groups: SwapGroup[] } | null>(null);
+  const [shown, setShown] = useState<{ session: Session; swaps: Swap[]; groups: SwapGroup[]; auto?: boolean } | null>(null);
   useEffect(() => {
     if (shown || !ready || !gReady || !asked || !live) return;
     const now = Date.now();
@@ -76,9 +76,22 @@ export function SwapReminder() {
       const list = swapsForSession(swaps, s);
       const gl = groupsForSession(groups, s);
       if (!list.length && !gl.length) continue;
+      // Turned on per swap: the result goes in without asking, and the sheet opens on the balance.
+      const auto = list.every((x) => x.autoShare) && gl.every((x) => x.autoShare);
       const id = setTimeout(() => {
         setStep('ask');
-        setShown({ session: s, swaps: list, groups: gl });
+        setShown({ session: s, swaps: list, groups: gl, auto });
+        if (auto) {
+          // Marked as asked first, so a restart before the sheet closes never sends it twice.
+          const next = [s.id, ...asked].slice(0, 50);
+          setAsked(next);
+          AsyncStorage.setItem(ASKED, JSON.stringify(next)).catch(() => {});
+          setBusy(true);
+          void record(s, list, gl).then(() => {
+            setBusy(false);
+            setStep('done');
+          });
+        }
       }, 900);
       return () => clearTimeout(id);
     }
@@ -96,15 +109,9 @@ export function SwapReminder() {
 
   async function confirm() {
     if (!shown) return;
-    const s = shown.session;
     setBusy(true);
     tap('success');
-    for (const sw of shown.swaps) {
-      await addEntry(sw.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || sw.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
-    }
-    for (const g of shown.groups) {
-      await addGroupPrize(g.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || g.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
-    }
+    await record(shown.session, shown.swaps, shown.groups);
     setBusy(false);
     setStep('done');
   }
@@ -172,6 +179,12 @@ export function SwapReminder() {
           </>
         ) : (
           <>
+            {shown.auto ? (
+              <T v="small" color={C.textDim}>
+                {prize > 0 ? t('Enviado sozinho: cobraste {amount}.', { amount: money(prize, s.currency) }) : t('Enviado sozinho: não cobraste.')}{' '}
+                {t('Para desligar, abre o swap.')}
+              </T>
+            ) : null}
             {locked ? <AccountsLocked /> : null}
             {!locked && shown.swaps.map((sw0) => {
               const sw = getSwap(sw0.id) ?? sw0;
@@ -266,5 +279,15 @@ async function notifyGroup(g: SwapGroup, news: GroupEntry[]) {
     });
   } catch (e) {
     console.warn('[swaps] notify group', e);
+  }
+}
+
+/** My result in each swap and group of this tournament: the prize, the event and the place, nothing else. */
+async function record(s: Session, swaps: Swap[], groups: SwapGroup[]) {
+  for (const sw of swaps) {
+    await addEntry(sw.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || sw.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
+  }
+  for (const g of groups) {
+    await addGroupPrize(g.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || g.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
   }
 }

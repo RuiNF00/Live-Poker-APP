@@ -89,3 +89,11 @@ test('news, backup merge', () => {
   assert.equal(r.added, 1);
   assert.ok(r.list.find((x) => x.id === 'g1')!.entries.some((x) => x.cid === 'p'));
 });
+
+test('one event: after my result, the seats still to record theirs', async () => {
+  const { groupWaitingOn } = await import('../swap-groups');
+  const ev = { ...group().terms, scope: 'event' as const };
+  assert.deepEqual(groupWaitingOn(group({ terms: ev })), []);
+  assert.deepEqual(groupWaitingOn(group({ terms: ev, entries: [e(0, 'result', 0), e(2, 'result', 900)] })), [1, 3]);
+  assert.deepEqual(groupWaitingOn(group({ entries: [e(0, 'result', 0)] })), [], 'a series never waits');
+});

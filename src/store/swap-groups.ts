@@ -63,6 +63,8 @@ export interface SwapGroup {
   syncedAt?: number;
   /** This phone only: which of my sessions each of my prizes came from (entry cid → session id). */
   links?: Record<string, string>;
+  /** This phone only: send my result when a tournament of this group ends, without asking. */
+  autoShare?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -252,4 +254,12 @@ export function groupsForSession(groups: SwapGroup[], s: Session): SwapGroup[] {
     const linked = new Set(Object.entries(g.links ?? {}).filter(([, id]) => id === s.id).map(([cid]) => cid));
     return !g.entries.some((e) => e.seat === g.seat && e.kind === 'result' && (linked.has(e.cid) || (sameName(e.event, s.name) && e.amount === (s.cashOut || 0))));
   });
+}
+
+/** One event, my result in: the seats still to record theirs (empty when nobody, or before mine). */
+export function groupWaitingOn(g: SwapGroup): number[] {
+  if (g.terms.scope !== 'event' || !groupReady(g) || g.gone || g.seats.some((s) => s.name === '-')) return [];
+  const has = (seat: number) => g.entries.some((e) => e.seat === seat && e.kind === 'result');
+  if (!has(g.seat)) return [];
+  return g.seats.map((s) => s.seat).filter((seat) => !has(seat));
 }

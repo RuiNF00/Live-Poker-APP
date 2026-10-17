@@ -2463,6 +2463,13 @@ const es: Record<string, string> = {
   "Regista só os teus prémios; {name} regista os seus.": "Registra solo tus premios; {name} registra los suyos.",
   "Ver contas": "Ver cuentas",
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Quién le debe a quién y cuánto, ya calculado. Con Pro.",
+  "À espera do resultado de {name}": "Esperando el resultado de {name}",
+  "Enviar o meu resultado sozinho": "Enviar mi resultado automáticamente",
+  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.": "Al terminar un torneo de este swap, el premio y el evento entran sin preguntar.",
+  "Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.": "Las manos, las notas y el bankroll nunca salen de tu móvil. Desactívalo cuando quieras.",
+  "Enviado sozinho: cobraste {amount}.": "Enviado automáticamente: cobraste {amount}.",
+  "Enviado sozinho: não cobraste.": "Enviado automáticamente: no cobraste.",
+  "Para desligar, abre o swap.": "Para desactivarlo, abre el swap.",
 };
 
 export default es;

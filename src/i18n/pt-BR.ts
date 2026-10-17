@@ -1065,6 +1065,13 @@ const ptBR: Record<string, string> = {
   "dos prémios do outro jogador": "dos prêmios do outro jogador",
   "Deves {mine} dos teus prémios · {name} deve {theirs} dos seus": "Você deve {mine} dos seus prêmios · {name} deve {theirs} dos próprios",
   "Regista só os teus prémios; {name} regista os seus.": "Registre só os seus prêmios; {name} registra os próprios.",
+  "À espera do resultado de {name}": "Aguardando o resultado de {name}",
+  "Enviar o meu resultado sozinho": "Enviar meu resultado automaticamente",
+  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.": "Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar.",
+  "Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.": "Mãos, notas e bankroll nunca saem do seu celular. Desligue quando quiser.",
+  "Enviado sozinho: cobraste {amount}.": "Enviado automaticamente: você ganhou {amount} de prêmio.",
+  "Enviado sozinho: não cobraste.": "Enviado automaticamente: você não ganhou prêmio.",
+  "Para desligar, abre o swap.": "Para desligar, abra o swap.",
 };
 
 export default ptBR;

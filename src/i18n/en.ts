@@ -2483,6 +2483,13 @@ const en: Record<string, string> = {
   'Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.': 'Drawdown chart: now −{now} below the peak, at most −{max}.',
   "Ver contas": "See the balance",
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Who owes whom and how much, worked out for you. With Pro.",
+  "À espera do resultado de {name}": "Waiting for {name}'s result",
+  "Enviar o meu resultado sozinho": "Send my result automatically",
+  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.": "When you finish a tournament in this swap, the prize and event go in without asking.",
+  "Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.": "Hands, notes and bankroll never leave your phone. Turn it off any time.",
+  "Enviado sozinho: cobraste {amount}.": "Sent automatically: you cashed {amount}.",
+  "Enviado sozinho: não cobraste.": "Sent automatically: you didn't cash.",
+  "Para desligar, abre o swap.": "To turn it off, open the swap.",
 };
 
 export default en;
