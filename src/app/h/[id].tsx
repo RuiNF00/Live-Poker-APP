@@ -12,7 +12,7 @@ import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
-import { hideFriendHand, markCommentsSeen, rememberFriendHand } from '@/lib/friend-hands';
+import { forgetFriendHand, hideFriendHand, markCommentsSeen, rememberFriendHand, useSharedHands } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import { comboLabel } from '@/poker/cards';
@@ -35,6 +35,8 @@ export default function SharedHand() {
   const [reported, setReported] = useState(false);
   const { hands } = useStore();
   const mine = !!id && hands.some((h) => h.shareId === id);
+  const { friends } = useSharedHands();
+  const listed = !!id && friends.some((f) => f.id === id);
 
   useEffect(() => {
     if (!id) return;
@@ -45,7 +47,8 @@ export default function SharedHand() {
   useEffect(() => {
     if (!id || !hand || mine || Platform.OS === 'web') return;
     const cards = hand.players[hand.hero]?.cards;
-    rememberFriendHand(id, [comboLabel(cards), blindsLabel(hand)].filter(Boolean).join(' · '));
+    // The ante in brackets reads like a typo in a one-line title: blinds only.
+    rememberFriendHand(id, [comboLabel(cards), blindsLabel({ game: { ...hand.game, ante: 0 } })].filter(Boolean).join(' · '), cards);
   }, [id, hand, mine]);
   useEffect(() => {
     if (id && comments) markCommentsSeen(id, comments.length);
@@ -100,6 +103,11 @@ export default function SharedHand() {
             }}>
             <T v="tiny">{reported ? t('Obrigado, vamos rever esta mão.') : t('Denunciar esta mão')}</T>
           </Pressable>
+          {listed && !reported ? (
+            <Pressable hitSlop={8} style={{ alignSelf: 'center' }} accessibilityRole="button" onPress={() => forgetFriendHand(id!)}>
+              <T v="tiny">{t('Tirar das mãos partilhadas')}</T>
+            </Pressable>
+          ) : null}
         </>
       )}
     </ScrollView>
