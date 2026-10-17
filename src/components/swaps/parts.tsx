@@ -7,13 +7,13 @@ import { View } from 'react-native';
 
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
-import { lang, t } from '@/i18n';
+import { decimalComma, t } from '@/i18n';
 import { money, shortDate, timeOf } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { other, owedOn, settled, swapNames, type Swap, type SwapEntry, type SwapLedger, type SwapSide, type SwapTerms } from '@/store/swaps';
 import { C, R, S } from '@/theme';
 
-export const pctLabel = (n: number) => `${lang === 'pt' ? String(n).replace('.', ',') : n}%`;
+export const pctLabel = (n: number) => `${decimalComma ? String(n).replace('.', ',') : n}%`;
 
 /** Both sides of the deal, as two lines anyone can check: "5% dos teus prémios vão para o João". */
 export function TermsCard({ terms, names, side, children }: { terms: SwapTerms; names: Record<SwapSide, string>; side: SwapSide | null; children?: React.ReactNode }) {

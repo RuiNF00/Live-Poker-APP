@@ -6,7 +6,7 @@
 import { Linking, Platform } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
-import { lang } from '../i18n';
+import { currencyAfter, decimalComma, lang } from '../i18n';
 
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
@@ -68,7 +68,8 @@ function hasPro(info: CustomerInfo): boolean {
 }
 
 function usd(n: number) {
-  return lang === 'pt' ? `${n.toFixed(2).replace('.', ',')} US$` : `$${n.toFixed(2)}`;
+  const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
+  return lang === 'en' ? `$${s}` : currencyAfter ? `${s}\u00a0US$` : `US$\u00a0${s}`;
 }
 
 function fallbackPlans(): StorePlan[] {
@@ -112,7 +113,7 @@ export async function getPaywallConfig(): Promise<PaywallConfig> {
   if (!LIVE) return DEFAULT_PAYWALL;
   try {
     const cur = (await (await rc()).getOfferings()).current;
-    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang) : DEFAULT_PAYWALL;
+    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang === 'pt' ? 'pt' : 'en') : DEFAULT_PAYWALL;
   } catch {
     return DEFAULT_PAYWALL;
   }

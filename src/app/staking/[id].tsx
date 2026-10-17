@@ -138,14 +138,18 @@ function BackerScreen() {
               {backer.note}
             </T>
           ) : null}
-          <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
-            <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={shareSummary} />
-            {square ? (
+          {square ? (
+            <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
+              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={shareSummary} />
               <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={() => setPaying(true)} />
-            ) : (
-              <Button size="md" style={{ flex: 1 }} icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={markPaid} />
-            )}
-          </Row>
+            </Row>
+          ) : (
+            // Stacked: "Marcar como pago" (and "Marcar como pagado" in es) doesn't fit half the width of an iPhone.
+            <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
+              <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={markPaid} />
+              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={shareSummary} />
+            </View>
+          )}
           {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={() => setPaying(true)} />}
         </Card>
 

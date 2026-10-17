@@ -5,7 +5,7 @@ import { landingCopy } from '@/components/landing/copy';
 import { MainCta, StickyCta } from '@/components/landing/Cta';
 import { StoreButtons, type StoreLinks } from '@/components/landing/StoreButtons';
 import { Card } from '@/components/landing/Visuals';
-import type { Locale } from '@/lib/i18n';
+import { isPt, numberTag, withCurrency, type Locale } from '@/lib/i18n';
 import type { ProfilePayload, SessionCard } from '@/lib/profile-data';
 import { profileCopy, type ProfileCopy } from './copy';
 import { ProfileBeacon } from './ProfileBeacon';
@@ -150,17 +150,18 @@ export function ProfileView({
 
 const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
 
 function SessionTile({ s, c, locale, hide }: { s: SessionCard; c: ProfileCopy; locale: Locale; hide: boolean }) {
-  const nf = new Intl.NumberFormat(locale === 'pt' ? 'de-DE' : 'en-GB', { maximumFractionDigits: 2 });
+  const nf = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
   const money = (n: number) => {
     const a = nf.format(Math.abs(n));
     const sign = n < 0 ? '−' : n > 0 ? '+' : '';
-    return locale === 'pt' ? `${sign}${a}${s.currency}` : `${sign}${s.currency}${a}`;
+    return withCurrency(a, s.currency, locale, sign);
   };
   // Spelled out here: the server's ICU can fall back to 9/10/2025, which reads as September in the US.
   const d = new Date(s.date);
-  const date = `${d.getUTCDate()} ${(locale === 'pt' ? MONTHS_PT : MONTHS_EN)[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const date = `${d.getUTCDate()} ${(isPt(locale) ? MONTHS_PT : locale === 'es' ? MONTHS_ES : MONTHS_EN)[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
   const h = `${nf.format(s.hours)}h`;
   const showResult = !hide && s.result !== undefined;
   const big = showResult ? money(s.result!) : s.finish ? c.place(s.finish, s.field) : h;

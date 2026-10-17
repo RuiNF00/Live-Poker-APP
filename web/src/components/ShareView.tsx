@@ -1,16 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  buildReplay,
-  describeStep,
-  formatAmount,
-  streetLabel,
-  type ActionType,
-  type AmountMode,
-  type HandRecord,
-  type ReplayStep,
-} from '@livepoker/hand-format';
+import { type ActionType, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
+import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
 import { t, type Locale } from '@/lib/i18n';
 import type { HandComment, QuizSpot } from '@/lib/types';
 import { PokerTable } from './PokerTable';

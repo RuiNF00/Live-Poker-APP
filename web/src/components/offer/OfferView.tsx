@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import type { Locale } from '@/lib/i18n';
+import { intlTag, type Locale } from '@/lib/i18n';
 import { writeLocal } from '@/lib/local';
 import { agreementCost, eventCost, type Agreement } from '@/lib/offer';
 import { storeLinks } from '@/lib/storeLinks';
@@ -44,7 +44,7 @@ export function OfferView({
     if (invite) writeLocal('invite', invite);
   }, [id, invite]);
 
-  const loc = locale === 'pt' ? 'pt-PT' : 'en-GB';
+  const loc = intlTag(locale);
   const date = (d: number) => new Date(d).toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' });
   const longDate = (iso: string) => new Date(iso).toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'action_agreement' }, invite);

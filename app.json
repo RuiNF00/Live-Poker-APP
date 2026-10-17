@@ -271,7 +271,9 @@
         {
           "supportedLocales": [
             "pt",
-            "en"
+            "pt-BR",
+            "en",
+            "es"
           ]
         }
       ]
@@ -282,7 +284,9 @@
     },
     "locales": {
       "pt": "./locales/pt.json",
-      "en": "./locales/en.json"
+      "pt-BR": "./locales/pt-BR.json",
+      "en": "./locales/en.json",
+      "es": "./locales/es.json"
     }
   }
 }
