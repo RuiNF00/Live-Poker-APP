@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, ChipRow, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
+import { useSheetAnimation } from '@/lib/motion';
 import { money } from '@/poker/format';
 import { uid } from '@/store/store';
 import type { Backer, BackerPayment, StakePackage } from '@/store/types';
@@ -22,8 +23,10 @@ export const markupLabel = (m: number) => (m === 1 ? t('Sem markup') : dec(m));
 /** A page sheet with the standard header, scrolling content and room for the keyboard. */
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  // Fades instead of sliding when the player asked for Reduce Motion.
+  const animation = useSheetAnimation();
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType={animation} presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={{ padding: S.gutter, paddingTop: S.xl, gap: S.xl, paddingBottom: insets.bottom + 40 }}
