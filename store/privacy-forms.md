@@ -10,7 +10,7 @@ Data not linked to you:
 
 | Category → type | Purpose |
 |---|---|
-| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players, optional private coaching links with coach comments) | App Functionality |
+| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players, optional private coaching links with coach comments, optional action-package agreements sent to a backer) | App Functionality |
 | User Content → Other User Content (optional cancellation feedback: reason + up to 120 characters) | Analytics |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
@@ -60,7 +60,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 
 | Data type | Collected | Optional | Purpose |
 |---|---|---|---|
-| App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
+| App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
