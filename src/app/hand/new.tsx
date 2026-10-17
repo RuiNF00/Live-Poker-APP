@@ -6,13 +6,13 @@
 //  - "salta para" chips fold/check everyone in between in one tap,
 //  - context (tournament, blinds, table) carries over from the session.
 
+import { gate } from '@/lib/gate';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePro } from '@/billing/pro';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
 import { ContextSheet, inputStyle } from '@/components/entry/ContextSheet';
@@ -21,7 +21,7 @@ import { PlayingCard } from '@/components/PlayingCard';
 import { Table } from '@/components/Table';
 import { Button, Chip, Row, T, tap } from '@/components/ui';
 import { comboLabel } from '@/poker/cards';
-import { buttonForHeroPosition, legal, positionOrder, positions, replay, totalPot, usedCards } from '@/poker/engine';
+import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { sizePresets, skipTargets, skipTo } from '@/poker/entry';
 import { newHand, resizeTable } from '@/poker/factory';
 import { amount, blindsLabel, chips } from '@/poker/format';
@@ -41,7 +41,6 @@ export default function NewHand() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ edit?: string }>();
   const store = useStore();
-  const pro = usePro();
   const { activeSession, settings, hands } = store;
 
   const [draft, setDraftState] = useState<Draft>(() => {
@@ -125,13 +124,9 @@ export default function NewHand() {
     update({ ...hand, board: [...hand.board, c] });
   };
 
-  const save = () => {
+  const save = async () => {
     tap('medium');
-    // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
-    if (!params.edit && !pro.canSaveHand()) {
-      pro.paywall('hands');
-      return;
-    }
+    if (!(await gate('save', { hand, hands: store.hands }))) return;
     // Named villains go into the player notes, so the next time they are one tap away.
     const players = hand.players.map((p, i) => {
       if (i === hand.hero || !p.name.trim() || p.playerId) return p;
@@ -162,10 +157,7 @@ export default function NewHand() {
         roster: final.players.map((p) => p.name),
       });
     }
-    if (!params.edit) {
-      store.setDraft(null);
-      pro.record('hand');
-    }
+    if (!params.edit) store.setDraft(null);
     router.replace({ pathname: '/hand/[id]', params: { id: final.id } });
   };
 
@@ -261,12 +253,12 @@ export default function NewHand() {
               {l.canCheck ? (
                 <Button title="Check" kind="secondary" style={{ flex: 1 }} onPress={() => act('check')} />
               ) : (
-                <Button title={`Call ${amount(l.toCall, hand, inBB)}`} style={{ flex: 1.4 }} onPress={() => act('call')} />
+                <Button title={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} style={{ flex: 1.4 }} onPress={() => act('call')} />
               )}
             </Row>
             {presets.length > 0 && (
               <View style={{ gap: 6 }}>
-                <T v="label">{l.canBet ? 'Bet' : 'Raise para'}</T>
+                <T v="label">{raiseName(s) + (l.canBet ? '' : ' para')}</T>
                 <Row style={{ flexWrap: 'wrap' }} gap={6}>
                   {presets.map((p) => (
                     <Pressable

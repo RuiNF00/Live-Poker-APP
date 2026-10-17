@@ -4,11 +4,11 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
+import { gate } from '@/lib/gate';
 import { fetchComments, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
@@ -17,7 +17,6 @@ import { C } from '@/theme';
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { hands, saveHand, deleteHand, settings } = useStore();
-  const pro = usePro();
   const hand = hands.find((h) => h.id === id);
   const [busy, setBusy] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -44,17 +43,15 @@ export default function HandScreen() {
     }
   };
 
-  const share = async () => {
+  const share = async (quiz = false) => {
     tap('medium');
-    const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
-    const link = await ensureLink();
-    if (!link) return;
-    if (isNew) pro.record('share');
-    const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}o que fazias aqui? 👀\n${link}`;
+    if (!(await gate('share', { hand, hands }))) return;
+    const base = await ensureLink();
+    if (!base) return;
+    const link = quiz ? base + '?q=1' : base;
+    const msg = quiz
+      ? `${hand.game.name ? hand.game.name + ' — ' : ''}desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️\n${link}`
+      : `${hand.game.name ? hand.game.name + ' — ' : ''}o que fazias aqui? 👀\n${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert('Link copiado');
@@ -106,8 +103,9 @@ export default function HandScreen() {
             icon={<Ionicons name="share-social" size={18} color={C.accentInk} />}
             style={{ flex: 1 }}
             disabled={busy}
-            onPress={share}
+            onPress={() => share()}
           />
+          <Button title="Desafio" kind="secondary" icon={<Ionicons name="help-circle-outline" size={16} color={C.text} />} disabled={busy} onPress={() => share(true)} />
           <Button title="Texto" kind="secondary" icon={<Ionicons name="copy-outline" size={16} color={C.text} />} onPress={copyText} />
         </Row>
         {hand.shareId ? (

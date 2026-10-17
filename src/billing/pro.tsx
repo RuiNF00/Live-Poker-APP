@@ -1,9 +1,11 @@
-// Who is Pro, and what the free plan has left today. Screens ask this
-// context before saving or sharing, and open the paywall when they can't.
+// Who is Pro, and what the free plan has left today. The save/share rules
+// plug into the app's gate (src/lib/gate.ts) and open the paywall when blocked.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+import { setGate } from '@/lib/gate';
 
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
@@ -81,6 +83,39 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     if (ok) setPro(true);
     return ok;
   }, [setPro]);
+
+  // Install the free-plan rules behind the app's save/share seam (src/lib/gate.ts).
+  // Refs keep the check current without re-installing it on every change.
+  const live = useRef({ usage, isPro, record, paywall });
+  useEffect(() => {
+    live.current = { usage, isPro, record, paywall };
+  }, [usage, isPro, record, paywall]);
+  useEffect(() => {
+    setGate(async (action, { hand, hands }) => {
+      const { usage: log, isPro: pro, record: rec, paywall: open } = live.current;
+      if (action === 'save') {
+        if (hands.some((h) => h.id === hand.id)) return true; // editing never counts
+        if (!canUse(log, 'hand', FREE.handsPerDay, pro)) {
+          open('hands');
+          return false;
+        }
+        rec('hand');
+        return true;
+      }
+      if (action === 'share') {
+        if (hand.shareId) return true; // re-sharing an existing link is free
+        if (!canUse(log, 'share', FREE.sharesPerDay, pro)) {
+          open('shares');
+          return false;
+        }
+        rec('share');
+        return true;
+      }
+      // Stories are free with a watermark; the story screen asks usePro() for voice/no watermark.
+      return true;
+    });
+    return () => setGate(async () => true);
+  }, []);
 
   const handsLeft = isPro ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
 

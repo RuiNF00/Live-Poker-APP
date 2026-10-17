@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { positions, replay, totalPot, type Step } from '@/poker/engine';
+import { legal, positions, raiseName, replay, totalPot, type Step } from '@/poker/engine';
 import { amount } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { actionColor, actionLabel, displayName, narrate, seatViews } from '@/poker/view';
@@ -18,15 +18,27 @@ export function Replayer({
   initialInBB = false,
   autoPlay = false,
   compact = false,
+  quiz = false,
+  onVote,
 }: {
   hand: Hand;
   initialInBB?: boolean;
   autoPlay?: boolean;
   compact?: boolean;
+  /** Stop before hero's last decision and ask "what do you do?". */
+  quiz?: boolean;
+  onVote?: (choice: string) => void;
 }) {
   const r = useMemo(() => replay(hand), [hand]);
   const steps = r.steps;
-  const last = steps.length - 1;
+  const quizAt = useMemo(() => {
+    if (!quiz) return -1;
+    for (let k = steps.length - 1; k > 0; k--) if (steps[k].kind === 'action' && steps[k].state.last?.p === hand.hero) return k;
+    return -1;
+  }, [quiz, steps, hand.hero]);
+  const [answered, setAnswered] = useState<string | null>(null);
+  const locked = quizAt > 0 && !answered;
+  const last = locked ? quizAt - 1 : steps.length - 1;
   const [i, setI] = useState(autoPlay ? 0 : last);
   const [playing, setPlaying] = useState(autoPlay);
   const [inBB, setInBB] = useState(initialInBB);
@@ -34,8 +46,9 @@ export function Replayer({
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    setI(autoPlay ? 0 : steps.length - 1);
-  }, [hand, autoPlay, steps.length]);
+    setI(autoPlay ? 0 : last);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hand, autoPlay]);
 
   useEffect(() => {
     if (!playing) return;
@@ -55,10 +68,10 @@ export function Replayer({
 
   const step: Step = steps[Math.min(i, last)];
   const st = step.state;
-  const atEnd = i >= last;
+  const atEnd = !locked && i >= last;
   const isShowdown = step.kind === 'showdown';
   const result = atEnd ? r.result : null;
-  const views = seatViews(hand, st, { inBB, reveal: isShowdown || revealAll, result, hideActing: true });
+  const views = seatViews(hand, st, { inBB, reveal: isShowdown || (revealAll && !locked), result, hideActing: !(locked && i === last) });
   if (result) {
     views.forEach((v, k) => {
       v.stack = amount(st.stacks[k] + result.won[k], hand, inBB);
@@ -94,6 +107,23 @@ export function Replayer({
         narration={narration}
         watermark={BRAND.name}
       />
+
+      {locked && i === last && (
+        <QuizPanel
+          state={st}
+          onPick={(c) => {
+            tap('medium');
+            setAnswered(c);
+            onVote?.(c);
+            setPlaying(true);
+          }}
+        />
+      )}
+      {answered ? (
+        <T v="small" style={{ textAlign: 'center' }}>
+          Tu escolheste <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>{answered}</T>. Vê o que aconteceu ↓
+        </T>
+      ) : null}
 
       {/* progress */}
       <View style={{ height: 4, backgroundColor: C.surface3, borderRadius: 2, overflow: 'hidden' }}>
@@ -133,7 +163,7 @@ export function Replayer({
         })}
       </Row>
 
-      {!compact && (
+      {!compact && !locked && (
         <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 2 }} nestedScrollEnabled>
           {log.map(({ x, k }, idx) => {
             const a = x.state.last!;
@@ -175,6 +205,29 @@ function boardFor(hand: Hand, s: Street) {
   const n = s === 'flop' ? 3 : s === 'turn' ? 4 : 5;
   const cards = hand.board.slice(s === 'flop' ? 0 : n - 1, n);
   return cards.map((c) => c[0] + ({ s: '♠', h: '♥', d: '♦', c: '♣' } as Record<string, string>)[c[1]]).join(' ');
+}
+
+function QuizPanel({ state, onPick }: { state: Step['state']; onPick: (c: string) => void }) {
+  const l = legal(state);
+  if (!l) return null;
+  const opts = [l.canCall ? 'Fold' : null, l.canCheck ? 'Check' : 'Call', l.canBet || l.canRaise ? raiseName(state) : null].filter(Boolean) as string[];
+  return (
+    <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.4)' }}>
+      <T v="h2" style={{ textAlign: 'center' }}>
+        O que fazes aqui?
+      </T>
+      <Row gap={8}>
+        {opts.map((o) => (
+          <Pressable
+            key={o}
+            onPress={() => onPick(o)}
+            style={({ pressed }) => ({ flex: 1, paddingVertical: 14, borderRadius: R.md, backgroundColor: o === 'Fold' ? C.surface3 : C.accent, alignItems: 'center', opacity: pressed ? 0.8 : 1 })}>
+            <Text style={{ color: o === 'Fold' ? C.text : C.accentInk, fontWeight: '800', fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
+          </Pressable>
+        ))}
+      </Row>
+    </View>
+  );
 }
 
 function Ctrl({ icon, onPress, active }: { icon: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; active?: boolean }) {

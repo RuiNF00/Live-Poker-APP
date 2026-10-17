@@ -27,7 +27,7 @@ Próximos passos recomendados (depois do lançamento): testar um preço mais bai
 
 - RevenueCat (`react-native-purchases`) trata das duas lojas, recibos e renovações. Entitlement `pro`.
 - `src/billing/purchases.ts`: sem chave da RevenueCat (Expo Go, web, desenvolvimento) usa uma loja de demonstração com os preços acima. Em produção sem chave, o botão diz "Ainda não disponível".
-- `src/billing/pro.tsx`: `usePro()` dá `isPro`, `handsLeft`, `canSaveHand()`, `canShare()`, `record()`, `paywall(reason)`. O estado Pro fica em cache para funcionar offline na sala.
+- `src/billing/pro.tsx`: instala as regras com `setGate()` (o `gate('save' | 'share')` da app em `src/lib/gate.ts`); `usePro()` dá `isPro`, `handsLeft`, `canSaveHand()`, `canShare()`, `record()`, `paywall(reason)`. O estado Pro fica em cache para funcionar offline na sala.
 - `src/app/paywall.tsx`: ecrã modal. Mostra o período de teste só se a loja disser que o jogador ainda tem direito a ele (exigência da Apple).
 - Página de preços: `landing/index.html` (estática, pronta para `sweatbook.poker`).
 - Depois do login com Supabase, chamar `identify(userId)` para ligar a subscrição à conta.

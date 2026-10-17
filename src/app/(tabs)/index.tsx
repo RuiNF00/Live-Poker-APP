@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { CardRow } from '@/components/PlayingCard';
-import { Button, Chip, Empty, Row, T } from '@/components/ui';
+import { Button, Chip, Empty, Row, T, Wordmark } from '@/components/ui';
 import { comboLabel } from '@/poker/cards';
 import { positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, duration, shortDate, timeOf } from '@/poker/format';
@@ -40,7 +40,7 @@ export default function HandsScreen() {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 4 }}>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="title">{BRAND.name}</T>
+              <Wordmark />
               <T v="small">{hands.length} mãos</T>
             </Row>
             {handsLeft !== null && hands.length > 0 ? (
