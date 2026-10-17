@@ -53,7 +53,7 @@ export default function HandScreen() {
     if (hand.shareId) return hand.shareId;
     setBusy(true);
     try {
-      const { id: shareId, token } = await uploadHand(hand);
+      const { id: shareId, token } = await uploadHand(hand, { names: settings.shareNames, notes: settings.shareNotes });
       saveHand({ ...hand, shareId, shareToken: token });
       return shareId;
     } catch {

@@ -6,13 +6,14 @@ import type React from 'react';
 import type { View } from 'react-native';
 
 import { uploadHand } from '@/lib/share-api';
+import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 export const canShareStory = false;
 
-export async function ensureShareId(hand: Hand, save: (h: Hand) => void): Promise<string> {
+export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: ShareOptions): Promise<string> {
   if (hand.shareId) return hand.shareId;
-  const { id, token } = await uploadHand(hand);
+  const { id, token } = await uploadHand(hand, opts);
   save({ ...hand, shareId: id, shareToken: token });
   return id;
 }

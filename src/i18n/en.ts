@@ -437,6 +437,12 @@ const en: Record<string, string> = {
   'Ontem': 'Yesterday',
   'Outra data: dd/mm/aaaa': 'Other date: dd/mm/yyyy',
   'A cópia atualiza-se sozinha quando abres a app. Usa o código num telemóvel de cada vez: o último a copiar substitui a cópia.': 'The backup updates itself when you open the app. Use the code on one phone at a time: the last one to back up replaces the copy.',
+  'Nas mãos que partilhas': 'In the hands you share',
+  'Mostrar os nomes dos adversários': "Show opponents' names",
+  'Desligado: aparecem como posições (BTN, CO…). As alcunhas das tuas notas nunca saem do telemóvel.': 'Off: they show as positions (BTN, CO…). Nicknames from your notes never leave your phone.',
+  'Incluir as minhas notas da mão': 'Include my notes on the hand',
+  'Vale para links novos. Uma mão já partilhada fica como estava.': 'Applies to new links. A hand already shared stays as it was.',
+  'Novos: {list}. O que já tinhas ficou.': 'New: {list}. Everything you had is still there.',
 };
 
 export default en;

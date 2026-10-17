@@ -14,7 +14,7 @@ import { Button, Chip, Panel, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
-import { buildBackup, parseBackup, sessionsCsv } from '@/store/backup';
+import { buildBackup, importSummary, parseBackup, sessionsCsv } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { BRAND, C } from '@/theme';
 
@@ -56,7 +56,7 @@ export default function SettingsScreen() {
       const text = await pickTextFile();
       if (text === null) return;
       const n = store.importData(parseBackup(text));
-      note(t('Cópia importada'), t('Novos: {h} mãos · {s} sessões · {p} jogadores. O que já tinhas ficou.', { h: n.hands, s: n.sessions, p: n.players }));
+      note(t('Cópia importada'), importSummary(n));
     } catch {
       note(t('Ficheiro inválido'), t('Escolhe um ficheiro .json exportado pelo Sweatbook.'));
     } finally {
@@ -93,6 +93,24 @@ export default function SettingsScreen() {
             <T v="body">{t('Mostrar valores em big blinds')}</T>
             <Switch value={settings.inBB} onValueChange={(inBB) => setSettings({ inBB })} trackColor={{ true: C.accent, false: C.surface3 }} />
           </Row>
+        </Panel>
+
+        <T v="h2">{t('Nas mãos que partilhas')}</T>
+        <Panel style={{ gap: 12 }}>
+          <Row style={{ justifyContent: 'space-between' }} gap={12}>
+            <View style={{ flex: 1 }}>
+              <T v="body">{t('Mostrar os nomes dos adversários')}</T>
+              <T v="tiny">{t('Desligado: aparecem como posições (BTN, CO…). As alcunhas das tuas notas nunca saem do telemóvel.')}</T>
+            </View>
+            <Switch value={settings.shareNames} onValueChange={(shareNames) => setSettings({ shareNames })} trackColor={{ true: C.accent, false: C.surface3 }} />
+          </Row>
+          <Row style={{ justifyContent: 'space-between' }} gap={12}>
+            <T v="body" style={{ flex: 1 }}>
+              {t('Incluir as minhas notas da mão')}
+            </T>
+            <Switch value={settings.shareNotes} onValueChange={(shareNotes) => setSettings({ shareNotes })} trackColor={{ true: C.accent, false: C.surface3 }} />
+          </Row>
+          <T v="tiny">{t('Vale para links novos. Uma mão já partilhada fica como estava.')}</T>
         </Panel>
 
         <T v="h2">{t('Cópia de segurança')}</T>

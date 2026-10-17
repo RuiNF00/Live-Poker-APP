@@ -15,6 +15,8 @@ import { captureRef } from 'react-native-view-shot';
 
 import { t } from '@/i18n';
 import { API, uploadHand } from '@/lib/share-api';
+import { appUserId } from '@/billing/purchases';
+import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 /** Meta (Facebook) app id. Required by Instagram for direct story sharing since 2023. */
@@ -23,9 +25,9 @@ const META_APP_ID = process.env.EXPO_PUBLIC_META_APP_ID as string | undefined;
 export const canShareStory = Platform.OS === 'ios' || Platform.OS === 'android';
 
 /** Upload the hand once and return its public share id. */
-export async function ensureShareId(hand: Hand, save: (h: Hand) => void): Promise<string> {
+export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: ShareOptions): Promise<string> {
   if (hand.shareId) return hand.shareId;
-  const { id, token } = await uploadHand(hand);
+  const { id, token } = await uploadHand(hand, opts);
   save({ ...hand, shareId: id, shareToken: token });
   return id;
 }
@@ -55,6 +57,9 @@ export async function renderVoiceStory(frame: string, voice: string, slot: { x: 
   form.append('frame', { uri: frame, name: 'frame.png', type: 'image/png' } as unknown as Blob);
   form.append('voice', { uri: voice, name: 'voice.m4a', type: 'audio/mp4' } as unknown as Blob);
   form.append('slot', JSON.stringify(slot));
+  // The server checks the Pro entitlement for this RevenueCat user.
+  const rcUserId = await appUserId();
+  if (rcUserId) form.append('rcUserId', rcUserId);
   const res = await fetch(`${API}/api/story-video`, { method: 'POST', body: form });
   if (!res.ok) throw new Error('story-video ' + res.status);
   const out = new File(Paths.cache, `sweatbook-story-${Date.now()}.mp4`);

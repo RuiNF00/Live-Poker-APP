@@ -45,7 +45,7 @@ BUILT FOR LIVE PLAYERS
 • Final-table deal calculator (ICM and chip chop)
 • Reads on the players at your table during the session
 • No account needed: your hands stay on your phone
-• Optional cloud backup with a recovery code, no email required
+• Optional encrypted cloud backup with a recovery code, no email required
 • Export everything to a file
 • Available in English and Portuguese
 

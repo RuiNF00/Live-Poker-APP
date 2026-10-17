@@ -70,6 +70,10 @@ export interface Settings {
   nickname: string;
   defaultTableSize: number;
   onboarded: boolean;
+  /** Shared hands: show opponents' names (off: they appear as positions). */
+  shareNames: boolean;
+  /** Shared hands: include your notes. */
+  shareNotes: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -78,4 +82,6 @@ export const DEFAULT_SETTINGS: Settings = {
   nickname: '',
   defaultTableSize: 9,
   onboarded: false,
+  shareNames: false,
+  shareNotes: true,
 };
