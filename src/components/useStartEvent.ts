@@ -6,6 +6,8 @@ import { router } from 'expo-router';
 import { Alert, Platform } from 'react-native';
 
 import { t } from '@/i18n';
+import { syncFestivalReminders } from '@/lib/festival-reminders';
+import { kindOn } from '@/lib/notify-policy';
 import { eventTitle, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { getOffers, stakesFor } from '@/store/action-offer';
 import { eventAction, getPlan, levelStart, updatePlan } from '@/store/festival-plan';
@@ -68,6 +70,8 @@ export function useStartEvent() {
           : sessionFromEvent(f, e, settings.defaultTableSize, bankroll.currency === f.currency ? bankroll.id : undefined);
     saveSession(s);
     updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(e.id) ? p.picked : [...p.picked, e.id], sessions: { ...p.sessions, [e.id]: s.id } }));
+    // Already in: its "registo fecha" reminder goes.
+    void syncFestivalReminders(f, getPlan(f.id), kindOn(settings, 'festival'));
     router.push('/session');
   };
 }

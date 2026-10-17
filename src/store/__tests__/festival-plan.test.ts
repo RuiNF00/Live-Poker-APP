@@ -360,3 +360,20 @@ test('Lisboa: official late reg for the one-day events only', () => {
   // Closes on Day 2 or the final day: left to the player.
   assert.ok(['1', '2-1A', '3', '8'].every((id) => !byId(id).lateRegMin));
 });
+
+test('Day 2 resumes a session bagged in a flight named "1A"', () => {
+  const pc = PUNTA_CANA_JAN_2027;
+  const ev = (id: string) => pc.events.find((e) => e.id === id)!;
+  const bagged = { id: 'x', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, endedAt: 2, bag: { stack: 120000, at: 2 }, breaks: [], buyIn: 3500, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 50000, stackLog: [], roster: [], notes: '' };
+  const plan = { ...EMPTY_PLAN, sessions: { '11-1A': 'x' } };
+  assert.equal(eventAction(pc, plan, [bagged], ev('11-2A'))!.kind, 'resume');
+  assert.equal(eventAction(pc, plan, [bagged], ev('11-2B')), null);
+});
+
+test('no "registo fecha" reminder for an event the player is already in', () => {
+  const pick = { ...EMPTY_PLAN, picked: ['5'] };
+  const at = venueTime(LISBOA_NOV_2026, '2026-11-26T12:00');
+  const lates = (p: typeof pick) => planReminders(LISBOA_NOV_2026, p, at).filter((r) => r.id.endsWith(':late'));
+  assert.equal(lates(pick).length, 1);
+  assert.equal(lates({ ...pick, sessions: { '5': 's1' } }).length, 0);
+});
