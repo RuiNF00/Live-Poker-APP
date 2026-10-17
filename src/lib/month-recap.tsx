@@ -14,6 +14,8 @@ import { useStore } from '@/store/store';
 import type { Session, Settings } from '@/store/types';
 
 import { notifications, setup } from './lock-screen/reminder';
+import { notifyAt, notifyOrHold } from './notify-gate';
+import { kindOn } from './notify-policy';
 
 const ID = 'sweatbook-month-recap';
 const YEAR_ID = 'sweatbook-year-recap';
@@ -29,8 +31,9 @@ export async function syncMonthRecap(sessions: Session[], settings: Settings, no
     await setup(n);
     if (Platform.OS === 'android') await n.setNotificationChannelAsync(CHANNEL, { name: t('Resumo do mês'), importance: n.AndroidImportance.DEFAULT });
     await n.cancelScheduledNotificationAsync(ID);
-    if (settings.monthRecap === false) return;
-    const { at, key } = nextRecap(now);
+    if (!kindOn(settings, 'recap')) return;
+    const { at: planned, key } = nextRecap(now);
+    const at = notifyAt('recap', planned);
     const r = monthRecap(sessions, key);
     if (!r.sessions) return;
     if (!(await n.getPermissionsAsync()).granted) return;
@@ -58,20 +61,25 @@ export async function syncYearRecap(sessions: Session[], settings: Settings, set
     await n.cancelScheduledNotificationAsync(YEAR_ID);
     const fired = settings.yearRecapAt && now >= settings.yearRecapAt ? new Date(settings.yearRecapAt).getFullYear() : undefined;
     if (fired !== undefined && fired !== settings.yearRecapSent) setSettings({ yearRecapSent: fired, yearRecapAt: undefined });
-    const plan = settings.monthRecap === false ? null : planYearRecap(now, fired ?? settings.yearRecapSent, sessions.some((s) => !s.endedAt));
+    const plan = !kindOn(settings, 'recap') ? null : planYearRecap(now, fired ?? settings.yearRecapSent, sessions.some((s) => !s.endedAt));
     const list = plan && plan.kind !== 'none' ? yearSessions(sessions, plan.year) : null;
     if (!plan || plan.kind === 'none' || !list || !(await n.getPermissionsAsync()).granted) {
       if (settings.yearRecapAt && fired === undefined) setSettings({ yearRecapAt: undefined });
       return;
     }
     const { title, body } = yearNotice(list, plan.year, recapHidden(settings));
-    await n.scheduleNotificationAsync({
-      identifier: YEAR_ID,
-      content: { title, body, data: { url: `sweatbook://year?y=${plan.year}` } },
-      trigger: plan.kind === 'at' ? { type: n.SchedulableTriggerInputTypes.DATE, date: plan.at, channelId: CHANNEL } : null,
-    });
-    if (plan.kind === 'now') setSettings({ yearRecapSent: plan.year, yearRecapAt: undefined });
-    else if (settings.yearRecapAt !== plan.at) setSettings({ yearRecapAt: plan.at });
+    const content = { title, body, data: { url: `sweatbook://year?y=${plan.year}` } };
+    if (plan.kind === 'now') {
+      // Late (held by a session, or the phone was off): through the shared gate, which holds it again if a session is live.
+      notifyOrHold('recap', () => {
+        void n.scheduleNotificationAsync({ identifier: YEAR_ID, content, trigger: null });
+        setSettings({ yearRecapSent: plan.year, yearRecapAt: undefined });
+      });
+      return;
+    }
+    const at = notifyAt('recap', plan.at);
+    await n.scheduleNotificationAsync({ identifier: YEAR_ID, content, trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL } });
+    if (settings.yearRecapAt !== at) setSettings({ yearRecapAt: at });
   } catch (e) {
     console.warn('[year-recap]', e);
   }

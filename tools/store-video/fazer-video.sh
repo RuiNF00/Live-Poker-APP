@@ -59,8 +59,8 @@ subtitles=tmp/legendas/$L.srt:fontsdir='$FONTS':force_style='FontName=Hanken Gro
       -c:a aac -b:a $AB -ar 48000 -ac 2 -movflags +faststart "lojas/$KIND-${W}x${H}-$L.mp4"
   done
 
-  # 4. Capa: o replayer aos ${CAPA:-22} s (antes do cartão final). Também serve para a candidatura a destaque.
-  "$FFMPEG" -v error -y -ss "${CAPA:-22}" -i "lojas/apple-886x1920-$L.mp4" -frames:v 1 "lojas/capa-$L.png"
+  # 4. Capa: o replayer aos ${CAPA:-24.5} s, com o flop à vista (antes do cartão final). Também serve para a candidatura a destaque.
+  "$FFMPEG" -v error -y -ss "${CAPA:-24.5}" -i "lojas/apple-886x1920-$L.mp4" -frames:v 1 "lojas/capa-$L.png"
 done
 
 # 5. Verificação: a Apple recusa fora de 15 a 30 s, acima de 30 fps ou sem áudio.

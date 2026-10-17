@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { rcUserIdOf } from '@/lib/swap-pro';
 import { swapStore, validId } from '@/lib/swaps';
 import { noStore, swapCors, swapResponse, tokenOf } from '../shared';
 
@@ -26,4 +27,17 @@ export async function DELETE(req: Request, { params }: Ctx) {
   const leave = new URL(req.url).searchParams.get('leave') === '1';
   const ok = !!token && validId(id) && (await (leave ? swapStore().leave(id, token) : swapStore().remove(id, token)));
   return NextResponse.json({ deleted: ok }, { status: ok ? 200 : 404, headers: swapCors });
+}
+
+/**
+ * PATCH { rcUserId } with the creator's token: their RevenueCat id changed (a reinstall or a
+ * restore), so the new one replaces it. Anyone else's token: 404.
+ */
+export async function PATCH(req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const token = tokenOf(req);
+  const rc = rcUserIdOf(((await req.json().catch(() => null)) as { rcUserId?: unknown } | null)?.rcUserId);
+  if (!rc) return NextResponse.json({ error: 'invalid' }, { status: 422, headers: swapCors });
+  const ok = !!token && validId(id) && (await swapStore().setOwnerRc(id, token, rc));
+  return NextResponse.json({ saved: ok }, { status: ok ? 200 : 404, headers: swapCors });
 }

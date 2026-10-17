@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
+import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -23,6 +24,7 @@ import { openInGtoWizard } from '@/lib/gto-wizard';
 import { useIdleCount } from '@/lib/idle-count';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
+import { ChargeNotice, useChargeNotice } from '@/components/ChargeNotice';
 import { ProMoment, useProMoment } from '@/components/ProMoment';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
@@ -64,6 +66,8 @@ export default function HandsScreen() {
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
   const backup = useBackupWarning();
+  // After an update: one card with the first thing that's new.
+  const news = useWhatsNewCard();
   const { handsLeft, trialDays, paywall, isPro } = usePro();
   useWelcomeOffer(hands.length);
   useOnboarding();
@@ -107,6 +111,7 @@ export default function HandsScreen() {
   const incomplete = useIdleCount(hands, isIncomplete) ?? 0;
   const checklist = useStartChecklist();
   const moment = useProMoment();
+  const chargeEnd = useChargeNotice();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
   const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
@@ -202,8 +207,12 @@ export default function HandsScreen() {
                     setDiscarded(null);
                   }}
                 />
-              ) : narrowed ? null : backup.health ? (
+              ) : narrowed ? null : chargeEnd ? (
+                <ChargeNotice end={chargeEnd} />
+              ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+              ) : news.item ? (
+                <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : checklist ? (
                 <StartChecklist state={checklist} />
               ) : moment ? (

@@ -7,6 +7,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
+import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
@@ -101,8 +102,9 @@ function NewSwap() {
       createdAt: Date.now(),
     };
     try {
-      const { swap, token } = await createSwap(terms);
-      saveSwap(fromRemote(swap, token, 'a'));
+      const rc = await appUserId();
+      const { swap, token } = await createSwap(terms, rc);
+      saveSwap({ ...fromRemote(swap, token, 'a'), ownerRc: rc });
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');
       const url = swapUrl(swap.id, ref);

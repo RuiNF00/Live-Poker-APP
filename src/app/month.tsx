@@ -18,6 +18,7 @@ import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
+import { canShareImage, shareImage } from '@/lib/share-image';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
 import { shareRef } from '@/lib/referrals';
@@ -78,6 +79,21 @@ export default function MonthScreen() {
       track('story_shared', { target: String(target), kind: 'month', money: !hideMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // X, WhatsApp and the rest: the same card through the share sheet, the link copied.
+  const postElsewhere = async () => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const ref = await shareRef().catch(() => '');
+      await shareImage(await captureStory(card), `${BRAND.webUrl}/r/${ref}?utm_source=share&utm_medium=image&utm_campaign=month`);
+      track('story_shared', { target: 'sheet', kind: 'month', money: !hideMoney });
+    } catch {
+      // closed the sheet
     } finally {
       setBusy(false);
     }
@@ -156,7 +172,10 @@ export default function MonthScreen() {
                 }}
               />
               {canShareStory ? (
-                <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} onPress={post} />
+                <>
+                  <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} onPress={post} />
+                  {canShareImage ? <IconButton name="share-outline" label={t('Partilhar noutra app (X, WhatsApp…)')} onPress={postElsewhere} /> : null}
+                </>
               ) : (
                 <T v="small" style={{ flex: 1 }}>
                   {t('Abre a app no telemóvel para publicar no Instagram.')}

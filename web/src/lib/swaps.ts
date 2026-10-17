@@ -26,6 +26,9 @@ export interface SwapStore {
   remove(id: string, token: string): Promise<boolean>;
   /** "Delete all my data": this side leaves; the other keeps a read-only record. */
   leave(id: string, token: string): Promise<boolean>;
+  /** The creator's RevenueCat id (side a only; replaces the last one). Never in a read of the swap. */
+  setOwnerRc(id: string, token: string, rc: string): Promise<boolean>;
+  ownerRc(id: string): Promise<string | null>;
   purge(): Promise<void>;
 }
 
@@ -95,13 +98,25 @@ class SupabaseSwaps implements SwapStore {
     return !!data;
   }
 
+  async setOwnerRc(id: string, token: string, rc: string) {
+    const { data, error } = await this.db.rpc('set_swap_owner_rc', { p_id: id, p_token: token, p_rc: rc });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async ownerRc(id: string) {
+    const { data, error } = await this.db.rpc('swap_owner_rc_of', { p_id: id });
+    if (error) throw error;
+    return typeof data === 'string' && data ? data : null;
+  }
+
   async purge() {
     await this.db.rpc('purge_swaps');
   }
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-type LocalRow = SwapRecord & { aHash: string; bHash: string | null };
+type LocalRow = SwapRecord & { aHash: string; bHash: string | null; ownerRc?: string };
 
 class LocalSwaps implements SwapStore {
   private file = path.join(process.cwd(), '.data', 'swaps.json');
@@ -147,7 +162,7 @@ class LocalSwaps implements SwapStore {
   async get(id: string) {
     const r = (await this.read())[id];
     if (!r) return null;
-    const { aHash: _a, bHash: _b, ...rec } = r;
+    const { aHash: _a, bHash: _b, ownerRc: _o, ...rec } = r;
     return rec;
   }
 
@@ -215,10 +230,24 @@ class LocalSwaps implements SwapStore {
         confirmedName: side === 'b' ? '-' : r.confirmedName,
         aHash: side === 'a' ? dead : r.aHash,
         bHash: side === 'b' ? dead : r.bHash,
+        ownerRc: side === 'a' ? undefined : r.ownerRc,
         updatedAt: new Date().toISOString(),
       };
       return true;
     });
+  }
+
+  async setOwnerRc(id: string, token: string, rc: string) {
+    return this.mutate((d) => {
+      const r = d[id];
+      if (this.sideOf(r, token) !== 'a' || r.leftSide === 'a' || !rc || rc.length > 100) return false;
+      r.ownerRc = rc;
+      return true;
+    });
+  }
+
+  async ownerRc(id: string) {
+    return (await this.read())[id]?.ownerRc ?? null;
   }
 
   async purge() {

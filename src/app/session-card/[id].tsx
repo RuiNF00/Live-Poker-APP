@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
-import { ShareSheet } from '@/components/ShareSheet';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
@@ -101,7 +101,7 @@ export default function SessionCardScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Partilhar sessão') }} />
-      <ShareSheet
+      <CardShareSheet
         visible={sheet}
         onClose={() => setSheet(false)}
         instagram={post} instagramTitle={look === 'sticker' ? t('Sticker no Instagram') : undefined} x={() => postTo('x')} other={() => postTo('any')} copy={copy}

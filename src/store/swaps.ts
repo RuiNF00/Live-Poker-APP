@@ -54,6 +54,8 @@ export interface RemoteSwap {
   updatedAt: string;
   /** The side that erased their data: read-only from then on. */
   leftSide?: SwapSide | null;
+  /** Only to a player in it: the creator has Pro, so the accounts are open to both. */
+  accounts?: boolean;
 }
 
 /** The phone's copy. */
@@ -78,6 +80,10 @@ export interface Swap {
   links?: Record<string, string>;
   /** This phone only: send my result when a tournament of this swap ends, without asking. */
   autoShare?: boolean;
+  /** The creator has Pro (from the server): who owes whom is open to both, Pro or not. */
+  accounts?: boolean;
+  /** Side a only: the RevenueCat id last sent as the creator's, to send it again when it changes. */
+  ownerRc?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -210,6 +216,7 @@ export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): 
     confirmedName: remote.leftSide && confirmedName ? keep(confirmedName, local.confirmedName) : confirmedName,
     code: remote.code ?? undefined,
     left: remote.leftSide ?? undefined,
+    accounts: remote.accounts ?? local.accounts,
     entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
     gone: false,
     syncedAt: now,

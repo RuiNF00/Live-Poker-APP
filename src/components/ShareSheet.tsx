@@ -1,71 +1,55 @@
-// One "Partilhar" button per screen opens this sheet: Instagram, X, the other
-// apps and copy link, so a screen never stacks a button per network. The hand
-// screen and every card screen (session, festival, carousel, year) use it.
+// One "Partilhar" button opens this: every way out of the app in one list
+// (Instagram, X, the other apps, copy link…), instead of a row of buttons.
 
 import React from 'react';
-import { Modal, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
-import { C, S } from '@/theme';
+import { C, R, S } from '@/theme';
 
-import { ListGroup, ListItem, SheetHeader, tap, type IconName } from './ui';
+import { ListGroup, ListItem, SheetHeader, T, type IconName } from './ui';
 
 export interface ShareOption {
-  key: string;
   icon: IconName;
-  title: string;
-  subtitle?: string;
+  label: string;
+  sub?: string;
   onPress: () => void;
 }
 
-export interface ShareTargets {
-  instagram?: () => void;
-  instagramTitle?: string;
-  x?: () => void;
-  other?: () => void;
-  copy?: () => void;
-  copyTitle?: string;
-}
-
-/** The usual four, in this order; a target with no handler is left out. */
-function optionsFor(o: ShareTargets): ShareOption[] {
-  const out: (ShareOption | null)[] = [
-    o.instagram ? { key: 'instagram', icon: 'logo-instagram', title: o.instagramTitle ?? t('Story no Instagram'), onPress: o.instagram } : null,
-    o.x ? { key: 'x', icon: 'logo-x', title: t('Post no X'), onPress: o.x } : null,
-    o.other ? { key: 'other', icon: 'share-outline', title: t('Outras apps'), subtitle: t('WhatsApp, Mensagens, guardar imagem…'), onPress: o.other } : null,
-    o.copy ? { key: 'copy', icon: 'link-outline', title: o.copyTitle ?? t('Copiar link'), onPress: o.copy } : null,
-  ];
-  return out.filter((x): x is ShareOption => !!x);
-}
-
-// Long enough for the sheet to close before Instagram or the system share sheet opens over it.
-const AFTER_CLOSE_MS = 350;
-
-export function ShareSheet({ visible, onClose, title, options: extra, ...targets }: { visible: boolean; onClose: () => void; title?: string; options?: ShareOption[] } & ShareTargets) {
-  const options = extra ?? optionsFor(targets);
-  const insets = useSafeAreaInsets();
-  const animation = useSheetAnimation();
-  const pick = (o: ShareOption) => {
-    tap('select');
-    onClose();
-    setTimeout(o.onPress, AFTER_CLOSE_MS);
-  };
+/** Groups of options; a group with a title shows it above, quieter ("Mais"). */
+export function ShareSheet({ visible, title, groups, onClose }: { visible: boolean; title?: string; groups: { title?: string; options: ShareOption[] }[]; onClose: () => void }) {
+  const sheetAnimation = useSheetAnimation();
   return (
-    <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
-      <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-        <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: Math.max(insets.bottom, S.lg), gap: S.lg }}>
-          <SheetHeader title={title ?? t('Partilhar')} onClose={onClose} />
-          <View>
-            <ListGroup>
-              {options.map((o) => (
-                <ListItem key={o.key} icon={o.icon} title={o.title} subtitle={o.subtitle} chevron onPress={() => pick(o)} />
-              ))}
-            </ListGroup>
-          </View>
-        </Pressable>
-      </Pressable>
+    <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
+      <View style={{ maxHeight: '85%', backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border }}>
+        <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, paddingBottom: 36, gap: S.md }}>
+          <SheetHeader title={title ?? t('Partilhar')} onClose={onClose} closeLabel={t('Fechar')} />
+          {groups.map((g, k) => (
+            <View key={k} style={{ gap: S.sm }}>
+              {g.title ? <T v="label">{g.title}</T> : null}
+              <ListGroup>
+                {g.options.map((o) => (
+                  <ListItem
+                    key={o.label}
+                    icon={o.icon}
+                    iconColor={C.text}
+                    title={o.label}
+                    subtitle={o.sub}
+                    chevron={false}
+                    onPress={() => {
+                      // Close first: the system share sheet or the next screen opens over nothing.
+                      onClose();
+                      o.onPress();
+                    }}
+                  />
+                ))}
+              </ListGroup>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     </Modal>
   );
 }

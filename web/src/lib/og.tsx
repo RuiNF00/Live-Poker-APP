@@ -4,6 +4,8 @@ import { ImageResponse } from 'next/og';
 import { buildReplay, formatChips, stakesText, type Card, type HandRecord } from '@livepoker/hand-format';
 import { brand } from '@/config/brand';
 import { heroLastSpot, resolveHand } from '@/lib/hand';
+import { numberTag, type Locale } from '@/lib/i18n';
+import { previewCopy } from '@/lib/preview-copy';
 import type { QuizSpot, SharedHand } from '@/lib/types';
 import { SUIT_COLORS, SUIT_PATHS } from '@/components/PlayingCard';
 import { MARK_LINES, MARK_PATH } from '@/components/Brand';
@@ -87,11 +89,13 @@ function boardOf(hand: HandRecord): Card[] {
 
 const oneLine = { display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 1072 } as const;
 
-const bbs = (n: number, bb: number) => `${Math.round((n / bb) * 10) / 10} BB`.replace('.', ',');
+const bbs = (n: number, bb: number, l: Locale) =>
+  `${new Intl.NumberFormat(numberTag(l), { maximumFractionDigits: 1 }).format(n / bb)} BB`;
 
 /** What the hero faces at the challenge spot, without giving the answer away. */
-function spotLine(hand: HandRecord, quiz: QuizSpot): string | null {
-  const steps = buildReplay(hand, { revealAll: false, locale: 'pt' });
+function spotLine(hand: HandRecord, quiz: QuizSpot, l: Locale): string | null {
+  const c = previewCopy(l);
+  const steps = buildReplay(hand, { revealAll: false, locale: l });
   const k = steps.findIndex((s) => s.action && s.street === quiz.street && s.action.index === quiz.actionIndex);
   if (k < 1) return null;
   const step = steps[k];
@@ -101,18 +105,19 @@ function spotLine(hand: HandRecord, quiz: QuizSpot): string | null {
   const pot = step.totalPot - (step.action?.paid ?? 0);
   const bb = hand.blinds.bb;
   return [
-    `${hero.position} com ${bbs(hero.stack + hero.committed, bb)}`,
-    facing > 0 ? `a pagar ${formatChips(facing)}` : 'a decidir primeiro',
-    `pote ${formatChips(pot)}`,
+    c.spotStack(hero.position, bbs(hero.stack + hero.committed, bb, l)),
+    facing > 0 ? c.facing(formatChips(facing)) : c.first,
+    c.pot(formatChips(pot)),
   ].join(' · ');
 }
 
 /**
  * Link preview for a shared hand (WhatsApp, Instagram, iMessage...).
  * For a challenge it stops at the hero's decision: board cards still to come
- * are shown as "?" so the preview never spoils the result.
+ * are shown as "?" so the preview never spoils the result. Written in the sharer's language.
  */
-export async function handOgImage(share: SharedHand | null, challenge: boolean): Promise<ImageResponse> {
+export async function handOgImage(share: SharedHand | null, challenge: boolean, locale: Locale = 'pt'): Promise<ImageResponse> {
+  const c = previewCopy(locale);
   const resolved = share ? resolveHand(share.payload) : null;
   const hand = resolved?.hand;
   const quiz = hand && challenge ? (share?.quiz ?? heroLastSpot(resolved!, share!.payload)) : null;
@@ -129,12 +134,12 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean):
   // PLO (4 cards) and a full board must fit side by side in 1072px.
   const heroW = heroCards.length > 2 ? 104 : 150;
   const boardW = heroCards.length > 2 ? 84 : 96;
-  const situation = hand && quiz ? spotLine(hand, quiz) : null;
-  const headline = quiz ? 'O que fazes aqui?' : share?.title || 'Como jogavas esta mão?';
+  const situation = hand && quiz ? spotLine(hand, quiz, locale) : null;
+  const headline = quiz ? c.challengeHeadline : share?.title || c.headline;
   const subline = quiz
     ? // The spot is what makes a friend tap; the title is already in the link's text.
       [situation, share?.title].filter(Boolean).join(' · ')
-    : [where, 'Vê o replay e diz como jogavas'].filter(Boolean).join(' · ');
+    : [where, c.subline].filter(Boolean).join(' · ');
 
   return new ImageResponse(
     (
@@ -182,7 +187,7 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean):
                   borderRadius: 999,
                 }}
               >
-                DESAFIO
+                {c.challenge.toUpperCase()}
               </div>
             )}
             <div style={{ fontSize: 30, opacity: 0.85, display: 'flex' }}>{stakes}</div>

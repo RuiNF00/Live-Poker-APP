@@ -28,7 +28,6 @@ import { shareSampleHand } from '@/lib/sample-share';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
-import { handShareText } from '@/share/share-text';
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -72,7 +71,7 @@ export default function HandScreen() {
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
         <Banner tone="info" icon="sparkles-outline" title={t('Mão de exemplo')} body={t('É assim que as tuas mãos ficam guardadas.')} />
         <HandHeader hand={hand} inBB={settings.inBB} />
-        <Replayer hand={hand} initialInBB={settings.inBB} autoPlay />
+        <Replayer hand={hand} initialInBB={settings.inBB} autoPlay source="sample" />
         <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
         <Section title={t('Partilhar')}>
           <Button
@@ -136,7 +135,9 @@ export default function HandScreen() {
     const ref = await shareRef();
     const link = shareLink(shareId, quiz ? 'challenge' : 'link', { quiz, ref });
     track('link_shared', { channel: quiz ? 'challenge' : 'link', share_id: shareId, ref });
-    const msg = `${handShareText(hand.game.name, quiz ? 'challenge' : 'link')}\n${link}`;
+    const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
+    const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}
+${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));
@@ -249,7 +250,7 @@ export default function HandScreen() {
         </View>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
-        <Replayer hand={hand} initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />

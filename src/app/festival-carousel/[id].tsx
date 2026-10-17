@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { FestivalSlide, SLIDE_H, SLIDE_W } from '@/components/FestivalCarousel';
-import { ShareSheet } from '@/components/ShareSheet';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -100,7 +100,7 @@ export default function FestivalCarouselScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Carrossel do festival') }} />
-      <ShareSheet
+      <CardShareSheet
         visible={sheet}
         onClose={() => setSheet(false)}
         instagram={post} instagramTitle={t('Carrossel no Instagram')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} copyTitle={t('Copiar legenda')}

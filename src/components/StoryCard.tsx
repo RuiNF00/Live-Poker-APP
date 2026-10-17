@@ -48,8 +48,8 @@ export function Wordmark({ size = 15 }: { size?: number }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
       <Mark size={size + 4} />
-      <Text style={{ fontFamily: ff(800), fontWeight: '800', fontSize: size, color: C.text, letterSpacing: -0.3 }}>
-        Sweat<Text style={{ color: C.accent }}>book</Text>
+      <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: size, color: C.text, letterSpacing: -0.3 }}>
+        Sweat<Text allowFontScaling={false} style={{ color: C.accent }}>book</Text>
       </Text>
     </View>
   );
@@ -81,7 +81,7 @@ const TABLE_NATIVE_W = 344;
 function MetaPill({ label, color, mono }: { label: string; color?: string; mono?: boolean }) {
   return (
     <View style={{ height: 22, paddingHorizontal: 9, borderRadius: R.pill, justifyContent: 'center', backgroundColor: color ? color + '24' : 'rgba(238,242,239,0.07)', borderWidth: 1, borderColor: color ? color + '40' : C.hairline }}>
-      <Text numberOfLines={1} style={{ fontFamily: mono ? F.mono : ff(700), fontSize: mono ? 10.5 : 11, color: color ?? C.textDim, letterSpacing: mono ? 0 : 0.1 }}>
+      <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: mono ? F.mono : ff(700), fontSize: mono ? 10.5 : 11, color: color ?? C.textDim, letterSpacing: mono ? 0 : 0.1 }}>
         {label}
       </Text>
     </View>
@@ -156,21 +156,21 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
         {voice ? null : reel ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: C.accentLine, borderRadius: R.pill, paddingHorizontal: 10, height: 22 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.accent }} />
-            <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.text }}>REPLAY</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.text }}>REPLAY</Text>
           </View>
         ) : isQ ? (
           <View style={{ backgroundColor: C.accent, borderRadius: R.pill, paddingHorizontal: 10, height: 22, justifyContent: 'center' }}>
-            <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accentInk }}>{t('O QUE FAZIAS?')}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accentInk }}>{t('O QUE FAZIAS?')}</Text>
           </View>
         ) : (
           <View style={{ borderWidth: 1, borderColor: C.borderStrong, borderRadius: R.pill, paddingHorizontal: 10, height: 22, justifyContent: 'center' }}>
-            <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.textDim }}>{t('MÃO JOGADA')}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.textDim }}>{t('MÃO JOGADA')}</Text>
           </View>
         )}
       </View>
 
       <View style={{ position: 'absolute', top: 106, left: GUTTER, right: GUTTER, gap: 8 }}>
-        <Text numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.4, color: C.muted }}>
+        <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.4, color: C.muted }}>
           {title.toUpperCase()}
         </Text>
         <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'nowrap', overflow: 'hidden' }}>
@@ -182,7 +182,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
         {text ? (
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
             <View style={{ width: 3, borderRadius: 2, backgroundColor: C.accent }} />
-            <Text
+            <Text allowFontScaling={false}
               numberOfLines={3}
               adjustsFontSizeToFit
               minimumFontScale={0.7}
@@ -270,9 +270,9 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
                   shadowOffset: { width: 0, height: 4 },
                 }}>
                 <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: ff(800), fontSize: 9, color: C.muted }}>{String.fromCharCode(65 + i)}</Text>
+                  <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 9, color: C.muted }}>{String.fromCharCode(65 + i)}</Text>
                 </View>
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
+                <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
                   {o.label}
                 </Text>
               </View>
@@ -293,12 +293,12 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
               paddingHorizontal: 14,
             }}>
             <View style={{ gap: 1, flexShrink: 1 }}>
-              <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accent }}>{STREET_LABEL[view.street].toUpperCase()}</Text>
-              <Text numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 13, color: C.text }}>
+              <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accent }}>{STREET_LABEL[view.street].toUpperCase()}</Text>
+              <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 13, color: C.text }}>
                 {dealt ?? view.narration}
               </Text>
             </View>
-            <Text style={{ fontFamily: F.mono, fontSize: 16, color: C.textDim }}>{view.potLabel}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 16, color: C.textDim }}>{view.potLabel}</Text>
           </View>
         ) : result ? (
           <View
@@ -314,12 +314,12 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
               paddingHorizontal: 14,
             }}>
             <View style={{ gap: 1 }}>
-              <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.muted }}>{t('RESULTADO DO HERO')}</Text>
-              <Text numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
+              <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.muted }}>{t('RESULTADO DO HERO')}</Text>
+              <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
                 {heroHand ?? (heroNet > 0 ? t('Hero leva o pote') : t('Pote {pot}', { pot: moment.pot }))}
               </Text>
             </View>
-            <Text style={{ fontFamily: F.mono, fontSize: 22, color: heroNet > 0 ? C.good : heroNet < 0 ? C.bad : C.text }}>
+            <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 22, color: heroNet > 0 ? C.good : heroNet < 0 ? C.bad : C.text }}>
               {heroNet > 0 ? '+' : heroNet < 0 ? '−' : ''}
               {amount(Math.abs(heroNet), hand, inBB)}
             </Text>
@@ -327,9 +327,9 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
         ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <LinkGlyph />
-          <Text style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
+          <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
             {isQ ? t('Vota e vê o que aconteceu') : t('Replay completo')}{' '}
-            <Text style={{ color: C.text }}>{brand ? t('em {host}', { host: linkHost }) : t('no link')}</Text>
+            <Text allowFontScaling={false} style={{ color: C.text }}>{brand ? t('em {host}', { host: linkHost }) : t('no link')}</Text>
           </Text>
         </View>
       </View>

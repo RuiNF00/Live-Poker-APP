@@ -11,7 +11,7 @@
 **Subtitle** (30): {{APP_SUBTITLE_EN}}
 
 **Promotional text** (170):
-Log a hand in seconds between levels, then replay it street by street. Share it with a link and get feedback from your friends.
+New: log a live hand in 11 taps between levels, replay it street by street and share a link anyone can open. Free: 3 new hands a day, unlimited sharing.
 
 **Keywords** (100 bytes, comma-separated, no spaces):
 history,hands,session,tournament,mtt,cash,staking,swap,holdem,notes,stats,recorder,icm,backer,tax
@@ -66,6 +66,7 @@ Free: up to 3 saved hands per day, unlimited sharing, imports, the odds calculat
 Support: {{SUPPORT_EMAIL}}
 Privacy: https://{{WEB_DOMAIN}}/privacy
 Terms of Use: https://{{WEB_DOMAIN}}/terms
+Apple EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 **What's New in 1.0**: First release. Log live poker hands in seconds, replay them, and share them with a link.
 

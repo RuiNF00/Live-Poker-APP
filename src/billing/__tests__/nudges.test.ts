@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { atHour, chargeNoticeAt, planNudges, recapAt, type NudgeInput } from '../nudges';
+import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, NUDGE_KIND, planNudges, recapAt, type NudgeInput } from '../nudges';
 
 const DAY = 86_400_000;
 // A 3-day trial started at a live session on Saturday evening.
@@ -63,4 +63,31 @@ test('come-back nudge 4 days out, only with something logged and no session runn
   assert.equal(byId(free).comeback.at, new Date(2026, 9, 21, 13).getTime());
   assert.equal(byId({ ...free, hands: [], sessions: [] }).comeback, undefined);
   assert.equal(byId({ ...free, sessionActive: true }).comeback, undefined);
+});
+
+test('come-back nudge: at most one every 14 days, none after 2 unanswered, none during a festival', () => {
+  const free = { ...base, isPro: false, trial: null };
+  const last = start - 5 * DAY;
+  assert.equal(byId({ ...free, comeback: { last, ignored: 0 } }).comeback.at, atHour(last + 14 * DAY, 13));
+  assert.equal(byId({ ...free, comeback: { ignored: 2 } }).comeback, undefined);
+  assert.equal(byId({ ...free, festivalAt: () => true }).comeback, undefined);
+  // It went off, and the player came back the next day: answered.
+  assert.deepEqual(comebackSeen({ planned: start - DAY, ignored: 1 }, start), { last: start - DAY, ignored: 0 });
+  // Came back a week after it went off: one more ignored.
+  assert.deepEqual(comebackSeen({ planned: start - 7 * DAY, ignored: 1 }, start), { last: start - 7 * DAY, ignored: 2 });
+  // Not due yet: nothing happened.
+  assert.equal(comebackSeen({ planned: start + DAY, ignored: 0 }, start).ignored, 0);
+});
+
+test('in-app charge notice: same window as the notification, only without notifications', () => {
+  const at = chargeNoticeAt(trial.end);
+  assert.equal(chargeNoticeDue(trial, at, false), true);
+  assert.equal(chargeNoticeDue(trial, at - 3_600_000, false), false);
+  assert.equal(chargeNoticeDue(trial, at, true), false);
+  assert.equal(chargeNoticeDue({ ...trial, willRenew: false }, at, false), false);
+  assert.equal(chargeNoticeDue(trial, trial.end + 1, false), false);
+});
+
+test('only the notice before a charge is billing (always on); the rest are switchable tips', () => {
+  assert.deepEqual(NUDGE_KIND, { 'trial-recap': 'tips', 'trial-end': 'billing', comeback: 'tips' });
 });

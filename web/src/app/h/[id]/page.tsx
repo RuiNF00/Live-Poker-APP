@@ -7,7 +7,8 @@ import { cache } from 'react';
 import { handTitle } from '@livepoker/hand-format';
 import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
-import { pickLocale, t } from '@/lib/i18n';
+import { ogLocale, pickLocale, previewLocale, t } from '@/lib/i18n';
+import { previewCopy } from '@/lib/preview-copy';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
 import { ShareView } from '@/components/ShareView';
 
@@ -18,23 +19,24 @@ const loadShare = cache(loadShareById);
 
 export async function generateMetadata({ params, searchParams }: Params & SearchParams): Promise<Metadata> {
   const { id } = await params;
-  const { q } = await searchParams;
+  const { q, lang } = await searchParams;
+  const locale = previewLocale(lang, (await headers()).get('accept-language'));
+  const c = previewCopy(locale);
   const share = await loadShare(id);
   const hand = share && resolveHand(share.payload)?.hand;
-  if (!share || !hand) return { title: 'Mão não encontrada', robots: { index: false } };
+  if (!share || !hand) return { title: c.notFound, robots: { index: false } };
   const challenge = q === '1' || !!share.quiz;
-  const title = challenge ? `Desafio: o que fazes aqui? · ${share.title || handTitle(hand)}` : share.title || handTitle(hand);
+  const title = challenge ? c.challengeTitle(share.title || handTitle(hand)) : share.title || handTitle(hand);
   const where = hand.tournament?.name || hand.location;
-  const description = [where, challenge ? 'Vota no que fazias antes de veres a jogada.' : 'Vê a mão e diz como jogavas.']
-    .filter(Boolean)
-    .join(' · ');
-  // The challenge preview stops at the hero's decision so it never spoils the result.
-  const image = { url: `/h/${id}/og${challenge ? '?q=1' : ''}`, width: 1200, height: 630, alt: title };
+  const description = [where, challenge ? c.challengeDescription : c.description].filter(Boolean).join(' · ');
+  // The challenge preview stops at the hero's decision so it never spoils the result. The image's
+  // language is in its URL, so a cached copy never answers in another one.
+  const image = { url: `/h/${id}/og?${challenge ? 'q=1&' : ''}lang=${locale}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,
     robots: { index: false },
-    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/h/${id}${q === '1' ? '?q=1' : ''}`, siteName: brand.name, images: [image] },
+    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/h/${id}${q === '1' ? '?q=1' : ''}`, siteName: brand.name, locale: ogLocale(locale), images: [image] },
     twitter: { card: 'summary_large_image', title, description, images: [image.url] },
   };
 }

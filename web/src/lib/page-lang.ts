@@ -1,11 +1,12 @@
 // The html lang of a page whose language comes from its route or ?lang= rather than the
-// browser (the help center, /support, /delete-account). proxy.ts passes it to the root layout.
+// browser (the help center, /support, /delete-account, /press). proxy.ts passes it to the root layout.
 
 const BY_PREFIX: [RegExp, string][] = [
   [/^\/pt-br\/ajuda(\/|$)/, 'pt-BR'],
   [/^\/es\/ayuda(\/|$)/, 'es'],
   [/^\/ajuda(\/|$)/, 'pt-PT'],
   [/^\/help(\/|$)/, 'en'],
+  [/^\/press(\/|$)/, 'en'], // the press kit is English only
 ];
 
 /** pt-PT, pt-BR, es or en; null when the page follows the browser's language. */

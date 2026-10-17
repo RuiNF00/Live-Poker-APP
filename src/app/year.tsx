@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
-import { ShareSheet } from '@/components/ShareSheet';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { Button, Chip, Empty, IconButton, Row, T, tap } from '@/components/ui';
 import { YearCard } from '@/components/YearCard';
 import { t } from '@/i18n';
@@ -138,7 +138,7 @@ export default function YearScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bgDeep, paddingTop: insets.top + S.xs }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
 
       {/* Story-style progress, one segment per card */}
       <Row gap={4} style={{ paddingHorizontal: S.gutter, paddingTop: S.xs }}>

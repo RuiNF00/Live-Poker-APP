@@ -76,7 +76,7 @@ export function YearCard({ review: r, kind, hideMoney = true, brand = true, ref 
       {/* Below Instagram's profile bar */}
       <View style={{ position: 'absolute', top: 70, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {brand ? <Logo size={14} color={accent ? INK : C.accent} cut={accent ? C.accent : C.bg} /> : <View />}
-        <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{t('O meu ano no póquer').toUpperCase()}</Text>
+        <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{t('O meu ano no póquer').toUpperCase()}</Text>
       </View>
 
       <View style={{ position: 'absolute', top: 120, left: 26, right: 26, bottom: 150, justifyContent: 'center' }}>
@@ -99,12 +99,12 @@ interface BodyProps {
 }
 
 function Kicker({ children, dim }: { children: string; dim: string }) {
-  return <Text style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>{children.toUpperCase()}</Text>;
+  return <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>{children.toUpperCase()}</Text>;
 }
 
 function Big({ children, color, size = 64, font = F.mono }: { children: string; color: string; size?: number; font?: string }) {
   return (
-    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} style={{ fontFamily: font, fontSize: size, lineHeight: size * 1.12, color, letterSpacing: size > 40 ? -2 : -0.5 }}>
+    <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} style={{ fontFamily: font, fontSize: size, lineHeight: size * 1.12, color, letterSpacing: size > 40 ? -2 : -0.5 }}>
       {children}
     </Text>
   );
@@ -112,7 +112,7 @@ function Big({ children, color, size = 64, font = F.mono }: { children: string; 
 
 function Caption({ children, dim }: { children: string; dim: string }) {
   return (
-    <Text numberOfLines={2} style={{ fontFamily: ff(700), fontSize: 13, lineHeight: 18, color: dim }}>
+    <Text allowFontScaling={false} numberOfLines={2} style={{ fontFamily: ff(700), fontSize: 13, lineHeight: 18, color: dim }}>
       {children}
     </Text>
   );
@@ -121,10 +121,10 @@ function Caption({ children, dim }: { children: string; dim: string }) {
 function Stat({ label, value, fg, dim }: { label: string; value: string; fg: string; dim: string }) {
   return (
     <View style={{ flex: 1, gap: 4 }}>
-      <Text numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>
+      <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>
         {label.toUpperCase()}
       </Text>
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: F.mono, fontSize: 30, lineHeight: 36, color: fg }}>
+      <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: F.mono, fontSize: 30, lineHeight: 36, color: fg }}>
         {value}
       </Text>
     </View>
@@ -155,13 +155,13 @@ function YearBody({ r, fg, dim, line, hideMoney }: BodyProps) {
       {r.countries.length ? (
         <View style={{ gap: 6 }}>
           <Kicker dim={dim}>{r.countries.length === 1 ? t('1 país') : t('{n} países', { n: r.countries.length })}</Kicker>
-          <Text style={{ fontSize: 28, lineHeight: 34 }}>{flags}</Text>
+          <Text allowFontScaling={false} style={{ fontSize: 28, lineHeight: 34 }}>{flags}</Text>
           {r.countries.length <= 3 ? <Caption dim={dim}>{r.countries.map(countryName).join(' · ')}</Caption> : null}
         </View>
       ) : r.topVenue ? (
         <View style={{ gap: 4 }}>
           <Kicker dim={dim}>{t('A tua sala')}</Kicker>
-          <Text numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 26, color: fg }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 26, color: fg }}>
             {r.topVenue}
           </Text>
         </View>
@@ -201,10 +201,10 @@ function StakeLine({ label, x, r, fg, dim, hideMoney }: { label: string; x: Stak
   return (
     <View style={{ gap: 4 }}>
       <Kicker dim={dim}>{label}</Kicker>
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: F.mono, fontSize: 44, lineHeight: 50, color: fg, letterSpacing: -1 }}>
+      <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: F.mono, fontSize: 44, lineHeight: 50, color: fg, letterSpacing: -1 }}>
         {stakeName(x, r.currency, hideMoney)}
       </Text>
-      {rate ? <Text style={{ fontFamily: F.mono, fontSize: 24, lineHeight: 30, color: toneOf(v) ?? fg }}>{rate}</Text> : null}
+      {rate ? <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 24, lineHeight: 30, color: toneOf(v) ?? fg }}>{rate}</Text> : null}
       <Caption dim={dim}>{t('{n} sessões · {h}h', { n: x.sessions, h: Math.round(x.hours) })}</Caption>
     </View>
   );
@@ -274,7 +274,7 @@ function BankrollBody({ r, fg, dim, line, hideMoney }: BodyProps) {
                 />
               ) : null}
             </View>
-            <Text style={{ fontFamily: ff(800), fontSize: 9, color: m.sessions ? dim : line }}>{MONTH(m.month, 'narrow')}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 9, color: m.sessions ? dim : line }}>{MONTH(m.month, 'narrow')}</Text>
           </View>
         ))}
       </View>

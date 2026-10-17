@@ -4,6 +4,7 @@ import * as Crypto from 'expo-crypto';
 
 import { publicHand, type ShareOptions } from '@/poker/privacy';
 import type { Hand, Street } from '@/poker/types';
+import { variant } from '@/i18n';
 import { BRAND } from '@/theme';
 
 export const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -40,6 +41,8 @@ export function shareLink(id: string, channel: ShareChannel, opts: { quiz?: bool
   q.set('utm_medium', medium);
   q.set('utm_campaign', id);
   if (opts.ref) q.set('r', opts.ref);
+  // The sharer's language, for the chat preview (see link-lang.ts).
+  q.set('lang', variant);
   return `${shareUrl(id)}?${q.toString()}`;
 }
 

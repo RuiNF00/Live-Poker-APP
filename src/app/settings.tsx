@@ -10,7 +10,7 @@ import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
-import { manageSubscription } from '@/billing/purchases';
+import { manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
@@ -19,6 +19,7 @@ import { Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Ro
 import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
+import { openStoreReviewPage } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
@@ -203,7 +204,7 @@ export default function SettingsScreen() {
             <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
             <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
             <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
-            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
+            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Recebem os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
             <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
             <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
           </ListGroup>
@@ -228,18 +229,23 @@ export default function SettingsScreen() {
                 note(ok ? t('Pro restaurado') : t('Não encontrámos compras nesta conta da loja.'));
               }}
             />
+            <ListItem icon="ticket-outline" title={t('Resgatar código')} subtitle={t('Um código de oferta da {store}', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })} onPress={() => void redeemCode()} />
           </ListGroup>
         </Section>
 
         <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
           <ListGroup>
-            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => mailSupport('suggestion')} />
+            <ListItem icon="chatbubble-ellipses-outline" title={t('Enviar feedback')} subtitle={t('O que corre mal, o que falta ou o que mudavas')} onPress={() => mailSupport('suggestion')} />
             <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => mailSupport('bug')} />
             <ListItem icon="book-outline" title={t('Ajuda')} subtitle={t('Respostas às dúvidas mais comuns')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/${HELP_PATH[variant]}`)} />
             <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => mailSupport('support')} />
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
+            {Platform.OS !== 'web' ? (
+              // The store's own page, never the in-app prompt: a button must always do something.
+              <ListItem icon="star-outline" title={t('Avaliar a Sweatbook')} subtitle={t('Na {store}', { store: Platform.OS === 'ios' ? 'App Store' : 'Google Play' })} onPress={() => openStoreReviewPage()} />
+            ) : null}
           </ListGroup>
         </Section>
 
@@ -260,7 +266,7 @@ export default function SettingsScreen() {
 
 const CLAIM_COPY: Partial<Record<ClaimResult, string>> = {
   queued: 'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.',
-  ok: 'Convite ativado. Guarda uma mão e ganham os dois 7 dias de Pro.',
+  ok: 'Convite ativado. Guarda uma mão e recebem os dois 7 dias de Pro.',
   already: 'Já tens um convite ativo.',
   self: 'Esse é o teu próprio código.',
   too_late: 'Os convites só contam nos 7 dias depois de instalar.',

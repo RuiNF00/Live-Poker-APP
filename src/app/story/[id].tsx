@@ -5,7 +5,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
-import { ShareSheet } from '@/components/ShareSheet';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
@@ -234,7 +234,7 @@ export default function StoryScreen() {
 
   return (
     <>
-      <ShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">

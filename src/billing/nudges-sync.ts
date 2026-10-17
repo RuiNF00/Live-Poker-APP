@@ -5,13 +5,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-import { t } from '@/i18n';
 import { notifications, setup } from '@/lib/lock-screen/reminder';
 
-import { NUDGE_IDS, planNudges, type NudgeInput, type Trial } from './nudges';
+import { festivalOn } from '@/lib/attribution';
+import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
+import { kindInfo } from '@/lib/notify-policy';
+
+import { comebackSeen, NUDGE_KIND, NUDGE_IDS, planNudges, type ComebackState, type NudgeInput, type Trial } from './nudges';
 import { getTrial } from './purchases';
 
-const CHANNEL = 'pro';
+const COMEBACK = 'rl.comeback.v1';
 const LOCAL_TRIAL = 'rl.trial.v1';
 /** Opened when a nudge is tapped: the hands list. */
 const URL = 'sweatbook://';
@@ -36,6 +39,15 @@ export async function currentTrial(): Promise<Trial | null> {
 
 let channel: Promise<unknown> | null = null;
 
+async function readComeback(): Promise<ComebackState> {
+  try {
+    const raw = await AsyncStorage.getItem(COMEBACK);
+    return raw ? (JSON.parse(raw) as ComebackState) : { ignored: 0 };
+  } catch {
+    return { ignored: 0 };
+  }
+}
+
 let queue: Promise<void> = Promise.resolve();
 
 /** One sync at a time, so a cancel never lands between another sync's schedules. */
@@ -48,20 +60,26 @@ async function sync(input: Omit<NudgeInput, 'trial' | 'store'>): Promise<void> {
   const n = notifications();
   if (!n) return;
   try {
+    // The channels come from lib/notify-policy (setup); the old single 'pro' channel goes.
     await setup(n);
-    if (Platform.OS === 'android') channel ??= n.setNotificationChannelAsync(CHANNEL, { name: t('Lembretes do Pro'), importance: n.AndroidImportance.DEFAULT });
+    if (Platform.OS === 'android') channel ??= n.deleteNotificationChannelAsync('pro').catch(() => {});
     await channel;
     await Promise.all(NUDGE_IDS.map((id) => n.cancelScheduledNotificationAsync(`sweatbook-${id}`)));
     if (!(await n.getPermissionsAsync()).granted) return;
     const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
     const trial = input.isPro ? await currentTrial() : null;
-    for (const x of planNudges({ ...input, trial, store })) {
+    const comeback = comebackSeen(await readComeback(), input.now);
+    // Reminders the player switched off are not planned; the notice before a charge always is.
+    const planned = planNudges({ ...input, trial, store, comeback, festivalAt: (ts) => festivalOn(ts) }).filter((x) => notifyKindOn(NUDGE_KIND[x.id]));
+    for (const x of planned) {
+      const kind = NUDGE_KIND[x.id];
       await n.scheduleNotificationAsync({
         identifier: `sweatbook-${x.id}`,
         content: { title: x.title, body: x.body, data: { url: URL } },
-        trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: x.at, channelId: CHANNEL },
+        trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: notifyAt(kind, x.at), channelId: kindInfo(kind).channel },
       });
     }
+    await AsyncStorage.setItem(COMEBACK, JSON.stringify({ ...comeback, planned: planned.find((x) => x.id === 'comeback')?.at })).catch(() => {});
   } catch (e) {
     console.warn('[pro] nudges', e);
   }

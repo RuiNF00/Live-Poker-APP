@@ -74,7 +74,7 @@ export function Logo({ ink }: { ink: boolean }) {
       ) : (
         <Mark size={18} />
       )}
-      <Text
+      <Text allowFontScaling={false}
         style={{
           fontFamily: ff(800),
           fontWeight: "800",
@@ -83,7 +83,7 @@ export function Logo({ ink }: { ink: boolean }) {
           letterSpacing: -0.3,
         }}
       >
-        Sweat<Text style={{ color: ink ? INK : C.accent }}>book</Text>
+        Sweat<Text allowFontScaling={false} style={{ color: ink ? INK : C.accent }}>book</Text>
       </Text>
     </View>
   );
@@ -220,7 +220,7 @@ export function FestivalCard({
             justifyContent: "center",
           }}
         >
-          <Text
+          <Text allowFontScaling={false}
             style={{
               fontFamily: ff(800),
               fontSize: 10,
@@ -245,7 +245,7 @@ export function FestivalCard({
         }}
       >
         <View style={{ gap: 6 }}>
-          <Text
+          <Text allowFontScaling={false}
             style={{
               fontFamily: ff(800),
               fontSize: 11,
@@ -255,7 +255,7 @@ export function FestivalCard({
           >
             {dateRange(r.from, r.to)}
           </Text>
-          <Text
+          <Text allowFontScaling={false}
             numberOfLines={2}
             adjustsFontSizeToFit
             minimumFontScale={0.7}
@@ -296,7 +296,7 @@ export function FestivalCard({
         <View style={{ gap: 14 }}>
           {lead ? (
             <View style={{ gap: 0 }}>
-              <Text
+              <Text allowFontScaling={false}
                 style={{
                   fontFamily: ff(800),
                   fontSize: 11,
@@ -309,7 +309,7 @@ export function FestivalCard({
               <View
                 style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}
               >
-                <Text
+                <Text allowFontScaling={false}
                   numberOfLines={1}
                   style={{
                     fontFamily: F.mono,
@@ -322,7 +322,7 @@ export function FestivalCard({
                   {lead.num}
                 </Text>
                 {lead.unit ? (
-                  <Text
+                  <Text allowFontScaling={false}
                     style={{
                       fontFamily: ff(800),
                       fontSize: 22,
@@ -335,7 +335,7 @@ export function FestivalCard({
                 ) : null}
               </View>
               {showMoney && r.result ? (
-                <Text
+                <Text allowFontScaling={false}
                   numberOfLines={1}
                   style={{ fontFamily: F.mono, fontSize: 16, color: dim }}
                 >
@@ -348,7 +348,7 @@ export function FestivalCard({
           <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 10 }}>
             {stats.map((x) => (
               <View key={x.key} style={{ width: "50%", gap: 2 }}>
-                <Text
+                <Text allowFontScaling={false}
                   style={{
                     fontFamily: ff(800),
                     fontSize: 10,
@@ -358,7 +358,7 @@ export function FestivalCard({
                 >
                   {x.label.toUpperCase()}
                 </Text>
-                <Text
+                <Text allowFontScaling={false}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.6}
@@ -399,7 +399,7 @@ export function FestivalCard({
               <PlayingCard card={hero.cards[1]} size="sm" />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text
+              <Text allowFontScaling={false}
                 style={{
                   fontFamily: ff(800),
                   fontSize: 10,
@@ -409,7 +409,7 @@ export function FestivalCard({
               >
                 {t("MELHOR MÃO")}
               </Text>
-              <Text
+              <Text allowFontScaling={false}
                 numberOfLines={1}
                 style={{ fontFamily: ff(800), fontSize: 15, color: fg }}
               >
@@ -418,7 +418,7 @@ export function FestivalCard({
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
               >
-                <Text
+                <Text allowFontScaling={false}
                   style={{
                     fontFamily: ff(800),
                     fontSize: 11,
@@ -427,7 +427,7 @@ export function FestivalCard({
                 >
                   {heroPos}
                 </Text>
-                <Text
+                <Text allowFontScaling={false}
                   numberOfLines={1}
                   style={{ fontFamily: F.mono, fontSize: 11, color: dim }}
                 >
@@ -435,7 +435,7 @@ export function FestivalCard({
                 </Text>
               </View>
             </View>
-            <Text
+            <Text allowFontScaling={false}
               style={{
                 fontFamily: F.mono,
                 fontSize: 22,
@@ -460,15 +460,15 @@ export function FestivalCard({
         }}
       >
         {h ? (
-          <Text style={{ fontFamily: ff(700), fontSize: 12, color: dim }}>
+          <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 12, color: dim }}>
             {t("Replay da mão")}{" "}
-            <Text style={{ color: fg }}>
+            <Text allowFontScaling={false} style={{ color: fg }}>
               {brand ? t("em {host}", { host: linkHost }) : t("no link")}
             </Text>
           </Text>
         ) : null}
         {brand ? (
-          <Text
+          <Text allowFontScaling={false}
             style={{
               fontFamily: ff(700),
               fontSize: 11,
@@ -477,7 +477,7 @@ export function FestivalCard({
             }}
           >
             {t("Feito com")}{" "}
-            <Text style={{ fontFamily: ff(800), color: ink ? INK : C.accent }}>
+            <Text allowFontScaling={false} style={{ fontFamily: ff(800), color: ink ? INK : C.accent }}>
               Sweatbook
             </Text>
             {h ? "" : ` · ${linkHost}`}
