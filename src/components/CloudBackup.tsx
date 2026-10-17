@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { t } from '@/i18n';
-import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
+import { copyWaiting, download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, onCopyWaiting, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
 import { syncCloudExpiry } from '@/lib/cloud-expiry';
 import { useOnline } from '@/lib/sync';
@@ -27,6 +27,7 @@ function note(title: string, body?: string) {
 
 const ERR: Record<string, string> = {
   network: 'Sem ligação. Tenta outra vez quando tiveres rede.',
+  offline: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
@@ -34,6 +35,13 @@ const ERR: Record<string, string> = {
   disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
   would_shrink: 'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.',
 };
+/** A copy asked for with no signal: true until it goes out. */
+function useCopyWaiting(): boolean {
+  const [w, setW] = useState(copyWaiting);
+  useEffect(() => onCopyWaiting(setW), []);
+  return w;
+}
+
 const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
 
 /** Yes/no before something the player should read first. */
@@ -109,6 +117,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   const [restoring, setRestoring] = useState(false);
   const [code, setCode] = useState('');
   const [now] = useState(Date.now);
+  const waiting = useCopyWaiting();
 
   useEffect(() => {
     loadCloud().then(setCloud);
@@ -135,6 +144,8 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
     try {
       setCloud(await upload(cloud, data(), { force, onRemote: joinRemote(store.importData) }));
     } catch (e) {
+      // No signal: the card says it waits and copies when the signal is back.
+      if ((e as Error)?.message === 'offline') return;
       if ((e as Error)?.message !== 'would_shrink' || Platform.OS === 'web') note(t('Não deu para fazer a cópia'), errText(e));
       else
         Alert.alert(t('Substituir a cópia na nuvem?'), t('A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.'), [
@@ -182,7 +193,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
   const stalled = !!cloud && cloudAhead(countsOf(buildBackup(store)), cloud);
   const health = backupHealth(cloud, now);
-  const warn = stalled || health.level !== 'ok';
+  const warn = waiting || stalled || health.level !== 'ok';
   const overLimit = health.level === 'failed' && health.reason === 'too_big';
 
   return (
@@ -193,7 +204,11 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
         </View>
         <View style={{ flex: 1 }}>
           <T v="h3">{t('Cópia na nuvem')}</T>
-          {stalled ? (
+          {waiting ? (
+            <T v="tiny" color={C.warn}>
+              {t('Sem rede: copia quando voltar')}
+            </T>
+          ) : stalled ? (
             <T v="tiny" color={C.warn}>
               {t('Cópia parada: tens menos do que a nuvem')}
             </T>
@@ -315,7 +330,8 @@ export function AutoCloudBackup() {
       const c = await loadCloud();
       const data = buildBackup(latest.current);
       // Never replaces a cloud copy with an empty or smaller phone (see cloud-guard).
-      if (c && autoBackup(c, countsOf(data), Date.now()) === 'upload') upload(c, data, { onRemote: joinRemote(latest.current.importData) }).catch(() => {});
+      // Due, or asked for while there was no signal.
+      if (c && (copyWaiting() || autoBackup(c, countsOf(data), Date.now()) === 'upload')) upload(c, data, { onRemote: joinRemote(latest.current.importData) }).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
     // On launch and on reconnect only (the store is read through the ref).
@@ -430,6 +446,7 @@ export function useBackupWarning(): { health: Exclude<Health, { level: 'ok' }> |
 export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Health, { level: 'ok' }>; onSnooze: () => void }) {
   const store = useStore();
   const [busy, setBusy] = useState(false);
+  const waiting = useCopyWaiting();
 
   // Over the limit another try fails the same way: the export is in Settings.
   const overLimit = health.level === 'failed' && health.reason === 'too_big';
@@ -443,6 +460,7 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
       await upload(c, buildBackup(store), { onRemote: joinRemote(store.importData) });
     } catch (e) {
       // Fewer things here than in the cloud: the choice (replace or restore) is in Settings.
+      if ((e as Error)?.message === 'offline') return;
       if ((e as Error)?.message === 'would_shrink') router.push('/settings');
       else note(t('Não deu para fazer a cópia'), errText(e));
     } finally {
@@ -455,7 +473,7 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
       icon="cloud-offline-outline"
       title={healthTitle(health)}
       // Same shape as the unfinished-hand card: what's wrong, then what a tap does.
-      body={overLimit ? t('Exportar tudo') : busy ? t('A copiar…') : t('Fazer cópia agora')}
+      body={overLimit ? t('Exportar tudo') : busy ? t('A copiar…') : waiting ? t('Sem rede: copia quando voltar') : t('Fazer cópia agora')}
       onPress={copyNow}
       dismissLabel={t('Agora não')}
       onDismiss={onSnooze}

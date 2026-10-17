@@ -13,6 +13,7 @@ import { BRAND } from '@/theme';
 import { ALPHA, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
+import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
 
 // The ciphers build their tables when loaded: only once a copy is actually sent or read, not at launch.
@@ -25,6 +26,8 @@ const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.web
 const KEY = 'rl.cloud.v1';
 /** Same as BACKUP_MAX_BYTES on the server. */
 const MAX_BYTES = 2 * 1024 * 1024;
+/** How long the quick "is the server there?" may take before a big transfer. */
+const REACH_MS = 8000;
 
 
 function randomB32(n: number): string {
@@ -123,10 +126,18 @@ export interface UploadOpts {
  */
 export async function upload(c: CloudState, data: BackupData, opts: UploadOpts = {}): Promise<CloudState> {
   try {
-    return await put(c, data, opts);
+    await reach();
+    const next = await put(c, data, opts);
+    setWaiting(false);
+    return next;
   } catch (e) {
-    // Remembered for the backup warning (would_shrink is the player's call, not a failure).
     const msg = (e as Error)?.message;
+    // No signal is not a failed copy: it waits and goes out on reconnect (AutoCloudBackup).
+    if (msg === 'offline') {
+      setWaiting(true);
+      throw e;
+    }
+    // Remembered for the backup warning (would_shrink is the player's call, not a failure).
     const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden'].includes(msg) ? msg : 'network';
     if (reason !== 'would_shrink') {
       const now = await loadCloud();
@@ -136,11 +147,41 @@ export async function upload(c: CloudState, data: BackupData, opts: UploadOpts =
   }
 }
 
+/**
+ * Before a transfer that may take 120 s on one bar of signal: with no network
+ * it fails in a few seconds ('offline') instead of after two long timeouts.
+ * Any answer means the server is there (as in probeWhileOffline).
+ */
+async function reach(): Promise<void> {
+  if (!isOnline()) throw new Error('offline');
+  await fetch(API, { method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: longSignal(REACH_MS) }).catch(() => {
+    throw new Error('offline');
+  });
+}
+
+let waiting = false;
+const waitingListeners = new Set<(w: boolean) => void>();
+function setWaiting(w: boolean) {
+  if (w === waiting) return;
+  waiting = w;
+  for (const fn of waitingListeners) fn(w);
+}
+/** A copy was asked for with no signal and goes out when it's back. */
+export function copyWaiting(): boolean {
+  return waiting;
+}
+export function onCopyWaiting(fn: (w: boolean) => void): () => void {
+  waitingListeners.add(fn);
+  return () => {
+    waitingListeners.delete(fn);
+  };
+}
+
 async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<CloudState> {
   let data = local;
   if (!opts.force && c.lastAt) {
     // Read and decrypted here, on the phone; the server never sees either copy.
-    const remote = await download(c).catch((e: Error) => {
+    const remote = await get(c).catch((e: Error) => {
       if (e.message === 'not_found') return null;
       throw e;
     });
@@ -177,6 +218,13 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
 }
 
 export async function download(c: CloudState): Promise<BackupData> {
+  await reach().catch(() => {
+    throw new Error('network');
+  });
+  return get(c);
+}
+
+async function get(c: CloudState): Promise<BackupData> {
   const { auth, enc } = crypto().deriveKeys(c.secret);
   const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth }, signal: longSignal() });
   if (res.status === 404) throw new Error('not_found');

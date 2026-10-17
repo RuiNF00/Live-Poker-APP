@@ -681,6 +681,7 @@ const ptBR: Record<string, string> = {
   'Apagar o swap para todos?': 'Excluir o swap para todos?',
   'Apagar para todos': 'Excluir para todos',
   'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'O organizador não publicou o fim do late reg (no Main Event as inscrições ficam abertas até o Dia 2): confirme no balcão do torneio.',
+  'Sem rede: copia quando voltar': 'Sem conexão: copia quando voltar',
   'Sem rede': 'Sem conexão',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Tudo salvo no celular. Envia quando houver sinal.',
