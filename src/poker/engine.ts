@@ -2,7 +2,7 @@
 // what they may do, pots, side pots and payouts. Pure functions, no React.
 
 import { evaluate } from './evaluator';
-import type { ActionKind, Hand, HandAction, Street } from './types';
+import type { ActionKind, CardCode, Hand, HandAction, Street } from './types';
 
 export interface LastAction {
   p: number;
@@ -59,6 +59,8 @@ export interface Pot {
   amount: number;
   eligible: number[];
   winners: number[] | null;
+  /** Run it twice: winners of the second half (the first half goes to `winners`). */
+  winners2?: number[] | null;
 }
 
 export interface HandResult {
@@ -78,6 +80,12 @@ export interface Replay {
   /** Index of the first action that could not be applied, if any. */
   invalidAt: number | null;
   result: HandResult | null;
+  /** Board cards out when betting closed on an all-in; null when it never did. */
+  runoutFrom: number | null;
+  /** Full boards the hand was settled on: one, or two when run twice. */
+  boards: CardCode[][];
+  /** Run it twice is on and the second run still needs cards. */
+  needsBoard2: boolean;
 }
 
 const NEXT_STREET: Record<Street, Street | null> = {
@@ -420,6 +428,11 @@ export function replay(hand: Hand): Replay {
   let s = initialState(hand);
   steps.push({ kind: 'start', street: 'preflop', state: s });
   let invalidAt: number | null = null;
+  let runoutFrom: number | null = null;
+  const markRunout = () => {
+    if (runoutFrom === null && s.bettingDone && !s.foldWin) runoutFrom = s.boardCount;
+  };
+  markRunout();
 
   const flushBoards = () => {
     while (s.needsBoard) {
@@ -445,19 +458,39 @@ export function replay(hand: Hand): Replay {
     const actStreet = s.street;
     s = next;
     steps.push({ kind: 'action', street: actStreet, state: s, actionIndex: i, actStreet });
+    markRunout();
     flushBoards();
   }
 
   let result: HandResult | null = null;
-  const complete = s.foldWin || (s.bettingDone && !s.needsBoard && s.boardCount === 5);
-  if (complete) {
-    result = computeResult(hand, s);
+  const boards = s.foldWin ? [] : runBoards(hand, runoutFrom);
+  const ranOut = s.bettingDone && !s.needsBoard && s.boardCount === 5;
+  const needsBoard2 = !s.foldWin && ranOut && boards.length === 1 && twice(hand, runoutFrom);
+  if (s.foldWin || (ranOut && !needsBoard2)) {
+    result = computeResult(hand, s, boards);
     if (!s.foldWin) steps.push({ kind: 'showdown', street: s.street, state: { ...s, last: null } });
   }
-  return { steps, final: s, invalidAt, result };
+  return { steps, final: s, invalidAt, result, runoutFrom, boards, needsBoard2 };
 }
 
-export function computeResult(hand: Hand, s: TableState): HandResult {
+/** Run it twice applies: chosen, and the all-in came before the river was out. */
+function twice(hand: Hand, runoutFrom: number | null): runoutFrom is number {
+  return !!hand.board2 && runoutFrom !== null && runoutFrom < 5;
+}
+
+/** Cards the second run still needs. */
+export function board2Needed(r: Replay): number {
+  return r.runoutFrom === null ? 0 : 5 - r.runoutFrom;
+}
+
+function runBoards(hand: Hand, runoutFrom: number | null): CardCode[][] {
+  const one = hand.board.slice(0, 5);
+  if (!twice(hand, runoutFrom) || one.length < 5) return [one];
+  const two = [...one.slice(0, runoutFrom), ...hand.board2!.slice(0, 5 - runoutFrom)];
+  return two.length === 5 ? [one, two] : [one];
+}
+
+export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = [hand.board.slice(0, 5)]): HandResult {
   const n = hand.players.length;
   const won = new Array(n).fill(0);
   const handNames: (string | null)[] = new Array(n).fill(null);
@@ -485,37 +518,51 @@ export function computeResult(hand: Hand, s: TableState): HandResult {
       prev = L;
     });
 
-    const board = hand.board.slice(0, 5);
-    const scores = new Map<number, number>();
-    for (const i of live) {
-      const c = hand.players[i].cards;
-      if (c && c.length === 2 && board.length === 5) {
-        const ev = evaluate([...c, ...board]);
-        scores.set(i, ev.score);
-        handNames[i] = ev.name;
-      }
-    }
-    for (const pot of pots) {
-      if (pot.eligible.length === 1) {
-        pot.winners = pot.eligible;
-      } else if (pot.eligible.every((i) => scores.has(i))) {
-        const best = Math.max(...pot.eligible.map((i) => scores.get(i)!));
-        pot.winners = pot.eligible.filter((i) => scores.get(i) === best);
-      } else if (hand.winners && hand.winners.length) {
-        const w = hand.winners.filter((i) => pot.eligible.includes(i));
-        pot.winners = w.length ? w : null;
-      }
-      if (pot.winners) {
-        const share = Math.floor(pot.amount / pot.winners.length);
-        let odd = pot.amount - share * pot.winners.length;
-        for (const w of pot.winners) {
-          won[w] += share + (odd > 0 ? 1 : 0);
-          if (odd > 0) odd--;
+    const scoresFor = (board: CardCode[], names: boolean) => {
+      const scores = new Map<number, number>();
+      for (const i of live) {
+        const c = hand.players[i].cards;
+        if (c && c.length === 2 && board.length === 5) {
+          const ev = evaluate([...c, ...board]);
+          scores.set(i, ev.score);
+          if (names) handNames[i] = ev.name;
         }
+      }
+      return scores;
+    };
+    const runs = boards.map((b, k) => ({ scores: scoresFor(b, k === 0), manual: k === 1 ? hand.winners2 : hand.winners }));
+    const pick = (pot: Pot, run: (typeof runs)[number]): number[] | null => {
+      if (pot.eligible.length === 1) return pot.eligible;
+      if (pot.eligible.every((i) => run.scores.has(i))) {
+        const best = Math.max(...pot.eligible.map((i) => run.scores.get(i)!));
+        return pot.eligible.filter((i) => run.scores.get(i) === best);
+      }
+      const w = (run.manual ?? []).filter((i) => pot.eligible.includes(i));
+      return w.length ? w : null;
+    };
+    const pay = (amount: number, winners: number[] | null) => {
+      if (!winners) return;
+      const share = Math.floor(amount / winners.length);
+      let odd = amount - share * winners.length;
+      for (const w of winners) {
+        won[w] += share + (odd > 0 ? 1 : 0);
+        if (odd > 0) odd--;
+      }
+    };
+    for (const pot of pots) {
+      pot.winners = pick(pot, runs[0]);
+      if (runs.length === 2) {
+        // Each run plays for half the pot; the odd chip goes with the first.
+        pot.winners2 = pick(pot, runs[1]);
+        const first = Math.ceil(pot.amount / 2);
+        pay(first, pot.winners);
+        pay(pot.amount - first, pot.winners2);
+      } else {
+        pay(pot.amount, pot.winners);
       }
     }
   }
-  const resolved = pots.every((p) => p.winners !== null);
+  const resolved = pots.every((p) => p.winners !== null && p.winners2 !== null);
   const net = won.map((w, i) => w - s.invested[i] - s.antes[i]);
   return { pots, won, net, resolved, handNames };
 }
@@ -563,6 +610,7 @@ export function usedCards(hand: Hand, except: string[] = []): Set<string> {
   const set = new Set<string>();
   for (const p of hand.players) for (const c of p.cards ?? []) set.add(c);
   for (const c of hand.board) set.add(c);
+  for (const c of hand.board2 ?? []) set.add(c);
   for (const c of except) set.delete(c);
   return set;
 }
@@ -574,5 +622,5 @@ export function totalPot(s: TableState): number {
 /** False while the hand still waits for an action, a board card or hero's cards. */
 export function isComplete(hand: Hand, r: Replay = replay(hand)): boolean {
   const s = r.final;
-  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && s.toAct === null && (!r.result || r.result.resolved);
+  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && !r.needsBoard2 && s.toAct === null && (!r.result || r.result.resolved);
 }

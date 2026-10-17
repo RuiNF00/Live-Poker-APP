@@ -13,7 +13,7 @@ import { C, S } from '@/theme';
 
 import { Button, Chip, ChipRow, Field, NumField, Row, Section, Segmented, SheetHeader, T } from './ui';
 
-export const CURRENCIES = ['€', '$', '£', 'R$', 'CHF'];
+export const CURRENCIES = ['€', '$', '£', 'R$', 'CHF', 'HK$', 'A$'];
 
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
   return (

@@ -5,6 +5,7 @@
 import { getAllSwaps, forgetSwapsLocally } from '@/store/swaps-store';
 import { swapDeleteJobs } from '@/store/swaps';
 
+import { onEraseAll } from './erase-all';
 import { deleteSwap, SwapError } from './swap-api';
 import { outcomeOf, queue, registerSender } from './sync';
 
@@ -23,3 +24,5 @@ registerSender('swap-delete', async (p) => {
     return e instanceof SwapError ? outcomeOf(e.status) : 'retry';
   }
 });
+
+onEraseAll(eraseSwaps);

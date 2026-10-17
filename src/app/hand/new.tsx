@@ -24,12 +24,13 @@ import { CardPicker } from '@/components/CardPicker';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
 import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
+import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
-import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
+import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
 import { newHand, nextLevel, rescaleStacks, resizeTable } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
@@ -55,8 +56,10 @@ export default function NewHand() {
   const pro = usePro();
   const { activeSession, settings, hands } = store;
 
+  // Only an existing hand is an edit (free of the daily limit); a link with a made-up id is a new hand.
+  const [isEdit] = useState(() => !!params.edit && store.hands.some((h) => h.id === params.edit));
   const [draft, setDraftState] = useState<Draft>(() => {
-    const editing = params.edit ? store.hands.find((h) => h.id === params.edit) : null;
+    const editing = isEdit ? store.hands.find((h) => h.id === params.edit) : null;
     if (editing) return { hand: editing, posChosen: true };
     if (store.draft) return { hand: store.draft, posChosen: !!store.draft.actions.length || store.draft.button !== 0 || !!store.draft.players[0].cards };
     const last = hands[0] ?? null;
@@ -79,7 +82,7 @@ export default function NewHand() {
   const s = r.final;
 
   useEffect(() => {
-    if (!params.edit) store.setDraft(hand);
+    if (!isEdit) store.setDraft(hand);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand]);
 
@@ -97,10 +100,11 @@ export default function NewHand() {
   };
 
   // ── phase ─────────────────────────────────────────
-  type Phase = 'hero' | 'action' | 'board' | 'showdown' | 'done';
+  type Phase = 'hero' | 'action' | 'board' | 'board2' | 'showdown' | 'done';
   let phase: Phase;
   if (!draft.posChosen || heroCards.length < 2) phase = 'hero';
   else if (s.needsBoard) phase = 'board';
+  else if (r.needsBoard2) phase = 'board2';
   else if (s.toAct !== null) phase = 'action';
   else if (r.result && !s.foldWin) phase = 'showdown';
   else phase = 'done';
@@ -165,12 +169,33 @@ export default function NewHand() {
     if (hand.board.length >= boardNeeded) return;
     update({ ...hand, board: [...hand.board, c] });
   };
+  // Run it twice: offered while an all-in runs out, and at showdown if forgotten.
+  const canTwice = r.runoutFrom !== null && r.runoutFrom < 5 && s.folded.filter((f) => !f).length > 1;
+  const twiceChip = canTwice ? (
+    <Chip
+      label={t('Correr 2 vezes')}
+      active={!!hand.board2}
+      onPress={() => {
+        tap();
+        update({ ...hand, board2: hand.board2 ? undefined : [], winners2: undefined });
+      }}
+    />
+  ) : null;
+  const board2Count = board2Needed(r);
+  const board2Left = board2Count - (hand.board2?.length ?? 0);
+  const pickBoard2 = (c: string) => {
+    const b2 = hand.board2 ?? [];
+    if (b2.includes(c)) return update({ ...hand, board2: b2.filter((x) => x !== c) });
+    if (b2.length >= board2Count) return;
+    update({ ...hand, board2: [...b2, c] });
+  };
+  const run2Board = [...hand.board.slice(0, r.runoutFrom ?? 0), ...(hand.board2 ?? [])];
 
   const save = async (over?: Partial<Hand>) => {
     tap('medium');
     const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
-    if (!params.edit && !pro.canSaveHand()) {
+    if (!isEdit && !pro.canSaveHand()) {
       if (over) update(hand);
       pro.paywall('hands');
       return;
@@ -189,7 +214,7 @@ export default function NewHand() {
     if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     // Keep the session's live table state in sync, so the next hand is pre-filled.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
-    if (sess && !params.edit) {
+    if (sess && !isEdit) {
       const heroEnd = r.result ? s.stacks[hand.hero] + r.result.won[hand.hero] : s.stacks[hand.hero] + s.bets[hand.hero];
       store.saveSession({
         ...sess,
@@ -207,7 +232,7 @@ export default function NewHand() {
       });
     }
     if (!settings.onboarded) store.setSettings({ onboarded: true });
-    if (!params.edit) {
+    if (!isEdit) {
       store.setDraft(null);
       pro.record('hand');
     }
@@ -238,7 +263,7 @@ export default function NewHand() {
   const sdSeat = showdownFor !== undefined ? showdownFor : liveVillains.length === 1 && (hand.players[liveVillains[0]].cards?.length ?? 0) < 2 ? liveVillains[0] : null;
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
-  const busy = hand.actions.length || heroCards.length || params.edit;
+  const busy = hand.actions.length || heroCards.length || isEdit;
   // Tapping a seat on the felt is how the action is entered: a seat the app
   // folded by itself came in after all; a seat further round gets the turn,
   // with everyone in between checking or folding. Anything else edits the seat.
@@ -328,7 +353,7 @@ export default function NewHand() {
               seats={seatsView}
               hero={hand.hero}
               button={hand.button}
-              board={hand.board.slice(0, s.boardCount || (phase === 'board' ? hand.board.length : 0))}
+              board={phase === 'board2' ? run2Board : hand.board.slice(0, s.boardCount || (phase === 'board' ? hand.board.length : 0))}
               pot={totalPot(s) > 0 ? amount(totalPot(s), hand, inBB) : undefined}
               narration={phase === 'action' ? STREET_PT[s.street] : undefined}
               watermark={BRAND.name}
@@ -384,7 +409,7 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
-            {!settings.onboarded && !params.edit ? (
+            {!settings.onboarded && !isEdit ? (
               <T v="tiny" style={{ textAlign: 'center' }}>
                 {t('Posição e duas cartas. Os folds até ti são automáticos.')}
               </T>
@@ -478,7 +503,24 @@ export default function NewHand() {
               {quickSave}
             </Row>
             <CardPicker used={usedCards(hand)} selected={hand.board.slice(s.boardCount)} onPick={pickBoard} />
-            {r.steps.length > 0 && s.bettingDone && <Button title={t('Guardar sem board')} kind="ghost" small onPress={() => save()} />}
+            {r.steps.length > 0 && s.bettingDone && (
+              <Row gap={8}>
+                {twiceChip}
+                <Button title={t('Guardar sem board')} kind="ghost" small onPress={() => save()} />
+              </Row>
+            )}
+          </>
+        )}
+
+        {!voice.recording && phase === 'board2' && (
+          <>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <T v="h2">
+                {t('2.ª vez')} · {board2Left === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: board2Left })}
+              </T>
+              {twiceChip}
+            </Row>
+            <CardPicker used={usedCards(hand)} selected={hand.board2 ?? []} onPick={pickBoard2} />
           </>
         )}
 
@@ -517,25 +559,39 @@ export default function NewHand() {
                       }}
                     />
                   )}
+                  {twiceChip && <ChipRow>{twiceChip}</ChipRow>}
+                  {r.boards.length === 2 &&
+                    r.boards.map((b, run) => (
+                      <Row key={run} gap={10}>
+                        <T v="small" style={{ minWidth: 80 }}>
+                          {run ? t('2.ª vez') : t('1.ª vez')}
+                        </T>
+                        <CardRow cards={b} />
+                      </Row>
+                    ))}
                   {r.result && !r.result.resolved && (
                     <View style={{ gap: 6 }}>
-                      <T v="label">{t('Quem ganhou?')}</T>
-                      <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                        {hand.players.map((p, i) =>
-                          s.folded[i] ? null : (
-                            <Chip
-                              key={i}
-                              big
-                              label={displayName(hand, i, pos)}
-                              active={hand.winners?.includes(i)}
-                              onPress={() => {
-                                const w = hand.winners ?? [];
-                                update({ ...hand, winners: w.includes(i) ? w.filter((x) => x !== i) : [...w, i] });
-                              }}
-                            />
-                          ),
-                        )}
-                      </Row>
+                      {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
+                        <View key={key} style={{ gap: 6 }}>
+                          <T v="label">{r.boards.length === 2 ? (run ? t('Quem ganhou a 2.ª vez?') : t('Quem ganhou a 1.ª vez?')) : t('Quem ganhou?')}</T>
+                          <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                            {hand.players.map((p, i) =>
+                              s.folded[i] ? null : (
+                                <Chip
+                                  key={i}
+                                  big
+                                  label={displayName(hand, i, pos)}
+                                  active={hand[key]?.includes(i)}
+                                  onPress={() => {
+                                    const w = hand[key] ?? [];
+                                    update({ ...hand, [key]: w.includes(i) ? w.filter((x) => x !== i) : [...w, i] });
+                                  }}
+                                />
+                              ),
+                            )}
+                          </Row>
+                        </View>
+                      ))}
                     </View>
                   )}
                 </View>

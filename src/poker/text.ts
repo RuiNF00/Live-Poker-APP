@@ -1,6 +1,6 @@
-import { positions, replay, totalPot, type LastAction } from './engine';
+import { positions, replay, straddleSeats, totalPot, type LastAction } from './engine';
 import { chips } from './format';
-import type { Hand, Street } from './types';
+import type { AnteType, Hand, Street } from './types';
 
 // Forum hand history (TwoPlusTwo, Reddit r/poker, WhatsApp groups): the
 // standard plain-text layout players already read, in English poker notation
@@ -8,6 +8,7 @@ import type { Hand, Street } from './types';
 // table read never ends up on a public forum.
 
 const STAGE_EN: Record<string, string> = { early: 'Early', mid: 'Middle stages', bubble: 'Bubble', itm: 'ITM', ft: 'Final table', hu: 'Heads-up' };
+const ANTE_EN: Record<AnteType, string> = { bb: 'BB ante', btn: 'button ante', all: 'ante', none: '' };
 const STREET_EN: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 
 /** 135 chips at 2 bb → "67.5 bb". Always a decimal point: forums are read in English. */
@@ -50,13 +51,20 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
   const who = (i: number) => (i === hand.hero ? 'Hero' : pos[i]);
   const out: string[] = [];
 
-  const ante = g.ante > 0 && g.anteType !== 'none' ? ` (${chips(g.ante)} ${g.anteType === 'bb' ? 'BB ante' : 'ante'})` : '';
+  const ante = !g.bombPot && g.ante > 0 && g.anteType !== 'none' ? ` (${chips(g.ante)} ${ANTE_EN[g.anteType]})` : '';
+  // Live extras that change the pot before anyone acts.
+  const straddles = straddleSeats(hand)
+    .map(([i, amt], j) => `${pos[i]}${i === hand.hero ? ' (Hero)' : ''} ${j ? 're-straddle' : 'straddle'} ${chips(amt)}`)
+    .join(', ');
+  const bomb = g.bombPot ? `Bomb pot: ${inBB(g.bombPot, bb)} each, starts on the flop` : '';
   out.push(
     [
       "NL Hold'em",
       g.kind === 'mtt' ? 'Tournament' : 'Cash',
       g.name,
       `${chips(g.sb)}/${chips(bb)}${ante}`,
+      straddles,
+      bomb,
       g.level ? `Level ${g.level}` : '',
       g.kind === 'mtt' && g.stage ? STAGE_EN[g.stage] : '',
       g.playersLeft ? `${g.playersLeft} left` : '',
@@ -76,7 +84,10 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
   type Block = { street: Street; pot: number; cards: string[]; acts: string[] };
   const blocks: Block[] = [];
   for (const st of r.steps) {
-    if (st.kind === 'start') blocks.push({ street: 'preflop', pot: totalPot(st.state), cards: [], acts: [] });
+    // A bomb pot has no preflop: the money goes in and the hand opens on the flop.
+    if (st.kind === 'start') {
+      if (!g.bombPot) blocks.push({ street: 'preflop', pot: totalPot(st.state), cards: [], acts: [] });
+    }
     else if (st.kind === 'board') {
       const n = st.state.boardCount;
       blocks.push({ street: st.street, pot: totalPot(st.state), cards: st.street === 'flop' ? hand.board.slice(0, 3) : hand.board.slice(n - 1, n), acts: [] });
@@ -93,6 +104,7 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
     out.push(head);
     if (acts.length) out.push(acts.join(', '));
   }
+  if (r.boards.length === 2) out.push('', `Second run: ${r.boards[1].join(' ')}`);
 
   if (r.result) {
     out.push('');

@@ -59,7 +59,7 @@ export function prepare(text: string): Prepared {
   return { table, source, mapping: mappingFor(source, table.headers) };
 }
 
-const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL: 'R$', CHF: 'CHF', '€': '€', $: '$', '£': '£', R$: 'R$', US$: '$' };
+const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL: 'R$', CHF: 'CHF', HKD: 'HK$', AUD: 'A$', '€': '€', $: '$', '£': '£', R$: 'R$', US$: '$' };
 
 export function currencyOf(raw: string, fallback: string): string {
   const c = raw.trim();
