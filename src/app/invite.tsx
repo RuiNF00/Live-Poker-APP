@@ -83,7 +83,7 @@ export default function InviteScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t('Copiar link')}
                 onPress={async () => {
-                  await Clipboard.setStringAsync(s.url);
+                  await Clipboard.setStringAsync(withLang(s.url, variant));
                   tap();
                 }}
                 style={({ pressed }) => ({ backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.borderStrong, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>

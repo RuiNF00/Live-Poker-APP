@@ -3233,6 +3233,7 @@ const es: Record<string, string> = {
   'Ganhei': 'Gané',
   'Perdi': 'Perdí',
   'Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.': 'Cada cuadrado es un día: verde relleno ganaste, contorno rojo perdiste. Más intenso, más dinero.',
+  '{n} torneios, {c} cashes.': '{n} torneos, {c} cashes.',
 };
 
 export default es;
