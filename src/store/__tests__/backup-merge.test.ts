@@ -25,3 +25,10 @@ test('only a copy another phone wrote is joined in', () => {
   // Copies made before this check existed: joined once, which loses nothing.
   assert.equal(writtenElsewhere({ exportedAt: 100 }, undefined), true);
 });
+
+test('two phones: weekly tournaments from both are kept, this phone’s copy of the same one stays', () => {
+  const w = (id: string, buyIn: number) => ({ id, name: id, venue: '', currency: '€', weekday: 4, time: '21:00', buyIn });
+  const a = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w('w1', 60)] }, 100);
+  const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w('w1', 80), w('w2', 30)] }, 90);
+  assert.deepEqual(mergeBackups(a, b).weekly?.map((x) => [x.id, x.buyIn]), [['w1', 60], ['w2', 30]]);
+});

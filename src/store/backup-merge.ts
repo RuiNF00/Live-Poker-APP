@@ -22,6 +22,8 @@ export function mergeBackups(local: BackupData, remote: BackupData): BackupData 
   out.festivalPlans = plans;
   const own: Festival[] = local.ownFestivals ?? [];
   out.ownFestivals = [...own, ...(remote.ownFestivals ?? []).filter((f) => !own.some((x) => x.id === f.id))];
+  const weekly = local.weekly ?? [];
+  out.weekly = [...weekly, ...(remote.weekly ?? []).filter((w) => !weekly.some((x) => x.id === w.id))];
   const q = local.quarantine ?? [];
   const more = (remote.quarantine ?? []).filter(([k]) => !q.some(([have]) => have === k));
   if (q.length || more.length) out.quarantine = [...q, ...more];
