@@ -3162,6 +3162,18 @@ const es: Record<string, string> = {
   'E mais {n} por acertar': 'Y {n} más por saldar',
   'Toca para registar o pagamento': 'Toca para registrar el pago',
   'Toca para veres as contas': 'Toca para ver las cuentas',
+  'O MEU PLANO': 'MI PLAN',
+  '+1 torneio': '+1 torneo',
+  '+{n} torneios': '+{n} torneos',
+  'Vens também?': '¿Vienes también?',
+  'Imagem e texto': 'Imagen y texto',
+  'Dias, horas e torneios, para o grupo': 'Días, horas y torneos, para el grupo',
+  'Partilhar o meu plano': 'Compartir mi plan',
+  'Para quem vai contigo: dias, horas e torneios': 'Para quien va contigo: días, horas y torneos',
+  'Mostrar buy-ins': 'Mostrar buy-ins',
+  'Nunca o total nem a banca': 'Nunca el total ni tu banca',
+  'O meu plano: {name}': 'Mi plan: {name}',
+  'Feito com Sweatbook: {link}': 'Hecho con Sweatbook: {link}',
 };
 
 export default es;

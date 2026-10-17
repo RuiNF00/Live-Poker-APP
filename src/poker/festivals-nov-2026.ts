@@ -194,6 +194,8 @@ export const TORRELODONES_NOV_2026: Festival = {
   // https://circuitonacionaldepoker.es/la-gran-final-ya-tiene-programa-12-dias-para-volver-a-hacer-historia/ (official poster)
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
+  // The schedule's last row is the 22nd; the festival runs to the 23rd (Main Event final).
+  dates: { from: '2026-11-12', to: '2026-11-23' },
   events: [
     { id: '1-1A', number: 1, name: 'Opening', flight: '1A', unnumbered: true, game: 'NLH', buyIn: 200, guarantee: 0, start: '2026-11-12T17:00', stack: 30000, levelMinutes: 30 },
     { id: '1-1B', number: 1, name: 'Opening', flight: '1B', unnumbered: true, game: 'NLH', buyIn: 200, guarantee: 0, start: '2026-11-13T17:00', stack: 30000, levelMinutes: 30 },

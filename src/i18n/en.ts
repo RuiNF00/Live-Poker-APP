@@ -3168,6 +3168,18 @@ const en: Record<string, string> = {
   'E mais {n} por acertar': 'And {n} more to settle',
   'Toca para registar o pagamento': 'Tap to record the payment',
   'Toca para veres as contas': 'Tap to see the accounts',
+  'O MEU PLANO': 'MY PLAN',
+  '+1 torneio': '+1 tournament',
+  '+{n} torneios': '+{n} tournaments',
+  'Vens também?': 'Coming too?',
+  'Imagem e texto': 'Image and text',
+  'Dias, horas e torneios, para o grupo': 'Days, times and tournaments, for the group',
+  'Partilhar o meu plano': 'Share my plan',
+  'Para quem vai contigo: dias, horas e torneios': 'For whoever is going with you: days, times and tournaments',
+  'Mostrar buy-ins': 'Show buy-ins',
+  'Nunca o total nem a banca': 'Never the total or your bankroll',
+  'O meu plano: {name}': 'My plan: {name}',
+  'Feito com Sweatbook: {link}': 'Made with Sweatbook: {link}',
 };
 
 export default en;

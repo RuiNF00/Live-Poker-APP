@@ -236,9 +236,9 @@ export default function SessionScreen() {
           recentNames={recentNames}
           recentVenues={recentVenues}
           today={todays.map(({ f, e }) => {
-            const { name, venue, currency, buyIn, stack, levelMinutes, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
+            const { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
             const bankroll = bankrolls.find((b) => b.currency === f.currency);
-            return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
+            return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
           })}
           submitLabel={t('Começar agora')}
           submitRef={startRef}

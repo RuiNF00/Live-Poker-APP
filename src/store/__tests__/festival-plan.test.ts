@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
-import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
+import { fitPlan, planDays, planText } from '../../share/festival-plan';
+import { levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -203,4 +204,32 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
   const pu = PUNTA_DEL_ESTE_DEC_2026.events.filter((e) => e.number === 8);
   assert.deepEqual(pu.map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '2']);
   assert.deepEqual([pu[0].buyIn, pu[0].stack, pu[0].levelMinutes, pu[0].guarantee], [2750, 20000, 30, 750_000]);
+});
+
+test('sharing the plan: by day in start order, days/times/names only, buy-ins only when asked', () => {
+  const plan = { ...EMPTY_PLAN, picked: ['10-1B', '85-1A', '10-2', '85-2'] };
+  const days = planDays(LV, plan);
+  assert.deepEqual(days.map((d) => d.day), ['2026-11-27', '2026-11-30', '2026-12-14', '2026-12-16']);
+  assert.deepEqual(days[0].rows.map((r) => [r.time, r.flight]), [['11:00', 'Flight 1A']]);
+  const text = planText(LV, plan, 'https://x.test/r/abc');
+  assert.match(text, /Las Vegas, dezembro 2026/);
+  assert.match(text, /11:00 · No Limit Hold'em · Flight 1A/);
+  assert.match(text, /Main Event · Dia 2/);
+  assert.match(text, /https:\/\/x\.test\/r\/abc$/);
+  assert.doesNotMatch(text, /\$|10[ .,]?400|600/);
+  assert.match(planText(LV, plan, 'l', { buyIns: true }), /Flight 1A · \$600|Flight 1A · 600/);
+  // The story keeps what fits and counts the rest.
+  const many = Array.from({ length: 5 }, (_, i) => ({ day: `d${i}`, label: `d${i}`, rows: Array.from({ length: 4 }, (_, j) => ({ id: `${i}-${j}`, time: '12:00', title: 'x', flight: '', buyIn: '' })) }));
+  const fit = fitPlan(many, 15);
+  assert.equal(fit.days.reduce((n, d) => n + 1 + d.rows.length, 0), 15);
+  assert.equal(fit.more, 20 - fit.days.reduce((n, d) => n + d.rows.length, 0));
+});
+
+test('a session for a planned event runs its level clock from the published start, never before', () => {
+  const e = TORRELODONES_NOV_2026.events.find((x) => x.id === '1-1C')!;
+  const start = venueTime(TORRELODONES_NOV_2026, e.start); // 17:00 in Madrid
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start - 25 * 60_000), start);
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 10 * 60_000), start + 10 * 60_000);
+  // The festival runs to the 23rd although its last row is the 22nd.
+  assert.deepEqual(festivalSpan(TORRELODONES_NOV_2026), { from: '2026-11-12', to: '2026-11-23' });
 });

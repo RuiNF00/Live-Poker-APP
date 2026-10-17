@@ -1508,6 +1508,13 @@ const ptBR: Record<string, string> = {
   'E mais {n} por acertar': 'E mais {n} para acertar',
   'Toca para registar o pagamento': 'Toque para registrar o pagamento',
   'Toca para veres as contas': 'Toque para ver as contas',
+  'Partilhar o meu plano': 'Compartilhar meu plano',
+  'Para quem vai contigo: dias, horas e torneios': 'Para quem vai com você: dias, horários e torneios',
+  'Vens também?': 'Você vai também?',
+  'O MEU PLANO': 'MEU PLANO',
+  'O meu plano: {name}': 'Meu plano: {name}',
+  'Dias, horas e torneios, para o grupo': 'Dias, horários e torneios, para o grupo',
+  'Nunca o total nem a banca': 'Nunca o total nem a banca',
 };
 
 export default ptBR;
