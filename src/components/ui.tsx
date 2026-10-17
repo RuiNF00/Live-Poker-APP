@@ -726,28 +726,45 @@ export function Segmented<K extends string | number>({
   );
 }
 
-/** Small coloured tag: positions (BTN, CO…) or labels. */
-export function Badge({ label, color, solid, style }: { label: string; color?: string; solid?: boolean; style?: StyleProp<ViewStyle> }) {
-  const col = color ?? posColor(label);
-  return (
-    <View style={[{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: R.xs, backgroundColor: solid ? col : col + '26', alignSelf: 'flex-start' }, style]}>
-      <RNText maxFontSizeMultiplier={1.3} style={{ color: solid ? C.bgDeep : col, fontFamily: ff(800), fontWeight: '800', fontSize: 11, letterSpacing: 0.3 }}>{label}</RNText>
-    </View>
-  );
+// Badges and pills repeat on every hand row: their styles are built once per colour.
+const tagSt = StyleSheet.create({
+  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: R.xs, alignSelf: 'flex-start' },
+  badgeText: { fontFamily: ff(800), fontWeight: '800', fontSize: 11, letterSpacing: 0.3 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 22, borderRadius: R.pill },
+  pillText: { fontFamily: ff(700), fontWeight: '700', fontSize: 12 },
+});
+const tint = new Map<string, { bg: ViewStyle; fg: TextStyle }>();
+function tinted(bg: string, fg: string) {
+  const k = bg + fg;
+  let v = tint.get(k);
+  if (!v) tint.set(k, (v = StyleSheet.create({ bg: { backgroundColor: bg }, fg: { color: fg } })));
+  return v;
 }
 
-/** Rounded label for tags and states. */
-export function Pill({ label, color, icon, style }: { label: string; color?: string; icon?: IconName; style?: StyleProp<ViewStyle> }) {
-  const col = color ?? C.textDim;
+/** Small coloured tag: positions (BTN, CO…) or labels. */
+export const Badge = React.memo(function Badge({ label, color, solid, style }: { label: string; color?: string; solid?: boolean; style?: StyleProp<ViewStyle> }) {
+  const col = color ?? posColor(label);
+  const tn = tinted(solid ? col : col + '26', solid ? C.bgDeep : col);
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 22, borderRadius: R.pill, backgroundColor: color ? col + '1F' : C.surface3 }, style]}>
+    <View style={[tagSt.badge, tn.bg, style]}>
+      <RNText maxFontSizeMultiplier={1.3} style={[tagSt.badgeText, tn.fg]}>{label}</RNText>
+    </View>
+  );
+});
+
+/** Rounded label for tags and states. */
+export const Pill = React.memo(function Pill({ label, color, icon, style }: { label: string; color?: string; icon?: IconName; style?: StyleProp<ViewStyle> }) {
+  const col = color ?? C.textDim;
+  const tn = tinted(color ? col + '1F' : C.surface3, col);
+  return (
+    <View style={[tagSt.pill, tn.bg, style]}>
       {icon ? <Ionicons name={icon} size={11} color={col} /> : null}
-      <RNText numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: col, fontFamily: ff(700), fontWeight: '700', fontSize: 12 }}>
+      <RNText numberOfLines={1} maxFontSizeMultiplier={1.3} style={[tagSt.pillText, tn.fg]}>
         {label}
       </RNText>
     </View>
   );
-}
+});
 
 // ─── Inputs ──────────────────────────────────────────────────────────────────
 
