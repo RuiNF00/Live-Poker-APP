@@ -332,7 +332,8 @@ export default function NewHand() {
   const levelUp = phase === 'hero' && settings.onboarded ? nextLevel(hand.game) : null;
   // Heads-up showdown: the picker for the opponent's cards is already open.
   const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
-  const sdSeat = showdownFor !== undefined ? showdownFor : liveVillains.length === 1 && (hand.players[liveVillains[0]].cards?.length ?? 0) < 2 ? liveVillains[0] : null;
+  // The picker opens on the first seat whose cards are still unknown (multiway too): a showdown is two taps per hand shown.
+  const sdSeat = showdownFor !== undefined ? showdownFor : (liveVillains.find((i) => (hand.players[i].cards?.length ?? 0) < 2) ?? null);
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
   const busy = hand.actions.length || heroCards.length || isEdit;

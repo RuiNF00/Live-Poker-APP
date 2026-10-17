@@ -601,7 +601,7 @@ test('mais limps: only after a limp and before any raise', () => {
 });
 
 // Round 4: where the taps still go, and the live cases (multiway all-in, straddle, BB ante).
-test('round 4 · multiway all-in with a side pot — 25 taps (was 31)', () => {
+test('round 4 · multiway all-in with a side pot — 24 taps (was 31)', () => {
   const run = (now: boolean) => {
     const e = new Entry('BTN', ['Ah', 'Kh']);
     e.entered('CO');
@@ -621,9 +621,14 @@ test('round 4 · multiway all-in with a side pot — 25 taps (was 31)', () => {
       e.only('SB');
     }
     e.board('Kd', '9s', '4c', '2h', '7d');
-    e.showsPick('CO', ['Qs', 'Qd']);
-    if (now) e.shows('SB', ['Jc', 'Tc']);
-    else e.showsPick('SB', ['Jc', 'Tc']);
+    // The picker opens on the first unknown seat by itself, then chains to the next.
+    if (now) {
+      e.shows('CO', ['Qs', 'Qd']);
+      e.shows('SB', ['Jc', 'Tc']);
+    } else {
+      e.showsPick('CO', ['Qs', 'Qd']);
+      e.showsPick('SB', ['Jc', 'Tc']);
+    }
     const r = e.save();
     assert.equal(r.result!.resolved, true);
     assert.equal(r.result!.pots.length, 2, 'main pot and a side pot');
@@ -632,7 +637,7 @@ test('round 4 · multiway all-in with a side pot — 25 taps (was 31)', () => {
   const before = run(false);
   const after = run(true);
   assert.equal(before.taps, 31);
-  assert.equal(after.taps, 25);
+  assert.equal(after.taps, 24);
   assert.deepEqual(after.net, before.net, 'same hand, same money');
 });
 
@@ -716,4 +721,41 @@ test('round 4 · checks to the raiser: a donk bet is one tap on "Alguém fez bet
   assert.equal(o.s.toAct, o.hand.hero);
   o.act('check');
   assert.equal(o.s.toAct, o.seat('BTN'));
+});
+
+// Round 5: amounts and showdown cards.
+test('round 5 · every typical size is one tap: 2.5x open, 3-bet, ⅓ c-bet, pot turn bet, all-in', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  const one = (label: string) => {
+    const before = e.taps;
+    e.size(label);
+    assert.equal(e.taps - before, 1, label);
+  };
+  one('2.5x');
+  e.act('fold');
+  one('3x');
+  e.act('call');
+  e.board('Kd', '9s', '4c');
+  e.act('check');
+  one('⅓');
+  e.act('call');
+  e.board('2h'); // BB's check to the c-bettor is filled in by itself
+  one('Pote');
+  one('All-in');
+});
+
+test('round 5 · multiway showdown: two taps per hand shown, no tap on the seat', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.act('call');
+  e.act('call');
+  e.board('Kd', '9s', '4c');
+  e.checkDown();
+  e.board('2h');
+  e.board('7d');
+  const before = e.taps;
+  e.shows('SB', ['Qs', 'Qd']);
+  e.shows('BB', ['Jc', 'Tc']);
+  assert.equal(e.taps - before, 4);
+  assert.equal(e.save().result!.resolved, true);
 });
