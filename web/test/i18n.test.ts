@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { intlTag, isPt, LOCALES, numberTag, ogLocale, pickLocale, previewLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
+import { intlTag, isPt, LOCALES, numberTag, ogLocale, pageLocale, pickLocale, previewLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
 import { previewCopy } from '../src/lib/preview-copy';
 import { packCopy } from '../src/components/pack/copy';
 import { backingCopy } from '../src/components/backing/copy';
@@ -152,5 +152,16 @@ describe('hand text', () => {
   it('names streets and steps in Spanish', () => {
     expect(streetLabel('preflop', 'es')).toBe('Preflop');
     expect(describeStep({ kind: 'start' } as Parameters<typeof describeStep>[0], 2, 'chips', 'es')).toBe('Inicio de la mano');
+  });
+});
+
+describe('pageLocale', () => {
+  it("follows the reader's phone, and the sharer's ?lang= only when the phone asks for none of ours", () => {
+    expect(pageLocale('pt-PT', 'es-ES,es;q=0.9')).toBe('es');
+    expect(pageLocale('pt-PT', 'fr-FR,fr;q=0.9')).toBe('pt');
+    expect(pageLocale('es', '')).toBe('es');
+    expect(pageLocale(undefined, 'fr-FR')).toBe('en');
+    expect(pickLocale('fr-FR')).toBe('en');
+    expect(pickLocale('')).toBe('pt');
   });
 });

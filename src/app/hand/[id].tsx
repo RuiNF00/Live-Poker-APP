@@ -23,7 +23,10 @@ import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
+import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
 import { markCommentsSeen } from '@/lib/friend-hands';
+import { kindOn } from '@/lib/notify-policy';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { streetOfNew } from '@/lib/friend-hands-core';
 import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
@@ -76,6 +79,7 @@ export default function HandScreen() {
   const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
   // Opened for new comments: the screen scrolls to them once they're laid out.
   const toComments = useRef(Number(fresh) > 0);
+  const commentsOn = kindOn(settings, 'comments');
   const loadComments = useCallback(() => {
     if (!hand?.shareId) return;
     const sid = hand.shareId;
@@ -88,6 +92,24 @@ export default function HandScreen() {
     fetchVotes(hand.shareId).then(setVotes).catch(() => {});
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
+  // Opened: the next comment may send a notice again.
+  const [sid, stok] = [hand?.shareId, hand?.shareToken];
+  useEffect(() => {
+    if (sid && stok) void openedOwnHand({ shareId: sid, shareToken: stok }, commentsOn);
+  }, [sid, stok, commentsOn]);
+  const [softAsk, askNotify] = useNotifySoftAsk();
+  // The link that was just made, for the ask below (the hand on screen is a render behind).
+  const made = useRef<{ shareId?: string; shareToken?: string }>({});
+  // After the first share of a hand, once it went out: "Novo comentário na tua mão" is worth asking for then.
+  const offerCommentPush = async () => {
+    if (!commentsOn || !commentPushAvailable() || !made.current.shareToken) return;
+    const ok = await askNotify({
+      where: 'comments',
+      title: t('Avisamos-te quando alguém comentar'),
+      preview: { title: t('Novo comentário na tua mão: turn'), body: t('Toca para abrir a mão nesse comentário.') },
+    });
+    if (ok) void turnOnCommentPush(made.current);
+  };
   // The street on screen in the replayer: comments mark it "you are here", and tapping a street jumps there.
   const [street, setStreet] = useState<Street>('preflop');
   const [seek, setSeek] = useState<{ street: Street; n: number }>();
@@ -152,6 +174,7 @@ export default function HandScreen() {
       // One public copy per hand: reuse a link made offline, or wait for the one being sent.
       const slot = await takeDirectShare(hand.id);
       if (slot.kind === 'ready') {
+        made.current = slot.link;
         saveHand({ ...hand, ...slot.link });
         return slot.link.shareId;
       }
@@ -161,6 +184,7 @@ export default function HandScreen() {
       }
       const asked = { ...hand, ask: ask.trim().slice(0, 140) || undefined };
       const { id: shareId, token } = await uploadHand(asked, { names: settings.shareNames, notes: settings.shareNotes });
+      made.current = { shareId, shareToken: token };
       saveHand({ ...asked, shareId, shareToken: token });
       return shareId;
     } catch (e) {
@@ -178,10 +202,6 @@ export default function HandScreen() {
   const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
     tap('medium');
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share');
@@ -195,6 +215,7 @@ ${link}`;
     if (to === 'x') {
       // Straight to a new post on X (the app if installed, else the browser); the link shows the replay card.
       await Linking.openURL(`https://x.com/intent/post?text=${encodeURIComponent(head)}&url=${encodeURIComponent(link)}`).catch(() => Share.share({ message: msg }));
+      if (isNew) void offerCommentPush();
       return;
     }
     if (to === 'whatsapp') {
@@ -202,6 +223,7 @@ ${link}`;
       const text = encodeURIComponent(msg);
       const url = Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`;
       await Linking.openURL(url).catch(() => Share.share({ message: msg }));
+      if (isNew) void offerCommentPush();
       return;
     }
     if (Platform.OS === 'web') {
@@ -211,6 +233,7 @@ ${link}`;
       const res = await Share.share({ message: msg });
       // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
       if (res.action === Share.sharedAction && hands.filter((h) => h.shareId || h.id === hand.id).length >= 3) maybeAskForReview('share3');
+      if (isNew && res.action === Share.sharedAction) void offerCommentPush();
     }
   };
 
@@ -219,10 +242,6 @@ ${link}`;
     let link: string | undefined;
     if (withLink) {
       const isNew = !hand.shareId;
-      if (isNew && !pro.canShare()) {
-        pro.paywall('shares');
-        return;
-      }
       const shareId = await ensureId();
       if (!shareId) return;
       if (isNew) pro.record('share');
@@ -294,10 +313,6 @@ ${link}`;
 
   const copyLink = async () => {
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share');
@@ -306,6 +321,7 @@ ${link}`;
     track('link_shared', { channel: 'copy', share_id: shareId, ref });
     tap('success');
     notice(t('Link copiado'));
+    if (isNew) void offerCommentPush();
   };
 
   const unshare = () => {
@@ -402,6 +418,7 @@ ${link}`;
               onRemove={hand.shareToken ? removeOne : undefined}
               pending={pending}
               onUndo={undoRemove}
+              ownerToken={hand.shareToken}
               onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 350)}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
@@ -418,6 +435,7 @@ ${link}`;
           </>
         )}
       </ScrollView>
+      {softAsk}
       <ShareSheet
         visible={shareOpen}
         header={
@@ -429,11 +447,11 @@ ${link}`;
         groups={[
           {
             options: [
-              { icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
-              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
-              { icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
-              { icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
-              { icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
+              { key: 'whatsapp', icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
+              { key: 'instagram', icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
+              { key: 'x', icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
+              { key: 'other', icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
+              { key: 'copy', icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
             ],
           },
           {

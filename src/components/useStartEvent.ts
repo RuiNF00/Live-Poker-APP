@@ -8,7 +8,7 @@ import { Alert, Platform } from 'react-native';
 import { t } from '@/i18n';
 import { eventTitle, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { getOffers, stakesFor } from '@/store/action-offer';
-import { eventAction, getPlan, updatePlan } from '@/store/festival-plan';
+import { eventAction, getPlan, levelStart, updatePlan } from '@/store/festival-plan';
 import { reenterFlight, resumeDay } from '@/store/multi-day';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -21,8 +21,7 @@ export function sessionName(e: FestivalEvent) {
 }
 
 /** A running tournament session for a festival event, starting now. */
-export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
-  const now = Date.now();
+export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined, now = Date.now()): Session {
   const base = blankSession('mtt', f.currency, tableSize);
   return {
     ...base,
@@ -35,6 +34,8 @@ export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: numbe
     // The published starting stack and level length, when known: nothing to type, and the level clock runs.
     stack: e.stack ?? base.stack,
     levelMinutes: e.levelMinutes,
+    // Started before the clock does (the reminder comes 30 min early): level 1 runs from the published start.
+    levelStartedAt: levelStart(f, e, now),
     tourney: e.stack ? { startStack: e.stack } : undefined,
     startedAt: now,
     stackLog: [{ t: now, stack: e.stack ?? base.stack, level: base.level }],

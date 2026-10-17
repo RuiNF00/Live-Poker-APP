@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Chip, ChipRow, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
-import { money } from '@/poker/format';
+import { money, num } from '@/poker/format';
 import { uid } from '@/store/store';
 import type { Backer, BackerPayment, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -78,8 +78,8 @@ export function blankPackage(backerId: string, terms?: Pick<StakePackage, 'kind'
 
 export function packageTerms(p: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut'>): string {
   return p.kind === 'makeup'
-    ? t('{share}% com makeup · ficas com {cut}% do lucro', { share: p.share, cut: p.playerCut })
-    : t('{share}% de cada torneio · {markup}', { share: p.share, markup: markupLabel(p.markup) });
+    ? t('{share}% com makeup · ficas com {cut}% do lucro', { share: num(p.share), cut: num(p.playerCut) })
+    : t('{share}% de cada torneio · {markup}', { share: num(p.share), markup: markupLabel(p.markup) });
 }
 
 /**
@@ -189,7 +189,7 @@ function PackageForm({ pkg, suggestName, makeup, balance, onSave, onDelete }: { 
           </T>
         </Card>
       ) : null}
-      <Button title={t('Guardar')} onPress={() => onSave({ ...x, name: x.name.trim() || t('Pacote de {share}%', { share: x.share }) }, closing && carry)} />
+      <Button title={t('Guardar')} onPress={() => onSave({ ...x, name: x.name.trim() || t('Pacote de {share}%', { share: num(x.share) }) }, closing && carry)} />
       {onDelete ? <Button title={t('Apagar pacote')} kind="danger" size="md" onPress={onDelete} /> : null}
     </>
   );

@@ -15,7 +15,8 @@ import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
 import { notice } from '@/lib/notice';
@@ -58,9 +59,9 @@ export default function FestivalCardScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      let link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`;
-      // The best hand's replay is the link, when the player can still make one today.
-      if (best && (best.hand.shareId || pro.canShare())) {
+      let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`, variant);
+      // The best hand's replay is the link (sharing is unlimited on every plan).
+      if (best) {
         try {
           const isNew = !best.hand.shareId;
           const shareId = await ensureShareId(best.hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
@@ -81,14 +82,14 @@ export default function FestivalCardScreen() {
 
   // X: the card as a picture with the best hand's replay (or the invite) in the post text.
   // The post text (same as the carousel caption) with the best hand's replay, or the invite.
-  const postText = async (to: 'x' | 'any') => {
+  const postText = async (to: 'x' | 'whatsapp' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    let link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`;
-    if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'x' ? 'x' : 'link', { ref });
+    let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=festival`, variant);
+    if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'any' ? 'link' : to, { ref });
     return carouselCaption(recap, link, { showResult, showMoney });
   };
 
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
@@ -109,7 +110,7 @@ export default function FestivalCardScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Partilhar festival') }} />
-      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
           horizontal

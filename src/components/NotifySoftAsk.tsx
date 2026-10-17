@@ -13,7 +13,7 @@ import { C, R, S } from '@/theme';
 
 export interface SoftAsk {
   /** Where it was asked, for the notify_permission event. */
-  where: 'session' | 'festival' | 'trial' | 'swap' | 'coach' | 'month' | 'staking';
+  where: 'session' | 'festival' | 'trial' | 'swap' | 'coach' | 'comments' | 'month' | 'staking';
   /** Why the player wants this, in one line. */
   title: string;
   /** The notification they will get, drawn the way iOS shows it. */

@@ -3,7 +3,7 @@
 
 import { Link, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CommentsList } from '@/components/Comments';
@@ -146,6 +146,13 @@ export default function SharedHand() {
               <T v="tiny">{t('Tirar das mãos partilhadas')}</T>
             </Pressable>
           ) : null}
+          {/* Contact on the screen itself (App Store 1.2): a problem with this hand or a comment, one tap to write. */}
+          <T v="tiny" style={{ textAlign: 'center' }}>
+            {t('Algum problema com uma mão ou comentário? Escreve para')}{' '}
+            <T v="tiny" style={{ textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}?subject=${encodeURIComponent(`h/${id}`)}`).catch(() => {})}>
+              {BRAND.supportEmail}
+            </T>
+          </T>
 
         </>
       )}

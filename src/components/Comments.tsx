@@ -37,6 +37,7 @@ export function CommentsList({
   pending,
   onUndo,
   onCompose,
+  ownerToken,
 }: {
   shareId: string;
   comments: Comment[];
@@ -59,6 +60,8 @@ export function CommentsList({
   onCompose?: () => void;
   /** On someone else's hand: "Bloquear" next to "Denunciar" hides that person's comments on this phone. */
   onBlock?: (c: Comment) => void;
+  /** The hand's own player: their replies don't send them a notice. */
+  ownerToken?: string;
 }) {
   const [name, setName] = useState(defaultName);
   // The name used last time on this phone, so a friend's hand doesn't ask for it again.
@@ -93,7 +96,7 @@ export function CommentsList({
     setBusy(true);
     setErr('');
     try {
-      const c = await postComment(shareId, { name: name.trim() || (onRemove ? t('Autor da mão') : t('Anónimo')), text: text.trim(), ...(about ? { street: about } : {}) });
+      const c = await postComment(shareId, { name: name.trim() || (onRemove ? t('Autor da mão') : t('Anónimo')), text: text.trim(), ...(about ? { street: about } : {}) }, ownerToken);
       onPosted({ ...c, street: c.street ?? about ?? null });
       setText('');
       if (name.trim()) AsyncStorage.setItem(NAME_KEY, name.trim().slice(0, 40)).catch(() => {});

@@ -5,6 +5,7 @@
 // still shows up there as "Stories"). Pro players can add their voice: the
 // story then goes out as a video rendered by the share server.
 
+import { requestRecordingPermissionsAsync } from 'expo-audio';
 import * as Clipboard from 'expo-clipboard';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
@@ -62,8 +63,10 @@ export interface FaceClip {
 }
 
 /** Records the player talking (front camera, up to 30 s). Null if they cancel or say no to the camera. */
-export async function recordFace(): Promise<FaceClip | null> {
-  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
+/** The front-camera clip; 'denied' when the camera or the microphone is off for the app (the screen offers Settings). */
+export async function recordFace(): Promise<FaceClip | 'denied' | null> {
+  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return 'denied';
+  if (!(await requestRecordingPermissionsAsync()).granted) return 'denied';
   const r = await ImagePicker.launchCameraAsync({
     mediaTypes: ['videos'],
     cameraType: ImagePicker.CameraType.front,
@@ -94,6 +97,11 @@ export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: 
 
 export async function captureStory(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
   return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
+}
+
+/** A card drawn at 360×450 (POST_H), exported 1080×1350 for a post on X or another app. */
+export async function capturePost(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1350, result: 'tmpfile' });
 }
 
 async function instagramInstalled(): Promise<boolean> {
@@ -268,20 +276,21 @@ export async function shareCarousel(files: string[], caption: string): Promise<S
 
 /**
  * A post with the images and the text (which carries the link): straight to X
- * when `to` is 'x' and X takes it, otherwise the system share sheet (X,
+ * or WhatsApp when `to` names it and it takes it, otherwise the system share sheet (X,
  * WhatsApp, save images…). X takes up to 4 images. The text is also copied, in
  * case the app picked drops it.
  */
-export async function sharePost(files: string[], text: string, to: 'x' | 'any' = 'any'): Promise<void> {
+export async function sharePost(files: string[], text: string, to: 'x' | 'whatsapp' | 'any' = 'any'): Promise<void> {
   await Clipboard.setStringAsync(text).catch(() => {});
   const Share = nativeShare();
   if (Share) {
-    if (to === 'x' && files.length === 1) {
+    if (to !== 'any' && files.length === 1) {
       try {
-        await Share.shareSingle({ social: Share.Social.TWITTER as Social.Twitter, url: files[0], message: text, type: 'image/png' });
+        const social = to === 'x' ? (Share.Social.TWITTER as Social.Twitter) : (Share.Social.WHATSAPP as Social.Whatsapp);
+        await Share.shareSingle({ social, url: files[0], message: text, type: 'image/png' });
         return;
       } catch {
-        // X not installed (or not reachable): the share sheet below.
+        // The app is not installed (or not reachable): the share sheet below.
       }
     }
     await Share.open({ urls: files.slice(0, 4), message: text, type: 'image/png', failOnCancel: false, title: t('Partilhar') });

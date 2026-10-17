@@ -119,6 +119,7 @@ function decodeEvent(e: Record<string, unknown>): FestivalEvent {
     ...(e.own === true ? { own: true } : {}),
     ...(isNum(e.stack) ? { stack: e.stack } : {}),
     ...(isNum(e.levelMinutes) ? { levelMinutes: e.levelMinutes } : {}),
+    ...(isNum(e.lateRegMin) ? { lateRegMin: e.lateRegMin } : {}),
   };
 }
 

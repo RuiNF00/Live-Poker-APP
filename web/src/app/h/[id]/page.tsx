@@ -33,7 +33,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
       description: c.goneBody,
       robots: { index: false },
       openGraph: { title: c.notFound, description: c.goneBody, type: 'website', siteName: brand.name, locale: ogLocale(locale), images: [site] },
-      twitter: { card: 'summary_large_image', title: c.notFound, description: c.goneBody, images: [site.url] },
+      twitter: { card: 'summary_large_image', title: c.notFound, description: c.goneBody, images: [{ url: site.url, alt: site.alt }] },
     };
   }
   const challenge = q === '1' || !!share.quiz;
@@ -48,7 +48,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
     description,
     robots: { index: false },
     openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/h/${id}${q === '1' ? '?q=1' : ''}`, siteName: brand.name, locale: ogLocale(locale), images: [image] },
-    twitter: { card: 'summary_large_image', title, description, images: [image.url] },
+    twitter: { card: 'summary_large_image', title, description, images: [{ url: image.url, alt: title }] },
   };
 }
 

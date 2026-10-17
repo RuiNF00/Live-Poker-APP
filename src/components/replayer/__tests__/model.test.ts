@@ -62,7 +62,13 @@ test('run it twice: both boards at the end, each winner tagged with their board'
   assert.deepEqual(end.board2, ['Ks', '4h', '8d', 'Qc', '5s']);
   assert.equal(end.seats[0].run, 1);
   assert.equal(end.seats[2].run, 2);
-  assert.match(end.narration, /^Board 1: Hero .*1001.* · Board 2: .*1001/);
+  assert.equal(end.narration, 'Mesa 1: Hero ganha 1001 (Par de Ases) · Mesa 2: BB ganha 1001 (Trio de Reis)');
+  assert.equal(end.seats[2].handName2, 'Trio de Reis');
+  // A screen reader hears both boards and each player's hand on each one.
+  const said = spokenTable(end);
+  assert.match(said, /Mesa 1: 2 de paus, 7 de ouros, 9 de espadas, Valete de copas, 3 de paus/);
+  assert.match(said, /Mesa 2: Rei de espadas, 4 de copas, 8 de ouros, Dama de paus, 5 de espadas/);
+  assert.match(said, /Mesa 1 Par de Ases, Mesa 2 Par de Ases/);
   // Before the end only the first board shows.
   assert.equal(viewAt(hand, r, r.steps.length - 1, opts).board2, null);
 });
@@ -156,4 +162,19 @@ test('screen reader: the table as one sentence, and grid cells by name', () => {
   assert.equal(handClassName('AKs'), 'Ás e Rei, mesmo naipe');
   assert.equal(handClassName('T9o'), 'Dez e Nove, naipes diferentes');
   assert.equal(handClassName('77'), 'Par, Sete');
+});
+
+test('screen reader: actions and streets read as sentences, never "aposta"', () => {
+  const hand = sampleHand('sample');
+  const r = replay(hand);
+  const items = timeline(hand, r, true);
+  const flop = items.find((it) => it.label === 'FLOP')!;
+  assert.match(flop.spoken, /^Flop: \S+ de \w+, \S+ de \w+, \S+ de \w+$/);
+  const raise = items.find((it) => it.kind === 'action' && /faz raise para/.test(it.spoken));
+  assert.ok(raise, 'a raise reads "… faz raise para …"');
+  assert.match(raise!.spoken, / no (UTG|UTG\+1|UTG\+2|LJ|HJ|CO|BTN|SB|BB) faz raise para |^(UTG|UTG\+1|UTG\+2|LJ|HJ|CO|BTN|SB|BB) faz raise para /);
+  for (const it of items) assert.doesNotMatch(it.spoken, /apost/i);
+  const k = r.steps.findIndex((s) => s.kind === 'action');
+  const v = viewAt(hand, r, k, opts);
+  assert.match(spokenTable(v), / faz | paga /);
 });

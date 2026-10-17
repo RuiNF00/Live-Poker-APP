@@ -14,7 +14,7 @@ import type { CardStat, CardStyle, Milestone } from '@/share/session-card';
 import type { Session } from '@/store/types';
 import { C, F, R, ff } from '@/theme';
 
-import { linkHost, STORY_H, STORY_W } from './StoryCard';
+import { linkHost, POST_H, STORY_H, STORY_W } from './StoryCard';
 
 /** The sticker is captured on its own, at this size in points. */
 export const STICKER_W = 320;
@@ -66,6 +66,8 @@ export interface SessionCardProps {
   hideVenue?: boolean;
   /** Sweatbook wordmark and "Feito com Sweatbook". Free cards always carry it. */
   brand?: boolean;
+  /** 'post': 4:5 for X and other apps, without the room Instagram's bars need. */
+  format?: 'story' | 'post';
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
 
@@ -73,7 +75,7 @@ export function SessionCard(props: SessionCardProps) {
   return props.look === 'sticker' ? <SessionSticker {...props} /> : <FullCard {...props} />;
 }
 
-function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, brand = true, ref }: SessionCardProps) {
+function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, brand = true, format = 'story', ref }: SessionCardProps) {
   const accent = look === 'brasa';
   const fg = accent ? INK : C.text;
   const dim = accent ? 'rgba(26,10,4,0.62)' : C.textDim;
@@ -81,33 +83,39 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, br
   const title = s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash');
   const showMilestone = !!milestone;
   const [lead, ...rest] = stats;
+  const post = format === 'post';
+  const H = post ? POST_H : STORY_H;
+  // Story: clear of Instagram's profile and reply bars. Post: nothing on top, so it sits tighter.
+  const at = post
+    ? { head: 26, title: 62, milestone: 146, numbers: showMilestone ? 196 : 150, mark: 22 }
+    : { head: 70, title: 118, milestone: 206, numbers: 268, mark: 74 };
 
   return (
-    <View ref={ref} collapsable={false} style={{ width: STORY_W, height: STORY_H, overflow: 'hidden', backgroundColor: accent ? C.accent : C.bgDeep }}>
+    <View ref={ref} collapsable={false} style={{ width: STORY_W, height: H, overflow: 'hidden', backgroundColor: accent ? C.accent : C.bgDeep }}>
       {accent ? (
         <LinearGradient colors={['#FF7A4F', C.accent, '#E9542A']} locations={[0, 0.5, 1]} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
       ) : (
         <>
           <LinearGradient colors={[C.bgDeep, C.bg, C.bg, C.bgDeep]} locations={[0, 0.3, 0.75, 1]} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
-          <Svg width={STORY_W} height={STORY_H} style={{ position: 'absolute', left: 0, top: 0 }}>
+          <Svg width={STORY_W} height={H} style={{ position: 'absolute', left: 0, top: 0 }}>
             <Defs>
               <RadialGradient id="ember" cx="50%" cy="42%" rx="75%" ry="40%">
                 <Stop offset="0" stopColor={C.accent} stopOpacity="0.16" />
                 <Stop offset="1" stopColor={C.accent} stopOpacity="0" />
               </RadialGradient>
             </Defs>
-            <Rect x="0" y="0" width={STORY_W} height={STORY_H} fill="url(#ember)" />
+            <Rect x="0" y="0" width={STORY_W} height={H} fill="url(#ember)" />
           </Svg>
         </>
       )}
 
       {/* Below Instagram's profile bar */}
-      <View style={{ position: 'absolute', top: 70, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ position: 'absolute', top: at.head, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {brand ? <Logo size={14} color={accent ? INK : C.accent} cut={accent ? C.accent : C.bg} /> : <View />}
         <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>{shortDate(s.startedAt).toUpperCase()}</Text>
       </View>
 
-      <View style={{ position: 'absolute', top: 118, left: 26, right: 26, gap: 6 }}>
+      <View style={{ position: 'absolute', top: at.title, left: 26, right: 26, gap: 6 }}>
         <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>
           {((!hideVenue && s.venue) || (s.kind === 'mtt' ? t('Torneio') : 'Cash')).toUpperCase()}
         </Text>
@@ -117,7 +125,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, br
       </View>
 
       {showMilestone ? (
-        <View style={{ position: 'absolute', top: 206, left: 26, right: 26, flexDirection: 'row' }}>
+        <View style={{ position: 'absolute', top: at.milestone, left: 26, right: 26, flexDirection: 'row' }}>
           <View
             style={{
               flexDirection: 'row',
@@ -140,7 +148,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, br
       ) : null}
 
       {/* Three big numbers, the first one hero-sized. */}
-      <View style={{ position: 'absolute', top: 268, left: 26, right: 26, gap: 20 }}>
+      <View style={{ position: 'absolute', top: at.numbers, left: 26, right: 26, gap: 20 }}>
         {lead ? (
           <View style={{ gap: 2 }}>
             <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>{lead.label.toUpperCase()}</Text>
@@ -163,7 +171,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, br
       </View>
 
       {/* Above Instagram's reply bar */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 74 }}>{brand ? <Watermark color={accent ? INK : C.accent} dim={dim} /> : null}</View>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: at.mark }}>{brand ? <Watermark color={accent ? INK : C.accent} dim={dim} /> : null}</View>
     </View>
   );
 }

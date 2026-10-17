@@ -22,6 +22,8 @@ import { STREET_LABEL, viewAt } from './replayer/model';
 
 export const STORY_W = 360;
 export const STORY_H = 640;
+/** A feed post (X, or another app) at 4:5, so X shows it whole in the timeline: 1080×1350 exported. */
+export const POST_H = 450;
 
 /** Where the voice chip sits, in story points. The waveform slot inside it is
  * left empty on the captured frame and drawn by the server while the voice plays. */
@@ -139,7 +141,11 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
           .join('  ')
       : null;
   const heroNet = result?.resolved ? result.net[hand.hero] : 0;
-  const heroHand = result?.handNames[hand.hero] ?? null;
+  // Run it twice: hero's hand on each board.
+  const heroSeat = view.seats.find((x) => x.hero);
+  const heroHand = heroSeat?.handName && heroSeat.handName2
+    ? `${t('Mesa')} 1 ${heroSeat.handName} · ${t('Mesa')} 2 ${heroSeat.handName2}`
+    : (result?.handNames[hand.hero] ?? null);
   // A smaller table leaves room for Instagram's Poll sticker above the reply bar.
   const pollRoom = isQ && !!poll;
   const tableW = pollRoom ? (text ? 200 : 256) : text ? 250 : 320;
@@ -376,7 +382,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
             }}>
             <View style={{ gap: 1 }}>
               <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.muted }}>{t('RESULTADO DO HERO')}</Text>
-              <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
+              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
                 {heroHand ?? (heroNet > 0 ? t('Hero leva o pote') : t('Pote {pot}', { pot: moment.pot }))}
               </Text>
             </View>

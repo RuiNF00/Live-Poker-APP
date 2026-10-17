@@ -15,9 +15,10 @@ import { SmallSample } from '@/components/SmallSample';
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { lang, locale, t } from '@/i18n';
+import { lang, locale, t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
-import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
+import { canShareStory, capturePost, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
 import { notice } from '@/lib/notice';
@@ -50,6 +51,7 @@ export default function MonthScreen() {
   const { width } = useWindowDimensions();
   const preview = Math.min(PREVIEW, (width - 2 * S.gutter) / STORY_W);
   const card = useRef<React.ComponentRef<typeof View>>(null);
+  const postCard = useRef<React.ComponentRef<typeof View>>(null);
   const [granted, setGranted] = useState<boolean | null>(() => (notifications() ? null : false));
   useEffect(() => {
     const n = notifications();
@@ -87,7 +89,7 @@ export default function MonthScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=month`;
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=month`, variant);
       const target = await shareStory(await captureStory(card), link);
       track('story_shared', { target: String(target), kind: 'month', money: !hideMoney });
     } catch {
@@ -98,9 +100,9 @@ export default function MonthScreen() {
   };
 
   // Text G: time and volume only; the result stays on the card if the player shows it there.
-  const postText = async (to: 'x' | 'any') => {
+  const postText = async (to: 'x' | 'whatsapp' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`;
+    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=month`, variant);
     const name = monthName(key);
     const line = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
       month: lang === 'en' ? name : name.toLowerCase(),
@@ -111,11 +113,11 @@ export default function MonthScreen() {
     return `${line}\n${link}`;
   };
 
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
-      await sharePost([await captureStory(card)], await postText(to), to);
+      await sharePost([await capturePost(postCard)], await postText(to), to);
       track('story_shared', { target: to, kind: 'month', money: !hideMoney });
     } catch {
       notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -138,7 +140,7 @@ export default function MonthScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Resumo do mês') }} />
-      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView
         style={{ flex: 1, backgroundColor: C.bg }}
         contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}
@@ -202,6 +204,10 @@ export default function MonthScreen() {
                   <MonthCard ref={card} r={r} hideMoney={hideMoney} />
                 </View>
               </View>
+            </View>
+            {/* The 4:5 copy for X and other apps: drawn off screen, only ever captured. */}
+            <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
+              <MonthCard ref={postCard} r={r} hideMoney={hideMoney} format="post" />
             </View>
             <Row gap={S.sm}>
               <IconButton

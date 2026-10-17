@@ -700,9 +700,9 @@ a {
 }
 
 .step-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Wraps instead of cutting: with large text a long name still reads whole. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .comment-here {
@@ -754,6 +754,8 @@ a {
   justify-content: center;
   align-items: center;
   gap: 6px;
+  /* At 200% text (or a very narrow screen) the last buttons move to a second row instead of off the screen. */
+  flex-wrap: wrap;
   margin-top: 4px;
 }
 
@@ -1291,10 +1293,27 @@ a {
   line-height: 1.5;
 }
 
+/* Reduced motion (system setting): cards and chips appear in place, nothing slides or deals in. */
 @media (prefers-reduced-motion: reduce) {
-  .card {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .num,

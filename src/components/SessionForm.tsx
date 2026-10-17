@@ -6,7 +6,7 @@ import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { countryOfVenue } from '@/tax/countries';
@@ -106,7 +106,10 @@ export function SessionForm({
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
-  const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country });
+  // A new past session: switching kind brings the last game of that kind (it was the other kind's).
+  const fresh = past && !initial.endedAt;
+  const switchKind = (k: GameKind) =>
+    setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
   const online = s.format === 'online';
   const submit = () => {
     if (past) {
@@ -158,6 +161,22 @@ export function SessionForm({
           </ChipRow>
         </Section>
       )}
+      {/* Past: the result first, so it sits above the keyboard that opens on it. */}
+      {past && (
+        <Card style={{ gap: S.lg }}>
+          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+            <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
+            <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} autoFocus={fresh} />
+          </Row>
+          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+            <NumField label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} />
+            <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} />
+          </Row>
+          <Row>
+            <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
+          </Row>
+        </Card>
+      )}
       <Card style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
           <Field label={mtt ? t('Torneio') : t('Jogo')} value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} />
@@ -202,19 +221,6 @@ export function SessionForm({
       )}
       {past && (
         <>
-          <Card style={{ gap: S.lg }}>
-            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-              <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
-              <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} />
-            </Row>
-            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-              <NumField label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} />
-              <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} />
-            </Row>
-            <Row>
-              <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
-            </Row>
-          </Card>
           <Section title={t('Quando')}>
             <ChipRow>
               {[0, 1, 2, 3, 4, 5, 6].map((k) => {

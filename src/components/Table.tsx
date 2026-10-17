@@ -252,7 +252,7 @@ export function Table({
                   </View>
                 ) : s.handName ? (
                   <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.handName} numberOfLines={1}>
-                    {s.handName}
+                    {s.handName.split(/[,:]/)[0]}
                   </Text>
                 ) : null}
               </Pressable>

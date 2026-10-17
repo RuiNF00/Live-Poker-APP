@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, settleReminders, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import type { Session } from '../types';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
@@ -151,3 +151,15 @@ test('settlement reminders: the next unanswered event per package at 13:00, one 
   const sent = { 'o1:2': AFTER - 1, 'o1:3': AFTER - 1 };
   assert.deepEqual(settleReminders([{ f: F, o, started: {} }], AFTER, sent), []);
 });
+
+test("a backer's next event: the first of their package not started, skipped or gone by", () => {
+  const o = pkg([{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }]);
+  const [e2, e3] = offerEvents(F, o);
+  const before = venueTime(F, e2.start) - 3600e3;
+  assert.equal(nextEventFor([F], [o], 'b1', () => ({}), before)?.s, e2.start);
+  assert.equal(nextEventFor([F], [o], 'b1', () => ({ '2': 's1' }), before)?.s, e3.start);
+  assert.equal(nextEventFor([F], [{ ...o, skipped: ['2'] }], 'b1', () => ({}), before)?.s, e3.start);
+  assert.equal(nextEventFor([F], [o], 'b1', () => ({}), venueTime(F, e3.start) + 1), null);
+  assert.equal(nextEventFor([F], [o], 'b2', () => ({}), before), null);
+});
+

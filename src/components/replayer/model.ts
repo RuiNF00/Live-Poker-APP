@@ -32,6 +32,8 @@ export interface RpSeat {
   /** Won at the end of the hand, formatted, e.g. "+12,5 bb". */
   won: string | null;
   handName: string | null;
+  /** Run it twice: the hand on the second board ("Par de Ases" on board 1, "Trio de 8" on board 2). */
+  handName2?: string | null;
   /** Run it twice: the one run this player won (1 or 2), when they didn't win both. */
   run: 1 | 2 | null;
   /** Share of the pot if the board ran out now, 0..1, when every live hand is face up. */
@@ -77,6 +79,8 @@ export interface RpView {
   pot: number;
   potLabel: string;
   narration: string;
+  /** The same moment as a whole sentence for a screen reader: "Vilão no BTN faz raise para 2,5 BB". */
+  spoken: string;
   /** Set when hero is the one to act facing a bet. */
   facing: RpFacing | null;
   /** Hero just bet or raised: what a bluff needs, the size, and the price the next player gets. */
@@ -101,6 +105,34 @@ const SUIT_WORD: Record<string, string> = { h: 'copas', d: 'ouros', c: 'paus', s
 export function spokenCard(c: CardCode): string {
   const r = RANK_WORD[c[0]];
   return t('{rank} de {suit}', { rank: r ? t(r) : c[0], suit: t(SUIT_WORD[c[1]] ?? c[1]) });
+}
+
+/** "Vilão no BTN", or just the position when the player has no name. */
+export function spokenWho(name: string, pos: string): string {
+  return name && name !== pos ? t('{name} no {pos}', { name, pos }) : pos;
+}
+
+/** An action as a screen reader says it, never with the store-banned "aposta". */
+export function spokenAction(who: string, kind: BadgeKind, amt: string): string {
+  switch (kind) {
+    case 'fold':
+      return t('{who} faz fold', { who });
+    case 'check':
+      return t('{who} faz check', { who });
+    case 'call':
+      return t('{who} paga {amt}', { who, amt });
+    case 'bet':
+      return t('{who} faz bet de {amt}', { who, amt });
+    case 'raise':
+      return t('{who} faz raise para {amt}', { who, amt });
+    case 'allin':
+      return t('{who} vai all-in com {amt}', { who, amt });
+  }
+}
+
+/** "Flop: Ás de copas, Rei de espadas, 7 de ouros". */
+export function spokenStreet(street: Street, cards: CardCode[]): string {
+  return `${STREET_LABEL[street]}: ${cards.map(spokenCard).join(', ')}`;
 }
 
 function badgeLabel(kind: BadgeKind, amt: string): string {
@@ -153,18 +185,21 @@ export function cachedRangeEquity(hero: CardCode[], board: CardCode[], classes: 
  */
 export function spokenTable(v: RpView): string {
   const parts: string[] = [];
-  if (v.narration) parts.push(v.narration);
+  if (v.spoken || v.narration) parts.push(v.spoken || v.narration);
   parts.push(`${t('Pote')} ${v.potLabel}`);
-  if (v.board.length) parts.push(`Board: ${v.board.map(spokenCard).join(', ')}`);
+  if (v.board2) [v.board, v.board2].forEach((b, j) => parts.push(`${t('Mesa')} ${j + 1}: ${b.map(spokenCard).join(', ')}`));
+  else if (v.board.length) parts.push(`${t('Mesa')}: ${v.board.map(spokenCard).join(', ')}`);
   for (const s of v.seats) {
     if (s.folded) continue;
-    const bits = [s.hero ? `${s.name} (${t('tu')})` : s.name, s.pos, s.stack];
-    const did = s.badge?.label ?? s.betLabel;
+    const who = spokenWho(s.name, s.pos);
+    const bits = [s.hero ? `${who} (${t('tu')})` : who, s.stack];
+    const did = s.badge?.label.toLowerCase() ?? s.betLabel;
     if (did) bits.push(did);
     if (s.allIn) bits.push('all-in');
     if (s.cards) bits.push(s.cards.map(spokenCard).join(' e '));
     else if (s.cards === null) bits.push(t('cartas tapadas'));
-    if (s.handName) bits.push(s.handName);
+    if (s.handName && s.handName2) bits.push(`${t('Mesa')} 1 ${s.handName}`, `${t('Mesa')} 2 ${s.handName2}`);
+    else if (s.handName) bits.push(s.handName);
     if (s.equity != null) bits.push(`equity ${pct(s.equity)}`);
     if (s.won) bits.push(`${t('ganha')} ${s.won}`);
     parts.push(bits.filter(Boolean).join(', '));
@@ -271,20 +306,27 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   else if (step.kind === 'board') narration = STREET_LABEL[step.street];
   else if (isShowdown) narration = 'Showdown';
   else if (st.last) narration = `${displayName(hand, st.last.p, pos)}: ${badgeLabel(st.last.allIn ? 'allin' : st.last.kind, fmt(st.last.kind === 'call' ? st.last.added : st.last.to)).toLowerCase()}`;
+  let spoken = narration;
+  if (step.kind === 'board') spoken = spokenStreet(step.street, hand.board.slice(st.boardCount - (step.street === 'flop' ? 3 : 1), st.boardCount));
+  else if (step.kind === 'action' && st.last)
+    spoken = spokenAction(spokenWho(displayName(hand, st.last.p, pos), pos[st.last.p]), st.last.allIn ? 'allin' : st.last.kind, fmt(st.last.kind === 'call' ? st.last.added : st.last.to));
   // Run it twice: each board pays half of every pot.
   const board2 = result && r.boards.length === 2 ? r.boards[1] : null;
   if (result && board2) {
     const runs = runPayouts(result, hand.players.length);
-    for (const s of seats) if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
+    for (const s of seats) {
+      if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
+      if (s.cards && s.handName) s.handName2 = evaluate([...s.cards, ...board2]).name;
+    }
     narration = runs
       .map((paid, j) => {
         const names = seats
           .filter((s) => paid[s.i] > 0)
           .map((s) => {
-            const hn = s.cards ? (j === 0 ? s.handName : evaluate([...s.cards, ...board2]).name) : null;
+            const hn = j === 0 ? s.handName : s.handName2;
             return `${s.name} ${t('ganha')} ${fmt(paid[s.i])}${hn ? ` (${hn})` : ''}`;
           });
-        return `Board ${j + 1}: ${names.join(', ')}`;
+        return `${t('Mesa')} ${j + 1}: ${names.join(', ')}`;
       })
       .join(' · ');
   } else if (result) {
@@ -371,6 +413,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     pot,
     potLabel: fmt(result ? pot : st.pot),
     narration,
+    spoken: result ? narration : spoken,
     facing,
     heroBet,
     decision,
@@ -407,16 +450,19 @@ export interface TimelineItem {
   label: string;
   /** Short action code, e.g. "R 2,2bb". */
   detail?: string;
+  /** What a screen reader says: "Vilão no BTN faz raise para 2,2 BB", "Flop: Ás de copas, …". */
+  spoken: string;
   color: 'hero' | 'aggr' | 'passive' | 'fold' | 'street';
 }
 
 /** One entry per step after the blinds: streets as markers, actions as dots. */
 export function timeline(hand: Hand, r: Replay, inBB: boolean): TimelineItem[] {
   const pos = positions(hand.players.length, hand.button);
-  const items: TimelineItem[] = [{ k: 0, kind: 'street', label: STREET_LABEL.preflop.toUpperCase(), color: 'street' }];
+  const items: TimelineItem[] = [{ k: 0, kind: 'street', label: STREET_LABEL.preflop.toUpperCase(), spoken: STREET_LABEL.preflop, color: 'street' }];
   r.steps.forEach((s, k) => {
-    if (s.kind === 'board') items.push({ k, kind: 'street', label: STREET_LABEL[s.street].toUpperCase(), color: 'street' });
-    else if (s.kind === 'showdown') items.push({ k, kind: 'end', label: 'SHOWDOWN', color: 'street' });
+    if (s.kind === 'board')
+      items.push({ k, kind: 'street', label: STREET_LABEL[s.street].toUpperCase(), spoken: spokenStreet(s.street, hand.board.slice(s.state.boardCount - (s.street === 'flop' ? 3 : 1), s.state.boardCount)), color: 'street' });
+    else if (s.kind === 'showdown') items.push({ k, kind: 'end', label: 'SHOWDOWN', spoken: 'Showdown', color: 'street' });
     else if (s.kind === 'action' && s.state.last) {
       const a = s.state.last;
       // A name that doesn't fit the timeline slot shows the position instead of being cut mid-word.
@@ -429,6 +475,7 @@ export function timeline(hand: Hand, r: Replay, inBB: boolean): TimelineItem[] {
         kind: 'action',
         label: who,
         detail: code,
+        spoken: spokenAction(spokenWho(displayName(hand, a.p, pos), pos[a.p]), a.allIn ? 'allin' : a.kind, amount(a.kind === 'call' ? a.added : a.to, hand, inBB)),
         color: a.kind === 'fold' ? 'fold' : a.p === hand.hero ? 'hero' : a.kind === 'bet' || a.kind === 'raise' || a.allIn ? 'aggr' : 'passive',
       });
     }

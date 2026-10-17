@@ -41,6 +41,14 @@ export interface ShareStore {
   removeComment(commentId: string, editToken: string, block: boolean): Promise<boolean>;
   /** Visible comments per hand, for the app's list of shared hands. */
   commentCounts(ids: string[]): Promise<Record<string, number>>;
+  /** The owner turns "Novo comentário" notices on for this hand (an Expo push token) or off (null). */
+  setCommentPush(id: string, editToken: string, pushToken: string | null, lang: string, tz: string): Promise<boolean>;
+  /** The owner opened the hand: the next comment may notify again. */
+  seenCommentPush(id: string, editToken: string): Promise<boolean>;
+  /** A comment arrived: the Expo messages that may go out now (none in quiet hours or until the last one is opened). */
+  queueCommentPush(id: string, street: string | null): Promise<PushMessage[]>;
+  /** Expo says the token is dead. */
+  dropCommentPush(id: string): Promise<void>;
   /** Taken down for review after 5 distinct reporters; 'hidden' when this report did it. */
   reportHand(id: string, reporterId: string, reason: string | null): Promise<ReportResult>;
   /** At most 5 voters per IP hash per hand. */
@@ -52,6 +60,12 @@ export interface ShareStore {
 }
 
 export type ReportResult = 'missing' | 'ok' | 'hidden';
+
+/** One message for Expo's push API, built by the database (comment_push_message). */
+export interface PushMessage {
+  handId: string;
+  message: { to: string; title: string; body: string; data?: { url?: string } } & Record<string, unknown>;
+}
 
 export const APP_EVENTS = [
   'app_open',
@@ -207,6 +221,30 @@ class SupabaseStore implements ShareStore {
     const { data, error } = await this.db.rpc('hand_comment_counts', { p_ids: ids });
     if (error) throw error;
     return Object.fromEntries(((data ?? []) as { hand_id: string; comments: number }[]).map((r) => [r.hand_id, r.comments]));
+  }
+
+  async setCommentPush(id: string, editToken: string, pushToken: string | null, lang: string, tz: string) {
+    const { data, error } = await this.db.rpc('set_comment_push', { p_hand_id: id, p_edit_token: editToken, p_push_token: pushToken, p_lang: lang, p_tz: tz });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async seenCommentPush(id: string, editToken: string) {
+    const { data, error } = await this.db.rpc('seen_comment_push', { p_hand_id: id, p_edit_token: editToken });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async queueCommentPush(id: string, street: string | null) {
+    const q = await this.db.rpc('queue_comment_push', { p_hand_id: id, p_street: street });
+    if (q.error) throw q.error;
+    const { data, error } = await this.db.rpc('take_comment_pushes', { p_hand_id: id });
+    if (error) throw error;
+    return ((data ?? []) as { hand_id: string; message: PushMessage['message'] }[]).map((r) => ({ handId: r.hand_id, message: r.message }));
+  }
+
+  async dropCommentPush(id: string) {
+    await this.db.rpc('drop_comment_push', { p_hand_id: id });
   }
 
   async reportHand(id: string, reporterId: string, reason: string | null) {
@@ -374,6 +412,21 @@ class LocalStore implements ShareStore {
     }
     return out;
   }
+
+  // Local dev sends no pushes: the owner check answers as the real one would, nothing is kept.
+  async setCommentPush(id: string, editToken: string) {
+    return this.ownsShare(id, editToken);
+  }
+
+  async seenCommentPush(id: string, editToken: string) {
+    return this.ownsShare(id, editToken);
+  }
+
+  async queueCommentPush(): Promise<PushMessage[]> {
+    return [];
+  }
+
+  async dropCommentPush() {}
 
   async reportComment(commentId: string, reporterId: string) {
     return this.mutate((d): ReportResult => {

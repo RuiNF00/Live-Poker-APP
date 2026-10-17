@@ -9,10 +9,14 @@ export type AmountMode = 'chips' | 'bb';
  */
 const NUMBER_TAG: Record<Locale, string> = { pt: 'pt-PT', 'pt-BR': 'pt-BR', en: 'en-US', es: 'es-ES' };
 
+const hasCents = (a: number) => Math.abs(a - Math.round(a)) > 1e-9;
+
 export function formatChips(n: number, locale: Locale = 'pt'): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10_000) return sign + Math.round(a).toLocaleString(NUMBER_TAG[locale] ?? 'en-US').replace(/\s/g, ' ');
+  // Cent games (0.25/0.50): a chop of 1.25 pays 0.63 and 0.62, not "1" and "1".
+  const tag = NUMBER_TAG[locale] ?? 'en-US';
+  if (a < 10_000) return sign + (hasCents(a) ? a.toLocaleString(tag, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(a).toLocaleString(tag)).replace(/\s/g, ' ');
   if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0) + 'k';
   return sign + fixed(a / 1_000_000, 2) + 'M';
 }
@@ -58,6 +62,7 @@ const STREET_LABEL: Record<Locale, Record<Street, string>> = {
 
 const START: Record<Locale, string> = { pt: 'Início da mão', 'pt-BR': 'Início da mão', en: 'Hand starts', es: 'Inicio de la mano' };
 const WINS: Record<Locale, string> = { pt: 'ganha', 'pt-BR': 'ganha', en: 'wins', es: 'gana' };
+const BOARD: Record<Locale, string> = { pt: 'Mesa', 'pt-BR': 'Mesa', en: 'Board', es: 'Mesa' };
 
 export function streetLabel(street: Street, locale: Locale = 'pt'): string {
   return (STREET_LABEL[locale] ?? STREET_LABEL.en)[street];
@@ -95,7 +100,7 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
       })
       .join(' · ');
   // Run it twice: what each board paid.
-  if (step.runs) return step.runs.map((r, k) => `Board ${k + 1}: ${paid(r.winners)}`).join(' · ');
+  if (step.runs) return step.runs.map((r, k) => `${BOARD[locale] ?? BOARD.en} ${k + 1}: ${paid(r.winners)}`).join(' · ');
   return paid(step.winners ?? []);
 }
 
