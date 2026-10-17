@@ -6,7 +6,7 @@ import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
 import { profit } from '../session-math';
 import type { Session } from '../types';
-import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -217,4 +217,14 @@ test('a group is "falta acertar" for me only when a transfer involves me', () =>
   assert.deepEqual(swapsToSettle([], [g]), [{ id: 'g1', group: true, place: 'Main Event', name: 'Main Event', pay: false, closedAt: 900 }]);
   assert.equal(swapsToSettle([], [{ ...g, seat: 1 }])[0].pay, true);
   assert.deepEqual(swapsToSettle([], [{ ...g, entries: [r(0, 0), r(1, 10000)] }]), []);
+});
+
+test('a swap is settled only at 0,00: 0,40 and 0,01 are still owed', () => {
+  const owes40 = swapLedger(swap({ entries: [e('a', 'result', 8)] }));
+  assert.equal(Math.abs(owes40.balance), 0.4);
+  assert.equal(settled(owes40), false);
+  const owes1 = swapLedger(swap({ entries: [e('a', 'result', 0.2)] }));
+  assert.equal(Math.abs(owes1.balance), 0.01);
+  assert.equal(settled(owes1), false);
+  assert.equal(settled(swapLedger(swap({ entries: [e('a', 'result', 8), e('a', 'payment', 0.4)] }))), true);
 });

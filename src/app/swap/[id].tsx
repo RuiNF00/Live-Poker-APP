@@ -17,6 +17,7 @@ import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
+import { HALF_CENT } from '@/store/swap-groups';
 import { useStore } from '@/store/store';
 import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
@@ -237,7 +238,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
         {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
             <Button lines={2} title={t('Cobrei')} icon="trophy-outline" style={PAIR} onPress={() => setSheet('result')} />
-            <Button lines={2} title={!locked && l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('payment')} />
+            <Button lines={2} title={!locked && l.balance < -HALF_CENT ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('payment')} />
           </Row>
         ) : null}
 

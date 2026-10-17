@@ -11,6 +11,7 @@ import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, 
 import { decimalComma, t } from '@/i18n';
 import { maybeAskForReview } from '@/lib/review';
 import { money, shortDate, timeOf } from '@/poker/format';
+import { HALF_CENT } from '@/store/swap-groups';
 import { useStore } from '@/store/store';
 import { CURRENCIES } from '@/store/currencies';
 import { other, owedOn, settled, swapNames, type Swap, type SwapEntry, type SwapLedger, type SwapSide, type SwapTerms } from '@/store/swaps';
@@ -108,7 +109,7 @@ export function BalanceHero({ l, name, currency, gone }: { l: SwapLedger; name: 
     : l.balance > 0
       ? t('{name} deve-te', { name })
       : t('Deves a {name}', { name });
-  const effect = !gone && Math.abs(l.effect) >= 0.5 ? (l.effect > 0 ? t('O swap soma {amount} ao teu resultado', { amount: money(l.effect, currency) }) : t('O swap tira {amount} ao teu resultado', { amount: money(-l.effect, currency) })) : '';
+  const effect = !gone && Math.abs(l.effect) >= HALF_CENT ? (l.effect > 0 ? t('O swap soma {amount} ao teu resultado', { amount: money(l.effect, currency) }) : t('O swap tira {amount} ao teu resultado', { amount: money(-l.effect, currency) })) : '';
   return (
     <Card tone="raised" style={{ gap: S.xs, paddingVertical: S.xl }}>
       <T v="label">{verdict}</T>
@@ -117,12 +118,12 @@ export function BalanceHero({ l, name, currency, gone }: { l: SwapLedger; name: 
           {money(Math.abs(l.balance), currency)}
         </T>
       )}
-      {l.iOwe >= 0.5 && l.theyOwe >= 0.5 ? (
+      {l.iOwe >= HALF_CENT && l.theyOwe >= HALF_CENT ? (
         <T v="small">{t('Deves {mine} dos teus prémios · {name} deve {theirs} dos seus', { mine: money(l.iOwe, currency), theirs: money(l.theyOwe, currency), name })}</T>
       ) : null}
-      {l.iPaid >= 0.5 || l.theyPaid >= 0.5 ? (
+      {l.iPaid >= HALF_CENT || l.theyPaid >= HALF_CENT ? (
         <T v="small">
-          {[l.iPaid >= 0.5 ? t('pagaste {amount}', { amount: money(l.iPaid, currency) }) : '', l.theyPaid >= 0.5 ? t('recebeste {amount}', { amount: money(l.theyPaid, currency) }) : ''].filter(Boolean).join(' · ')}
+          {[l.iPaid >= HALF_CENT ? t('pagaste {amount}', { amount: money(l.iPaid, currency) }) : '', l.theyPaid >= HALF_CENT ? t('recebeste {amount}', { amount: money(l.theyPaid, currency) }) : ''].filter(Boolean).join(' · ')}
         </T>
       ) : null}
       {effect ? <T v="small" color={l.effect > 0 ? C.good : C.textDim}>{effect}</T> : null}
