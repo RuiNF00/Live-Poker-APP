@@ -71,5 +71,5 @@ export async function download(c: CloudState): Promise<BackupData> {
 export async function removeRemote(c: CloudState): Promise<void> {
   const res = await fetch(`${API}/api/backup/${c.id}`, { method: 'DELETE', headers: { 'x-backup-key': deriveKeys(c.secret).auth } }).catch(() => null);
   // 404: already gone. Anything else means the copy may still be on the server.
-  if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : 'network');
+  if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : 'network');
 }
