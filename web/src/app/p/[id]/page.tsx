@@ -47,7 +47,8 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   const c = packCopy(locale);
   const found = await loadPack(id);
   const title = found ? c.metaTitle(found.pack.title, found.hands.length) : c.gone;
-  const image = { url: `/p/${id}/og?lang=${locale}`, width: 1200, height: 630, alt: title };
+  // Gone: the site's own card, so the link still reads as Sweatbook.
+  const image = found ? { url: `/p/${id}/og?lang=${locale}`, width: 1200, height: 630, alt: title } : { url: '/opengraph-image', width: 1200, height: 630, alt: brand.name };
   return {
     title: { absolute: `${title} · ${brand.name}` },
     description: c.metaDescription,
@@ -60,9 +61,9 @@ export async function generateMetadata({ params, searchParams }: Params & Search
       url: `${brand.siteUrl}/p/${id}`,
       siteName: brand.name,
       locale: ogLocale(locale),
-      ...(found ? { images: [image] } : {}),
+      images: [image],
     },
-    twitter: { card: found ? 'summary_large_image' : 'summary', title, description: c.metaDescription, ...(found ? { images: [image.url] } : {}) },
+    twitter: { card: 'summary_large_image', title, description: c.metaDescription, images: [image.url] },
   };
 }
 

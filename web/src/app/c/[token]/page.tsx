@@ -6,18 +6,29 @@ import { CoachView, type CoachHand } from '@/components/coach/CoachView';
 import { coachCopy } from '@/components/coach/copy';
 import { coachStore, TOKEN_RE } from '@/lib/coach';
 import { resolveHand } from '@/lib/hand';
-import { pickLocale } from '@/lib/i18n';
+import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import '@/components/coach/coach.css';
 import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ token: string }> };
 
 // Deliberately bland: a preview in a chat must not tell anyone whose hands these are.
-export const metadata: Metadata = {
-  title: { absolute: 'Mãos para rever · Sweatbook' },
-  robots: { index: false, follow: false, nocache: true },
-  referrer: 'no-referrer',
-};
+// In the sharer's language (?lang=), like every other shared link.
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
+  const { lang } = await searchParams;
+  const locale = previewLocale(lang, (await headers()).get('accept-language'));
+  const c = coachCopy(locale);
+  const title = c.kicker('');
+  const description = `${c.privateBadge}. ${c.cta}`;
+  return {
+    title: { absolute: `${title} · Sweatbook` },
+    description,
+    robots: { index: false, follow: false, nocache: true },
+    referrer: 'no-referrer',
+    openGraph: { title, description, type: 'website', siteName: 'Sweatbook', locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] },
+    twitter: { card: 'summary_large_image', title, description, images: ['/opengraph-image'] },
+  };
+}
 
 /** Private coaching link: https://sweatbook.poker/c/<token>. Made from the app; the player can revoke it. */
 export default async function CoachLink({ params }: Params) {

@@ -3,6 +3,7 @@ import type { Locale } from '@/lib/i18n';
 // Text of a shared hand's link preview (title, description and image), in the sharer's language.
 const pt = {
   notFound: 'Mão não encontrada',
+  goneBody: 'O link pode ter sido apagado por quem o partilhou.',
   challengeTitle: (title: string) => `Desafio: o que fazes aqui? · ${title}`,
   challengeDescription: 'Vota no que fazias antes de veres a jogada.',
   description: 'Vê a mão e diz como jogavas.',
@@ -23,6 +24,7 @@ const pt = {
 
 const ptBR: typeof pt = {
   notFound: 'Mão não encontrada',
+  goneBody: 'Quem compartilhou pode ter apagado o link.',
   challengeTitle: (title) => `Desafio: o que você faz aqui? · ${title}`,
   challengeDescription: 'Vote no que você faria antes de ver a jogada.',
   description: 'Veja a mão e diga como você jogaria.',
@@ -43,6 +45,7 @@ const ptBR: typeof pt = {
 
 const es: typeof pt = {
   notFound: 'Mano no encontrada',
+  goneBody: 'Quien la compartió puede haber borrado el link.',
   challengeTitle: (title) => `Reto: ¿qué haces aquí? · ${title}`,
   challengeDescription: 'Vota qué harías antes de ver la jugada.',
   description: 'Mira la mano y di cómo la jugarías.',
@@ -63,6 +66,7 @@ const es: typeof pt = {
 
 const en: typeof pt = {
   notFound: 'Hand not found',
+  goneBody: 'Whoever shared it may have deleted the link.',
   challengeTitle: (title) => `Challenge: what do you do here? · ${title}`,
   challengeDescription: 'Vote on your play before you see what happened.',
   description: "Watch the hand and say how you'd play it.",
