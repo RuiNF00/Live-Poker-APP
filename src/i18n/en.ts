@@ -682,6 +682,13 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Toca para o atualizar entre mãos. As bb e o gráfico acompanham sozinhos.': 'Tap to update it between hands. The bb count and the chart follow on their own.',
+  'Tudo ao alcance do polegar': 'All within thumb reach',
+  'Pausa, rebuy e uma nota da sessão sem saíres deste ecrã.': 'Break, rebuy and a session note without leaving this screen.',
+  'Regista uma mão': 'Log a hand',
+  'Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.': "It comes with the tournament, blinds and your stack. If you're called away, it's saved halfway.",
+  'Mais ferramentas': 'More tools',
+  'viagens': 'trips',
   'Mãos em que pôs dinheiro no pote antes do flop sem ser obrigado (as blinds não contam).': "Hands where they put money in before the flop without being forced to (blinds don't count).",
   'Mãos em que abriu ou subiu antes do flop. Perto do VPIP é agressivo; muito abaixo, paga muito.': 'Hands where they opened or raised before the flop. Close to VPIP is aggressive; far below means they call a lot.',
   'Vezes que voltou a subir antes do flop, entre as vezes em que alguém abriu antes dele.': 'How often they re-raised before the flop when someone had opened before them.',
