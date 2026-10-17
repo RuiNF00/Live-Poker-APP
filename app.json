@@ -185,6 +185,19 @@
             "com.instagram.android"
           ]
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF6A3D"
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "enableAndroid": true,
+          "widgets": []
+        }
       ]
     ],
     "experiments": {

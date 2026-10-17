@@ -5,8 +5,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Platform, Pressable, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -15,7 +15,8 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { StakeFields } from '@/components/StakeFields';
 import { Button, Card, Chip, ChipRow, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
+import { LEVEL_LENGTHS, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { askNotificationPermission } from '@/lib/lock-screen/reminder';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
@@ -24,19 +25,20 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 
 /**
- * Re-renders every `ms` while this tab is on screen. Tabs stay mounted, so an
- * always-on interval kept redrawing the whole session screen every second
- * behind hand entry and the hands list.
+ * Re-renders every `ms` while this tab is on screen and returns the time of
+ * the tick. Tabs stay mounted, so an always-on interval kept redrawing the
+ * whole session screen every second behind hand entry and the hands list.
  */
 function useTick(ms = 1000) {
-  const [, setT] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   useFocusEffect(
     useCallback(() => {
-      setT((x) => x + 1);
-      const id = setInterval(() => setT((x) => x + 1), ms);
+      setNow(Date.now());
+      const id = setInterval(() => setNow(Date.now()), ms);
       return () => clearInterval(id);
     }, [ms]),
   );
+  return now;
 }
 
 function confirm(title: string, body: string, ok: () => void) {
@@ -69,14 +71,13 @@ export default function SessionScreen() {
 
 function Live({ s }: { s: Session }) {
   useKeepAwake();
-  useTick(1000);
+  const now = useTick(1000);
   const { saveSession, hands } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout'>(null);
   const [ending, setEnding] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
-  const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
   // Memoised: this screen re-renders every second (clock) and hands can be thousands.
   const nHands = useMemo(() => hands.filter((h) => h.sessionId === s.id).length, [hands, s.id]);
   const save = (p: Partial<Session>) => saveSession({ ...s, ...p });
@@ -85,10 +86,17 @@ function Live({ s }: { s: Session }) {
 
   const bumpLevel = (dir: 1 | -1) => {
     tap();
-    const i = levels.findIndex(([sb, bb]) => sb === s.sb && bb === s.bb);
-    const j = Math.max(0, Math.min(levels.length - 1, (i < 0 ? 0 : i) + dir));
-    const [sb, bb] = levels[j];
-    save({ sb, bb, ante: s.anteType === 'bb' ? bb : s.anteType === 'all' ? Math.round(bb / 8) : 0, level: (s.level ?? 1) + dir > 0 ? (s.level ?? 1) + dir : 1 });
+    save(levelAfter(s, dir));
+  };
+  const nextAt = nextLevelAt(s, now);
+  const levelDue = !!nextAt && nextAt <= now;
+  // Level length cycles Off → 15 → 20 → 30 → 40 → 60 → Off; the clock restarts on set (see withLevelClock).
+  const cycleLevelLength = () => {
+    tap();
+    const i = LEVEL_LENGTHS.indexOf((s.levelMinutes ?? 0) as (typeof LEVEL_LENGTHS)[number]);
+    const levelMinutes = i + 1 < LEVEL_LENGTHS.length ? LEVEL_LENGTHS[i + 1] : undefined;
+    if (levelMinutes && !s.levelMinutes) void askNotificationPermission();
+    save({ levelMinutes, levelStartedAt: undefined });
   };
   const togglePause = () => {
     tap();
@@ -102,7 +110,7 @@ function Live({ s }: { s: Session }) {
       <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
         <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
         <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
-          {clock(playedMs(s))}
+          {clock(playedMs(s, now))}
         </T>
         <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
         <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
@@ -138,6 +146,14 @@ function Live({ s }: { s: Session }) {
             <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
             <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
           </Row>
+          <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
+            <Row gap={4} style={{ marginTop: 2 }}>
+              <Ionicons name="alarm-outline" size={13} color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted} />
+              <T v="monoS" color={levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted}>
+                {!nextAt ? t('Aviso de nível') : levelDue ? t('{min} min · subir nível', { min: s.levelMinutes! }) : t('{min} min · sobe em {time}', { min: s.levelMinutes!, time: mmss(nextAt - now) })}
+              </T>
+            </Row>
+          </Pressable>
         </Card>
       </Row>
 
@@ -243,7 +259,7 @@ function Live({ s }: { s: Session }) {
         }}
       />
       <T v="tiny" style={{ textAlign: 'center' }}>
-        {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(Date.now() - s.startedAt), profit: money(profit(s), s.currency) })}
+        {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(profit(s), s.currency) })}
       </T>
     </Screen>
   );
@@ -277,6 +293,11 @@ function TableReads({ roster }: { roster: string[] }) {
       </ListGroup>
     </Section>
   );
+}
+
+function mmss(ms: number) {
+  const secs = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
 }
 
 function clock(ms: number) {

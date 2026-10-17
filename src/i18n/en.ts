@@ -602,6 +602,16 @@ const en: Record<string, string> = {
   'Substituir a cópia na nuvem?': 'Replace the cloud backup?',
   'A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.': 'The cloud backup has more hands, sessions or players than this phone. If you deleted them on purpose, replace it. If not, restore with your code first.',
   'Substituir': 'Replace',
+  // Lock screen (Live Activity, Android notification, level reminder)
+  'desde {time}': 'since {time}',
+  'Tempo': 'Time',
+  'Sobe em': 'Up in',
+  'Subida de nível': 'Level up',
+  'Nível {n}: blinds {blinds}. Toca para atualizar a sessão.': 'Level {n}: blinds {blinds}. Tap to update your session.',
+  'Duração do nível': 'Level length',
+  'Aviso de nível': 'Level alert',
+  '{min} min · subir nível': '{min} min · level up',
+  '{min} min · sobe em {time}': '{min} min · up in {time}',
 };
 
 export default en;

@@ -29,6 +29,10 @@ export interface Session {
   ante: number;
   anteType: AnteType;
   level?: number;
+  /** Tournament level length; drives the level-up reminder and the lock-screen countdown. */
+  levelMinutes?: number;
+  /** When the current level started (reset on every level change). */
+  levelStartedAt?: number;
   stage?: StageId;
   tableSize: number;
   stack: number;
