@@ -20,6 +20,7 @@ import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { shareLink } from '@/lib/share-api';
+import { notice } from '@/lib/notice';
 import { carouselCaption, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -102,7 +103,7 @@ export default function FestivalCardScreen() {
 
   const copy = async () => {
     await Clipboard.setStringAsync(await postText('any')).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   return (

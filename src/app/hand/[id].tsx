@@ -28,6 +28,7 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
+import { notice } from '@/lib/notice';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
@@ -157,7 +158,7 @@ ${link}`;
     }
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      Alert.alert(t('Link copiado'));
+      notice(t('Link copiado'));
     } else {
       const res = await Share.share({ message: msg });
       // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
@@ -250,7 +251,7 @@ ${link}`;
     await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));
     track('link_shared', { channel: 'copy', share_id: shareId, ref });
     tap('success');
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   const unshare = () => {

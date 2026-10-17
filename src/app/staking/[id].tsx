@@ -16,6 +16,7 @@ import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { maybeAskForReview } from '@/lib/review';
+import { notice } from '@/lib/notice';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
@@ -117,7 +118,10 @@ function BackerScreen() {
     const ref = await shareRef().catch(() => '');
     const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined);
     const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
-    if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
+    if (Platform.OS === 'web') {
+      await Clipboard.setStringAsync(msg);
+      notice(t('Texto copiado'));
+    }
     else {
       const r = await Share.share({ message: msg });
       if (r.action === Share.dismissedAction) return;

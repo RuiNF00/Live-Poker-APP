@@ -16,6 +16,7 @@ import { noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
+import { notice } from '@/lib/notice';
 import { useStore } from '@/store/store';
 import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
@@ -167,7 +168,7 @@ function OwnSwap({ s }: { s: Swap }) {
     track('link_shared', { channel: 'swap' });
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(url);
-      Alert.alert(t('Link copiado'), url);
+      notice(t('Link copiado'), url);
     } else
       await Share.share({
         message: s.confirmedAt

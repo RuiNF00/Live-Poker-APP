@@ -14,6 +14,7 @@ import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { canMakeVideo, canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, sharePost, shareStory, shareVideo } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
+import { notice } from '@/lib/notice';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
@@ -180,7 +181,7 @@ export default function StoryScreen() {
         target = await shareStory(await captureStory(card), link);
       }
       track('story_shared', { target: String(target), voice: !!voice, share_id: shareId, ref, question: mode === 'question' });
-      if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
+      if (target === 'sheet') notice(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
@@ -229,7 +230,7 @@ export default function StoryScreen() {
     const l = await linkFor('link');
     if (!l) return;
     await Clipboard.setStringAsync(postText(l.link)).catch(() => {});
-    Alert.alert(t('Link copiado'));
+    notice(t('Link copiado'));
   };
 
   return (
