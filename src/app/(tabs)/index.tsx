@@ -174,7 +174,13 @@ export default function HandsScreen() {
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
                     {hands.length > 1 ? <IconButton name={activeFilters(filter) || filter.sort !== 'recent' ? 'options' : 'options-outline'} label={t('Filtrar mãos')} onPress={() => setFiltering(true)} /> : null}
                     <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
-                    <IconButton name="settings-outline" label={t('Definições')} onPress={() => router.push('/settings')} />
+                    {/* New comments also show here, so they aren't lost when another card wins the one-card slot below. */}
+                    <IconButton
+                      name="settings-outline"
+                      label={shared.newTotal ? `${t('Definições')}, ${shared.newTotal === 1 ? t('1 comentário novo') : t('{n} comentários novos', { n: shared.newTotal })}` : t('Definições')}
+                      badge={shared.newTotal > 0}
+                      onPress={() => router.push('/settings')}
+                    />
                   </>
                 }
               />

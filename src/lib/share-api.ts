@@ -101,10 +101,11 @@ function authorId(): Promise<string> {
   return author;
 }
 
-export async function postComment(id: string, c: { name: string; text: string; street?: Street }): Promise<Comment> {
+/** `ownerToken`: the hand's own player replying, so the server doesn't send them a notice about it. */
+export async function postComment(id: string, c: { name: string; text: string; street?: Street }, ownerToken?: string): Promise<Comment> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/comments`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(ownerToken ? { 'x-edit-token': ownerToken } : {}) },
     body: JSON.stringify({ ...c, authorId: await authorId() }),
   });
   if (res.status === 422) throw new Error('offensive');

@@ -39,6 +39,10 @@ update comment_push set tz = :'awake' where hand_id = :'h2';
 select message->>'title' = 'Nuevo comentario en tu mano: preflop' as sent_after_quiet_hours from take_comment_pushes(null);
 select flush_comment_pushes() = 0 as flush_without_pg_net_sends_nothing;
 
+update comment_push set updated_at = now() - interval '181 days' where hand_id = :'h2';
+select purge_comment_push() = 1 as unused_for_180_days_purged;
+select count(*) = 1 as recent_token_stays from comment_push where hand_id = :'h1';
+select set_comment_push(:'h2', :'t2', :'tok', 'es', :'awake');
 select set_comment_push(:'h2', :'t2', null) as owner_turns_it_off;
 select count(*) = 0 as token_deleted from comment_push where hand_id = :'h2';
 select delete_shared_hand(:'h1', :'t1');

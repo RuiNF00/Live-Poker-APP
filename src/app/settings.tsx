@@ -207,7 +207,7 @@ export default function SettingsScreen() {
               iconColor={C.accent}
               title={t('Mãos partilhadas')}
               subtitle={t('As mãos dos teus amigos e os comentários nas tuas')}
-              right={shared.newTotal ? <Badge solid color={C.accent} label={String(shared.newTotal)} /> : undefined}
+              right={shared.newTotal ? <Badge solid color={C.accent} label={shared.newTotal === 1 ? t('1 novo') : t('{n} novos', { n: shared.newTotal })} /> : undefined}
               onPress={() => router.push('/shared-hands')}
             />
             <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />

@@ -430,6 +430,7 @@ ${link}`;
               onRemove={hand.shareToken ? removeOne : undefined}
               pending={pending}
               onUndo={undoRemove}
+              ownerToken={hand.shareToken}
               onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 350)}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
