@@ -77,3 +77,10 @@ test('"Cópia parada" only when the cloud holds a copy: not on the first backup 
   assert.equal(cloudAhead({}, { ...code, lastAt: 1, counts: { hands: 3 } }), true); // restore not loaded yet
   assert.equal(cloudAhead({ hands: 3 }, { ...code, lastAt: 1, counts: { hands: 3 } }), false);
 });
+
+test('an empty cloud copy (backup just turned on with no data) is nothing to protect', () => {
+  const empty: CloudState = { ...code, lastAt: 1, counts: { hands: 0, sessions: 0, players: 0 } };
+  assert.equal(uploadBlock({}, empty), null);
+  assert.equal(cloudAhead({}, empty), false);
+  assert.equal(uploadBlock({ hands: 1 }, empty), null);
+});

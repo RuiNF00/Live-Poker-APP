@@ -277,8 +277,12 @@ export default function NewHand() {
     router.back();
   };
 
-  const reads = useMemo(() => opponentStats(hands, store.players), [hands, store.players]);
-  const seen = useMemo(() => sessionsSeen(hands, store.players), [hands, store.players]);
+  // What we know about each opponent, for the seat sheet only. Worked out the
+  // first time a seat opens, not on every render: over years of hands it is
+  // the slowest thing on this screen, and saving a hand would redo it just
+  // before leaving.
+  const [known, setKnown] = useState<{ reads: ReturnType<typeof opponentStats>; seen: ReturnType<typeof sessionsSeen> } | null>(null);
+  if (seatEdit !== null && !known) setKnown({ reads: opponentStats(hands, store.players), seen: sessionsSeen(hands, store.players) });
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
@@ -700,8 +704,8 @@ export default function NewHand() {
         heroStack={hand.players[hand.hero].stack}
         bb={hand.game.bb}
         known={store.players}
-        stats={reads}
-        seen={seen}
+        stats={known?.reads}
+        seen={known?.seen}
         onClose={() => setSeatEdit(null)}
         reseat={
           seatEdit === null || seatEdit === hand.hero || hand.actions.length
