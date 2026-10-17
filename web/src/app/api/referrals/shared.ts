@@ -18,7 +18,7 @@ export interface ReferralBody {
 }
 
 // Hits per IP per hour. Claims are tight: each fake install needs one, and they're the farming path.
-const HOURLY: Record<string, number> = { code: 60, status: 60, claim: 10, activate: 30 };
+const HOURLY: Record<string, number> = { code: 60, status: 60, claim: 10, activate: 30, erase: 10 };
 
 /** Common checks: rate limit, backend on, installId uuid, optional RevenueCat app user id. */
 export async function readBody(req: Request, bucket: string) {

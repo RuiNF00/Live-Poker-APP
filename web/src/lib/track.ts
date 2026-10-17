@@ -1,6 +1,10 @@
-import { voterId } from './local';
-
 const UTM = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+
+// Random per page load and never stored: views and store clicks of one visit tie
+// together, but the browser is not recognised on a later visit (no consent needed).
+// voterId stays only for counting votes.
+let pageId: string | null = null;
+const visitId = () => (pageId ??= crypto.randomUUID());
 
 /** Web side of the funnel (share_viewed, store_click, landing_view). Never throws, never blocks navigation. */
 export function track(event: 'share_viewed' | 'store_click' | 'landing_view', props: Record<string, string | number | boolean> = {}) {
@@ -17,7 +21,7 @@ export function track(event: 'share_viewed' | 'store_click' | 'landing_view', pr
     const host = document.referrer ? new URL(document.referrer).hostname : '';
     const body = JSON.stringify({
       event,
-      installId: voterId(),
+      installId: visitId(),
       platform: 'web',
       props: { ...utm, ...(host && host !== window.location.hostname ? { from_host: host } : {}), ...props },
     });
