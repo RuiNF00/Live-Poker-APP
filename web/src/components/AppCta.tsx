@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { brand } from '@/config/brand';
 import { t, type Locale } from '@/lib/i18n';
 import { Mark, Wordmark } from './Brand';
+import { track } from '@/lib/track';
 
 type Platform = 'ios' | 'android' | 'other';
 
@@ -38,12 +39,12 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
         {hasStores ? (
           <div className="cta-stores">
             {ios && (platform !== 'android') && (
-              <a className="btn btn-primary" href={ios}>
+              <a className="btn btn-primary" href={ios} onClick={() => track('store_click', { store: 'ios', from: 'share', shareId })}>
                 App Store
               </a>
             )}
             {android && (platform !== 'ios') && (
-              <a className="btn btn-primary" href={android}>
+              <a className="btn btn-primary" href={android} onClick={() => track('store_click', { store: 'android', from: 'share', shareId })}>
                 Google Play
               </a>
             )}
@@ -64,7 +65,11 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
           <span>{brand.tagline[locale]}</span>
         </div>
         {primary ? (
-          <a className="btn btn-primary btn-sm" href={primary}>
+          <a
+            className="btn btn-primary btn-sm"
+            href={primary}
+            onClick={() => track('store_click', { store: primary === ios ? 'ios' : 'android', from: 'share_sticky', shareId })}
+          >
             {d.ctaDownload}
           </a>
         ) : (

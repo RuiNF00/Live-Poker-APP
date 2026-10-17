@@ -35,6 +35,28 @@ export interface ShareStore {
   reportHand(id: string, reporterId: string, reason: string | null): Promise<boolean>;
   vote(id: string, voterId: string, choice: VoteChoice): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
+  logEvent(e: AppEvent): Promise<void>;
+}
+
+export const APP_EVENTS = [
+  'app_open',
+  'hand_saved',
+  'limit_hit',
+  'paywall_shown',
+  'purchase',
+  'share_created',
+  'story_shared',
+  'share_viewed',
+  'store_click',
+  'landing_view',
+] as const;
+export type AppEventName = (typeof APP_EVENTS)[number];
+
+export interface AppEvent {
+  event: AppEventName;
+  installId: string;
+  platform: 'ios' | 'android' | 'web';
+  props: Record<string, string | number | boolean>;
 }
 
 // ---------- Supabase ----------
@@ -159,6 +181,16 @@ class SupabaseStore implements ShareStore {
     for (const r of (data ?? []) as { choice: VoteChoice; votes: number }[]) out[r.choice] = Number(r.votes);
     return out;
   }
+
+  async logEvent(e: AppEvent) {
+    const { error } = await this.db.rpc('log_app_event', {
+      p_event: e.event,
+      p_install_id: e.installId,
+      p_platform: e.platform,
+      p_props: e.props,
+    });
+    if (error) throw error;
+  }
 }
 
 // ---------- Local JSON file (development and demos without Supabase) ----------
@@ -169,6 +201,7 @@ interface LocalData {
   votes: Record<string, Record<string, VoteChoice>>;
   reports?: Record<string, string[]>;
   handReports?: Record<string, string[]>;
+  events?: (AppEvent & { createdAt: string })[];
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -299,6 +332,12 @@ class LocalStore implements ShareStore {
     const out: Partial<Record<VoteChoice, number>> = {};
     for (const c of Object.values((await this.read()).votes[id] ?? {})) out[c] = (out[c] ?? 0) + 1;
     return out;
+  }
+
+  async logEvent(e: AppEvent) {
+    await this.mutate((d) => {
+      d.events = [...(d.events ?? []), { ...e, createdAt: new Date().toISOString() }].slice(-2000);
+    });
   }
 }
 

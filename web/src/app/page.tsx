@@ -7,7 +7,7 @@ import { Mark, Wordmark } from '@/components/Brand';
 import { PlayingCard } from '@/components/PlayingCard';
 import { landingCopy } from '@/components/landing/copy';
 import { Pricing } from '@/components/landing/Pricing';
-import { StoreButtons, type StoreLinks } from '@/components/landing/StoreButtons';
+import { LandingView, StoreButtons, type StoreLinks } from '@/components/landing/StoreButtons';
 import './landing.css';
 
 export const metadata: Metadata = {
@@ -43,6 +43,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
   return (
     <div className="lp">
+      <LandingView />
       <div className="lp-wrap">
         <nav className="lp-nav">
           <Link className="lp-logo" href="/" aria-label={brand.name}>
@@ -64,7 +65,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               {c.heroTitle[0]} <em>{c.heroTitle[1]}</em>
             </h1>
             <p className="lp-lede">{c.heroBody}</p>
-            <StoreButtons c={c} stores={stores} />
+            <StoreButtons c={c} stores={stores} from="hero" />
             <p className="lp-note">
               {c.heroNote}{' '}
               <Link href="/h/demo?q=1">{c.tryDemo} →</Link>
@@ -154,7 +155,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <section id="baixar" className="lp-section lp-final">
           <Mark size={56} />
           <h2>{c.finalTitle}</h2>
-          <StoreButtons c={c} stores={stores} />
+          <StoreButtons c={c} stores={stores} from="final" />
         </section>
 
         <footer className="lp-footer">

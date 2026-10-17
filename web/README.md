@@ -24,6 +24,7 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `GET /api/hands/<id>/comments` | `{ comments: [{ id, name, text, createdAt (ms), stepIndex }] }` |
 | `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
 | `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
+| `POST /api/events` `{ event, installId (uuid), platform: ios\|android\|web, props? }` | `204`. Eventos do funil: `app_open`, `hand_saved`, `limit_hit`, `paywall_shown`, `purchase`, `share_created`, `story_shared` (app) e `share_viewed`, `store_click`, `landing_view` (site). Sem dados pessoais. Contagens diárias no Supabase: `select * from app_event_daily limit 100;` |
 | `POST /api/hands/<id>/report` `{ reporterId (uuid), reason? }` | `{ reported }` (5 denúncias tiram a mão do ar) |
 | `POST /api/hands/<id>/comments/<commentId>/report` `{ reporterId }` | `{ reported }` (3 denúncias escondem o comentário) |
 

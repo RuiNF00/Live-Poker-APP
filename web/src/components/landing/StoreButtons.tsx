@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { LandingCopy } from './copy';
+import { track } from '@/lib/track';
 
 export interface StoreLinks {
   ios: string;
@@ -47,10 +48,15 @@ function PlayLogo() {
 }
 
 /** App Store and Google Play badges; on a phone, its own store comes first. */
-export function StoreButtons({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
+export function StoreButtons({ c, stores, from }: { c: LandingCopy; stores: StoreLinks; from: string }) {
   const platform = usePlatform();
   const ios = (
-    <a key="ios" className={`lp-store${stores.ios ? '' : ' soon'}`} href={stores.ios || '#baixar'}>
+    <a
+      key="ios"
+      className={`lp-store${stores.ios ? '' : ' soon'}`}
+      href={stores.ios || '#baixar'}
+      onClick={() => track('store_click', { store: 'ios', from, live: !!stores.ios })}
+    >
       <AppleLogo />
       <span>
         <small>{stores.ios ? c.getOn : c.soon}</small>
@@ -59,7 +65,12 @@ export function StoreButtons({ c, stores }: { c: LandingCopy; stores: StoreLinks
     </a>
   );
   const android = (
-    <a key="android" className={`lp-store${stores.android ? '' : ' soon'}`} href={stores.android || '#baixar'}>
+    <a
+      key="android"
+      className={`lp-store${stores.android ? '' : ' soon'}`}
+      href={stores.android || '#baixar'}
+      onClick={() => track('store_click', { store: 'android', from, live: !!stores.android })}
+    >
       <PlayLogo />
       <span>
         <small>{stores.android ? c.getOnPlay : c.soonPlay}</small>
@@ -68,4 +79,10 @@ export function StoreButtons({ c, stores }: { c: LandingCopy; stores: StoreLinks
     </a>
   );
   return <div className="lp-stores">{platform === 'android' ? [android, ios] : [ios, android]}</div>;
+}
+
+/** Counts a landing visit once per page load (top of the site → store funnel). */
+export function LandingView() {
+  useEffect(() => track('landing_view'), []);
+  return null;
 }

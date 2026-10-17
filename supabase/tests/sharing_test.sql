@@ -49,3 +49,16 @@ select count(*) = 0 as comments_hidden_after_delete from hand_comments where han
 
 \set ON_ERROR_STOP off
 select create_shared_hand('{"version":2}'::jsonb);
+
+-- Funnel events (still as anon: may log, may not read)
+select log_app_event('app_open', gen_random_uuid(), 'ios', '{"v":"1.0.0"}');
+select log_app_event('store_click', '00000000-0000-0000-0000-000000000001', 'web', '{"store":"ios","utm_source":"share"}');
+\set ON_ERROR_STOP off
+select log_app_event('drop_table', gen_random_uuid(), 'ios', '{}');
+select log_app_event('app_open', gen_random_uuid(), 'windows', '{}');
+select * from app_events;
+select * from app_event_daily;
+\set ON_ERROR_STOP on
+reset role;
+select count(*) = 2 as only_valid_events_stored from app_events;
+select sum(events) = 2 and sum(installs) = 2 as daily_view_counts from app_event_daily;
