@@ -15,7 +15,7 @@ export const SEATS: Record<number, Pt[]> = {
   2: [{ x: 50, y: 87 }, { x: 50, y: 14 }],
   3: [{ x: 50, y: 87 }, { x: 15, y: 25 }, { x: 85, y: 25 }],
   4: [{ x: 50, y: 87 }, { x: 10.5, y: 50 }, { x: 50, y: 14 }, { x: 89.5, y: 50 }],
-  5: [{ x: 50, y: 87 }, { x: 13, y: 64 }, { x: 22, y: 19 }, { x: 78, y: 19 }, { x: 87, y: 64 }],
+  5: [{ x: 50, y: 87 }, { x: 13, y: 67 }, { x: 22, y: 19 }, { x: 78, y: 19 }, { x: 87, y: 67 }],
   6: [{ x: 50, y: 87 }, { x: 12, y: 66 }, { x: 13, y: 30 }, { x: 50, y: 13 }, { x: 87, y: 30 }, { x: 88, y: 66 }],
   7: [{ x: 50, y: 87 }, { x: 12, y: 67 }, { x: 12, y: 34 }, { x: 33, y: 13 }, { x: 67, y: 13 }, { x: 88, y: 34 }, { x: 88, y: 67 }],
   8: [{ x: 50, y: 87 }, { x: 13, y: 72 }, { x: 10.5, y: 47 }, { x: 15, y: 22 }, { x: 50, y: 12 }, { x: 85, y: 22 }, { x: 89.5, y: 47 }, { x: 87, y: 72 }],
@@ -31,10 +31,15 @@ export const BET_SPOTS: Record<number, Pt[]> = {
   5: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 34, y: 33 }, { x: 66, y: 33 }, { x: 67, y: 66 }],
   6: [{ x: 50, y: 71 }, { x: 32, y: 66 }, { x: 29, y: 38 }, { x: 50, y: 29 }, { x: 71, y: 38 }, { x: 68, y: 66 }],
   7: [{ x: 50, y: 71 }, { x: 32, y: 66 }, { x: 32, y: 38 }, { x: 40, y: 29 }, { x: 60, y: 29 }, { x: 68, y: 38 }, { x: 68, y: 66 }],
-  8: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 27, y: 56 }, { x: 30, y: 34 }, { x: 50, y: 29 }, { x: 70, y: 34 }, { x: 73, y: 56 }, { x: 67, y: 66 }],
+  8: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 27, y: 56 }, { x: 30, y: 32 }, { x: 50, y: 27 }, { x: 70, y: 32 }, { x: 73, y: 56 }, { x: 67, y: 66 }],
   9: [{ x: 50, y: 71 }, { x: 34, y: 66 }, { x: 27, y: 59 }, { x: 29, y: 38 }, { x: 40, y: 29 }, { x: 60, y: 29 }, { x: 71, y: 38 }, { x: 73, y: 59 }, { x: 66, y: 66 }],
   10: [{ x: 50, y: 71 }, { x: 38, y: 66 }, { x: 27, y: 61 }, { x: 31, y: 38 }, { x: 34, y: 31 }, { x: 50, y: 26 }, { x: 66, y: 31 }, { x: 69, y: 38 }, { x: 73, y: 61 }, { x: 62, y: 66 }],
 };
+
+/** Share of a seat's hole cards that shows above its plate; the rest tucks under it. Hero's big cards tuck more. */
+export const CARD_SHOW = 0.88;
+export const HERO_CARD_SHOW = 0.7;
+export const cardShow = (hero: boolean) => (hero ? HERO_CARD_SHOW : CARD_SHOW);
 
 export const BOARD_Y = 47;
 export const POT_Y = 60;
@@ -76,7 +81,7 @@ const at = (p: Pt, w: number) => ({ x: (p.x / 100) * w, y: (p.y / 100) * w * STA
 export function seatBox(p: Pt, w: number, hero = false): Box {
   const k = scaleFor(w);
   const c = at(p, w);
-  const cardsH = (hero ? SIZE.heroCardH : SIZE.seatCardH) * k * 0.7; // cards overlap the plate by 30%
+  const cardsH = (hero ? SIZE.heroCardH : SIZE.seatCardH) * k * cardShow(hero);
   return {
     left: c.x - (SIZE.plateW * k) / 2,
     right: c.x + (SIZE.plateW * k) / 2,

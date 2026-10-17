@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,13 +23,25 @@ function dayKey(ts: number) {
   return d.getTime();
 }
 
+// toLocaleDateString is slow on Hermes; a long history has hundreds of days.
+const dayTitles = new Map<number, string>();
 function dayTitle(day: number) {
   const today = dayKey(Date.now());
   if (day === today) return t('Hoje');
-  if (day === today - DAY) return t('Ontem');
-  const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
-  return new Date(day).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) });
+  // Half a day back is always inside yesterday, even when it was 23 or 25 hours long.
+  if (day === dayKey(today - DAY / 2)) return t('Ontem');
+  let s = dayTitles.get(day);
+  if (s === undefined) {
+    const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
+    s = new Date(day).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) });
+    dayTitles.set(day, s);
+  }
+  return s;
 }
+
+// Defined once: an inline component here is a new type on every render, so
+// React unmounted and remounted every separator each time the list rendered.
+const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
   const { hands, activeSession, settings, draft, setDraft } = useStore();
@@ -60,6 +72,13 @@ export default function HandsScreen() {
   const renderItem = useCallback(({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} />, [settings.inBB]);
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
+  // Discarding a draft is one tap, so keep it for a few seconds behind an undo.
+  const [discarded, setDiscarded] = useState<Hand | null>(null);
+  useEffect(() => {
+    if (!discarded) return;
+    const id = setTimeout(() => setDiscarded(null), 6000);
+    return () => clearTimeout(id);
+  }, [discarded]);
   const hasDraft = !!draft && (draft.actions.length > 0 || !!draft.players[draft.hero].cards?.length);
 
   return (
@@ -71,7 +90,7 @@ export default function HandsScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingHorizontal: S.gutter, paddingBottom: 40 }}
-        ItemSeparatorComponent={() => <View style={{ height: S.sm }} />}
+        ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <SafeTop>
             <View style={{ gap: S.md, marginBottom: S.sm }}>
@@ -93,7 +112,29 @@ export default function HandsScreen() {
                 />
               ) : null}
               {hasDraft ? (
-                <Banner tone="warn" icon="create-outline" title={t('Mão a meio')} body={t('Toca para continuar onde ficaste')} onPress={() => router.push('/hand/new')} onDismiss={() => setDraft(null)} dismissLabel={t('Descartar')} />
+                <Banner
+                  tone="warn"
+                  icon="create-outline"
+                  title={t('Mão a meio')}
+                  body={t('Toca para continuar onde ficaste')}
+                  onPress={() => router.push('/hand/new')}
+                  onDismiss={() => {
+                    setDiscarded(draft);
+                    setDraft(null);
+                  }}
+                  dismissLabel={t('Descartar')}
+                />
+              ) : discarded ? (
+                <Banner
+                  tone="info"
+                  icon="trash-outline"
+                  title={t('Mão descartada')}
+                  action={t('Anular')}
+                  onPress={() => {
+                    setDraft(discarded);
+                    setDiscarded(null);
+                  }}
+                />
               ) : null}
               {handsLeft !== null && hands.length > 0 ? (
                 <FreeMeter left={handsLeft} cta={handsLeft === 0 && trialDays ? t('{days} dias grátis', { days: trialDays }) : t('Ver Pro')} onPress={() => paywall(handsLeft === 0 ? 'hands' : 'generic')} />
@@ -219,12 +260,23 @@ function searchText(h: Hand): string {
   return s;
 }
 
+// Replaying a hand is the costly part of a row. Keep the result per hand
+// version, so rows scrolling back into view don't replay again.
+const rowCache = new WeakMap<Hand, { net: number | undefined; done: boolean }>();
+function rowSummary(hand: Hand) {
+  let v = rowCache.get(hand);
+  if (!v) {
+    const r = replay(hand);
+    v = { net: r.result?.resolved ? r.result.net[hand.hero] : undefined, done: isComplete(hand, r) };
+    rowCache.set(hand, v);
+  }
+  return v;
+}
+
 const HandRow = React.memo(function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
-  const r = useMemo(() => replay(hand), [hand]);
+  const { net, done } = rowSummary(hand);
   const pos = positions(hand.players.length, hand.button);
-  const net = r.result?.resolved ? r.result.net[hand.hero] : undefined;
   const hero = hand.players[hand.hero];
-  const done = isComplete(hand, r);
   return (
     <Pressable
       accessibilityRole="button"

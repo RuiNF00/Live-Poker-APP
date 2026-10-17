@@ -6,25 +6,25 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { t } from '@/i18n';
 import { amount, blindsLabel } from '@/poker/format';
-import { STAGES, type Hand, type Street } from '@/poker/types';
-import { seatViews } from '@/poker/view';
+import { STAGES, type Hand } from '@/poker/types';
+import { positions } from '@/poker/engine';
 import type { StoryMoment } from '@/story/moment';
-import { BRAND, C, F, ff } from '@/theme';
+import { BRAND, C, F, R, ff, posColor } from '@/theme';
 
-import { Table } from './Table';
+import { ReplayerTable } from './replayer/ReplayerTable';
+import { STAGE_RATIO } from './replayer/layout';
+import { viewAt } from './replayer/model';
 
 export const STORY_W = 360;
 export const STORY_H = 640;
 
-const STREET_PT: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
-
 /** Where the voice chip sits, in story points. The waveform slot inside it is
  * left empty on the captured frame and drawn by the server while the voice plays. */
-const VOICE_CHIP = { left: 196, top: 67, w: 142, h: 26 };
+const VOICE_CHIP = { left: 190, top: 68, w: 148, h: 26 };
 export const VOICE_SLOT = { x: VOICE_CHIP.left + 26, y: VOICE_CHIP.top + 5, w: VOICE_CHIP.w - 34, h: VOICE_CHIP.h - 10 };
 
 /** The slot in pixels of the exported 1080×1920 frame. */
@@ -69,58 +69,106 @@ export interface StoryCardProps {
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
 
+const GUTTER = 22;
+/** Width the replayer table is designed for (layout.ts scales around 366). */
+const TABLE_NATIVE_W = 344;
+
+function MetaPill({ label, color, mono }: { label: string; color?: string; mono?: boolean }) {
+  return (
+    <View style={{ height: 22, paddingHorizontal: 9, borderRadius: R.pill, justifyContent: 'center', backgroundColor: color ? color + '24' : 'rgba(238,242,239,0.07)', borderWidth: 1, borderColor: color ? color + '40' : C.hairline }}>
+      <Text numberOfLines={1} style={{ fontFamily: mono ? F.mono : ff(700), fontSize: mono ? 10.5 : 11, color: color ?? C.textDim, letterSpacing: mono ? 0 : 0.1 }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function LinkGlyph({ size = 12, color = C.accent }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M10 14a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5M14 10a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, onLayout, ref }: StoryCardProps) {
   const g = hand.game;
-  const st = moment.step.state;
   const isQ = moment.mode === 'question';
   const result = isQ ? null : moment.replay.result;
-  const views = seatViews(hand, st, { inBB, reveal: !isQ, result, hideActing: !isQ });
-  if (result) {
-    views.forEach((v, k) => {
-      v.stack = amount(st.stacks[k] + result.won[k], hand, inBB);
-      v.allIn = false;
-    });
-  }
+  // Same table as the in-app replayer, frozen at the story's moment.
+  const view = viewAt(hand, moment.replay, moment.stepIndex, { inBB, reveal: !isQ, atEnd: !isQ });
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
-  const meta = [g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash'), blindsLabel(hand), stage].filter(Boolean).join('  ·  ');
+  const heroPos = positions(hand.players.length, hand.button)[hand.hero];
+  const title = g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
   const text = comment.trim();
-  const long = text.length > 90;
+  const long = text.length > 80;
   const heroNet = result?.resolved ? result.net[hand.hero] : 0;
-  const tableW = text ? 276 : 316;
+  const heroHand = result?.handNames[hand.hero] ?? null;
+  const tableW = text ? 250 : 320;
+  const tableTop = text ? 240 : 160;
+  const bottomTop = tableTop + tableW * STAGE_RATIO + 8;
 
   return (
-    <View ref={ref} collapsable={false} onLayout={onLayout} style={{ width: STORY_W, height: STORY_H, backgroundColor: C.bg, overflow: 'hidden' }}>
-      <LinearGradient
-        colors={['#0C1311', '#0F2019', '#123227', '#0C1311']}
-        locations={[0, 0.35, 0.62, 1]}
-        style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}
-      />
+    <View ref={ref} collapsable={false} onLayout={onLayout} style={{ width: STORY_W, height: STORY_H, backgroundColor: C.bgDeep, overflow: 'hidden' }}>
+      <LinearGradient colors={[C.bgDeep, C.bg, C.bg, C.bgDeep]} locations={[0, 0.3, 0.75, 1]} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
+      {/* Felt light behind the table, like a lamp over the game. */}
+      <Svg width={STORY_W} height={STORY_H} style={{ position: 'absolute', left: 0, top: 0 }}>
+        <Defs>
+          <RadialGradient id="lamp" cx="50%" cy={String((tableTop + (tableW * STAGE_RATIO) / 2) / STORY_H)} rx="62%" ry="38%">
+            <Stop offset="0" stopColor="#1F5A47" stopOpacity="0.55" />
+            <Stop offset="0.55" stopColor="#123327" stopOpacity="0.25" />
+            <Stop offset="1" stopColor="#0C1311" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="ember" cx="100%" cy="0%" rx="70%" ry="30%">
+            <Stop offset="0" stopColor={C.accent} stopOpacity="0.10" />
+            <Stop offset="1" stopColor={C.accent} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width={STORY_W} height={STORY_H} fill="url(#lamp)" />
+        <Rect x="0" y="0" width={STORY_W} height={STORY_H} fill="url(#ember)" />
+      </Svg>
 
       {/* Below Instagram's profile bar */}
-      <View style={{ position: 'absolute', top: 70, left: 22, right: 22, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: brand ? 'space-between' : 'flex-end' }}>
-          {brand ? <Wordmark size={13} /> : null}
-          {voice ? (
-            <View style={{ height: 20 }} />
-          ) : (
-            <View style={{ backgroundColor: isQ ? C.accent : C.surface3, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }}>
-              <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1, color: isQ ? C.accentInk : C.text }}>
-                {isQ ? t('O QUE FAZIAS?') : t('MÃO JOGADA')}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text numberOfLines={1} style={{ fontFamily: F.monoRegular, fontSize: 10, color: C.muted, letterSpacing: 0.2 }}>
-          {meta.toUpperCase()}
+      <View style={{ position: 'absolute', top: 70, left: GUTTER, right: GUTTER, height: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        {brand ? <Wordmark size={14} /> : <View />}
+        {voice ? null : isQ ? (
+          <View style={{ backgroundColor: C.accent, borderRadius: R.pill, paddingHorizontal: 10, height: 22, justifyContent: 'center' }}>
+            <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accentInk }}>{t('O QUE FAZIAS?')}</Text>
+          </View>
+        ) : (
+          <View style={{ borderWidth: 1, borderColor: C.borderStrong, borderRadius: R.pill, paddingHorizontal: 10, height: 22, justifyContent: 'center' }}>
+            <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.textDim }}>{t('MÃO JOGADA')}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={{ position: 'absolute', top: 106, left: GUTTER, right: GUTTER, gap: 8 }}>
+        <Text numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.4, color: C.muted }}>
+          {title.toUpperCase()}
         </Text>
+        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'nowrap', overflow: 'hidden' }}>
+          <MetaPill label={heroPos} color={posColor(heroPos)} />
+          <MetaPill label={blindsLabel(hand)} mono />
+          {stage ? <MetaPill label={stage} /> : null}
+          {g.playersLeft ? <MetaPill label={t('{n} restantes', { n: g.playersLeft })} /> : null}
+        </View>
         {text ? (
-          <Text
-            numberOfLines={3}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-            style={{ fontFamily: ff(800), fontWeight: '800', fontSize: long ? 19 : 23, lineHeight: long ? 23 : 27, color: C.text, letterSpacing: -0.4, marginTop: 2 }}>
-            {text}
-          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+            <View style={{ width: 3, borderRadius: 2, backgroundColor: C.accent }} />
+            <Text
+              numberOfLines={3}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              style={{ flex: 1, fontFamily: ff(800), fontWeight: '800', fontSize: long ? 18 : 21, lineHeight: long ? 22 : 25, color: C.text, letterSpacing: -0.5 }}>
+              {text}
+            </Text>
+          </View>
         ) : null}
       </View>
 
@@ -132,10 +180,10 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
             top: VOICE_CHIP.top,
             width: VOICE_CHIP.w,
             height: VOICE_CHIP.h,
-            borderRadius: 999,
-            backgroundColor: 'rgba(22,32,29,0.95)',
+            borderRadius: R.pill,
+            backgroundColor: 'rgba(255,106,61,0.12)',
             borderWidth: 1,
-            borderColor: C.accent,
+            borderColor: C.accentLine,
             justifyContent: 'center',
             paddingLeft: 8,
           }}>
@@ -162,44 +210,85 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
         </View>
       ) : null}
 
-      <View style={{ position: 'absolute', width: tableW, left: (STORY_W - tableW) / 2, top: text ? 204 : 124 }}>
-        <Table
-          seats={views}
-          hero={hand.hero}
-          button={hand.button}
-          board={hand.board.slice(0, st.boardCount)}
-          pot={moment.pot}
-          narration={isQ ? STREET_PT[moment.street] + (moment.toCall ? ' · ' + t('para pagar {amount}', { amount: moment.toCall }) : '') : undefined}
-        />
+      {/* Laid out at the replayer's phone width, then scaled to fit, so seats and cards keep their proportions. */}
+      <View style={{ position: 'absolute', width: tableW, height: tableW * STAGE_RATIO, left: (STORY_W - tableW) / 2, top: tableTop }}>
+        <View
+          style={{
+            position: 'absolute',
+            width: TABLE_NATIVE_W,
+            left: (tableW - TABLE_NATIVE_W) / 2,
+            top: ((tableW - TABLE_NATIVE_W) * STAGE_RATIO) / 2,
+            transform: [{ scale: tableW / TABLE_NATIVE_W }],
+          }}>
+          <ReplayerTable view={view} heroIndex={hand.hero} button={hand.button} />
+        </View>
       </View>
 
       {/* Above Instagram's reply bar */}
-      <View style={{ position: 'absolute', left: 22, right: 22, top: text ? 532 : 486, gap: 8 }}>
+      <View style={{ position: 'absolute', left: GUTTER, right: GUTTER, top: bottomTop, gap: 10 }}>
         {isQ ? (
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {moment.options.map((o) => (
+            {moment.options.map((o, i) => (
               <View
                 key={o.label}
-                style={{ flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: C.borderStrong, backgroundColor: 'rgba(22,32,29,0.92)', paddingVertical: 10, alignItems: 'center' }}>
-                <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ff(800), fontSize: 14, color: C.text }}>
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: R.md,
+                  borderWidth: 1,
+                  borderColor: C.borderStrong,
+                  backgroundColor: C.surface2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingHorizontal: 6,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.35,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 4 },
+                }}>
+                <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontFamily: ff(800), fontSize: 9, color: C.muted }}>{String.fromCharCode(65 + i)}</Text>
+                </View>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontFamily: ff(800), fontSize: 14, color: C.text }}>
                   {o.label}
                 </Text>
               </View>
             ))}
           </View>
         ) : result ? (
-          <View style={{ alignItems: 'center', marginTop: 14 }}>
+          <View
+            style={{
+              height: 48,
+              borderRadius: R.md,
+              borderWidth: 1,
+              borderColor: heroNet > 0 ? 'rgba(74,222,128,0.30)' : C.borderStrong,
+              backgroundColor: heroNet > 0 ? C.goodSoft : C.surface2,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 14,
+            }}>
+            <View style={{ gap: 1 }}>
+              <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.muted }}>{t('RESULTADO DO HERO')}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
+                {heroHand ?? (heroNet > 0 ? t('Hero leva o pote') : t('Pote {pot}', { pot: moment.pot }))}
+              </Text>
+            </View>
             <Text style={{ fontFamily: F.mono, fontSize: 22, color: heroNet > 0 ? C.good : heroNet < 0 ? C.bad : C.text }}>
               {heroNet > 0 ? '+' : heroNet < 0 ? '−' : ''}
               {amount(Math.abs(heroNet), hand, inBB)}
             </Text>
-            <Text style={{ fontFamily: F.medium, fontSize: 11, color: C.muted }}>{heroNet > 0 ? t('Hero leva o pote') : t('Resultado do Hero')}</Text>
           </View>
         ) : null}
-        <Text style={{ textAlign: 'center', fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
-          {isQ ? t('Vota e vê o que aconteceu') : t('Replay completo')}{' '}
-          <Text style={{ color: C.accent }}>{brand ? t('em {host}', { host: linkHost }) : t('no link')}</Text>
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <LinkGlyph />
+          <Text style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
+            {isQ ? t('Vota e vê o que aconteceu') : t('Replay completo')}{' '}
+            <Text style={{ color: C.text }}>{brand ? t('em {host}', { host: linkHost }) : t('no link')}</Text>
+          </Text>
+        </View>
       </View>
     </View>
   );

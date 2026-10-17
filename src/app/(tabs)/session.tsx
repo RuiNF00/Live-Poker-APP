@@ -3,9 +3,9 @@
 // are linked to it and keep its stack up to date.
 
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
@@ -23,12 +23,20 @@ import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 
+/**
+ * Re-renders every `ms` while this tab is on screen. Tabs stay mounted, so an
+ * always-on interval kept redrawing the whole session screen every second
+ * behind hand entry and the hands list.
+ */
 function useTick(ms = 1000) {
   const [, setT] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setT((x) => x + 1), ms);
-    return () => clearInterval(id);
-  }, [ms]);
+  useFocusEffect(
+    useCallback(() => {
+      setT((x) => x + 1);
+      const id = setInterval(() => setT((x) => x + 1), ms);
+      return () => clearInterval(id);
+    }, [ms]),
+  );
 }
 
 function confirm(title: string, body: string, ok: () => void) {
@@ -44,18 +52,7 @@ export default function SessionScreen() {
   if (activeSession) return <Live s={activeSession} />;
   return (
     <Screen title={t('Sessão')}>
-      <Card tone="raised" style={{ gap: S.md }}>
-        <Row gap={12}>
-          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="timer-outline" size={22} color={C.accent} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <T v="h2">{t('Começar sessão')}</T>
-            <T v="small">{t('Relógio, stack e blinds num só sítio.')}</T>
-          </View>
-        </Row>
-        <T v="small">{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
-      </Card>
+      <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
       <SessionForm
         initial={blankSession(sessions[0]?.kind ?? 'mtt', settings.currency, settings.defaultTableSize)}
         recentNames={recentNames}

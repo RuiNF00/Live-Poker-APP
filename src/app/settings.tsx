@@ -5,18 +5,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { Alert, Platform, ScrollView, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CloudBackup } from '@/components/CloudBackup';
-import { inputStyle } from '@/components/entry/ContextSheet';
-import { Button, Chip, Panel, Row, T, tap } from '@/components/ui';
+import { Button, Card, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, importSummary, parseBackup, sessionsCsv } from '@/store/backup';
 import { useStore } from '@/store/store';
-import { BRAND, C } from '@/theme';
+import { BRAND, C, F, S } from '@/theme';
 
 const CURRENCIES = ['€', '$', '£', 'R$', 'CHF'];
 
@@ -64,89 +63,85 @@ export default function SettingsScreen() {
     }
   };
 
+  const counts = [hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length }), sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length }), players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })].join(' · ');
   return (
     <>
       <Stack.Screen options={{ title: t('Definições') }} />
-      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-        <Panel style={{ gap: 12 }}>
-          <View style={{ gap: 6 }}>
-            <T v="label">{t('O teu nome nos comentários')}</T>
-            <TextInput value={settings.nickname} onChangeText={(nickname) => setSettings({ nickname: nickname.slice(0, 40) })} placeholder={t('Ex.: Rui')} placeholderTextColor={C.muted} style={inputStyle} />
-          </View>
-          <View style={{ gap: 6 }}>
-            <T v="label">{t('Moeda')}</T>
-            <Row gap={6} style={{ flexWrap: 'wrap' }}>
-              {CURRENCIES.map((c) => (
-                <Chip key={c} label={c} active={settings.currency === c} onPress={() => setSettings({ currency: c })} />
-              ))}
+      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        {!pro.isPro ? (
+          <Card tone="accent" onPress={() => pro.paywall('generic')} style={{ gap: 4 }}>
+            <Row gap={10}>
+              <Ionicons name="flash" size={18} color={C.accent} />
+              <T v="h2" style={{ flex: 1 }}>
+                Sweatbook Pro
+              </T>
+              <Ionicons name="chevron-forward" size={17} color={C.accent} />
             </Row>
-          </View>
-          <View style={{ gap: 6 }}>
-            <T v="label">{t('Jogadores na mesa por defeito')}</T>
-            <Row gap={6} style={{ flexWrap: 'wrap' }}>
-              {[6, 7, 8, 9, 10].map((n) => (
-                <Chip key={n} label={String(n)} active={settings.defaultTableSize === n} onPress={() => setSettings({ defaultTableSize: n })} />
-              ))}
-            </Row>
-          </View>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <T v="body">{t('Mostrar valores em big blinds')}</T>
-            <Switch value={settings.inBB} onValueChange={(inBB) => setSettings({ inBB })} trackColor={{ true: C.accent, false: C.surface3 }} />
-          </Row>
-        </Panel>
+            <T v="small">{pro.trialDays ? t('Mãos sem limite, bankroll completo e stories com voz. {days} dias grátis.', { days: pro.trialDays }) : t('Mãos sem limite, bankroll completo e stories com voz.')}</T>
+          </Card>
+        ) : null}
 
-        <T v="h2">{t('Nas mãos que partilhas')}</T>
-        <Panel style={{ gap: 12 }}>
-          <Row style={{ justifyContent: 'space-between' }} gap={12}>
-            <View style={{ flex: 1 }}>
-              <T v="body">{t('Mostrar os nomes dos adversários')}</T>
-              <T v="tiny">{t('Desligado: aparecem como posições (BTN, CO…). As alcunhas das tuas notas nunca saem do telemóvel.')}</T>
+        <Section title={t('Perfil')}>
+          <Card style={{ gap: S.lg }}>
+            <Field label={t('O teu nome nos comentários')} value={settings.nickname} onChangeText={(nickname) => setSettings({ nickname: nickname.slice(0, 40) })} placeholder={t('Ex.: Rui')} />
+            <View style={{ gap: S.sm }}>
+              <T v="label">{t('Moeda')}</T>
+              <Segmented options={CURRENCIES.map((c) => ({ key: c, label: c }))} value={settings.currency} onChange={(currency) => setSettings({ currency })} />
             </View>
-            <Switch value={settings.shareNames} onValueChange={(shareNames) => setSettings({ shareNames })} trackColor={{ true: C.accent, false: C.surface3 }} />
-          </Row>
-          <Row style={{ justifyContent: 'space-between' }} gap={12}>
-            <T v="body" style={{ flex: 1 }}>
-              {t('Incluir as minhas notas da mão')}
-            </T>
-            <Switch value={settings.shareNotes} onValueChange={(shareNotes) => setSettings({ shareNotes })} trackColor={{ true: C.accent, false: C.surface3 }} />
-          </Row>
-          <T v="tiny">{t('Vale para links novos. Uma mão já partilhada fica como estava.')}</T>
-        </Panel>
+            <View style={{ gap: S.sm }}>
+              <T v="label">{t('Jogadores na mesa')}</T>
+              <Segmented options={[6, 7, 8, 9, 10].map((n) => ({ key: n, label: String(n) }))} value={settings.defaultTableSize} onChange={(defaultTableSize) => setSettings({ defaultTableSize })} />
+            </View>
+          </Card>
+          <ListGroup>
+            <ToggleItem icon="calculator-outline" title={t('Valores em big blinds')} subtitle={t('Nas mãos, em vez de fichas')} value={settings.inBB} onChange={(inBB) => setSettings({ inBB })} />
+          </ListGroup>
+        </Section>
 
-        <T v="h2">{t('Cópia de segurança')}</T>
-        <T v="small" style={{ marginTop: -8 }}>
-          {t('Tudo fica só neste telemóvel. Faz uma cópia para não perderes as mãos se trocares de telemóvel.')}
-        </T>
-        <CloudBackup />
-        <Panel style={{ gap: 0, padding: 0 }}>
-          <Item icon="download-outline" label={t('Exportar tudo (ficheiro)')} hint={[hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length }), sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length }), players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })].join(' · ')} onPress={exportAll} />
-          <Item icon="cloud-upload-outline" label={busy ? t('A importar…') : t('Importar ficheiro')} hint={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
-          <Item icon="swap-horizontal-outline" label={t('Importar de outra app')} hint={t('Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
-          <Item icon="grid-outline" label={t('Sessões em CSV') + (pro.isPro ? '' : ' · Pro')} hint={t('Para Excel, Google Sheets ou o contabilista')} onPress={exportCsv} last />
-        </Panel>
+        <Section title={t('Mãos que partilhas')} hint={t('Vale para links novos. Uma mão já partilhada fica como estava.')}>
+          <ListGroup>
+            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={t('Desligado, aparecem como posições. As tuas alcunhas nunca saem do telemóvel.')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
+            <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
+          </ListGroup>
+        </Section>
 
-        <T v="h2">{t('Ferramentas')}</T>
-        <Panel style={{ gap: 0, padding: 0 }}>
-          <Item icon="gift-outline" label={t('Convidar amigos')} hint={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
-          <Item icon="pie-chart-outline" label={t('Calculadora de deal (ICM)')} hint={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} last />
-        </Panel>
-        <InviteCodeField />
+        <Section title={t('Cópia de segurança')} hint={t('Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.')}>
+          <CloudBackup />
+          <ListGroup>
+            <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
+            <ListItem icon="push-outline" title={busy ? t('A importar…') : t('Importar ficheiro')} subtitle={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
+            <ListItem icon="swap-horizontal-outline" iconColor={C.info} title={t('Importar de outra app')} subtitle={t('Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
+            <ListItem icon="grid-outline" title={t('Sessões em CSV')} subtitle={t('Para Excel ou Google Sheets')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={exportCsv} />
+          </ListGroup>
+        </Section>
 
-        <T v="h2">{t('Conta')}</T>
-        <Panel style={{ gap: 0, padding: 0 }}>
-          {!pro.isPro ? <Item icon="flash-outline" label={pro.trialDays ? t('Experimentar o Pro {days} dias grátis', { days: pro.trialDays }) : t('Ver o Sweatbook Pro')} onPress={() => pro.paywall('generic')} /> : null}
-          <Item
-            icon="refresh-outline"
-            label={t('Restaurar compras')}
-            onPress={async () => {
-              const ok = await pro.restore();
-              note(ok ? t('Pro restaurado') : t('Não encontrámos compras nesta conta da loja.'));
-            }}
-          />
-          <Item icon="help-circle-outline" label={t('Ajuda e contacto')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
-          <Item icon="shield-checkmark-outline" label={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
-          <Item icon="document-text-outline" label={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} last />
-        </Panel>
+        <Section title={t('Ferramentas')}>
+          <ListGroup>
+            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
+            <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
+          </ListGroup>
+          <InviteCodeField />
+        </Section>
+
+        <Section title={t('Conta')}>
+          <ListGroup>
+            <ListItem
+              icon="refresh-outline"
+              title={t('Restaurar compras')}
+              onPress={async () => {
+                const ok = await pro.restore();
+                note(ok ? t('Pro restaurado') : t('Não encontrámos compras nesta conta da loja.'));
+              }}
+            />
+            <ListItem icon="help-buoy-outline" title={t('Ajuda e contacto')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
+            <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
+            <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
+          </ListGroup>
+        </Section>
+        <View style={{ alignItems: 'center', gap: 4, paddingTop: S.sm }}>
+          <Wordmark size={18} />
+          <T v="tiny">{BRAND.tagline}</T>
+        </View>
       </ScrollView>
     </>
   );
@@ -171,12 +166,12 @@ function InviteCodeField() {
   }, []);
   if (!show) return null;
   return (
-    <Panel style={{ gap: 8 }}>
+    <Card style={{ gap: S.sm }}>
       <T v="label">{t('Tenho um código de convite')}</T>
-      <Row gap={8}>
-        <TextInput value={code} onChangeText={setCode} autoCapitalize="none" autoCorrect={false} placeholder="a1b2c3d4e5" placeholderTextColor={C.muted} style={[inputStyle, { flex: 1 }]} />
+      <Row gap={S.sm}>
+        <Field value={code} onChangeText={setCode} autoCapitalize="none" autoCorrect={false} placeholder="a1b2c3d4e5" style={{ flex: 1 }} inputStyle={{ fontFamily: F.mono }} />
         <Button
-          small
+          size="md"
           title={busy ? '…' : t('Usar')}
           disabled={busy || !code.trim()}
           onPress={async () => {
@@ -188,21 +183,6 @@ function InviteCodeField() {
           }}
         />
       </Row>
-    </Panel>
-  );
-}
-
-function Item({ icon, label, hint, onPress, last }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; hint?: string; onPress: () => void; last?: boolean }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderBottomWidth: last ? 0 : 1, borderBottomColor: C.border, opacity: pressed ? 0.7 : 1 })}>
-      <Ionicons name={icon} size={20} color={C.text} />
-      <View style={{ flex: 1 }}>
-        <T v="body">{label}</T>
-        {hint ? <T v="tiny">{hint}</T> : null}
-      </View>
-      <Ionicons name="chevron-forward" size={16} color={C.muted} />
-    </Pressable>
+    </Card>
   );
 }

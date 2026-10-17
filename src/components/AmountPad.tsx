@@ -6,9 +6,9 @@ import { Modal, Pressable, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { chips } from '@/poker/format';
-import { C, R, ff } from '@/theme';
+import { C, F, R, S } from '@/theme';
 
-import { Button, Chip, Row, T, tap } from './ui';
+import { Button, Row, Segmented, T, tap } from './ui';
 
 export function AmountPad({
   visible,
@@ -46,22 +46,30 @@ export function AmountPad({
   const capped = max !== undefined ? Math.min(value, max) : value;
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={onClose} />
-      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, padding: 16, paddingBottom: 34, gap: 12 }}>
+      <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
+      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.borderStrong, padding: S.gutter, paddingBottom: 34, gap: S.md }}>
+        <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: C.borderStrong, marginTop: -4 }} />
         <Row style={{ justifyContent: 'space-between' }}>
           <T v="h2">{title}</T>
-          <Row>
-            <Chip label={t('Fichas')} active={!inBB} onPress={() => setInBB(false)} />
-            <Chip label="BB" active={inBB} onPress={() => setInBB(true)} />
-          </Row>
+          <Segmented
+            size="sm"
+            style={{ width: 132 }}
+            options={[
+              { key: 'chips', label: t('Fichas') },
+              { key: 'bb', label: 'BB' },
+            ]}
+            value={inBB ? 'bb' : 'chips'}
+            onChange={(k) => setInBB(k === 'bb')}
+          />
         </Row>
-        <View style={{ backgroundColor: C.bg, borderRadius: R.md, padding: 14, alignItems: 'flex-end' }}>
-          <Text style={{ color: C.text, fontSize: 34, fontWeight: '800', fontFamily: ff(800), fontVariant: ['tabular-nums'] }}>
+        <View style={{ backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'flex-end', gap: 2 }}>
+          <Text style={{ color: C.text, fontSize: 38, fontFamily: F.mono, fontVariant: ['tabular-nums'], letterSpacing: -1 }}>
             {txt || '0'}
             <Text style={{ color: C.muted, fontSize: 18 }}>{inBB ? ' bb' : ''}</Text>
           </Text>
-          <T v="small">
-            = {chips(capped)} {t('fichas')}{max !== undefined && value >= max ? ' (all-in)' : ''}
+          <T v="monoS" color={tooLow ? C.danger : C.muted}>
+            = {chips(capped)} {t('fichas')}
+            {max !== undefined && value >= max ? ' (all-in)' : ''}
             {tooLow ? ' · ' + t('mínimo {amount}', { amount: chips(min!) }) : ''}
           </T>
         </View>
@@ -69,15 +77,20 @@ export function AmountPad({
           {keys.map((k) => (
             <Pressable
               key={k}
+              accessibilityRole="button"
+              accessibilityLabel={k === '⌫' ? t('Apagar') : k}
               onPress={() => press(k)}
               style={({ pressed }) => ({
-                width: '31.5%',
-                paddingVertical: 14,
+                width: '31.8%',
+                height: 52,
                 borderRadius: R.md,
                 backgroundColor: pressed ? C.surface3 : C.surface2,
+                borderWidth: 1,
+                borderColor: C.border,
                 alignItems: 'center',
+                justifyContent: 'center',
               })}>
-              <Text style={{ color: C.text, fontSize: 22, fontWeight: '700', fontFamily: ff(700) }}>{k}</Text>
+              <Text style={{ color: k === 'k' || k === ',' || k === '⌫' ? C.textDim : C.text, fontSize: 24, fontFamily: F.mono }}>{k}</Text>
             </Pressable>
           ))}
         </View>

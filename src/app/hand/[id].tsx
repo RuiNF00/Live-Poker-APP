@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CommentsList } from '@/components/Comments';
@@ -10,14 +10,14 @@ import { isComplete } from '@/poker/engine';
 import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
-import { Button, Empty, Row, T, tap } from '@/components/ui';
+import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
-import { C, R } from '@/theme';
+import { C, S } from '@/theme';
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,10 +42,11 @@ export default function HandScreen() {
 
   if (isSample)
     return (
-      <ScrollView contentContainerStyle={{ padding: 12, gap: 14, paddingBottom: 48 }}>
+      <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
+        <Banner tone="info" icon="sparkles-outline" title={t('Mão de exemplo')} body={t('É assim que as tuas mãos ficam guardadas.')} />
         <HandHeader hand={hand} />
         <Replayer hand={hand} initialInBB={settings.inBB} autoPlay />
-        <Button title={t('Registar a minha primeira mão')} onPress={() => router.replace('/hand/new')} />
+        <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
       </ScrollView>
     );
 
@@ -127,78 +128,63 @@ ${link}`;
       ]);
   };
 
+  const edit = () => router.push({ pathname: '/hand/new', params: { edit: hand.id } });
   return (
     <>
       <Stack.Screen
         options={{
           title: '',
           headerRight: () => (
-            <Row gap={16}>
-              <Pressable hitSlop={8} onPress={() => router.push({ pathname: '/hand/new', params: { edit: hand.id } })}>
-                <Ionicons name="create-outline" size={22} color={C.text} />
-              </Pressable>
-              <Pressable hitSlop={8} onPress={remove}>
-                <Ionicons name="trash-outline" size={21} color={C.danger} />
-              </Pressable>
+            <Row gap={S.sm}>
+              <IconButton name="create-outline" size={36} label={t('Editar mão')} onPress={edit} />
+              <IconButton name="trash-outline" size={36} color={C.danger} label={t('Apagar mão')} onPress={remove} />
             </Row>
           ),
         }}
       />
-      <ScrollView contentContainerStyle={{ padding: 12, gap: 14, paddingBottom: 48 }}>
-        <HandHeader hand={hand} />
-        {!isComplete(hand) && (
-          <Pressable
-            onPress={() => router.push({ pathname: '/hand/new', params: { edit: hand.id } })}
-            style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderColor: 'rgba(245,184,61,0.45)', borderWidth: 1, borderRadius: R.md, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="create-outline" size={18} color={C.warn} />
-            <T v="small" style={{ flex: 1, color: C.text }}>
-              {t('Mão por completar. Toca para continuar onde ficaste.')}
-            </T>
-          </Pressable>
-        )}
+      <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
+        <View style={{ paddingHorizontal: 4 }}>
+          <HandHeader hand={hand} />
+        </View>
+        {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         <Replayer hand={hand} initialInBB={settings.inBB} />
-        <Button
-          title={t('Story no Instagram')}
-          icon={<Ionicons name="logo-instagram" size={19} color={C.accentInk} />}
-          onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })}
-        />
-        <Row gap={8}>
-          <Button
-            title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : t('Partilhar com amigos')}
-            kind="secondary"
-            icon={<Ionicons name="share-social" size={18} color={C.text} />}
-            style={{ flex: 1 }}
-            disabled={busy}
-            onPress={() => share()}
-          />
-          <Button title={t('Desafio')} kind="secondary" icon={<Ionicons name="help-circle-outline" size={16} color={C.text} />} disabled={busy} onPress={() => share(true)} />
-          <Button title={t('Texto')} kind="secondary" icon={<Ionicons name="copy-outline" size={16} color={C.text} />} onPress={copyText} />
-        </Row>
+
+        <Section title={t('Partilhar')}>
+          <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />
+          <Row gap={S.sm}>
+            <ShareTile icon="help-circle-outline" label={t('Desafio')} sub={t('Votação')} disabled={busy} onPress={() => share(true)} />
+            <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })} />
+            <ShareTile icon="copy-outline" label={t('Texto')} sub="WhatsApp" onPress={copyText} />
+          </Row>
+        </Section>
+
         {hand.shareId ? (
-          <View style={{ gap: 8 }}>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2">{t('Comentários')}</T>
-              <Pressable onPress={loadComments} hitSlop={8}>
-                <Ionicons name="refresh" size={18} color={C.textDim} />
-              </Pressable>
-            </Row>
+          <Section title={t('Comentários')} action={t('Atualizar')} onAction={loadComments}>
             <VoteTally votes={votes} />
             <CommentsList shareId={hand.shareId} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} defaultName={settings.nickname} />
-            {hand.shareToken ? (
-              <Pressable onPress={unshare} hitSlop={8} style={{ alignSelf: 'center', paddingTop: 8 }}>
-                <T v="small" color={C.danger}>
-                  {t('Apagar partilha')}
-                </T>
-              </Pressable>
-            ) : null}
-          </View>
+            {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
+          </Section>
         ) : (
-          <T v="small" style={{ textAlign: 'center' }}>
-            {t('Partilha o link: os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}
+          <T v="small" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
+            {t('Os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}
           </T>
         )}
       </ScrollView>
     </>
+  );
+}
+
+function ShareTile({ icon, label, sub, onPress, disabled }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; sub: string; onPress: () => void; disabled?: boolean }) {
+  return (
+    <Card onPress={disabled ? undefined : onPress} style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: S.md, paddingHorizontal: S.sm, opacity: disabled ? 0.5 : 1 }} accessibilityLabel={label}>
+      <Ionicons name={icon} size={22} color={C.text} />
+      <T v="h3" style={{ fontSize: 14 }}>
+        {label}
+      </T>
+      <T v="tiny" numberOfLines={1}>
+        {sub}
+      </T>
+    </Card>
   );
 }
 
@@ -209,7 +195,7 @@ function VoteTally({ votes }: { votes: Record<string, number> }) {
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1]);
   return (
-    <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, gap: 8, borderWidth: 1, borderColor: C.border }}>
+    <Card style={{ gap: S.sm }}>
       <T v="label">{total === 1 ? t('1 voto') : t('{n} votos', { n: total })}</T>
       {rows.map(([choice, v]) => {
         const pct = Math.round((v / total) * 100);
@@ -227,6 +213,6 @@ function VoteTally({ votes }: { votes: Record<string, number> }) {
           </View>
         );
       })}
-    </View>
+    </Card>
   );
 }

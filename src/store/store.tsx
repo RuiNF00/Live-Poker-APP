@@ -118,6 +118,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // every screen behind the entry modal from re-rendering on each tap.
   const draftRef = useRef<Hand | null>(null);
   const [draftKey, setDraftKey] = useState(0);
+  // Hand entry calls this on every tap; write the draft at most every 400 ms
+  // (and at once when the app leaves the screen) instead of on each tap.
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushDraft = useCallback(() => {
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = null;
+    const h = draftRef.current;
+    if (h) persist(KEYS.draft, h);
+    else AsyncStorage.removeItem(KEYS.draft).catch(() => {});
+  }, []);
   const writers = useRef<{
     hands: ReturnType<typeof createWriter<Hand>>;
     sessions: ReturnType<typeof createWriter<Session>>;
@@ -161,14 +171,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // writes immediately so a killed app doesn't lose the last hand.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active' || !writers.current) return;
+      if (st === 'active') return;
+      if (draftTimer.current) flushDraft(); // only an unsaved change
+      if (!writers.current) return;
       const w = writers.current;
       w.hands.flush();
       w.sessions.flush();
       w.players.flush();
     });
     return () => sub.remove();
-  }, []);
+  }, [flushDraft]);
 
   useEffect(() => {
     if (loaded.current) writers.current?.hands.schedule(hands);
@@ -193,12 +205,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
   const deletePlayer = useCallback((id: string) => setPlayers((l) => l.filter((x) => x.id !== id)), []);
   const setSettings = useCallback((patch: Partial<Settings>) => setSettingsState((s) => ({ ...s, ...patch })), []);
-  const setDraft = useCallback((h: Hand | null) => {
-    draftRef.current = h;
-    setDraftKey(draftKeyOf(h));
-    if (h) persist(KEYS.draft, h);
-    else AsyncStorage.removeItem(KEYS.draft).catch(() => {});
-  }, []);
+  const setDraft = useCallback(
+    (h: Hand | null) => {
+      draftRef.current = h;
+      setDraftKey(draftKeyOf(h));
+      if (!h) flushDraft();
+      else if (!draftTimer.current) draftTimer.current = setTimeout(flushDraft, 400);
+    },
+    [flushDraft],
+  );
 
   const importData = useCallback(
     (b: BackupData) => {
