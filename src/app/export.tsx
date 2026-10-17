@@ -17,6 +17,7 @@ import { endOfDay, inRange, scopeIds, scopeOptions, sameScope, type DateRange, t
 import { buildBackup, sessionsCsv } from '@/store/backup';
 import { parseDay } from '@/store/session-math';
 import { useStore } from '@/store/store';
+import { taxReport } from '@/tax/tax-math';
 import { BRAND, C, S } from '@/theme';
 
 type Period = 'year' | 'lastYear' | '12m' | 'all' | 'custom';
@@ -56,6 +57,7 @@ export default function ExportScreen() {
   }, [fromText, toText, now]);
   const range = useMemo(() => rangeOf(period, now, custom), [period, now, custom]);
   const report = useMemo(() => buildReport({ sessions, transfers, bankrolls, scope, range }), [sessions, transfers, bankrolls, scope, range]);
+  const tax = useMemo(() => taxReport(report.currencies.flatMap((c) => c.sessions), range), [report, range]);
   const main = report.currencies[0];
   const ids = scope ? scopeIds(scope, bankrolls) : null;
   const handsIn = hands.filter((h) => inRange(h.createdAt, range)).length;
@@ -74,7 +76,7 @@ export default function ExportScreen() {
   };
 
   const pdf = () =>
-    run('pdf', true, () => sharePdf(`sweatbook-relatorio-${stamp}.pdf`, reportHtml(report, { player: settings.nickname || undefined })));
+    run('pdf', true, () => sharePdf(`sweatbook-relatorio-${stamp}.pdf`, reportHtml(report, { player: settings.nickname || undefined, tax })));
   const sessionsFile = () =>
     run('sessions', true, () => {
       const list = report.currencies.flatMap((c) => c.sessions);
@@ -133,11 +135,16 @@ export default function ExportScreen() {
             <Stat label={t('Sessões')} value={String(main?.totals.sessions ?? 0)} />
             <Stat label={t('Mãos')} value={String(handsIn)} />
           </StatGrid>
+          {tax.pending.length ? (
+            <T v="small" color={C.warn} style={{ paddingHorizontal: 4 }}>
+              {t('Imposto retido a recuperar: {amount}', { amount: tax.pending.map((p) => money(p.amount, p.currency)).join(' + ') })}
+            </T>
+          ) : null}
         </Section>
 
         <Section title={t('Exportar')}>
           <ListGroup>
-            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala e mês, e todas as sessões')} right={lock} onPress={pdf} />
+            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala, mês e país, e todas as sessões')} right={lock} onPress={pdf} />
             <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos e levantamentos, para Excel ou Google Sheets')} right={lock} onPress={sessionsFile} />
             <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={t('Posição, cartas, board, resultado, tags e notas')} right={lock} onPress={handsFile} />
             <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')} onPress={backup} />

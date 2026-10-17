@@ -6,6 +6,9 @@ import { locale, t } from '@/i18n';
 import { duration, money } from '@/poker/format';
 import { cost, playedMs, profit, type Breakdown } from '@/store/session-math';
 
+import { countryName, flag } from '@/tax/countries';
+import type { TaxReport } from '@/tax/tax-math';
+
 import type { CurrencyReport, Report } from './report';
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -108,7 +111,42 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
     </section>`;
 }
 
-export function reportHtml(r: Report, opts: { player?: string; now?: number } = {}): string {
+function taxBlock(x: TaxReport): string {
+  if (!x.rows.some((r) => r.country || r.withheld)) return '';
+  const rows = x.rows
+    .map(
+      (r) =>
+        `<tr><td>${esc(r.country ? `${flag(r.country)} ${countryName(r.country)}` : countryName(undefined))}</td><td class="n">${r.sessions}</td><td class="n">${esc(money(r.wins, r.currency))}</td><td class="n">${esc(money(r.losses, r.currency))}</td><td class="n ${cls(r.net)}">${esc(signed(r.net, r.currency))}</td><td class="n">${r.withheld ? esc(money(r.withheld, r.currency)) : '—'}</td><td class="n">${r.toRecover ? esc(money(r.toRecover, r.currency)) : '—'}</td></tr>`,
+    )
+    .join('');
+  const us = x.us
+    ? `
+    <h3>${esc(t('Se declaras impostos nos EUA'))}</h3>
+    <table>
+      <thead><tr><th></th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Perdas dedutíveis'))}</th><th class="n">${esc(t('Fica a tributar'))}</th></tr></thead>
+      <tbody>${x.us
+        .map(
+          (u) =>
+            `<tr><td>${esc(u.currency)}</td><td class="n">${esc(money(u.wins, u.currency))}</td><td class="n">${esc(money(u.losses, u.currency))}</td><td class="n">${esc(money(u.deductible, u.currency))}</td><td class="n">${esc(money(u.taxable, u.currency))}</td></tr>`,
+        )
+        .join('')}</tbody>
+    </table>
+    <p class="muted">${esc(t('A partir de 2026 só 90% das perdas são dedutíveis, e nunca mais do que os ganhos. Quem declara nos EUA precisa de cada sessão documentada: data, local, jogo, buy-ins e cash-outs.'))}${x.us.some((u) => u.lostToCap) ? ' ' + esc(t('Neste período, {amount} de perdas ficam por deduzir por causa desta regra.', { amount: x.us.filter((u) => u.lostToCap).map((u) => money(u.lostToCap, u.currency)).join(' + ') })) : ''}</p>`
+    : '';
+  return `
+    <section>
+      <h2>${esc(t('Impostos por país'))}</h2>
+      <table>
+        <thead><tr><th>${esc(t('País'))}</th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Resultado'))}</th><th class="n">${esc(t('Retido'))}</th><th class="n">${esc(t('A recuperar'))}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}</p>
+      ${us}
+      <p class="note">${esc(t('Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.'))}</p>
+    </section>`;
+}
+
+export function reportHtml(r: Report, opts: { player?: string; now?: number; tax?: TaxReport } = {}): string {
   const many = r.currencies.length > 1;
   return `<!doctype html>
 <html lang="${locale.slice(0, 2)}">
@@ -140,6 +178,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number } = 
   .pos { color: #13803D; }
   .neg { color: #C03A2B; }
   .sessions td { font-size: 9.5pt; }
+  .note { border: 1px solid #F0C9B8; background: #FDF3EE; border-radius: 8px; padding: 8px 10px; font-size: 9pt; margin-top: 10px; }
   footer { margin-top: 22px; padding-top: 8px; border-top: 1px solid #D9E0DC; font-size: 8.5pt; color: #5B6B64; }
 </style>
 </head>
@@ -153,6 +192,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number } = 
     <div class="meta">${opts.player ? esc(opts.player) + '<br/>' : ''}${esc(t('Gerado a {date}', { date: day(opts.now ?? Date.now()) }))}</div>
   </header>
   ${r.currencies.length ? r.currencies.map((c) => currencyBlock(c, many)).join('') : `<p>${esc(t('Sem sessões no período'))}</p>`}
+  ${opts.tax ? taxBlock(opts.tax) : ''}
   <footer>${esc(t('Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.'))}</footer>
 </body>
 </html>`;

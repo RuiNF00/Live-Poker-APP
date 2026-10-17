@@ -113,7 +113,7 @@ function cell(v: string | number | undefined): string {
 
 /** Sessions, then deposits and withdrawals, as CSV for spreadsheets and accountants. */
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = []): string {
-  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'notes'];
+  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -138,6 +138,10 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         Math.round(profit(s) * 100) / 100,
         s.finish,
         s.field,
+        s.country ?? '',
+        s.withheld?.amount ?? '',
+        s.withheld?.form ?? '',
+        s.withheld ? s.withheld.status : '',
         s.notes,
       ]
         .map(cell)
