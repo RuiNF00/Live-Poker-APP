@@ -42,7 +42,10 @@ SHARE AND GET FEEDBACK
 BUILT FOR LIVE PLAYERS
 • Tournaments and cash games, with a session clock and stack tracking
 • Your live session on the lock screen: time played, stack and level
-• Bankroll and results by venue, with staking (percentage sold, markup) and expenses
+• Bankroll and results by venue, with deposits, withdrawals and expenses
+• Staking: your backers, packages across several tournaments and markup, with what you owe each one
+• A live link for your backers to follow your stack and level during the session
+• Import your sessions from other poker apps or any CSV
 • Final-table deal calculator (ICM and chip chop)
 • Reads on the players at your table during the session
 • No account needed: your hands stay on your phone
@@ -51,7 +54,7 @@ BUILT FOR LIVE PLAYERS
 • Available in English and Portuguese
 
 SWEATBOOK PRO
-Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, the 30-day, 90-day and 1-year bankroll filters, session export to CSV and voice-over Instagram Stories without the watermark. Monthly or yearly subscription; the yearly plan starts with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
+Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, multiple bankrolls, every bankroll filter (30 days, 90 days, 1 year, by stake), session export to CSV and voice-over Instagram Stories without the watermark. Monthly or yearly subscription; the yearly plan starts with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
 
 {{APP_NAME}} is a logging and study tool. It does not offer real-money gaming or betting of any kind.
 

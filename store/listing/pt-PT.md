@@ -42,7 +42,10 @@ PARTILHA E PEDE OPINIÃO
 PARA QUEM JOGA LIVE
 • Torneios e cash games, com relógio de sessão e registo do stack
 • A sessão em curso no ecrã bloqueado: tempo de jogo, stack e nível
-• Bankroll e resultados por casino, com staking (percentagem vendida, markup) e despesas
+• Bankroll e resultados por casino, com depósitos, levantamentos e despesas
+• Staking: os teus backers, pacotes de vários torneios e markup, com o que deves a cada um
+• Um link em direto para os teus backers seguirem o stack e o nível durante a sessão
+• Importa as tuas sessões de outras apps de póquer ou de qualquer CSV
 • Calculadora de deal para a mesa final (ICM e chip chop)
 • Leituras dos jogadores da tua mesa durante a sessão
 • Sem contas: as tuas mãos ficam no teu telemóvel
@@ -51,7 +54,7 @@ PARA QUEM JOGA LIVE
 • Disponível em português e inglês
 
 SWEATBOOK PRO
-Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas, os filtros de bankroll de 30 dias, 90 dias e 1 ano, a exportação de sessões em CSV e Stories com a tua voz e sem marca de água. Subscrição mensal ou anual; o plano anual começa com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
+Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas, vários bankrolls, todos os filtros de bankroll (30 dias, 90 dias, 1 ano, por stake), a exportação de sessões em CSV e Stories com a tua voz e sem marca de água. Subscrição mensal ou anual; o plano anual começa com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
 
 {{APP_NAME}} é uma ferramenta de registo e estudo. Não permite apostar nem jogar a dinheiro.
 
