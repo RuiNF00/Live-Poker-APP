@@ -125,6 +125,7 @@ export default function HandsScreen() {
                 right={
                   <>
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
+                    <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
                     <IconButton name="settings-outline" label={t('Definições')} onPress={() => router.push('/settings')} />
                   </>
                 }

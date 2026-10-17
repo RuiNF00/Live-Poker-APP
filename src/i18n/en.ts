@@ -566,6 +566,7 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'A tua mão contra cartas ou um range': 'Your hand against cards or a range',
   'Exemplo de aviso': 'Example notification',
   'agora': 'now',
   'Só avisos que pediste. Nada de publicidade. Podes desligar nas definições do telemóvel.': 'Only alerts you asked for. No ads. You can turn them off in your phone settings.',
