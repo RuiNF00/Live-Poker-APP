@@ -71,6 +71,22 @@ export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; 
   );
 }
 
+/** /r/<code> with a code that is not one of ours: say so, and still offer the app. */
+export function InvalidInvite({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
+  return (
+    <section className="lp-invite" aria-labelledby="invite-title">
+      <span className="lp-eyebrow">
+        <GiftIcon /> {c.invite.eyebrow}
+      </span>
+      <h1 id="invite-title">{c.invite.invalidTitle}</h1>
+      <p className="lp-lede">{c.invite.invalidBody}</p>
+      <div id="hero-cta" className="lp-hero-actions">
+        <MainCta label={c.ctaFree} stores={stores} from="invite_invalid" />
+      </div>
+    </section>
+  );
+}
+
 function GiftIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
