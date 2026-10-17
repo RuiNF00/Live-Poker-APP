@@ -6,7 +6,7 @@ import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 
-import { Button, Card, Pill, Row, T, tap } from '@/components/ui';
+import { Button, Card, Pill, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive } from '@/lib/live-link';
@@ -92,6 +92,15 @@ export function BackerLiveCard({ s }: { s: Session }) {
           </T>
         </View>
       </Row>
+      {s.live ? (
+        <ToggleItem
+          icon="location-outline"
+          title={t('Mostrar a sala')}
+          subtitle={s.venue ? t('{venue} aparece no link. Desligado, ninguém sabe onde estás.', { venue: s.venue }) : t('Desligado, ninguém sabe onde estás.')}
+          value={!!s.live.showVenue}
+          onChange={(showVenue) => saveSession({ ...s, live: { ...s.live!, showVenue } })}
+        />
+      ) : null}
       {s.live ? (
         <Row gap={S.sm}>
           <Button size="md" kind="ghost" style={{ flex: 1 }} title={t('Desligar')} disabled={busy} onPress={remove} />

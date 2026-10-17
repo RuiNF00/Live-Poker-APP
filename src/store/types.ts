@@ -28,7 +28,8 @@ export interface Session {
   /** Who has a piece of this session. Absent on older sessions: `staking` is then one unnamed stake. */
   stakes?: Stake[];
   /** Public live link for backers (sweatbook.poker/live/<id>); token lets this phone update or remove it. */
-  live?: { id: string; token: string };
+  /** Backer live link. The venue is only on the page when the player turns it on (where they are is their business). */
+  live?: { id: string; token: string; showVenue?: boolean };
   /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
   makeupCut?: number;
   // Live table state, used to pre-fill every new hand.

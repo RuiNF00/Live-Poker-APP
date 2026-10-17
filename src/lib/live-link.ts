@@ -3,7 +3,7 @@
 // changes; the page polls it. Opt-in per session, and the player can remove it.
 //
 // Only what a backer needs goes out: no notes, no table roster, no backer names
-// or amounts, no hands.
+// or amounts, no hands, and the venue only when the player chooses to show it.
 
 import { cost, isPaused, playedMs, soldShare } from '@/store/session-math';
 import type { Session } from '@/store/types';
@@ -54,7 +54,7 @@ export function liveSnapshot(s: Session, player: string, hands: number, now = Da
     player: str(player, 40),
     kind: s.kind,
     name: str(s.name, 80),
-    venue: str(s.venue, 80),
+    venue: s.live?.showVenue ? str(s.venue, 80) : '',
     currency: str(s.currency, 4),
     startedAt: s.startedAt,
     endedAt: s.endedAt ?? null,
