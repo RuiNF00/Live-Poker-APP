@@ -1274,6 +1274,8 @@ const ptBR: Record<string, string> = {
   'Abrir definições': 'Abrir configurações',
   'Aparecem no ecrã bloqueado.': 'Aparecem na tela de bloqueio.',
   'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Você pode escolher quais nas Configurações da Sweatbook.',
+  'Aviso antes de cobrar': 'Aviso antes da cobrança',
+  'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante o teste grátis, avisamos você antes de cobrar.',
 };
 
 export default ptBR;
