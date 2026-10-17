@@ -1,0 +1,84 @@
+import type { Session } from '@/store/types';
+
+import type { GameInfo, Hand } from './types';
+
+export const MTT_LEVELS: [number, number][] = [
+  [100, 200], [150, 300], [200, 400], [250, 500], [300, 600], [400, 800], [500, 1000], [600, 1200],
+  [800, 1600], [1000, 2000], [1200, 2400], [1500, 3000], [2000, 4000], [2500, 5000], [3000, 6000],
+  [4000, 8000], [5000, 10000], [6000, 12000], [8000, 16000], [10000, 20000], [15000, 30000], [20000, 40000],
+];
+export const CASH_LEVELS: [number, number][] = [
+  [1, 2], [1, 3], [2, 3], [2, 5], [5, 5], [5, 10], [10, 20], [25, 50],
+];
+
+export function defaultGame(kind: 'mtt' | 'cash', currency = '€'): GameInfo {
+  return kind === 'mtt'
+    ? { kind, name: '', sb: 100, bb: 200, ante: 200, anteType: 'bb', currency, stage: 'early', level: 1 }
+    : { kind, name: '', sb: 1, bb: 2, ante: 0, anteType: 'none', currency };
+}
+
+export function newHand(opts: {
+  id: string;
+  session?: Session | null;
+  last?: Hand | null;
+  tableSize?: number;
+  currency?: string;
+}): Hand {
+  const { session, last } = opts;
+  let game: GameInfo;
+  let n: number;
+  let stack: number;
+  let names: string[] = [];
+  if (session) {
+    game = {
+      kind: session.kind,
+      name: session.name,
+      venue: session.venue,
+      sb: session.sb,
+      bb: session.bb,
+      ante: session.ante,
+      anteType: session.anteType,
+      level: session.level,
+      stage: session.stage,
+      currency: session.currency,
+      buyIn: session.buyIn,
+    };
+    n = session.tableSize;
+    stack = session.stack;
+    names = session.roster;
+  } else if (last) {
+    game = { ...last.game };
+    n = last.players.length;
+    stack = last.players[last.hero].stack;
+  } else {
+    game = defaultGame('mtt', opts.currency);
+    n = opts.tableSize ?? 9;
+    stack = game.bb * 100;
+  }
+  n = Math.max(2, Math.min(10, n));
+  const now = Date.now();
+  return {
+    v: 1,
+    id: opts.id,
+    createdAt: now,
+    updatedAt: now,
+    sessionId: session?.id,
+    game,
+    players: Array.from({ length: n }, (_, i) => ({
+      name: i === 0 ? 'Hero' : names[i] ?? '',
+      stack: stack || game.bb * 100,
+    })),
+    button: 0,
+    hero: 0,
+    actions: [],
+    board: [],
+    tags: [],
+    notes: '',
+  };
+}
+
+/** Change table size keeping hero at index 0 and the same stacks. */
+export function resizeTable(hand: Hand, n: number): Hand {
+  const players = Array.from({ length: n }, (_, i) => hand.players[i] ?? { name: '', stack: hand.players[hand.hero].stack });
+  return { ...hand, players, button: Math.min(hand.button, n - 1), actions: [], winners: undefined };
+}

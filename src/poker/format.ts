@@ -1,0 +1,63 @@
+import type { ActionKind, Hand } from './types';
+
+function trim(n: number, digits: number) {
+  return n.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+}
+
+/** 950 → "950", 12500 → "12.5k", 1250000 → "1.25M". */
+export function chips(n: number): string {
+  const a = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (a < 10000) return sign + Math.round(a).toLocaleString('pt-PT').replace(/\s/g, ' ');
+  if (a < 1e6) return sign + trim(a / 1000, a < 100000 ? 1 : 0) + 'k';
+  return sign + trim(a / 1e6, 2) + 'M';
+}
+
+export function bbs(n: number, bb: number): string {
+  if (!bb) return chips(n);
+  const v = n / bb;
+  return trim(v, Math.abs(v) < 10 ? 1 : Math.abs(v) < 100 ? 1 : 0) + ' bb';
+}
+
+export function amount(n: number, hand: Pick<Hand, 'game'>, inBB: boolean): string {
+  return inBB ? bbs(n, hand.game.bb) : chips(n);
+}
+
+export function money(n: number, currency = '€'): string {
+  const sign = n < 0 ? '−' : '';
+  const a = Math.abs(n);
+  const s = a >= 1000 ? Math.round(a).toLocaleString('pt-PT') : trim(a, 2);
+  return `${sign}${s}${currency}`;
+}
+
+export const ACTION_LABEL: Record<ActionKind, string> = {
+  fold: 'Fold',
+  check: 'Check',
+  call: 'Call',
+  bet: 'Bet',
+  raise: 'Raise',
+};
+
+export function blindsLabel(hand: Pick<Hand, 'game'>): string {
+  const g = hand.game;
+  const base = `${chips(g.sb)}/${chips(g.bb)}`;
+  if (g.ante > 0 && g.anteType !== 'none') return `${base} (${chips(g.ante)})`;
+  return base;
+}
+
+export function duration(ms: number): string {
+  const m = Math.max(0, Math.floor(ms / 60000));
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return h ? `${h}h${String(mm).padStart(2, '0')}` : `${mm}min`;
+}
+
+export function shortDate(ts: number): string {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+}
+
+export function timeOf(ts: number): string {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+}
