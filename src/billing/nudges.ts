@@ -1,6 +1,7 @@
-// The local notifications that sell Pro by its value, not its price: what the
-// player logged by day 5 of the trial, a clear notice before the first charge,
-// and a nudge back after a few days away. Pure planning here; nudges-sync
+// The local notifications that sell Pro by its value, not its price: a recap
+// the day after the first live session of the trial (the trial now starts at a
+// session and lasts as long as the store product says), a clear notice before
+// the first charge, and a nudge back after a few days away. Pure planning here; nudges-sync
 // schedules them on the phone.
 
 import { locale, t } from '@/i18n';
@@ -12,8 +13,9 @@ const NUDGE_HOUR = 13;
 /** Days without opening the app before the come-back nudge. */
 export const COMEBACK_DAYS = 4;
 
-export type NudgeId = 'trial-day5' | 'trial-end' | 'comeback';
-export const NUDGE_IDS: NudgeId[] = ['trial-day5', 'trial-end', 'comeback'];
+export type NudgeId = 'trial-recap' | 'trial-end' | 'comeback';
+/** 'trial-day5' is the old id, still cancelled so a reminder planned by an older version never fires. */
+export const NUDGE_IDS: (NudgeId | 'trial-day5')[] = ['trial-recap', 'trial-end', 'comeback', 'trial-day5'];
 
 export interface Nudge {
   id: NudgeId;
@@ -36,8 +38,8 @@ export interface NudgeInput {
   /** Annual price as the store shows it, for the charge notice. */
   annualPrice: string;
   store: string;
-  hands: { createdAt: number }[];
-  sessions: { startedAt: number }[];
+  hands: { createdAt: number; sessionId?: string }[];
+  sessions: { id?: string; startedAt: number; endedAt?: number }[];
   sessionActive: boolean;
 }
 
@@ -65,39 +67,43 @@ function count(n: number, one: string, many: string) {
   return n === 1 ? t(one) : t(many, { n });
 }
 
+/** Midday after the session, at least 8 h after it ended (late-night sessions get the next day). */
+export function recapAt(endedAt: number): number {
+  const at = atHour(endedAt, NUDGE_HOUR);
+  return at >= endedAt + 8 * HOUR ? at : atHour(endedAt + DAY, NUDGE_HOUR);
+}
+
 export function planNudges(p: NudgeInput): Nudge[] {
   const out: Nudge[] = [];
   const soon = p.now + 60_000;
 
   if (p.isPro && p.trial && p.trial.end > p.now) {
     const { start, end } = p.trial;
-    const day5 = atHour(start + 4 * DAY, NUDGE_HOUR);
     const notice = p.trial.willRenew ? chargeNoticeAt(end) : null;
     const date = new Date(end).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
-    // Day 5 only makes sense in a trial long enough to have one, ahead of the charge notice.
-    if (day5 > soon && day5 < end - DAY && (notice === null || day5 < notice - 6 * HOUR)) {
-      const hands = p.hands.filter((h) => h.createdAt >= start).length;
-      const sessions = p.sessions.filter((s) => s.startedAt >= start).length;
-      out.push({
-        id: 'trial-day5',
-        at: day5,
-        title: t('Dia 5 do teu Pro'),
-        body:
-          hands + sessions > 0
-            ? t('{hands} e {sessions} registadas. Grátis até {date}.', {
-                hands: count(hands, '1 mão', '{n} mãos'),
-                sessions: count(sessions, '1 sessão', '{n} sessões'),
-                date,
-              })
-            : t('Grátis até {date}. Regista a próxima mão em segundos.', { date }),
-      });
+    // The day after the first live session that ended during the trial: what Pro kept from it.
+    const first = p.sessions.filter((s) => s.endedAt && s.endedAt >= start && s.endedAt < end).sort((a, b) => a.endedAt! - b.endedAt!)[0];
+    if (first) {
+      const at = recapAt(first.endedAt!);
+      const hands = p.hands.filter((h) => (first.id && h.sessionId ? h.sessionId === first.id : h.createdAt >= first.startedAt && h.createdAt <= first.endedAt!)).length;
+      if (at > soon && at < end - DAY && (notice === null || Math.abs(at - notice) >= 6 * HOUR)) {
+        out.push({
+          id: 'trial-recap',
+          at,
+          title: t('O que o Pro guardou da tua sessão'),
+          body: hands > 0 ? t('{hands}, sem limite. Grátis até {date}.', { hands: count(hands, '1 mão', '{n} mãos'), date }) : t('Vê em que sala e stake ganhas mais. Grátis até {date}.', { date }),
+        });
+      }
     }
     if (notice !== null && notice > soon) {
       out.push({
         id: 'trial-end',
         at: notice,
         title: t('O teste grátis acaba a {date}', { date }),
-        body: t('Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.', { price: p.annualPrice, store: p.store }),
+        body:
+          p.store === 'Google Play'
+            ? t('Depois, {price} por ano. Para não pagar, cancela na Google Play antes dessa data.', { price: p.annualPrice })
+            : t('Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.', { price: p.annualPrice, store: p.store }),
       });
     }
   }

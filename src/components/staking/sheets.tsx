@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, ChipRow, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
+import { useSheetAnimation } from '@/lib/motion';
 import { money } from '@/poker/format';
 import { uid } from '@/store/store';
 import type { Backer, BackerPayment, StakePackage } from '@/store/types';
@@ -22,8 +23,10 @@ export const markupLabel = (m: number) => (m === 1 ? t('Sem markup') : dec(m));
 /** A page sheet with the standard header, scrolling content and room for the keyboard. */
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  // Fades instead of sliding when the player asked for Reduce Motion.
+  const animation = useSheetAnimation();
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType={animation} presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={{ padding: S.gutter, paddingTop: S.xl, gap: S.xl, paddingBottom: insets.bottom + 40 }}
@@ -78,17 +81,36 @@ export function packageTerms(p: Pick<StakePackage, 'kind' | 'share' | 'markup' |
     : t('{share}% de cada torneio · {markup}', { share: p.share, markup: markupLabel(p.markup) });
 }
 
-export function PackageSheet({ pkg, onSave, onDelete, onClose }: { pkg: StakePackage | null; onSave: (p: StakePackage) => void; onDelete?: () => void; onClose: () => void }) {
+/**
+ * `makeup`: what is still to win back in this package (shown when closing it).
+ * `onSave(p, carry)`: carry is true when the player chose to take that makeup to a new package.
+ */
+export function PackageSheet({
+  pkg,
+  makeup,
+  onSave,
+  onDelete,
+  onClose,
+}: {
+  pkg: StakePackage | null;
+  makeup?: string | null;
+  onSave: (p: StakePackage, carry: boolean) => void;
+  onDelete?: () => void;
+  onClose: () => void;
+}) {
   return (
     <Sheet visible={!!pkg} title={pkg?.name ? pkg.name : t('Novo pacote')} onClose={onClose}>
-      {pkg ? <PackageForm key={pkg.id} pkg={pkg} onSave={onSave} onDelete={onDelete} /> : null}
+      {pkg ? <PackageForm key={pkg.id} pkg={pkg} makeup={makeup ?? null} onSave={onSave} onDelete={onDelete} /> : null}
     </Sheet>
   );
 }
 
-function PackageForm({ pkg, onSave, onDelete }: { pkg: StakePackage; onSave: (p: StakePackage) => void; onDelete?: () => void }) {
+function PackageForm({ pkg, makeup, onSave, onDelete }: { pkg: StakePackage; makeup: string | null; onSave: (p: StakePackage, carry: boolean) => void; onDelete?: () => void }) {
   const [x, setX] = useState(pkg);
   const set = (p: Partial<StakePackage>) => setX((v) => ({ ...v, ...p }));
+  // Closing it now with makeup still to win back: forgive it, or carry it to a new package (the usual deal).
+  const closing = !!makeup && x.kind === 'makeup' && !!x.closedAt && !pkg.closedAt;
+  const [carry, setCarry] = useState(true);
   return (
     <>
       <Field label={t('Nome do pacote')} value={x.name} onChangeText={(name) => set({ name })} placeholder={t('Ex.: Série de outubro, festival de verão')} maxLength={60} />
@@ -144,7 +166,22 @@ function PackageForm({ pkg, onSave, onDelete }: { pkg: StakePackage; onSave: (p:
           />
         </ListGroup>
       ) : null}
-      <Button title={t('Guardar')} onPress={() => onSave({ ...x, name: x.name.trim() || t('Pacote de {share}%', { share: x.share }) })} />
+      {closing ? (
+        <Card tone="inset" style={{ gap: S.sm }}>
+          <T v="h3">{t('Ainda há {amount} de makeup', { amount: makeup! })}</T>
+          <T v="small">{t('Combina com o backer o que acontece ao makeup quando o pacote fecha.')}</T>
+          <ChipRow>
+            <Chip label={t('Passa para um pacote novo')} active={carry} onPress={() => setCarry(true)} />
+            <Chip label={t('Fica perdoado')} active={!carry} onPress={() => setCarry(false)} />
+          </ChipRow>
+          <T v="small">
+            {carry
+              ? t('Abre um pacote novo com as mesmas condições, que começa com este makeup por recuperar.')
+              : t('O makeup acaba com o pacote: o próximo começa do zero.')}
+          </T>
+        </Card>
+      ) : null}
+      <Button title={t('Guardar')} onPress={() => onSave({ ...x, name: x.name.trim() || t('Pacote de {share}%', { share: x.share }) }, closing && carry)} />
       {onDelete ? <Button title={t('Apagar pacote')} kind="danger" size="md" onPress={onDelete} /> : null}
     </>
   );

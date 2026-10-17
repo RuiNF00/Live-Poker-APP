@@ -59,7 +59,7 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
 });
 
 test('ships without an event brand; the player can name the festival', () => {
-  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main/i, f.id);
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main|bsop|\bcep\b|sau[ií]pe/i, f.id);
   // No outbound links: organisers also run real-money gaming sites (store review).
   for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /https?:|www\./i, f.id);
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');

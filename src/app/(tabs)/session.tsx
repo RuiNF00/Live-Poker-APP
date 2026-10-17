@@ -6,13 +6,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -88,6 +89,15 @@ function SinceStart({ s }: { s: Session }) {
   );
 }
 
+/**
+ * Height of the pinned thumb bar, so the scroll content ends above it. At the
+ * largest text sizes the bar grows, and a fixed padding left inputs under it.
+ */
+function useBarHeight(): [number, (e: LayoutChangeEvent) => void] {
+  const [h, setH] = useState(80);
+  return [h, (e) => setH(Math.ceil(e.nativeEvent.layout.height))];
+}
+
 function confirm(title: string, body: string, ok: () => void) {
   if (Platform.OS === 'web') ok();
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: t('Sim'), onPress: ok }]);
@@ -100,6 +110,7 @@ export default function SessionScreen() {
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
 
   const startRef = useRef<(() => void) | null>(null);
+  const [bar, onBarLayout] = useBarHeight();
   // "Como chegas?" between Começar agora and the clock, unless turned off.
   const [arriving, setArriving] = useState<Session | null>(null);
   const begin = (s: Session) => {
@@ -111,7 +122,7 @@ export default function SessionScreen() {
   if (activeSession) return <Live s={activeSession} />;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Screen title={t('Sessão')} contentStyle={{ paddingBottom: 96 }}>
+      <Screen title={t('Sessão')} contentStyle={{ paddingBottom: bar + S.lg }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
           {FESTIVALS.map((f) => (
@@ -144,6 +155,15 @@ export default function SessionScreen() {
             </ListGroup>
           </Section>
         ) : null}
+        {/* Paper ticket from registration: the phone reads it and fills the tournament in. */}
+        <ListGroup>
+          {canReadReceipts ? (
+            <ListItem icon="receipt-outline" iconColor={C.accent} title={t('Fotografa o recibo do buy-in')} subtitle={t('Torneio, buy-in, mesa e lugar preenchidos por ti')} onPress={() => router.push('/receipt')} chevron />
+          ) : (
+            // Expo Go and the web have no text recognition: say so, nothing to tap.
+            <ListItem icon="receipt-outline" iconColor={C.textDim} title={t('Fotografa o recibo do buy-in')} subtitle={t('Disponível na versão da loja')} chevron={false} />
+          )}
+        </ListGroup>
         <SessionForm
           initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
           bankrolls={bankrolls}
@@ -155,7 +175,7 @@ export default function SessionScreen() {
         />
       </Screen>
       {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
-      <View style={styles.thumbBar}>
+      <View style={styles.thumbBar} onLayout={onBarLayout}>
         {/* A bagged day waiting comes first: one tap on the big button must not buy in a second time. */}
         {bagged[0] ? (
           <>
@@ -230,7 +250,7 @@ function FestivalItem({ f }: { f: Festival }) {
       icon="calendar-outline"
       iconColor={C.accent}
       title={festivalName(f, plan)}
-      subtitle={`${f.venue} · ${t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size })}`}
+      subtitle={`${f.venue} · ${f.events.length ? t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size }) : t('Datas a confirmar')}`}
       chevron
       onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
     />
@@ -278,6 +298,7 @@ function Live({ s }: { s: Session }) {
 
   const rebuy = () => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }));
 
+  const [bar, onBarLayout] = useBarHeight();
   // First live session: a three-step tour of what matters between hands.
   const stackRef = useRef<ViewRef>(null);
   const barRef = useRef<ViewRef>(null);
@@ -298,7 +319,7 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
-      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
+      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: bar + S.lg }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
           <PlayClock s={s} paused={paused} />
@@ -375,7 +396,7 @@ function Live({ s }: { s: Session }) {
 
         <Section title={t('Dinheiro')}>
           <ListGroup>
-            <ListItem icon="wallet-outline" title={t('Investido')} value={money(cost(s), s.currency)} />
+            <ListItem icon="wallet-outline" title={t('Buy-ins')} value={money(cost(s), s.currency)} />
             <ListItem
               icon="add-circle-outline"
               iconColor={C.accent}
@@ -492,7 +513,7 @@ function Live({ s }: { s: Session }) {
         <SinceStart s={s} />
       </Screen>
       {/* Everything you do between hands, within reach of the thumb. */}
-      <View style={styles.thumbBar}>
+      <View style={styles.thumbBar} onLayout={onBarLayout}>
         <View ref={barRef} collapsable={false} style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />

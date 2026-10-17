@@ -120,7 +120,9 @@ function localDay(day: string): number {
  */
 export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx?: Trip['fx'], now = Date.now()): Trip {
   const picked = new Set(plan.picked);
-  const days = (picked.size ? f.events.filter((e) => picked.has(e.id)) : f.events).map(eventDay).sort();
+  const fromEvents = (picked.size ? f.events.filter((e) => picked.has(e.id)) : f.events).map(eventDay).sort();
+  // No schedule yet: the festival's official dates.
+  const days = fromEvents.length ? fromEvents : f.dates ? [f.dates.from, f.dates.to] : [new Date(now).toISOString().slice(0, 10)];
   return {
     id,
     name: f.name,

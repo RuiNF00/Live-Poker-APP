@@ -34,6 +34,8 @@ export interface FestivalRecap {
   days: number;
   /** Local days played, as dayKey(). */
   played: Set<string>;
+  /** Days a tournament paid out (the day it ended), as dayKey(). */
+  cashedOn: Set<string>;
   events: number;
   cashSessions: number;
   /** Tournaments that paid (prize above 0). */
@@ -49,6 +51,7 @@ export interface FestivalRecap {
 }
 
 const DAY_GAP = 6 * 3_600_000;
+const DAY_MS = 86_400_000;
 export const dayKey = (ms: number) => {
   const d = new Date(ms);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -107,6 +110,7 @@ export function festivalRecap(trip: Trip, sessions: Session[], hands: Hand[]): F
     to: trip.to,
     days: played.size,
     played,
+    cashedOn: new Set(mtts.filter((s) => (s.cashOut || 0) > 0).map((s) => dayKey(s.endedAt ?? s.startedAt))),
     events: mtts.length,
     cashSessions: cash.length,
     cashes: mtts.filter((s) => (s.cashOut || 0) > 0).length,
@@ -152,4 +156,92 @@ export function recapStats(r: FestivalRecap): RecapStat[] {
     r.cashSessions ? { key: 'cash', label: t('Sessões de cash'), value: String(r.cashSessions) } : null,
   ];
   return all.filter((x): x is RecapStat => !!x).slice(0, 4);
+}
+
+export interface EventRow {
+  id: string;
+  name: string;
+  /** Start day, as a timestamp. */
+  day: number;
+  finish?: number;
+  field?: number;
+  cashed: boolean;
+  /** Result in the player's own buy-ins for this event. */
+  bi: number | null;
+  /** Result in the trip's currency, shown only when the player turns amounts on. */
+  money: number;
+}
+
+/** The tournaments of the trip for the carousel: the `max` best by result, in the order they were played. */
+export function eventRows(trip: Trip, sessions: Session[], max = 6): EventRow[] {
+  const rows: EventRow[] = tripSessions(trip, sessions)
+    .filter((s) => s.kind === 'mtt' && toTripCurrency(0, s.currency, trip) !== null)
+    .map((s) => {
+      const own = s.buyIn * (1 - soldShare(s));
+      return {
+        id: s.id,
+        name: s.name || t('Torneio'),
+        day: s.startedAt,
+        finish: s.finish,
+        field: s.field,
+        cashed: (s.cashOut || 0) > 0,
+        bi: own > 0 ? profit(s) / own : null,
+        money: toTripCurrency(profit(s), s.currency, trip) ?? 0,
+      };
+    });
+  return rows
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => (b.r.bi ?? b.r.money) - (a.r.bi ?? a.r.money))
+    .slice(0, max)
+    .sort((a, b) => a.r.day - b.r.day || a.i - b.i)
+    .map((x) => x.r);
+}
+
+/** "+3,4 bi" for an event row. */
+export function biLabel(v: number): string {
+  return `${resultParts({ value: v, unit: 'bi' }).num} bi`;
+}
+
+/**
+ * The post's caption: the festival in one line, then the invite link. Instagram
+ * doesn't take a caption from another app, so the player pastes it. Amounts only
+ * when the player turned them on.
+ */
+export function carouselCaption(r: FestivalRecap, link: string, opts: { showResult: boolean; showMoney: boolean }): string {
+  const bits: string[] = [];
+  if (r.events) bits.push(r.events === 1 ? t('1 evento') : t('{n} eventos', { n: r.events }));
+  if (r.events) bits.push(t('{c}/{n} nos prémios', { c: r.cashes, n: r.events }));
+  if (r.best) bits.push(t('melhor lugar {p}', { p: r.best.field ? `${r.best.finish}º/${r.best.field}` : `${r.best.finish}º` }));
+  bits.push(r.days === 1 ? t('1 dia de jogo') : t('{n} dias de jogo', { n: r.days }));
+  const lines = [`${r.title}: ${bits.join(', ')}.`];
+  if (opts.showResult && r.result) lines.push(t('Resultado: {v}', { v: resultLabel(r.result) + (opts.showMoney ? ` (${moneyLabel(r)})` : '') }));
+  else if (opts.showResult && opts.showMoney) lines.push(t('Resultado: {v}', { v: moneyLabel(r) }));
+  lines.push('', t('Registo as mãos e as sessões ao vivo com a Sweatbook: {link}', { link }));
+  return lines.join('\n');
+}
+
+/** Monday-first weeks covering the trip; null pads the days outside it. */
+export function tripWeeks(from: number, to: number): (number | null)[][] {
+  const start = new Date(from);
+  start.setHours(12, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(12, 0, 0, 0);
+  const days: (number | null)[] = Array((start.getDay() + 6) % 7).fill(null);
+  for (let ms = start.getTime(); ms <= end.getTime() && days.length < 42; ms += DAY_MS) days.push(ms);
+  while (days.length % 7) days.push(null);
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+  return weeks;
+}
+
+export type SlideKind = 'summary' | 'hand' | 'events' | 'days' | 'close';
+
+/** The slides that have something to show, in order. The closing slide is the brand, so it goes when the brand does. */
+export function carouselSlides(r: FestivalRecap, events: EventRow[], opts: { showHand: boolean; brand: boolean }): SlideKind[] {
+  const out: SlideKind[] = ['summary'];
+  if (opts.showHand && r.bestHand) out.push('hand');
+  if (events.length) out.push('events');
+  out.push('days');
+  if (opts.brand) out.push('close');
+  return out;
 }

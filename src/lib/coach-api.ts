@@ -27,6 +27,7 @@ import {
 } from './coach-core';
 import { onEraseAll } from './erase-all';
 import { notifications, setup } from './lock-screen/reminder';
+import { notifyOrHold } from './notify-gate';
 import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -195,7 +196,17 @@ async function notify(n: number) {
   try {
     await setup(N);
     if (!(await N.getPermissionsAsync()).granted) return;
-    if (Platform.OS === 'android') await N.setNotificationChannelAsync(CHANNEL, { name: t('Comentários do coach'), importance: N.AndroidImportance.DEFAULT });
+    // Off in Settings: nothing. During a live session: waits for the end or a pause.
+    notifyOrHold('coach', () => {
+      void post(N, n);
+    });
+  } catch (e) {
+    console.warn('[coach] notify', e);
+  }
+}
+
+async function post(N: NonNullable<ReturnType<typeof notifications>>, n: number) {
+  try {
     await N.scheduleNotificationAsync({
       identifier: 'coach-comments',
       content: {

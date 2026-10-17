@@ -35,6 +35,8 @@ export interface Festival {
   /** What the organiser hasn't published, shown under the schedule. */
   notes: string[];
   events: FestivalEvent[];
+  /** Official dates, 'YYYY-MM-DD', for a festival whose event schedule isn't out yet (no events). */
+  dates?: { from: string; to: string };
 }
 
 const ev = (number: number, name: string, game: FestivalEvent['game'], buyIn: number, guarantee: number, start: string, flight?: string): FestivalEvent => {
@@ -178,7 +180,44 @@ export const LAS_VEGAS_DEC_2026: Festival = {
   ],
 };
 
-export const FESTIVALS: Festival[] = [BAHAMAS_DEC_2026, LAS_VEGAS_DEC_2026];
+/**
+ * Brazil's summer series, 22–30 January 2027, on the Bahia coast. Only the
+ * dates are official so far (organiser's "próximas etapas" page, read on
+ * 2026-10-17): the planner shows them and the events go in when the schedule
+ * is published. Generic name, no event brand or resort name.
+ */
+export const BAHIA_JAN_2027: Festival = {
+  id: 'bahia-jan-2027',
+  name: 'Série de verão, janeiro 2027',
+  venue: 'Bahia',
+  city: 'Brasil',
+  currency: 'R$',
+  utcOffset: -180,
+  // https://bsop.com.br/proximas-etapas/
+  source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.'],
+  events: [],
+  dates: { from: '2027-01-22', to: '2027-01-30' },
+};
+
+/**
+ * The first stop of Spain's national series, in Barcelona, usually in March.
+ * The 2027 dates aren't published (checked 2026-10-17): no dates, no events,
+ * only the month it usually runs in, said as such. Generic name, no brand.
+ */
+export const BARCELONA_MAR_2027: Festival = {
+  id: 'barcelona-mar-2027',
+  name: 'Etapa nacional, Barcelona · março 2027',
+  venue: 'Barcelona',
+  city: 'Espanha',
+  currency: '€',
+  utcOffset: 60,
+  source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.'],
+  events: [],
+};
+
+export const FESTIVALS: Festival[] = [BAHAMAS_DEC_2026, LAS_VEGAS_DEC_2026, BAHIA_JAN_2027, BARCELONA_MAR_2027];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */
 export function venueTime(f: Pick<Festival, 'utcOffset'>, local: string): number {

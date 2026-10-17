@@ -4,7 +4,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +16,8 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
-import { defaultYear, FREE_YEAR_CARDS, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
+import { countInSlices } from '@/lib/idle-count';
+import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
 
@@ -24,6 +25,7 @@ const CARD_TITLE: Record<YearCardKind, string> = {
   year: t('O teu ano'),
   best: t('Melhor sessão'),
   stakes: t('As tuas stakes'),
+  bankroll: t('O ano na bankroll'),
   pot: t('Maior pote do ano'),
   streak: t('Semanas seguidas a registar'),
 };
@@ -43,10 +45,14 @@ export default function YearScreen() {
   const pager = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
 
+  // The biggest pot replays every hand of the year: that runs in slices after the first frame, then the pot card joins.
+  const [potsFor, setPotsFor] = useState<{ year: number; hands: typeof hands } | null>(null);
+  useEffect(() => countInSlices(handsOfYear(hands, year), (h) => (cachedPotBB(h), false), () => setPotsFor({ year, hands })), [hands, year]);
+  const potReady = potsFor?.year === year && potsFor.hands === hands;
   const review = useMemo(() => {
     const activity = [...hands.map((h) => h.createdAt), ...sessions.filter((x) => x.notes.trim()).map((x) => x.startedAt), ...players.map((p) => p.updatedAt)];
-    return yearReview(year, sessions, hands, activity, settings.streakPauses ?? []);
-  }, [year, sessions, hands, players, settings.streakPauses]);
+    return yearReview(year, sessions, hands, activity, settings.streakPauses ?? [], { pot: potReady });
+  }, [year, sessions, hands, players, settings.streakPauses, potReady]);
   const cards = useMemo(() => yearCards(review), [review]);
   const kind = cards[Math.min(page, cards.length - 1)];
   const locked = !pro.isPro && page >= FREE_YEAR_CARDS;
@@ -203,7 +209,7 @@ function LockedCard({ title, onUnlock }: { title: string; onUnlock: () => void }
         {title}
       </T>
       <T v="callout" style={{ textAlign: 'center' }}>
-        {t('As stakes onde ganhaste mais, o maior pote e a tua sequência estão no Pro.')}
+        {t('As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.')}
       </T>
       <Button kind="outline" size="sm" title={t('Desbloquear')} onPress={onUnlock} />
     </View>

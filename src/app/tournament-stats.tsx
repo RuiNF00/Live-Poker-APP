@@ -58,7 +58,7 @@ export default function TournamentStatsScreen() {
   }
 
   const enough = sum.count >= MIN_SAMPLE;
-  const verdict = !enough ? null : sum.roi === null ? t('Sem dinheiro investido nesta vista.') : sum.roi >= 0 ? t('Por cada 100 investidos, voltaram {x}.', { x: Math.round(100 + sum.roi) }) : t('Por cada 100 investidos, voltaram {x}. Em torneios, a variância é longa.', { x: Math.round(100 + sum.roi) });
+  const verdict = !enough ? null : sum.roi === null ? t('Sem buy-ins nesta vista.') : sum.roi >= 0 ? t('Por cada 100 em buy-ins, voltaram {x}.', { x: Math.round(100 + sum.roi) }) : t('Por cada 100 em buy-ins, voltaram {x}. Em torneios, a variância é longa.', { x: Math.round(100 + sum.roi) });
 
   return (
     <>
@@ -95,7 +95,7 @@ export default function TournamentStatsScreen() {
         <StatGrid cols={3}>
           <Stat label={t('Resultado')} value={hidden ? '•••' : compact(sum.net, currency)} tone={hidden ? undefined : sum.net >= 0 ? 'good' : 'bad'} />
           <Stat label="ITM" value={pct(sum.itm)} sub={t('{n} cashes', { n: sum.cashes })} />
-          <Stat label={t('Investido')} value={hidden ? '•••' : compact(sum.invested, currency, false)} />
+          <Stat label={t('Buy-ins')} value={hidden ? '•••' : compact(sum.invested, currency, false)} />
           <Stat label={t('Lugar')} value={sum.avgFinish ? Math.round(sum.avgFinish).toLocaleString(locale) : '—'} sub={sum.avgFieldPct !== null ? t('top {p}', { p: pct(sum.avgFieldPct) }) : sum.finishes ? t('médio em {n}', { n: sum.finishes }) : t('sem lugares')} />
           <Stat label="Re-entry" value={pct(sum.reentryRate)} sub={sum.reentriesPer !== null ? t('{x} por torneio', { x: sum.reentriesPer.toLocaleString(locale, { maximumFractionDigits: 1 }) }) : undefined} />
           <Stat label="Bounties" value={hidden ? '•••' : compact(sum.bounties, currency, false)} />

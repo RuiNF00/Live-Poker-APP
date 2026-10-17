@@ -1,12 +1,12 @@
 [
-  {"route": "/hand/new", "pt": ["Regista uma mão", "em segundos"], "en": ["Log a hand", "in seconds"]},
-  {"route": "/hand/h7", "pt": ["Revê cada rua,", "até o run it twice"], "en": ["Replay every street,", "even run it twice"]},
-  {"route": "/story/h1", "pt": ["Partilha e pede", "a opinião dos amigos"], "en": ["Share it and ask", "your friends"], "hide": ["Abre a app no telemóvel", "Open the app on your phone"]},
-  {"route": "/", "pt": ["Encontra qualquer", "mão depois"], "en": ["Find any hand", "later"]},
-  {"route": "/session", "pt": ["Torneio e nível,", "sempre guardados"], "en": ["Tournament and level,", "remembered"]},
-  {"route": "/tournament-stats", "pt": ["ROI e ITM", "de cada torneio"], "en": ["ROI and ITM", "for every tournament"]},
-  {"route": "/bankroll", "pt": ["O teu bankroll", "sem folhas de Excel"], "en": ["Your bankroll,", "no spreadsheets"]},
-  {"route": "/trips/t1", "pt": ["A viagem toda,", "despesas incluídas"], "en": ["The whole trip,", "expenses included"]},
-  {"route": "/festival-card/t1", "pt": ["Fecha o festival", "com uma Story"], "en": ["Wrap up the festival", "in one Story"], "hide": ["Abre a app no telemóvel", "Open the app on your phone"]},
-  {"route": "/backing", "pt": ["Quem bancas,", "tudo num só sítio"], "en": ["Everyone you back,", "in one place"]}
+  {"route": "/hand/new", "pt": ["Regista uma mão", "em segundos"], "en": ["Log a hand", "in seconds"], "pt-BR": ["Registre uma mão", "em segundos"], "es": ["Registra una mano", "en segundos"]},
+  {"route": "/hand/h7", "pt": ["Revê cada rua,", "até o run it twice"], "en": ["Replay every street,", "even run it twice"], "pt-BR": ["Reveja cada street,", "até o run it twice"], "es": ["Revive cada calle,", "hasta el run it twice"]},
+  {"route": "/story/h1", "pt": ["Partilha e pede", "a opinião dos amigos"], "en": ["Share it and ask", "your friends"], "hide": ["Abre a app no telemóvel", "Open the app on your phone", "Abra o app no celular", "Abre la app en tu teléfono"], "pt-BR": ["Compartilhe e peça", "a opinião dos amigos"], "es": ["Compártela y pide", "opinión a tus amigos"]},
+  {"route": "/", "pt": ["Encontra qualquer", "mão depois"], "en": ["Find any hand", "later"], "pt-BR": ["Encontre qualquer", "mão depois"], "es": ["Encuentra cualquier", "mano después"]},
+  {"route": "/session", "pt": ["Torneio e nível,", "sempre guardados"], "en": ["Tournament and level,", "remembered"], "pt-BR": ["Torneio e nível,", "sempre salvos"], "es": ["Torneo y nivel,", "siempre guardados"]},
+  {"route": "/tournament-stats", "pt": ["ROI e ITM", "de cada torneio"], "en": ["ROI and ITM", "for every tournament"], "pt-BR": ["ROI e ITM", "de cada torneio"], "es": ["ROI y ITM", "de cada torneo"]},
+  {"route": "/bankroll", "pt": ["O teu bankroll", "sem folhas de Excel"], "en": ["Your bankroll,", "no spreadsheets"], "pt-BR": ["Controle de banca", "sem planilhas"], "es": ["Tu bankroll,", "sin hojas de cálculo"]},
+  {"route": "/trips/t1", "pt": ["A viagem toda,", "despesas incluídas"], "en": ["The whole trip,", "expenses included"], "pt-BR": ["A viagem toda,", "despesas incluídas"], "es": ["Todo el viaje,", "gastos incluidos"]},
+  {"route": "/festival-card/t1", "pt": ["Fecha o festival", "com uma Story"], "en": ["Wrap up the festival", "in one Story"], "hide": ["Abre a app no telemóvel", "Open the app on your phone", "Abra o app no celular", "Abre la app en tu teléfono"], "pt-BR": ["Feche o festival", "com um Story"], "es": ["Cierra el festival", "con una Story"]},
+  {"route": "/backing", "pt": ["Quem bancas,", "tudo num só sítio"], "en": ["Everyone you back,", "in one place"], "pt-BR": ["Quem você banca,", "tudo num só lugar"], "es": ["A quién respaldas,", "todo en un lugar"]}
 ]

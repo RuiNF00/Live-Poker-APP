@@ -31,6 +31,16 @@ const pt = {
   cta: 'Feito com o Sweatbook, o caderno de mãos para jogadores live.',
   goneTitle: 'Este link já não está ativo',
   goneBody: 'O jogador desligou-o ou o prazo acabou. Pede-lhe um link novo.',
+  offensive: 'O comentário tem linguagem ofensiva. Reescreve-o, por favor.',
+  leave: 'Deixar de ver este link',
+  leaveSure: 'Deixas de ver estas mãos e o jogador recebe um aviso. Sair?',
+  leaveYes: 'Sim, sair',
+  leaveNo: 'Cancelar',
+  leftTitle: 'Deixaste de ver este link',
+  leftBody: 'O jogador foi avisado. Neste browser, o link fica fechado.',
+  comeBack: 'Voltar a ver as mãos',
+  leftNote: 'Deixei de ver este link.',
+  coach: 'Coach',
 };
 
 const en: typeof pt = {
@@ -62,6 +72,16 @@ const en: typeof pt = {
   cta: 'Made with Sweatbook, the hand notebook for live players.',
   goneTitle: 'This link is no longer active',
   goneBody: 'The player turned it off or it expired. Ask them for a new one.',
+  offensive: 'The comment has offensive language. Please rewrite it.',
+  leave: 'Stop seeing this link',
+  leaveSure: "You'll stop seeing these hands and the player gets a notice. Leave?",
+  leaveYes: 'Yes, leave',
+  leaveNo: 'Cancel',
+  leftTitle: 'You stopped seeing this link',
+  leftBody: 'The player was told. In this browser, the link stays closed.',
+  comeBack: 'See the hands again',
+  leftNote: 'I stopped seeing this link.',
+  coach: 'Coach',
 };
 
 const ptBR: typeof pt = {
@@ -93,6 +113,16 @@ const ptBR: typeof pt = {
   cta: 'Feito com o Sweatbook, o caderno de mãos para jogadores live.',
   goneTitle: 'Este link não está mais ativo',
   goneBody: 'O jogador desativou o link ou o prazo acabou. Peça um link novo para ele.',
+  offensive: 'O comentário tem linguagem ofensiva. Reescreva, por favor.',
+  leave: 'Deixar de ver este link',
+  leaveSure: 'Você deixa de ver estas mãos e o jogador recebe um aviso. Sair?',
+  leaveYes: 'Sim, sair',
+  leaveNo: 'Cancelar',
+  leftTitle: 'Você deixou de ver este link',
+  leftBody: 'O jogador foi avisado. Neste navegador, o link fica fechado.',
+  comeBack: 'Voltar a ver as mãos',
+  leftNote: 'Deixei de ver este link.',
+  coach: 'Coach',
 };
 
 const es: typeof pt = {
@@ -124,6 +154,16 @@ const es: typeof pt = {
   cta: 'Hecho con Sweatbook, el cuaderno de manos para jugadores live.',
   goneTitle: 'Este link ya no está activo',
   goneBody: 'El jugador lo desactivó o venció el plazo. Pídele un link nuevo.',
+  offensive: 'El comentario tiene lenguaje ofensivo. Reescríbelo, por favor.',
+  leave: 'Dejar de ver este link',
+  leaveSure: 'Dejas de ver estas manos y el jugador recibe un aviso. ¿Salir?',
+  leaveYes: 'Sí, salir',
+  leaveNo: 'Cancelar',
+  leftTitle: 'Dejaste de ver este link',
+  leftBody: 'El jugador recibió el aviso. En este navegador, el link queda cerrado.',
+  comeBack: 'Volver a ver las manos',
+  leftNote: 'Dejé de ver este link.',
+  coach: 'Coach',
 };
 
 const copy: Record<Locale, typeof pt> = { pt, 'pt-BR': ptBR, en, es };

@@ -7,6 +7,9 @@ const repoRoot = path.join(__dirname, '..');
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@livepoker/hand-format'],
+  // Shared links open on casino Wi-Fi and in chat apps: the CSS (~10 KB) rides in the HTML instead of
+  // costing two more round trips before the first paint.
+  experimental: { inlineCss: true },
   turbopack: { root: repoRoot },
   outputFileTracingRoot: repoRoot,
   // Voice stories run ffmpeg as a child process; ship its binary with that route.
@@ -20,7 +23,8 @@ const nextConfig: NextConfig = {
     '/og/invite': ['./assets/fonts/*.ttf'],
     '/opengraph-image': ['./assets/fonts/*.ttf'],
   },
-  // Coaching links carry their secret in the URL: never indexed, cached or sent on as a referrer.
+  // Private links (coaching, swaps, action-package agreements) carry their secret in the URL:
+  // never indexed, cached or sent on as a referrer.
   async headers() {
     const secret = [
       { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
@@ -30,6 +34,11 @@ const nextConfig: NextConfig = {
     return [
       { source: '/c/:token*', headers: secret },
       { source: '/api/coach/:path*', headers: secret },
+      { source: '/swap/:path*', headers: secret },
+      { source: '/api/swaps/:path*', headers: secret },
+      { source: '/api/swap-groups/:path*', headers: secret },
+      { source: '/o/:path*', headers: secret },
+      { source: '/api/offers/:path*', headers: secret },
     ];
   },
   // Localised entry points for the store pages: Apple's Support URL and Google's data deletion URL.

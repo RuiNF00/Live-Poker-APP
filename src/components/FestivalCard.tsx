@@ -32,7 +32,7 @@ const SIDE = 26;
 const DAY = 86_400_000;
 
 /** "2–17 DEZ 2026", or "28 NOV – 3 DEZ 2026" across months. */
-function dateRange(from: number, to: number): string {
+export function dateRange(from: number, to: number): string {
   const a = new Date(from);
   const b = new Date(to);
   const month = (d: Date) =>
@@ -45,7 +45,7 @@ function dateRange(from: number, to: number): string {
 }
 
 /** One tick per day of the trip, lit where the player sat down. */
-function dayTicks(r: FestivalRecap): boolean[] {
+export function dayTicks(r: FestivalRecap): boolean[] {
   const out: boolean[] = [];
   const start = new Date(r.from);
   start.setHours(12, 0, 0, 0);
@@ -55,7 +55,7 @@ function dayTicks(r: FestivalRecap): boolean[] {
   return out;
 }
 
-function Logo({ ink }: { ink: boolean }) {
+export function Logo({ ink }: { ink: boolean }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
       {ink ? (

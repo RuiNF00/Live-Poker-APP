@@ -4,6 +4,7 @@
 import { t } from '../i18n';
 
 import { apply, legal, totalPot, type TableState } from './engine';
+import { decimal } from './format';
 import type { Hand, HandAction } from './types';
 
 export interface SizePreset {
@@ -54,7 +55,7 @@ export function sizeToRemember(hand: Hand, s: TableState, to: number): { spot: S
 const FRACTIONS: [number, string][] = [[1 / 4, '¼'], [1 / 3, '⅓'], [1 / 2, '½'], [2 / 3, '⅔'], [3 / 4, '¾']];
 
 function sizeLabel(spot: SizeSpot, m: number) {
-  if (spot !== 'bet') return `${Math.round(m * 10) / 10}x`;
+  if (spot !== 'bet') return `${decimal(Math.round(m * 10) / 10).replace(/[.,]0$/, '')}x`;
   const f = FRACTIONS.find(([v]) => Math.abs(v - m) < 0.02);
   if (f) return f[1];
   if (Math.abs(m - 1) < 0.02) return t('Pote');
