@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Hand } from '@/poker/types';
-import { clearOffers, getOffers } from '@/store/action-offer';
+import { clearOffers, storedOffers } from '@/store/action-offer';
 import type { Session } from '@/store/types';
 
 import { lockSupported, saveLock } from './app-lock';
@@ -36,8 +36,8 @@ export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'sha
   for (const s of d.sessions) if (s.live) queueLiveDelete(s.live);
   // Action-package links: one private page per backer. (Statement links keep their
   // numbers in the URL fragment, so there's nothing of them on the server to delete.)
-  for (const o of getOffers()) for (const l of o.lines) if (l.remote) queueAgreementDelete(l.remote);
-  clearOffers();
+  for (const o of await storedOffers()) for (const l of o.lines) if (l.remote) queueAgreementDelete(l.remote);
+  await clearOffers();
   const cloud = await loadCloud();
   if (cloud) {
     queueCloudDelete(cloud);

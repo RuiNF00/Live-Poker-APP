@@ -135,6 +135,16 @@ export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: st
   return out;
 }
 
+/**
+ * What a backer still owes for a piece no session carries yet: the events of the
+ * package not started, at the piece's cost. Once a session starts, its stake
+ * (unpaid until the line is marked paid) carries that event instead.
+ */
+export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
+  if (line.paid) return 0;
+  return r2(offerEvents(f, o).filter((e) => !started[e.id]).reduce((a, e) => a + (e.buyIn * line.pct * o.markup) / 100, 0));
+}
+
 /** Packages these offers created: their stakes on a session are replaced, the rest kept. */
 export function offerPackageIds(offers: ActionOffer[]): Set<string> {
   return new Set(offers.flatMap((o) => o.lines.map((l) => l.packageId)));
@@ -155,7 +165,7 @@ type Offers = Record<string, ActionOffer>;
 
 let offers: Offers = {};
 let list: ActionOffer[] = [];
-let loaded = false;
+let loading: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -163,26 +173,31 @@ function emit() {
   for (const l of listeners) l();
 }
 
-function load() {
-  if (loaded) return;
-  loaded = true;
-  AsyncStorage.getItem(KEY)
+function load(): Promise<void> {
+  loading ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
       if (!raw) return;
       offers = { ...JSON.parse(raw), ...offers };
       emit();
     })
     .catch(() => {});
+  return loading;
 }
 
 function subscribe(l: () => void) {
-  load();
+  void load();
   listeners.add(l);
   return () => listeners.delete(l);
 }
 
 export function getOffers(): ActionOffer[] {
-  load();
+  void load();
+  return list;
+}
+
+/** Every package, once the stored ones are read (getOffers may still be empty right after launch). */
+export async function storedOffers(): Promise<ActionOffer[]> {
+  await load();
   return list;
 }
 
@@ -209,10 +224,12 @@ export function deleteOffer(id: string) {
 }
 
 /** "Delete all my data": forget every package (the links are deleted through the outbox first). */
-export function clearOffers() {
+export async function clearOffers() {
+  // After the stored list is read, so a load still in flight can't bring them back.
+  await load();
   offers = {};
   emit();
-  AsyncStorage.removeItem(KEY).catch(() => {});
+  await AsyncStorage.removeItem(KEY).catch(() => {});
 }
 
 export function useOffers(): ActionOffer[] {

@@ -141,15 +141,17 @@ function StakingScreen() {
   );
 }
 
-/** What a backer's balance is made of, in one line: "a receber 400€ · por pagar 120€ · pago 100€". */
+/**
+ * What a backer's balance is made of, in one line: "o backer recebe 400€ · ação por pagar 120€".
+ * Only when it's more than one thing: a single part is the balance itself, said again.
+ */
 function parts(l: BackerLedger, cur: string): string {
-  return [
-    l.owed ? t('a receber {amount}', { amount: money(l.owed, cur) }) : '',
-    l.unpaid ? t('por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
+  const list = [
+    l.owed ? t('o backer recebe {amount}', { amount: money(l.owed, cur) }) : '',
+    l.unpaid ? t('ação por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
     Math.abs(l.paid) >= 0.5 ? (l.paid > 0 ? t('pagaste {amount}', { amount: money(l.paid, cur) }) : t('recebeste {amount}', { amount: money(-l.paid, cur) })) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ].filter(Boolean);
+  return list.length > 1 ? list.join(' · ') : '';
 }
 
 /** One coloured number and a sentence, Splitwise style: where you stand with all your backers. */
