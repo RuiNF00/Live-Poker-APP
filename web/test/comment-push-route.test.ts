@@ -5,8 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { SAMPLE_TOURNAMENT_HAND } from '@livepoker/hand-format';
 
 vi.mock('server-only', () => ({}));
-// after() runs at once here: no request scope in tests.
-vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: (fn: () => unknown) => void fn() }));
+// after() has no request scope in tests: its work is collected so each check can wait for it.
+const work = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: (fn: () => unknown) => void work.push(Promise.resolve().then(fn)) }));
+const settled = () => Promise.all(work.splice(0));
 const notifyOwner = vi.fn(async () => {});
 vi.mock('@/lib/comment-push', () => ({ notifyOwner }));
 vi.mock('@/lib/abuse', async (orig) => ({ ...(await orig<typeof import('@/lib/abuse')>()), limited: async () => false }));
@@ -30,18 +32,20 @@ describe('the owner notice follows the comment', () => {
     const { id, editToken } = await store.createShare({ payload: SAMPLE_TOURNAMENT_HAND });
     const ok = await post(id, { name: 'Troll', text: 'Pagava o turn', street: 'turn', authorId: 'troll-device-1' });
     expect(ok.status).toBe(201);
+    await settled();
     expect(notifyOwner).toHaveBeenCalledWith(id, 'turn');
     const { comment } = (await ok.json()) as { comment: { id: string } };
     expect(await store.removeComment(comment.id, editToken, true)).toBe(true);
     notifyOwner.mockClear();
     expect((await post(id, { name: 'Troll', text: 'outra vez', authorId: 'troll-device-1' })).status).toBe(403);
     expect((await post(id, { name: 'Zé', text: 'filho da puta' })).status).toBe(422);
+    await settled();
     expect(notifyOwner).not.toHaveBeenCalled();
     expect((await post(id, { name: 'Autor da mão', text: '@Ana obrigado' }, editToken)).status).toBe(201);
-    await new Promise((r) => setTimeout(r, 0));
+    await settled();
     expect(notifyOwner).not.toHaveBeenCalled();
     expect((await post(id, { name: 'Ana', text: 'de nada' }, 'not-the-token')).status).toBe(201);
-    await new Promise((r) => setTimeout(r, 0));
+    await settled();
     expect(notifyOwner).toHaveBeenCalledOnce();
   });
 });
