@@ -26,6 +26,8 @@ import { SessionLockScreen } from '@/lib/lock-screen';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { bootReferrals } from '@/lib/referrals';
+// Registers the queued share-link sender before the outbox first drains.
+import '@/lib/share-queue';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 

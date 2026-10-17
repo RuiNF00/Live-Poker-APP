@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { legal, raiseName, replay } from '@/poker/engine';
+import { pct } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
@@ -229,8 +230,8 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
             {f.vs ? <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> vs {f.vs}</Text> : null}
           </Text>
           <Stat label="Call" value={f.toCall} color={C.good} />
-          <Stat label={t('Pot odds')} value={`${(f.potOdds * 100).toFixed(1)}%`} color={C.info} />
-          <Stat label="MDF" value={`${Math.round(f.mdf * 100)}%`} color="#A78BFA" />
+          <Stat label={t('Pot odds')} value={pct(f.potOdds, 1)} color={C.info} />
+          <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
           {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
@@ -255,7 +256,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
 function RangeEq({ eq }: { eq: { equity: number; pct: number } }) {
   return (
     <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
-      Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{Math.round(eq.equity * 100)}%</Text> {t('vs top')} {eq.pct}%
+      Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{pct(eq.equity)}</Text> {t('vs top')} {eq.pct}%
     </Text>
   );
 }
