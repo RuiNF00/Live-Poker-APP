@@ -1269,7 +1269,6 @@ const es: Record<string, string> = {
   'Relatório PDF e CSV': 'Informe PDF y CSV',
   'Relatório de póquer': 'Informe de póquer',
   'Resultados por bankroll, jogo, sala e mês, e todas as sessões': 'Resultados por bankroll, juego, sala y mes, y todas las sesiones',
-  'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.': 'Resultados registrados por el jugador en Sweatbook. El resultado de cada sesión ya descuenta buy-ins, gastos y la parte de los backers.',
   'Sala': 'Sala',
   'Sem sessões no período': 'Sin sesiones en el período',
   'Todas as bankrolls': 'Todos los bankrolls',
@@ -2430,6 +2429,8 @@ const es: Record<string, string> = {
   'Torneios com prémio: {cashes} de {n}': 'Torneos con premio: {cashes} de {n}',
   'Este mês / o mês anterior com sessões': 'Este mes / el mes anterior con sesiones',
   'Este mês / média dos {n} meses anteriores': 'Este mes / media de los {n} meses anteriores',
+  '1 swap': '1 swap',
+  '{n} swaps': '{n} swaps',
 };
 
 export default es;

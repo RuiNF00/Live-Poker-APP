@@ -588,7 +588,6 @@ const ptBR: Record<string, string> = {
   'Levantamentos': 'Saques',
   'Mais {n} moedas, cada uma com o seu resumo.': 'Mais {n} moedas, cada uma com seu resumo.',
   'Relatório de póquer': 'Relatório de poker',
-  'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.': 'Resultados registrados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas e a parte dos backers.',
   'Tudo, sempre grátis. Para mudar de telemóvel ou de app.': 'Tudo, sempre grátis. Para trocar de celular ou de app.',
   'Um relatório em PDF para o contabilista ou o teu backer, ou os dados em CSV para o Excel.': 'Um relatório em PDF para o contador ou seu backer, ou os dados em CSV para o Excel.',
   'Com 3 sessões de cash terminadas calculamos o teu win rate e desvio padrão.': 'Com 3 sessões de cash finalizadas calculamos seu win rate e desvio padrão.',
@@ -1060,6 +1059,12 @@ const ptBR: Record<string, string> = {
   'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Melhor sessão: {amount}. Toque para ver o resumo do mês.',
   'Toca para veres o resumo do mês.': 'Toque para ver o resumo do mês.',
   'Torneios com prémio: {cashes} de {n}': 'Torneios com prêmio: {cashes} de {n}',
+  'Confere e importa': 'Confira e importe',
+  'Importámos 1 sessão': 'Importamos 1 sessão',
+  'Importámos {n} sessões': 'Importamos {n} sessões',
+  'Já mudaste de app': 'Você já trocou de app',
+  'Mudar de app em 1 minuto': 'Troque de app em 1 minuto',
+  'Já uso outra app: mudar em 1 minuto': 'Já uso outro app: trocar em 1 minuto',
 };
 
 export default ptBR;
