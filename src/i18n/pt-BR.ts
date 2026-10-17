@@ -1134,6 +1134,8 @@ const ptBR: Record<string, string> = {
   'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
   'fez fold': 'deu fold',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
+  // Crash reports switch (Definições → Os teus dados).
+  'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
 };
 
 export default ptBR;
