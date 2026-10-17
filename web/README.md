@@ -35,7 +35,7 @@ O motor de replay, o avaliador e o conversor do `Hand` da app estão em `package
 
 1. Supabase: criar projeto, correr `supabase/migrations/*.sql` (SQL editor ou `supabase db push`).
 2. Vercel: importar o repositório com **Root Directory = `web`**.
-3. Variáveis (ver `web/.env.example`, inclui `APPLE_TEAM_ID` e `ANDROID_CERT_SHA256` para os links abrirem a app): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (por defeito `https://sweatbook.vercel.app`), e quando existirem `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_PLAY_STORE_URL`.
+3. Variáveis (ver `web/.env.example`, inclui `APPLE_TEAM_ID` e `ANDROID_CERT_SHA256` para os links abrirem a app): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (por defeito `https://sweatbook.poker`), e quando existirem `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_PLAY_STORE_URL`.
 
 ## Testes
 
