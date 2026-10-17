@@ -170,7 +170,7 @@ function BankrollTab() {
           </Row>
         </Card>
 
-        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} /> : null}
+        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} /> : null}
 
         <MoreTools />
 
@@ -307,6 +307,15 @@ function BankrollTab() {
                   title={t('Resumo do mês')}
                   subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: Math.round(lastMonth.hours) })}
                   onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key } })}
+                />
+              ) : null}
+              {tot.sessions && list.some((x) => x.kind === 'cash') ? (
+                <ListItem
+                  icon="layers-outline"
+                  iconColor={C.accent}
+                  title={t('Posso subir de stake?')}
+                  subtitle={t('Buy-ins para a tua stake e para a de cima')}
+                  onPress={() => router.push({ pathname: '/moveup', params: { bankroll: pastBankroll.id } })}
                 />
               ) : null}
               <ListItem

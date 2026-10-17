@@ -123,6 +123,20 @@ export interface Bankroll {
   updatedAt?: number;
   /** The player's own limits for this bankroll. */
   rules?: BankrollRules;
+  /** A planned shot at a bigger cash stake. */
+  shot?: ShotPlan;
+}
+
+/** A shot at a bigger stake: buy-ins set aside for it, and how many lost before going back. */
+export interface ShotPlan {
+  sb: number;
+  bb: number;
+  /** Buy-ins (100 big blinds) set aside for the shot. */
+  buyIns: number;
+  /** Buy-ins lost at this stake before going back to `back`. */
+  stopAfter: number;
+  back: { sb: number; bb: number };
+  startedAt: number;
 }
 
 /** Bankroll rules; every amount is in the bankroll's currency. */
