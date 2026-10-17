@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
@@ -14,6 +14,8 @@ import { C, R, S, SHADOW, ff } from '@/theme';
 
 export default function Paywall() {
   const insets = useSafeAreaInsets();
+  // Small phones (SE, mini): drop the hero icon so the plans show without scrolling.
+  const compact = useWindowDimensions().height < 760;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, purchase, restore, isPro } = usePro();
   const { hands } = useStore();
@@ -55,13 +57,15 @@ export default function Paywall() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: S.xl }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: compact ? S.lg : S.xl }}>
         <IconButton name="close" label={t('Fechar')} onPress={close} />
 
         <View style={{ gap: S.md }}>
-          <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
-            <Ionicons name="flash" size={28} color={C.accentInk} />
-          </View>
+          {compact ? null : (
+            <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
+              <Ionicons name="flash" size={28} color={C.accentInk} />
+            </View>
+          )}
           <T v="title">{copy.title}</T>
           <T v="callout">{copy.body}</T>
           {hands.length >= 3 && reason !== 'welcome' ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
@@ -137,6 +141,14 @@ export default function Paywall() {
           </Pressable>
         </Row>
         {reason === 'hands' && FREE.handsPerDay ? (
+          <Pressable onPress={() => router.replace('/invite')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 2 }}>
+            <Ionicons name="gift-outline" size={14} color={C.accent} />
+            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+              {t('Convida um amigo: 7 dias Pro para os dois')}
+            </T>
+          </Pressable>
+        ) : null}
+        {reason === 'hands' && FREE.handsPerDay ? (
           <Pressable onPress={close} hitSlop={8} style={{ paddingTop: 2 }}>
             <T v="small" color={C.muted} style={{ textAlign: 'center' }}>
               {t('Agora não · amanhã tens mais {n}', { n: FREE.handsPerDay })}
@@ -198,21 +210,24 @@ function PlanCard({
           </View>
         ))}
       </Row>
-      <Row gap={6} style={{ alignItems: 'flex-end', paddingLeft: 30 }}>
-        <T v="monoL">{big}</T>
-        <T v="small" style={{ paddingBottom: 3 }}>
-          {unit}
-        </T>
-        <View style={{ flex: 1 }} />
-        <View style={{ alignItems: 'flex-end', flexShrink: 1 }}>
+      <View style={{ paddingLeft: 30, gap: 2 }}>
+        <Row gap={6} style={{ alignItems: 'flex-end' }}>
+          <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+            {big}
+          </T>
+          <T v="small" style={{ paddingBottom: 3 }}>
+            {unit}
+          </T>
           {was ? (
-            <T v="monoS" style={{ textDecorationLine: 'line-through', color: C.muted }} accessibilityLabel={t('Em vez de {price}', { price: was })}>
+            <T v="monoS" style={{ marginLeft: 'auto', paddingBottom: 4, textDecorationLine: 'line-through', color: C.muted }} accessibilityLabel={t('Em vez de {price}', { price: was })}>
               {was}
             </T>
           ) : null}
-          <T v="small">{line}</T>
-        </View>
-      </Row>
+        </Row>
+        <T v="small" numberOfLines={1}>
+          {line}
+        </T>
+      </View>
     </Pressable>
   );
 }

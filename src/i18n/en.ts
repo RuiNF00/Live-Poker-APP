@@ -294,6 +294,7 @@ const en: Record<string, string> = {
   'Começar {days} dias grátis': 'Start {days} days free',
   'Depois {after}': 'Then {after}',
   'Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.': 'Renews automatically. Cancel in the {store} at least 24 h before the period ends.',
+  'Convida um amigo: 7 dias Pro para os dois': 'Invite a friend: 7 Pro days for you both',
   'Agora não · amanhã tens mais {n}': 'Not now · {n} more tomorrow',
   'Tudo desbloqueado. 0 a pagar.': 'Everything unlocked. Nothing to pay.',
   'Começa: {price}': 'Starts: {price}',
