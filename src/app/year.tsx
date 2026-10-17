@@ -93,9 +93,9 @@ export default function YearScreen() {
   };
 
   // Time and volume only; the result stays on the card if the player shows it there.
-  const postText = async (to: 'x' | 'any') => {
+  const postText = async (to: 'x' | 'whatsapp' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=year`, variant);
+    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=year`, variant);
     const line = t('O meu {year} no póquer: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
       year,
       sessions: review.sessions,
@@ -105,7 +105,7 @@ export default function YearScreen() {
     return `${line}\n${link}`;
   };
 
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
@@ -140,7 +140,7 @@ export default function YearScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bgDeep, paddingTop: insets.top + S.xs }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
 
       {/* Story-style progress, one segment per card */}
       <Row gap={4} style={{ paddingHorizontal: S.gutter, paddingTop: S.xs }}>

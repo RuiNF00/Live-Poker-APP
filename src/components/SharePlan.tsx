@@ -6,10 +6,11 @@
 
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Share, View } from 'react-native';
+import { Alert, Linking, Platform, Share, View } from 'react-native';
 
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
+import { withLang } from '@/lib/link-lang';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
@@ -50,7 +51,7 @@ export function SharePlan({ f, plan }: { f: Festival; plan: FestivalPlan }) {
 
   const link = async (source: string) => {
     const code = await shareRef().catch(() => '');
-    return `${BRAND.webUrl}/r/${code}?utm_source=${source}&utm_medium=plan&utm_campaign=festival_plan`;
+    return withLang(`${BRAND.webUrl}/r/${code}?utm_source=${source}&utm_medium=plan&utm_campaign=festival_plan`, variant);
   };
   const fail = () => Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
   const later = (fn: () => Promise<void>) => () => void setTimeout(() => void fn().catch(fail), AFTER_CLOSE_MS);
@@ -59,6 +60,7 @@ export function SharePlan({ f, plan }: { f: Festival; plan: FestivalPlan }) {
   const options: ShareOption[] = [];
   if (canShareStory) {
     options.push({
+      key: 'instagram',
       icon: 'logo-instagram',
       label: t('Story no Instagram'),
       onPress: later(async () => {
@@ -67,25 +69,31 @@ export function SharePlan({ f, plan }: { f: Festival; plan: FestivalPlan }) {
       }),
     });
     options.push({
-      icon: 'image-outline',
-      label: t('Imagem e texto'),
-      sub: t('WhatsApp, Mensagens, guardar imagem…'),
+      key: 'other',
+      icon: 'share-outline',
+      label: t('Outras apps'),
+      sub: t('Mensagens, Telegram…'),
       onPress: later(async () => {
         await sharePost([await image()], planText(f, plan, await link('app'), { buyIns }), 'any');
         track('story_shared', { target: 'any', kind: 'festival_plan', buyIns });
       }),
     });
   }
+  // WhatsApp gets the text (days, times, events) straight into the chat picker; the image goes through the other apps.
   options.push({
-    icon: 'chatbubble-ellipses-outline',
-    label: t('Só o texto'),
+    key: 'whatsapp',
+    icon: 'logo-whatsapp',
+    label: 'WhatsApp',
     sub: t('Dias, horas e torneios, para o grupo'),
     onPress: later(async () => {
-      await Share.share({ message: planText(f, plan, await link('whatsapp'), { buyIns }) });
-      track('story_shared', { target: 'text', kind: 'festival_plan', buyIns });
+      const message = planText(f, plan, await link('whatsapp'), { buyIns });
+      const text = encodeURIComponent(message);
+      await Linking.openURL(Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`).catch(() => Share.share({ message }));
+      track('story_shared', { target: 'whatsapp', kind: 'festival_plan', buyIns });
     }),
   });
   options.push({
+    key: 'copy',
     icon: 'copy-outline',
     label: t('Copiar texto'),
     onPress: () =>

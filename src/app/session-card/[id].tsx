@@ -79,13 +79,13 @@ export default function SessionCardScreen() {
     const n = hands.filter((x) => x.sessionId === s.id).length;
     return `${n ? t('{h} h ao vivo, {hands} mãos registadas.', { h, hands: n }) : t('{h} h ao vivo.', { h })}\n${link}`;
   };
-  const inviteLink = async (to: 'x' | 'any') => {
+  const inviteLink = async (to: 'x' | 'whatsapp' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    return withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`, variant);
+    return withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=session`, variant);
   };
 
   // X or any other app: the card at 4:5 (the dark look for the sticker) as a picture, the invite link in the text.
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
@@ -109,7 +109,7 @@ export default function SessionCardScreen() {
       <CardShareSheet
         visible={sheet}
         onClose={() => setSheet(false)}
-        instagram={post} instagramTitle={look === 'sticker' ? t('Sticker no Instagram') : undefined} x={() => postTo('x')} other={() => postTo('any')} copy={copy}
+        instagram={post} instagramTitle={look === 'sticker' ? t('Sticker no Instagram') : undefined} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy}
       />
       {/* The 4:5 copy for X and other apps: drawn off screen, only ever captured. */}
       <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>

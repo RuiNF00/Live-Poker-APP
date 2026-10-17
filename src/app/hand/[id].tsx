@@ -447,11 +447,11 @@ ${link}`;
         groups={[
           {
             options: [
-              { icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
-              { icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
-              { icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
-              { icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
-              { icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
+              { key: 'whatsapp', icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
+              { key: 'instagram', icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
+              { key: 'x', icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
+              { key: 'other', icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
+              { key: 'copy', icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
             ],
           },
           {
