@@ -14,6 +14,7 @@ import {
   presetRange,
   scopeOptions,
   sessionsIn,
+  sortBankrolls,
   stakeKey,
   stakeOptions,
 } from '../bankroll-math';
@@ -119,4 +120,11 @@ test('date presets', () => {
   assert.equal(lm.to, new Date(2026, 9, 1).getTime() - 1);
   assert.equal(presetRange('year', now).from, new Date(2026, 0, 1).getTime());
   assert.deepEqual(presetRange('all', now), {});
+});
+
+test('sortBankrolls: the auto bankroll stays first even when an import brings older ones', () => {
+  const auto: Bankroll = { id: autoBankrollId('€'), name: 'Principal', currency: '€', createdAt: 5000 };
+  const online: Bankroll = { id: 'br_online', name: 'Online', currency: '€', createdAt: 1000 };
+  const later: Bankroll = { id: 'br_later', name: 'Bahamas', currency: '€', createdAt: 3000 };
+  assert.deepEqual(sortBankrolls([later, online, auto]).map((b) => b.name), ['Principal', 'Online', 'Bahamas']);
 });
