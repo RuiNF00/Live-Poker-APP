@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -22,6 +23,9 @@ export function CoachMarks({ id, steps }: { id: string; steps: CoachStep[] }) {
   const { width, height } = useWindowDimensions();
   const [i, setI] = useState(-1);
   const [box, setBox] = useState<Box | null>(null);
+  // A screen pushed on top (the trial paywall at the first live session) wins:
+  // the tour waits under it and comes back when it closes.
+  const focused = useIsFocused();
 
   useEffect(() => {
     let alive = true;
@@ -52,7 +56,7 @@ export function CoachMarks({ id, steps }: { id: string; steps: CoachStep[] }) {
     setI(steps.length);
     AsyncStorage.setItem(key, '1').catch(() => {});
   };
-  if (i < 0 || i >= steps.length || !box) return null;
+  if (i < 0 || i >= steps.length || !box || !focused) return null;
   const step = steps[i];
   const last = i === steps.length - 1;
   // The tip goes on whichever side of the lit area has more room.
