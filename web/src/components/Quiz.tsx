@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { actionLabel, formatAmount, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
+import type { AmountMode, HandRecord, ReplayStep } from '@livepoker/hand-format';
+import { actionLabel, formatAmount } from '@/lib/hand-i18n';
 import { t, type Locale } from '@/lib/i18n';
 import type { VoteChoice } from '@/lib/types';
 import { voterId, writeLocal } from '@/lib/local';

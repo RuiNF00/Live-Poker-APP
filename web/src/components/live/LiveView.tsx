@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import type { Locale } from '@/lib/i18n';
+import { intlTag, numberTag, withCurrency, type Locale } from '@/lib/i18n';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
 import { writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
@@ -73,14 +73,14 @@ export function LiveView({
   }, [id, s.endedAt, gone]);
 
   // Chip counts read best with a dot (pt) or comma (en): pt-PT's space is a full cell in a mono font.
-  const fmt = new Intl.NumberFormat(locale === 'pt' ? 'de-DE' : 'en-GB', { maximumFractionDigits: 1 });
+  const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 });
   const num = (n: number) => fmt.format(n);
   const money = (n: number) => {
     const sign = n < 0 ? '−' : '';
     const a = num(Math.abs(n));
-    return locale === 'pt' ? `${sign}${a}${s.currency}` : `${sign}${s.currency}${a}`;
+    return withCurrency(a, s.currency, locale, sign);
   };
-  const time = (t: number) => new Date(t).toLocaleTimeString(locale === 'pt' ? 'pt-PT' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
+  const time = (t: number) => new Date(t).toLocaleTimeString(intlTag(locale), { hour: '2-digit', minute: '2-digit' });
 
   const ended = !!s.endedAt;
   const stale = !ended && now - updatedAt > STALE_MS;

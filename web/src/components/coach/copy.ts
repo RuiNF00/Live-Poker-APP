@@ -1,7 +1,7 @@
 import type { Locale } from '@/lib/i18n';
 import type { Mark } from '@/lib/coach-data';
 
-// Text for the coach's page (/c/<token>), in the site's two languages.
+// Text for the coach's page (/c/<token>), in the site's languages.
 const pt = {
   privateBadge: 'Link privado',
   kicker: (player: string) => (player ? `Mãos de ${player} para rever` : 'Mãos para rever'),
@@ -64,5 +64,69 @@ const en: typeof pt = {
   goneBody: 'The player turned it off or it expired. Ask them for a new one.',
 };
 
-export const coachCopy = (l: Locale) => (l === 'en' ? en : pt);
+const ptBR: typeof pt = {
+  privateBadge: 'Link privado',
+  kicker: (player: string) => (player ? `Mãos de ${player} para revisar` : 'Mãos para revisar'),
+  handsCount: (n: number) => (n === 1 ? '1 mão' : `${n} mãos`),
+  expires: (d: string) => `Ativo até ${d}`,
+  hand: (i: number) => `Mão ${i}`,
+  notes: 'Notas do jogador',
+  marks: { good: 'Boa linha', mistake: 'Erro', question: 'Pergunta' },
+  composeTitle: 'Comentar este momento',
+  composeHand: 'Comentar a mão',
+  wholeHand: 'A mão inteira',
+  atStep: 'Neste momento',
+  yourName: 'Seu nome (coach)',
+  placeholder: 'O que você faria aqui e por quê?',
+  send: 'Comentar',
+  sending: 'Enviando…',
+  error: 'Não foi possível enviar. Tente de novo.',
+  limited: 'Muitos comentários seguidos. Espere um pouco.',
+  closed: 'Este link não está mais ativo.',
+  comments: 'Comentários',
+  noComments: 'Ainda sem comentários nesta mão. Escolha um momento no replayer e deixe o primeiro.',
+  player: 'Jogador',
+  prev: 'Mão anterior',
+  next: 'Próxima mão',
+  log: 'Ação',
+  privacy: 'Só quem tem este link vê estas mãos. Não aparece em buscas nem no perfil do jogador, e o jogador pode desativá-lo quando quiser.',
+  cta: 'Feito com o Sweatbook, o caderno de mãos para jogadores live.',
+  goneTitle: 'Este link não está mais ativo',
+  goneBody: 'O jogador desativou o link ou o prazo acabou. Peça um link novo para ele.',
+};
+
+const es: typeof pt = {
+  privateBadge: 'Link privado',
+  kicker: (player: string) => (player ? `Manos de ${player} para revisar` : 'Manos para revisar'),
+  handsCount: (n: number) => (n === 1 ? '1 mano' : `${n} manos`),
+  expires: (d: string) => `Activo hasta el ${d}`,
+  hand: (i: number) => `Mano ${i}`,
+  notes: 'Notas del jugador',
+  marks: { good: 'Buena línea', mistake: 'Error', question: 'Pregunta' },
+  composeTitle: 'Comentar este momento',
+  composeHand: 'Comentar la mano',
+  wholeHand: 'La mano entera',
+  atStep: 'En este momento',
+  yourName: 'Tu nombre (coach)',
+  placeholder: '¿Qué harías aquí y por qué?',
+  send: 'Comentar',
+  sending: 'Enviando…',
+  error: 'No se pudo enviar. Inténtalo de nuevo.',
+  limited: 'Demasiados comentarios seguidos. Espera un poco.',
+  closed: 'Este link ya no está activo.',
+  comments: 'Comentarios',
+  noComments: 'Aún no hay comentarios en esta mano. Elige un momento en el replayer y deja el primero.',
+  player: 'Jugador',
+  prev: 'Mano anterior',
+  next: 'Mano siguiente',
+  log: 'Acción',
+  privacy: 'Solo quien tiene este link ve estas manos. No aparece en búsquedas ni en el perfil del jugador, y el jugador puede desactivarlo cuando quiera.',
+  cta: 'Hecho con Sweatbook, el cuaderno de manos para jugadores live.',
+  goneTitle: 'Este link ya no está activo',
+  goneBody: 'El jugador lo desactivó o venció el plazo. Pídele un link nuevo.',
+};
+
+const copy: Record<Locale, typeof pt> = { pt, 'pt-BR': ptBR, en, es };
+
+export const coachCopy = (l: Locale) => copy[l];
 export type CoachCopy = typeof pt;
