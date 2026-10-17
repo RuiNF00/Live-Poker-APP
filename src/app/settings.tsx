@@ -10,7 +10,7 @@ import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
-import { manageSubscription } from '@/billing/purchases';
+import { manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
@@ -203,7 +203,7 @@ export default function SettingsScreen() {
             <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
             <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
             <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
-            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Ganham os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
+            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Recebem os dois 7 dias de Pro')} onPress={() => router.push('/invite')} />
             <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
             <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
           </ListGroup>
@@ -228,6 +228,7 @@ export default function SettingsScreen() {
                 note(ok ? t('Pro restaurado') : t('Não encontrámos compras nesta conta da loja.'));
               }}
             />
+            <ListItem icon="ticket-outline" title={t('Resgatar código')} subtitle={t('Um código de oferta da {store}', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })} onPress={() => void redeemCode()} />
           </ListGroup>
         </Section>
 
@@ -260,7 +261,7 @@ export default function SettingsScreen() {
 
 const CLAIM_COPY: Partial<Record<ClaimResult, string>> = {
   queued: 'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.',
-  ok: 'Convite ativado. Guarda uma mão e ganham os dois 7 dias de Pro.',
+  ok: 'Convite ativado. Guarda uma mão e recebem os dois 7 dias de Pro.',
   already: 'Já tens um convite ativo.',
   self: 'Esse é o teu próprio código.',
   too_late: 'Os convites só contam nos 7 dias depois de instalar.',
