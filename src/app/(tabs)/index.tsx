@@ -6,13 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro, useWelcomeOffer } from '@/billing/pro';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
-import { Badge, Banner, Button, Chip, ChipRow, Empty, IconButton, Pill, Row, ScreenHeader, SearchField, T, Wordmark } from '@/components/ui';
+import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, Empty, IconButton, Pill, Row, ScreenHeader, SearchField, T, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
-import { amount, blindsLabel, timeOf } from '@/poker/format';
+import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
+import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
+import type { Session } from '@/store/types';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
 const DAY = 86400000;
@@ -44,7 +46,7 @@ function dayTitle(day: number) {
 const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
-  const { hands, settings, draft, setDraft } = useStore();
+  const { hands, sessions, activeSession, settings, draft, setDraft } = useStore();
   const { handsLeft, trialDays, paywall } = usePro();
   useWelcomeOffer(hands.length);
   const [q, setQ] = useState('');
@@ -55,7 +57,7 @@ export default function HandsScreen() {
     const qq = q.trim().toLowerCase();
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || h.tags.includes(tag)) && (!qq || searchText(h).includes(qq)));
+      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)));
     const out: { title: string; data: Hand[] }[] = [];
     let cur = -1;
     for (const h of rows) {
@@ -68,6 +70,9 @@ export default function HandsScreen() {
     }
     return out;
   }, [hands, q, tag]);
+
+  const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
+  const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
 
   const renderItem = useCallback(({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} />, [settings.inBB]);
 
@@ -103,6 +108,7 @@ export default function HandsScreen() {
                   </>
                 }
               />
+              {!activeSession && sessions.length > 0 ? <Verdict sessions={sessions} incomplete={incomplete} onIncomplete={() => setTag(INCOMPLETE)} /> : null}
               {hasDraft ? (
                 <Banner
                   tone="warn"
@@ -139,6 +145,14 @@ export default function HandsScreen() {
                     <Chip key={tg} label={t(tg)} active={tag === tg} onPress={() => setTag(tag === tg ? null : tg)} />
                   ))}
                 </ChipRow>
+              ) : null}
+              {tag || q.trim() ? (
+                <Row gap={S.sm}>
+                  <T v="small" style={{ flex: 1 }}>
+                    {shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}
+                  </T>
+                  {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : t(tag)} onClear={() => setTag(null)} /> : null}
+                </Row>
               ) : null}
             </View>
           </SafeTop>
@@ -329,3 +343,66 @@ const HandRow = React.memo(function HandRow({ hand, inBB }: { hand: Hand; inBB: 
     </Pressable>
   );
 });
+
+const INCOMPLETE = '__incomplete';
+
+/** A filter that is on, with an x to take it off. */
+function FilterPill({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('Tirar filtro {name}', { name: label })}
+      onPress={onClear}
+      hitSlop={8}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 12, paddingRight: 8, height: 30, borderRadius: R.pill, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, opacity: pressed ? 0.75 : 1 })}>
+      <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+        {label}
+      </T>
+      <Ionicons name="close" size={14} color={C.accent} />
+    </Pressable>
+  );
+}
+
+/** One line on how the month is going, then the next useful thing to do. */
+function Verdict({ sessions, incomplete, onIncomplete }: { sessions: Session[]; incomplete: number; onIncomplete: () => void }) {
+  const [now] = useState(() => Date.now());
+  const start = new Date(now);
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  const done = sessions.filter((x) => x.endedAt);
+  const cur = mainCurrency(done, '€');
+  const month = done.filter((x) => (x.endedAt ?? 0) >= start.getTime() && x.currency === cur);
+  const net = month.reduce((a, x) => a + profit(x), 0);
+  const last = Math.max(0, ...done.map((x) => x.endedAt ?? 0));
+  const idle = last ? Math.floor((now - last) / DAY) : 0;
+  const next =
+    incomplete > 0
+      ? { text: incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete }), action: t('Ver'), go: onIncomplete }
+      : idle >= 7
+        ? { text: t('Sem sessões há {n} dias', { n: idle }), action: t('Começar'), go: () => router.navigate('/session') }
+        : null;
+  return (
+    <Card style={{ gap: 6, paddingVertical: 14 }}>
+      {month.length ? (
+        <Row gap={6} style={{ flexWrap: 'wrap' }}>
+          <T v="h3">{t('Este mês')}</T>
+          <Amount value={net} text={money(net, cur)} v="mono" />
+          <T v="small">{month.length === 1 ? t('em 1 sessão') : t('em {n} sessões', { n: month.length })}</T>
+        </Row>
+      ) : (
+        <T v="h3">{t('Ainda sem sessões este mês')}</T>
+      )}
+      {next ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={`${next.text}. ${next.action}`} onPress={next.go} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <T v="small" style={{ flex: 1 }}>
+            {next.text}
+          </T>
+          <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+            {next.action}
+          </T>
+          <Ionicons name="chevron-forward" size={14} color={C.accent} />
+        </Pressable>
+      ) : null}
+    </Card>
+  );
+}
