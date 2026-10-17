@@ -76,6 +76,8 @@ export interface Hand {
   /** Study folders the player made ("Rever com coach"); private, never shared. */
   folders?: string[];
   notes: string;
+  /** Private note per street ("no turn devia..."); never leaves the phone, not even when notes are shared. */
+  streetNotes?: Partial<Record<Street, string>>;
   title?: string;
   /** Manual winner(s) when showdown cards are unknown. */
   winners?: number[];

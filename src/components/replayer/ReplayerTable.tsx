@@ -11,7 +11,7 @@ import { pct } from '@/poker/format';
 import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
-import { BOARD_Y, BRAND_Y, cardShow, dealerSpot, POT_Y, scaleFor, SIZE, STAGE_RATIO, tableMap } from './layout';
+import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
 import type { BadgeKind, RpSeat, RpView } from './model';
 import { RpCard } from './RpCard';
 
@@ -96,8 +96,13 @@ export function ReplayerTable({
   const onLayout = (e: LayoutChangeEvent) => setW(Math.round(e.nativeEvent.layout.width));
 
   const bestEquity = Math.max(-1, ...view.seats.map((s) => s.equity ?? -1));
-  const boardW = SIZE.boardCardW * k;
-  const boardH = SIZE.boardCardH * k;
+  const boardW = SIZE.boardCardW * k * boardScale(n);
+  const boardH = SIZE.boardCardH * k * boardScale(n);
+  // Seats as drawn: pulled in from the sides so no plate touches the screen edge.
+  const seatPt = (i: number) => {
+    const c = seatCenter(map.seats[vis(i)], w);
+    return { x: (c.x / w) * 100, y: map.seats[vis(i)].y };
+  };
 
   return (
     <View onLayout={onLayout} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO }}>
@@ -127,7 +132,7 @@ export function ReplayerTable({
           {view.board2 ? (
             <RunBoards boards={[view.board, view.board2]} k={k} top={(BOARD_Y / 100) * h} />
           ) : (
-          <View style={{ position: 'absolute', left: 0, right: 0, top: (BOARD_Y / 100) * h - boardH / 2, flexDirection: 'row', justifyContent: 'center', gap: SIZE.boardGap * k }}>
+          <View style={{ position: 'absolute', left: 0, right: 0, top: (BOARD_Y / 100) * h - boardH / 2, flexDirection: 'row', justifyContent: 'center', gap: SIZE.boardGap * k * boardScale(n) }}>
             {[0, 1, 2, 3, 4].map((c) =>
               view.board[c] ? (
                 <Appear key={view.board[c]}>
@@ -175,7 +180,7 @@ export function ReplayerTable({
 
           {/* dealer button */}
           {(() => {
-            const d = dealerSpot(map.seats[vis(button)], map.bets[vis(button)]);
+            const d = dealerSpot(seatPt(button), map.bets[vis(button)]);
             const size = 18 * k;
             return (
               <View
@@ -200,7 +205,7 @@ export function ReplayerTable({
 
           {/* seats */}
           {view.seats.map((s) => (
-            <Seat key={'s' + s.i} seat={s} x={(map.seats[vis(s.i)].x / 100) * w} y={(map.seats[vis(s.i)].y / 100) * h} k={k} bestEquity={bestEquity} />
+            <Seat key={'s' + s.i} seat={s} x={(seatPt(s.i).x / 100) * w} y={(seatPt(s.i).y / 100) * h} w={w} k={k} bestEquity={bestEquity} />
           ))}
         </Pressable>
       )}
@@ -245,7 +250,7 @@ function Pill({ text, k, strong }: { text: string; k: number; strong?: boolean }
   );
 }
 
-function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: number; k: number; bestEquity: number }) {
+function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y: number; w: number; k: number; bestEquity: number }) {
   const pw = SIZE.plateW * k;
   const ph = SIZE.plateH * k;
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
@@ -253,6 +258,8 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
   const pos = { bg: posColor(s.pos), fg: '#0C1311' };
   const winNote = s.run ? RUN_MARK[s.run] : s.handName;
   const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (winNote ? ` · ${winNote}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label: s.badge.label } : null;
+  // Room beside the plate before the stage edge, on the tighter side.
+  const spare = Math.max(5, Math.min(x - pw / 2, w - x - pw / 2) - EDGE * k);
   const border = s.won ? C.good : s.acting ? C.accent : s.hero ? 'rgba(245,237,216,0.55)' : 'rgba(245,237,216,0.14)';
 
   return (
@@ -312,20 +319,21 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
       </View>
 
       {badge ? (
+        // Hero's badge sits right of the plate; the others are centred above it. Either may be
+        // wider than the plate, never past the stage edge, so a long result isn't cut.
         <View
           style={{
             position: 'absolute',
-            ...(s.hero ? { left: pw + 4, top: ch * cardShow(s.hero) + ph / 2 - 8 * k } : { top: ch * cardShow(s.hero) - 8 * k }),
-            backgroundColor: badge.bg,
-            borderRadius: 4,
-            paddingHorizontal: 4 * k,
-            paddingVertical: 1,
-            maxWidth: s.hero ? 120 * k : pw + 10,
             zIndex: 3,
+            ...(s.hero
+              ? { left: pw + 4, top: ch * cardShow(s.hero) + ph / 2 - 8 * k, width: Math.max(pw, w - (x + pw / 2 + 4) - EDGE * k), alignItems: 'flex-start' }
+              : { top: ch * cardShow(s.hero) - 8 * k, left: -spare, right: -spare, alignItems: 'center' }),
           }}>
-          <Text allowFontScaling={false} numberOfLines={1} style={{ color: badge.fg, fontFamily: F.mono, fontSize: 8.5 * k }}>
-            {badge.label}
-          </Text>
+          <View style={{ backgroundColor: badge.bg, borderRadius: 4, paddingHorizontal: 4 * k, paddingVertical: 1, maxWidth: '100%' }}>
+            <Text allowFontScaling={false} numberOfLines={1} style={{ color: badge.fg, fontFamily: F.mono, fontSize: 8.5 * k }}>
+              {badge.label}
+            </Text>
+          </View>
         </View>
       ) : null}
 

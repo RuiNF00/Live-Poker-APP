@@ -24,6 +24,8 @@ export interface HandComment {
   name: string;
   text: string;
   stepIndex: number | null;
+  /** Street of `stepIndex`, filled in by the comments API so the app can group without replaying. */
+  street?: Street | null;
   createdAt: number;
 }
 
