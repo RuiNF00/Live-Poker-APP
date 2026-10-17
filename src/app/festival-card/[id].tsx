@@ -5,12 +5,14 @@
 // always say "Feito com Sweatbook".
 
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
+import { ShareSheet } from '@/components/ShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
@@ -18,7 +20,7 @@ import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { shareLink } from '@/lib/share-api';
-import { festivalRecap, recapStats } from '@/share/festival-card';
+import { carouselCaption, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
 
@@ -38,6 +40,7 @@ export default function FestivalCardScreen() {
   const [showHand, setShowHand] = useState(true);
   const [brand, setBrand] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
 
   const recap = useMemo(() => (trip ? festivalRecap(trip, sessions, hands) : null), [trip, sessions, hands]);
@@ -76,15 +79,20 @@ export default function FestivalCardScreen() {
   };
 
   // X: the card as a picture with the best hand's replay (or the invite) in the post text.
-  const postX = async () => {
+  // The post text (same as the carousel caption) with the best hand's replay, or the invite.
+  const postText = async (to: 'x' | 'any') => {
+    const ref = await shareRef().catch(() => '');
+    let link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`;
+    if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'x' ? 'x' : 'link', { ref });
+    return carouselCaption(recap, link, { showResult, showMoney });
+  };
+
+  const postTo = async (to: 'x' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
-      const ref = await shareRef().catch(() => '');
-      let link = `${BRAND.webUrl}/r/${ref}?utm_source=x&utm_medium=post&utm_campaign=festival`;
-      if (best?.hand.shareId) link = shareLink(best.hand.shareId, 'x', { ref });
-      await sharePost([await captureStory({ current: refs.current[page] })], `${recap.title}\n${link}`);
-      track('story_shared', { target: 'x', kind: 'festival', look, money: showMoney });
+      await sharePost([await captureStory({ current: refs.current[page] })], await postText(to), to);
+      track('story_shared', { target: to, kind: 'festival', look, money: showMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
@@ -92,9 +100,15 @@ export default function FestivalCardScreen() {
     }
   };
 
+  const copy = async () => {
+    await Clipboard.setStringAsync(await postText('any')).catch(() => {});
+    Alert.alert(t('Link copiado'));
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: t('Partilhar festival') }} />
+      <ShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
           horizontal
@@ -168,10 +182,7 @@ export default function FestivalCardScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Row gap={S.sm}>
-            <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} style={{ flex: 1 }} onPress={post} />
-            <Button kind="secondary" icon="logo-x" title="X" disabled={busy} style={{ width: 88 }} onPress={postX} />
-          </Row>
+          <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}

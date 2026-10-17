@@ -28,6 +28,7 @@ import { shareSampleHand } from '@/lib/sample-share';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
+import { handShareText } from '@/share/share-text';
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -135,9 +136,7 @@ export default function HandScreen() {
     const ref = await shareRef();
     const link = shareLink(shareId, quiz ? 'challenge' : 'link', { quiz, ref });
     track('link_shared', { channel: quiz ? 'challenge' : 'link', share_id: shareId, ref });
-    const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
-    const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}
-${link}`;
+    const msg = `${handShareText(hand.game.name, quiz ? 'challenge' : 'link')}\n${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));

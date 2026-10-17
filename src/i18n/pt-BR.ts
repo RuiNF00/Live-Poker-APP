@@ -59,8 +59,6 @@ const ptBR: Record<string, string> = {
   'Tu': 'Você',
   'Notas (o que pensaste, reads, dúvidas…)': 'Notas (o que você pensou, reads, dúvidas…)',
   'Não deu para criar o link agora. Podes partilhar o texto da mão.': 'Não deu para criar o link agora. Você pode compartilhar o texto da mão.',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
-  'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
   'Cola no fórum, no Reddit ou no grupo de WhatsApp.': 'Cole no fórum, no Reddit ou no grupo de WhatsApp.',
   'Leva as mãos todas para o solver': 'Leve todas as mãos para o solver',
   'Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.': 'Com o Pro, você exporta várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.',
@@ -1289,11 +1287,16 @@ const ptBR: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
   'Não conseguimos preparar a imagem. Tenta outra vez.': 'Não conseguimos preparar a imagem. Tente de novo.',
-  'A minha sessão de póquer ao vivo': 'Minha sessão de poker ao vivo',
-  'O que fazias nesta mão?': 'O que você faria nesta mão?',
-  'Vê o replay da mão': 'Veja o replay da mão',
-  'O meu ano no póquer ao vivo': 'Meu ano no poker ao vivo',
-  'Partilhar no X': 'Compartilhar no X',
+  '{h} h ao vivo, {hands} mãos registadas.': '{h} h ao vivo, {hands} mãos registradas.',
+  'O meu {year} no póquer: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Meu {year} no poker: {sessions} sessões, {hours} horas e {hands} mãos registradas.',
+  'Outras apps': 'Outros apps',
+  'WhatsApp, Mensagens, guardar imagem…': 'WhatsApp, Mensagens, salvar imagem…',
+  '{game}: o que fazes aqui? Vota antes de ver o resultado 🗳️': '{game}: o que você faz aqui? Vote antes de ver o resultado 🗳️',
+  'O que fazes aqui? Vota antes de ver o resultado 🗳️': 'O que você faz aqui? Vote antes de ver o resultado 🗳️',
+  '{game}: o que fazias aqui? A mão toda, rua a rua, no link 👀': '{game}: o que você faria aqui? A mão inteira, street a street, no link 👀',
+  'O que fazias aqui? A mão toda, rua a rua, no link 👀': 'O que você faria aqui? A mão inteira, street a street, no link 👀',
+  '{game}: o que fazias aqui? 👀': '{game}: o que você faria aqui? 👀',
+  'O que fazias aqui? 👀': 'O que você faria aqui? 👀',
 };
 
 export default ptBR;
