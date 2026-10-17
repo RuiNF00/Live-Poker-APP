@@ -58,6 +58,7 @@ export const APP_EVENTS = [
   'link_shared',
   'link_opened',
   'invite_claimed',
+  'cancel_flow',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 

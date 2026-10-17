@@ -116,6 +116,7 @@ export default function SettingsScreen() {
 
         <Section title={t('Conta')}>
           <ListGroup>
+            {pro.isPro ? <ListItem icon="flash-outline" iconColor={C.accent} title={t('A tua subscrição')} subtitle="Sweatbook Pro" onPress={() => router.push('/cancel')} /> : null}
             <ListItem
               icon="refresh-outline"
               title={t('Restaurar compras')}
