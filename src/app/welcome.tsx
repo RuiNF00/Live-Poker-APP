@@ -46,6 +46,14 @@ export default function Welcome() {
     // the first saved hand (TrialFollowUp, useWelcomeOffer), so its days are spent playing.
     router.back();
   };
+  // At the table, or skipping: close with no paywall. The questions don't block anyone.
+  const close = (path: 'mesa' | 'saltar') => {
+    AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
+    setSkipped(true);
+    track('onboarding_step', { step: path === 'mesa' ? 'table' : 'skip', index: step, path });
+    router.back();
+    if (path === 'mesa') setTimeout(() => router.push('/hand/new'), 350);
+  };
   // Coming from another app: the history first (the import is free), the questions can wait.
   const switchApp = () => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
@@ -75,10 +83,7 @@ export default function Welcome() {
           </View>
           {at !== 'plan' ? (
             <Pressable
-              onPress={() => {
-                setSkipped(true);
-                setStep(STEPS.length - 1);
-              }}
+              onPress={() => close('saltar')}
               hitSlop={10}
               accessibilityRole="button">
               <T v="small" color={C.textDim}>
@@ -224,6 +229,7 @@ export default function Welcome() {
         {at === 'hero' ? (
           <View style={{ gap: S.xs }}>
             <Button title={t('Começar')} iconRight="chevron-forward" onPress={next} />
+            <Button kind="secondary" icon="flash-outline" title={t('Estou à mesa: registar uma mão já')} onPress={() => close('mesa')} />
             <Button kind="ghost" size="sm" icon="swap-horizontal-outline" title={t('Já uso outra app: mudar em 1 minuto')} onPress={switchApp} />
           </View>
         ) : null}

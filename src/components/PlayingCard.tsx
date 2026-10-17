@@ -104,8 +104,8 @@ export const PlayingCard = React.memo(function PlayingCard({
   return (
     <View style={[st.face, highlight && fx.highlight, dim && fx.dim, style]}>
       {size === 'xs' ? null : <View style={st.tint} />}
-      <Text style={[st.rank, rank.length > 1 && st.rank10]}>{rank}</Text>
-      <Text style={st.suit}>{SUIT_SYMBOL[suit]}</Text>
+      <Text allowFontScaling={false} style={[st.rank, rank.length > 1 && st.rank10]}>{rank}</Text>
+      <Text allowFontScaling={false} style={st.suit}>{SUIT_SYMBOL[suit]}</Text>
     </View>
   );
 });

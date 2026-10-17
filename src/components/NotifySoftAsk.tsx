@@ -7,6 +7,7 @@ import { Button, Row, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { softAskAllowed } from '@/lib/notify-policy';
+import { noteOverlay } from '@/lib/review';
 import { C, R, S } from '@/theme';
 
 export interface SoftAsk {
@@ -42,12 +43,14 @@ export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<
     }
     return new Promise<boolean>((resolve) => {
       done.current = resolve;
+      noteOverlay(true);
       setAsk(a);
     });
   }, []);
 
   const finish = async (yes: boolean) => {
     setAsk(null);
+    noteOverlay(false);
     if (!yes) AsyncStorage.setItem(SOFT_NO_KEY, String(Date.now())).catch(() => {});
     const ok = yes ? await askNotificationPermission() : false;
     done.current?.(ok);

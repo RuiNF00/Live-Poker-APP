@@ -61,10 +61,10 @@ export function CardPicker({
                     alignItems: 'center',
                     justifyContent: 'center',
                   })}>
-                  <Text style={{ color: isUsed ? C.muted : INK[s], fontWeight: '900', fontFamily: ff(900), fontSize: cw > 26 ? 17 : 14, lineHeight: cw > 26 ? 19 : 16, letterSpacing: -0.5 }}>
+                  <Text allowFontScaling={false} style={{ color: isUsed ? C.muted : INK[s], fontWeight: '900', fontFamily: ff(900), fontSize: cw > 26 ? 17 : 14, lineHeight: cw > 26 ? 19 : 16, letterSpacing: -0.5 }}>
                     {displayRank(c)}
                   </Text>
-                  <Text style={{ color: isUsed ? C.muted : INK[s], fontSize: cw > 26 ? 12 : 10, lineHeight: 13 }}>{SUIT_SYMBOL[s]}</Text>
+                  <Text allowFontScaling={false} style={{ color: isUsed ? C.muted : INK[s], fontSize: cw > 26 ? 12 : 10, lineHeight: 13 }}>{SUIT_SYMBOL[s]}</Text>
                 </Pressable>
               );
             })}
