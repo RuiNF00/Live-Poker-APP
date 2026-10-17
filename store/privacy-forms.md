@@ -36,7 +36,7 @@ Voice notes on hands (PR #25) stay on the device and are not declared; only Inst
 
 PostHog EU (#106, optional): our server forwards usage events (install id, event name, small props; no IP, no free text) to PostHog as our processor. Still Analytics / not linked / not tracking on Apple; on Play, transfers to a service provider acting on our behalf are not "sharing", so "Shared: No" stays.
 
-Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.app (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
+Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.dev (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
 
 App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device. Receipt and tax-form photos and files never leave the phone: they are files in the app's documents folder (`src/lib/docs.native.ts`), and the cloud backup serialises only the session data with the file names (`src/lib/cloud-backup.ts`, checked at 24efbeb). So receipt photos add no rows. (Photos or Videos is declared on Apple only for the face clip in hand videos, #234, iOS only; Play stays without it.) Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
 
@@ -51,6 +51,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 - Mature themes, violence, profanity, medical, alcohol/tobacco/drugs: **None**.
 - User-generated content: **Yes** (shared hands and comments). Requires report + removal, see `review-risks.md`.
 - Messaging / chat: No. Unrestricted web access: No.
+- Age assurance questions (2025+): parental controls **No**, age verification **No**, ads **No** (the app shows no ads).
 - Then set the **age override to 18+**: the app is about casino poker and the terms require 18+. Over-rating never causes a rejection; under-rating a poker app sometimes draws a question.
 
 ## Apple: other App Store Connect fields
