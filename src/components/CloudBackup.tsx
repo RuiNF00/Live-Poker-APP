@@ -9,6 +9,7 @@ import { Alert, Platform, Pressable, View } from 'react-native';
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, countsOf } from '@/lib/cloud-guard';
+import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary } from '@/store/backup';
 import { useStore } from '@/store/store';
@@ -179,8 +180,10 @@ export function AutoCloudBackup() {
   // a restore in the meantime must not be overwritten by the empty first render.
   const latest = useRef(store);
   latest.current = store;
+  // Also when the signal comes back: a backup due while offline goes out then.
+  const online = useOnline();
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !online) return;
     const id = setTimeout(async () => {
       const c = await loadCloud();
       const data = buildBackup(latest.current);
@@ -188,8 +191,7 @@ export function AutoCloudBackup() {
       if (c && autoBackup(c, countsOf(data), Date.now()) === 'upload') upload(c, data).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
-    // Only on launch: the store object changes on every edit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready]);
+    // On launch and on reconnect only (the store is read through the ref).
+  }, [ready, online]);
   return null;
 }

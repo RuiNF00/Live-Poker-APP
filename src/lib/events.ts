@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 import { anonId } from './share-api';
+import { outcomeOf, queue, registerSender } from './sync';
 import { BRAND } from '@/theme';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -63,13 +64,17 @@ export async function setRefCode(code: string): Promise<void> {
 
 export function track(event: FunnelEvent, props?: Record<string, string | number | boolean>) {
   if (__DEV__) return;
+  // Queued on the phone and sent when there's signal: card rooms often have none.
   installId()
-    .then((id) =>
-      fetch(`${API}/api/events`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ event, installId: id, platform: Platform.OS, props }),
-      }),
-    )
+    .then((id) => queue('event', { event, installId: id, platform: Platform.OS, props }))
     .catch(() => {});
 }
+
+registerSender('event', async (body) => {
+  const res = await fetch(`${API}/api/events`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return outcomeOf(res.status);
+});

@@ -876,6 +876,10 @@ const en: Record<string, string> = {
   'MB Way, dinheiro, transferência…': 'Cash, bank transfer…',
   'Acertado': 'Square',
   'Deve-te {amount}': 'Owes you {amount}',
+  'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'No signal right now: the invite is saved and turns on by itself when you’re back online.',
+  'Sem rede': 'Offline',
+  'Sem rede · {n} por enviar': 'Offline · {n} to send',
+  'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
 };
 
 export default en;
