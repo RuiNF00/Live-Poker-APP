@@ -56,6 +56,12 @@ select delete_coach_link(:'t3', :'o3') as deleted;
 select count(*) = 1 as deleted_link_gone from coach_links;
 select count(*) = 0 as deleted_link_comments_gone from coach_comments;
 
+-- No end date and 400 days quiet: purged too.
+select token as t4, owner_token as o4 from create_coach_link('', '', null, '[{"id":"z","payload":{}}]'::jsonb) \gset
+update coach_links set created_at = now() - interval '401 days' where token_hash = encode(sha256(convert_to(:'t4', 'utf8')), 'hex');
+select purge_coach_links() = 1 as quiet_open_link_purged;
+select count(*) = 1 as recent_open_link_kept from coach_links;
+
 reset role;
 set role anon;
 \set ON_ERROR_STOP off
