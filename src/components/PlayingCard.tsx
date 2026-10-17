@@ -38,9 +38,9 @@ export function PlayingCard({
             width: d.w,
             height: d.h,
             borderRadius: d.r,
-            backgroundColor: '#22302B',
-            borderWidth: 1.5,
-            borderColor: '#FF6A3D',
+            backgroundColor: '#1A2521',
+            borderWidth: 1,
+            borderColor: 'rgba(255,106,61,0.55)',
             alignItems: 'center',
             justifyContent: 'center',
             opacity: dim ? 0.35 : 1,
@@ -60,6 +60,7 @@ export function PlayingCard({
       </View>
     );
   }
+  // Cream face with a 4-colour rank, like a real deck under casino light.
   const suit = card[1] as Suit;
   const col = C.suit[suit];
   return (
@@ -69,11 +70,11 @@ export function PlayingCard({
           width: d.w,
           height: d.h,
           borderRadius: d.r,
-          backgroundColor: col,
+          backgroundColor: '#F6F2E8',
           borderWidth: highlight ? 2 : 1,
-          borderColor: highlight ? C.accent : 'rgba(255,255,255,0.22)',
-          paddingTop: size === 'xs' ? 1 : 3,
-          paddingLeft: size === 'xs' ? 3 : 4,
+          borderColor: highlight ? C.accent : 'rgba(0,0,0,0.25)',
+          paddingTop: size === 'xs' ? 1 : 2,
+          paddingLeft: size === 'xs' ? 3 : size === 'sm' ? 4 : 5,
           opacity: dim ? 0.35 : 1,
           overflow: 'hidden',
           shadowColor: '#000',
@@ -84,12 +85,13 @@ export function PlayingCard({
         },
         style,
       ]}>
-      <Text style={{ color: '#fff', fontSize: d.rank, fontWeight: '900', fontFamily: ff(900), lineHeight: d.rank * 1.05, letterSpacing: -1 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: col, opacity: 0.08 }} />
+      <Text style={{ color: col, fontSize: d.rank, fontWeight: '800', fontFamily: ff(800), lineHeight: d.rank * 1.08, letterSpacing: displayRank(card).length > 1 ? -1.5 : -0.5 }}>
         {displayRank(card)}
       </Text>
       <Text
         style={{
-          color: 'rgba(255,255,255,0.92)',
+          color: col,
           fontSize: d.suit,
           lineHeight: d.suit * 1.1,
           position: 'absolute',

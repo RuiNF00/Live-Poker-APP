@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
@@ -8,11 +8,10 @@ import type { GameKind } from '@/poker/types';
 import { parseDay, playedMs } from '@/store/session-math';
 import { uid } from '@/store/store';
 import type { Session } from '@/store/types';
-import { C } from '@/theme';
+import { S } from '@/theme';
 
-import { inputStyle, NumField } from './entry/ContextSheet';
 import { StakeFields } from './StakeFields';
-import { Button, Chip, Row, T } from './ui';
+import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T } from './ui';
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
@@ -67,63 +66,78 @@ export function SessionForm({
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
+  const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue });
   return (
-    <View style={{ gap: 14 }}>
-      <Row>
-        <Chip big label={t('Torneio')} active={mtt} onPress={() => setS({ ...blankSession('mtt', s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue })} />
-        <Chip big label="Cash game" active={!mtt} onPress={() => setS({ ...blankSession('cash', s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue })} />
-      </Row>
-      <View style={{ gap: 6 }}>
-        <T v="label">{mtt ? t('Torneio') : t('Jogo')}</T>
-        <TextInput value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} placeholderTextColor={C.muted} style={inputStyle} />
-        {recentNames.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-            {recentNames.map((n) => (
-              <Chip key={n} label={n} active={s.name === n} onPress={() => set({ name: n })} />
-            ))}
-          </ScrollView>
-        )}
-      </View>
-      <View style={{ gap: 6 }}>
-        <T v="label">{t('Casino / sala')}</T>
-        <TextInput value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={t('Ex.: Casino Estoril')} placeholderTextColor={C.muted} style={inputStyle} />
-        {recentVenues.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-            {recentVenues.map((n) => (
-              <Chip key={n} label={n} active={s.venue === n} onPress={() => set({ venue: n })} />
-            ))}
-          </ScrollView>
-        )}
-      </View>
-      <Row gap={10}>
-        <NumField label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} />
-        {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
-      </Row>
+    <View style={{ gap: S.lg }}>
+      <Segmented
+        options={[
+          { key: 'mtt', label: t('Torneio') },
+          { key: 'cash', label: 'Cash game' },
+        ]}
+        value={s.kind}
+        onChange={(k) => k !== s.kind && switchKind(k)}
+      />
+      <Card style={{ gap: S.lg }}>
+        <View style={{ gap: S.sm }}>
+          <Field label={mtt ? t('Torneio') : t('Jogo')} value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} />
+          {recentNames.length > 0 && (
+            <ChipRow style={{ marginHorizontal: -S.lg }}>
+              {recentNames.map((n) => (
+                <Chip key={n} label={n} active={s.name === n} onPress={() => set({ name: n })} />
+              ))}
+            </ChipRow>
+          )}
+        </View>
+        <View style={{ gap: S.sm }}>
+          <Field label={t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={t('Ex.: Casino Estoril')} />
+          {recentVenues.length > 0 && (
+            <ChipRow style={{ marginHorizontal: -S.lg }}>
+              {recentVenues.map((n) => (
+                <Chip key={n} label={n} active={s.venue === n} onPress={() => set({ venue: n })} />
+              ))}
+            </ChipRow>
+          )}
+        </View>
+        <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+          <NumField label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} />
+          {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
+        </Row>
+      </Card>
       {!past && (
-        <View style={{ gap: 6 }}>
-          <T v="label">Blinds</T>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+        <Section title="Blinds">
+          <ChipRow>
             {levels.map(([sb, bb]) => (
               <Chip key={bb} label={`${chips(sb)}/${chips(bb)}`} active={s.bb === bb && s.sb === sb} onPress={() => set({ sb, bb, ante: mtt ? bb : 0 })} />
             ))}
-          </ScrollView>
-        </View>
+          </ChipRow>
+        </Section>
       )}
       {past && (
         <>
-          <Row gap={10}>
-            <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
-            <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} />
-          </Row>
-          <View style={{ gap: 6 }}>
-            <T v="label">{t('Quando')}</T>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
+          <Card style={{ gap: S.lg }}>
+            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+              <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
+              <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} />
+            </Row>
+          </Card>
+          <Section title={t('Quando')}>
+            <ChipRow>
               {[0, 1, 2, 3, 4, 5, 6].map((k) => {
                 const d = dayStart(Date.now()) - k * 86400000;
-                return <Chip key={k} label={k === 0 ? t('Hoje') : k === 1 ? t('Ontem') : shortDay(d)} active={day === d} onPress={() => { setDay(d); setDateText(''); }} />;
+                return (
+                  <Chip
+                    key={k}
+                    label={k === 0 ? t('Hoje') : k === 1 ? t('Ontem') : shortDay(d)}
+                    active={day === d}
+                    onPress={() => {
+                      setDay(d);
+                      setDateText('');
+                    }}
+                  />
+                );
               })}
-            </ScrollView>
-            <TextInput
+            </ChipRow>
+            <Field
               value={dateText}
               onChangeText={(v) => {
                 setDateText(v);
@@ -131,25 +145,25 @@ export function SessionForm({
                 if (d !== null) setDay(d);
               }}
               placeholder={t('Outra data: dd/mm/aaaa')}
-              placeholderTextColor={C.muted}
               keyboardType="numbers-and-punctuation"
-              style={inputStyle}
             />
             {day < dayStart(Date.now()) - 6 * 86400000 ? <T v="tiny">{fullDay(day)}</T> : null}
-          </View>
-          <View style={{ gap: 6 }}>
-            <T v="label">{t('Duração')}</T>
-            <Row style={{ flexWrap: 'wrap' }} gap={6}>
-              {[...new Set([1, 2, 3, 4, 5, 6, 8, 10, 12, initHours])].sort((a, b) => a - b).map((h) => (
-                <Chip key={h} label={`${h}h`} active={hours === h} onPress={() => setHours(h)} />
-              ))}
-            </Row>
-          </View>
+          </Section>
+          <Section title={t('Duração')}>
+            <ChipRow>
+              {[...new Set([1, 2, 3, 4, 5, 6, 8, 10, 12, initHours])]
+                .sort((a, b) => a - b)
+                .map((h) => (
+                  <Chip key={h} label={`${h}h`} active={hours === h} onPress={() => setHours(h)} />
+                ))}
+            </ChipRow>
+          </Section>
         </>
       )}
       <StakeFields s={s} onChange={set} expenses={!!past} />
       <Button
         title={submitLabel}
+        icon={past ? 'checkmark' : 'play'}
         onPress={() => {
           if (past) {
             // Unchanged date and duration keep the original times (and breaks).
