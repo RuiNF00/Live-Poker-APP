@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { useSheetAnimation } from '@/lib/motion';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import { STAGES, type GameInfo } from '@/poker/types';
@@ -29,10 +30,11 @@ export function ContextSheet({
   onTableSize: (n: number) => void;
   onClose: () => void;
 }) {
+  const sheetAnimation = useSheetAnimation();
   const set = (patch: Partial<GameInfo>) => onChange({ ...game, ...patch });
   const levels = game.kind === 'mtt' ? MTT_LEVELS : CASH_LEVELS;
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, maxHeight: '88%', borderTopWidth: 1, borderColor: C.border }}>
         <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, gap: S.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">

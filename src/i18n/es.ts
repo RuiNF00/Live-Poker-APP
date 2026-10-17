@@ -2478,6 +2478,13 @@ const es: Record<string, string> = {
   'ouros': 'diamantes',
   'paus': 'tréboles',
   'espadas': 'picas',
+  'Guardar mão': 'Guardar mano',
+  'Contexto da mão: {context}. Toca para mudar': 'Contexto de la mano: {context}. Toca para cambiar',
+  '{action} para {amount}': '{action} a {amount}',
+  'stack {stack}': 'stack {stack}',
+  'fichas na mesa {amount}': 'fichas en la mesa {amount}',
+  'a jogar': 'le toca',
+  'Editar lugar': 'Editar asiento',
 };
 
 export default es;

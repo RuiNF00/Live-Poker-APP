@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
+import { t } from '@/i18n';
 import type { CardCode } from '@/poker/types';
 import { C, ff } from '@/theme';
 
@@ -29,6 +30,17 @@ export interface SeatView {
 }
 
 export const ASPECT = 1.18;
+
+/** "BTN, Ana, stack 45 bb, a jogar": what VoiceOver reads for a seat. */
+export function seatLabel(s: SeatView): string {
+  const parts = [s.pos && s.pos !== s.name ? s.pos : '', s.hero ? t('Tu') : s.name, s.allIn ? 'all-in' : t('stack {stack}', { stack: s.stack })];
+  if (s.bet) parts.push(t('fichas na mesa {amount}', { amount: s.bet }));
+  if (s.action) parts.push(s.action.label);
+  if (s.folded && s.action?.label.toLowerCase() !== 'fold') parts.push('fold');
+  if (s.acting) parts.push(t('a jogar'));
+  if (s.winner) parts.push(s.winner);
+  return parts.filter(Boolean).join(', ');
+}
 
 function seatXY(k: number, n: number, rx = 41, ry = 40) {
   const a = ((90 + (k * 360) / n) * Math.PI) / 180;
@@ -175,6 +187,12 @@ export function Table({
             return (
               <Pressable
                 key={'s' + i}
+                accessibilityRole="button"
+                accessibilityLabel={seatLabel(s)}
+                accessibilityState={{ disabled: !onSeatPress && !onSeatLongPress }}
+                // The long press (edit the seat) as a screen-reader action.
+                accessibilityActions={onSeatLongPress ? [{ name: 'longpress', label: t('Editar lugar') }] : undefined}
+                onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && onSeatLongPress?.(i)}
                 disabled={!onSeatPress && !onSeatLongPress}
                 onPress={() => onSeatPress?.(i)}
                 onLongPress={onSeatLongPress ? () => onSeatLongPress(i) : undefined}

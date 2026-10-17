@@ -1072,6 +1072,8 @@ const ptBR: Record<string, string> = {
   'Aposta': 'Bet',
   'HERO APOSTA': 'HERO DÁ BET',
   'Passar ou apostar': 'Check ou bet',
+  'Guardar mão': 'Salvar mão',
+  'Contexto da mão: {context}. Toca para mudar': 'Contexto da mão: {context}. Toque para mudar',
 };
 
 export default ptBR;
