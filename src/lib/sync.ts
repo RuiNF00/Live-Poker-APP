@@ -52,6 +52,11 @@ export function unqueue(kind: string, key: string): Promise<boolean> {
   return outbox.cancel(kind, key).catch(() => false);
 }
 
+/** Still waiting to go out (not sent yet, not given up on after too many tries or days). */
+export function queued(kind: string, key: string): Promise<boolean> {
+  return outbox.has(kind, key).catch(() => false);
+}
+
 let started = false;
 /** Once, at startup (after installFetchTimeout). */
 export function startSync() {

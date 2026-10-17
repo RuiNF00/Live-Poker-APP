@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
@@ -9,7 +9,7 @@ import { readLocal, writeLocal } from '@/lib/local';
 import { appHref, useAndroid } from '@/lib/app-link';
 import { storeLinks } from '@/lib/storeLinks';
 import { OpenInApp } from '@/components/OpenInApp';
-import { swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
+import { newSwapKey, swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
 import '@/app/landing.css';
@@ -30,6 +30,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [name, setName] = useState(initial.terms.b.name);
+  const key = useRef('');
   const t = swap.terms;
   const you = token ? swap.you : null;
   const left = swap.leftSide ?? null;
@@ -100,7 +101,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
   }
 
   const confirm = () =>
-    send(`/api/swaps/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({ name }) }, (tok) => {
+    send(`/api/swaps/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({ name, token: (key.current ||= newSwapKey()) }) }, (tok) => {
       writeLocal(`swap:${id}`, tok);
       // The next group link picks this name by itself.
       writeLocal('swap:name', name.trim());

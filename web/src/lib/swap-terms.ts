@@ -140,3 +140,9 @@ export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<Swa
   const r = (n: number) => Math.round(n * 100) / 100;
   return { aOwes: r(aOwes), bOwes: r(bOwes), aPaid: r(aPaid), bPaid: r(bPaid), net: r(bOwes - bPaid - (aOwes - aPaid)) };
 }
+
+/**
+ * The browser's own token for a confirm or a seat claim (64 hex, one per page): a retry after
+ * a lost answer sends the same one and gets in, instead of "already confirmed".
+ */
+export const newSwapKey = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('');

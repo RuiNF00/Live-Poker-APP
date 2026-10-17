@@ -19,6 +19,7 @@ import { track } from '@/lib/events';
 import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
 import { newCreateKey, SwapError } from '@/lib/swap-api';
+import { forgetSwapCreate, queueSwapCreate } from '@/lib/swap-create-queue';
 import { createGroup, groupUrl } from '@/lib/swap-group-api';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -119,15 +120,17 @@ function NewGroupSwap() {
     setBusy(true);
     tap('medium');
     const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: Date.now() };
+    const names = [me.trim(), ...others];
+    const rc = await appUserId();
     try {
-      const rc = await appUserId();
-      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others], rc, key.current);
+      const { group, token, invite } = await createGroup(terms, names, rc, key.current);
       saveGroup({ ...groupFromRemote(group, token, 0, invite), ownerRc: rc });
+      forgetSwapCreate(key.current.token);
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');
       const url = groupUrl(group.id, invite, ref);
       track('link_shared', { channel: 'swap' });
-      const msg = t('Swap de grupo de {pct} no {title}. Escolhe o teu nome para entrar: {url}', { pct: pctLabel(pct), title: terms.title, url });
+      const msg = t('Swap de grupo de {pct} no {title}. Escolhe o teu nome para entrar: {url}', { pct: pctLabel(group.terms.pct), title: group.terms.title, url });
       const open = () => router.replace({ pathname: '/swap/g/[id]', params: { id: group.id } });
       if (Platform.OS === 'web') {
         open();
@@ -140,6 +143,9 @@ function NewGroupSwap() {
       const code = e instanceof SwapError ? e.code : 'offline';
       setBusy(false);
       if (code === 'offline') {
+        // Kept on the phone: it is created by itself when the signal is back, even after Voltar.
+        queueSwapCreate({ kind: 'group', keys: key.current, terms, names, rc });
+        if (!settings.nickname) setSettings({ nickname: me.trim() });
         setWaiting(true);
         return;
       }

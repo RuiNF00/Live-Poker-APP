@@ -23,8 +23,11 @@ export interface SwapStore {
   create(t: SwapTerms, token?: string): Promise<{ id: string; token: string }>;
   get(id: string): Promise<SwapRecord | null>;
   side(id: string, token: string): Promise<Side | null>;
-  /** The other side's token, or null when it was already confirmed or is gone. */
-  confirm(id: string, name: string): Promise<string | null>;
+  /**
+   * The other side's token, or null when it was already confirmed or is gone. `token`: the app's
+   * own (64 hex), so a confirm sent again after a lost answer gets the same token back.
+   */
+  confirm(id: string, name: string, token?: string): Promise<string | null>;
   addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   remove(id: string, token: string): Promise<boolean>;
@@ -72,8 +75,8 @@ class SupabaseSwaps implements SwapStore {
     return data === 'a' || data === 'b' ? data : null;
   }
 
-  async confirm(id: string, name: string) {
-    const { data, error } = await this.db.rpc('confirm_swap', { p_id: id, p_name: name });
+  async confirm(id: string, name: string, token?: string) {
+    const { data, error } = await this.db.rpc('confirm_swap', { p_id: id, p_name: name, p_token: token ?? null });
     if (error) throw error;
     return typeof data === 'string' && data ? data : null;
   }
@@ -176,11 +179,14 @@ class LocalSwaps implements SwapStore {
     return this.sideOf((await this.read())[id], token);
   }
 
-  async confirm(id: string, name: string) {
+  async confirm(id: string, name: string, own?: string) {
     return this.mutate((d) => {
       const r = d[id];
-      if (!r || r.confirmedAt) return null;
-      const token = randomBytes(32).toString('hex');
+      if (!r) return null;
+      // Already confirmed with this same token: the answer of the first time was lost.
+      if (r.confirmedAt) return own && !r.leftSide && r.bHash === sha256(own) ? own : null;
+      const token = own ?? randomBytes(32).toString('hex');
+      if (r.aHash === sha256(token)) return null;
       const now = new Date().toISOString();
       d[id] = { ...r, bHash: sha256(token), confirmedAt: now, confirmedName: name, updatedAt: now };
       return token;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
@@ -8,6 +8,7 @@ import { formatMoney, intlTag, numberTag, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
 import { groupNet, minTransfers, type PublicGroup } from '@/lib/swap-group-terms';
+import { newSwapKey } from '@/lib/swap-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
 import { AccountsInApp, AddEntry, EntryRow, payment, PrivateLink, Top } from './SwapView';
@@ -30,6 +31,7 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
   const [token, setToken] = useState<string | null>(null);
   const [inviteKey, setInviteKey] = useState<string | null>(null);
   const [pick, setPick] = useState<number | null>(null);
+  const key = useRef('');
   const [gone, setGone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -109,7 +111,7 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
 
   const join = () =>
     pick !== null &&
-    send(`/api/swap-groups/${encodeURIComponent(id)}/claim`, { method: 'POST', body: JSON.stringify({ seat: pick, invite: inviteKey }) }, (tok) => {
+    send(`/api/swap-groups/${encodeURIComponent(id)}/claim`, { method: 'POST', body: JSON.stringify({ seat: pick, invite: inviteKey, token: (key.current ||= newSwapKey()) }) }, (tok) => {
       writeLocal(`swapg:${id}`, tok);
       writeLocal('swap:name', name(pick));
       setToken(tok);

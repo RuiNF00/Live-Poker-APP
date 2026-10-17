@@ -129,3 +129,17 @@ test('a job about something deleted can be forgotten before it goes out', async 
   // Gone from storage too, so a restart doesn't bring it back.
   assert.equal(await createOutbox(kv, {}).size(), 0);
 });
+
+test('has: a job waits until it is sent, then it is gone', async () => {
+  const kv = mem();
+  let up = false;
+  const box = createOutbox(kv, { make: async () => (up ? 'done' : 'retry') });
+  await box.enqueue('make', {}, 'k1');
+  assert.equal(await box.has('make', 'k1'), true);
+  assert.equal(await box.has('make', 'k2'), false);
+  await box.drain(true);
+  assert.equal(await box.has('make', 'k1'), true);
+  up = true;
+  await box.drain(true);
+  assert.equal(await box.has('make', 'k1'), false);
+});

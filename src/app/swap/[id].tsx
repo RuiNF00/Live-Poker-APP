@@ -5,7 +5,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, Share, View } from 'react-native';
 
 import { useLocked } from '@/components/ProGate';
@@ -16,7 +16,7 @@ import { noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
-import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
+import { confirmSwap, fetchSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
 import { useStore } from '@/store/store';
 import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
@@ -78,6 +78,8 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
   const { settings, setSettings } = useStore();
   const [name, setName] = useState(settings.nickname || remote.terms.b.name);
   const [busy, setBusy] = useState(false);
+  // This screen's own token: a confirm whose answer was lost gets in on the retry.
+  const key = useRef(newCreateKey());
   const tm = remote.terms;
   const names = { a: tm.a.name, b: remote.confirmedName || tm.b.name };
 
@@ -85,7 +87,7 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
     setBusy(true);
     tap('medium');
     try {
-      const { swap, token } = await confirmSwap(remote.id, name.trim());
+      const { swap, token } = await confirmSwap(remote.id, name.trim(), key.current);
       saveSwap(fromRemote(swap, token, 'b'));
       if (!settings.nickname) setSettings({ nickname: name.trim() });
       tap('success');

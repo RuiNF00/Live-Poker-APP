@@ -5,7 +5,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, Pressable, Share, View } from 'react-native';
 
 import { GroupEntryRow, GroupEntrySheet, GroupHero, GroupSettle, seatLabel, type GroupDraft } from '@/components/swaps/group-parts';
@@ -16,7 +16,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
-import { SwapError } from '@/lib/swap-api';
+import { newCreateKey, SwapError } from '@/lib/swap-api';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
 import { shortDate, timeOf } from '@/poker/format';
 import { GROUP_MIN, groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
@@ -93,6 +93,8 @@ function Head({ g }: { g: Pick<SwapGroup, 'terms' | 'seats'> }) {
 function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
   const [pick, setPick] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  // This screen's own token: a claim whose answer was lost gets the seat on the retry.
+  const key = useRef(newCreateKey());
   const open = remote.seats.filter((s) => !s.confirmedAt);
 
   async function join() {
@@ -100,7 +102,7 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
     setBusy(true);
     tap('medium');
     try {
-      const { group, token } = await claimSeat(remote.id, invite, pick);
+      const { group, token } = await claimSeat(remote.id, invite, pick, key.current);
       saveGroup(groupFromRemote(group, token, pick));
       tap('success');
     } catch (e) {

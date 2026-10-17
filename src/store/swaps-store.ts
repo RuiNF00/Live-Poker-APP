@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
 import { appUserId } from '@/billing/purchases';
+import { onReconnect } from '@/lib/online';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOwnerRc, SwapError } from '@/lib/swap-api';
 
 import { quarantine } from './boot';
@@ -195,3 +196,8 @@ export function useSwaps() {
 
 // Start reading at launch, so a backup taken early already has the swaps.
 boot();
+
+// The signal is back: results and payments saved without it go out now, not on the next visit.
+onReconnect(() => {
+  void boot().then(() => Promise.all(state.swaps.filter((s) => !s.gone && s.entries.some((e) => e.pending)).map((s) => syncSwap(s.id))));
+});

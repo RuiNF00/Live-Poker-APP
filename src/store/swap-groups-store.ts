@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
 import { appUserId } from '@/billing/purchases';
+import { onReconnect } from '@/lib/online';
 import { SwapError, newCid } from '@/lib/swap-api';
 import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
 
@@ -190,3 +191,8 @@ export function useGroups() {
 }
 
 boot();
+
+// The signal is back: results and payments saved without it go out now, not on the next visit.
+onReconnect(() => {
+  void boot().then(() => Promise.all(state.groups.filter((g) => !g.gone && g.entries.some((e) => e.pending)).map((g) => syncGroup(g.id))));
+});
