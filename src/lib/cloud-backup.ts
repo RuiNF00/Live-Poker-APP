@@ -179,7 +179,8 @@ export async function download(c: CloudState): Promise<BackupData> {
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');
-  return parseBackup(await unsealAsync(new Uint8Array(await res.arrayBuffer()), enc));
+  // Encrypted with this code's key or nothing: never a plain copy someone put on the server.
+  return parseBackup(await unsealAsync(new Uint8Array(await res.arrayBuffer()), enc, undefined, true));
 }
 
 export async function removeRemote(c: CloudState): Promise<void> {

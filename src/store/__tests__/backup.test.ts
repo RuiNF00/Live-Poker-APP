@@ -135,3 +135,9 @@ test('backup carries festival plans and own festivals, and drops what the planne
   assert.deepEqual(old.festivalPlans, {});
   assert.deepEqual(old.ownFestivals, []);
 });
+
+test('festival events from a file keep only the fields the planner knows', () => {
+  const ev = { id: 'o1', number: 100001, name: 'Deepstack', game: 'NLH', buyIn: 250, start: '2026-11-02T18:00', evil: '<script>', own: true };
+  const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, hands: [], sessions: [], players: [], festivalPlans: { x: { picked: [], events: [ev] } } }));
+  assert.deepEqual(b.festivalPlans?.x.events, [{ id: 'o1', number: 100001, name: 'Deepstack', game: 'NLH', buyIn: 250, guarantee: 0, start: '2026-11-02T18:00', own: true }]);
+});

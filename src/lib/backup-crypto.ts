@@ -122,7 +122,12 @@ export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Arra
 }
 
 /** Opens a sealed backup; plain (older) backups pass through. Throws 'forbidden' on a wrong key. */
-export function unseal(raw: Uint8Array, key: Uint8Array): string {
+/**
+ * `sealedOnly`: the cloud copy. Anything not encrypted with the key is refused
+ * ('forbidden'), so whoever controls the server can't hand the phone data of
+ * their own. Files the player imports by hand may still be plain JSON.
+ */
+export function unseal(raw: Uint8Array, key: Uint8Array, sealedOnly = false): string {
   const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw;
   if (isV2(bytes)) return strFromU8(gunzipSync(openV2(bytes, key)));
   const text = strFromU8(bytes);
@@ -130,9 +135,13 @@ export function unseal(raw: Uint8Array, key: Uint8Array): string {
   try {
     env = JSON.parse(text) as Partial<Sealed>;
   } catch {
+    if (sealedOnly) throw new Error('forbidden');
     return text;
   }
-  if (env?.sweatbook !== 'backup' || env.alg !== 'A256GCM' || !env.n || !env.c) return text;
+  if (env?.sweatbook !== 'backup' || env.alg !== 'A256GCM' || !env.n || !env.c) {
+    if (sealedOnly) throw new Error('forbidden');
+    return text;
+  }
   try {
     return strFromU8(gunzipSync(gcm(key, fromB64(env.n)).decrypt(fromB64(env.c))));
   } catch {
@@ -168,7 +177,8 @@ async function gunzipSliced(raw: Uint8Array, pause: () => Promise<void>): Promis
 }
 
 /** Same as unseal, with both gunzips sliced so a restore keeps the screen alive. */
-export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
+/** Same as unseal, in slices. */
+export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe, sealedOnly = false): Promise<string> {
   const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await gunzipSliced(raw, pause) : raw;
   if (isV2(bytes)) {
     const zipped = openV2(bytes, key);
@@ -180,9 +190,13 @@ export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () =>
   try {
     env = JSON.parse(text) as Partial<Sealed>;
   } catch {
+    if (sealedOnly) throw new Error('forbidden');
     return text;
   }
-  if (env?.sweatbook !== 'backup' || env.alg !== 'A256GCM' || !env.n || !env.c) return text;
+  if (env?.sweatbook !== 'backup' || env.alg !== 'A256GCM' || !env.n || !env.c) {
+    if (sealedOnly) throw new Error('forbidden');
+    return text;
+  }
   let zipped: Uint8Array;
   try {
     zipped = gcm(key, fromB64(env.n)).decrypt(fromB64(env.c));

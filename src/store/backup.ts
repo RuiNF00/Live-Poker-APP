@@ -99,8 +99,27 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 /** Keys from a file: never one that would reach the object's prototype. */
 const safeKey = (k: string) => k.length > 0 && k.length <= 100 && k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
 
-function okEvent(e: unknown): e is FestivalEvent {
+function okEvent(e: unknown): e is Record<string, unknown> {
   return withId(e) && isObj(e) && isStr(e.name) && isNum(e.number) && isNum(e.buyIn) && isStr(e.start) && (e.game === 'NLH' || e.game === 'PLO' || e.game === 'Mix');
+}
+
+/** Only the fields the planner knows; nothing else from the file is kept. */
+function decodeEvent(e: Record<string, unknown>): FestivalEvent {
+  return {
+    id: (e.id as string).slice(0, 100),
+    number: e.number as number,
+    name: (e.name as string).slice(0, 80),
+    ...(isStr(e.flight) ? { flight: e.flight.slice(0, 8) } : {}),
+    ...(e.day2 === true ? { day2: true } : {}),
+    ...(e.unnumbered === true ? { unnumbered: true } : {}),
+    game: e.game as FestivalEvent['game'],
+    buyIn: e.buyIn as number,
+    guarantee: isNum(e.guarantee) ? e.guarantee : 0,
+    start: (e.start as string).slice(0, 16),
+    ...(e.own === true ? { own: true } : {}),
+    ...(isNum(e.stack) ? { stack: e.stack } : {}),
+    ...(isNum(e.levelMinutes) ? { levelMinutes: e.levelMinutes } : {}),
+  };
 }
 
 /** Only the shapes the planner reads; anything else in the file is dropped. */
@@ -114,7 +133,7 @@ function decodePlans(x: unknown): Record<string, FestivalPlan> {
   };
   for (const [id, p] of Object.entries(x)) {
     if (!safeKey(id) || !isObj(p) || !Array.isArray(p.picked)) continue;
-    const events = Array.isArray(p.events) ? (p.events as unknown[]).filter(okEvent).map((e) => ({ ...e, guarantee: isNum(e.guarantee) ? e.guarantee : 0 })) : [];
+    const events = Array.isArray(p.events) ? (p.events as unknown[]).filter(okEvent).map(decodeEvent) : [];
     out[id] = {
       picked: (p.picked as unknown[]).filter(isStr),
       lateReg: strMap(p.lateReg, isNum),
@@ -135,8 +154,8 @@ function decodeOwnFestivals(x: unknown): Festival[] {
       return {
         id: f.id as string,
         name: (f.name as string).slice(0, 60),
-        venue: isStr(f.venue) ? f.venue : '',
-        city: isStr(f.city) ? f.city : '',
+        venue: isStr(f.venue) ? f.venue.slice(0, 80) : '',
+        city: isStr(f.city) ? f.city.slice(0, 80) : '',
         currency: f.currency as string,
         utcOffset: isNum(f.utcOffset) ? f.utcOffset : 0,
         source: { label: '', checked: isObj(f.source) && isStr(f.source.checked) ? f.source.checked : '' },

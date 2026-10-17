@@ -102,3 +102,16 @@ test('the notice before the server deletes an unused copy: a month before 18 mon
   assert.equal(expiryWarnAt({ lastAt: 1000 }), 1000 + EXPIRY_WARN_MS);
   assert.equal(Math.round(EXPIRY_WARN_MS / 86400000), 510);
 });
+
+test('the cloud copy only opens encrypted: a plain copy put on the server is refused', async () => {
+  const key = deriveKeys('ABCDEFGHJKMNPQRS').enc;
+  const plain = JSON.stringify({ app: 'sweatbook', v: 1, hands: [], sessions: [], players: [] });
+  const raw = new TextEncoder().encode(plain);
+  assert.throws(() => unseal(raw, key, true), /forbidden/);
+  await assert.rejects(unsealAsync(raw, key, undefined, true), /forbidden/);
+  await assert.rejects(unsealAsync(new TextEncoder().encode('not json'), key, undefined, true), /forbidden/);
+  // Encrypted copies (v1 and v2) still open; a file imported by hand may still be plain.
+  assert.equal(await unsealAsync(new TextEncoder().encode(seal(plain, key, new Uint8Array(12))), key, undefined, true), plain);
+  assert.equal(await unsealAsync(await sealAsync(plain, key, new Uint8Array(12)), key, undefined, true), plain);
+  assert.equal(unseal(raw, key), plain);
+});
