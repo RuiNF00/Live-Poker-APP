@@ -44,6 +44,7 @@ BUILT FOR LIVE PLAYERS
 • Your live session on the lock screen: time played, stack and level
 • Home screen widget with your running session or this week's result
 • Bankroll and results by venue, with deposits, withdrawals and expenses
+• Written swaps: confirmed by both players, with who owes whom
 • Staking records: log the action you sold, your backers, packages and makeup, and see what you owe each one
 • A live link for your backers to follow your stack and level during the session
 • Import your sessions from other poker apps or any CSV

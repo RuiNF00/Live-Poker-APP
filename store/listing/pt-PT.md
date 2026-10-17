@@ -44,6 +44,7 @@ PARA QUEM JOGA LIVE
 • A sessão em curso no ecrã bloqueado: tempo de jogo, stack e nível
 • Widget no ecrã principal com a sessão a decorrer ou o resultado da semana
 • Bankroll e resultados por casino, com depósitos, levantamentos e despesas
+• Swaps por escrito: confirmados pelos dois, com as contas de quem deve a quem
 • Staking: regista a ação que vendes, os backers, pacotes e makeup, e vê o que deves a cada um
 • Um link em direto para os teus backers seguirem o stack e o nível durante a sessão
 • Importa as tuas sessões de outras apps de póquer ou de qualquer CSV

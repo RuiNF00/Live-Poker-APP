@@ -48,6 +48,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 - Export compliance: exempt encryption only (`ITSAppUsesNonExemptEncryption=false` in app.json).
 - Sign-in required: No. No demo account needed. Review notes in `review-risks.md`.
 - Retention offer ("Conversão para Pro" thread), created by the store thread with the API keys, not by Rui: Apple promotional offer `sweatbook_retention_40` on sweatbook_pro_monthly (-40% for 3 months, pay as you go); Play offer `sweatbook-retention-40` on the monthly base plan (-40% for 3 months, developer-determined eligibility); Play base plan pause enabled (up to 3 months). Without them the app hides the offer.
+- Lifetime purchase (Conversão thread, PR pending): non-consumable `sweatbook_lifetime`, 499 USD (or the nearest Apple price point) / 499 USD Play one-time product, unlocks the same RevenueCat entitlement as the subscription, shown only in the cancel flow. Created by the store thread with the API keys (App Store Connect, Play Console, RevenueCat) and submitted with the version like the subscriptions. Restore purchases must restore it.
 - In-App Purchases: create the subscription products in App Store Connect before submitting, attach them to the version, and give each a review screenshot of the paywall. Requires the Paid Apps agreement, bank and tax forms done by Rui.
 - EU Digital Services Act trader status: question for Rui. A paid subscription makes the app commercial, which in practice means **trader** (his address and phone shown on the EU listing) unless he publishes through a company.
 
