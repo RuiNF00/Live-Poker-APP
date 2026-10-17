@@ -4,9 +4,9 @@
 
 | Store | Required | Size (portrait) | Count |
 |---|---|---|---|
-| App Store | iPhone 6.9" | 1320 × 2868 (1290 × 2796 also accepted) | 3 to 10, we ship 6 |
+| App Store | iPhone 6.9" | 1320 × 2868 | 3 to 10, we ship 7 |
 | App Store | iPad 13" | only if `supportsTablet` is true; it is false for v1 | — |
-| Google Play | Phone | 1080 × 1920 to 1440 × 3120, 9:16 to 9:20, PNG/JPEG < 8 MB | 2 to 8, we ship 6 |
+| Google Play | Phone | 1080 × 1920 (Play caps the long side at 2× the short side), PNG/JPEG < 8 MB | 2 to 8, we ship 7 |
 | Google Play | Feature graphic | 1024 × 500 | 1 |
 | Google Play | Icon | 512 × 512 PNG, 32-bit | 1 |
 | App Store | Icon | 1024 × 1024 PNG, no alpha (taken from the build) | 1 |
@@ -30,10 +30,16 @@ Frame 1 is the one most people see in search results; it must show the speed of 
 
 ## How they are produced
 
-1. Seed the simulator with ~20 realistic hands (a realistic live tournament, no real event brands or player names).
-2. Run the app in the iOS Simulator (iPhone 16 Pro Max, 6.9") and an Android emulator (Pixel, 1080 × 2400), capture with `xcrun simctl io booted screenshot` / `adb exec-out screencap -p`.
-3. Compose captions and frames with a script (HTML template + Playwright screenshot at exact pixel size) so changing the brand re-renders every image. This will live in `store/screenshots/` once the app UI exists.
-4. Status bar: 9:41, full battery, full signal (`xcrun simctl status_bar booted override ...`).
+Rendered from the real app (Expo web build) with seeded demo data, no real event brands or player names:
+
+```bash
+npx expo export -p web && npx serve -s dist -l 4173 &   # in the app root
+cd store/screenshots && npm i playwright && node render.mjs http://localhost:4173 out
+```
+
+`frames.json` holds the route and caption (PT and EN) of each frame, `seed.mjs` the demo hands, sessions and players. Output: `out/{ios,android}/{pt,en}/1..7.png`. The current set is in `/mnt/project-files/launch/screenshots/`.
+
+Frames: 1 hand entry, 2 replayer, 3 Instagram story share, 4 hand list with tags, 5 live session, 6 bankroll, 7 player notes.
 
 ## Feature graphic (Play)
 
