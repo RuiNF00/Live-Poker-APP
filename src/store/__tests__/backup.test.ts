@@ -12,7 +12,7 @@ const sess = (over: Partial<Session> = {}): Session => ({
 });
 
 test('round trip through JSON', () => {
-  const b = buildBackup({ hands: [], sessions: [sess()], players: [], settings: DEFAULT_SETTINGS }, 5);
+  const b = buildBackup({ hands: [], sessions: [sess()], players: [], backers: [], packages: [], payments: [], settings: DEFAULT_SETTINGS }, 5);
   const back = parseBackup(JSON.stringify(b));
   assert.equal(back.sessions.length, 1);
   assert.equal(back.exportedAt, 5);

@@ -1,0 +1,84 @@
+import type { Locale } from '@/lib/i18n';
+
+// Text for the backer live page, in the same two languages as the rest of the site.
+const pt = {
+  live: 'Em direto',
+  paused: 'Em pausa',
+  ended: 'Terminada',
+  stale: 'Sem atualizações',
+  tournament: 'Torneio',
+  cash: 'Cash game',
+  startedAt: (time: string) => `começou às ${time}`,
+  stack: 'Stack',
+  level: (n: number) => `Nível ${n}`,
+  blinds: 'Blinds',
+  sinceStart: 'desde o início',
+  time: 'Tempo de jogo',
+  entries: 'Entradas',
+  invested: 'Investido',
+  stage: 'Fase',
+  hands: 'Mãos registadas',
+  stages: { early: 'Início', mid: 'Meio', bubble: 'Bolha', itm: 'Nos prémios', ft: 'Mesa final', hu: 'Heads-up' } as Record<string, string>,
+  prize: 'Prémio',
+  cashOut: 'Cash-out',
+  busted: 'Eliminado',
+  place: (n: number, field: number | null) => (field ? `${n}º de ${field}` : `${n}º lugar`),
+  result: 'Resultado',
+  sold: (n: number) => `${n}% da ação vendida`,
+  updated: (ago: string) => `Atualizado ${ago}`,
+  justNow: 'agora mesmo',
+  minutesAgo: (n: number) => (n === 1 ? 'há 1 minuto' : `há ${n} minutos`),
+  hoursAgo: (n: number) => (n === 1 ? 'há 1 hora' : `há ${n} horas`),
+  autoRefresh: 'Esta página atualiza sozinha.',
+  chart: 'Stack ao longo da sessão',
+  ctaTitle: 'Também jogas live?',
+  ctaBody: 'Regista sessões e mãos em segundos, vende ação com nome e dá aos teus backers um link como este.',
+  notFound: 'Link não encontrado',
+  metaTitle: (player: string, name: string) => (player ? `${player} em direto · ${name}` : `Em direto · ${name}`),
+  metaDescription: 'Segue a sessão em direto: stack, nível e resultado.',
+};
+
+const en: typeof pt = {
+  live: 'Live',
+  paused: 'On break',
+  ended: 'Finished',
+  stale: 'No recent updates',
+  tournament: 'Tournament',
+  cash: 'Cash game',
+  startedAt: (time: string) => `started at ${time}`,
+  stack: 'Stack',
+  level: (n: number) => `Level ${n}`,
+  blinds: 'Blinds',
+  sinceStart: 'since the start',
+  time: 'Time played',
+  entries: 'Entries',
+  invested: 'Invested',
+  stage: 'Stage',
+  hands: 'Hands logged',
+  stages: { early: 'Early', mid: 'Middle', bubble: 'Bubble', itm: 'In the money', ft: 'Final table', hu: 'Heads-up' },
+  prize: 'Prize',
+  cashOut: 'Cash-out',
+  busted: 'Busted',
+  place: (n: number, field: number | null) => (field ? `${ordinal(n)} of ${field}` : `${ordinal(n)} place`),
+  result: 'Result',
+  sold: (n: number) => `${n}% of the action sold`,
+  updated: (ago: string) => `Updated ${ago}`,
+  justNow: 'just now',
+  minutesAgo: (n: number) => (n === 1 ? '1 minute ago' : `${n} minutes ago`),
+  hoursAgo: (n: number) => (n === 1 ? '1 hour ago' : `${n} hours ago`),
+  autoRefresh: 'This page updates by itself.',
+  chart: 'Stack over the session',
+  ctaTitle: 'Playing live too?',
+  ctaBody: 'Log sessions and hands in seconds, sell action to named backers and give them a link like this one.',
+  notFound: 'Link not found',
+  metaTitle: (player: string, name: string) => (player ? `${player} live · ${name}` : `Live · ${name}`),
+  metaDescription: 'Follow the session live: stack, level and result.',
+};
+
+function ordinal(n: number) {
+  const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${s}`;
+}
+
+export const liveCopy = (locale: Locale) => (locale === 'en' ? en : pt);
+export type LiveCopy = typeof pt;

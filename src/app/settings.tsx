@@ -35,7 +35,7 @@ export default function SettingsScreen() {
   const exportAll = async () => {
     tap();
     try {
-      await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup({ hands, sessions, players, settings })), 'application/json');
+      await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup(store)), 'application/json');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }

@@ -6,6 +6,7 @@ import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { StakingEntry } from '@/components/staking/StakingEntry';
 import { Button, Chip, Empty, Panel, Row, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
@@ -51,6 +52,8 @@ export default function BankrollScreen() {
             <Chip key={l} label={p && !isPro && !FREE.bankrollFilters ? l + ' · Pro' : l} active={period === p} onPress={() => (p && !isPro && !FREE.bankrollFilters ? paywall('stats') : setPeriod(p))} />
           ))}
         </Row>
+
+        <StakingEntry />
 
         {tot.sessions === 0 ? (
           <Empty title={t('Ainda sem sessões terminadas')} body={t('Começa uma sessão no separador Sessão ou adiciona uma sessão passada para ver lucro, hora a hora e ROI.')} />
@@ -192,6 +195,7 @@ function SessionRow({ s, onDelete, onEdit }: { s: Session; onDelete: () => void;
             {s.entries} × {money(s.buyIn, s.currency)}
             {s.addOn ? ` + add-on ${money(s.addOn, s.currency)}` : ''} → {money(s.cashOut, s.currency)}
             {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: money(owedToBackers(s), s.currency) }) : ''}
+            {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: money(s.makeupCut, s.currency) }) : ''}
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: money(s.expenses, s.currency) }) : ''}
           </T>
           <Row gap={14}>

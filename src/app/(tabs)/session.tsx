@@ -12,6 +12,7 @@ import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { StakeFields } from '@/components/StakeFields';
 import { Button, Card, Chip, ChipRow, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -179,6 +180,11 @@ function Live({ s }: { s: Session }) {
         </ListGroup>
       </Section>
 
+      <Section title="Staking" action={t('Backers')} onAction={() => router.push('/staking')}>
+        <BackerLiveCard s={s} />
+        <StakeFields s={s} onChange={save} expenses={false} />
+      </Section>
+
       {!ending ? (
         <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
       ) : (
@@ -203,7 +209,7 @@ function Live({ s }: { s: Session }) {
                     </Row>
                   ) : null}
                   <Row style={{ justifyContent: 'space-between' }}>
-                    <T v="h3">{s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
+                    <T v="h3">{s.stakes?.length || s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
                     <T v="monoL" color={p >= 0 ? C.good : C.bad}>
                       {(p > 0 ? '+' : '') + money(p, s.currency)}
                     </T>

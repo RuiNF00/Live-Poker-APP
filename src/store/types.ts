@@ -21,8 +21,15 @@ export interface Session {
   field?: number;
   /** Travel, hotel, tips: comes off your result. */
   expenses?: number;
-  /** Action sold to backers: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%). */
+  /** Action sold, in total: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%).
+   *  Kept as the summary of `stakes` so older copies of the app still read it. */
   staking?: { sold: number; markup: number };
+  /** Who has a piece of this session. Absent on older sessions: `staking` is then one unnamed stake. */
+  stakes?: Stake[];
+  /** Public live link for backers (sweatbook.poker/live/<id>); token lets this phone update or remove it. */
+  live?: { id: string; token: string };
+  /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
+  makeupCut?: number;
   // Live table state, used to pre-fill every new hand.
   sb: number;
   bb: number;
@@ -36,6 +43,58 @@ export interface Session {
   /** Names at the table by seat (0 = seat 1). */
   roster: string[];
   notes: string;
+  updatedAt?: number;
+}
+
+/** One backer's piece of one session. */
+export interface Stake {
+  /** Absent: sold without a name (older sessions, or a quick sale). */
+  backerId?: string;
+  /** Part of a package: share and terms come from it. */
+  packageId?: string;
+  /** % of the whole action. */
+  share: number;
+  /** 1.1 = 10% markup. Always 1 in a makeup package. */
+  markup: number;
+  /** The backer hasn't paid for this piece yet: it counts against their balance. */
+  unpaid?: boolean;
+}
+
+export interface Backer {
+  id: string;
+  name: string;
+  note: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
+/**
+ * Several sessions sold to one backer on the same terms.
+ * - 'action': they buy `share`% of each tournament at `markup`; every session settles on its own.
+ * - 'makeup': they put up `share`% of the buy-ins; losses carry over (makeup) and you keep
+ *   `playerCut`% of their profit only once the package as a whole is up.
+ */
+export interface StakePackage {
+  id: string;
+  backerId: string;
+  name: string;
+  kind: 'action' | 'makeup';
+  share: number;
+  markup: number;
+  playerCut: number;
+  createdAt: number;
+  closedAt?: number;
+  updatedAt?: number;
+}
+
+/** Money between you and a backer. amount > 0: you paid them; < 0: they paid you. */
+export interface BackerPayment {
+  id: string;
+  backerId: string;
+  amount: number;
+  at: number;
+  note: string;
+  createdAt: number;
   updatedAt?: number;
 }
 

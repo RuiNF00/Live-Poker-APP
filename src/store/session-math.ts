@@ -1,4 +1,4 @@
-import type { Session } from './types';
+import type { Session, Stake } from './types';
 
 /** Time actually at the table: wall time minus breaks. */
 export function playedMs(s: Session, now = Date.now()): number {
@@ -16,9 +16,30 @@ export function cost(s: Session): number {
   return s.buyIn * Math.max(1, s.entries) + (s.addOn || 0);
 }
 
+/** Every piece sold of this session; an older session's `staking` reads as one unnamed stake. */
+export function stakesOf(s: Session): Stake[] {
+  if (s.stakes) return s.stakes.filter((x) => x.share > 0);
+  return s.staking?.sold ? [{ share: s.staking.sold, markup: s.staking.markup || 1 }] : [];
+}
+
+/** The `staking` summary kept next to `stakes`: total sold and its average markup. */
+export function stakingSummary(stakes: Stake[]): Session['staking'] {
+  const sold = stakes.reduce((a, x) => a + x.share, 0);
+  if (!sold) return undefined;
+  const markup = stakes.reduce((a, x) => a + x.share * (x.markup || 1), 0) / sold;
+  return { sold: Math.round(sold * 100) / 100, markup: Math.round(markup * 1000) / 1000 };
+}
+
 /** Share sold to backers, 0–1. */
 export function soldShare(s: Session): number {
-  return Math.min(1, Math.max(0, (s.staking?.sold ?? 0) / 100));
+  const sold = stakesOf(s).reduce((a, x) => a + x.share, 0);
+  return Math.min(1, Math.max(0, sold / 100));
+}
+
+/** One stake's fraction of the whole action, 0–1 (scaled down if more than 100% was sold). */
+export function pieceOf(s: Session, x: Stake): number {
+  const sold = stakesOf(s).reduce((a, y) => a + y.share, 0);
+  return sold > 100 ? x.share / sold : x.share / 100;
 }
 
 /** Result of the whole action, before staking and expenses. */
@@ -28,7 +49,7 @@ export function gross(s: Session): number {
 
 /** What the backers paid you for their share (markup included). */
 export function stakeIn(s: Session): number {
-  return soldShare(s) * cost(s) * (s.staking?.markup || 1);
+  return stakesOf(s).reduce((a, x) => a + pieceOf(s, x) * cost(s) * (x.markup || 1), 0);
 }
 
 /** What you owe the backers from the prize. */
@@ -41,10 +62,16 @@ export function ownCost(s: Session): number {
   return cost(s) - stakeIn(s) + (s.expenses || 0);
 }
 
-/** Your result: your share of the prize, plus what backers paid, minus buy-ins and expenses. */
+/**
+ * Your result: your share of the prize, plus what backers paid, minus buy-ins and expenses,
+ * plus your cut of a makeup package credited to this session (kept in sync by the store).
+ */
 export function profit(s: Session): number {
-  return (s.cashOut || 0) - owedToBackers(s) - ownCost(s);
+  return (s.cashOut || 0) - owedToBackers(s) - ownCost(s) + (s.makeupCut || 0);
 }
+
+/** Per-session makeup cuts, by session id. Missing ids are 0. */
+export type Cuts = Map<string, number>;
 
 export interface Breakdown {
   key: string;
