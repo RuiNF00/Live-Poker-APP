@@ -175,6 +175,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Stat label="Call" value={f.toCall} color={C.good} />
           <Stat label={t('Pot odds')} value={`${(f.potOdds * 100).toFixed(1)}%`} color={C.info} />
           <Stat label="MDF" value={`${Math.round(f.mdf * 100)}%`} color="#A78BFA" />
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
         </>
       ) : (
         <>
@@ -184,9 +185,19 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
         </>
       )}
     </View>
+  );
+}
+
+/** Hero's equity against the range villain's preflop action suggests, e.g. "Equity 54% vs top 20%". */
+function RangeEq({ eq }: { eq: { equity: number; pct: number } }) {
+  return (
+    <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
+      Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{Math.round(eq.equity * 100)}%</Text> {t('vs top')} {eq.pct}%
+    </Text>
   );
 }
 
