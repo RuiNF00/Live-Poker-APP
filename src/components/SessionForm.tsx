@@ -7,7 +7,7 @@ import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 import { parseDay, playedMs } from '@/store/session-math';
 import { uid } from '@/store/store';
-import type { Session } from '@/store/types';
+import type { Bankroll, Session } from '@/store/types';
 import { S } from '@/theme';
 
 import { StakeFields } from './StakeFields';
@@ -49,9 +49,12 @@ export function SessionForm({
   recentVenues,
   onSubmit,
   submitLabel,
+  bankrolls = [],
 }: {
   initial: Session;
   past?: boolean;
+  /** Where the session can count; a choice only shows with two or more. */
+  bankrolls?: Bankroll[];
   recentNames: string[];
   recentVenues: string[];
   onSubmit: (s: Session) => void;
@@ -66,7 +69,8 @@ export function SessionForm({
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
-  const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue });
+  const switchKind = (k: GameKind) => setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId });
+  const online = s.format === 'online';
   return (
     <View style={{ gap: S.lg }}>
       <Segmented
@@ -77,6 +81,29 @@ export function SessionForm({
         value={s.kind}
         onChange={(k) => k !== s.kind && switchKind(k)}
       />
+      <Segmented
+        size="sm"
+        options={[
+          { key: 'live', label: 'Live' },
+          { key: 'online', label: 'Online' },
+        ]}
+        value={online ? 'online' : 'live'}
+        onChange={(f) => set({ format: f === 'online' ? 'online' : undefined })}
+      />
+      {bankrolls.length > 1 && (
+        <Section title="Bankroll">
+          <ChipRow>
+            {bankrolls.map((b) => (
+              <Chip
+                key={b.id}
+                label={`${b.name} · ${b.currency}`}
+                active={(s.bankrollId ? s.bankrollId === b.id : b.currency === s.currency && bankrolls.find((x) => x.currency === s.currency)?.id === b.id)}
+                onPress={() => set({ bankrollId: b.id, currency: b.currency })}
+              />
+            ))}
+          </ChipRow>
+        </Section>
+      )}
       <Card style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
           <Field label={mtt ? t('Torneio') : t('Jogo')} value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} />
@@ -89,7 +116,7 @@ export function SessionForm({
           )}
         </View>
         <View style={{ gap: S.sm }}>
-          <Field label={t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={t('Ex.: Casino Estoril')} />
+          <Field label={online ? t('Sala online') : t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={online ? t('Ex.: PokerStars') : t('Ex.: Casino Estoril')} />
           {recentVenues.length > 0 && (
             <ChipRow style={{ marginHorizontal: -S.lg }}>
               {recentVenues.map((n) => (
@@ -103,8 +130,8 @@ export function SessionForm({
           {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
         </Row>
       </Card>
-      {!past && (
-        <Section title="Blinds">
+      {(!past || !mtt) && (
+        <Section title={past ? 'Stakes' : 'Blinds'}>
           <ChipRow>
             {levels.map(([sb, bb]) => (
               <Chip key={bb} label={`${chips(sb)}/${chips(bb)}`} active={s.bb === bb && s.sb === sb} onPress={() => set({ sb, bb, ante: mtt ? bb : 0 })} />

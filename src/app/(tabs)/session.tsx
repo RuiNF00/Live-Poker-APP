@@ -45,7 +45,7 @@ function confirm(title: string, body: string, ok: () => void) {
 }
 
 export default function SessionScreen() {
-  const { activeSession, sessions, saveSession, settings } = useStore();
+  const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
 
@@ -65,13 +65,16 @@ export default function SessionScreen() {
         <T v="small">{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
       </Card>
       <SessionForm
-        initial={blankSession(sessions[0]?.kind ?? 'mtt', settings.currency, settings.defaultTableSize)}
+        initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
+        bankrolls={bankrolls}
         recentNames={recentNames}
         recentVenues={recentVenues}
         submitLabel={t('Começar agora')}
         onSubmit={(s) => {
           tap('medium');
           saveSession(s);
+          // The next session goes to the same bankroll.
+          if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
         }}
       />
     </Screen>
