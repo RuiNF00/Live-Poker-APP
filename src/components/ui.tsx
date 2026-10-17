@@ -853,7 +853,13 @@ export function Banner({
           </T>
         ) : null}
         {onDismiss ? (
-          <Pressable onPress={onDismiss} hitSlop={12} accessibilityLabel={dismissLabel ?? t('Fechar')}>
+          // Its own tap target, set apart by a hairline, so it isn't hit while reaching for the banner.
+          <Pressable
+            onPress={onDismiss}
+            hitSlop={{ top: 12, bottom: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel={dismissLabel ?? t('Fechar')}
+            style={{ alignSelf: 'stretch', justifyContent: 'center', paddingLeft: 14, marginLeft: 2, borderLeftWidth: 1, borderLeftColor: C.border }}>
             <Ionicons name="close" size={18} color={C.muted} />
           </Pressable>
         ) : onPress && !action ? (

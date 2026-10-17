@@ -501,6 +501,8 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Mão descartada': 'Hand discarded',
+  'Anular': 'Undo',
   'Ainda sem sessões': 'No sessions yet',
   'Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o €/hora e o ROI aparecem aqui.': 'Finish a live session or add one you\'ve already played. Profit, hourly and ROI show up here.',
   'Juntar sessão passada': 'Add a past session',
