@@ -3186,6 +3186,7 @@ const es: Record<string, string> = {
   'Punta Cana, janeiro 2027': 'Punta Cana, enero 2027',
   'República Dominicana': 'República Dominicana',
   'Mais formas de partilhar': 'Más formas de compartir',
+  '{name} · Dia {n}: {chips} em fichas ({bb})': '{name} · Día {n}: {chips} en fichas ({bb})',
 };
 
 export default es;

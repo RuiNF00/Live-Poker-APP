@@ -96,7 +96,9 @@ export function stackPostText(s: Session): string {
   const day = dayOf(s);
   return isBagged(s)
     ? t('{name} · Dia {n} ensacado: {chips}', { name, n: day, chips: chips(s.bag!.stack) })
-    : t('{name} · Dia {n}: {chips} em fichas', { name, n: day, chips: chips(s.stack) });
+    : s.bb
+      ? t('{name} · Dia {n}: {chips} em fichas ({bb})', { name, n: day, chips: chips(s.stack), bb: bbs(s.stack, s.bb) })
+      : t('{name} · Dia {n}: {chips} em fichas', { name, n: day, chips: chips(s.stack) });
 }
 
 const monthKey = (ms: number) => {

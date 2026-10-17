@@ -65,3 +65,9 @@ test('stack card: chips, day and bb while playing; the bag once the day is over;
   assert.ok(text.includes('Main') && text.includes('91k'));
   assert.ok(!text.includes('€') && !text.includes('Estoril'));
 });
+
+test('mid-day stack text carries the big blinds, never money or the venue', () => {
+  const text = stackPostText(mk({ endedAt: undefined, stack: 42000, bb: 1000 }));
+  assert.ok(text.includes('42k') && text.includes('42 bb'), text);
+  assert.ok(!text.includes('€') && !text.includes('Estoril'));
+});

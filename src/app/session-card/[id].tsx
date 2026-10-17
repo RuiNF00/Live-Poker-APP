@@ -13,13 +13,14 @@ import { usePro } from '@/billing/pro';
 import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
-import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
+import { Button, Empty, IconButton, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, capturePost, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
 import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
+import { lastShare, rememberShare } from '@/lib/share-last';
 import { playedMs } from '@/store/session-math';
 import { CARD_STYLES, milestoneFor, sessionStats, stackPostText, stackStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
@@ -101,6 +102,28 @@ export default function SessionCardScreen() {
   const copy = async () => {
     await Clipboard.setStringAsync(postText(await inviteLink('any'))).catch(() => {});
     notice(t('Link copiado'));
+  };
+
+  // The destination used last is the button itself (one tap less mid-tournament); the sheet is on "…".
+  // "Outras apps" and a first share keep the sheet, so the system one never opens unasked.
+  const last = lastShare();
+  const igTitle = look === 'sticker' ? t('Sticker no Instagram') : t('Story no Instagram');
+  const quick =
+    last === 'instagram'
+      ? { icon: 'logo-instagram' as const, label: igTitle }
+      : last === 'whatsapp'
+        ? { icon: 'logo-whatsapp' as const, label: 'WhatsApp' }
+        : last === 'x'
+          ? { icon: 'logo-x' as const, label: t('Publicar no X') }
+          : last === 'copy'
+            ? { icon: 'link-outline' as const, label: t('Copiar link') }
+            : null;
+  const sendLast = () => {
+    if (!last) return;
+    rememberShare(last);
+    if (last === 'instagram') void post();
+    else if (last === 'whatsapp' || last === 'x') void postTo(last);
+    else if (last === 'copy') void copy();
   };
 
   return (
@@ -194,7 +217,19 @@ export default function SessionCardScreen() {
       </ScrollView>
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {canShareStory ? (
-          <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
+          quick && !busy ? (
+            <Row gap={S.sm}>
+              <Button
+                title={quick.label}
+                icon={quick.icon}
+                onPress={sendLast}
+                style={{ flex: 1 }}
+              />
+              <IconButton name="ellipsis-horizontal" size={46} label={t('Mais formas de partilhar')} onPress={() => setSheet(true)} />
+            </Row>
+          ) : (
+            <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
+          )
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
             {t('Abre a app no telemóvel para publicar no Instagram.')}
