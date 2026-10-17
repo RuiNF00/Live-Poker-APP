@@ -4,13 +4,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 
+import { rememberTrial, syncNudges } from './nudges-sync';
 import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
 import * as store from './purchases';
 import { track } from '@/lib/events';
 import { activateInvite, claimState } from '@/lib/referrals';
+import { useStore } from '@/store/store';
 
 const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcome.v1' };
 
@@ -27,6 +30,8 @@ interface ProValue {
   paywall: (reason?: PaywallReason) => void;
   purchase: (plan: PlanId, reason?: PaywallReason) => Promise<store.BuyResult>;
   restore: () => Promise<boolean>;
+  /** Re-plan the trial and come-back notifications (after the player allows them). */
+  refreshNudges: () => void;
 }
 
 const Ctx = createContext<ProValue | null>(null);
@@ -87,6 +92,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       if (res === 'ok') {
         setPro(true);
         track('purchase', { plan: id, reason, trial: plan.trialDays });
+        if (plan.trialDays) void rememberTrial(plan.trialDays);
       }
       return res;
     },
@@ -101,9 +107,26 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   const handsLeft = isPro ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
 
+  // Trial and come-back notifications follow the data: re-planned when it
+  // changes and each time the app comes back to the front.
+  const { hands, sessions, activeSession } = useStore();
+  const [nudgeTick, setNudgeTick] = useState(0);
+  const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && refreshNudges());
+    return () => sub.remove();
+  }, [refreshNudges]);
+  const annualPrice = plans.find((p) => p.id === 'annual')?.priceString ?? '';
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void syncNudges({ now: Date.now(), isPro, annualPrice, hands, sessions, sessionActive: !!activeSession });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession]);
+
   const value = useMemo(
-    () => ({ isPro, plans, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore }),
-    [isPro, plans, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore],
+    () => ({ isPro, plans, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges }),
+    [isPro, plans, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

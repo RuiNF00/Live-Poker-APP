@@ -96,6 +96,18 @@ export async function getIsPro(): Promise<boolean | null> {
   }
 }
 
+/** The running free trial, from the store. Null when not in one; undefined when the store can't say (demo store, offline). */
+export async function getTrial(): Promise<{ start: number; end: number; willRenew: boolean } | null | undefined> {
+  if (!LIVE) return undefined;
+  try {
+    const e = (await Purchases.getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    if (!e || e.periodType !== 'TRIAL' || !e.expirationDateMillis) return null;
+    return { start: e.latestPurchaseDateMillis, end: e.expirationDateMillis, willRenew: e.willRenew };
+  } catch {
+    return undefined;
+  }
+}
+
 export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
 
 export async function buy(plan: StorePlan): Promise<BuyResult> {
