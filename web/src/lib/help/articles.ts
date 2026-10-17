@@ -442,7 +442,7 @@ const ARTICLES: Article[] = [
             'They tap I confirm the swap in the browser, with or without the app. From then on the terms and time are fixed and you both get the deal code.',
           ],
         },
-        'When someone cashes, tap I cashed and log the prize. The app shows who owes whom; when you pay, log it under I paid. Share the accounts sends the summary to the other player.',
+        'When someone cashes, tap I cashed and log the prize. The app shows who owes whom; when you pay, log it under I paid. Share the balance sends the summary to the other player.',
         'Creating swaps and settling up are part of Pro. Confirming a swap by link is always free.',
         { note: 'Records and accounts only: no money moves through Sweatbook, payments are made between you. 18+ only.' },
       ],

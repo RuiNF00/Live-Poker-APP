@@ -156,7 +156,7 @@ export const BR: Record<string, ArticleText> = {
       {
         steps: [
           'Em Bankroll → Swaps, toque em Novo swap.',
-          'Escolha com quem, a porcentagem (desligue A mesma percentagem para um swap desigual, por exemplo 3% por 2%) e se é para Um evento ou para a Série inteira.',
+          'Escolha com quem, a porcentagem (desligue A mesma porcentagem para um swap desigual, por exemplo 3% por 2%) e se é para Um evento ou para a Série inteira.',
           'Toque em Criar e enviar link e mande só para o outro jogador.',
           'Ele toca em Confirmo o swap no navegador, com ou sem o app. A partir daí, os termos e o horário ficam fixados e os dois recebem o código do acordo.',
         ],
