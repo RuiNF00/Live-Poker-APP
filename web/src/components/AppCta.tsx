@@ -5,6 +5,7 @@ import { brand } from '@/config/brand';
 import { t, type Locale } from '@/lib/i18n';
 import { Mark, Wordmark } from './Brand';
 import { track } from '@/lib/track';
+import { storeLinks } from '@/lib/storeLinks';
 import { StoreButtons } from './landing/StoreButtons';
 import { landingCopy } from './landing/copy';
 import '@/app/landing.css';
@@ -24,10 +25,7 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
   const [platform, setPlatform] = useState<Platform>('other');
   useEffect(() => setPlatform(detectPlatform()), []);
 
-  const utm = `utm_source=share&utm_medium=hand&utm_campaign=${encodeURIComponent(shareId)}`;
-  const withUtm = (url: string) => (url ? `${url}${url.includes('?') ? '&' : '?'}${utm}` : '');
-  const ios = withUtm(brand.appStoreUrl);
-  const android = withUtm(brand.playStoreUrl);
+  const { ios, android } = storeLinks({ utm_source: 'share', utm_medium: 'hand', utm_campaign: shareId });
   const primary = platform === 'ios' ? ios : platform === 'android' ? android : ios || android;
 
   return (

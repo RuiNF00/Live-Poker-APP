@@ -8,6 +8,8 @@ export const brand = {
   },
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'https://sweatbook.poker').replace(/\/$/, ''),
   appStoreUrl: process.env.NEXT_PUBLIC_APP_STORE_URL || '',
+  /** App Store Connect provider token (pt=) for campaign links; optional. */
+  appStoreProviderToken: process.env.NEXT_PUBLIC_APP_STORE_PROVIDER_TOKEN || '',
   playStoreUrl: process.env.NEXT_PUBLIC_PLAY_STORE_URL || '',
   appScheme: process.env.NEXT_PUBLIC_APP_SCHEME || 'sweatbook',
   colors: {

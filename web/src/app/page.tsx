@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { brand } from '@/config/brand';
 import { pickLocale } from '@/lib/i18n';
+import { storeLinks, type Utm } from '@/lib/storeLinks';
 import { Mark, Wordmark } from '@/components/Brand';
 import { PlayingCard } from '@/components/PlayingCard';
 import { landingCopy } from '@/components/landing/copy';
@@ -22,15 +23,13 @@ export const metadata: Metadata = {
 type Search = Record<string, string | string[] | undefined>;
 
 /** Carries the visitor's utm_* (Instagram bio, story link) through to the store links. */
-function withUtm(url: string, search: Search) {
-  if (!url) return '';
-  const u = new URL(url);
-  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']) {
+function utmFrom(search: Search): Utm {
+  const utm: Utm = { utm_source: 'site' };
+  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as const) {
     const v = search[k];
-    if (typeof v === 'string' && v) u.searchParams.set(k, v.slice(0, 80));
+    if (typeof v === 'string' && v) utm[k] = v.slice(0, 80);
   }
-  if (!u.searchParams.has('utm_source')) u.searchParams.set('utm_source', 'site');
-  return u.toString();
+  return utm;
 }
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
@@ -39,7 +38,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const lang = typeof search.lang === 'string' ? search.lang : null;
   const locale = lang === 'en' || lang === 'pt' ? lang : pickLocale(h.get('accept-language'));
   const c = landingCopy(locale);
-  const stores: StoreLinks = { ios: withUtm(brand.appStoreUrl, search), android: withUtm(brand.playStoreUrl, search) };
+  const stores: StoreLinks = storeLinks(utmFrom(search));
 
   return (
     <div className="lp">
