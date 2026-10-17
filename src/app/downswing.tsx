@@ -4,15 +4,13 @@
 // order; it is Pro, the numbers above it are not.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BlurView } from 'expo-blur';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
 
-import { usePro } from '@/billing/pro';
-import { useLocked } from '@/components/ProGate';
-import { Button, Card, Row, Section, Stat, StatGrid, T } from '@/components/ui';
+import { ProBlur, useLocked } from '@/components/ProGate';
+import { Card, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
 import { DOWNSWING_MIN, downswingOdds, downswings, usualBuyIn, type Downswing } from '@/store/results-math';
@@ -25,7 +23,6 @@ const date = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'num
 
 export default function DownswingScreen() {
   const { sessions, defaultBankroll, settings } = useStore();
-  const { paywall } = usePro();
   const locked = useLocked('downswingRead');
   const params = useLocalSearchParams<{ currency?: string }>();
   const cur = params.currency || defaultBankroll.currency;
@@ -88,17 +85,9 @@ export default function DownswingScreen() {
             !locked ? (
               <Read odds={odds} big={big} cu={cu} fmt={fmt} cur={cur} />
             ) : (
-              <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-                  <Read odds={odds} big={big} cu={cu} fmt={() => '•••'} cur={cur} />
-                </View>
-                <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
-                  <T v="h3" style={{ textAlign: 'center' }}>
-                    {t('Vê se este downswing é azar ou sinal')}
-                  </T>
-                  <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('downswingRead')} />
-                </BlurView>
-              </View>
+              <ProBlur feature="downswingRead" locked title={t('Vê se este downswing é azar ou sinal')}>
+                <Read odds={odds} big={big} cu={cu} fmt={() => '•••'} cur={cur} />
+              </ProBlur>
             )
           ) : (
             <Card tone="inset" style={{ gap: S.xs }}>

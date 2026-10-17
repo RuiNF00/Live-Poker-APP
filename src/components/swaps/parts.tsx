@@ -5,7 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
+import { ProRow } from '@/components/ProGate';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
@@ -93,17 +93,7 @@ export function Seal({ swap }: { swap: Pick<Swap, 'confirmedAt' | 'confirmedName
 
 /** Settlement is Pro (PRO_ONLY.swaps): the results stay visible, the accounts open the paywall. */
 export function AccountsLocked() {
-  const { paywall } = usePro();
-  return (
-    <Card onPress={() => paywall('swaps')} accessibilityLabel={t('Ver contas')} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-      <Ionicons name="lock-closed" size={20} color={C.accent} />
-      <View style={{ flex: 1, gap: 2 }}>
-        <T v="h3">{t('Ver contas')}</T>
-        <T v="small">{t('Quem deve a quem e quanto, já calculado. Com o Pro.')}</T>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={C.muted} />
-    </Card>
-  );
+  return <ProRow feature="swaps" title={t('Ver contas')} body={t('Quem deve a quem e quanto, já calculado. Com o Pro.')} />;
 }
 
 /** One number and a sentence: who owes whom in this swap. */

@@ -5,13 +5,11 @@
 // screen). Staying, or stopping, is always on the table.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BlurView } from 'expo-blur';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
-import { useLocked } from '@/components/ProGate';
+import { ProBlur, useLocked } from '@/components/ProGate';
 import { Button, Card, Chip, ChipRow, Empty, Row, Section, T, tap } from '@/components/ui';
 import { WinRateSample } from '@/components/WinRate';
 import { locale, t } from '@/i18n';
@@ -31,7 +29,6 @@ const pct = (p: number) => (p < 0.001 ? t('menos de 0,1%') : p > 0.99 ? t('quase
 
 export default function MoveUpScreen() {
   const { sessions, bankrolls, transfers, defaultBankroll, settings, saveBankroll } = useStore();
-  const pro = usePro();
   const locked = useLocked('moveUpPlan');
   const params = useLocalSearchParams<{ bankroll?: string }>();
   const b: Bankroll = bankrolls.find((x) => x.id === params.bankroll) ?? defaultBankroll;
@@ -101,16 +98,16 @@ export default function MoveUpScreen() {
         </Section>
 
         <Section title={t('Risco de ruína')}>
-          <Lock locked={locked} title={t('Vê o teu risco de ruína com os teus números')} onUnlock={() => pro.paywall('moveUpPlan')}>
+          <ProBlur feature="moveUpPlan" locked={locked} title={t('Vê o teu risco de ruína com os teus números')}>
             {w ? <Risk w={w} m={m} balance={balance} masked={locked} /> : <Card tone="inset"><T v="small">{t('Com 3 sessões de cash terminadas calculamos o teu risco de ruína.')}</T></Card>}
-          </Lock>
+          </ProBlur>
         </Section>
 
         {m.next ? (
           <Section title={t('Plano de tentativa')} hint={t('Não é um conselho para jogar mais: é um limite que defines antes de te sentares.')}>
-            <Lock locked={locked} title={t('Define quanto arriscas antes de tentar a stake de cima')} onUnlock={() => pro.paywall('moveUpPlan')}>
+            <ProBlur feature="moveUpPlan" locked={locked} title={t('Define quanto arriscas antes de tentar a stake de cima')}>
               <Shot b={b} list={list} cur={m.cur} next={m.next} fmt={locked ? () => '•••' : fmt} onSave={(shot) => saveBankroll({ ...b, shot })} />
-            </Lock>
+            </ProBlur>
           </Section>
         ) : null}
       </ScrollView>
@@ -126,23 +123,6 @@ function Tile({ label, sub, value, ok, rule }: { label: string; sub: string; val
         {value}
       </T>
       <T v="tiny">{t('buy-ins (regra: {n})', { n: rule })}</T>
-    </View>
-  );
-}
-
-function Lock({ locked, title, onUnlock, children }: { locked: boolean; title: string; onUnlock: () => void; children: React.ReactNode }) {
-  if (!locked) return <>{children}</>;
-  return (
-    <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-        {children}
-      </View>
-      <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
-        <T v="h3" style={{ textAlign: 'center' }}>
-          {title}
-        </T>
-        <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={onUnlock} />
-      </BlurView>
     </View>
   );
 }

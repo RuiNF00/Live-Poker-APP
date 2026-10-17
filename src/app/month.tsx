@@ -4,17 +4,15 @@
 // from are Pro.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
 import { SmallSample } from '@/components/SmallSample';
-import { useLocked } from '@/components/ProGate';
+import { ProBlur, useLocked } from '@/components/ProGate';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { lang, locale, t } from '@/i18n';
@@ -36,7 +34,6 @@ const PREVIEW = 0.62;
 
 export default function MonthScreen() {
   const { sessions, hands, settings, setSettings } = useStore();
-  const pro = usePro();
   const locked = useLocked('monthCompare');
   const params = useLocalSearchParams<{ m?: string }>();
   const months = useMemo(() => recapMonths(sessions).slice(0, 12), [sessions]);
@@ -219,15 +216,15 @@ export default function MonthScreen() {
         </Section>
 
         <Section title={t('Comparado com os meses anteriores')}>
-          <Locked locked={locked} title={t('Vê se este mês foi melhor que os outros')} onUnlock={() => pro.paywall('monthCompare')}>
+          <ProBlur feature="monthCompare" locked={locked} title={t('Vê se este mês foi melhor que os outros')}>
             <Compare r={r} c={cmp} fmt={locked ? () => '•••' : fmt} signed={locked ? () => '•••' : signed} />
-          </Locked>
+          </ProBlur>
         </Section>
 
         <Section title={t('Onde ganhaste este mês')}>
-          <Locked locked={locked} title={t('Vê as salas e stakes deste mês')} onUnlock={() => pro.paywall('monthCompare')}>
+          <ProBlur feature="monthCompare" locked={locked} title={t('Vê as salas e stakes deste mês')}>
             <Where list={inMonth(sessions, key).filter((s) => s.currency === r.currency)} cur={r.currency} signed={locked ? () => '•••' : signed} />
-          </Locked>
+          </ProBlur>
         </Section>
 
         <ListGroup>
@@ -258,21 +255,6 @@ function Line({ label, s, value }: { label: string; s: { session: Session; profi
         {value}
       </T>
     </Row>
-  );
-}
-
-function Locked({ locked, title, onUnlock, children }: { locked: boolean; title: string; onUnlock: () => void; children: React.ReactNode }) {
-  if (!locked) return <>{children}</>;
-  return (
-    <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>{children}</View>
-      <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
-        <T v="h3" style={{ textAlign: 'center' }}>
-          {title}
-        </T>
-        <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={onUnlock} />
-      </BlurView>
-    </View>
   );
 }
 

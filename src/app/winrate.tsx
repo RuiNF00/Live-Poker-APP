@@ -2,14 +2,12 @@
 // is free; how many hours until it means something, and the split by game,
 // stake, room and weekday, are Pro.
 
-import { BlurView } from 'expo-blur';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
-import { usePro } from '@/billing/pro';
-import { useLocked } from '@/components/ProGate';
-import { Button, Card, Row, Section, Segmented, T } from '@/components/ui';
+import { ProBlur, useLocked } from '@/components/ProGate';
+import { Card, Row, Section, Segmented, T } from '@/components/ui';
 import { Interval, signed, WinRateCard, WinRateSample } from '@/components/WinRate';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -22,7 +20,6 @@ const bb1 = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 }
 
 export default function WinRateScreen() {
   const { sessions, defaultBankroll, settings } = useStore();
-  const { paywall } = usePro();
   const locked = useLocked('winrateDetail');
   const params = useLocalSearchParams<{ currency?: string }>();
   const cur = params.currency || defaultBankroll.currency;
@@ -32,22 +29,11 @@ export default function WinRateScreen() {
   const w = useMemo(() => winRate(cash), [cash]);
   const groups = useMemo(() => winRateBy(cash, by, cur), [cash, by, cur]);
 
-  const lock = (title: string, body: React.ReactNode) =>
-    !locked ? (
-      body
-    ) : (
-      <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-          {body}
-        </View>
-        <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
-          <T v="h3" style={{ textAlign: 'center' }}>
-            {title}
-          </T>
-          <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('winrateDetail')} />
-        </BlurView>
-      </View>
-    );
+  const lock = (title: string, body: React.ReactNode) => (
+    <ProBlur feature="winrateDetail" locked={locked} title={title}>
+      {body}
+    </ProBlur>
+  );
 
   return (
     <>

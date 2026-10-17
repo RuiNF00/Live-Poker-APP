@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { canUse, pruneLog, remainingToday, usedToday, type UsageEvent } from '../limits';
-import { annualSavingPct, perMonth, PLANS } from '../plans';
+import { annualSavingPct, featuresFor, perMonth, PLANS, PRO_FEATURES, PRO_ONLY, type ProFeature } from '../plans';
 
 const day = (h: number, m = 0) => new Date(2026, 9, 17, h, m).getTime();
 const yesterday = new Date(2026, 9, 16, 23, 59).getTime();
@@ -86,4 +86,13 @@ test('turning the clock back does not free up today\'s hands', () => {
   assert.equal(canUse(full, 'hand', 3, false, day(8)), false);
   // Clock set back to yesterday: today's saves still count (kept by pruneLog too).
   assert.equal(canUse(pruneLog(full, yesterday), 'hand', 3, false, yesterday), false);
+});
+
+test('every Pro feature leads its own paywall: a feature row, and the paywall opened from its lock puts it first', () => {
+  for (const f of [...(Object.keys(PRO_ONLY) as ProFeature[]), 'mttStats' as const, 'varianceMine' as const]) {
+    assert.ok(PRO_FEATURES.some((x) => x.key === f), `${f} has no feature row`);
+    const rows = featuresFor(f);
+    assert.equal(rows[0].feature.key, f, `${f} does not lead its paywall`);
+    assert.equal(rows[0].highlight, true);
+  }
 });

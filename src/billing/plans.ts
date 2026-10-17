@@ -99,7 +99,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -159,6 +159,14 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Este mês foi melhor?'),
     body: t('Compara cada mês com os anteriores e vê onde ganhaste.'),
   },
+  mttStats: {
+    title: t('ROI e ITM onde jogas'),
+    body: t('Por buy-in, festival e jogo: onde os teus torneios dão lucro.'),
+  },
+  varianceMine: {
+    title: t('A variância com os teus números'),
+    body: t('O teu win rate e desvio padrão, já preenchidos, em vez de exemplos.'),
+  },
   villainRange: {
     title: t('Desenha a range do vilão'),
     body: t('Escolhe as mãos dele na grelha e vê a tua equity contra elas.'),
@@ -201,7 +209,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
 };
 
-export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | ProFeature;
+export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mttStats' | 'varianceMine' | ProFeature;
 
 /** The first three are the generic rows; the rest lead only when they triggered the paywall. */
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
@@ -216,6 +224,11 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },
   { key: 'insights', icon: 'bulb', title: t('Onde ganhas e onde perdes'), body: t('Salas, stakes, sono e tilt') },
   { key: 'downswingRead', icon: 'pulse', title: t('Azar ou sinal?'), body: t('O teu downswing é normal?') },
+  { key: 'winrateDetail', icon: 'speedometer', title: t('Win rate a sério'), body: t('Por jogo, stake e sala') },
+  { key: 'monthCompare', icon: 'calendar', title: t('Mês a mês'), body: t('Compara com os anteriores') },
+  { key: 'moveUpPlan', icon: 'layers', title: t('Subir de stake'), body: t('Risco de ruína e plano') },
+  { key: 'mttStats', icon: 'trophy', title: t('Torneios a fundo'), body: t('ROI e ITM por buy-in e festival') },
+  { key: 'varianceMine', icon: 'pulse', title: t('A tua variância'), body: t('Com os teus números') },
   { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
 ];
 
@@ -237,6 +250,11 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   homeTotal: 'homeTotal',
   insights: 'insights',
   downswingRead: 'downswingRead',
+  winrateDetail: 'winrateDetail',
+  monthCompare: 'monthCompare',
+  moveUpPlan: 'moveUpPlan',
+  mttStats: 'mttStats',
+  varianceMine: 'varianceMine',
   villainRange: 'villainRange',
 };
 
