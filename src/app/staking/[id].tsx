@@ -75,6 +75,7 @@ function BackerScreen() {
         const now = Date.now();
         savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now });
         tap('medium');
+        // Store-review moment C (design/pedido-avaliacao.md): maybeAskForReview('settled') here once src/lib/review.ts lands.
       },
       t('Marcar como pago'),
     );

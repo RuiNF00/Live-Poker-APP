@@ -569,7 +569,7 @@ const ptBR: Record<string, string> = {
   'Contacto, IBAN, como combinaram…': 'Contato, Pix, como combinaram…',
   'Apagar backer': 'Excluir backer',
   '{share}% com makeup · ficas com {cut}% do lucro': '{share}% com makeup · você fica com {cut}% do lucro',
-  'O backer paga a parte dele dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.': 'O backer paga a parte dele dos buy-ins. As perdas acumulam (makeup) e você só ganha sua parte do lucro quando o pacote estiver acima de zero.',
+  'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.': 'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e você só ganha sua parte do lucro quando o pacote estiver acima de zero.',
   'O backer compra a mesma percentagem de cada torneio do pacote, ao markup combinado. Cada torneio acerta-se sozinho.': 'O backer compra a mesma porcentagem de cada torneio do pacote, ao markup combinado. Cada torneio se acerta sozinho.',
   'A tua parte do lucro': 'Sua parte do lucro',
   'Já não entra em sessões novas. O saldo fica.': 'Não entra mais em sessões novas. O saldo fica.',
@@ -1115,6 +1115,21 @@ const ptBR: Record<string, string> = {
   'A probabilidade de perderes o bankroll todo. Usamos o limite de baixo do teu win rate ({lo} BB/h, a média é {bb}) e o teu desvio padrão de {sd} BB/h: é a conta prudente.': 'A probabilidade de você perder o bankroll inteiro. Usamos o limite de baixo do seu win rate ({lo} BB/h; a média é {bb}) e o seu desvio padrão de {sd} BB/h: é a conta prudente.',
   'O teu win rate ainda pode ser zero ou negativo: com esta incerteza, o risco não fica limitado em nenhuma stake. Mais horas na tua stake tornam a conta mais firme.': 'O seu win rate ainda pode ser zero ou negativo: com essa incerteza, o risco não fica limitado em nenhuma stake. Mais horas na sua stake deixam a conta mais firme.',
   '1 sessão em {stake}, resultado {amount}. Ainda podes perder {left} buy-ins antes de voltares.': '1 sessão em {stake}, resultado {amount}. Você ainda pode perder {left} buy-ins antes de voltar.',
+  // Festival settlement per backer (action package screen).
+  '{title}: a tua parte de {pct}': '{title}: sua parte de {pct}',
+  'Prémios da tua parte: {amount}': 'Prêmios da sua parte: {amount}',
+  'Torneios que não joguei: devolvo-te {amount}': 'Torneios que não joguei: te devolvo {amount}',
+  'prémio {amount}': 'prêmio {amount}',
+  'sem prémio': 'sem prêmio',
+  'Prémios da parte': 'Prêmios da parte',
+  'Não jogaste o {event}?': 'Você não jogou o {event}?',
+  'Não há sessão registada. As contas deste torneio ficam à espera até responderes.': 'Não há sessão registrada. As contas deste torneio ficam esperando até você responder.',
+  'Joguei, registar resultado': 'Joguei, registrar resultado',
+  'à espera': 'esperando',
+  '{n} à espera de resposta': '{n} esperando resposta',
+  'Vendida a 1 backer por {price}. Pões {out} do teu bolso.': 'Vendida a 1 backer por {price}. Você coloca {out} do seu bolso.',
+  'Avisamos-te no dia a seguir a cada torneio para fechares as contas': 'Avisamos você no dia seguinte a cada torneio para fechar as contas',
+  'O torneio acabou. Regista o resultado para fechar as contas.': 'O torneio acabou. Registre o resultado para fechar as contas.',
 };
 
 export default ptBR;
