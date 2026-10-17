@@ -218,10 +218,11 @@ export default function ActionPackageScreen() {
     applyToSessions(before);
   };
 
-  const send = async (l: PackageLine) => {
+  // `unlocked`: called again right after paying, so the link goes out without a second tap.
+  const send = async (l: PackageLine, unlocked = false) => {
     if (!settings.nickname.trim()) return setError(t('Escreve o teu nome para o backer saber de quem é o link.'));
     // Free: links for one package. More is Pro.
-    if (!l.remote && !pro.isPro && getOffers().some((x) => x.id !== o.id && x.lines.some((y) => y.remote))) return pro.paywall('staking');
+    if (!unlocked && !l.remote && !pro.isPro && getOffers().some((x) => x.id !== o.id && x.lines.some((y) => y.remote))) return pro.paywall('staking', () => void send(l, true));
     setBusy(l.id);
     setError(null);
     tap('medium');

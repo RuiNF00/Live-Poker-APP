@@ -132,3 +132,13 @@ test('levelsDue: the level moves up by itself when its clock runs out, on the fl
   assert.equal(levelsDue(mk(), 99 * MIN), null);
   assert.equal(levelsDue(mk({ kind: 'cash', levelMinutes: 30, levelStartedAt: 10 * MIN }), 99 * MIN), null);
 });
+
+test('a tournament started before its published start keeps level 1 until the floor\'s clock has run a full level', () => {
+  // Tapped at 16:35 for a 17:00 start with 30-min levels: the clock starts at 17:00.
+  const s = withLevelClock(undefined, mk({ level: 1, levelMinutes: 30, levelStartedAt: 60 * MIN }), 35 * MIN);
+  assert.equal(s.levelStartedAt, 60 * MIN);
+  assert.equal(nextLevelAt(s, 66 * MIN), 90 * MIN);
+  assert.equal(levelsDue(s, 66 * MIN), null);
+  // A new session without a start still runs from now.
+  assert.equal(withLevelClock(undefined, mk({ levelMinutes: 30 }), 35 * MIN).levelStartedAt, 35 * MIN);
+});

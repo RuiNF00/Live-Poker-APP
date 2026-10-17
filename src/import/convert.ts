@@ -58,6 +58,8 @@ export interface ImportResult {
   kindKnown: boolean;
   /** Some dates read differently day-first and month-first. */
   ambiguousDates: boolean;
+  /** Bankroll name per session or move id, from Sweatbook's own CSV: goes back to the bankroll of that name. */
+  bankrollNames: Record<string, string>;
 }
 
 /** Everything the import screen needs after a file is picked. */
@@ -123,9 +125,23 @@ function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: bo
   return { h, mi: Number(m[2]), sec: Number(m[3] ?? 0), hasTime: true };
 }
 
+// The same cell is split up to four times (order guess, start, ambiguity check),
+// so remember the answers; pure, so sharing them between files is safe.
+const splits = new Map<string, DateParts | null>();
+
 function splitDate(raw: string): DateParts | null {
+  let p = splits.get(raw);
+  if (p !== undefined) return p;
+  if (splits.size > 50_000) splits.clear();
+  p = splitDateOnce(raw);
+  splits.set(raw, p);
+  return p;
+}
+
+function splitDateOnce(raw: string): DateParts | null {
   // A weekday in front ("Sat, Oct 17 2026", "sáb. 17 out 2026") says nothing the date doesn't.
-  const s = raw.trim().replace(/^([^\d\s,.]{2,9})\.?,?\s+(?=\d|[^\d\s]{3,}\.?\s+\d)/u, (w, word: string) => (month(word.slice(0, 3)) ? w : ''));
+  const t = raw.trim();
+  const s = /^\d/.test(t) ? t : t.replace(/^([^\d\s,.]{2,9})\.?,?\s+(?=\d|[^\d\s]{3,}\.?\s+\d)/u, (w, word: string) => (month(word.slice(0, 3)) ? w : ''));
   if (!s) return null;
   let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(.*)$/);
   if (m) return { y: +m[1], a: +m[2], b: +m[3], ymd: true, ...timeOf(m[4]) };
@@ -277,6 +293,45 @@ const TRANSFER_IN = /deposit|dep[oó]sito|cash ?in\b|top ?up|carregamento|einzah
 
 /** Sessions from a mapped table. Same file twice gives the same ids, so a re-import adds nothing. */
 export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): ImportResult {
+  const run = convert(table, mapping, opt);
+  for (;;) {
+    const step = run.next();
+    if (step.done) return step.value;
+  }
+}
+
+/** Rows converted between two looks at the clock. */
+const CHUNK = 100;
+/** Longest the screen goes without drawing while a file is converted. */
+const SLICE_MS = 50;
+
+/**
+ * toSessions in steps, so a file with years of sessions doesn't freeze the
+ * screen: hands control back every SLICE_MS and says how far it got.
+ * Null when `cancelled` turns true (the player left or changed a column); nothing is kept.
+ */
+export async function toSessionsAsync(
+  table: Table,
+  mapping: Mapping,
+  opt: ImportOptions,
+  progress?: { onProgress?: (done: number, total: number) => void; cancelled?: () => boolean; sliceMs?: number },
+): Promise<ImportResult | null> {
+  const run = convert(table, mapping, opt);
+  let since = Date.now();
+  for (;;) {
+    const step = run.next();
+    if (step.done) return step.value;
+    // Each pause costs a redraw, so pause only once the screen has waited long enough to notice.
+    if (Date.now() - since < (progress?.sliceMs ?? SLICE_MS)) continue;
+    progress?.onProgress?.(step.value, table.rows.length);
+    await new Promise((r) => setTimeout(r, 0));
+    if (progress?.cancelled?.()) return null;
+    since = Date.now();
+  }
+}
+
+/** Yields how many rows are done every CHUNK rows; returns the result. */
+function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator<number, ImportResult> {
   const get = (r: string[], f: Field) => (mapping[f] === undefined ? '' : (r[mapping[f]!] ?? '').trim());
   const order = opt.order ?? guessOrder(table.rows.flatMap((r) => [get(r, 'start'), get(r, 'end')]));
   // A "type" column that holds Casino/Club, not cash or tournament, says nothing about the kind.
@@ -288,9 +343,16 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
   let unreadable = 0;
   const failed: FailedRow[] = [];
   const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
+  const bankrollNames: Record<string, string> = {};
 
-  table.rows.forEach((r, ri) => {
+  for (let ri = 0; ri < table.rows.length; ri++) {
+    if (ri && ri % CHUNK === 0) yield ri;
+    const r = table.rows[ri];
     const line = table.lines?.[ri] ?? ri + 2;
+    // Trip expenses in Sweatbook's CSV belong to a trip, not to the sessions.
+    if (opt.source === 'sweatbook' && /^expense$/i.test(get(r, 'kind'))) continue;
+    // Sweatbook's own id: importing the same file again merges instead of doubling.
+    const own = opt.source === 'sweatbook' && /^[\w.-]{1,80}$/.test(get(r, 'id')) ? get(r, 'id') : '';
     const k = kindUseful ? kindOf(get(r, 'kind')) : null;
     const nameRaw = get(r, 'name');
     const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
@@ -300,17 +362,19 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
       if (m) {
         const dup = seen.get(m.id) ?? 0;
         seen.set(m.id, dup + 1);
-        moves.push(dup ? { ...m, id: m.id + '_' + dup } : m);
+        if (own) m.id = own;
+        if (get(r, 'bankroll')) bankrollNames[m.id] = get(r, 'bankroll');
+        moves.push(dup && !own ? { ...m, id: m.id + '_' + dup } : m);
       } else {
         transfers++;
         failed.push({ line, reason: startP ? 'badMove' : get(r, 'start') ? 'badDate' : 'noDate', value: startP ? preview(r) : get(r, 'start') || preview(r) });
       }
-      return;
+      continue;
     }
     if (!startP) {
       unreadable++;
       failed.push({ line, reason: get(r, 'start') ? 'badDate' : 'noDate', value: get(r, 'start') || preview(r) });
-      return;
+      continue;
     }
     let start = startP.t;
     if (!startP.hasTime) {
@@ -334,12 +398,12 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     if (bad) {
       unreadable++;
       failed.push({ line, reason: 'badMoney', value: bad });
-      return;
+      continue;
     }
     if (buyIn === null && cashOut === null && net === null) {
       unreadable++;
       failed.push({ line, reason: 'noMoney', value: [get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')].filter(Boolean).join(' · ') || preview(r) });
-      return;
+      continue;
     }
 
     const finish = parseNum(get(r, 'finish'));
@@ -384,7 +448,9 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     if (end < start && start - end < 86400000) end += 86400000;
     if (end < start) end = start;
     const breaks: Session['breaks'] = [];
-    const played = parseNum(get(r, 'minutes'));
+    // Minutes played, or hours: next to an end time, the difference is the breaks.
+    const hrs = mapping.minutes === undefined && endP ? parseHours(get(r, 'hours')) : null;
+    const played = parseNum(get(r, 'minutes')) ?? (hrs === null ? null : hrs * 60);
     const brk = endP && played !== null ? (end - start) / 60000 - played : parseNum(get(r, 'breakMinutes'));
     if (brk && brk > 0.5 && brk * 60000 < end - start) breaks.push({ start: end - brk * 60000, end });
 
@@ -410,8 +476,12 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     const dup = seen.get(base) ?? 0;
     seen.set(base, dup + 1);
 
+    const id = own || 'imp_' + hash(base + (dup ? '#' + dup : ''));
+    if (get(r, 'bankroll')) bankrollNames[id] = get(r, 'bankroll');
+    const country = get(r, 'country').toUpperCase();
+    const day = parseNum(get(r, 'day'));
     sessions.push({
-      id: 'imp_' + hash(base + (dup ? '#' + dup : '')),
+      id,
       kind,
       name,
       venue,
@@ -438,10 +508,12 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
       roster: [],
       notes,
       ...(format ? { format } : null),
+      ...(/^[A-Z]{2}$/.test(country) ? { country } : null),
+      ...(kind === 'mtt' && day && day > 1 ? { day: Math.round(day) } : null),
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
-  });
-  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  }
+  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */
@@ -451,4 +523,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day');

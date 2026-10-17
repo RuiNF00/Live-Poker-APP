@@ -3,7 +3,7 @@
 
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -14,6 +14,7 @@ import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { useStore } from '@/store/store';
 import { biggestScores, finishedTourneys, summarize } from '@/store/tourney-stats';
@@ -48,7 +49,7 @@ export default function TournamentCardScreen() {
       const target = await shareStory(await captureStory(ref), link);
       track('story_shared', { target: String(target), kind: 'tourney_cv', money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

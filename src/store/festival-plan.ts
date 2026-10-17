@@ -63,6 +63,11 @@ export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   return withPlanEvents(f, plan).events.filter((e) => set.has(e.id));
 }
 
+/** When a session started for this event runs its level clock from: the published start, or now when that's past. */
+export function levelStart(f: Festival, e: FestivalEvent, now = Date.now()): number | undefined {
+  return e.levelMinutes ? Math.max(now, venueTime(f, e.start)) : undefined;
+}
+
 /** What the festival is called on screen: the player's name for it, else the shipped one. */
 export function festivalName(f: Festival, plan: FestivalPlan): string {
   return plan.name?.trim() || t(f.name);

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { breakdown, lastTimeAt, owedToBackers, parseDay, profit, totals } from '../session-math';
+import { breakdown, lastPlayed, lastTimeAt, owedToBackers, parseDay, profit, totals } from '../session-math';
 import type { Session } from '../types';
 
 function mk(over: Partial<Session> = {}): Session {
@@ -107,4 +107,19 @@ test('lastTimeAt: the level clock and the blind structure come along, the field 
   const c = lastTimeAt('NLH 1/2', { ...form, kind: 'cash' }, [cash]);
   assert.equal(c.levelMinutes, 30);
   assert.equal(c.tourney, undefined);
+});
+
+test('lastPlayed: a new past session starts as the last one played in that currency', () => {
+  const older = mk({ id: 'a', kind: 'cash', name: 'NLH 1/2', venue: 'Póvoa', buyIn: 200, sb: 1, bb: 2, startedAt: 1000 });
+  const last = mk({ id: 'b', kind: 'cash', name: 'NLH 2/5', venue: 'Estoril', buyIn: 500, sb: 2, bb: 5, startedAt: 2000 });
+  const mtt = mk({ id: 'c', name: 'Deepstack', buyIn: 250, stack: 1, stackLog: [{ t: 0, stack: 40000 }], startedAt: 1500 });
+  const live = mk({ id: 'd', kind: 'cash', name: 'NLH 5/10', startedAt: 3000, endedAt: undefined });
+  const usd = mk({ id: 'e', kind: 'cash', name: 'NLH 5/10', currency: '$', startedAt: 4000 });
+  const all = [older, mtt, last, live, usd];
+  // The newest finished one in that currency, whatever the order of the list.
+  assert.deepEqual(lastPlayed('€', all), { kind: 'cash', name: 'NLH 2/5', venue: 'Estoril', format: undefined, sb: 2, bb: 5, ante: last.ante, anteType: last.anteType, buyIn: 500, stack: 500 });
+  // Switching to tournaments: the last tournament, with its starting stack.
+  assert.equal(lastPlayed('€', all, 'mtt').stack, 40000);
+  assert.equal(lastPlayed('€', all, 'mtt').name, 'Deepstack');
+  assert.deepEqual(lastPlayed('£', all), {});
 });

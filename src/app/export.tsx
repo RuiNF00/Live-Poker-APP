@@ -65,15 +65,19 @@ export default function ExportScreen() {
   const stamp = period === 'year' ? String(y) : period === 'lastYear' ? String(y - 1) : new Date(now).toISOString().slice(0, 10);
 
   const run = async (key: string, pro_: boolean, fn: () => Promise<void>) => {
-    if (pro_ && !pro.isPro) return pro.paywall(key === 'pdf' && PRO_ONLY.taxReport ? 'taxReport' : 'stats');
-    setBusy(key);
-    try {
-      await fn();
-    } catch {
-      note(t('Não deu para exportar'), t('Tenta outra vez.'));
-    } finally {
-      setBusy(null);
-    }
+    const go = async () => {
+      setBusy(key);
+      try {
+        await fn();
+      } catch {
+        note(t('Não deu para exportar'), t('Tenta outra vez.'));
+      } finally {
+        setBusy(null);
+      }
+    };
+    // After paying, the export that was tapped starts by itself.
+    if (pro_ && !pro.isPro) return pro.paywall(key === 'pdf' && PRO_ONLY.taxReport ? 'taxReport' : 'stats', () => void go());
+    await go();
   };
 
   const pdf = () =>

@@ -4,12 +4,13 @@
 
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Share, View } from 'react-native';
+import { Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { useSwapSuggestions } from '@/components/swaps/suggest';
+import { notice } from '@/lib/notice';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -131,7 +132,7 @@ function NewSwap() {
         setWaiting(true);
         return;
       }
-      Alert.alert(
+      notice(
         t('Não foi possível criar o swap'),
         code === 'offensive' ? t('Um dos nomes não é permitido.') : code === 'rate_limited' ? t('Demasiados swaps seguidos. Tenta daqui a pouco.') : t('Precisa de rede para criar o link. Tenta de novo quando tiveres sinal.'),
       );

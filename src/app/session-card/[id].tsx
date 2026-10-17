@@ -6,7 +6,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -18,8 +18,8 @@ import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, capturePost, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
-import { shareRef } from '@/lib/referrals';
 import { notice } from '@/lib/notice';
+import { shareRef } from '@/lib/referrals';
 import { playedMs } from '@/store/session-math';
 import { CARD_STYLES, milestoneFor, sessionStats, stackPostText, stackStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
@@ -66,7 +66,7 @@ export default function SessionCardScreen() {
         look === 'sticker' ? await shareSticker(await captureSticker(node, STICKER_W, STICKER_H), link) : await shareStory(await captureStory(node), link);
       track('story_shared', { target: String(target), kind: chipCount ? 'stack' : 'session', look, money: !hideMoney, milestone: !!(milestone && showMilestone) });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -92,7 +92,7 @@ export default function SessionCardScreen() {
       await sharePost([await capturePost(postCard)], postText(await inviteLink(to)), to);
       track('story_shared', { target: to, kind: chipCount ? 'stack' : 'session', look, money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

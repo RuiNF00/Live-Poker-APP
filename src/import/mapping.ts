@@ -35,6 +35,11 @@ export const FIELDS = [
   'tableSize',
   'notes',
   'tags',
+  // Only in Sweatbook's own CSV: never guessed from another app's headers.
+  'id',
+  'bankroll',
+  'country',
+  'day',
 ] as const;
 export type Field = (typeof FIELDS)[number];
 
@@ -74,6 +79,10 @@ const SYN: Record<Field, string[]> = {
   tableSize: ['tablesize', 'seats', 'maxplayers', 'tamanhodamesa'],
   notes: ['sessionnote', 'notes', 'note', 'comment', 'comments', 'notas', 'nota', 'observacoes', 'comentarios', 'remarques', 'notizen'],
   tags: ['tags', 'tag', 'labels', 'etiquetas'],
+  id: [],
+  bankroll: [],
+  country: [],
+  day: [],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());
@@ -157,10 +166,17 @@ export function mappingFor(source: SourceId, headers: string[]): Mapping {
       notes: idx(headers, 'sessionnote'),
       tags: idx(headers, 'tags'),
     });
-  if (source === 'sweatbook')
+  if (source === 'sweatbook') {
+    // Files from before started_at/ended_at have the date and the start time apart.
+    const exact = idx(headers, 'startedat');
     return strip({
-      start: idx(headers, 'date'),
-      time: idx(headers, 'starttime'),
+      start: exact ?? idx(headers, 'date'),
+      time: exact === undefined ? idx(headers, 'starttime') : undefined,
+      end: idx(headers, 'endedat'),
+      id: idx(headers, 'id'),
+      bankroll: idx(headers, 'bankroll'),
+      country: idx(headers, 'country'),
+      day: idx(headers, 'mttday'),
       hours: idx(headers, 'hours'),
       handsDealt: idx(headers, 'hands'),
       kind: idx(headers, 'type'),
@@ -178,5 +194,6 @@ export function mappingFor(source: SourceId, headers: string[]): Mapping {
       field: idx(headers, 'field'),
       notes: idx(headers, 'notes'),
     });
+  }
   return auto;
 }

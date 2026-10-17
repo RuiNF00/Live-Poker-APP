@@ -10,41 +10,63 @@ export interface Table {
   lines?: number[];
 }
 
-/** Splits CSV text into rows of cells. Quotes may hold separators, quotes ("") and line breaks. */
+/**
+ * Splits CSV text into rows of cells. Quotes may hold separators, quotes ("") and line breaks.
+ * Cells are cut out with slice rather than built a character at a time: on the
+ * phone's engine that is what made a 5,000-session file take seconds.
+ */
 export function parseCsv(text: string, sep = detectSeparator(text)): string[][] {
-  const s = text.replace(/^﻿/, '');
+  const s = text.replace(/^\uFEFF/, '');
+  const n = s.length;
+  const SEP = sep.charCodeAt(0);
   const rows: string[][] = [];
   let row: string[] = [];
+  // What a cell has so far from quoted parts; the unquoted run since `from` is added when it ends.
   let cell = '';
-  let quoted = false;
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (quoted) {
-      if (ch === '"') {
-        if (s[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else quoted = false;
-      } else cell += ch;
-    } else if (ch === '"' && cell.trim() === '') {
+  let from = 0;
+  let i = 0;
+  while (i < n) {
+    const ch = s.charCodeAt(i);
+    if (ch === 34 /* " */ && (cell + s.slice(from, i)).trim() === '') {
+      // A quoted part: up to the closing quote, "" being a quote.
       cell = '';
-      quoted = true;
-    } else if (ch === sep) {
-      row.push(cell);
+      i++;
+      for (;;) {
+        const q = s.indexOf('"', i);
+        if (q < 0) {
+          cell += s.slice(i);
+          i = n;
+          break;
+        }
+        if (s.charCodeAt(q + 1) === 34) {
+          cell += s.slice(i, q + 1);
+          i = q + 2;
+        } else {
+          cell += s.slice(i, q);
+          i = q + 1;
+          break;
+        }
+      }
+      from = i;
+    } else if (ch === SEP) {
+      row.push((cell + s.slice(from, i)).trim());
       cell = '';
-    } else if (ch === '\n' || ch === '\r') {
-      if (ch === '\r' && s[i + 1] === '\n') i++;
-      row.push(cell);
+      from = ++i;
+    } else if (ch === 10 || ch === 13) {
+      row.push((cell + s.slice(from, i)).trim());
+      if (ch === 13 && s.charCodeAt(i + 1) === 10) i++;
       rows.push(row);
       row = [];
       cell = '';
-    } else cell += ch;
+      from = ++i;
+    } else i++;
   }
-  if (cell !== '' || row.length) {
-    row.push(cell);
+  const last = cell + s.slice(from, n);
+  if (last !== '' || row.length) {
+    row.push(last.trim());
     rows.push(row);
   }
-  return rows.map((r) => r.map((c) => c.trim()));
+  return rows;
 }
 
 /** The separator that splits the first lines most evenly: comma, semicolon or tab. */

@@ -3,11 +3,12 @@
 
 import { Directory, File, Paths } from 'expo-file-system';
 
-/** "Delete all my data": the copies made for support, the files picked for import, and anything with the player's face or voice. */
+/** "Delete all my data": every file the app left in the cache (exports, backups, support copies, videos), the files picked for import, and anything with the player's face or voice. */
 export function dropSupportCopies(): void {
   try {
-    // Imports, and the hand videos and voice stories (they can carry the player's face and voice).
-    for (const f of new Directory(Paths.cache).list()) if (f instanceof File && /^sweatbook-(importacao|mao|story)-/.test(f.name)) f.delete();
+    // Everything the app writes there is named sweatbook-*: backups and CSV/PDF exports (the whole
+    // history, notes included), solver files, import copies, and hand videos and stories (face, voice).
+    for (const f of new Directory(Paths.cache).list()) if (f instanceof File && f.name.startsWith('sweatbook-')) f.delete();
   } catch {}
   try {
     // expo-document-picker's copyToCacheDirectory puts picked files here.

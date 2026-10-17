@@ -82,6 +82,7 @@
     "test": "tsx --test 'src/**/__tests__/*.test.ts'",
     "typecheck": "tsc --noEmit",
     "bench": "tsx scripts/bench-storage.ts",
+    "bench:import": "tsx scripts/bench-import.ts",
     "i18n:missing": "tsx scripts/i18n-missing.ts",
     "check:release": "node scripts/pre-release.mjs",
     "ota:publish": "node scripts/ota-publish.mjs",

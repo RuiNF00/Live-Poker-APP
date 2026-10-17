@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Share, View } from 'react-native';
 
 import { useLocked } from '@/components/ProGate';
 import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, PAIR, pctLabel, Seal, SwapBadge, TermsCard, useSettledReview, type EntryDraft } from '@/components/swaps/parts';
@@ -14,9 +14,9 @@ import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Scre
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
-import { notice } from '@/lib/notice';
 import { useStore } from '@/store/store';
 import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
@@ -25,7 +25,7 @@ import { C, S } from '@/theme';
 const POLL_MS = 30000;
 
 export default function SwapScreen() {
-  const { id, k, r } = useLocalSearchParams<{ id: string; k?: string; r?: string }>();
+  const { id, k, r, pay } = useLocalSearchParams<{ id: string; k?: string; r?: string; pay?: string }>();
   const { swaps, ready } = useSwaps();
   const own = swaps.find((s) => s.id === id);
   const [remote, setRemote] = useState<RemoteSwap | null | undefined>(undefined);
@@ -54,7 +54,7 @@ export default function SwapScreen() {
     };
   }, [ready, own, id, k]);
 
-  if (own) return <OwnSwap s={own} />;
+  if (own) return <OwnSwap s={own} pay={pay === '1'} />;
   return (
     <>
       <Stack.Screen options={{ title: 'Swap', headerBackTitle: t('Voltar') }} />
@@ -91,7 +91,7 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
       tap('success');
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
-      Alert.alert(
+      notice(
         t('Não foi possível confirmar'),
         code === 'already_confirmed' ? t('Este swap já foi confirmado.') : code === 'offensive' ? t('Esse nome não é permitido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'),
       );
@@ -139,10 +139,18 @@ function Head({ terms, names }: { terms: Swap['terms']; names: Record<'a' | 'b',
   );
 }
 
-function OwnSwap({ s }: { s: Swap }) {
+function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   // Who owes whom: with my Pro, or for everyone when the creator has Pro.
   const locked = useLocked('swaps') && !s.accounts;
+  // From the "falta acertar" reminder: straight to the payment, the amount owed already in.
+  // (A moment after the screen lands: a sheet opened mid-push is lost on iOS.)
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
+  const canPay = !!s.confirmedAt && !s.gone && !s.left;
+  useEffect(() => {
+    if (!pay || !canPay) return;
+    const id = setTimeout(() => setSheet('payment'), 450);
+    return () => clearTimeout(id);
+  }, [pay, canPay]);
   const [offline, setOffline] = useState(false);
   const names = swapNames(s);
   const them = names[other(s.side)];
@@ -188,7 +196,7 @@ function OwnSwap({ s }: { s: Swap }) {
   function onEntry(e: SwapEntry) {
     if (e.side !== s.side) return;
     confirmAction(t('Apagar registo?'), t('{name} deixa de o ver. Usa isto só para corrigir um erro.', { name: them }), t('Apagar'), async () => {
-      if (!(await removeEntry(s.id, e))) Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (!(await removeEntry(s.id, e))) notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
     });
   }
 
@@ -316,7 +324,7 @@ function OwnSwap({ s }: { s: Swap }) {
                 t('Apagar'),
                 async () => {
                   if (await deleteSwapEverywhere(s.id)) router.back();
-                  else Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+                  else notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
                 },
               )
             }
