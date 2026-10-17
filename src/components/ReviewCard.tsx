@@ -1,7 +1,7 @@
 // "Rever" on the hand screen, right under the replayer: one tap marks the hand
 // reviewed (or puts it in the queue), with an optional note from you or your coach.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
