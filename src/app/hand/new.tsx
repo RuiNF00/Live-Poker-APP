@@ -176,6 +176,7 @@ export default function NewHand() {
         roster: final.players.map((p) => p.name),
       });
     }
+    if (!settings.onboarded) store.setSettings({ onboarded: true });
     if (!params.edit) {
       store.setDraft(null);
       pro.record('hand');
@@ -435,6 +436,14 @@ export default function NewHand() {
           </View>
         )}
 
+        {phase === 'hero' && !settings.onboarded && !params.edit && (
+          <View style={{ backgroundColor: C.accentSoft, borderRadius: R.md, padding: 12, gap: 4, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
+            <T v="h2">{t('Primeira mão? É rápido:')}</T>
+            <T v="small" style={{ color: C.text, lineHeight: 19 }}>
+              {t('1. Toca na tua posição e nas tuas duas cartas.\n2. Os folds até ti são automáticos. Depois do teu raise, usa "Só X paga".\n3. Escolhe o flop e continua. Podes guardar a meio e completar depois.')}
+            </T>
+          </View>
+        )}
         {(phase === 'action' || phase === 'board') && (
           <Button title={t('Guardar rápido · completas depois')} kind="ghost" small onPress={save} />
         )}

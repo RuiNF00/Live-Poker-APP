@@ -301,6 +301,8 @@ const en: Record<string, string> = {
   'Filtros por período, ROI, ITM e por hora.': 'Filters by period, ROI, ITM and hourly.',
   'Partilha sem limites': 'Unlimited sharing',
   'Os teus amigos comentam e votam no browser, sem app.': 'Your friends comment and vote in their browser, no app needed.',
+  'Primeira mão? É rápido:': 'First hand? It\'s quick:',
+  '1. Toca na tua posição e nas tuas duas cartas.\n2. Os folds até ti são automáticos. Depois do teu raise, usa "Só X paga".\n3. Escolhe o flop e continua. Podes guardar a meio e completar depois.': '1. Tap your position and your two cards.\n2. Folds up to you are automatic. After your raise, use "Only X calls".\n3. Pick the flop and keep going. You can save halfway and finish later.',
 };
 
 export default en;
