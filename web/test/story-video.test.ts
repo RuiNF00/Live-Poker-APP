@@ -25,6 +25,21 @@ describe('ffmpegArgs', () => {
   });
 });
 
+describe('ffmpeg input hardening', () => {
+  it('forces a demuxer per input and only local files', () => {
+    const args = ffmpegArgs('/t/frame.png', '/t/voice.mp3', '/t/o.mp4', null);
+    const before = (flag: string, value: string, input: string) => {
+      const i = args.indexOf(input);
+      return args.slice(0, i).lastIndexOf(flag) >= 0 && args[args.slice(0, i).lastIndexOf(flag) + 1] === value;
+    };
+    expect(before('-f', 'image2', '/t/frame.png')).toBe(true);
+    expect(before('-c:v', 'png', '/t/frame.png')).toBe(true);
+    expect(before('-f', 'mp3', '/t/voice.mp3')).toBe(true);
+    expect(args.filter((a) => a === '-protocol_whitelist')).toHaveLength(2);
+    expect(ffmpegArgs('f.png', 'v.m4a', 'o.mp4', null)).toContain('mov');
+  });
+});
+
 describe('renderStoryVideo', () => {
   it('renders an MP4 as long as the voice note', async () => {
     const ff = (process.env.FFMPEG_PATH || require('ffmpeg-static')) as string;

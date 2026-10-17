@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 import { APP_EVENTS, getStore, type AppEvent } from '@/lib/store';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,7 +27,7 @@ function cleanProps(raw: unknown): AppEvent['props'] {
  * Fire-and-forget funnel events from the app and the site. Rows are write-only for clients.
  */
 export async function POST(req: Request) {
-  if (rateLimited(`events:${clientIp(req)}`, 120, 60_000)) {
+  if (await limited(req, 'events', 600, 3600)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   }
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ error: 'invalid_event' }, { status: 422, headers: cors });
   }
-  // Retention backstop for databases without pg_cron (see migration 20261017030000).
+  // Retention backstop for databases without pg_cron (migrations 20261017030000, 20261017090000).
   if (Math.random() < 0.005) after(() => getStore().purgeOldEvents().catch(() => {}));
   try {
     await getStore().logEvent({ event, installId, platform, props: cleanProps(body?.props) });

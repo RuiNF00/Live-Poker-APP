@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cors } from '@/lib/cors';
 import { voteFromComment } from '@/lib/hand';
 import { getStore, VOTE_CHOICES, type VoteChoice } from '@/lib/store';
-import { clientIp, rateLimited } from '@/lib/ratelimit';
+import { ipHash, limited, voterUuid } from '@/lib/abuse';
 
 /** Votes from the web plus the app's "🗳️ <choice>" comments. */
 async function counts(id: string) {
@@ -24,12 +24,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (rateLimited(`vote:${clientIp(req)}`, 20, 60_000)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
+  if (await limited(req, 'vote', 120, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   const body = await req.json().catch(() => ({}));
   const { voterId, choice } = body as { voterId?: string; choice?: VoteChoice };
   if (!voterId || !UUID.test(voterId) || !choice || !VOTE_CHOICES.includes(choice)) {
     return NextResponse.json({ error: 'invalid_vote' }, { status: 422, headers: cors });
   }
-  await getStore().vote(id, voterId, choice);
+  // The browser's id is only a key for re-votes: the server derives the stored id, and SQL
+  // caps voters per IP per hand.
+  await getStore().vote(id, voterUuid(voterId), choice, ipHash(req));
   return NextResponse.json({ counts: await counts(id) }, { headers: cors });
 }

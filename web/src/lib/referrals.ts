@@ -2,7 +2,8 @@ import 'server-only';
 import { randomBytes } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { serviceClient } from './supabase';
 import { grantPromotional } from './revenuecat';
 
 // Referral loop (see supabase/migrations/20261017040000_referrals.sql for the rules).
@@ -31,6 +32,8 @@ interface Grant {
 interface ReferralBackend {
   codeFor(installId: string, code: string, rcUserId: string | null): Promise<string>;
   claim(friend: string, code: string, source: ReferralSource, shareId: string | null): Promise<ClaimResult>;
+  /** The friend's stored RevenueCat user while a claimed referral awaits activation, else null. */
+  awaitingRc(friend: string): Promise<string | null>;
   activate(friend: string): Promise<Grant[]>;
   pending(installId: string): Promise<Grant[]>;
   markGranted(installId: string, until: string): Promise<void>;
@@ -54,6 +57,9 @@ class SupabaseReferrals implements ReferralBackend {
   }
   claim(friend: string, code: string, source: ReferralSource, shareId: string | null) {
     return this.rpc<ClaimResult>('claim_referral', { p_friend: friend, p_code: code, p_source: source, p_share_id: shareId });
+  }
+  async awaitingRc(friend: string) {
+    return (await this.rpc<string | null>('referral_awaiting_rc', { p_friend: friend })) ?? null;
   }
   async activate(friend: string) {
     return (await this.rpc<Grant[]>('activate_referral', { p_friend: friend, p_days: REWARD_DAYS })) ?? [];
@@ -105,7 +111,7 @@ class LocalBackend implements ReferralBackend {
   codeFor(installId: string, code: string, rcUserId: string | null) {
     return this.mutate((d) => {
       const cur = d.codes[installId];
-      const c = (d.codes[installId] = { ...cur, code: cur?.code ?? code, rcUserId: rcUserId ?? cur?.rcUserId ?? null });
+      const c = (d.codes[installId] = { ...cur, code: cur?.code ?? code, rcUserId: cur?.rcUserId ?? rcUserId ?? null });
       // The app's code lost the race to a server one: keep both, as the SQL does.
       const isApp = (x: string) => /^[0-9a-f]{10}$/.test(x);
       const taken = Object.values(d.codes).some((o) => o.code === code || o.appCode === code);
@@ -123,17 +129,29 @@ class LocalBackend implements ReferralBackend {
       return 'ok';
     });
   }
+  async awaitingRc(friend: string) {
+    const d = await this.read();
+    const r = d.referrals[friend];
+    return r && !r.activatedAt ? (d.codes[friend]?.rcUserId ?? null) : null;
+  }
+  // Same rules as activate_referral(), per RevenueCat user.
   async activate(friend: string) {
     const ids = await this.mutate((d) => {
       const r = d.referrals[friend];
       if (!r || r.activatedAt) return [];
+      const rc = (id: string) => d.codes[id]?.rcUserId ?? null;
+      const friendRc = rc(friend);
+      const refRc = rc(r.referrer);
+      if (!friendRc) return [];
       const now = Date.now();
       r.activatedAt = new Date(now).toISOString();
+      if (refRc === friendRc) return [];
       const days = REWARD_DAYS * 86_400_000;
-      d.rewards.push({ installId: friend, friend, role: 'friend', days: REWARD_DAYS, proUntil: new Date(now + days).toISOString(), grantedAt: null, createdAt: r.activatedAt });
+      const hadFriendReward = d.rewards.some((w) => w.role === 'friend' && rc(w.installId) === friendRc);
+      if (!hadFriendReward) d.rewards.push({ installId: friend, friend, role: 'friend', days: REWARD_DAYS, proUntil: new Date(now + days).toISOString(), grantedAt: null, createdAt: r.activatedAt });
       const yearAgo = now - 365 * 86_400_000;
-      const earned = d.rewards.filter((w) => w.installId === r.referrer && w.role === 'referrer' && Date.parse(w.createdAt) > yearAgo).length;
-      if (earned < 10) {
+      const earned = d.rewards.filter((w) => rc(w.installId) === refRc && w.role === 'referrer' && Date.parse(w.createdAt) > yearAgo).length;
+      if (refRc && earned < 10) {
         const prev = Math.max(now, ...d.rewards.filter((w) => w.installId === r.referrer).map((w) => Date.parse(w.proUntil)));
         d.rewards.push({ installId: r.referrer, friend, role: 'referrer', days: REWARD_DAYS, proUntil: new Date(prev + days).toISOString(), grantedAt: null, createdAt: r.activatedAt });
       }
@@ -174,10 +192,12 @@ let backend: ReferralBackend | null = null;
 /** null when Supabase is configured without the service role key: referrals are then off. */
 export function referrals(): ReferralBackend | null {
   if (backend) return backend;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (url && service) backend = new SupabaseReferrals(createClient(url, service, { auth: { persistSession: false } }));
-  else if (!url) backend = new LocalBackend();
+  try {
+    const db = serviceClient();
+    backend = db ? new SupabaseReferrals(db) : new LocalBackend();
+  } catch {
+    return null;
+  }
   return backend;
 }
 
