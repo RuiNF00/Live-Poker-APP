@@ -31,9 +31,10 @@ import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-export function tap(kind: 'light' | 'medium' | 'select' = 'light') {
+export function tap(kind: 'light' | 'medium' | 'select' | 'success' = 'light') {
   if (Platform.OS === 'web') return;
   if (kind === 'select') Haptics.selectionAsync().catch(() => {});
+  else if (kind === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   else Haptics.impactAsync(kind === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
@@ -67,8 +68,12 @@ type TV =
   | 'monoL'
   | 'monoXL';
 
+// How far each style may grow with the iPhone's text size setting. Big titles and
+// numbers already read well and would break their rows; body text grows the most.
+const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.2, h1: 1.3, h2: 1.4, h3: 1.4, body: 1.6, callout: 1.6, small: 1.6, tiny: 1.5, label: 1.4, mono: 1.4, monoS: 1.4, monoL: 1.25, monoXL: 1.15 };
+
 export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string }) {
-  return <RNText {...rest} style={[ts[v], color ? { color } : null, style]} />;
+  return <RNText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
 }
 
 const mono: TextStyle = { fontFamily: F.mono, fontVariant: ['tabular-nums'], color: C.text };
@@ -392,6 +397,7 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }
       chevron={false}
       right={
         <Switch
+          accessibilityLabel={title}
           value={value}
           onValueChange={(v) => {
             tap('select');
@@ -511,7 +517,9 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
+      hitSlop={sz === 'sm' ? 4 : 0}
       onPress={() => {
         if (haptic) tap(kind === 'primary' ? 'medium' : 'light');
         onPress?.();
@@ -536,10 +544,10 @@ export function Button({
       ]}>
       {iconNode}
       <View style={{ alignItems: 'center' }}>
-        <RNText numberOfLines={1} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1 }}>
+        <RNText numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1 }}>
           {title}
         </RNText>
-        {sub ? <RNText style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}
+        {sub ? <RNText maxFontSizeMultiplier={1.3} style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}
       </View>
       {iconRight ? <Ionicons name={iconRight} size={fs + 1} color={fg} /> : null}
     </Pressable>
@@ -616,7 +624,7 @@ export function Chip({
         tap('select');
         onPress?.();
       }}
-      hitSlop={4}
+      hitSlop={big ? 0 : 5}
       style={({ pressed }) => [
         {
           minHeight: big ? 44 : 34,
@@ -634,7 +642,7 @@ export function Chip({
         style,
       ]}>
       {icon ? <Ionicons name={icon} size={big ? 16 : 14} color={active ? col : C.textDim} /> : null}
-      <RNText numberOfLines={1} style={{ color: active ? col : C.textDim, fontWeight: '700', fontFamily: ff(700), fontSize: big ? 15 : 14 }}>
+      <RNText numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: active ? col : C.textDim, fontWeight: '700', fontFamily: ff(700), fontSize: big ? 15 : 14 }}>
         {label}
       </RNText>
     </Pressable>
@@ -684,7 +692,7 @@ export function Segmented<K extends string | number>({
             }}
             style={{
               flex: 1,
-              minHeight: size === 'md' ? 36 : 30,
+              minHeight: size === 'md' ? 36 : 32,
               borderRadius: R.sm + 1,
               alignItems: 'center',
               justifyContent: 'center',
@@ -693,7 +701,7 @@ export function Segmented<K extends string | number>({
               backgroundColor: on ? C.surface3 : 'transparent',
               ...(on ? SHADOW : null),
             }}>
-            <RNText numberOfLines={1} style={{ color: on ? C.text : C.muted, fontFamily: ff(700), fontWeight: '700', fontSize: size === 'md' ? 14 : 13 }}>
+            <RNText numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: on ? C.text : C.muted, fontFamily: ff(700), fontWeight: '700', fontSize: size === 'md' ? 14 : 13 }}>
               {o.label}
             </RNText>
             {o.locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
@@ -709,7 +717,7 @@ export function Badge({ label, color, solid, style }: { label: string; color?: s
   const col = color ?? posColor(label);
   return (
     <View style={[{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: R.xs, backgroundColor: solid ? col : col + '26', alignSelf: 'flex-start' }, style]}>
-      <RNText style={{ color: solid ? C.bgDeep : col, fontFamily: ff(800), fontWeight: '800', fontSize: 11, letterSpacing: 0.3 }}>{label}</RNText>
+      <RNText maxFontSizeMultiplier={1.3} style={{ color: solid ? C.bgDeep : col, fontFamily: ff(800), fontWeight: '800', fontSize: 11, letterSpacing: 0.3 }}>{label}</RNText>
     </View>
   );
 }
@@ -720,7 +728,7 @@ export function Pill({ label, color, icon, style }: { label: string; color?: str
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 22, borderRadius: R.pill, backgroundColor: color ? col + '1F' : C.surface3 }, style]}>
       {icon ? <Ionicons name={icon} size={11} color={col} /> : null}
-      <RNText numberOfLines={1} style={{ color: col, fontFamily: ff(700), fontWeight: '700', fontSize: 12 }}>
+      <RNText numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: col, fontFamily: ff(700), fontWeight: '700', fontSize: 12 }}>
         {label}
       </RNText>
     </View>

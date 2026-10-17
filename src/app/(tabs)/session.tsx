@@ -63,7 +63,7 @@ export default function SessionScreen() {
         recentVenues={recentVenues}
         submitLabel={t('Começar agora')}
         onSubmit={(s) => {
-          tap('medium');
+          tap('success');
           saveSession(s);
           // The next session goes to the same bankroll.
           if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
@@ -239,7 +239,9 @@ function Live({ s }: { s: Session }) {
                 size="md"
                 title={t('Guardar')}
                 style={{ flex: 1 }}
+                haptic={false}
                 onPress={() => {
+                  tap('success');
                   const now = Date.now();
                   saveSession({
                     ...s,

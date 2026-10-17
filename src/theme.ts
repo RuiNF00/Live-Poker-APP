@@ -25,7 +25,7 @@ export const C = {
   // Text: primary, secondary, tertiary.
   text: '#F1F4F2',
   textDim: '#B4BFBA',
-  muted: '#7F8D87',
+  muted: '#8C9A94', // 4.7:1 on surface3, AA for small text
   // The one strong colour: only where there is something to do.
   accent: '#FF6A3D',
   accentPressed: '#E85A30',

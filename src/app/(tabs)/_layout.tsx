@@ -66,6 +66,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: C.text,
         tabBarInactiveTintColor: C.muted,
         tabBarLabelStyle: { fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2 },
+        // The bar has a fixed height; iOS shows the big label on long-press instead.
+        tabBarAllowFontScaling: false,
       }}>
       <Tabs.Screen name="index" options={{ title: t('Mãos'), tabBarIcon: icon('albums', 'albums-outline') }} />
       <Tabs.Screen name="session" options={{ title: t('Sessão'), tabBarIcon: icon('timer', 'timer-outline') }} />
