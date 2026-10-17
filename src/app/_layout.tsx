@@ -32,6 +32,7 @@ import { startCoachSync } from '@/lib/coach-api';
 import { bootReferrals } from '@/lib/referrals';
 // Registers the queued share-link sender before the outbox first drains.
 import '@/lib/share-queue';
+import '@/lib/pack-api';
 // Registers the swap delete sender ("Delete all my data").
 import '@/lib/swap-cleanup';
 // Same for the public profile's delete.
@@ -107,6 +108,8 @@ export default function RootLayout() {
             <Stack.Screen name="profile" options={{ title: t('Perfil público') }} />
             <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
             <Stack.Screen name="coach/new" options={{ title: t('Enviar ao coach'), presentation: 'modal' }} />
+            <Stack.Screen name="pack/index" options={{ title: t('Links de várias mãos') }} />
+            <Stack.Screen name="pack/new" options={{ title: t('Partilhar num só link'), presentation: 'modal' }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
             <Stack.Screen name="export" options={{ title: t('Exportar') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
