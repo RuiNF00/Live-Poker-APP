@@ -16,10 +16,10 @@ const CHANNEL = 'level-up';
 /** Opened when the reminder is tapped: the session screen, where the level goes up. */
 export const LEVEL_UP_URL = 'sweatbook://session';
 
-type N = typeof import('expo-notifications');
+export type N = typeof import('expo-notifications');
 let mod: N | null | undefined;
 
-function notifications(): N | null {
+export function notifications(): N | null {
   if (mod !== undefined) return mod;
   if (Platform.OS === 'web') return (mod = null);
   try {
@@ -32,7 +32,7 @@ function notifications(): N | null {
 }
 
 let ready: Promise<void> | null = null;
-function setup(n: N) {
+export function setup(n: N) {
   ready ??= (async () => {
     // Show it even with the app open: the player may be looking at the hands list.
     n.setNotificationHandler({
