@@ -860,6 +860,8 @@ const en: Record<string, string> = {
   'Com marca Sweatbook': 'Sweatbook branding',
   'Tirar a marca é do Pro': 'Removing the branding is a Pro feature',
   'Não foi possível guardar': 'Couldn’t save',
+  'Alguns dados estavam danificados': 'Some data was damaged',
+  '{n} registo(s) não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.': '{n} item(s) couldn’t be read. We kept a copy aside on this phone and the rest of the app works as usual. If anything is missing, use “Restore” on the cloud backup in Settings.',
   'O telemóvel recusou gravar os dados (pouco espaço livre?). Tenta libertar espaço; a app volta a tentar sozinha.': 'Your phone refused to save the data (low on storage?). Try freeing some space; the app will retry on its own.',
   'Algo correu mal neste ecrã': 'Something went wrong on this screen',
   'As tuas mãos estão guardadas no telemóvel. Tenta de novo; se voltar a acontecer, fecha e abre a app.': 'Your hands are saved on your phone. Try again; if it happens again, close and reopen the app.',

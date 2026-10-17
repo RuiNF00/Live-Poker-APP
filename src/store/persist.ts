@@ -31,6 +31,13 @@ export interface Loaded<T> {
   persisted: T[];
   /** Items or keys that couldn't be read. Nothing on disk is deleted because of them. */
   problems: number;
+  /** Raw values (key, value) that were unreadable or unusable, for the caller to quarantine. */
+  bad: [string, string][];
+}
+
+export interface LoadOptions<T> {
+  /** Checks one stored item: the item (filled in if needed) or null when unusable. See validate.ts. */
+  fix?: (x: unknown) => T | null;
 }
 
 type Item = { id: string; updatedAt?: number };
@@ -55,19 +62,29 @@ function parseJson(raw: string | null): unknown {
 
 const isItem = (x: unknown): x is Item => !!x && typeof x === 'object' && typeof (x as Item).id === 'string' && (x as Item).id.length > 0;
 
-async function readItems<T extends Item>(kv: KV, spec: CollectionSpec, ids: string[]): Promise<{ items: T[]; problems: number }> {
+/** One stored item through the check: the item, or null when unusable. `repaired` when a field was filled in. */
+function check<T extends Item>(v: unknown, fix?: (x: unknown) => T | null): { item: T | null; repaired: boolean } {
+  if (!isItem(v)) return { item: null, repaired: false };
+  if (!fix) return { item: v as T, repaired: false };
+  const item = fix(v);
+  return { item: item && isItem(item) ? item : null, repaired: !!item && item !== v };
+}
+
+async function readItems<T extends Item>(kv: KV, spec: CollectionSpec, ids: string[], fix?: (x: unknown) => T | null) {
   const items: T[] = [];
-  let problems = 0;
+  const bad: [string, string][] = [];
+  let repaired = 0;
   for (const part of chunks(ids)) {
     const rows = await kv.multiGet(part.map((id) => spec.prefix + id));
-    for (const [, raw] of rows) {
+    for (const [key, raw] of rows) {
       if (raw == null) continue; // removed between index write and now: fine
-      const v = parseJson(raw);
-      if (isItem(v)) items.push(v as T);
-      else problems++;
+      const r = check(parseJson(raw), fix);
+      if (r.item) items.push(r.item);
+      else bad.push([key, raw]);
+      if (r.repaired) repaired++;
     }
   }
-  return { items, problems };
+  return { items, bad, repaired };
 }
 
 /** Writes the whole list in the per-item layout (items first, index last). */
@@ -90,11 +107,13 @@ function union<T extends Item>(a: T[], b: T[]): T[] {
  * Reads a collection. Never throws and never deletes anything it couldn't
  * read: a corrupt index is rebuilt from the item keys, a corrupt item is
  * skipped (and left on disk), an unreadable v1 value stays where it is.
+ * What it skipped comes back in `bad` (see boot.ts, which quarantines it).
  */
-export async function loadCollection<T extends Item>(kv: KV, spec: CollectionSpec): Promise<Loaded<T>> {
+export async function loadCollection<T extends Item>(kv: KV, spec: CollectionSpec, opts: LoadOptions<T> = {}): Promise<Loaded<T>> {
   let items: T[] = [];
   let persisted: T[] = [];
   let problems = 0;
+  const bad: [string, string][] = [];
 
   try {
     const rawIdx = await kv.getItem(spec.index);
@@ -102,20 +121,25 @@ export async function loadCollection<T extends Item>(kv: KV, spec: CollectionSpe
     if (rawIdx != null) {
       const parsed = parseJson(rawIdx);
       if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) ids = parsed as string[];
-      else problems++;
+      else {
+        problems++;
+        bad.push([spec.index, rawIdx]);
+      }
     }
     if (ids === null) {
       // Index missing or broken: rebuild it from whatever item keys exist.
       ids = (await kv.getAllKeys()).filter((k) => k.startsWith(spec.prefix)).map((k) => k.slice(spec.prefix.length));
     }
     if (ids) {
-      const r = await readItems<T>(kv, spec, [...new Set(ids)]);
+      const r = await readItems<T>(kv, spec, [...new Set(ids)], opts.fix);
       items = r.items;
-      problems += r.problems;
+      problems += r.bad.length;
+      bad.push(...r.bad);
       if (rawIdx == null || problems) items.sort((a, b) => ((b as { createdAt?: number }).createdAt ?? 0) - ((a as { createdAt?: number }).createdAt ?? 0));
       // A rebuilt index isn't on disk yet: leave persisted empty for the index
       // to be rewritten, but the items themselves are already there.
-      persisted = rawIdx != null && !problems ? items : [];
+      // A repaired item must be written back too.
+      persisted = rawIdx != null && !problems && !r.repaired ? items : [];
     }
   } catch {
     problems++;
@@ -133,20 +157,35 @@ export async function loadCollection<T extends Item>(kv: KV, spec: CollectionSpe
     else if (raw != null) {
       const v = parseJson(raw);
       if (Array.isArray(v)) {
-        items = union(items, v.filter(isItem) as T[]);
+        const ok: T[] = [];
+        for (const x of v) {
+          const r = check(x, opts.fix);
+          if (r.item) ok.push(r.item);
+        }
+        // Some entries unusable: the whole v1 value goes to the caller, which
+        // removes it only once a copy is in quarantine.
+        const partial = ok.length < v.length;
+        if (partial) {
+          problems++;
+          bad.push([spec.legacy, raw]);
+        }
+        items = union(items, ok);
         try {
           await writeAll(kv, spec, items);
           persisted = items;
-          await kv.multiRemove([spec.legacy]);
+          if (!partial) await kv.multiRemove([spec.legacy]);
         } catch {
           // Disk full or similar: keep v1 as is and try again next launch. The
           // writer will rewrite everything, since persisted is still stale.
         }
-      } else problems++;
+      } else {
+        problems++;
+        bad.push([spec.legacy, raw]);
+      }
     }
   }
 
-  return { items, persisted, problems };
+  return { items, persisted, problems, bad };
 }
 
 export interface Diff {
