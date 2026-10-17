@@ -2918,6 +2918,8 @@ const es: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tiene las fechas, salas y resultados que contiene. Nada de lo que ya tienes en Sweatbook va con él. Lo envías tú, desde tu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Acepto enviar este archivo a soporte',
   'Abrir o email': 'Abrir el email',
+  'Torneios mais caros': 'Torneos más caros',
+  'Torneios mais baratos': 'Torneos más baratos',
 };
 
 export default es;
