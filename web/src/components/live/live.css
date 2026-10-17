@@ -65,7 +65,8 @@
 }
 
 .live-state-paused,
-.live-state-stale {
+.live-state-stale,
+.live-state-bagged {
   color: #f5b83d;
   background: rgba(245, 184, 61, 0.12);
 }
@@ -240,6 +241,12 @@
   color: var(--accent);
   font-size: 13px;
   font-weight: 700;
+}
+
+.live-note {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .live-updated {

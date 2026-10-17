@@ -20,12 +20,22 @@ select confirmed_at is null as markup_clears_confirmation from get_action_offer(
 select confirm_action_offer(:'oid') is not null as reconfirmed;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{events,0,p}', '6')) as events_updated from action_offers where id = :'oid';
 select confirmed_at is null as events_clear_confirmation from get_action_offer(:'oid');
+-- So do a new currency or backer name (20261017211000).
+select confirm_action_offer(:'oid') is not null as reconfirmed_2;
+select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{cur}', '"$"')) as cur_updated from action_offers where id = :'oid';
+select confirmed_at is null as cur_clears_confirmation from get_action_offer(:'oid');
+select confirm_action_offer(:'oid') is not null as reconfirmed_3;
+select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{backer}', '"Bea"')) as backer_updated from action_offers where id = :'oid';
+select confirmed_at is null as backer_clears_confirmation from get_action_offer(:'oid');
 select update_action_offer(:'oid', 'wrong', '{"v":1,"events":[]}') = false as update_wrong_token;
 select (payload->'events'->0->>'p')::numeric = 6 as unchanged_by_wrong_token from get_action_offer(:'oid');
 
 -- Purge 60 days after the last event.
 select id as old_id from create_action_offer('{"v":1,"events":[{"id":"a","d":1,"b":1,"p":1}]}'::jsonb) \gset
 select last_event_at < now() - interval '60 days' as old_event_dated from action_offers where id = :'old_id';
+-- An event dated in 2200 can't keep a link from the purge.
+select id as far_id from create_action_offer('{"v":1,"events":[{"id":"a","d":7258118400000,"b":1,"p":1}]}'::jsonb) \gset
+select last_event_at <= now() + interval '2 years' as far_event_capped from action_offers where id = :'far_id';
 select purge_action_offers() = 1 as purged;
 select count(*) = 1 as current_kept from action_offers where id = :'oid';
 

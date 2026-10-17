@@ -37,7 +37,8 @@ function BackerScreen() {
   const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
   const backer = backers.find((b) => b.id === id);
   const l = backer ? ledgers.get(backer.id) : undefined;
-  const cur = settings.currency;
+  // Totals are in the deal's currency; each session row in its own.
+  const cur = l?.currency || settings.currency;
 
   if (!backer || !l)
     return (
@@ -218,10 +219,10 @@ function BackerScreen() {
                           {[shortDate(s.startedAt), `${r.stake.share}%`, r.stake.markup !== 1 ? markupLabel(r.stake.markup) : '', pkgName(r.stake.packageId) ?? ''].filter(Boolean).join(' · ')}
                         </T>
                         {!s.endedAt ? <Pill label={t('A decorrer')} color={C.good} icon="ellipse" /> : null}
-                        {r.stake.unpaid ? <Pill label={t('Por pagar {amount}', { amount: money(r.cost, cur) })} color={C.warn} /> : null}
+                        {r.stake.unpaid ? <Pill label={t('Por pagar {amount}', { amount: money(r.cost, s.currency || cur) })} color={C.warn} /> : null}
                       </Row>
                     }
-                    right={s.endedAt ? <Amount value={net} text={money(net, cur)} style={{ fontSize: 14 }} /> : undefined}
+                    right={s.endedAt ? <Amount value={net} text={money(net, s.currency || cur)} style={{ fontSize: 14 }} /> : undefined}
                     onPress={() => setPiece(r)}
                   />
                 );
@@ -298,7 +299,7 @@ function BackerScreen() {
         row={piece}
         name={backer.name}
         pkgName={pkgName(piece?.stake.packageId)}
-        currency={cur}
+        currency={piece?.session.currency || cur}
         onClose={() => setPiece(null)}
         onTogglePaid={togglePaid}
       />
