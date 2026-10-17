@@ -6,7 +6,7 @@
 
 import type { Settings } from '@/store/types';
 
-export type NotifyKind = 'levels' | 'festival' | 'money' | 'coach' | 'recap' | 'billing' | 'tips';
+export type NotifyKind = 'levels' | 'festival' | 'money' | 'coach' | 'comments' | 'recap' | 'billing' | 'tips';
 
 export interface KindInfo {
   kind: NotifyKind;
@@ -26,6 +26,8 @@ export const KINDS: readonly KindInfo[] = [
   { kind: 'festival', channel: 'festival', name: 'Torneios planeados', importance: 'high', requested: true },
   { kind: 'money', channel: 'money', name: 'Swaps e staking', importance: 'default', private: true },
   { kind: 'coach', channel: 'coach', name: 'Comentários do coach', importance: 'default' },
+  // A push from the server (lib/comment-push), which keeps the quiet hours itself.
+  { kind: 'comments', channel: 'comments', name: 'Comentários nas tuas mãos', importance: 'default' },
   { kind: 'recap', channel: 'recap', name: 'Resumo do mês', importance: 'default' },
   { kind: 'billing', channel: 'billing', name: 'Subscrição', importance: 'default' },
   { kind: 'tips', channel: 'tips', name: 'Lembretes', importance: 'low' },
@@ -37,7 +39,7 @@ export const kindInfo = (k: NotifyKind): KindInfo => KINDS.find((x) => x.kind ==
 export const SESSION_CHANNEL = 'session';
 
 /** Kinds with a switch in Settings › Notificações. The notice before a charge has none: it protects the player. */
-export const SWITCHABLE: readonly NotifyKind[] = ['levels', 'festival', 'money', 'coach', 'recap', 'tips'];
+export const SWITCHABLE: readonly NotifyKind[] = ['levels', 'festival', 'money', 'coach', 'comments', 'recap', 'tips'];
 
 /** Is this kind on in Settings? Everything is on until turned off; billing always is. */
 export function kindOn(s: Pick<Settings, 'notify' | 'monthRecap'>, k: NotifyKind): boolean {
