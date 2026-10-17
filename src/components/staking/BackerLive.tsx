@@ -6,7 +6,7 @@ import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 
-import { Button, Card, Pill, Row, T, tap, ToggleItem } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, Pill, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
@@ -22,9 +22,10 @@ function note(title: string, body: string) {
   else Alert.alert(title, body);
 }
 
-async function shareLink(s: Session, id: string) {
+/** `share`: one backer's %, after #p= so their page shows their own piece (the fragment never reaches the server). */
+async function shareLink(s: Session, id: string, share?: number) {
   const ref = await shareRef().catch(() => '');
-  const url = withLang(`${liveUrl(id)}?utm_source=app&utm_medium=backer_live${ref ? `&r=${encodeURIComponent(ref)}` : ''}`, variant);
+  const url = withLang(`${liveUrl(id)}?utm_source=app&utm_medium=backer_live${ref ? `&r=${encodeURIComponent(ref)}` : ''}`, variant) + (share ? `#p=${share}` : '');
   const msg = t('Segue a minha sessão em direto: {name}{url}', { name: s.name ? s.name + '\n' : '', url });
   track('link_shared', { channel: 'backer_live' });
   if (Platform.OS === 'web') {
@@ -34,7 +35,12 @@ async function shareLink(s: Session, id: string) {
 }
 
 export function BackerLiveCard({ s }: { s: Session }) {
-  const { saveSession, hands, settings } = useStore();
+  const { saveSession, hands, settings, backers } = useStore();
+  // Named backers on this session: each can get the link with their own %.
+  const named = (s.stakes ?? []).flatMap((x) => {
+    const b = x.backerId ? backers.find((y) => y.id === x.backerId) : undefined;
+    return b ? [{ id: b.id, name: b.name, share: x.share }] : [];
+  });
   const [busy, setBusy] = useState(false);
 
   const create = async () => {
@@ -110,6 +116,13 @@ export function BackerLiveCard({ s }: { s: Session }) {
       ) : (
         <Button size="md" kind="outline" icon="radio-outline" title={busy ? t('A criar…') : t('Criar link em direto')} disabled={busy} onPress={create} />
       )}
+      {s.live && named.length ? (
+        <ChipRow>
+          {named.map((b) => (
+            <Chip key={b.id} icon="paper-plane-outline" label={t('Enviar a {name} ({n}%)', { name: b.name, n: b.share })} onPress={() => shareLink(s, s.live!.id, b.share)} />
+          ))}
+        </ChipRow>
+      ) : null}
     </Card>
   );
 }

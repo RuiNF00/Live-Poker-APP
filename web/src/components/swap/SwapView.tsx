@@ -101,6 +101,8 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
   const confirm = () =>
     send(`/api/swaps/${encodeURIComponent(id)}/confirm`, { method: 'POST', body: JSON.stringify({ name }) }, (tok) => {
       writeLocal(`swap:${id}`, tok);
+      // The next group link picks this name by itself.
+      writeLocal('swap:name', name.trim());
       setToken(tok);
     });
 
@@ -122,6 +124,8 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
   const creditor: Side | null = Math.abs(bal.net) < 0.005 ? null : bal.net > 0 ? 'a' : 'b';
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'swap', utm_campaign: id }, invite);
   const privateLink = token && you ? `${window.location.origin}/swap/${id}#k=${token}` : '';
+  // What I owe, when the accounts are open to me: one tap records the payment.
+  const owe = accounts && you && !left && creditor && creditor !== you ? Math.round(Math.abs(bal.net) * 100) / 100 : 0;
 
   return (
     <main className="live">
@@ -184,6 +188,14 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
           {bal.aOwes >= 0.005 && bal.bOwes >= 0.005 ? <p className="sw-hint sw-line">{c.owesSplit(names.a, money(bal.aOwes), names.b, money(bal.bOwes))}</p> : null}
           {bal.aPaid >= 0.005 ? <p className="sw-hint sw-line">{c.paid(names.a, money(bal.aPaid))}</p> : null}
           {bal.bPaid >= 0.005 ? <p className="sw-hint sw-line">{c.paid(names.b, money(bal.bPaid))}</p> : null}
+          {owe ? (
+            <>
+              <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: payment(owe) }) })}>
+                {c.paidNow(money(owe))}
+              </button>
+              <p className="sw-hint">{c.paidNowHint}</p>
+            </>
+          ) : null}
         </section>
       ) : null}
 
@@ -224,7 +236,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
       {left ? <p className="live-updated">{c.leftNote(c.leftPlayer)}</p> : null}
 
-      {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
+      {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} owe={owe} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
 
       {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/${id}?k=${token}`} /> : null}
 
@@ -237,7 +249,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
       {/* Only once both confirmed: before that the page is about the deal, not the app. */}
       {confirmed && accounts ? (
-        <section className="live-cta" id="baixar">
+        <section className="live-cta sw-accounts" id="baixar">
           <Mark size={36} />
           <p>{c.confirmedCta}</p>
           <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
@@ -253,10 +265,15 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
 export type C = ReturnType<typeof swapCopy>;
 
+/** A payment entry for the API (the same shape AddEntry sends). */
+export function payment(amount: number, to?: number) {
+  return { cid: Math.random().toString(36).slice(2, 12), kind: 'payment', amount, event: '', finish: null, ...(to === undefined ? {} : { to }) };
+}
+
 /** In place of the accounts when the creator doesn't have Pro: the results stay, the app does the maths. */
 export function AccountsInApp({ c, locale, stores }: { c: C; locale: Locale; stores: ReturnType<typeof storeLinks> }) {
   return (
-    <section className="live-cta" id="baixar">
+    <section className="live-cta sw-accounts" id="baixar">
       <Mark size={36} />
       <p>
         <b>{c.accountsInApp}</b>
@@ -270,7 +287,7 @@ export function AccountsInApp({ c, locale, stores }: { c: C; locale: Locale; sto
 
 export function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   return (
-    <header className="live-top">
+    <header className="live-top sw-top">
       <a href="/" className="live-brand" aria-label="Sweatbook">
         <Mark size={26} />
         <Wordmark className="live-word" />
@@ -305,6 +322,7 @@ export function AddEntry({
   title,
   onAdd,
   payees,
+  owe = 0,
 }: {
   c: C;
   busy: boolean;
@@ -313,6 +331,8 @@ export function AddEntry({
   onAdd: (e: object) => Promise<boolean>;
   /** Group swaps: who a payment can go to. */
   payees?: { seat: number; name: string }[];
+  /** What I owe (0 when unknown): a payment starts at it. */
+  owe?: number;
 }) {
   const [kind, setKind] = useState<'result' | 'payment'>('result');
   const [to, setTo] = useState(payees?.[0]?.seat ?? -1);
@@ -342,7 +362,10 @@ export function AddEntry({
         <button role="tab" aria-selected={kind === 'result'} className={kind === 'result' ? 'on' : ''} onClick={() => setKind('result')}>
           {c.addPrize}
         </button>
-        <button role="tab" aria-selected={kind === 'payment'} className={kind === 'payment' ? 'on' : ''} onClick={() => setKind('payment')}>
+        <button role="tab" aria-selected={kind === 'payment'} className={kind === 'payment' ? 'on' : ''} onClick={() => {
+            setKind('payment');
+            if (!amount && owe) setAmount(String(owe));
+          }}>
           {c.addPayment}
         </button>
       </div>

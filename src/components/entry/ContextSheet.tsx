@@ -8,7 +8,7 @@ import { chips } from '@/poker/format';
 import { STAGES, type GameInfo } from '@/poker/types';
 import { C, R, S } from '@/theme';
 
-import { Button, Chip, ChipRow, Field, NumField, Row, Segmented, SheetHeader, T } from '../ui';
+import { Button, Chip, ChipRow, Field, NumField, Row, Segmented, SheetHeader, T, useSheetPad } from '../ui';
 
 // Older screens import these from here; they live in the design system now.
 export { inputStyle, NumField } from '../ui';
@@ -33,11 +33,12 @@ export function ContextSheet({
   const sheetAnimation = useSheetAnimation();
   const set = (patch: Partial<GameInfo>) => onChange({ ...game, ...patch });
   const levels = game.kind === 'mtt' ? MTT_LEVELS : CASH_LEVELS;
+  const sheetPad = useSheetPad(40);
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, maxHeight: '88%', borderTopWidth: 1, borderColor: C.border }}>
-        <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, gap: S.lg, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, gap: S.lg, paddingBottom: sheetPad }} keyboardShouldPersistTaps="handled">
           <SheetHeader title={t('Contexto da mão')} onClose={onClose} closeLabel={t('Fechar')} />
           <Segmented
             options={[

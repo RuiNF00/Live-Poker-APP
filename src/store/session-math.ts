@@ -242,5 +242,11 @@ export function lastTimeAt(name: string, s: Session, sessions: Session[]): Parti
     ...(same ? { buyIn: p.buyIn } : {}),
     // Tournament: the starting stack; cash: the stack is the buy-in.
     ...(s.kind === 'mtt' ? { stack: p.stackLog[0]?.stack ?? p.stack } : same ? { stack: p.buyIn } : {}),
+    // The level clock and the blind structure, so nobody cycles Off→15→20→30 again. The field
+    // and the payouts belong to that day's event and stay behind.
+    ...(p.levelMinutes ? { levelMinutes: p.levelMinutes } : {}),
+    ...(s.kind === 'mtt' && p.tourney?.structure?.length
+      ? { tourney: { structure: p.tourney.structure, structureName: p.tourney.structureName, startStack: p.tourney.startStack } }
+      : {}),
   };
 }

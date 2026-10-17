@@ -307,3 +307,24 @@
   font-family: var(--mono, ui-monospace, monospace);
   white-space: nowrap;
 }
+
+/* Narrow phones and 200% text: the state pill drops under the logo instead of
+   running off the screen, and the store badges shrink to the card. */
+.sw-top {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sw-accounts .lp-store {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A transfer with its "Paguei" button: the line between rows sits on the row. */
+.sw-transfer-row + .sw-transfer-row > .sw-transfer {
+  border-top: 1px solid var(--line);
+}
+
+.sw-transfer-row .sw-btn {
+  margin: 2px 0 10px;
+}

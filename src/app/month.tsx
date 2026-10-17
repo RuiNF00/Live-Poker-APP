@@ -5,7 +5,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 
@@ -36,11 +36,12 @@ const PREVIEW = 0.62;
 export default function MonthScreen() {
   const { sessions, hands, settings, setSettings } = useStore();
   const locked = useLocked('monthCompare');
-  const params = useLocalSearchParams<{ m?: string }>();
+  const params = useLocalSearchParams<{ m?: string; c?: string }>();
   const months = useMemo(() => recapMonths(sessions).slice(0, 12), [sessions]);
   const [key, setKey] = useState(() => (params.m && /^\d{4}-\d{2}$/.test(params.m) ? params.m : defaultMonth(sessions)));
   const hidden = !!settings.hideAmounts;
-  const r = useMemo(() => (key ? monthRecap(sessions, key) : null), [sessions, key]);
+  // Opened from the Bankroll tab: that bankroll's currency, while the month has sessions in it.
+  const r = useMemo(() => (key ? monthRecap(sessions, key, params.c && inMonth(sessions, key).some((s) => s.currency === params.c) ? params.c : undefined) : null), [sessions, key, params.c]);
   const cmp = useMemo(() => (key && r ? compareMonths(sessions, key, r.currency) : null), [sessions, key, r]);
   const [hideMoney, setHideMoney] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -71,7 +72,7 @@ export default function MonthScreen() {
       <>
         <Stack.Screen options={{ title: t('Resumo do mês') }} />
         <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter }}>
-          <Empty icon="calendar-outline" title={t('Ainda não há um mês para ver')} body={t('Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.')} />
+          <Empty icon="calendar-outline" title={t('Ainda não há um mês para ver')} body={t('Termina uma sessão e o resumo do mês aparece aqui. No dia 1 avisamos-te com o mês que passou.')} action={<Button title={t('Começar sessão')} icon="play" onPress={() => router.replace('/session')} />} />
         </View>
       </>
     );

@@ -301,3 +301,22 @@ test('a chopped pot with cents splits to the cent, never more than the pot', () 
   assert.ok(txt.includes('Hero collected €1.63 from pot\nUTG collected €1.62 from pot'), txt);
   assert.ok(txt.includes('Total pot €3.25 | Rake €0'), txt);
 });
+
+test('a whole-euro chop at cent blinds still splits to the cent: €1 is 0.50 + 0.50', () => {
+  const h = mk({
+    game: { kind: 'cash', name: 'Casino', sb: 0.25, bb: 0.5, ante: 0, anteType: 'none', currency: '€' },
+    players: [
+      { name: 'Rui', stack: 50, cards: ['2c', '3d'] },
+      { name: 'Zé', stack: 50, cards: ['4h', '5s'] },
+      { name: 'Ana', stack: 50 },
+    ],
+    // 3-handed, button Hero: Hero folds, SB completes, BB checks, checked down, both play the board.
+    actions: [{ p: 0, kind: 'fold' }, { p: 1, kind: 'call' }, { p: 2, kind: 'check' }, { p: 1, kind: 'check' }, { p: 2, kind: 'check' }, { p: 1, kind: 'check' }, { p: 2, kind: 'check' }, { p: 1, kind: 'check' }, { p: 2, kind: 'check' }],
+    board: ['Ac', 'Kc', 'Qd', 'Jd', 'Th'],
+  });
+  h.players[2].cards = ['6h', '7s'];
+  const res = replay(h).result!;
+  assert.deepEqual([res.won[1], res.won[2]], [0.5, 0.5]);
+  const txt = pokerStarsText(h);
+  assert.ok(txt.includes('SB collected €0.50 from pot\nBB collected €0.50 from pot'), txt);
+});

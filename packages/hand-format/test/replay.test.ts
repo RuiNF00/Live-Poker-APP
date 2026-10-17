@@ -149,6 +149,35 @@ describe('edge cases', () => {
     expect(end.winners!.map((w) => w.amount)).toEqual([2, 2]);
   });
 
+  it('picked winners without cards: the short all-in takes the main pot, the deeper winner the side pot', () => {
+    const h = base({
+      players: [
+        { seat: 1, stack: 50 },
+        { seat: 2, stack: 120 },
+        { seat: 3, stack: 200, cards: ['8s', '8d'], isHero: true },
+      ],
+      board: { flop: ['2c', '7d', '9s'], turn: 'Th', river: '3c' },
+      actions: { preflop: [{ seat: 1, type: 'allin', amount: 50 }, { seat: 2, type: 'allin', amount: 120 }, { seat: 3, type: 'call' }], flop: [], turn: [], river: [] },
+      winnerSeats: [1, 2],
+    });
+    const won = Object.fromEntries(buildReplay(h).at(-1)!.winners!.map((w) => [w.seat, w.amount]));
+    expect(won).toEqual({ 1: 150, 2: 140 });
+  });
+
+  it('splits a whole-euro cash chop to the cent: €1 at 0.25/0.50 is 0.50 + 0.50', () => {
+    const h = base({
+      blinds: { sb: 0.25, bb: 0.5 },
+      buttonSeat: 2,
+      players: [
+        { seat: 1, stack: 50, cards: ['Ac', '2d'] },
+        { seat: 2, stack: 50, cards: ['Ad', '3c'] },
+      ],
+      board: { flop: ['Ks', 'Kh', 'Qs'], turn: 'Qh', river: 'Js' },
+      actions: { preflop: [{ seat: 2, type: 'call' }, { seat: 1, type: 'check' }], flop: [], turn: [], river: [] },
+    });
+    expect(buildReplay(h).at(-1)!.winners!.map((w) => w.amount)).toEqual([0.5, 0.5]);
+  });
+
   it('splits a chopped pot with cents to the cent', () => {
     const h = base({
       blinds: { sb: 0.25, bb: 0.5 },

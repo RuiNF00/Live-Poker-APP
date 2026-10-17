@@ -3,14 +3,20 @@
 
 import { Directory, File, Paths } from 'expo-file-system';
 
-/** "Delete all my data": the copies made for support and the files picked for import. */
+/** "Delete all my data": the copies made for support, the files picked for import, and anything with the player's face or voice. */
 export function dropSupportCopies(): void {
   try {
-    for (const f of new Directory(Paths.cache).list()) if (f instanceof File && f.name.startsWith('sweatbook-importacao-')) f.delete();
+    // Imports, and the hand videos and voice stories (they can carry the player's face and voice).
+    for (const f of new Directory(Paths.cache).list()) if (f instanceof File && /^sweatbook-(importacao|mao|story)-/.test(f.name)) f.delete();
   } catch {}
   try {
     // expo-document-picker's copyToCacheDirectory puts picked files here.
     const d = new Directory(Paths.cache, 'DocumentPicker');
+    if (d.exists) d.delete();
+  } catch {}
+  try {
+    // expo-image-picker's camera clips and photos (the face clip for hand videos among them).
+    const d = new Directory(Paths.cache, 'ImagePicker');
     if (d.exists) d.delete();
   } catch {}
 }

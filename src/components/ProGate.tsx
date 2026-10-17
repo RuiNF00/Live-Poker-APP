@@ -10,7 +10,7 @@ import { Button, Card, Empty, Screen, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { C, R, S } from '@/theme';
 
-const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar', moveUpPlan: 'layers', villainRange: 'grid' } as const satisfies Record<ProFeature, string>;
+const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar', moveUpPlan: 'layers', villainRange: 'grid', faceVideo: 'videocam' } as const satisfies Record<ProFeature, string>;
 
 /** True when this feature needs Pro and the player doesn't have it. */
 export function useLocked(feature: ProFeature): boolean {
@@ -25,7 +25,7 @@ export function ProLocked({ feature, title }: { feature: ProFeature; title: stri
     <>
       <Stack.Screen options={{ title, headerBackTitle: t('Voltar') }} />
       <Screen contentStyle={{ paddingTop: S.xl }}>
-        <Empty icon={ICON[feature]} title={copy.title} body={copy.body} action={<Button title={t('Ver Pro')} iconRight="chevron-forward" onPress={() => paywall(feature)} />} />
+        <Empty icon={ICON[feature]} title={copy.title} body={copy.body} action={<Button title={t('Ver com Pro')} iconRight="chevron-forward" onPress={() => paywall(feature)} />} />
       </Screen>
     </>
   );

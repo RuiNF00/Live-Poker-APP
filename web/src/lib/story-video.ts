@@ -34,6 +34,29 @@ export function parseSlot(raw: unknown): Slot | null {
   return { x, y, w, h };
 }
 
+/** Where the face clip goes on a replay video: a circle of diameter `d` at x, y. */
+export interface FaceSlot {
+  x: number;
+  y: number;
+  d: number;
+}
+
+/** Clamp the face circle to the frame; null if it makes no sense. */
+export function parseFaceSlot(raw: unknown): FaceSlot | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const n = (k: string) => (typeof r[k] === 'number' && Number.isFinite(r[k]) ? Math.round(r[k] as number) : NaN);
+  const x = n('x');
+  const y = n('y');
+  const d = even(n('d'));
+  if ([x, y, d].some(Number.isNaN) || x < 0 || y < 0 || d < 60 || d > 600) return null;
+  if (x + d > STORY_W || y + d > STORY_H) return null;
+  return { x, y, d };
+}
+
+/** An MP4/QuickTime file starts with a box whose type is 'ftyp' (bytes 4–7). */
+export const isMp4 = (b: Uint8Array) => b.length > 12 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;
+
 // Inputs are uploads, so ffmpeg must not guess what they are: each one is read by a single
 // named demuxer from a local file only (no playlists, concat lists or URLs).
 const VOICE_DEMUXER: Record<string, string> = { m4a: 'mov', '3gp': 'mov', aac: 'aac', mp3: 'mp3', webm: 'matroska', ogg: 'ogg' };
@@ -94,9 +117,17 @@ export function parseDurations(raw: unknown, frames: number): number[] | null {
 
 /**
  * Replay video: each JPEG frame held for its duration with a short crossfade
- * into the next, over the voice note (waveform in `slot`) or silence.
+ * into the next, over the voice note (waveform in `slot`), the face clip (in a
+ * circle at `face.slot`, its sound as the audio) or silence.
  */
-export function replayArgs(frames: string[], durations: number[], voice: string | null, out: string, slot: Slot | null): string[] {
+export function replayArgs(
+  frames: string[],
+  durations: number[],
+  voice: string | null,
+  out: string,
+  slot: Slot | null,
+  face: { file: string; slot: FaceSlot } | null = null,
+): string[] {
   const n = frames.length;
   const total = Math.min(MAX_SECONDS, durations.reduce((a, d) => a + d, 0));
   const inputs: string[] = [];
@@ -114,7 +145,17 @@ export function replayArgs(frames: string[], durations: number[], voice: string 
     cur = `x${i}`;
   }
   const T = total.toFixed(2);
-  if (voice) {
+  if (face) {
+    const { x, y, d } = face.slot;
+    // Square crop of the selfie, scaled into the circle; the last frame holds if the clip is shorter.
+    inputs.push('-protocol_whitelist', 'file', '-f', 'mov', '-i', face.file);
+    parts.push(
+      `[${n}:v]crop='min(iw,ih)':'min(iw,ih)',scale=${d}:${d},fps=24,tpad=stop_mode=clone:stop_duration=${MAX_SECONDS},format=yuva420p,` +
+        `geq=lum='p(X,Y)':cb='p(X,Y)':cr='p(X,Y)':a='if(lte(hypot(X-${d / 2},Y-${d / 2}),${d / 2}),255,0)'[fc]`,
+      `[${cur}][fc]overlay=${x}:${y}:shortest=1,format=yuv420p[v]`,
+      `[${n}:a]apad,atrim=0:${T}[a]`,
+    );
+  } else if (voice) {
     const voiceFormat = VOICE_DEMUXER[path.extname(voice).slice(1).toLowerCase()] ?? 'mov';
     inputs.push('-protocol_whitelist', 'file', '-f', voiceFormat, '-i', voice);
     if (slot) {
@@ -197,7 +238,9 @@ export async function renderReplayVideo(input: {
   voice: Uint8Array | null;
   voiceExt: string;
   slot: Slot | null;
+  face?: { bytes: Uint8Array; slot: FaceSlot } | null;
 }): Promise<Buffer> {
+  // The voice and face live only in this temp folder, removed below whatever happens.
   const dir = await mkdtemp(path.join(os.tmpdir(), 'replay-'));
   try {
     const frames = await Promise.all(
@@ -212,8 +255,13 @@ export async function renderReplayVideo(input: {
       voice = path.join(dir, 'voice.' + input.voiceExt);
       await writeFile(voice, input.voice);
     }
+    let face: { file: string; slot: FaceSlot } | null = null;
+    if (input.face) {
+      face = { file: path.join(dir, 'face.mov'), slot: input.face.slot };
+      await writeFile(face.file, input.face.bytes);
+    }
     const out = path.join(dir, 'replay.mp4');
-    await run(ffmpegPath(), replayArgs(frames, input.durations, voice, out, voice ? input.slot : null), 55_000);
+    await run(ffmpegPath(), replayArgs(frames, input.durations, face ? null : voice, out, voice ? input.slot : null, face), 55_000);
     return await readFile(out);
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});

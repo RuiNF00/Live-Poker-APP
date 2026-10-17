@@ -16,12 +16,12 @@ import type { Session } from '@/store/types';
 import { blankSession } from './SessionForm';
 import { tap } from './ui';
 
-function sessionName(e: FestivalEvent) {
+export function sessionName(e: FestivalEvent) {
   return eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
 }
 
 /** A running tournament session for a festival event, starting now. */
-function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
+export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bankrollId: string | undefined): Session {
   const now = Date.now();
   const base = blankSession('mtt', f.currency, tableSize);
   return {
@@ -32,8 +32,12 @@ function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bank
     bankrollId,
     // Backers who bought a piece of this event through an action package.
     stakes: stakesFor(getOffers(), f.id, e.id),
+    // The published starting stack and level length, when known: nothing to type, and the level clock runs.
+    stack: e.stack ?? base.stack,
+    levelMinutes: e.levelMinutes,
+    tourney: e.stack ? { startStack: e.stack } : undefined,
     startedAt: now,
-    stackLog: [{ t: now, stack: base.stack, level: base.level }],
+    stackLog: [{ t: now, stack: e.stack ?? base.stack, level: base.level }],
   };
 }
 

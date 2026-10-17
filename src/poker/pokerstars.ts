@@ -3,7 +3,7 @@
 // antes, every action with Stars' wording, board, showdown and summary.
 // Opponents are named by position, so table reads never leave the phone.
 
-import { positions, replay, splitPot, straddleSeats, totalPot, type HandResult, type Replay } from './engine';
+import { centGame, positions, replay, splitPot, straddleSeats, totalPot, type HandResult, type Replay } from './engine';
 import type { Hand, Street } from './types';
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Flop', flop: 'Flop', turn: 'Turn', river: 'River' };
@@ -43,12 +43,12 @@ function utcTime(ms: number): string {
  * Chips each player won on each run: one row, or two when the hand was run
  * twice (each run plays for half of every pot, the odd chip with the first).
  */
-export function runWinnings(res: HandResult): number[][] {
+export function runWinnings(res: HandResult, cents = false): number[][] {
   if (!res.pots.some((p) => p.winners2 !== undefined)) return [res.won];
   const runs = [new Array(res.won.length).fill(0), new Array(res.won.length).fill(0)];
   const pay = (row: number[], amount: number, winners: number[] | null | undefined) => {
     if (!winners?.length) return;
-    splitPot(amount, winners.length).forEach((x, k) => (row[winners[k]] += x));
+    splitPot(amount, winners.length, cents).forEach((x, k) => (row[winners[k]] += x));
   };
   for (const p of res.pots) {
     const [first] = splitPot(p.amount, 2);
@@ -153,7 +153,7 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const res = r.result;
   const fin = r.final;
   const shows = (i: number) => !fin.folded[i] && hand.players[i].cards?.length === 2;
-  const runs = res ? runWinnings(res) : [];
+  const runs = res ? runWinnings(res, centGame(hand)) : [];
   // More than one pot (an all-in for less): named the way Stars does, so trackers split them right.
   const sides = !!res && res.pots.length > 1 && res.pots.every((p) => p.winners?.length);
   const potName = (j: number) => (j === 0 ? 'Main pot' : res!.pots.length === 2 ? 'Side pot' : `Side pot-${j}`);
@@ -166,7 +166,7 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
       // Side pots, Stars' way: the last side pot first, the main pot last.
       for (let j = res!.pots.length - 1; j >= 0; j--) {
         const p = res!.pots[j];
-        splitPot(p.amount, p.winners!.length).forEach((x, w) => out.push(`${name(p.winners![w])} collected ${fmt(x)} from ${potName(j).toLowerCase()}`));
+        splitPot(p.amount, p.winners!.length, centGame(hand)).forEach((x, w) => out.push(`${name(p.winners![w])} collected ${fmt(x)} from ${potName(j).toLowerCase()}`));
       }
     } else won.forEach((w, i) => w > 0 && out.push(`${name(i)} collected ${fmt(w)} from pot`));
   });

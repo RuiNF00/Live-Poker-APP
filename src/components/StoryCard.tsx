@@ -33,6 +33,15 @@ export function voiceSlotPx(scale = 1080 / 360) {
   return { x: VOICE_SLOT.x * scale, y: VOICE_SLOT.y * scale, w: VOICE_SLOT.w * scale, h: VOICE_SLOT.h * scale };
 }
 
+/** Hand video with the player's face: a circle top right, filled by the server with the face clip. */
+const FACE = { d: 96, right: 18, top: 58 };
+/** The circle inside the ring, in pixels of the exported 1080×1920 frame. */
+export function faceSlotPx(scale = 1080 / 360) {
+  const ring = 2;
+  const d = Math.round((FACE.d - ring * 2) * scale / 2) * 2;
+  return { x: Math.round((STORY_W - FACE.right - FACE.d + ring) * scale), y: Math.round((FACE.top + ring) * scale), d };
+}
+
 export const linkHost = BRAND.webUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 export function Mark({ size = 18 }: { size?: number }) {
@@ -73,6 +82,8 @@ export interface StoryCardProps {
   /** Question story for Instagram: the options make way for the player's own Poll sticker.
    * 'hint' marks the space (preview only), 'empty' leaves it clean for the capture. */
   poll?: 'hint' | 'empty' | null;
+  /** Hand video with the face clip: 'preview' shows a placeholder, 'slot' leaves the circle for the server. */
+  face?: 'preview' | 'slot' | null;
   onLayout?: (e: LayoutChangeEvent) => void;
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
@@ -105,7 +116,7 @@ function LinkGlyph({ size = 12, color = C.accent }: { size?: number; color?: str
   );
 }
 
-export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, at, poll = null, onLayout, ref }: StoryCardProps) {
+export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, at, poll = null, face = null, onLayout, ref }: StoryCardProps) {
   const g = hand.game;
   const reel = step !== undefined;
   const isQ = !reel && moment.mode === 'question';
@@ -158,7 +169,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
       {/* Below Instagram's profile bar */}
       <View style={{ position: 'absolute', top: 70, left: GUTTER, right: GUTTER, height: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {brand ? <Wordmark size={14} /> : <View />}
-        {voice ? null : reel ? (
+        {voice || face ? null : reel ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: C.accentLine, borderRadius: R.pill, paddingHorizontal: 10, height: 22 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.accent }} />
             <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.text }}>REPLAY</Text>
@@ -174,7 +185,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
         )}
       </View>
 
-      <View style={{ position: 'absolute', top: 106, left: GUTTER, right: GUTTER, gap: 8 }}>
+      <View style={{ position: 'absolute', top: 106, left: GUTTER, right: face ? FACE.right + FACE.d + 8 : GUTTER, gap: 8 }}>
         <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.4, color: C.muted }}>
           {title.toUpperCase()}
         </Text>
@@ -232,6 +243,29 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
                 <View key={i} style={{ width: 2, height: b * VOICE_SLOT.h, borderRadius: 1, backgroundColor: C.accent }} />
               ))}
             </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {face ? (
+        <View
+          style={{
+            position: 'absolute',
+            left: STORY_W - FACE.right - FACE.d,
+            top: FACE.top,
+            width: FACE.d,
+            height: FACE.d,
+            borderRadius: FACE.d / 2,
+            borderWidth: 2,
+            borderColor: C.accent,
+            backgroundColor: face === 'preview' ? C.surface2 : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          {face === 'preview' ? (
+            <Svg width={40} height={40} viewBox="0 0 24 24">
+              <Path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5Z" fill={C.muted} />
+            </Svg>
           ) : null}
         </View>
       ) : null}

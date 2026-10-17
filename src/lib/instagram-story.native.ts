@@ -8,6 +8,7 @@
 import * as Clipboard from 'expo-clipboard';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 import type React from 'react';
 import { Linking, Platform, type View } from 'react-native';
@@ -44,6 +45,45 @@ export const canShareStory = Platform.OS === 'ios' || Platform.OS === 'android';
 /** The hand video is rendered from frames the store build captures; Expo Go shows "Disponível na versão da loja" instead. */
 export const canMakeVideo = canShareStory && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
+/**
+ * Face in the hand video (iOS): the front camera, at medium quality so the clip
+ * fits in one upload with the frames. Android's camera app can't be told a
+ * quality, so its clips are too big to send; the option stays iOS-only.
+ */
+export const canRecordFace = canMakeVideo && Platform.OS === 'ios';
+
+/** The face clip plus the frames must stay under the share server's 4.5 MB request limit. */
+export const MAX_FACE_BYTES = 3.2 * 1024 * 1024;
+
+export interface FaceClip {
+  uri: string;
+  ms: number;
+  bytes: number;
+}
+
+/** Records the player talking (front camera, up to 30 s). Null if they cancel or say no to the camera. */
+export async function recordFace(): Promise<FaceClip | null> {
+  if (!(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
+  const r = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['videos'],
+    cameraType: ImagePicker.CameraType.front,
+    videoMaxDuration: 30,
+    videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
+  });
+  const a = r.canceled ? null : r.assets[0];
+  if (!a) return null;
+  return { uri: a.uri, ms: a.duration ?? 0, bytes: a.fileSize ?? new File(a.uri).size ?? 0 };
+}
+
+/** Deletes a local file we made or recorded (the face clip, a rendered video). Never throws. */
+export function dropLocal(uri: string | null | undefined): void {
+  if (!uri) return;
+  try {
+    const f = new File(uri);
+    if (f.exists) f.delete();
+  } catch {}
+}
+
 /** Upload the hand once and return its public share id. */
 export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: ShareOptions): Promise<string> {
   if (hand.shareId) return hand.shareId;
@@ -66,6 +106,11 @@ async function instagramInstalled(): Promise<boolean> {
 }
 
 export type StoryTarget = 'instagram' | 'sheet';
+
+/** Whether shareStory opens Instagram's story editor itself (not the system sheet). */
+export async function storyGoesToInstagram(): Promise<boolean> {
+  return !!nativeShare() && !!META_APP_ID && (await instagramInstalled());
+}
 
 /**
  * Voice story: the server (web/src/app/api/story-video) lays the voice note over
@@ -120,21 +165,23 @@ export async function shareSticker(file: string, link: string): Promise<StoryTar
   return 'sheet';
 }
 
-/** One replay frame for the hand video. JPEG keeps a 20-frame upload under the server's limit. */
-export async function captureFrame(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
-  return captureRef(ref, { format: 'jpg', quality: 0.82, width: 1080, height: 1920, result: 'tmpfile' });
+/** One replay frame for the hand video. JPEG keeps a 20-frame upload under the server's limit; lighter still next to a face clip. */
+export async function captureFrame(ref: React.RefObject<React.ComponentRef<typeof View> | null>, quality = 0.82): Promise<string> {
+  return captureRef(ref, { format: 'jpg', quality, width: 1080, height: 1920, result: 'tmpfile' });
 }
 
 /**
  * Hand video (Reels, TikTok, WhatsApp status): the server (web/src/app/api/replay-video)
  * holds each frame for its duration with a crossfade, over the voice note when
- * there is one. Returns a local MP4.
+ * there is one, or with the player's face clip (and its sound) in a circle.
+ * The voice or face is used for this render only and never kept. Returns a local MP4.
  */
 export async function renderReplayVideo(
   frames: string[],
   durations: number[],
   voice: string | null,
   slot: { x: number; y: number; w: number; h: number } | null,
+  face?: { uri: string; slot: { x: number; y: number; d: number } } | null,
 ): Promise<string> {
   const form = new FormData();
   frames.forEach((uri, i) => form.append('frame' + i, { uri, name: `f${i}.jpg`, type: 'image/jpeg' } as unknown as Blob));
@@ -142,10 +189,17 @@ export async function renderReplayVideo(
   if (voice) {
     form.append('voice', { uri: voice, name: 'voice.m4a', type: 'audio/mp4' } as unknown as Blob);
     if (slot) form.append('slot', JSON.stringify(slot));
+  }
+  if (face) {
+    form.append('face', { uri: face.uri, name: 'face.mov', type: 'video/quicktime' } as unknown as Blob);
+    form.append('faceSlot', JSON.stringify(face.slot));
+  }
+  if (voice || face) {
     const rcUserId = await appUserId();
     if (rcUserId) form.append('rcUserId', rcUserId);
   }
   const res = await fetch(`${API}/api/replay-video`, { method: 'POST', body: form });
+  if (res.status === 413) throw new Error('too_large');
   if (!res.ok) throw new Error('replay-video ' + res.status);
   const out = new File(Paths.cache, `sweatbook-mao-${Date.now()}.mp4`);
   await out.write(new Uint8Array(await res.arrayBuffer()));

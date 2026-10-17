@@ -79,6 +79,8 @@ export const PRO_ONLY = {
   moveUpPlan: true,
   /** Drawing villain's range on the 13×13 grid in the replayer. Equity against the range read from the preflop raises stays free. */
   villainRange: true,
+  /** The player's face (front camera) in a circle on the hand video. The video itself, with or without the brand, stays free. */
+  faceVideo: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -171,6 +173,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Desenha a range do vilão'),
     body: t('Escolhe as mãos dele na grelha e vê a tua equity contra elas.'),
   },
+  faceVideo: {
+    title: t('A tua cara no vídeo da mão'),
+    body: t('Explica a mão a falar, com a tua cara num canto.'),
+  },
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
@@ -235,6 +241,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'varianceMine', icon: 'pulse', title: t('A tua variância'), body: t('Com os teus números') },
   { key: 'trips', icon: 'airplane', title: t('Viagens'), body: t('Despesas e líquido por festival') },
   { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
+  { key: 'faceVideo', icon: 'videocam', title: t('Vídeo com a tua cara'), body: t('A explicar a mão, num canto') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
@@ -262,6 +269,7 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   varianceMine: 'varianceMine',
   villainRange: 'villainRange',
   trips: 'trips',
+  faceVideo: 'faceVideo',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */

@@ -373,7 +373,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
           <Stat label="Call" value={f.toCall} color={C.good} />
           <Stat label={t('Pot odds')} value={pct(f.potOdds, 1)} color={C.info} />
           <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
-          <Stat label={t('Aposta')} value={pct(f.betPct)} color={C.text} />
+          <Stat label="Bet" value={pct(f.betPct)} color={C.text} />
           <Stat label="V:B" value={ratio(f.vb)} color={C.warn} />
           {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} locked={rangeLocked} /> : null}
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
@@ -383,7 +383,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
       ) : view.heroBet ? (
         <>
           <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
-            {t('HERO APOSTA')}
+            {t('HERO FAZ BET')}
             <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> {pct(view.heroBet.pct)} {t('do pote')}</Text>
           </Text>
           <Stat label="Bluff BE" value={pct(view.heroBet.bluffBE, 1)} color={C.accent} />

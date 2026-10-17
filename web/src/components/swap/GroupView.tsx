@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Mark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import type { Locale } from '@/lib/i18n';
+import { formatMoney, intlTag, numberTag, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
 import { groupNet, minTransfers, type PublicGroup } from '@/lib/swap-group-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
-import { AccountsInApp, AddEntry, EntryRow, PrivateLink, Top } from './SwapView';
+import { AccountsInApp, AddEntry, EntryRow, payment, PrivateLink, Top } from './SwapView';
 import '@/app/landing.css';
 import '@/components/live/live.css';
 import './swap.css';
@@ -64,10 +64,14 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
     const tok = k ?? readLocal<string>(`swapg:${id}`);
     setToken(tok);
     setInviteKey(i ?? readLocal<string>(`swapg-invite:${id}`));
+    // The name this browser used last time (here or in another swap) is picked already: joining is one tap.
+    const mine = readLocal<string>('swap:name')?.trim().toLowerCase();
+    const seat = mine ? initial.seats.find((x) => !x.confirmedAt && x.name.trim().toLowerCase() === mine) : undefined;
+    if (seat) setPick(seat.seat);
     if (tok) load(tok);
     track('share_viewed', { kind: 'swap', swapId: id });
     if (ref) writeLocal('invite', ref);
-  }, [id, ref, load]);
+  }, [id, ref, load, initial.seats]);
 
   useEffect(() => {
     if (gone) return;
@@ -80,12 +84,10 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
     };
   }, [gone, load, token]);
 
-  const fmt = new Intl.NumberFormat(locale === 'pt' ? 'de-DE' : 'en-GB', { maximumFractionDigits: 2 });
-  const money = (n: number) => {
-    const a = fmt.format(Math.abs(n));
-    return locale === 'pt' ? `${n < 0 ? '−' : ''}${a}${t.currency}` : `${n < 0 ? '−' : ''}${t.currency}${a}`;
-  };
-  const when = (iso: number) => new Date(iso).toLocaleString(locale === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  // Same formats as the pair page, in all four languages.
+  const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
+  const money = (n: number) => formatMoney(n, t.currency, locale);
+  const when = (iso: number) => new Date(iso).toLocaleString(intlTag(locale), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   async function send(url: string, init: RequestInit, onToken?: (tok: string) => void) {
     setBusy(true);
@@ -109,6 +111,7 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
     pick !== null &&
     send(`/api/swap-groups/${encodeURIComponent(id)}/claim`, { method: 'POST', body: JSON.stringify({ seat: pick, invite: inviteKey }) }, (tok) => {
       writeLocal(`swapg:${id}`, tok);
+      writeLocal('swap:name', name(pick));
       setToken(tok);
     });
 
@@ -201,14 +204,23 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
           <p className="live-label">{c.settleTitle}</p>
           {transfers.length ? (
             transfers.map((x) => (
-              <p key={`${x.from}-${x.to}`} className="sw-transfer">
-                <span>{c.pays(name(x.from), name(x.to))}</span>
-                <b>{money(x.amount)}</b>
-              </p>
+              <div key={`${x.from}-${x.to}`} className="sw-transfer-row">
+                <p className="sw-transfer">
+                  <span>{c.pays(name(x.from), name(x.to))}</span>
+                  <b>{money(x.amount)}</b>
+                </p>
+                {/* Mine to pay: one tap records it, for everyone. */}
+                {x.from === you && !someoneLeft ? (
+                  <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swap-groups/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: payment(Math.round(x.amount * 100) / 100, x.to) }) })}>
+                    {c.paidNow(money(x.amount))}
+                  </button>
+                ) : null}
+              </div>
             ))
           ) : (
             <p className="live-big sw-dim">{results.length ? c.groupSquare : c.square}</p>
           )}
+          {transfers.some((x) => x.from === you) && !someoneLeft ? <p className="sw-hint">{c.paidNowHint}</p> : null}
         </section>
       ) : null}
 
@@ -264,7 +276,7 @@ export function GroupView({ locale, initial, accounts: initialAccounts, invite: 
       ) : null}
 
       {ready && accounts ? (
-        <section className="live-cta" id="baixar">
+        <section className="live-cta sw-accounts" id="baixar">
           <Mark size={36} />
           <p>{c.groupConfirmedCta}</p>
           <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />

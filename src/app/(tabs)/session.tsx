@@ -3,33 +3,39 @@
 // are linked to it and keep its stack up to date.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
-import { blankSession, SessionForm } from '@/components/SessionForm';
+import { blankSession, firstSession, SessionForm } from '@/components/SessionForm';
 import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
+import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
 import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
 import { FestivalItem, PlannedNow } from '@/components/FestivalItem';
-import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
+import { sessionFromEvent, sessionName } from '@/components/useStartEvent';
+import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
-import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
+import { eventDay } from '@/poker/festivals';
+import { updatePlan } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
+import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -65,10 +71,14 @@ function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
   );
 }
 
-function LevelAlarm({ s }: { s: Session }) {
+function LevelAlarm({ s, onDue }: { s: Session; onDue: () => void }) {
   const now = useTick(1000);
   const nextAt = nextLevelAt(s, now);
   const levelDue = !!nextAt && nextAt <= now;
+  // A tournament's level goes up by itself when the clock runs out (see levelsDue); cash just shows it.
+  useEffect(() => {
+    if (levelDue && s.kind === 'mtt') onDue();
+  }, [levelDue, s.kind, onDue]);
   const color = levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted;
   return (
     <Row gap={4} style={{ marginTop: 2 }}>
@@ -99,9 +109,18 @@ function useBarHeight(): [number, (e: LayoutChangeEvent) => void] {
   return [h, (e) => setH(Math.ceil(e.nativeEvent.layout.height))];
 }
 
-function confirm(title: string, body: string, ok: () => void) {
-  if (Platform.OS === 'web') ok();
-  else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: t('Sim'), onPress: ok }]);
+/** One-tap stack updates: what an orbit of blinds costs, and the usual swings. */
+function stackQuick(s: Session): { label: string; value: number }[] {
+  const unit = Math.max(1, s.sb || 1);
+  const round = (v: number) => Math.max(0, Math.round(v / unit) * unit);
+  const antes = s.anteType === 'none' ? 0 : s.anteType === 'all' ? s.ante * s.tableSize : s.ante;
+  const orbit = s.sb + s.bb + antes;
+  return [
+    { label: t('−1 órbita'), value: round(s.stack - orbit) },
+    { label: '−10%', value: round(s.stack * 0.9) },
+    { label: '+10%', value: round(s.stack * 1.1) },
+    { label: '×2', value: s.stack * 2 },
+  ];
 }
 
 export default function SessionScreen() {
@@ -115,14 +134,38 @@ export default function SessionScreen() {
   // The tab is for starting a session: one festival row only when it's on or a week away (design/simplificar.md).
   const near = coming.find((f) => soon(f, today));
   const next = coming.find((f) => f !== near);
+  // Today's festival tournaments, for the form's chips (Day 2s carry on from "Por continuar").
+  const todays = useMemo(
+    () =>
+      coming
+        .flatMap((f) => f.events.filter((e) => !e.day2 && eventDay(e) === today).map((e) => ({ f, e })))
+        .sort((a, b) => a.e.start.localeCompare(b.e.start))
+        .slice(0, 8),
+    [coming, today],
+  );
 
   const startRef = useRef<(() => void) | null>(null);
   const [bar, onBarLayout] = useBarHeight();
   // "Como chegas?" between Começar agora and the clock, unless turned off.
   const [arriving, setArriving] = useState<Session | null>(null);
+  // Once a day is enough (answered or skipped): a second flight or a cash game after the tournament starts straight away.
+  // The very first session doesn't ask either: the trial offer already follows it.
+  const askedToday = !sessions.length || sessions.some((x) => dayKey(x.startedAt) === today);
+  // First session ever: game and stakes from the first-run answers, so nothing needs typing.
+  const [plays, setPlays] = useState<string | null>(null);
+  useEffect(() => {
+    if (sessions.length) return;
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((raw) => setPlays(raw ? ((JSON.parse(raw) as { plays?: string | null }).plays ?? null) : null))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const begin = (s: Session) => {
     tap('success');
     saveSession(s);
+    // Started from a today chip: the festival plan knows, for re-entries and Day 2.
+    const hit = todays.find(({ e }) => sessionName(e) === s.name && e.buyIn === s.buyIn);
+    if (hit) updatePlan(hit.f.id, (p) => ({ ...p, picked: p.picked.includes(hit.e.id) ? p.picked : [...p.picked, hit.e.id], sessions: { ...p.sessions, [hit.e.id]: s.id } }));
     track('session_started', { kind: s.kind });
     // The next session goes to the same bankroll.
     if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
@@ -182,13 +225,24 @@ export default function SessionScreen() {
           )}
         </ListGroup>
         <SessionForm
-          initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
+          key={plays ?? ''}
+          initial={{
+            ...((!sessions.length && firstSession(plays, defaultBankroll.currency, settings.defaultTableSize)) ||
+              blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize)),
+            format: sessions[0]?.format,
+            bankrollId: defaultBankroll.id,
+          }}
           bankrolls={bankrolls}
           recentNames={recentNames}
           recentVenues={recentVenues}
+          today={todays.map(({ f, e }) => {
+            const { name, venue, currency, buyIn, stack, levelMinutes, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
+            const bankroll = bankrolls.find((b) => b.currency === f.currency);
+            return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
+          })}
           submitLabel={t('Começar agora')}
           submitRef={startRef}
-          onSubmit={(s) => (settings.mindAsk === false ? begin(s) : setArriving(s))}
+          onSubmit={(s) => (settings.mindAsk === false || askedToday ? begin(s) : setArriving(s))}
         />
       </Screen>
       {/* Pinned above the tab bar: the form is longer than the screen, starting should not need a scroll. */}
@@ -241,10 +295,11 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
     setShownFor(s);
     if (s) setMind(s.mind);
   }
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={!!s} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
-        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md, maxHeight: '92%' }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md, maxHeight: '92%' }}>
           <SheetHeader title={t('Antes de começar')} onClose={onClose} />
           <ScrollView contentContainerStyle={{ gap: S.md }} keyboardShouldPersistTaps="handled">
             <MindBefore value={mind} onChange={setMind} />
@@ -268,6 +323,24 @@ function Live({ s }: { s: Session }) {
   const [ending, setEnding] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
+  const [more, setMore] = useState(false);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const scrollToEnd = useRef(false);
+  // What tournament mode already knows fills the form: players left is your place, its payout plus bounties the prize.
+  const startEnding = () => {
+    if (mtt) {
+      const tr = s.tourney;
+      const place = tr?.left || 0;
+      const prize = (place && tr?.payouts?.[place - 1]) || 0;
+      setFinish({ cashOut: prize + (tr?.bounties || 0), place, field: tr?.entries || 0 });
+    } else {
+      // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
+      setFinish((f) => ({ ...f, cashOut: s.stack }));
+    }
+    setEnding(true);
+    // The form opens at the bottom of a long screen: bring it up once it's laid out.
+    scrollToEnd.current = true;
+  };
   const [moods, setMoods] = useState<string[]>([]);
   const [softAsk, askNotify] = useNotifySoftAsk();
   const paused = isPaused(s);
@@ -293,6 +366,10 @@ function Live({ s }: { s: Session }) {
     }
     save({ levelMinutes, levelStartedAt: undefined });
   };
+  const levelUp = () => {
+    const p = levelsDue(s);
+    if (p) save(p);
+  };
   const togglePause = () => {
     tap();
     const now = Date.now();
@@ -300,12 +377,28 @@ function Live({ s }: { s: Session }) {
     else save({ breaks: [...s.breaks, { start: now }] });
   };
 
+  // No "Are you sure?": it happens at once with "Anular" for a few seconds, which is quicker at the table and as safe.
+  const [undo, setUndo] = useState<{ title: string; prev: Partial<Session> } | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const timer = setTimeout(() => setUndo(null), 6000);
+    return () => clearTimeout(timer);
+  }, [undo]);
+  const undoable = (title: string, next: Partial<Session>) => {
+    tap('success');
+    const prev = Object.fromEntries(Object.keys(next).map((k) => [k, s[k as keyof Session]])) as Partial<Session>;
+    setUndo({ title, prev });
+    save(next);
+  };
   // The new chips go on the stack too (cash: the buy-in; tournament: a fresh starting stack), so nobody has to type it.
-  const rebuy = () =>
-    confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => {
-      const stack = mtt ? s.tourney?.startStack || first : s.stack + s.buyIn;
-      save({ entries: s.entries + 1, stack, stackLog: [...s.stackLog, { t: Date.now(), stack, level: s.level }] });
+  const rebuy = () => {
+    const stack = mtt ? s.tourney?.startStack || first : s.stack + s.buyIn;
+    undoable(`${mtt ? 'Re-entry' : 'Rebuy'} · ${money(s.buyIn, s.currency)}`, {
+      entries: s.entries + 1,
+      stack,
+      stackLog: [...s.stackLog, { t: Date.now(), stack, level: s.level }],
     });
+  };
 
   const [bar, onBarLayout] = useBarHeight();
   // First live session: a three-step tour of what matters between hands.
@@ -328,7 +421,7 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
-      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: bar + S.lg }}>
+      <Screen scrollRef={scrollRef} title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: bar + S.lg }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
           <PlayClock s={s} paused={paused} />
@@ -375,7 +468,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
             <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
-              <LevelAlarm s={s} />
+              <LevelAlarm s={s} onDue={levelUp} />
             </Pressable>
           </Card>
         </Row>
@@ -421,8 +514,9 @@ function Live({ s }: { s: Session }) {
               subtitle={money(s.buyIn, s.currency)}
               onPress={rebuy}
             />
-            {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={money(s.buyIn, s.currency)} onPress={() => confirm('Add-on?', `${money(s.buyIn, s.currency)}`, () => save({ addOn: (s.addOn || 0) + s.buyIn }))} /> : null}
+            {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={money(s.buyIn, s.currency)} onPress={() => undoable(`Add-on · ${money(s.buyIn, s.currency)}`, { addOn: (s.addOn || 0) + s.buyIn })} /> : null}
             {mtt ? <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} onPress={() => router.push('/chop')} /> : null}
+            {mtt ? <SwapLiveRow s={s} /> : null}
           </ListGroup>
         </Section>
 
@@ -434,24 +528,25 @@ function Live({ s }: { s: Session }) {
         {!ending ? (
           <View style={{ gap: S.sm }}>
             {mtt ? <Button title={t('Ensacar fichas (fim do dia {n})', { n: dayOf(s) })} kind="secondary" size="md" icon="bag-handle-outline" onPress={() => setPad('bag')} /> : null}
-            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => {
-                // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
-                if (!mtt) setFinish((f) => ({ ...f, cashOut: s.stack }));
-                setEnding(true);
-              }}
-            />
+            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={startEnding} />
           </View>
         ) : (
+          <View
+            key="ending"
+            onLayout={(e) => {
+              if (!scrollToEnd.current) return;
+              scrollToEnd.current = false;
+              const y = Math.max(0, e.nativeEvent.layout.y - S.lg);
+              // A frame later, once the taller content is in the scroll view.
+              requestAnimationFrame(() => scrollRef.current?.scrollTo({ y, animated: true }));
+            }}
+          >
           <Section title={t('Terminar sessão')}>
             <Card style={{ gap: S.md }}>
               <Row gap={S.sm}>
                 <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
                 {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                 {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
-              </Row>
-              <Row gap={S.sm}>
-                <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => save({ tips: tips || undefined })} />
-                <NumField label={t('Mãos jogadas')} value={s.handsDealt ?? 0} onChange={(handsDealt) => save({ handsDealt: handsDealt || undefined })} />
               </Row>
               <View style={{ gap: S.sm }}>
                 <T v="label">{t('Como correu')}</T>
@@ -461,8 +556,6 @@ function Live({ s }: { s: Session }) {
                   ))}
                 </View>
               </View>
-              {settings.mindAsk === false ? null : <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />}
-              <StakeFields s={s} onChange={save} />
               {(() => {
                 const end = { ...s, cashOut: finish.cashOut };
                 const owed = owedToBackers(end);
@@ -510,8 +603,21 @@ function Live({ s }: { s: Session }) {
                   }}
                 />
               </Row>
+              {/* Rarely needed at the table: out of the way of Guardar. */}
+              <Button kind="plain" size="sm" title={more ? t('Menos detalhes') : t('Mais detalhes')} iconRight={more ? 'chevron-up' : 'chevron-down'} haptic={false} onPress={() => setMore((m) => !m)} />
+              {more ? (
+                <View style={{ gap: S.md }}>
+                  <Row gap={S.sm}>
+                    <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => save({ tips: tips || undefined })} />
+                    <NumField label={t('Mãos jogadas')} value={s.handsDealt ?? 0} onChange={(handsDealt) => save({ handsDealt: handsDealt || undefined })} />
+                  </Row>
+                  {settings.mindAsk === false ? null : <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />}
+                  <StakeFields s={s} onChange={save} />
+                </View>
+              ) : null}
             </Card>
           </Section>
+          </View>
         )}
 
         <AmountPad
@@ -529,6 +635,8 @@ function Live({ s }: { s: Session }) {
           visible={pad === 'stack'}
           title={t('Stack atual')}
           bb={s.bb}
+          initial={s.stack}
+          quick={stackQuick(s)}
           onClose={() => setPad(null)}
           onDone={(v) => {
             setPad(null);
@@ -537,6 +645,20 @@ function Live({ s }: { s: Session }) {
         />
         <SinceStart s={s} />
       </Screen>
+      {undo ? (
+        <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: bar + S.sm }}>
+          <Banner
+            tone="info"
+            icon="checkmark-circle-outline"
+            title={undo.title}
+            action={t('Anular')}
+            onPress={() => {
+              save(undo.prev);
+              setUndo(null);
+            }}
+          />
+        </View>
+      ) : null}
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar} onLayout={onBarLayout}>
         <View ref={barRef} collapsable={false} style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
@@ -595,10 +717,11 @@ function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; valu
     setShownFor(visible);
     if (visible) setText(value);
   }
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
-        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
           <SheetHeader title={t('Nota da sessão')} onClose={onClose} />
           <Field value={text} onChangeText={setText} placeholder={t('A mesa, como te sentes, o que queres lembrar…')} multiline autoFocus inputStyle={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
           <Button title={t('Guardar')} icon="checkmark" onPress={() => onSave(text.trim())} />

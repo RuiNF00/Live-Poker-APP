@@ -146,6 +146,8 @@ test('a finished tournament asks for my result only in the swaps it belongs to, 
   assert.deepEqual(swapsForSession(all, main).map((s) => s.id), ['ser', 'ev']);
   const side = sess({ id: 'x', kind: 'mtt', name: '$1k Turbo', currency: '$', startedAt: t0 + D, endedAt: t0 + D + 5000 });
   assert.deepEqual(swapsForSession(all, side).map((s) => s.id), ['ser']);
+  // A session started from the festival plan is named per flight; the event swap still asks.
+  assert.deepEqual(swapsForSession(all, { ...main, name: '$10k Main Event · Flight 1B' }).map((s) => s.id), ['ser', 'ev']);
   // Played before the swap began, cash games and live sessions never ask.
   assert.deepEqual(swapsForSession(all, { ...main, startedAt: t0 - 3 * D }).map((s) => s.id), []);
   assert.deepEqual(swapsForSession(all, { ...main, kind: 'cash' }), []);

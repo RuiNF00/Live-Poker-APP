@@ -277,8 +277,12 @@ export default function NewHand() {
     router.back();
   };
 
-  const reads = useMemo(() => opponentStats(hands, store.players), [hands, store.players]);
-  const seen = useMemo(() => sessionsSeen(hands, store.players), [hands, store.players]);
+  // What we know about each opponent, for the seat sheet only. Worked out the
+  // first time a seat opens, not on every render: over years of hands it is
+  // the slowest thing on this screen, and saving a hand would redo it just
+  // before leaving.
+  const [known, setKnown] = useState<{ reads: ReturnType<typeof opponentStats>; seen: ReturnType<typeof sessionsSeen> } | null>(null);
+  if (seatEdit !== null && !known) setKnown({ reads: opponentStats(hands, store.players), seen: sessionsSeen(hands, store.players) });
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
@@ -476,7 +480,8 @@ export default function NewHand() {
                 <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
                   {t('Alguém entrou?')}
                 </T>
-                {autoSeats.map((i) => (
+                {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
+                {[...autoSeats].reverse().map((i) => (
                   <Chip key={i} label={displayName(hand, i, pos)} onPress={() => rewind(i)} />
                 ))}
               </ChipRow>
@@ -599,7 +604,8 @@ export default function NewHand() {
                         <CardRow cards={b} />
                       </Row>
                     ))}
-                  {r.result && !r.result.resolved && (
+                  {/* Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
+                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== 2)) && (
                     <View style={{ gap: 6 }}>
                       {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
                         <View key={key} style={{ gap: 6 }}>
@@ -698,8 +704,8 @@ export default function NewHand() {
         heroStack={hand.players[hand.hero].stack}
         bb={hand.game.bb}
         known={store.players}
-        stats={reads}
-        seen={seen}
+        stats={known?.reads}
+        seen={known?.seen}
         onClose={() => setSeatEdit(null)}
         reseat={
           seatEdit === null || seatEdit === hand.hero || hand.actions.length
