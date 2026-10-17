@@ -159,7 +159,7 @@ test('a $ deal stays in $ when the home currency is €', () => {
   const l = backerLedger('b1', [usd({ buyIn: 1000, cashOut: 30016 })], [], [], undefined, { table: fxTable, fallback: '€' });
   assert.equal(l.currency, '$');
   assert.equal(Math.round(l.balance), 15008);
-  const tot = stakingTotals([l], '€', fxTable, Date.UTC(2026, 9, 17));
+  const tot = stakingTotals([l], '€', fxTable, {}, Date.UTC(2026, 9, 17));
   assert.equal(tot.currency, '$');
   assert.equal(Math.round(tot.owe), 15008);
   assert.equal(tot.approx, false);
@@ -179,11 +179,11 @@ test("backers in different currencies add up in the home one at today's rate, or
   const a = { ...backerLedger('x', [], [], []), currency: '$', balance: 1250 };
   const b = { ...backerLedger('x', [], [], []), currency: '€', balance: 100 };
   const now = Date.UTC(2026, 9, 17);
-  const tot = stakingTotals([a, b], '€', fxTable, now);
+  const tot = stakingTotals([a, b], '€', fxTable, {}, now);
   assert.equal(tot.currency, '€');
   assert.equal(Math.round(tot.owe), 1100);
   assert.equal(tot.approx, true);
   assert.equal(tot.oweTo, 2);
-  const split = stakingTotals([a, b], '€', {}, now);
+  const split = stakingTotals([a, b], '€', {}, {}, now);
   assert.deepEqual(split.split?.map((x) => x.currency).sort(), ['$', '€']);
 });

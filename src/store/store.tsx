@@ -17,31 +17,14 @@ import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
-import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
+import { bankrollOf, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
-import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
+import { KEYS, SPECS, loadAll as readAll } from './boot';
+import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
 import { withSwaps, type Swap } from './swaps';
 import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
-
-const KEYS = {
-  settings: 'rl.settings.v1',
-  draft: 'rl.draft.v1',
-};
-
-const SPECS = {
-  hands: { index: 'rl.hands.v2', prefix: 'rl.hand.v2.', legacy: 'rl.hands.v1' },
-  sessions: { index: 'rl.sessions.v2', prefix: 'rl.session.v2.', legacy: 'rl.sessions.v1' },
-  players: { index: 'rl.players.v2', prefix: 'rl.player.v2.', legacy: 'rl.players.v1' },
-  bankrolls: { index: 'rl.bankrolls.v2', prefix: 'rl.bankroll.v2.' },
-  transfers: { index: 'rl.transfers.v2', prefix: 'rl.transfer.v2.' },
-  backers: { index: 'rl.backers.v1', prefix: 'rl.backer.v1.' },
-  packages: { index: 'rl.packages.v1', prefix: 'rl.package.v1.' },
-  payments: { index: 'rl.payments.v1', prefix: 'rl.payment.v1.' },
-  trips: { index: 'rl.trips.v1', prefix: 'rl.trip.v1.' },
-  backing: { index: 'rl.backing.v1', prefix: 'rl.backed.v1.' },
-} satisfies Record<string, CollectionSpec>;
 
 export function uid(prefix = ''): string {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -106,15 +89,6 @@ interface StoreValue {
 
 const Ctx = createContext<StoreValue | null>(null);
 
-async function load<T>(key: string, fallback: T): Promise<T> {
-  try {
-    const raw = await AsyncStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 let warned = false;
 /** Tell the player once per launch: a save that silently fails is lost work. */
 function storageFailed(e: unknown) {
@@ -133,36 +107,15 @@ function persist(key: string, value: unknown) {
 
 const kv = AsyncStorage as unknown as KV;
 
-function loadAll() {
-  const t0 = Date.now();
-  return Promise.all([
-    loadCollection<Hand>(kv, SPECS.hands),
-    loadCollection<Session>(kv, SPECS.sessions),
-    loadCollection<PlayerNote>(kv, SPECS.players),
-    loadCollection<Bankroll>(kv, SPECS.bankrolls),
-    loadCollection<Transfer>(kv, SPECS.transfers),
-    load<Settings>(KEYS.settings, DEFAULT_SETTINGS),
-    load<Hand | null>(KEYS.draft, null),
-    loadCollection<Backer>(kv, SPECS.backers),
-    loadCollection<StakePackage>(kv, SPECS.packages),
-    loadCollection<BackerPayment>(kv, SPECS.payments),
-    loadCollection<Trip>(kv, SPECS.trips),
-    loadCollection<BackedPlayer>(kv, SPECS.backing),
-  ]).then(([hands, sessions, players, bankrolls, transfers, settings, draft, backers, packages, payments, trips, backing]) => ({
-    hands,
-    sessions,
-    players,
-    bankrolls,
-    transfers,
-    settings,
-    draft,
-    backers,
-    packages,
-    payments,
-    trips,
-    backing,
-    ms: Date.now() - t0,
-  }));
+const loadAll = () => readAll(kv);
+
+/** Damaged values were set aside at launch: say so once, so nothing vanishes silently. */
+function quarantined(n: number) {
+  console.warn('[store] values moved to quarantine', n);
+  Alert.alert(
+    t('Alguns dados estavam danificados'),
+    t('{n} registo(s) não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n }),
+  );
 }
 
 // Start reading as soon as the bundle runs, in parallel with fonts and the
@@ -244,7 +197,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (boot ?? loadAll()).then((d) => {
       boot = null;
       if (!alive) return;
-      if (d.hands.problems + d.sessions.problems + d.players.problems) console.warn('[store] unreadable items skipped', d.hands.problems, d.sessions.problems, d.players.problems);
+      if (d.quarantined) quarantined(d.quarantined);
+      if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
       if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
       const w = {
         hands: createWriter(kv, SPECS.hands, d.hands.persisted, storageFailed),
@@ -270,7 +224,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (d.backing.persisted !== d.backing.items) w.backing.schedule(d.backing.items);
       if (d.transfers.persisted !== d.transfers.items) w.transfers.schedule(d.transfers.items);
       if (d.trips.persisted !== d.trips.items) w.trips.schedule(d.trips.items);
-      const st = { ...DEFAULT_SETTINGS, ...d.settings };
+      const st = d.settings;
       // Older data has no bankrolls: one per currency is made on first launch.
       const br = ensureBankrolls(d.bankrolls.items, d.sessions.items, st.currency);
       if (d.bankrolls.persisted !== br) w.bankrolls.schedule(br);
@@ -477,7 +431,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setHands(h.list);
       setSessions(s.list);
       setPlayers(p.list);
-      setBankrolls(br.list);
+      setBankrolls(dropUnusedAuto(br.list, b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }));
       setTransfers(tx.list);
       setBackers(bk.list);
       setPackages(mergeById(packages, b.packages ?? []).list);

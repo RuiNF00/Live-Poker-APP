@@ -45,8 +45,8 @@ export function ContextSheet({
             value={game.kind}
             onChange={(k) =>
               k === 'mtt'
-                ? set({ kind: 'mtt', anteType: game.anteType === 'none' ? 'bb' : game.anteType, ante: game.ante || game.bb })
-                : set({ kind: 'cash', anteType: 'none', ante: 0, stage: undefined })
+                ? set({ kind: 'mtt', anteType: game.anteType === 'none' ? 'bb' : game.anteType, ante: game.ante || game.bb, straddles: undefined, straddleFrom: undefined, bombPot: undefined })
+                : set({ kind: 'cash', anteType: 'none', ante: 0, stage: undefined, level: undefined, playersLeft: undefined })
             }
           />
 

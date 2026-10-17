@@ -5,11 +5,15 @@
 // profit is what it was worth when it was won. Net worth uses the latest rate.
 
 import { balanceOf } from './bankroll-math';
+import { CURRENCY_INFO, isoOf } from './currencies';
 import { ownCost, profit } from './session-math';
 import type { Bankroll, Session, Transfer } from './types';
 
-/** Currency symbols the app uses, as ISO codes. */
-export const ISO: Record<string, string> = { '€': 'EUR', $: 'USD', '£': 'GBP', R$: 'BRL', CHF: 'CHF', HK$: 'HKD', A$: 'AUD' };
+/** Stored currency values, as ISO codes. */
+export const ISO: Record<string, string> = Object.fromEntries(Object.entries(CURRENCY_INFO).map(([k, v]) => [k, v.code]));
+
+/** Rates the player typed for currencies the ECB doesn't publish: ISO code → units per 1 EUR. */
+export type ManualRates = Record<string, number>;
 
 /** 'YYYY-MM-DD' → ISO code → units of that currency per 1 EUR. EUR itself is never stored. */
 export type RateTable = Record<string, Record<string, number>>;
@@ -48,15 +52,15 @@ export function eurRate(table: RateTable, iso: string, day: string, days = daysW
   return table[days[lo]][iso];
 }
 
-/** Rate from one currency symbol to another on a day; null without rates for either. */
-export function rate(table: RateTable, from: string, to: string, ts: number): number | null {
+/** Rate from one currency to another on a day (ECB, else a typed rate); null without one for either. */
+export function rate(table: RateTable, from: string, to: string, ts: number, manual: ManualRates = {}): number | null {
   if (from === to) return 1;
-  const a = ISO[from];
-  const b = ISO[to];
+  const a = ISO[from] ?? isoOf(from);
+  const b = ISO[to] ?? isoOf(to);
   if (!a || !b) return null;
   const day = dayKey(ts);
-  const ra = eurRate(table, a, day);
-  const rb = eurRate(table, b, day);
+  const ra = eurRate(table, a, day) ?? (manual[a] > 0 ? manual[a] : null);
+  const rb = eurRate(table, b, day) ?? (manual[b] > 0 ? manual[b] : null);
   return ra && rb ? rb / ra : null;
 }
 
@@ -88,6 +92,7 @@ export function homeTotals(
   table: RateTable,
   range: { from?: number; to?: number },
   now = Date.now(),
+  manual: ManualRates = {},
 ): HomeTotals {
   const missing = new Set<string>();
   const used = new Set<string>();
@@ -95,7 +100,7 @@ export function homeTotals(
   for (const b of d.bankrolls) {
     const bal = balanceOf({ bankrollId: b.id }, d.sessions, d.transfers, d.bankrolls).balance;
     if (!bal) continue;
-    const r = rate(table, b.currency, home, now);
+    const r = rate(table, b.currency, home, now, manual);
     if (r === null) {
       missing.add(b.currency);
       continue;
@@ -109,7 +114,7 @@ export function homeTotals(
   let mttProfit = 0;
   for (const s of d.sessions) {
     if (!s.endedAt || (range.from !== undefined && s.startedAt < range.from) || (range.to !== undefined && s.startedAt > range.to)) continue;
-    const r = rate(table, s.currency, home, s.startedAt);
+    const r = rate(table, s.currency, home, s.startedAt, manual);
     if (r === null) {
       missing.add(s.currency);
       continue;

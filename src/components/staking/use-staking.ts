@@ -22,11 +22,12 @@ export function useStaking() {
   const table = useRates(since);
   return useMemo(() => {
     const pk = packageStates(sessions, packages);
-    const fx = { table, fallback: home };
+    const manual = settings.fxManual ?? {};
+    const fx = { table, fallback: home, manual };
     const ledgers = new Map<string, BackerLedger>(backers.map((b) => [b.id, backerLedger(b.id, sessions, packages, payments, pk, fx)]));
-    const totals = stakingTotals([...ledgers.values()], home, table);
+    const totals = stakingTotals([...ledgers.values()], home, table, manual);
     return { pk, ledgers, totals };
-  }, [sessions, packages, payments, backers, table, home]);
+  }, [sessions, packages, payments, backers, table, home, settings.fxManual]);
 }
 
 /** A total that may be split across currencies: "1 200€" or "300€ + 14 508$". */

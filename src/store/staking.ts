@@ -2,7 +2,7 @@
 // the balance between you. Pure, so it can be tested; screens call these with
 // the store's lists.
 
-import { rate, type RateTable } from './fx-math';
+import { rate, type ManualRates, type RateTable } from './fx-math';
 import { cost, pieceOf, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
@@ -146,7 +146,7 @@ export function backerLedger(
   packages: StakePackage[],
   payments: BackerPayment[],
   pk = packageStates(sessions, packages),
-  fx: { table: RateTable; fallback: string } = { table: {}, fallback: '' },
+  fx: { table: RateTable; fallback: string; manual?: ManualRates } = { table: {}, fallback: '' },
 ): BackerLedger {
   const pkgOf = new Map(packages.map((p) => [p.id, p]));
   const rows: BackerLedgerRow[] = [];
@@ -166,7 +166,7 @@ export function backerLedger(
   const k = (r: BackerLedgerRow) => {
     const c = r.session.currency;
     if (!c || c === currency) return 1;
-    const x = rate(fx.table, c, currency, r.session.startedAt);
+    const x = rate(fx.table, c, currency, r.session.startedAt, fx.manual);
     if (x === null) missing.add(c);
     return x ?? 1;
   };
@@ -212,7 +212,7 @@ function dealCurrency(rows: BackerLedgerRow[]): string | undefined {
  * deal's currency; with more than one currency, the totals are also given in
  * `home` at today's rate (`approx`), or per currency when a rate is missing.
  */
-export function stakingTotals(ledgers: BackerLedger[], home: string, table: RateTable, now = Date.now()) {
+export function stakingTotals(ledgers: BackerLedger[], home: string, table: RateTable, manual: ManualRates = {}, now = Date.now()) {
   const per = new Map<string, { owe: number; owed: number }>();
   let oweTo = 0;
   let owedBy = 0;
@@ -231,7 +231,7 @@ export function stakingTotals(ledgers: BackerLedger[], home: string, table: Rate
   let owed = 0;
   let convertible = true;
   for (const x of byCurrency) {
-    const r = rate(table, x.currency, cur, now);
+    const r = rate(table, x.currency, cur, now, manual);
     if (r === null) convertible = false;
     owe += x.owe * (r ?? 1);
     owed += x.owed * (r ?? 1);

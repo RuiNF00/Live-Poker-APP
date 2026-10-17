@@ -20,13 +20,14 @@ import { uid, useStore } from '@/store/store';
 import type { BackerLedgerRow } from '@/store/staking';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
+import { withPro } from '@/components/ProGate';
 
 function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')) {
   if (Platform.OS === 'web') ok();
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: okLabel, style: 'destructive', onPress: ok }]);
 }
 
-export default function BackerScreen() {
+function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sessions, backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
   const { pk, ledgers } = useStaking();
@@ -315,3 +316,5 @@ export default function BackerScreen() {
     </>
   );
 }
+
+export default withPro('staking', 'Staking', BackerScreen);

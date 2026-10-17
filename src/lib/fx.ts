@@ -6,11 +6,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useSyncExternalStore } from 'react';
 
-import { dayKey, ISO, latestDay, mergeRates, type RateTable } from '@/store/fx-math';
+import { ECB_CODES } from '@/store/currencies';
+import { dayKey, latestDay, mergeRates, type RateTable } from '@/store/fx-math';
 
 const KEY = 'rl.fx.v1';
 const API = 'https://api.frankfurter.dev/v1';
-const SYMBOLS = Object.values(ISO).filter((c) => c !== 'EUR');
+const SYMBOLS = ECB_CODES;
 
 interface Cache {
   rates: RateTable;
