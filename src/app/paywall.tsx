@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, formatPrice, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
@@ -159,7 +159,7 @@ export default function Paywall() {
                 title={t('Anual')}
                 big={annual.priceString}
                 unit={t('/ano')}
-                line={t('{price} por mês', { price: formatPrice(perMonth(annual.price), annual.currency, locale) })}
+                line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
                 tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, '−' + saving + '%']}
                 compact={compact}
               />

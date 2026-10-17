@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePro } from '@/billing/pro';
+import { LOCAL_PRO, usePro } from '@/billing/pro';
 import { manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
@@ -225,7 +225,7 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               onPress={() => (pro.isPro ? router.push('/cancel') : manageSubscription())}
             />
             <ListItem

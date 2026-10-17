@@ -88,11 +88,6 @@ export type ProFeature = keyof typeof PRO_ONLY;
 export const FREE = {
   /** New hands saved per calendar day. The 4th waits as a draft, never lost. */
   handsPerDay: 3 as number | null,
-  /**
-   * Link shares per day. Kept unlimited on purpose: every share puts the
-   * brand in front of friends who don't have the app yet.
-   */
-  sharesPerDay: null as number | null,
   /** Bankroll date and stake filters ("Sempre" and every stake stay free). */
   bankrollFilters: false,
   /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
@@ -101,7 +96,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -180,10 +175,6 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
-  },
-  shares: {
-    title: t('Já partilhaste a mão de hoje'),
-    body: t('Com Pro, partilhas sem limite.'),
   },
   stats: {
     title: t('Conhece o teu bankroll'),
@@ -310,6 +301,20 @@ export function formatPrice(n: number, currency: string, locale: string): string
   } catch {
     return `${n.toFixed(2)} ${currency}`;
   }
+}
+
+/**
+ * A derived amount (the annual plan per month) written exactly like the store's own price
+ * string: same symbol, side and decimal mark. Two prices on one screen never disagree
+ * ("$199.99" next to "US$16.67"). Falls back to Intl when the string has no number.
+ */
+export function priceLike(priceString: string, n: number, currency: string, locale: string): string {
+  const num = priceString.match(/\d(?:[\d.,\s\u00a0\u202f']*\d)?/)?.[0];
+  if (!num) return formatPrice(n, currency, locale);
+  const dec = /[.,](\d{1,2})$/.exec(num);
+  const digits = dec ? dec[1].length : 0;
+  const amount = n.toFixed(digits);
+  return priceString.replace(num, dec && num[num.length - digits - 1] === ',' ? amount.replace('.', ',') : amount);
 }
 
 export function annualSavingPct(monthly: number, annual: number): number {

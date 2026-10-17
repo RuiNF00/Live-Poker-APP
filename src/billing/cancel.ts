@@ -2,6 +2,8 @@
 // button always on screen. Rules from the Mobbin notes: no "Outro", what the
 // player would lose shown with their own numbers, never a blocked exit.
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { totals } from '@/store/session-math';
 
 export type CancelReason = 'notPlaying' | 'bankroll' | 'noSubscription' | 'feature' | 'slow' | 'otherApp';
@@ -51,4 +53,23 @@ export function scrubNote(note: string): string {
     .replace(/\+?\d[\d\s().-]{6,}\d/g, '…')
     .trim()
     .slice(0, 120);
+}
+
+/** The retention discount and the one-time Pro each show once: a second visit to cancel goes straight to the store. */
+export type CancelOffer = 'discount' | 'lifetime';
+const OFFERS_SEEN = 'rl.cancelOffers.v1';
+
+export async function offersSeen(): Promise<CancelOffer[]> {
+  try {
+    const raw = await AsyncStorage.getItem(OFFERS_SEEN);
+    const v: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(v) ? v.filter((x): x is CancelOffer => x === 'discount' || x === 'lifetime') : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function markOfferSeen(offer: CancelOffer): Promise<void> {
+  const seen = await offersSeen();
+  if (!seen.includes(offer)) await AsyncStorage.setItem(OFFERS_SEEN, JSON.stringify([...seen, offer])).catch(() => {});
 }
