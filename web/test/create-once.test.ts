@@ -6,6 +6,8 @@ import { SAMPLE_TOURNAMENT_HAND } from '@livepoker/hand-format';
 
 // A create sent twice (a retry after a lost answer) makes one link or one comment (migration 340000).
 vi.mock('server-only', () => ({}));
+// The routes purge now and then with after(), which needs a request scope the test doesn't have.
+vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: () => {} }));
 vi.mock('@/lib/abuse', async (orig) => ({ ...(await orig<typeof import('@/lib/abuse')>()), limited: async () => false }));
 process.chdir(mkdtempSync(path.join(tmpdir(), 'once-')));
 delete process.env.SUPABASE_URL;
