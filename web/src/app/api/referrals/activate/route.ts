@@ -27,7 +27,8 @@ export async function POST(req: Request) {
     const ok = !rc || !revenueCatConfigured() || (await isNewSubscriber(rc));
     const booked = ok ? await r.b.activate(installId) : [];
     await grantPending(r.b, [...booked, ...(await r.b.pending(installId))]);
-    return json({ status: await r.b.status(installId), booked: ok });
+    // Nothing is booked without the friend's RevenueCat user, so the app must keep retrying.
+    return json({ status: await r.b.status(installId), booked: !!rc && ok });
   } catch {
     return json({ error: 'unavailable' }, 503);
   }
