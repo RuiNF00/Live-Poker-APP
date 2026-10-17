@@ -38,7 +38,7 @@ import type { Hand, Street } from '@/poker/types';
 export default function HandScreen() {
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   const { id, c: fresh } = useLocalSearchParams<{ id: string; c?: string }>();
-  const { hands, saveHand, deleteHand, settings } = useStore();
+  const { hands, saveHand, deleteHand, settings, setSettings } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
   const isSample = id === 'sample';
@@ -95,7 +95,7 @@ export default function HandScreen() {
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
         <Banner tone="info" icon="sparkles-outline" title={t('Mão de exemplo')} body={t('É assim que as tuas mãos ficam guardadas.')} />
         <HandHeader hand={hand} inBB={settings.inBB} />
-        <Replayer hand={hand} initialInBB={settings.inBB} autoPlay source="sample" />
+        <Replayer hand={hand} initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} autoPlay source="sample" />
         <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
         <Section title={t('Partilhar')}>
           <Button
@@ -325,7 +325,7 @@ ${link}`;
         <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} />
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
-        <Replayer hand={hand} source="own" initialInBB={settings.inBB} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />

@@ -924,7 +924,7 @@ export function NumField({ label, value, onChange, suffix }: { label: string; va
   );
 }
 
-export function SearchField({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle> }) {
+export function SearchField({ value, onChange, placeholder, style, autoFocus }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle>; autoFocus?: boolean }) {
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.md, paddingHorizontal: 12, borderWidth: 1, borderColor: C.fieldBorder, minHeight: 44, gap: 8 }, style]}>
       <Ionicons name="search" size={17} color={C.muted} />
@@ -932,6 +932,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         maxFontSizeMultiplier={CONTROL_SCALE}
         placeholderTextColor={C.muted}
         selectionColor={C.accent}

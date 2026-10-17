@@ -45,12 +45,15 @@ export function Replayer({
   streetNotes,
   source,
   icm = false,
+  onInBB,
 }: {
   hand: Hand;
   /** Where the hand came from, for the replay_opened event. Previews (welcome) pass nothing and aren't counted. */
   source?: 'own' | 'sample' | 'shared';
   initialInBB?: boolean;
   autoPlay?: boolean;
+  /** Called when the player switches chips/BB, so the next hand opens the same way. */
+  onInBB?: (inBB: boolean) => void;
   /** Tournament hands: the ICM estimate (Settings, off by default). */
   icm?: boolean;
   /** Kept for callers; the timeline replaces the old action list. */
@@ -277,7 +280,10 @@ export function Replayer({
         <Ctrl icon="chevron-forward" label={t('Seguinte')} onPress={() => go(k + 1)} />
         <Ctrl icon="play-forward" label={t('Próxima street')} onPress={nextStreet} />
         <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={() => setSpeed((s) => (s + 1) % SPEEDS.length)} />
-        <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => setInBB((b) => !b)} />
+        <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => {
+            setInBB(!inBB);
+            onInBB?.(!inBB);
+          }} />
         <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} toggle onPress={() => setReveal((x) => !x)} />
       </View>
 
