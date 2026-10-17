@@ -34,13 +34,14 @@ export default function Welcome() {
   const play = PLAYS.find((p) => p.key === a.plays);
   const volume = VOLUMES.find((v) => v.key === a.volume);
   const at = STEPS[step];
+  const [skipped, setSkipped] = useState(false);
   // One event per screen reached, so the funnel shows where people stop.
   useEffect(() => track('onboarding_step', { step: at, index: step }), [at, step]);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const finish = () => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
-    track('onboarding_step', { step: 'done', index: STEPS.length, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
+    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
     router.back();
     // After the modal is gone, so the paywall slides up over the home screen.
     // Pro already, or invited (their Pro days come with the first hand): no paywall to end on.
@@ -54,6 +55,7 @@ export default function Welcome() {
   // At the table, or skipping: close with no paywall. The questions don't block anyone.
   const close = (path: 'mesa' | 'saltar') => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
+    setSkipped(true);
     track('onboarding_step', { step: path === 'mesa' ? 'table' : 'skip', index: step, path });
     router.back();
     if (path === 'mesa') setTimeout(() => router.push('/hand/new'), 350);

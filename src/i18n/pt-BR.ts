@@ -1289,8 +1289,6 @@ const ptBR: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
   'O que corre mal, o que falta ou o que mudavas': 'O que dá errado, o que falta ou o que você mudaria',
-  'Aviso antes de cobrar': 'Aviso antes da cobrança',
-  'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante o teste grátis, avisamos você antes da cobrança.',
   'Estou à mesa: registar uma mão já': 'Estou na mesa: registrar uma mão agora',
 };
 
