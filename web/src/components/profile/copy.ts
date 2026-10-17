@@ -79,7 +79,7 @@ const ptBR: typeof pt = {
   ctaTitle: 'Você também joga live?',
   ctaBody: 'Registre suas mãos e sessões em segundos, revise no replayer e crie seu perfil.',
   notFound: 'Perfil não encontrado',
-  metaDescription: (name: string) => `Mãos e sessões de pôquer live de ${name} no Sweatbook.`,
+  metaDescription: (name: string) => `Mãos e sessões de poker ao vivo de ${name} no Sweatbook.`,
 };
 
 const es: typeof pt = {
