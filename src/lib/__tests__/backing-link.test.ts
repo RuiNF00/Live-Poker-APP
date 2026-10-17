@@ -85,3 +85,15 @@ test('statement says what the app says: its ledger (rates, festival pieces to co
   assert.equal(st.rows.find((r) => r.c === 1000)?.cu, undefined);
   assert.equal(decodeStatement(encodeStatement(st))?.rows.find((r) => r.cu)?.cu, '€');
 });
+
+test('a running session carries its stack for the backer; a finished one never does', () => {
+  const running = mk({ endedAt: undefined, stack: 182500, bb: 3000, level: 14, stakes: [{ backerId: 'b1', share: 20, markup: 1 }] });
+  const done = mk({ cashOut: 0, stakes: [{ backerId: 'b1', share: 20, markup: 1 }] });
+  const st = buildStatement(backer, 'Rui', '€', [running, done], [], [], 1);
+  assert.deepEqual(st.rows.find((r) => !r.e)!.lv, { s: 182500, bb: 3000, lv: 14 });
+  assert.equal(st.rows.find((r) => r.e)!.lv, undefined);
+  // Through the link and its checks: kept while it runs, dropped on a finished row.
+  const back = checkStatement(JSON.parse(JSON.stringify({ ...st, rows: st.rows.map((r) => ({ ...r, lv: { s: 1, bb: 1 } })) })))!;
+  assert.deepEqual(back.rows.find((r) => !r.e)!.lv, { s: 1, bb: 1 });
+  assert.equal(back.rows.find((r) => r.e)!.lv, undefined);
+});

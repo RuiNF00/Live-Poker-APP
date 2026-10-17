@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import { decodeStatement, type Statement } from '@/lib/backing';
+import { checkStatement, decodeStatement, encodeStatement, type Statement } from '@/lib/backing';
+import { openSealed, sealedRef, type Sealed } from '@/lib/sealed';
 import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
 import { appHref, useAndroid } from '@/lib/app-link';
 import { readLocal, writeLocal } from '@/lib/local';
@@ -15,9 +16,13 @@ import '@/app/landing.css';
 import '@/components/live/live.css';
 import './backing.css';
 
+/** How often an open fixed link asks for the player's latest (only while the tab is in view). */
+const POLL_MS = 10000;
+
 /**
  * A backer's statement. The numbers come from the URL fragment, read here in the
- * browser, so they never reach the server (not even in its logs).
+ * browser, so they never reach the server (not even in its logs). A fixed link
+ * (#s=<id>.<key>) fetches its page sealed and opens it here with the key from the fragment.
  */
 export function BackingView({ locale, invite }: { locale: Locale; invite: string | null }) {
   const c = backingCopy(locale);
@@ -26,24 +31,77 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
   const android = useAndroid();
   // "Recebi" / "Paguei" for this statement: when they told the player, kept on this phone only.
   const [told, setTold] = useState<number | null>(null);
+  // A fixed link: the player turned it off, and when the page last changed.
+  const [gone, setGone] = useState(false);
+  const [fixed, setFixed] = useState(false);
 
   useEffect(() => {
-    const read = () => {
-      const x = decodeStatement(window.location.hash);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let seq = 0;
+    // A fixed link's "Recebi" is for the balance it showed: a new balance asks again.
+    const toldKey = (x: Statement, sealed: boolean) => `bk-told:${x.id}:${sealed ? `b${x.bal}` : x.at}`;
+    const show = (x: Statement | null, sealed: boolean) => {
       setSt(x);
-      setData(x ? window.location.hash.slice(1) : '');
-      setTold(x ? readLocal<number>(`bk-told:${x.id}:${x.at}`) : null);
+      setData(x ? (sealed ? encodeStatement(x) : window.location.hash.slice(1)) : '');
+      setTold(x ? readLocal<number>(toldKey(x, sealed)) : null);
+    };
+    const load = async (ref: { id: string; key: string }, n: number) => {
+      // A tab in the background asks nothing; coming back to it reloads at once (below).
+      if (document.visibilityState === 'hidden') return;
+      try {
+        const res = await fetch(`/api/backer-pages/${encodeURIComponent(ref.id)}`, { cache: 'no-store' });
+        if (n !== seq) return;
+        if (res.status === 404) {
+          setGone(true);
+          return show(null, true);
+        }
+        if (res.ok) {
+          const j = (await res.json()) as { sealed: Sealed | null };
+          const x = j.sealed ? checkStatement(await openSealed(j.sealed, ref.id, ref.key)) : null;
+          if (n !== seq) return;
+          // Not filled yet (the player's phone sends it a moment after the link): keep waiting.
+          if (x || j.sealed) show(x, true);
+        }
+      } catch {
+        // No signal: what's on screen stays, and the next poll tries again.
+      }
+      if (n === seq) timer = setTimeout(() => void load(ref, n), POLL_MS);
+    };
+    const read = () => {
+      clearTimeout(timer);
+      const n = ++seq;
+      const ref = sealedRef(window.location.hash);
+      setFixed(!!ref);
+      setGone(false);
+      if (ref) void load(ref, n);
+      else show(decodeStatement(window.location.hash), false);
     };
     read();
+    // Back to the tab: the latest at once, not at the next poll.
+    const back = () => {
+      if (document.visibilityState === 'visible' && sealedRef(window.location.hash)) read();
+    };
     window.addEventListener('hashchange', read);
+    document.addEventListener('visibilitychange', back);
     track('share_viewed', { kind: 'backer_statement' });
     if (invite) writeLocal('invite', invite);
-    return () => window.removeEventListener('hashchange', read);
+    return () => {
+      seq++;
+      clearTimeout(timer);
+      window.removeEventListener('hashchange', read);
+      document.removeEventListener('visibilitychange', back);
+    };
   }, [invite]);
 
   const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
   const money = (n: number, cur: string) => formatMoney(n, cur, locale);
   const date = (t: number) => new Date(t).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' });
+  // Today: the time; before: the day.
+  const when = (t: number) =>
+    new Date(t).toDateString() === new Date().toDateString()
+      ? new Date(t).toLocaleTimeString(intlTag(locale), { hour: '2-digit', minute: '2-digit' })
+      : date(t);
+  const chips = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
   // The venue's own clock ('2026-11-03T12:00'), shown as is wherever the backer is.
   const venueTime = (s: string) => {
     const [d, hm] = s.split('T');
@@ -65,8 +123,8 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
       <main className="live">
         <Top />
         <section className="live-head">
-          <h1>{c.invalid}</h1>
-          <p className="live-sub">{c.invalidBody}</p>
+          <h1>{gone ? c.gone : c.invalid}</h1>
+          <p className="live-sub">{gone ? c.goneBody : c.invalidBody}</p>
         </section>
       </main>
     );
@@ -80,7 +138,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
     const text = st.bal > 0 ? c.receivedMsg(owed, date(st.at)) : c.paidMsg(owed, date(st.at));
     const mark = () => {
       const t = Date.now();
-      writeLocal(`bk-told:${st.id}:${st.at}`, t);
+      writeLocal(`bk-told:${st.id}:${fixed ? `b${st.bal}` : st.at}`, t);
       setTold(t);
     };
     if (navigator.share) {
@@ -102,7 +160,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
       <section className="live-head">
         <p className="live-eyebrow">{c.eyebrow}</p>
         <h1>{c.title(st.pl)}</h1>
-        <p className="live-sub">{c.sent(date(st.at))}</p>
+        <p className="live-sub">{fixed ? c.updated(when(st.at)) : c.sent(date(st.at))}</p>
       </section>
 
       <section className="live-card live-result">
@@ -115,6 +173,18 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
               <a className="bk-follow" href={`/live/${encodeURIComponent(now.l)}${invite ? `?r=${encodeURIComponent(invite)}` : ''}`}>
                 {c.follow}
               </a>
+            ) : null}
+            {now.lv ? (
+              <span className="bk-stack">
+                {[
+                  c.stack(chips.format(now.lv.s), now.lv.bb ? new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 }).format(now.lv.s / now.lv.bb) : ''),
+                  now.lv.lv ? c.level(now.lv.lv) : '',
+                  now.lv.dy ? c.day(now.lv.dy) : '',
+                  now.lv.bg ? c.bagged : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
             ) : null}
           </p>
         ) : st.nx ? (

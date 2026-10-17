@@ -1572,6 +1572,10 @@ const ptBR: Record<string, string> = {
   'Termina a {date}': 'Termina em {date}',
   'Renova a {date}': 'Renova em {date}',
   'Verifica a rede e tenta outra vez daqui a pouco.': 'Verifique a conexão e tente de novo daqui a pouco.',
+  // Backer's fixed link
+  'Desligar o link de {name}?': 'Desativar o link de {name}?',
+  'A página deixa de abrir. Se voltares a enviar as contas, vai um link novo.': 'A página deixa de abrir. Se você enviar as contas de novo, vai um link novo.',
+  '{name} tem um link fixo que se atualiza sozinho.': '{name} tem um link fixo que atualiza sozinho.',
   'Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, recebemos os dois {pct}% no primeiro mês do Pro. {url}': 'Uso o Sweatbook para salvar minhas mãos de pôquer ao vivo. Experimenta: se você salvar a primeira mão, nós dois recebemos {pct}% no primeiro mês do Pro. {url}',
   'Não deu para abrir o desconto': 'Não deu para abrir o desconto',
   'Tenta outra vez daqui a pouco. O desconto continua guardado aqui.': 'Tente de novo daqui a pouco. O desconto continua guardado aqui.',

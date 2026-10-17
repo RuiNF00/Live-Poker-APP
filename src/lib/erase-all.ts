@@ -7,13 +7,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Hand } from '@/poker/types';
 import { clearOffers, storedOffers } from '@/store/action-offer';
-import type { Session } from '@/store/types';
+import type { Backer, Session } from '@/store/types';
 
 import { lockSupported, saveLock } from './app-lock';
 import { loadCloud, queueCloudDelete, rememberedCode, saveCloud } from './cloud-backup';
 import { dropAllDocs } from './docs';
 import { keysToErase } from './erase-core';
 import { runErasers } from './erase-hooks';
+import { queueBackerPageDelete } from './backer-page';
 import { queueLiveDelete } from './live-cleanup';
 import { notifications } from './lock-screen/reminder';
 import { queueAgreementDelete } from './offer-api';
@@ -25,9 +26,11 @@ import { dropAllVoiceNotes } from './voice-note';
 export { onEraseAll } from './erase-hooks';
 
 /** Step 1, before the store empties: queue the delete of every public copy. */
-export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'shareToken'>[]; sessions: Pick<Session, 'live'>[] }) {
+export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'shareToken'>[]; sessions: Pick<Session, 'live'>[]; backers?: Pick<Backer, 'page'>[] }) {
   for (const h of d.hands) await forgetHandShare(h).catch(() => {});
   for (const s of d.sessions) if (s.live) queueLiveDelete(s.live);
+  // Backers' fixed links (sealed: the server can't read them, but they go anyway).
+  for (const b of d.backers ?? []) if (b.page) queueBackerPageDelete(b.page);
   // Action-package links: one private page per backer. (Statement links keep their
   // numbers in the URL fragment, so there's nothing of them on the server to delete.)
   for (const o of await storedOffers()) for (const l of o.lines) if (l.remote) queueAgreementDelete(l.remote);

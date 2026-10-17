@@ -24,3 +24,4 @@ psql -q -d "$DB" -f tests/packs_test.sql
 psql -q -d "$DB" -f tests/comment_push_test.sql
 psql -q -d "$DB" -f tests/create_once_test.sql
 psql -q -d "$DB" -f tests/comment_author_erase_test.sql
+psql -q -d "$DB" -f tests/backer_pages_test.sql

@@ -29,6 +29,16 @@ export interface StatementRow {
   l?: string;
   /** The session's currency, when it isn't the statement's: c and o are in it. */
   cu?: string;
+  /** While it runs: the stack, the big blind, the level, the day of a multi-day event, bagged. */
+  lv?: StatementLive;
+}
+
+export interface StatementLive {
+  s: number;
+  bb: number;
+  lv?: number;
+  dy?: number;
+  bg?: 1;
 }
 
 /** "O ano com {backer}": one row per package (n '' = outside a package), in the statement's currency. */
@@ -75,6 +85,17 @@ function fromUtf8(b: number[]): string {
     else if (x < 0xf0) c = ((x & 15) << 12) | ((b[i++] & 63) << 6) | (b[i++] & 63);
     else c = ((x & 7) << 18) | ((b[i++] & 63) << 12) | ((b[i++] & 63) << 6) | (b[i++] & 63);
     s += String.fromCodePoint(c);
+  }
+  return s;
+}
+
+/** The statement as link data (the app's encodeStatement): what a sealed page hands to "Guardar na Sweatbook". */
+export function encodeStatement(st: Statement): string {
+  const b = new TextEncoder().encode(JSON.stringify(st));
+  let s = '';
+  for (let i = 0; i < b.length; i += 3) {
+    const n = (b[i] << 16) | ((b[i + 1] ?? 0) << 8) | (b[i + 2] ?? 0);
+    s += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + (i + 1 < b.length ? B64[(n >> 6) & 63] : '') + (i + 2 < b.length ? B64[n & 63] : '');
   }
   return s;
 }
@@ -130,6 +151,15 @@ export function checkStatement(json: unknown): Statement | null {
       if (typeof x.p === 'string' && x.p) row.p = str(x.p, 40);
       if (typeof x.l === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(x.l)) row.l = x.l;
       if (typeof x.cu === 'string' && x.cu) row.cu = str(x.cu, 4);
+      const lv = x.lv as Record<string, unknown> | undefined;
+      const stack = lv && typeof lv === 'object' && row.e === null ? num(lv.s, 0, MAX) : null;
+      if (lv && stack !== null) {
+        row.lv = { s: stack, bb: num(lv.bb, 0, MAX) ?? 0 };
+        const level = num(lv.lv, 1, 1000), day = num(lv.dy, 1, 30);
+        if (level !== null) row.lv.lv = level;
+        if (day !== null) row.lv.dy = day;
+        if (lv.bg) row.lv.bg = 1;
+      }
       rows.push(row);
     }
     const st: Statement = {

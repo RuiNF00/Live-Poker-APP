@@ -135,3 +135,11 @@
   font-size: 13px;
   color: var(--muted, #9aa49e);
 }
+
+/* A fixed link's running session: the stack as the player last logged it. */
+.bk-stack {
+  display: block;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}

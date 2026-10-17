@@ -3255,6 +3255,11 @@ const en: Record<string, string> = {
   'Termina a {date}': 'Ends on {date}',
   'Renova a {date}': 'Renews on {date}',
   'Verifica a rede e tenta outra vez daqui a pouco.': 'Check your connection and try again in a moment.',
+  // Backer's fixed link
+  'Desligar o link de {name}?': "Turn off {name}'s link?",
+  'A página deixa de abrir. Se voltares a enviar as contas, vai um link novo.': 'The page stops opening. If you send the statement again, a new link goes out.',
+  '{name} tem um link fixo que se atualiza sozinho.': '{name} has a fixed link that updates by itself.',
+  'Ver o que {name} vê': 'See what {name} sees',
   'Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, recebemos os dois {pct}% no primeiro mês do Pro. {url}': 'I use Sweatbook to save my live poker hands. Try it: if you save your first hand, we both get {pct}% off our first month of Pro. {url}',
   'Não deu para abrir o desconto': 'Couldn\'t open the discount',
   'Tenta outra vez daqui a pouco. O desconto continua guardado aqui.': 'Try again in a moment. The discount stays saved here.',

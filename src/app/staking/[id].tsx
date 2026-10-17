@@ -2,31 +2,32 @@
 // a piece of, and the payments that settle it.
 
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { Avatar } from '@/components/Avatar';
+import { ensureBackerPage, pushBackerPage, statementFor } from '@/components/staking/BackerPage';
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
-import { buildStatement, statementUrl } from '@/lib/backing-link';
+import { statementUrl } from '@/lib/backing-link';
+import { backerPageUrl, queueBackerPageDelete } from '@/lib/backer-page';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
 import { shareRef } from '@/lib/referrals';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
-import { FESTIVALS } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
-import { nextEventFor, useOffers } from '@/store/action-offer';
-import { getPlan } from '@/store/festival-plan';
+import { useOffers } from '@/store/action-offer';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
 import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
-import type { Session, StakePackage } from '@/store/types';
+import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
 import { ReadOnlyNote, useProReadOnly, withPro } from '@/components/ProGate';
 
@@ -126,11 +127,22 @@ function BackerScreen() {
     // It carries only this backer's own pieces (see lib/backing-link).
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
-    const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined, l);
-    // "When": the next festival event they have a piece of, at the top of their page.
-    const nx = nextEventFor(FESTIVALS, offers, backer.id, (id) => getPlan(id).sessions);
-    if (nx) st.nx = nx;
-    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: withLang(statementUrl(st, ref), variant) })].join('\n');
+    const data = { sessions, packages, payments, offers, home: settings.currency };
+    let next: Backer = { ...backer, shareKey: key };
+    let url = '';
+    // Their fixed link: sent once, it keeps itself current (BackerPage). The year summary stays a one-off.
+    if (!withYear)
+      try {
+        const b = await ensureBackerPage(next, saveBacker);
+        next = b;
+        // Filled before the message goes, so the backer never opens an empty page.
+        if (await pushBackerPage(b.page, statementFor(b, settings.nickname || '', l, data))) url = withLang(backerPageUrl(b.page, ref), variant);
+        else next = { ...b, page: undefined };
+      } catch {
+        // No signal: the one-off link works anyway (its numbers ride in the link itself).
+      }
+    if (!url) url = withLang(statementUrl(statementFor({ ...next, shareKey: key }, settings.nickname || '', l, data, undefined, withYear && yr ? yr : undefined), ref), variant);
+    const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url })].join('\n');
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       notice(t('Texto copiado'));
@@ -140,9 +152,21 @@ function BackerScreen() {
       if (r.action === Share.dismissedAction) return;
     }
     // Keep a record of when they were sent the statement and what it said.
-    saveBacker({ ...backer, shareKey: key, reminders: [...(backer.reminders ?? []), { at: Date.now(), balance: l.balance }].slice(-20) });
+    saveBacker({ ...next, shareKey: key, reminders: [...(backer.reminders ?? []), { at: Date.now(), balance: l.balance }].slice(-20) });
     track('link_shared', { channel: withYear ? 'backer_year' : 'backer_statement' });
   };
+
+  // Takes the fixed link down for the backer too; the next "Enviar contas" makes a new one.
+  const unlink = () =>
+    confirm(
+      t('Desligar o link de {name}?', { name: backer.name }),
+      t('A página deixa de abrir. Se voltares a enviar as contas, vai um link novo.'),
+      () => {
+        if (backer.page) queueBackerPageDelete(backer.page);
+        saveBacker({ ...backer, page: undefined });
+      },
+      t('Desligar'),
+    );
 
   type Hist = { kind: 'pay'; at: number; p: (typeof pays)[number] } | { kind: 'sent'; at: number; balance: number };
   const history: Hist[] = [
@@ -190,6 +214,18 @@ function BackerScreen() {
             </View>
           )}
           {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={gate(() => setPaying(true))} />}
+          {backer.page ? (
+            // Their fixed link: the player sees exactly what the backer sees, and can take it down.
+            <View style={{ alignSelf: 'stretch', alignItems: 'center', gap: 2 }}>
+              <T v="tiny" style={{ textAlign: 'center' }}>
+                {t('{name} tem um link fixo que se atualiza sozinho.', { name: backer.name })}
+              </T>
+              <Row gap={S.xs}>
+                <Button size="sm" kind="ghost" title={t('Ver o que {name} vê', { name: backer.name })} onPress={() => void WebBrowser.openBrowserAsync(withLang(backerPageUrl(backer.page!), variant)).catch(() => {})} />
+                <Button size="sm" kind="ghost" title={t('Desligar')} onPress={unlink} />
+              </Row>
+            </View>
+          ) : null}
         </Card>
 
         <Section title={t('Como chegámos aqui')}>

@@ -6,6 +6,7 @@
 // the amounts stay between the two of them. Only this backer's own pieces go out:
 // no notes, no hands, no other backers' names or amounts.
 
+import { dayOf, isBagged } from '@/store/multi-day';
 import { backerLedger, packageStates, type BackerLedger, type YearStatement } from '@/store/staking';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
 import { BRAND } from '@/theme';
@@ -37,6 +38,16 @@ export interface StatementRow {
   l?: string;
   /** The session's currency, when it isn't the statement's: c and o are in it. */
   cu?: string;
+  /** While it runs: the stack, the big blind, the level, the day of a multi-day event, bagged. */
+  lv?: StatementLive;
+}
+
+export interface StatementLive {
+  s: number;
+  bb: number;
+  lv?: number;
+  dy?: number;
+  bg?: 1;
 }
 
 /** "O ano com {backer}": one row per package (n '' = outside a package), in the statement's currency. */
@@ -104,6 +115,12 @@ export function buildStatement(
       const p = r.stake.packageId ? pkgName.get(r.stake.packageId) : undefined;
       if (p) row.p = p.slice(0, 40);
       if (s.live?.id && !s.endedAt) row.l = s.live.id;
+      if (!s.endedAt && s.stack > 0) {
+        row.lv = { s: s.stack, bb: s.bb };
+        if (s.level) row.lv.lv = s.level;
+        if (s.kind === 'mtt' && dayOf(s) > 1) row.lv.dy = dayOf(s);
+        if (isBagged(s)) row.lv.bg = 1;
+      }
       if (s.currency && s.currency !== currency) row.cu = s.currency.slice(0, 4);
       return row;
     }),
@@ -207,6 +224,15 @@ export function checkStatement(json: unknown): Statement | null {
       if (typeof x.p === 'string' && x.p) row.p = str(x.p, 40);
       if (typeof x.l === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(x.l)) row.l = x.l;
       if (typeof x.cu === 'string' && x.cu) row.cu = str(x.cu, 4);
+      const lv = x.lv as Record<string, unknown> | undefined;
+      const stack = lv && typeof lv === 'object' && row.e === null ? num(lv.s, 0, MAX) : null;
+      if (lv && stack !== null) {
+        row.lv = { s: stack, bb: num(lv.bb, 0, MAX) ?? 0 };
+        const level = num(lv.lv, 1, 1000), day = num(lv.dy, 1, 30);
+        if (level !== null) row.lv.lv = level;
+        if (day !== null) row.lv.dy = day;
+        if (lv.bg) row.lv.bg = 1;
+      }
       rows.push(row);
     }
     const st: Statement = {

@@ -9,6 +9,7 @@ import { AppState } from 'react-native';
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
 import { useRates } from '@/lib/fx';
+import { queueBackerPageDelete } from '@/lib/backer-page';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { notice } from '@/lib/notice';
@@ -392,6 +393,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
   const saveBacker = useCallback((b: Backer) => setBackers((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
   const deleteBacker = useCallback((id: string) => {
+    // Their fixed link goes too: the page stops opening for them.
+    const page = backers.find((x) => x.id === id)?.page;
+    if (page) queueBackerPageDelete(page);
     setBackers((l) => l.filter((x) => x.id !== id));
     setPackages((l) => l.filter((x) => x.backerId !== id));
     setPayments((l) => l.filter((x) => x.backerId !== id));
@@ -403,7 +407,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           : s,
       ),
     );
-  }, []);
+  }, [backers]);
   const savePackage = useCallback((p: StakePackage) => setPackages((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
   const deletePackage = useCallback((id: string) => {
     setPackages((l) => l.filter((x) => x.id !== id));
@@ -493,7 +497,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const eraseAll = useCallback(async () => {
     // Loaded on demand: the delete path pulls in cloud crypto, documents and voice notes.
     const { eraseLocal, eraseRemote } = await import('@/lib/erase-all');
-    await eraseRemote({ hands, sessions: rawSessions });
+    await eraseRemote({ hands, sessions: rawSessions, backers });
     if (draftTimer.current) clearTimeout(draftTimer.current);
     draftTimer.current = null;
     draftRef.current = null;
@@ -529,7 +533,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setQuarantine([]);
     setSettingsState(DEFAULT_SETTINGS);
     setDraftKey(draftKeyOf(null));
-  }, [hands, rawSessions]);
+  }, [hands, rawSessions, backers]);
 
   const activeSession = useMemo(
     () => sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0] ?? null,
