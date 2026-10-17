@@ -24,5 +24,5 @@ eas submit --platform ios --profile testflight --path sweatbook.ipa
 
 ## Notes
 - Export compliance: see `review-precheck.md` (the backup uses AES in the app, so the answer isn't "exempt").
-- Without `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, the paywall shows "Ainda não disponível". That's expected until RevenueCat is set up. Then add the key to the `env` of the `testflight` profile (it's public).
+- Since #106 the `production` and `testflight` builds **fail** in `eas-build-pre-install` unless `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (`appl_…`) and `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (`goog_…`) exist as EAS environment variables in the **production** environment. After creating the RevenueCat apps (store thread, with the step 24 key), run with EXPO_TOKEN set: `eas env:create --environment production --name EXPO_PUBLIC_REVENUECAT_IOS_KEY --value appl_… --visibility plaintext --non-interactive` and the same for the Android key. Both keys are public SDK keys. On a real build, if offerings fail to load, the paywall shows a retry message, not fallback prices (App Review 2.1).
 - The build number goes up automatically (`autoIncrement`, `appVersionSource: remote`).
