@@ -51,6 +51,7 @@ export async function upload(c: CloudState, data: BackupData): Promise<CloudStat
     body: seal(JSON.stringify(data), enc, Crypto.getRandomBytes(12)),
   });
   if (res.status === 413) throw new Error('too_big');
+  if (res.status === 507) throw new Error('quota');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const next = { ...c, lastAt: Date.now() };

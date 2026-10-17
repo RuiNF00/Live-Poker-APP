@@ -26,6 +26,7 @@ const ERR: Record<string, string> = {
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia é grande demais para a nuvem. Exporta para ficheiro.',
+  quota: 'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.',
   disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
 };
 const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);

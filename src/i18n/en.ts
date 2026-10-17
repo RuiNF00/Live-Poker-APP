@@ -376,6 +376,7 @@ const en: Record<string, string> = {
   'Sem markup': 'No markup',
   'Despesas ({currency})': 'Expenses ({currency})',
   'Sem ligação. Tenta outra vez quando tiveres rede.': 'No connection. Try again when you have signal.',
+  'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.': 'Our server is full right now. Your hands are safe on this phone; we will try again later.',
   'Não encontrámos nenhuma cópia com esse código.': 'We found no backup with that code.',
   'Este código não dá acesso a esta cópia.': "This code doesn't open this backup.",
   'A cópia é grande demais para a nuvem. Exporta para ficheiro.': 'The backup is too big for the cloud. Export it to a file.',
