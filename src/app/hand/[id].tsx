@@ -28,6 +28,7 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
+import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
@@ -146,8 +147,7 @@ export default function HandScreen() {
     const channel = to ?? (quiz ? 'challenge' : 'link');
     const link = shareLink(shareId, channel, { quiz, ref });
     track('link_shared', { channel, share_id: shareId, ref });
-    const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
-    const head = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}`;
+    const head = handShareText(hand.game.name, quiz ? 'challenge' : 'link');
     const msg = `${head}
 ${link}`;
     if (to === 'x') {
