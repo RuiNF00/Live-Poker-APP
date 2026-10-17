@@ -31,3 +31,9 @@ The beta plan gives each tester 1 year of Pro on launch day. That is a separate 
 | Beta testers | each tester, on launch day (programa-beta.md) | one per iPhone tester, 1 year free | one per Android tester, longest free period allowed (up to 1 year) |
 
 All batches are free Pro only, never tied to money or a contest, and nobody is contacted until Rui decides. One code per person; keep the CSVs in `Projetos-Claude/sweatbook-chaves/`, never in the repo or the chat.
+
+## Invite discount (Rui, 17 Oct; #314)
+The invite reward is now 50% off the first month of Pro for both players, usable for 72 hours (max 10 friends a year), instead of 7 Pro days. Not free Pro, so it is separate from the batches above.
+- **App Store** (store thread, step 15 API key): `sweatbook_pro_monthly` → Offer codes → one-time-use codes, **pay as you go, 50% off for 1 month**, eligibility **New subscribers only** (Security P2: the codes are transferable, so never existing or lapsed subscribers). Generate a large pool (e.g. 1,000; refill when it runs low) and save the CSV to `Projetos-Claude/sweatbook-chaves/codigos-convite.csv`. Rui imports it into Supabase table `invite_offer_codes` (column `code`; checklist step 48). The server hands one code to each reward.
+- **Google Play** (store thread, step 22 service account, Android Publisher API `monetization.subscriptions.basePlans.offers`): on the monthly base plan, a **developer-determined** offer with tag `sweatbook-invite-50`, one phase of 50% off for 1 month. The app applies it only when the server says the player has an open reward.
+- `EXPO_PUBLIC_APPLE_APP_ID` (the numeric App Store app ID, after step 14) in EAS production lets the redeem page pre-fill the code.
