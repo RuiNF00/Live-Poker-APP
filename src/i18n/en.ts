@@ -1893,6 +1893,7 @@ const en: Record<string, string> = {
   'Torneio a decorrer': 'Tournament running',
   'Sessão a decorrer': 'Session running',
   'torneios': 'tournaments',
+  'Níveis e intervalos': 'Levels and breaks',
   'Intervalo': 'Break',
   'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos numa linha própria: Break 15': 'One level per line: blinds, ante and minutes. E.g. 100/200/200 40. Breaks on a line of their own: Break 15',
   'Nível acabou · intervalo de {n} min': 'Level over · {n} min break',

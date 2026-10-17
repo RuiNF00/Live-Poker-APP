@@ -45,7 +45,7 @@ export function setup(n: N) {
       handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
     });
     if (Platform.OS === 'android') {
-      await n.setNotificationChannelAsync(CHANNEL, { name: t('Subida de nível'), importance: n.AndroidImportance.HIGH, vibrationPattern: [0, 250, 150, 250] });
+      await n.setNotificationChannelAsync(CHANNEL, { name: t('Níveis e intervalos'), importance: n.AndroidImportance.HIGH, vibrationPattern: [0, 250, 150, 250] });
       // The running session: quiet, and on a locked phone only "Sweatbook" with the contents hidden (no stack, no blinds).
       await n.setNotificationChannelAsync(SESSION_CHANNEL, { name: t('Sessão a decorrer'), importance: n.AndroidImportance.LOW, lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE });
     }
@@ -89,7 +89,7 @@ export async function syncLevelReminder(s: Session | null, now = Date.now()): Pr
     const { title, body } = levelUpMessage(s);
     await n.scheduleNotificationAsync({
       identifier: ID,
-      content: { title, body, data: { url: LEVEL_UP_URL }, sound: true },
+      content: { title, body, data: { url: LEVEL_UP_URL }, sound: true, interruptionLevel: 'timeSensitive' },
       trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
     });
     // The structure's next break: a call back a couple of minutes before play starts again.
@@ -98,7 +98,7 @@ export async function syncLevelReminder(s: Session | null, now = Date.now()): Pr
     if (b && back > now + 5_000) {
       await n.scheduleNotificationAsync({
         identifier: BREAK_ID,
-        content: { ...breakEndMessage(s, b), data: { url: LEVEL_UP_URL }, sound: true },
+        content: { ...breakEndMessage(s, b), data: { url: LEVEL_UP_URL }, sound: true, interruptionLevel: 'timeSensitive' },
         trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: back, channelId: CHANNEL },
       });
     }

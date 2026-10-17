@@ -2397,6 +2397,7 @@ const es: Record<string, string> = {
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estaban guardados aparte se volvieron a abrir y están de vuelta en la app.',
   // Tournament breaks
   'torneios': 'torneos',
+  'Níveis e intervalos': 'Niveles y descansos',
   'Intervalo': 'Descanso',
   'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos numa linha própria: Break 15': 'Un nivel por línea: ciegas, ante y minutos. Ej.: 100/200/200 40. Los descansos en su propia línea: Break 15',
   'Nível acabou · intervalo de {n} min': 'Nivel terminado · descanso de {n} min',
