@@ -9,6 +9,7 @@ export const BRAND = {
   tagline: t('O teu caderno de póquer live'),
   webUrl: (process.env.EXPO_PUBLIC_WEB_URL as string | undefined) ?? 'https://sweatbook.poker',
   scheme: 'sweatbook',
+  supportEmail: 'support@sweatbook.poker',
 };
 
 export const C = {
@@ -21,6 +22,8 @@ export const C = {
   surface3: '#223029',
   border: 'rgba(238,242,239,0.08)',
   borderStrong: 'rgba(238,242,239,0.16)',
+  // Outline of things you type in or switch: 3:1 against the background.
+  fieldBorder: 'rgba(238,242,239,0.30)',
   hairline: 'rgba(238,242,239,0.06)',
   // Text: primary, secondary, tertiary.
   text: '#F1F4F2',
@@ -50,14 +53,16 @@ export const C = {
   railLine: 'rgba(238,242,239,0.16)',
   chip: '#F4F1EA',
   // Actions
-  fold: '#5C6A64',
+  // Light enough to read on the felt (4.5:1); folded seats still read as out.
+  fold: '#8FA19A',
   check: '#9DB3AA',
   call: '#4ADE80',
   bet: '#F5B83D',
   raise: '#F5B83D',
   allin: '#FF5A5F',
   // Cards (4-colour deck reads faster at a glance)
-  suit: { s: '#1B1D1C', h: '#D93A3A', d: '#2F6FE0', c: '#1F9D57' } as Record<string, string>,
+  // Dark enough for small pips on ivory (4.5:1 or better).
+  suit: { s: '#1B1D1C', h: '#C02E2E', d: '#2560C8', c: '#17804A' } as Record<string, string>,
 };
 
 /** One colour per seat position, so a position reads at a glance anywhere. */

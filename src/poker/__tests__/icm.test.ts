@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { chipChop, icm } from '../icm';
+import { chipChop, icm, icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix } from '../icm';
 
 const close = (a: number[], b: number[], eps = 0.01) => a.forEach((x, i) => assert.ok(Math.abs(x - b[i]) < eps, `${x} vs ${b[i]}`));
 
@@ -27,4 +27,43 @@ test('equities always sum to the prize pool', () => {
 test('chip chop locks the lowest payout', () => {
   close(chipChop([3000, 1000], [100, 60]), [90, 70]);
   close(chipChop([500, 300, 200], [500, 300, 200]), [200 + 400 * 0.5, 200 + 400 * 0.3, 200 + 400 * 0.2]);
+});
+
+test('payout presets sum to 1 and a satellite pays every seat the same', () => {
+  for (const p of ['satellite', 'flat', 'standard', 'top'] as const)
+    for (const n of [1, 3, 9, 20]) assert.ok(Math.abs(payoutPreset(p, n).reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  close(payoutPreset('satellite', 4), [0.25, 0.25, 0.25, 0.25], 1e-9);
+  assert.ok(payoutPreset('top', 9)[0] > payoutPreset('standard', 9)[0]);
+  assert.ok(payoutPreset('flat', 9)[0] < payoutPreset('standard', 9)[0]);
+});
+
+test('winner-take-all has no risk premium: ICM equity is chips', () => {
+  const r = icmCall({ stacks: [500, 500, 1000], payouts: [100], hero: 0, villain: 1, pot: 500, call: 500 });
+  assert.ok(Math.abs(r.riskPremium) < 1e-9);
+  assert.ok(Math.abs(r.chipEq - 0.5) < 1e-9);
+});
+
+test('on the bubble a call needs more than pot odds', () => {
+  // 4 left, 3 paid: two big stacks, a short one. Calling off between the big stacks is expensive.
+  const m = riskPremiumMatrix([1000, 1000, 1000, 200], [50, 30, 20]);
+  assert.ok(Number.isNaN(m[0][0]));
+  assert.ok(m[0][1] > 0.05, `rp ${m[0][1]}`);
+  // The short stack risks little of its own equity: its premium against a big stack is smaller.
+  assert.ok(m[3][0] < m[0][1]);
+});
+
+test('a busted player takes the next place down', () => {
+  const r = icmCall({ stacks: [0, 0, 1000], payouts: [70, 30], hero: 0, villain: 1, pot: 1000, call: 0 });
+  // Hero folds with nothing behind: villain wins the pot, hero's 0 chips take 3rd (unpaid).
+  assert.equal(r.evFold, 0);
+});
+
+test('PKO: a covered bounty lowers the equity needed', () => {
+  // 1 000 buy-in, 20 000 starting stack, villain's bounty 500: 500 × 0.5 × 20 = 5 000 chips.
+  assert.equal(pkoBountyChips(500, 20000, 1000), 5000);
+  const plain = pkoRequiredEquity(10000, 25000, 0);
+  const pko = pkoRequiredEquity(10000, 25000, 5000);
+  assert.equal(plain, 0.4);
+  assert.ok(Math.abs(pko - 1 / 3) < 1e-9);
+  assert.equal(pkoBountyChips(0, 20000, 1000), 0);
 });

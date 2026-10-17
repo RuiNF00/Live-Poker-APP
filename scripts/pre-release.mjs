@@ -29,7 +29,13 @@ const steps = [
   },
   { name: 'Configuração Expo válida', cmd: 'npx expo config --type public --json > /dev/null' },
   { name: 'iOS: modos em segundo plano e textos de permissão', cmd: 'node scripts/check-ios-plist.mjs' },
-  ...(quick ? [] : [{ name: 'Bundle exporta sem erros', cmd: `npx expo export --platform web --output-dir ${out}` }]),
+  { name: 'Atualizações over-the-air (EAS Update)', cmd: 'node scripts/check-updates.mjs' },
+  ...(quick
+    ? []
+    : [
+        { name: 'Bundle exporta sem erros', cmd: `npx expo export --platform web --output-dir ${out}` },
+        { name: 'Tamanho do bundle dentro do limite', cmd: `node scripts/check-bundle.mjs ${out}` },
+      ]),
 ];
 
 const results = [];

@@ -10,7 +10,7 @@ import { ScrollView, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { Button, Card, Chip, ChipRow, Divider, NumField, Row, Section, Segmented, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { money } from '@/poker/format';
+import { decimal, money } from '@/poker/format';
 import { cashStats, mttStats, project } from '@/store/results-math';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -79,7 +79,7 @@ export default function VarianceScreen() {
                 ? t('{n} sessões de cash, {h} h: {rate}/h com desvio padrão de {sd}/h.', { n: cash.sessions, h: Math.round(cash.hours), rate: money(Math.round(cash.hourly), cur), sd: money(Math.round(cash.sdHour), cur) })
                 : t('Com 3 sessões de cash terminadas calculamos o teu win rate e desvio padrão.')
               : mtt
-                ? t('{n} torneios: ROI {roi}, buy-in médio {bi}, desvio padrão de {sd} buy-ins.', { n: mtt.tournaments, roi: `${Math.round(mtt.roi)}%`, bi: money(Math.round(mtt.avgBuyIn), cur), sd: mtt.sdBuyIns.toFixed(1) })
+                ? t('{n} torneios: ROI {roi}, buy-in médio {bi}, desvio padrão de {sd} buy-ins.', { n: mtt.tournaments, roi: `${Math.round(mtt.roi)}%`, bi: money(Math.round(mtt.avgBuyIn), cur), sd: decimal(mtt.sdBuyIns) })
                 : t('Com 5 torneios terminados calculamos o teu ROI e desvio padrão.')}
           </T>
           {mine ? <Button size="sm" kind={isPro ? 'secondary' : 'outline'} icon={isPro ? 'download-outline' : 'lock-closed'} title={isPro ? t('Usar os meus números') : t('Usar os meus números com Pro')} onPress={useMine} style={{ alignSelf: 'flex-start' }} /> : null}

@@ -9,14 +9,17 @@ import { Avatar } from '@/components/Avatar';
 import { OpponentStatsRow } from '@/components/OpponentStats';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
+import { sampleColor, SmallSample } from '@/components/SmallSample';
+import { usePaged } from '@/components/ShowMore';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
 import type { Hand } from '@/poker/types';
-import { handCounts, opponentStats, SMALL_SAMPLE } from '@/store/queries';
+import { handCounts, opponentStats } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
 import { C, S } from '@/theme';
+import { useSheetAnimation } from '@/lib/motion';
 
 function handsWith(hands: Hand[], p: PlayerNote) {
   const n = p.name.trim().toLowerCase();
@@ -24,6 +27,7 @@ function handsWith(hands: Hand[], p: PlayerNote) {
 }
 
 export default function PlayersScreen() {
+  const sheetAnim = useSheetAnimation();
   const { players, savePlayer, deletePlayer, hands } = useStore();
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<PlayerNote | null>(null);
@@ -93,11 +97,11 @@ export default function PlayersScreen() {
               ) : null}
               {st?.hands ? (
                 <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
-                  <T v="monoS" color={st.hands < SMALL_SAMPLE ? C.muted : C.textDim} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
+                  <T v="monoS" color={sampleColor(st.hands)} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
                     {`VPIP ${pct(st.vpip, st.hands)} · PFR ${pct(st.pfr, st.hands)} · 3-bet ${pct(st.threeBet, st.threeBetOpp)}`}
                   </T>
                   {/* Under 20 hands the numbers are a hint, never a read (same rule as the stats app). */}
-                  {st.hands < SMALL_SAMPLE ? <Pill label={t('amostra pequena')} color={C.warn} /> : null}
+                  <SmallSample n={st.hands} />
                 </Row>
               ) : null}
               {item.notes ? (
@@ -109,7 +113,7 @@ export default function PlayersScreen() {
           );
         }}
       />
-      <Modal visible={!!edit} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEdit(null)}>
+      <Modal visible={!!edit} animationType={sheetAnim} presentationStyle="pageSheet" onRequestClose={() => setEdit(null)}>
         {edit && (
           <PlayerEditor
             p={edit}
@@ -143,6 +147,7 @@ function tagColor(tag: string): string | undefined {
 function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
   const [x, setX] = useState(p);
   const toggle = (tg: string) => setX((v) => ({ ...v, tags: v.tags.includes(tg) ? v.tags.filter((k) => k !== tg) : [...v.tags, tg] }));
+  const { shown, more } = usePaged(hands);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
       <SheetHeader title={p.name ? p.name : t('Novo jogador')} onClose={onClose} closeLabel={t('Fechar')} />
@@ -167,7 +172,7 @@ function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; 
       {hands.length > 0 && (
         <Section title={t('Mãos contra {name}', { name: x.name })}>
           <ListGroup>
-            {hands.map((h) => (
+            {shown.map((h) => (
               <ListItem
                 key={h.id}
                 left={h.players[h.hero].cards?.length === 2 ? <CardRow cards={h.players[h.hero].cards!} size="xs" gap={2} /> : undefined}
@@ -180,6 +185,7 @@ function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; 
               />
             ))}
           </ListGroup>
+          {more}
         </Section>
       )}
       {p.name ? <Button title={t('Apagar jogador')} kind="danger" size="md" icon="trash-outline" onPress={onDelete} /> : null}

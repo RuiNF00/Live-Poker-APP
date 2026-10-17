@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AmountMode, HandRecord, ReplayStep } from '@livepoker/hand-format';
+import { stakesText, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
 import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
 import { Mark as Logo } from '@/components/Brand';
 import { PokerTable } from '@/components/PokerTable';
@@ -182,7 +182,7 @@ function HandReview({
   }, [comments]);
   const sorted = useMemo(() => [...comments].sort((a, b) => (a.stepIndex ?? -1) - (b.stepIndex ?? -1) || a.createdAt.localeCompare(b.createdAt)), [comments]);
   const tour = hand.tournament;
-  const stakes = `${formatAmount(hand.blinds.sb, bb, 'chips', locale)}/${formatAmount(bb, bb, 'chips', locale)}${hand.blinds.ante ? ` · ante ${formatAmount(hand.blinds.ante, bb, 'chips', locale)}` : ''}`;
+  const stakes = stakesText(hand.blinds, (n) => formatAmount(n, bb, 'chips', locale));
 
   return (
     <div className="cv-grid">

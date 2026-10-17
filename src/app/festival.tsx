@@ -17,7 +17,7 @@ import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { eventDay, eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import { money } from '@/poker/format';
+import { money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { getOffers, stakesFor } from '@/store/action-offer';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
@@ -29,13 +29,6 @@ import { C, R, S } from '@/theme';
 
 type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix';
 const LATE_REG_HOURS = [2, 3, 4, 5, 6, 8];
-
-/** $50M, $2.5M, $750k. */
-function short(n: number, cur: string) {
-  if (n >= 1e6) return `${cur}${+(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}M`;
-  if (n >= 1e3) return `${cur}${+(n / 1e3).toFixed(n % 1e3 ? 1 : 0)}k`;
-  return `${cur}${n}`;
-}
 
 function dayLabel(day: string) {
   const [y, m, d] = day.split('-').map(Number);
@@ -312,7 +305,7 @@ function EventRow({
             {eventTitle(e)}
           </T>
           <T v="small" numberOfLines={1}>
-            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${short(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>

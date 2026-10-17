@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const rec = await loadSwap(id);
   const c = swapCopy(pickLocale((await headers()).get('accept-language')));
-  if (!rec) return { title: c.notFound, robots: { index: false } };
+  if (!rec) return { title: c.notFound, robots: { index: false }, referrer: 'no-referrer' };
   const t = rec.terms;
   const title = c.metaTitle(t.a.name, rec.confirmedName || t.b.name, t.title);
   // No amounts in the preview: the chat it lands in may have more than the two players.
@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title,
     description: c.metaDescription,
     robots: { index: false },
+    referrer: 'no-referrer',
     openGraph: { title, description: c.metaDescription, type: 'website', url: `${brand.siteUrl}/swap/${id}`, siteName: brand.name },
   };
 }

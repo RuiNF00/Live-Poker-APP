@@ -5,7 +5,7 @@ import { landingCopy } from '@/components/landing/copy';
 import { MainCta, StickyCta } from '@/components/landing/Cta';
 import { StoreButtons, type StoreLinks } from '@/components/landing/StoreButtons';
 import { Card } from '@/components/landing/Visuals';
-import { isPt, numberTag, withCurrency, type Locale } from '@/lib/i18n';
+import { isPt, numberTag, formatMoney, type Locale } from '@/lib/i18n';
 import type { ProfilePayload, SessionCard } from '@/lib/profile-data';
 import { profileCopy, type ProfileCopy } from './copy';
 import { ProfileBeacon } from './ProfileBeacon';
@@ -154,11 +154,7 @@ const MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept
 
 function SessionTile({ s, c, locale, hide }: { s: SessionCard; c: ProfileCopy; locale: Locale; hide: boolean }) {
   const nf = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
-  const money = (n: number) => {
-    const a = nf.format(Math.abs(n));
-    const sign = n < 0 ? '−' : n > 0 ? '+' : '';
-    return withCurrency(a, s.currency, locale, sign);
-  };
+  const money = (n: number) => formatMoney(n, s.currency, locale, true);
   // Spelled out here: the server's ICU can fall back to 9/10/2025, which reads as September in the US.
   const d = new Date(s.date);
   const date = `${d.getUTCDate()} ${(isPt(locale) ? MONTHS_PT : locale === 'es' ? MONTHS_ES : MONTHS_EN)[d.getUTCMonth()]} ${d.getUTCFullYear()}`;

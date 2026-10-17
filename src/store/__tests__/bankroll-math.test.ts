@@ -148,3 +148,15 @@ test('restoring on a fresh phone: its own empty "Principal" gives way to the bac
   // Nothing in the backup: nothing changes.
   assert.equal(dropUnusedAuto(fresh, [], { bankrolls: fresh, sessions: [], transfers: [] }), fresh);
 });
+
+test('bankrollsBack: a restore on a fresh phone counts the backup\'s Principal too', async () => {
+  const { bankrollsBack, ensureBankrolls } = await import('../bankroll-math');
+  const fresh = ensureBankrolls([], [], '€', 1);
+  const backup: Bankroll[] = [{ ...fresh[0], name: 'Casino', updatedAt: 5 }, { id: 'br_live', name: 'Live', currency: '€', createdAt: 2, updatedAt: 3 }];
+  // Same stable id as the phone's empty Principal, plus a new one: both come back.
+  assert.equal(bankrollsBack(backup, { bankrolls: fresh, sessions: [], transfers: [] }), 2);
+  // A Principal already in use here stays the player's own: only the new one counts.
+  const tx = [{ id: 't', bankrollId: fresh[0].id, kind: 'deposit' as const, amount: 1, at: 1, note: '' }];
+  assert.equal(bankrollsBack(backup, { bankrolls: fresh, sessions: [], transfers: tx }), 1);
+  assert.equal(bankrollsBack([], { bankrolls: fresh, sessions: [], transfers: [] }), 0);
+});

@@ -6,10 +6,11 @@ import { Pressable, View } from 'react-native';
 
 import { GLOSSARY, type TermKey } from '@/data/glossary';
 import { t } from '@/i18n';
-import { SMALL_SAMPLE, type OpponentStats } from '@/store/queries';
+import { type OpponentStats } from '@/store/queries';
 import { C, R, S } from '@/theme';
 
 import { Row, T } from './ui';
+import { isSmallSample, sampleColor, SmallSample } from './SmallSample';
 
 const pct = (n: number, d: number) => (d ? `${Math.round((100 * n) / d)}` : '—');
 
@@ -23,7 +24,7 @@ export function OpponentStatsRow({ stats }: { stats: OpponentStats | undefined }
       </T>
     );
   }
-  const small = stats.hands < SMALL_SAMPLE;
+  const small = isSmallSample(stats.hands);
   const cells: { label: TermKey; value: string }[] = [
     { label: 'VPIP', value: pct(stats.vpip, stats.hands) },
     { label: 'PFR', value: pct(stats.pfr, stats.hands) },
@@ -42,7 +43,7 @@ export function OpponentStatsRow({ stats }: { stats: OpponentStats | undefined }
             onPress={() => setTerm(term === c.label ? null : c.label)}
             style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, borderWidth: 1, borderColor: term === c.label ? C.borderStrong : C.border, paddingVertical: 8, alignItems: 'center', gap: 2 }}>
             <T v="label">{c.label}</T>
-            <T v="monoL" color={small ? C.textDim : C.text}>
+            <T v="monoL" color={sampleColor(stats.hands, C.text)}>
               {c.value}
             </T>
           </Pressable>
@@ -56,10 +57,13 @@ export function OpponentStatsRow({ stats }: { stats: OpponentStats | undefined }
           {t(GLOSSARY[term].line)}
         </T>
       ) : null}
-      <T v="tiny" color={small ? C.warn : C.textDim}>
-        {stats.hands === 1 ? t('1 mão') : t('{n} mãos', { n: stats.hands })}
-        {small ? ' · ' + t('amostra pequena, é só uma pista') : ' · ' + t('Toca num número para o explicar')}
-      </T>
+      {small ? (
+        <SmallSample n={stats.hands} variant="note" />
+      ) : (
+        <T v="tiny" color={C.textDim}>
+          {t('{n} mãos', { n: stats.hands }) + ' · ' + t('Toca num número para o explicar')}
+        </T>
+      )}
     </View>
   );
 }

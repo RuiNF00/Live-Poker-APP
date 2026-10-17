@@ -58,6 +58,11 @@ test('homeTotals: each session at its own day, net worth at the latest rate, unk
   assert.ok(Math.abs(h.netWorth - (100 + 1490 / 1.25)) < 1e-9);
   assert.deepEqual(h.missing, ['HK$']);
   assert.equal(h.mixed, true);
+  // Each currency's part: $ 1192 € (92.3%) first, then € 100 (7.7%); HK$ has no rate.
+  assert.deepEqual(h.parts.map((x) => x.currency), ['$', '€']);
+  assert.equal(h.parts[0].amount, 1490);
+  assert.ok(Math.abs(h.parts[0].share! - 1192 / 1292) < 1e-9);
+  assert.ok(Math.abs(h.parts[0].share! + h.parts[1].share! - 1) < 1e-9);
 });
 
 test('mergeRates takes a time series or one day, ignores junk and other bases', () => {

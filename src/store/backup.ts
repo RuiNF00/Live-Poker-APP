@@ -35,7 +35,12 @@ export interface BackupData {
   /** Group swaps with this player's seat token (absent before group swaps). */
   swapGroups?: SwapGroup[];
   settings?: Partial<Settings>;
+  /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
+  quarantine?: [string, string][];
 }
+
+/** Same prefix as boot.ts (kept here so backups don't import the store's loader). */
+const QUARANTINE = 'rl.quarantine.v1.';
 
 export function buildBackup(
   d: {
@@ -52,6 +57,7 @@ export function buildBackup(
     swaps?: Swap[];
     swapGroups?: SwapGroup[];
     settings: Settings;
+    quarantine?: [string, string][];
   },
   now = Date.now(),
 ): BackupData {
@@ -72,6 +78,7 @@ export function buildBackup(
     swaps: d.swaps ?? [],
     swapGroups: d.swapGroups ?? [],
     settings: d.settings,
+    ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
 }
 
@@ -135,6 +142,10 @@ export function parseBackup(text: string): BackupData {
     swaps,
     swapGroups,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
+    // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
+    quarantine: Array.isArray(j.quarantine)
+      ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
+      : [],
   };
 }
 
@@ -275,6 +286,7 @@ export function importSummary(n: {
   packages?: number;
   payments?: number;
   backing?: number;
+  swaps?: number;
 }): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
@@ -289,6 +301,7 @@ export function importSummary(n: {
   if (n.packages) parts.push(n.packages === 1 ? t('1 pacote de staking') : t('{n} pacotes de staking', { n: n.packages }));
   if (n.payments) parts.push(n.payments === 1 ? t('1 pagamento a backers') : t('{n} pagamentos a backers', { n: n.payments }));
   if (n.backing) parts.push(n.backing === 1 ? t('1 jogador que apoias') : t('{n} jogadores que apoias', { n: n.backing }));
+  if (n.swaps) parts.push(n.swaps === 1 ? t('1 swap') : t('{n} swaps', { n: n.swaps }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

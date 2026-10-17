@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { legal, raiseName, replay } from '@/poker/engine';
@@ -9,13 +9,17 @@ import { pct } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
-import { timeline, viewAt, type TimelineItem } from './replayer/model';
+import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
+import { IcmPanel } from './replayer/IcmPanel';
+import { useReduceMotion } from './replayer/motion';
 import { ReplayerTable } from './replayer/ReplayerTable';
+import { Scrubber } from './replayer/Scrubber';
+import { motionTimeline } from './replayer/timeline';
 import { tap } from './ui';
 
 const SPEEDS = [1, 1.5, 2, 0.5];
 const TIPS_KEY = 'sweatbook.replayer.tips.v1';
-const BASE_MS = 1100;
+const NAMES_KEY = 'sweatbook.replayer.hideNames.v1';
 
 /**
  * Hand replayer, built for a phone held upright. Visual and interaction base:
@@ -76,14 +80,19 @@ export function Replayer({
   const atEnd = !locked && k >= steps.length - 1;
 
   // Playback stops by itself at the last step it may show.
+  // One timeline for the replayer and the Story/reel export: how long each step holds, what moves.
+  const reduceMotion = useReduceMotion();
+  const motion = useMemo(() => motionTimeline(hand, r, { reduce: reduceMotion }), [hand, r, reduceMotion]);
+  // A step plays its animations only when reached going forward.
+  const [came, setCame] = useState({ k, from: k });
+  if (came.k !== k) setCame({ k, from: came.k });
+  const forward = came.k === k && came.from < k;
   const running = playing && k < last;
   useEffect(() => {
     if (!running) return;
-    // A new street gets a beat longer, like a dealer burning and turning.
-    const pause = steps[k + 1]?.kind === 'board' ? 1.4 : 1;
-    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), (BASE_MS * pause) / SPEEDS[speed]);
+    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), motion[k].ms / SPEEDS[speed]);
     return () => clearTimeout(id);
-  }, [running, k, last, steps, speed]);
+  }, [running, k, last, motion, speed]);
 
   // A card being dealt is felt as well as seen: one firm tap per new street.
   const prevK = useRef(k);
@@ -115,9 +124,37 @@ export function Replayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [street]);
   const note = streetNotes?.[street]?.trim();
+  // Screen readers hear each street as it's dealt: "Flop: Ás de copas, 7 de paus, 2 de ouros".
+  const dealt = steps[k]?.kind === 'board' ? k : -1;
+  useEffect(() => {
+    if (dealt < 0) return;
+    const board = hand.board.slice(0, steps[dealt].state.boardCount);
+    const fresh = street === 'flop' ? board.slice(0, 3) : board.slice(-1);
+    AccessibilityInfo.announceForAccessibility(`${STREET_LABEL[street]}: ${fresh.map(spokenCard).join(', ')}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealt]);
 
-  const view = useMemo(() => viewAt(hand, r, k, { inBB, reveal: reveal && !locked, atEnd }), [hand, r, k, inBB, reveal, locked, atEnd]);
-  const items = useMemo(() => timeline(hand, r, inBB), [hand, r, inBB]);
+  // Names off for a screenshot or a screen share: every player shows as their position, hero as "Hero".
+  const named = hand.players.some((p) => p.name);
+  const [hideNames, setHideNames] = useState(false);
+  useEffect(() => {
+    let live = true;
+    AsyncStorage.getItem(NAMES_KEY)
+      .then((v) => live && v === '1' && setHideNames(true))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const toggleNames = () => {
+    tap('select');
+    AsyncStorage.setItem(NAMES_KEY, hideNames ? '0' : '1').catch(() => {});
+    setHideNames(!hideNames);
+  };
+  const shown = useMemo(() => (hideNames && named ? { ...hand, players: hand.players.map((p) => ({ ...p, name: '' })) } : hand), [hand, hideNames, named]);
+
+  const view = useMemo(() => viewAt(shown, r, k, { inBB, reveal: reveal && !locked, atEnd }), [shown, r, k, inBB, reveal, locked, atEnd]);
+  const items = useMemo(() => timeline(shown, r, inBB), [shown, r, inBB]);
 
   const go = (to: number) => {
     doneTips();
@@ -139,7 +176,7 @@ export function Replayer({
 
   return (
     <View style={{ gap: 8 }}>
-      <ReplayerTable view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
+      <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
 
       {locked && k === last ? (
         <QuizPanel
@@ -147,6 +184,7 @@ export function Replayer({
           onPick={(c) => {
             tap('medium');
             setAnswered(c);
+            AccessibilityInfo.announceForAccessibility(`${t('Tu escolheste')} ${c}. ${t('Vê o que aconteceu.')}`);
             onVote?.(c);
             setPlaying(true);
           }}
@@ -160,6 +198,7 @@ export function Replayer({
           <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>{note}</Text>
         </View>
       ) : null}
+      {hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
       {answered ? (
         <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
           {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}
@@ -199,6 +238,26 @@ export function Replayer({
         <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} onPress={() => setReveal((x) => !x)} />
       </View>
 
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1 }}>
+          <Scrubber
+            k={k}
+            last={last}
+            items={items}
+            onSeek={(to) => {
+              doneTips();
+              setPlaying(false);
+              setI(to);
+            }}
+          />
+        </View>
+        {named ? (
+          <View style={{ width: 52, flexDirection: 'row' }}>
+            <Ctrl icon={hideNames ? 'person-outline' : 'person'} label={hideNames ? t('Mostrar nomes') : t('Esconder nomes')} active={hideNames} onPress={toggleNames} />
+          </View>
+        ) : null}
+      </View>
+
       {tips && !locked ? <TipBubble onClose={doneTips} /> : null}
       <Timeline items={items} current={k} last={last} onPick={go} />
     </View>
@@ -226,7 +285,7 @@ function TipBubble({ onClose }: { onClose: () => void }) {
       <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>
         {t('Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.')}
       </Text>
-      <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar')} onPress={onClose} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
         <Text style={{ color: C.accent, fontFamily: ff(700), fontSize: 13 }}>{t('Percebi')}</Text>
       </Pressable>
     </View>
@@ -243,7 +302,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
         borderRadius: R.md,
         backgroundColor: '#0E0D0B',
         borderWidth: 1,
-        borderColor: f ? 'rgba(255,106,61,0.45)' : C.border,
+        borderColor: f || view.decision || view.heroBet ? 'rgba(255,106,61,0.45)' : C.border,
         paddingHorizontal: 12,
         paddingVertical: 7,
         flexDirection: 'row',
@@ -261,10 +320,39 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Stat label="Call" value={f.toCall} color={C.good} />
           <Stat label={t('Pot odds')} value={pct(f.potOdds, 1)} color={C.info} />
           <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
+          <Stat label={t('Aposta')} value={pct(f.betPct)} color={C.text} />
+          <Stat label="V:B" value={ratio(f.vb)} color={C.warn} />
           {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
+        </>
+      ) : view.heroBet ? (
+        <>
+          <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
+            {t('HERO APOSTA')}
+            <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> {pct(view.heroBet.pct)} {t('do pote')}</Text>
+          </Text>
+          <Stat label="Bluff BE" value={pct(view.heroBet.bluffBE, 1)} color={C.accent} />
+          <Stat label="V:B" value={ratio(view.heroBet.vb)} color={C.warn} />
+          <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
+            {view.heroBet.vs}: {t('pot odds')} <Text style={{ color: C.info, fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsPotOdds, 1)}</Text> · MDF{' '}
+            <Text style={{ color: '#A78BFA', fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsMdf)}</Text>
+          </Text>
+          <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
+            {view.info}
+          </Text>
+        </>
+      ) : view.decision ? (
+        <>
+          <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
+            {t('HERO A DECIDIR')}
+            <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> · {view.decision}</Text>
+          </Text>
+          <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
+            {view.info}
+          </Text>
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
         </>
       ) : (
         <>
@@ -290,6 +378,11 @@ function RangeEq({ eq }: { eq: { equity: number; pct: number } }) {
   );
 }
 
+/** Value:bluff as "2.3:1". */
+function ratio(x: number): string {
+  return `${pct(x / 100, 1).replace('%', '')}:1`;
+}
+
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
@@ -311,12 +404,13 @@ const ITEM_W = 62;
 function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; current: number; last: number; onPick: (k: number) => void }) {
   const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const [w, setW] = useState(0);
+  const reduce = useReduceMotion();
   const at = Math.max(
     0,
     items.reduce((best, it, idx) => (it.k <= current ? idx : best), 0),
   );
   useEffect(() => {
-    if (w) ref.current?.scrollTo({ x: Math.max(0, at * ITEM_W - w / 2 + ITEM_W / 2), animated: true });
+    if (w) ref.current?.scrollTo({ x: Math.max(0, at * ITEM_W - w / 2 + ITEM_W / 2), animated: !reduce });
   }, [at, w]);
   return (
     <ScrollView
@@ -378,6 +472,7 @@ function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'
         {opts.map((o) => (
           <Pressable
             key={o}
+            accessibilityRole="button"
             onPress={() => onPick(o)}
             style={({ pressed }) => ({
               flex: 1,

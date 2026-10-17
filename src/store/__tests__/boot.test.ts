@@ -14,7 +14,7 @@ import type { Hand } from '@/poker/types';
 import { balanceOf, ensureBankrolls } from '../bankroll-math';
 import { KEYS, QUARANTINE, SPECS, loadAll, type Boot } from '../boot';
 import { createWriter, type CollectionSpec } from '../persist';
-import { curve, profit, totals } from '../session-math';
+import { curve, playedMs, profit, totals } from '../session-math';
 import { withCuts } from '../staking';
 import { FakeStorage } from './fake-storage';
 import { RELEASES, current, release1, type Release } from './launch-fixtures';
@@ -135,7 +135,17 @@ const CASES: Case[] = [
     key: S + 's2',
     raw: edit((s) => (delete s.breaks, delete s.stackLog, delete s.roster)),
     quarantined: 0,
-    check: (d) => assert.deepEqual(d.sessions.items.find((s) => s.id === 's2')!.breaks, []),
+    check: (d) => {
+      const s = d.sessions.items.find((x) => x.id === 's2')!;
+      assert.deepEqual(s.breaks, []);
+      // Same money as the untouched copy: Bankroll and results don't move.
+      const ref = current().kv.data.get(S + 's2')!;
+      assert.equal(profit(s), profit(JSON.parse(ref)));
+      const sessions = withCuts(d.sessions.items, d.packages.items);
+      const br = ensureBankrolls(d.bankrolls.items, sessions, d.settings.currency);
+      assert.ok(Number.isFinite(balanceOf({ currency: s.currency }, sessions, d.transfers.items, br).balance));
+      assert.ok(Number.isFinite(playedMs(s)) && playedMs(s) >= 0);
+    },
   },
   { name: 'sessão com pausas que não são lista', key: S + 's2', raw: edit((s) => (s.breaks = 'x')), quarantined: 1 },
   { name: 'jogador sem etiquetas é reparado', key: SPECS.players.prefix + 'p1', raw: edit((p) => delete p.tags), quarantined: 0 },
@@ -307,4 +317,43 @@ test('2.000 estragos aleatórios: o arranque nunca rebenta', async () => {
     }
     assert.ok(d.hands.items.length >= 29, `case ${i}: lost more than the damaged hand`);
   }
+});
+
+test('quarentena que esta versão já lê volta para a app (restauro numa versão corrigida)', async () => {
+  const r = current();
+  const h = { ...JSON.parse(r.kv.data.get(H + 'h3')!), id: 'hx', createdAt: 1 };
+  const qKey = `${QUARANTINE}123.${H}hx`;
+  r.kv.data.set(qKey, JSON.stringify(h));
+  const stillBad = `${QUARANTINE}124.${H}hy`;
+  r.kv.data.set(stillBad, '{"id":"hy"');
+  const d = await launch(r.kv);
+  exercise(d);
+  assert.equal(d.recovered, 1);
+  assert.ok(d.hands.items.some((x) => x.id === 'hx'));
+  assert.ok(!r.kv.data.has(qKey));
+  assert.deepEqual(d.quarantine, [[stillBad, '{"id":"hy"']]);
+  // On disk in the per-item layout: the next launch reads it without quarantine.
+  const again = await loadAll(r.kv);
+  assert.ok(again.hands.items.some((x) => x.id === 'hx'));
+  assert.equal(again.recovered, 0);
+});
+
+test('lista v1 de quarentena que agora se lê volta inteira, sem duplicar o que já existe', async () => {
+  const r = current();
+  const known = JSON.parse(r.kv.data.get(H + 'h1')!);
+  const fresh = { ...known, id: 'hz' };
+  r.kv.data.set(`${QUARANTINE}5.${SPECS.hands.legacy}`, JSON.stringify([known, fresh]));
+  const d = await launch(r.kv);
+  assert.equal(d.recovered, 1);
+  assert.equal(d.hands.items.filter((x) => x.id === 'h1').length, 1);
+  assert.equal(d.quarantine.length, 0);
+});
+
+test('definições e índices de quarentena ficam à parte e aparecem na lista', async () => {
+  const r = current();
+  r.kv.data.set(KEYS.settings, '{"currency":');
+  r.kv.data.set(SPECS.hands.index, 'xx');
+  const d = await launch(r.kv);
+  assert.equal(d.quarantine.length, 2);
+  assert.equal((await loadAll(r.kv)).quarantine.length, 2);
 });

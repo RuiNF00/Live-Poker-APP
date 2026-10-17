@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Modal, ScrollView, View } from 'react-native';
 
 import { locale, t } from '@/i18n';
+import type { Keep } from '@/store/moveup-math';
 import { endOfDay, presetRange, startOfDay, type DateRange, type RangePreset, type StakeOption } from '@/store/bankroll-math';
 import { CURRENCIES } from '@/store/currencies';
 import { parseDay } from '@/store/session-math';
@@ -13,12 +14,14 @@ import type { Bankroll, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
 
 import { Button, Chip, ChipRow, Field, NumField, Row, Section, Segmented, SheetHeader, T } from './ui';
+import { useSheetAnimation } from '@/lib/motion';
 
 export { CURRENCIES };
 
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
+  const sheetAnim = useSheetAnimation();
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+    <Modal visible={visible} animationType={sheetAnim} onRequestClose={onClose} presentationStyle="pageSheet">
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
         {visible ? children : null}
@@ -74,22 +77,58 @@ export function DayPicker({ value, onChange }: { value: number; onChange: (day: 
   );
 }
 
-/** New or existing deposit / withdrawal. `bankrolls` are the ones it may go to (one currency). */
+/** "2/5", or "torneios de 250 €": the game a bankroll rule is about. */
+export function keepStake(k: Keep, fmt: (n: number) => string): string {
+  return k.basis.kind === 'cash' ? `${k.basis.stake.sb}/${k.basis.stake.bb}` : t('torneios de {amount}', { amount: fmt(k.basis.buyIn) });
+}
+
+/** Under a new withdrawal: how much can come out and still keep the player's own rules. */
+function KeepHint({ k, amount, fmt, onFill }: { k: Keep; amount: number; fmt: (n: number) => string; onFill: (n: number) => void }) {
+  const p = { n: k.basis.buyIns, stake: keepStake(k, fmt) };
+  if (k.free === 0 && !amount) return <T v="small">{t('As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.', { ...p, need: fmt(k.need) })}</T>;
+  if (amount > k.free) {
+    return (
+      <T v="small" color={C.warn}>
+        {t('Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).', p)}
+      </T>
+    );
+  }
+  return (
+    <View style={{ gap: S.sm }}>
+      <T v="small">{t('Podes levantar até {amount} e manter as tuas regras ({n} buy-ins para {stake}).', { ...p, amount: fmt(k.free) })}</T>
+      {amount !== k.free ? (
+        <ChipRow>
+          <Chip icon="arrow-up" label={t('Levantar {amount}', { amount: fmt(k.free) })} onPress={() => onFill(k.free)} />
+        </ChipRow>
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * New or existing deposit / withdrawal. `bankrolls` are the ones it may go to (one currency).
+ * `keep` gives, for a new withdrawal, what each bankroll's rules let come out.
+ */
 export function TransferForm({
   initial,
   bankrolls,
   onSave,
   onDelete,
+  keep,
+  fmt,
 }: {
   initial: Transfer;
   bankrolls: Bankroll[];
   onSave: (x: Transfer) => void;
   onDelete?: () => void;
+  keep?: (bankrollId: string) => Keep | null;
+  fmt?: (n: number, currency: string) => string;
 }) {
   const [x, setX] = useState(initial);
   const set = (p: Partial<Transfer>) => setX((c) => ({ ...c, ...p }));
   const b = bankrolls.find((r) => r.id === x.bankrollId) ?? bankrolls[0];
   const cur = b?.currency ?? '€';
+  const k = x.kind === 'withdrawal' && b && keep ? keep(b.id) : null;
   return (
     <View style={{ gap: S.lg }}>
       <Segmented
@@ -103,6 +142,7 @@ export function TransferForm({
       <Row>
         <NumField label={t('Valor ({currency})', { currency: cur })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} />
       </Row>
+      {k && fmt ? <KeepHint k={k} amount={x.amount} fmt={(n) => fmt(n, cur)} onFill={(amount) => set({ amount })} /> : null}
       {bankrolls.length > 1 ? (
         <Section title="Bankroll">
           <ChipRow>

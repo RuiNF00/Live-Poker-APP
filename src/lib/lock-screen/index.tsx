@@ -4,14 +4,14 @@
 
 import { requireOptionalNativeModule } from 'expo';
 import * as Linking from 'expo-linking';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 
 import { liveProps } from './live-state';
-import { askNotificationPermission, onReminderTap, syncLevelReminder } from './reminder';
+import { onReminderTap, syncLevelReminder } from './reminder';
 
 type Native = typeof import('./activity');
 
@@ -55,7 +55,6 @@ async function end() {
 export function SessionLockScreen() {
   const { activeSession, settings } = useStore();
   const hide = !!settings.hideAmounts;
-  const asked = useRef<string | null>(null);
 
   useEffect(() => {
     const s = activeSession;
@@ -65,11 +64,8 @@ export function SessionLockScreen() {
       return;
     }
     void (async () => {
-      // Android 13+ needs permission for any notification; ask once per session, when it starts.
-      if (Platform.OS === 'android' && asked.current !== s.id) {
-        asked.current = s.id;
-        await askNotificationPermission();
-      }
+      // No system prompt here: the session screen asks with its own primer
+      // first. Without permission Android simply shows no notification.
       await show(s, hide);
       await syncLevelReminder(s);
     })();
