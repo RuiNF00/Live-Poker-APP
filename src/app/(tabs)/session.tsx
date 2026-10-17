@@ -19,7 +19,7 @@ import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
-import { FestivalItem } from '@/components/FestivalItem';
+import { FestivalItem, PlannedNow } from '@/components/FestivalItem';
 import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
@@ -133,6 +133,8 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: bar + S.lg }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
+          {/* A tournament planned for now comes first: one tap and it's running, filled in. */}
+          <PlannedNow festivals={coming} />
           {near ? <FestivalItem f={near} /> : null}
           <ListItem
             icon="calendar-outline"

@@ -3078,6 +3078,8 @@ const es: Record<string, string> = {
   'No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.': 'En Instagram, pon el sticker Encuesta en el espacio vacío con {options}. Luego publica la story Resultado o deja el enlace para que vean qué hiciste.',
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Se detiene antes de tu decisión y deja espacio para la encuesta de Instagram.',
   '{month} até agora: {amount} em {h} h': '{month} hasta ahora: {amount} en {h} h',
+  'Começar: {name}': 'Empezar: {name}',
+  'Às {time}': 'A las {time}',
 };
 
 export default es;
