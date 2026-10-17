@@ -4,6 +4,7 @@ import { t } from '@/i18n';
 import { positions, totalPot, type Replay, type Step } from '@/poker/engine';
 import { equity } from '@/poker/equity';
 import { amount } from '@/poker/format';
+import { equityVsRange, rangePctForRaises, topRange } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
 export type BadgeKind = ActionKind | 'allin';
@@ -51,6 +52,8 @@ export interface RpView {
   facing: RpFacing | null;
   /** Pot / effective stack summary line. */
   info: string;
+  /** Heads-up with villain's cards unknown: hero's equity against a range read from villain's preflop raises. */
+  rangeEq: { equity: number; pct: number } | null;
   end: boolean;
 }
 
@@ -88,6 +91,16 @@ function cachedEquity(holes: CardCode[][], board: CardCode[]) {
     equityCache.set(key, eq);
   }
   return eq;
+}
+
+const rangeCache = new Map<string, number | null>();
+function cachedRangeEquity(hero: CardCode[], board: CardCode[], pct: number) {
+  const key = `${hero.join('')}/${board.join('')}/${pct}`;
+  if (!rangeCache.has(key)) {
+    if (rangeCache.size > 200) rangeCache.clear();
+    rangeCache.set(key, equityVsRange(hero, topRange(pct), board));
+  }
+  return rangeCache.get(key)!;
 }
 
 /** The view at step `k` of the replay. `reveal` shows every known hand. */
@@ -154,6 +167,26 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     live.forEach((s, j) => (s.equity = eq[j]));
   }
 
+  // Heads-up against hidden cards: equity against the range villain's preflop raises suggest.
+  let rangeEq: RpView['rangeEq'] = null;
+  const heroSeat = seats[hand.hero];
+  const villains = live.filter((s) => !s.hero);
+  if (!result && !heroSeat.folded && heroSeat.cards && heroSeat.cards.length === 2 && villains.length === 1 && villains[0].cards === null) {
+    // How strong villain's preflop raise was: open = 1, 3-bet = 2, 4-bet = 3 (0 = only called).
+    let level = 0;
+    let raises = 0;
+    for (let j = 1; j <= k; j++) {
+      const s = r.steps[j];
+      const a = s.state.last;
+      if (s.kind !== 'action' || s.street !== 'preflop' || !a || (a.kind !== 'raise' && a.kind !== 'bet')) continue;
+      raises++;
+      if (a.p === villains[0].i) level = raises;
+    }
+    const pct = rangePctForRaises(level);
+    const e = cachedRangeEquity(heroSeat.cards, board, pct);
+    if (e != null) rangeEq = { equity: e, pct };
+  }
+
   const pot = result ? result.pots.reduce((a, b) => a + b.amount, 0) : st.pot;
   const potAll = totalPot(st);
 
@@ -203,6 +236,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     narration,
     facing,
     info,
+    rangeEq,
     end: !!result,
   };
 }
@@ -225,7 +259,9 @@ export function timeline(hand: Hand, r: Replay, inBB: boolean): TimelineItem[] {
     else if (s.kind === 'showdown') items.push({ k, kind: 'end', label: 'SHOWDOWN', color: 'street' });
     else if (s.kind === 'action' && s.state.last) {
       const a = s.state.last;
-      const who = a.p === hand.hero ? hand.players[a.p].name || 'Hero' : hand.players[a.p].name ? hand.players[a.p].name.slice(0, 6) : pos[a.p];
+      // A name that doesn't fit the timeline slot shows the position instead of being cut mid-word.
+      const nm = hand.players[a.p].name;
+      const who = nm && nm.length <= 7 ? nm : a.p === hand.hero ? 'Hero' : pos[a.p];
       const amt = amount(a.kind === 'call' ? a.added : a.to, hand, inBB).replace(' ', '');
       const code = a.allIn ? `AI ${amt}` : { fold: 'F', check: 'X', call: `C ${amt}`, bet: `B ${amt}`, raise: `R ${amt}` }[a.kind];
       items.push({
