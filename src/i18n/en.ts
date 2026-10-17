@@ -2424,6 +2424,7 @@ const en: Record<string, string> = {
   'Dias de jogo': 'Days played',
   '{v} no póquer': '{v} at the tables',
   'Junta o resultado do póquer em {c}, sem as despesas da viagem': 'Adds the poker result in {c}, before trip expenses',
+  'Mostrar mais ({n})': 'Show more ({n})',
 };
 
 export default en;

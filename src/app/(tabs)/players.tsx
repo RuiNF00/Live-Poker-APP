@@ -10,6 +10,7 @@ import { OpponentStatsRow } from '@/components/OpponentStats';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
 import { sampleColor, SmallSample } from '@/components/SmallSample';
+import { usePaged } from '@/components/ShowMore';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
@@ -146,6 +147,7 @@ function tagColor(tag: string): string | undefined {
 function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
   const [x, setX] = useState(p);
   const toggle = (tg: string) => setX((v) => ({ ...v, tags: v.tags.includes(tg) ? v.tags.filter((k) => k !== tg) : [...v.tags, tg] }));
+  const { shown, more } = usePaged(hands);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
       <SheetHeader title={p.name ? p.name : t('Novo jogador')} onClose={onClose} closeLabel={t('Fechar')} />
@@ -170,7 +172,7 @@ function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; 
       {hands.length > 0 && (
         <Section title={t('Mãos contra {name}', { name: x.name })}>
           <ListGroup>
-            {hands.map((h) => (
+            {shown.map((h) => (
               <ListItem
                 key={h.id}
                 left={h.players[h.hero].cards?.length === 2 ? <CardRow cards={h.players[h.hero].cards!} size="xs" gap={2} /> : undefined}
@@ -183,6 +185,7 @@ function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; 
               />
             ))}
           </ListGroup>
+          {more}
         </Section>
       )}
       {p.name ? <Button title={t('Apagar jogador')} kind="danger" size="md" icon="trash-outline" onPress={onDelete} /> : null}

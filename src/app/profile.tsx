@@ -10,6 +10,7 @@ import { ActivityIndicator, Alert, Platform, ScrollView, Share, View } from 'rea
 
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Field, ListGroup, ListItem, Row, Section, T, tap, ToggleItem } from '@/components/ui';
+import { usePaged } from '@/components/ShowMore';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { EMPTY_DRAFT, handleLooksValid, MAX_ITEMS, normalizeHandle, profileBody, profileSessions, shareableHands, type ProfileDraft, type ProfileLink } from '@/lib/profile-payload';
@@ -62,6 +63,8 @@ export default function ProfileScreen() {
 
   const shareable = useMemo(() => shareableHands(hands), [hands]);
   const finished = useMemo(() => profileSessions(sessions), [sessions]);
+  const handPages = usePaged(shareable);
+  const sessionPages = usePaged(finished);
 
   useEffect(() => {
     loadProfileLink().then((l) => {
@@ -210,24 +213,27 @@ export default function ProfileScreen() {
 
         <Section title={t('Mãos no perfil ({n})', { n: draft.hands.length })} hint={t('Só aparecem mãos que já partilhaste por link. Num desafio, o board fica escondido.')}>
           {shareable.length ? (
-            <ListGroup>
-              {shareable.map((hd) => {
-                const on = draft.hands.includes(hd.id);
-                const cards = hd.players[hd.hero]?.cards ?? [];
-                return (
-                  <ListItem
-                    key={hd.id}
-                    left={cards.length ? <CardRow cards={cards} size="xs" /> : undefined}
-                    icon={cards.length ? undefined : 'albums-outline'}
-                    title={hd.title || hd.game.name || t('Mão')}
-                    subtitle={[hd.game.venue, shortDate(hd.createdAt)].filter(Boolean).join(' · ')}
-                    right={<Check on={on} />}
-                    chevron={false}
-                    onPress={() => toggle('hands', hd.id)}
-                  />
-                );
-              })}
-            </ListGroup>
+            <>
+              <ListGroup>
+                {handPages.shown.map((hd) => {
+                  const on = draft.hands.includes(hd.id);
+                  const cards = hd.players[hd.hero]?.cards ?? [];
+                  return (
+                    <ListItem
+                      key={hd.id}
+                      left={cards.length ? <CardRow cards={cards} size="xs" /> : undefined}
+                      icon={cards.length ? undefined : 'albums-outline'}
+                      title={hd.title || hd.game.name || t('Mão')}
+                      subtitle={[hd.game.venue, shortDate(hd.createdAt)].filter(Boolean).join(' · ')}
+                      right={<Check on={on} />}
+                      chevron={false}
+                      onPress={() => toggle('hands', hd.id)}
+                    />
+                  );
+                })}
+              </ListGroup>
+              {handPages.more}
+            </>
           ) : (
             <Card style={{ alignItems: 'center', gap: 4 }}>
               <T v="small" style={{ textAlign: 'center' }}>
@@ -239,19 +245,22 @@ export default function ProfileScreen() {
 
         <Section title={t('Sessões no perfil ({n})', { n: draft.sessions.length })} hint={draft.hideAmounts ? t('Sem montantes: aparecem o torneio, o lugar e as horas.') : t('Com montantes: aparecem o resultado e o buy-in.')}>
           {finished.length ? (
-            <ListGroup>
-              {finished.map((s) => (
-                <ListItem
-                  key={s.id}
-                  icon={s.kind === 'mtt' ? 'trophy-outline' : 'cash-outline'}
-                  title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
-                  subtitle={[s.venue, shortDate(s.startedAt), s.finish ? `${s.finish}º` : null].filter(Boolean).join(' · ')}
-                  right={<Check on={draft.sessions.includes(s.id)} />}
-                  chevron={false}
-                  onPress={() => toggle('sessions', s.id)}
-                />
-              ))}
-            </ListGroup>
+            <>
+              <ListGroup>
+                {sessionPages.shown.map((s) => (
+                  <ListItem
+                    key={s.id}
+                    icon={s.kind === 'mtt' ? 'trophy-outline' : 'cash-outline'}
+                    title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
+                    subtitle={[s.venue, shortDate(s.startedAt), s.finish ? `${s.finish}º` : null].filter(Boolean).join(' · ')}
+                    right={<Check on={draft.sessions.includes(s.id)} />}
+                    chevron={false}
+                    onPress={() => toggle('sessions', s.id)}
+                  />
+                ))}
+              </ListGroup>
+              {sessionPages.more}
+            </>
           ) : (
             <Card style={{ alignItems: 'center' }}>
               <T v="small" style={{ textAlign: 'center' }}>

@@ -18,6 +18,7 @@ import { filterPills, HandFilterSheet } from '@/components/HandFilters';
 import { activeFilters, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
+import { useIdleCount } from '@/lib/idle-count';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { ProMoment, useProMoment } from '@/components/ProMoment';
@@ -96,7 +97,8 @@ export default function HandsScreen() {
   // While the list is narrowed, nudges about the rest of it get out of the way.
   const narrowed = !!tag || pills.length > 0;
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
-  const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
+  // Replays every hand: counted in slices after the list has drawn (years of hands take a second on a mid-range phone).
+  const incomplete = useIdleCount(hands, isIncomplete) ?? 0;
   const checklist = useStartChecklist();
   const moment = useProMoment();
   const [now] = useState(() => Date.now());
@@ -507,6 +509,8 @@ function rowSummary(hand: Hand) {
   }
   return v;
 }
+
+const isIncomplete = (h: Hand) => !rowSummary(h).done;
 
 const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick, coach }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void; coach: number }) {
   const { net, done } = rowSummary(hand);

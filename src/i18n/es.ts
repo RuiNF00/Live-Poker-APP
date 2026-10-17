@@ -2395,6 +2395,7 @@ const es: Record<string, string> = {
   'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.': 'Resultados registrados por el jugador en Sweatbook. El resultado de cada sesión ya descuenta buy-ins, gastos, propinas y la parte de los backers.',
   'Dados recuperados': 'Datos recuperados',
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estaban guardados aparte se volvieron a abrir y están de vuelta en la app.',
+  'Mostrar mais ({n})': 'Mostrar más ({n})',
 };
 
 export default es;
