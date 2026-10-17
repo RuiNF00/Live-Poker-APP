@@ -10,9 +10,10 @@ const here = path.dirname(new URL(import.meta.url).pathname);
 const frames = JSON.parse(fs.readFileSync(path.join(here, 'frames.json'), 'utf8'));
 const exe = fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined;
 
-// Output sizes: App Store 6.9" and Google Play phone (Play caps the aspect ratio at 2:1).
+// Output sizes: App Store 6.9" and 6.5", and Google Play phone (Play caps the aspect ratio at 2:1).
 const TARGETS = [
   { store: 'ios', w: 1320, h: 2868 },
+  { store: 'ios-6.5', w: 1284, h: 2778 },
   { store: 'android', w: 1080, h: 1920 },
 ];
 const BG = '#0C1311', ACCENT = '#FF6A3D';
@@ -48,6 +49,23 @@ async function capture(locale) {
     for (const txt of f.hide ?? []) {
       await page.evaluate((txt) => {
         for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent.includes(txt)) el.style.visibility = 'hidden';
+      }, txt);
+    }
+    // Elements that must not appear in store art at all (e.g. the "Won/Lost" filter chips): remove the
+    // whole control so the row closes up instead of leaving a gap.
+    for (const txt of f.drop ?? []) {
+      await page.evaluate((txt) => {
+        for (const el of document.querySelectorAll('div')) {
+          if (el.childElementCount !== 0 || el.textContent.trim() !== txt) continue;
+          (el.closest('[role="button"],[tabindex]') ?? el).style.display = 'none';
+        }
+      }, txt);
+    }
+    // Text to cut out of a line without hiding the rest (e.g. a share domain that isn't decided yet).
+    for (const txt of f.strip ?? []) {
+      await page.evaluate((txt) => {
+        const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes(txt)) n.nodeValue = n.nodeValue.replace(txt, '');
       }, txt);
     }
     shots.push((await page.screenshot()).toString('base64'));
