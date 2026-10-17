@@ -2955,7 +2955,6 @@ const es: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tiene las fechas, salas y resultados que contiene. Nada de lo que ya tienes en Sweatbook va con él. Lo envías tú, desde tu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Acepto enviar este archivo a soporte',
   'Abrir o email': 'Abrir el email',
-  'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Mi {month} en vivo: {sessions} sesiones, {hours} horas y {hands} manos registradas.',
   'Torneios mais caros': 'Torneos más caros',
   'Torneios mais baratos': 'Torneos más baratos',
   'Desenha a range do vilão': 'Dibuja el rango del villano',
@@ -2989,6 +2988,7 @@ const es: Record<string, string> = {
   'Tirar da lista?': '¿Quitar de la lista?',
   'A mão continua no link do teu amigo.': 'La mano sigue en el link de tu amigo.',
   'Mão de um amigo': 'Mano de un amigo',
+  'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Mi {month} en vivo: {sessions} sesiones, {hours} horas y {hands} manos registradas.',
   // Festivals: the player's own, and January to June 2027
   'Todos os festivais': 'Todos los festivales',
   'Os do calendário e os que adicionares': 'Los del calendario y los que añadas',
