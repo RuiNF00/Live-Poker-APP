@@ -16,6 +16,25 @@ module.exports = defineConfig([
     },
   },
   {
+    // Startup size: the root icon import pulls every icon set (~1 MB of JS) and
+    // RevenueCat is ~1 MB that billing/purchases.ts loads on first use only.
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: '@expo/vector-icons', message: "Import one set: import Ionicons from '@expo/vector-icons/Ionicons'." },
+            { name: 'react-native-purchases', message: 'Go through src/billing/purchases.ts, which loads RevenueCat on first use.' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/billing/purchases.ts'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  {
     ignores: ['dist/*', 'web/*', 'packages/*', 'landing/*', 'store/*', 'supabase/*', '.claude/*'],
   },
 ]);

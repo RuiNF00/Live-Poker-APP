@@ -64,7 +64,7 @@ export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 
 export function nextLevelAt(s: Session, now = Date.now()): number | undefined {
   if (!s.levelMinutes || !s.levelStartedAt || s.endedAt) return undefined;
   const from = s.levelStartedAt;
-  const paused = s.breaks.reduce((a, b) => a + Math.max(0, Math.min(b.end ?? now, now) - Math.max(b.start, from)), 0);
+  const paused = (s.breaks ?? []).reduce((a, b) => a + Math.max(0, Math.min(b.end ?? now, now) - Math.max(b.start, from)), 0);
   return from + s.levelMinutes * 60_000 + paused;
 }
 
@@ -87,22 +87,29 @@ function hm(ms: number): string {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}`;
 }
 
-export function liveProps(s: Session, now = Date.now()): LiveProps {
+/**
+ * What the lock screen shows. With privacy mode on (`hideAmounts`), a cash
+ * game's stack is money on the table, so it shows ••• there; tournament chips
+ * aren't money and stay. The session's name often carries the venue, so
+ * privacy mode shows the game instead.
+ */
+export function liveProps(s: Session, now = Date.now(), hideAmounts = false): LiveProps {
   const paused = isPaused(s);
   const played = playedMs(s, now);
   const mtt = s.kind === 'mtt';
   const next = nextLevelAt(s, now);
   const after = levelAfter(s, 1);
+  const hideCash = hideAmounts && !mtt;
   return {
-    title: s.name || (mtt ? t('Torneio') : 'Cash game'),
+    title: (!hideAmounts && s.name) || (mtt ? t('Torneio') : 'Cash game'),
     status: paused ? t('Em pausa') : t('A jogar'),
     paused,
     clockFrom: now - played,
     pausedAt: paused ? now : 0,
     since: t('desde {time}', { time: timeOf(s.startedAt) }),
     played: hm(played),
-    stack: chips(s.stack),
-    stackBB: bbs(s.stack, s.bb),
+    stack: hideCash ? '•••' : chips(s.stack),
+    stackBB: hideCash ? '•••' : bbs(s.stack, s.bb),
     level: s.level ? t('Nível {n}', { n: s.level }) : 'Blinds',
     blinds: `${chips(s.sb)}/${chips(s.bb)}`,
     nextLevelAt: next ?? 0,

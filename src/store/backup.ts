@@ -84,7 +84,10 @@ export function parseBackup(text: string): BackupData {
   if (!isObj(j) || j.app !== 'sweatbook' || j.v !== 1) throw new Error('invalid');
   const arr = (k: string) => (Array.isArray(j[k]) ? (j[k] as unknown[]).filter(withId) : []);
   const hands = arr('hands').filter((h) => isObj(h) && Array.isArray(h.players) && Array.isArray(h.actions)) as unknown as Hand[];
-  const sessions = arr('sessions').filter((s) => isObj(s) && typeof s.startedAt === 'number') as unknown as Session[];
+  // A foreign or hand-edited backup may lack `breaks`; every session-time sum reads it.
+  const sessions = arr('sessions')
+    .filter((s): s is Record<string, unknown> => isObj(s) && typeof s.startedAt === 'number')
+    .map((s) => ({ ...s, breaks: Array.isArray(s.breaks) ? s.breaks : [] })) as unknown as Session[];
   const players = arr('players').filter((p) => isObj(p) && typeof p.name === 'string') as unknown as PlayerNote[];
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];

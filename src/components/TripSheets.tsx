@@ -67,7 +67,7 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
   return (
     <View style={{ gap: S.lg }}>
       <Field label={t('Nome')} value={x.name} onChangeText={(name) => set({ name: name.slice(0, 60) })} placeholder={t('Ex.: Bahamas, dezembro')} autoFocus={isNew && !x.name} />
-      <Field label={t('Onde')} value={x.venue} onChangeText={(venue) => set({ venue: venue.slice(0, 60) })} placeholder={t('Ex.: Baha Mar, Nassau')} />
+      <Field label={t('Onde')} value={x.venue} onChangeText={(venue) => set({ venue: venue.slice(0, 60) })} placeholder={t('Ex.: Nassau, Bahamas')} />
       <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
         <Field label={t('De')} value={fromText} onChangeText={(v) => setDay('from', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />
         <Field label={t('Até')} value={toText} onChangeText={(v) => setDay('to', v)} placeholder="dd/mm/aaaa" keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />

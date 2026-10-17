@@ -27,7 +27,7 @@ export function bagDay(s: Session, stack: number, now = Date.now()): Session {
     stack,
     stackLog: [...s.stackLog, { t: now, stack, level: s.level }],
     endedAt: now,
-    breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
+    breaks: (s.breaks ?? []).map((b) => (b.end ? b : { ...b, end: now })),
     bag: { stack, at: now },
   };
 }
@@ -42,7 +42,7 @@ export function resumeDay(s: Session, now = Date.now()): Session {
     day: dayOf(s) + 1,
     stack: bag.stack,
     stackLog: [...s.stackLog, { t: now, stack: bag.stack, level: s.level }],
-    breaks: [...s.breaks, { start: bag.at, end: now }],
+    breaks: [...(s.breaks ?? []), { start: bag.at, end: now }],
     levelStartedAt: s.levelMinutes ? now : undefined,
   };
 }
@@ -63,7 +63,7 @@ export function reenterFlight(s: Session, name: string, now = Date.now()): Sessi
     field: undefined,
     stack: startStack,
     stackLog: [...s.stackLog, { t: now, stack: startStack }],
-    breaks: [...s.breaks, { start: out, end: now }],
+    breaks: [...(s.breaks ?? []), { start: out, end: now }],
     levelStartedAt: undefined,
   };
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { localeFormat } from '../../i18n';
-import { moneyIn } from '../format';
+import { bbs, chips, moneyIn } from '../format';
 
 // U+00A0, so "R$" never wraps away from its amount.
 const NB = ' ';
@@ -34,4 +34,12 @@ test('decimal separator and Intl tag per language', () => {
   assert.equal(localeFormat('es', 'es-AR').decimalComma, true);
   // Argentina writes 1.234,50 but puts the symbol first.
   assert.equal(localeFormat('es', 'es-AR').currencyAfter, false);
+});
+
+test('short chip and bb amounts use the local decimal', () => {
+  // Tests run as pt-PT, which writes a decimal comma.
+  assert.equal(chips(12500), '12,5k');
+  assert.equal(chips(1250000), '1,25M');
+  assert.equal(bbs(500, 200), '2,5 bb');
+  assert.equal(bbs(4000, 200), '20 bb');
 });

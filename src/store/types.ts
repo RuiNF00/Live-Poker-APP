@@ -292,12 +292,16 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Home-screen widget: show this week's result. Off by default: a home screen is seen by whoever sits next to you. */
+  widgetResult?: boolean;
   /** Rates typed for currencies the ECB doesn't publish (ARS, CLP...): ISO code → units per 1 EUR. */
   fxManual?: Record<string, number>;
   /** Count swaps in results (Session.swapNet). Missing = yes. */
   includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
+  /** Haptic feedback; on unless turned off in Settings. */
+  haptics?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -307,5 +311,5 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultTableSize: 9,
   onboarded: false,
   shareNames: false,
-  shareNotes: true,
+  shareNotes: false,
 };

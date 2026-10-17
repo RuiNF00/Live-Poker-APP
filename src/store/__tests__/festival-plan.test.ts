@@ -59,7 +59,7 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
 });
 
 test('ships without an event brand; the player can name the festival', () => {
-  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify({ ...f, venue: undefined }), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn/i, f.id);
+  for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /wsop|ggmillion|ggpoker|wpt|world poker tour|wynn|baha mar|baha-|paradise|colossus|plossus|circuit|prime|world championship|super main/i, f.id);
   // No outbound links: organisers also run real-money gaming sites (store review).
   for (const f of FESTIVALS) assert.doesNotMatch(JSON.stringify(f), /https?:|www\./i, f.id);
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
@@ -88,6 +88,10 @@ test('one tournament across flights and days: start, re-enter a later flight, re
   assert.equal(eventAction(F, plan, [bagged], ev('12-2BC')), null);
   assert.equal(eventAction(F, { ...EMPTY_PLAN, sessions: { '12-C': 'x' } }, [bagged], ev('12-2BC'))!.kind, 'resume');
   assert.equal(eventAction(F, plan, [bagged], ev('12-B')), null);
+  // Busted in A, re-entered in B and bagged there: only the Day 2 that takes B.
+  const both = { ...EMPTY_PLAN, sessions: { '12-A': 'x', '12-B': 'x' } };
+  assert.equal(eventAction(F, both, [bagged], ev('12-2A')), null);
+  assert.equal(eventAction(F, both, [bagged], ev('12-2BC'))!.kind, 'resume');
   // Other events are untouched.
   assert.deepEqual(eventAction(F, plan, [bagged], ev('13')), { kind: 'start' });
 });
@@ -98,7 +102,7 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   assert.deepEqual([...starts].sort(), starts);
   assert.equal(LV.events[0].start, '2026-12-01T13:00');
   assert.equal(LV.events.at(-1)!.start, '2026-12-21T12:00');
-  const wc = LV.events.filter((e) => e.name === 'World Championship');
+  const wc = LV.events.filter((e) => e.name === 'Main Event');
   assert.deepEqual(wc.map((e) => [e.flight, e.buyIn, e.start]), [
     ['1A', 10400, '2026-12-13T11:00'],
     ['1B', 10400, '2026-12-14T11:00'],
@@ -110,6 +114,6 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   // Las Vegas is UTC-8 in December.
   assert.equal(new Date(venueTime(LV, '2026-12-13T11:00')).toISOString(), '2026-12-13T19:00:00.000Z');
   const bagged = { id: 'w', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, endedAt: 2, bag: { stack: 120000, at: 2 }, breaks: [], buyIn: 10400, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 120000, stackLog: [], roster: [], notes: '' };
-  const day2 = LV.events.find((e) => e.name === 'World Championship' && e.day2)!;
+  const day2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
   assert.equal(eventAction(LV, { ...EMPTY_PLAN, sessions: { [wc[1].id]: 'w' } }, [bagged], day2)!.kind, 'resume');
 });

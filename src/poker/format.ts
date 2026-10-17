@@ -20,7 +20,9 @@ function dateFmt(k: 'day' | 'time'): Intl.DateTimeFormat {
 }
 
 function trim(n: number, digits: number) {
-  return n.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  const s = n.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  // "12,5k" and "2,5 bb" where the language writes a decimal comma.
+  return FORMAT.decimalComma ? s.replace('.', ',') : s;
 }
 
 /** 950 → "950", 12500 → "12.5k", 1250000 → "1.25M". */

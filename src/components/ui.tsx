@@ -32,8 +32,14 @@ import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
+// Off in Settings › Vibração; kept here so every tap() call obeys it.
+let hapticsOn = true;
+export function setHaptics(on: boolean) {
+  hapticsOn = on;
+}
+
 export function tap(kind: 'light' | 'medium' | 'select' | 'success' = 'light') {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || !hapticsOn) return;
   if (kind === 'select') Haptics.selectionAsync().catch(() => {});
   else if (kind === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   else Haptics.impactAsync(kind === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -503,7 +509,7 @@ export function Button({
   iconRight,
   small,
   size,
-  haptic = true,
+  haptic,
   sub,
 }: {
   title: string;
@@ -516,6 +522,7 @@ export function Button({
   iconRight?: IconName;
   small?: boolean;
   size?: BtnSize;
+  /** Defaults to a light tap on primary buttons only: haptics are for moments that count. */
   haptic?: boolean;
   /** Second line under the title (primary buttons with a price, say). */
   sub?: string;
@@ -535,7 +542,7 @@ export function Button({
       disabled={disabled}
       hitSlop={sz === 'sm' ? 4 : 0}
       onPress={() => {
-        if (haptic) tap(kind === 'primary' ? 'medium' : 'light');
+        if (haptic ?? kind === 'primary') tap('light');
         onPress?.();
       }}
       style={({ pressed }) => [

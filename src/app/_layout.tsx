@@ -32,6 +32,7 @@ import { startCoachSync } from '@/lib/coach-api';
 import { bootReferrals } from '@/lib/referrals';
 // Registers the queued share-link sender before the outbox first drains.
 import '@/lib/share-queue';
+import '@/lib/pack-api';
 // Registers the swap delete sender ("Delete all my data").
 import '@/lib/swap-cleanup';
 // Same for the public profile's delete.
@@ -94,17 +95,22 @@ export default function RootLayout() {
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="year" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="session-card/[id]" options={{ title: t('Partilhar sessão'), presentation: 'modal' }} />
+            <Stack.Screen name="festival-card/[id]" options={{ title: t('Partilhar festival'), presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
             <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
             <Stack.Screen name="tournament" options={{ title: t('Modo torneio') }} />
+            <Stack.Screen name="tournament-stats" options={{ title: t('Torneios') }} />
+            <Stack.Screen name="tournament-card" options={{ title: t('Currículo de torneios'), presentation: 'modal' }} />
             <Stack.Screen name="odds" options={{ title: t('Calculadora de odds') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="profile" options={{ title: t('Perfil público') }} />
             <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
             <Stack.Screen name="coach/new" options={{ title: t('Enviar ao coach'), presentation: 'modal' }} />
+            <Stack.Screen name="pack/index" options={{ title: t('Links de várias mãos') }} />
+            <Stack.Screen name="pack/new" options={{ title: t('Partilhar num só link'), presentation: 'modal' }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
             <Stack.Screen name="export" options={{ title: t('Exportar') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />

@@ -29,7 +29,7 @@ test('no session: this week in the main currency, older weeks and other currenci
     mk({ id: 'old', startedAt: MON - 30 * H, endedAt: MON - 26 * H, cashOut: 9000 }),
     mk({ id: 'eur', currency: '€', cashOut: 9000 }),
   ];
-  const p = widgetProps({ ...base, sessions }, NOW);
+  const p = widgetProps({ ...base, showResult: true, sessions }, NOW);
   assert.equal(p.live, false);
   assert.equal(p.result, '+' + money(740, '$'));
   assert.equal(p.tone, 'up');
@@ -37,10 +37,17 @@ test('no session: this week in the main currency, older weeks and other currenci
   assert.match(p.weekSub, /6h/);
 });
 
-test('amounts hidden: no money on the home screen', () => {
-  const p = widgetProps({ ...base, hideAmounts: true, sessions: [mk({ cashOut: 1740 })] }, NOW);
+test('amounts hidden: no money on the home screen, even with the result turned on', () => {
+  const p = widgetProps({ ...base, hideAmounts: true, showResult: true, sessions: [mk({ cashOut: 1740 })] }, NOW);
   assert.equal(p.result, '•••');
   assert.equal(p.tone, 'flat');
+});
+
+test('by default the result of the week stays hidden; sessions and streak still show', () => {
+  const p = widgetProps({ ...base, sessions: [mk({ cashOut: 1740 })] }, NOW);
+  assert.equal(p.result, '•••');
+  assert.equal(p.tone, 'flat');
+  assert.match(p.weekSub, /^1 sess/);
 });
 
 test('nothing played this week: a dash, and the streak counts logging', () => {

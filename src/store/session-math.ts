@@ -3,12 +3,12 @@ import type { Session, Stake } from './types';
 /** Time actually at the table: wall time minus breaks. */
 export function playedMs(s: Session, now = Date.now()): number {
   const end = s.endedAt ?? now;
-  const breaks = s.breaks.reduce((a, b) => a + Math.max(0, (b.end ?? end) - b.start), 0);
+  const breaks = (s.breaks ?? []).reduce((a, b) => a + Math.max(0, (b.end ?? end) - b.start), 0);
   return Math.max(0, end - s.startedAt - breaks);
 }
 
 export function isPaused(s: Session): boolean {
-  const last = s.breaks[s.breaks.length - 1];
+  const last = s.breaks?.[s.breaks.length - 1];
   return !!last && last.end === undefined;
 }
 
