@@ -70,7 +70,9 @@ function Tournament({ s }: { s: Session }) {
 
   const level = s.level ?? 1;
   const depth = stackDepth(s.stack, s, s.tableSize || 9);
-  const avg = averageStack(tour);
+  // The stack the session started with stands in until the player types the official one.
+  const startStack = tour.startStack || s.stackLog[0]?.stack || 0;
+  const avg = averageStack({ ...tour, startStack });
   const pay = tour.payouts?.length && tour.left ? payState(tour.payouts, tour.left) : null;
 
   const applyStructure = (structure: Level[], name?: string) => {
@@ -132,7 +134,7 @@ function Tournament({ s }: { s: Session }) {
             <Divider />
             <Row gap={S.md}>
               <Cell label={t('Entradas')} value={tour.entries ? tour.entries.toLocaleString(locale) : undefined} onPress={() => setPad('entries')} />
-              <Cell label={t('Stack inicial')} value={tour.startStack ? chips(tour.startStack) : undefined} onPress={() => setPad('startStack')} />
+              <Cell label={t('Stack inicial')} value={startStack ? chips(startStack) : undefined} onPress={() => setPad('startStack')} />
             </Row>
             <Divider />
             <Row gap={S.md}>
