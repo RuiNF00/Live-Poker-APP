@@ -13,9 +13,10 @@ import {
   useAudioRecorderState,
 } from 'expo-audio';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { notice } from '@/lib/notice';
 import { voiceNoteExists } from '@/lib/voice-note';
 import { C, R, S } from '@/theme';
 
@@ -54,7 +55,7 @@ export function useVoiceCapture(onDone: (uri: string) => void) {
     try {
       const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(t('Microfone desligado'), t('Ativa o microfone para o Sweatbook nas definições do telemóvel.'));
+        notice(t('Microfone desligado'), t('Ativa o microfone para o Sweatbook nas definições do telemóvel.'));
         return;
       }
       tap('medium');
