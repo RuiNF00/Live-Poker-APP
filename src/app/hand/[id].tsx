@@ -178,10 +178,6 @@ export default function HandScreen() {
   const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
     tap('medium');
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share');
@@ -219,10 +215,6 @@ ${link}`;
     let link: string | undefined;
     if (withLink) {
       const isNew = !hand.shareId;
-      if (isNew && !pro.canShare()) {
-        pro.paywall('shares');
-        return;
-      }
       const shareId = await ensureId();
       if (!shareId) return;
       if (isNew) pro.record('share');
@@ -294,10 +286,6 @@ ${link}`;
 
   const copyLink = async () => {
     const isNew = !hand.shareId;
-    if (isNew && !pro.canShare()) {
-      pro.paywall('shares');
-      return;
-    }
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share');

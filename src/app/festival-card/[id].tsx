@@ -59,8 +59,8 @@ export default function FestivalCardScreen() {
     try {
       const ref = await shareRef().catch(() => '');
       let link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`;
-      // The best hand's replay is the link, when the player can still make one today.
-      if (best && (best.hand.shareId || pro.canShare())) {
+      // The best hand's replay is the link (sharing is unlimited on every plan).
+      if (best) {
         try {
           const isNew = !best.hand.shareId;
           const shareId = await ensureShareId(best.hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });

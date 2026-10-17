@@ -68,7 +68,7 @@ test('paywall leads with the feature the player reached for', async () => {
   assert.equal(featuresFor('story')[0].highlight, true);
   assert.equal(featuresFor('welcome')[0].feature.key, 'hands');
   assert.equal(featuresFor('generic').filter((f) => f.highlight).length, 0);
-  for (const r of ['hands', 'stats', 'story', 'welcome', 'generic', 'shares', 'taxReport', 'staking'] as const) assert.equal(featuresFor(r).length, 3);
+  for (const r of ['hands', 'stats', 'story', 'welcome', 'generic', 'taxReport', 'staking'] as const) assert.equal(featuresFor(r).length, 3);
   // A gated feature leads with its own row, then two generic ones.
   assert.deepEqual(featuresFor('taxReport').map((f) => f.feature.key), ['taxReport', 'hands', 'stats']);
   assert.ok(PRO_FEATURES.length > 3);

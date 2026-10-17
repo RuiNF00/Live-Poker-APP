@@ -88,11 +88,6 @@ export type ProFeature = keyof typeof PRO_ONLY;
 export const FREE = {
   /** New hands saved per calendar day. The 4th waits as a draft, never lost. */
   handsPerDay: 3 as number | null,
-  /**
-   * Link shares per day. Kept unlimited on purpose: every share puts the
-   * brand in front of friends who don't have the app yet.
-   */
-  sharesPerDay: null as number | null,
   /** Bankroll date and stake filters ("Sempre" and every stake stay free). */
   bankrollFilters: false,
   /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
@@ -101,7 +96,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -180,10 +175,6 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
-  },
-  shares: {
-    title: t('Já partilhaste a mão de hoje'),
-    body: t('Com Pro, partilhas sem limite.'),
   },
   stats: {
     title: t('Conhece o teu bankroll'),
