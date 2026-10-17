@@ -143,7 +143,7 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
 
       <section className="live-card sw-terms">
         <p className="sw-term">
-          <b>{pctLabel}</b> {c.groupShare(pctLabel)}
+          {c.groupShare(pctLabel)}
         </p>
         {t.note ? <p className="sw-note">“{t.note}”</p> : null}
         {canJoin ? null : (
@@ -260,7 +260,7 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
       {ready ? (
         <section className="live-cta" id="baixar">
           <Mark size={36} />
-          <p>{c.confirmedCta}</p>
+          <p>{c.groupConfirmedCta}</p>
           <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
         </section>
       ) : null}

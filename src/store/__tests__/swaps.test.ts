@@ -164,5 +164,9 @@ test('unsettled swaps: confirmed, money still owed, not left, archived or gone',
 
 test('the other side leaving is kept from the server copy', () => {
   const remote: RemoteSwap = { id: 's1', terms: { ...terms, b: { name: '-', pct: 3 } }, confirmedAt: new Date(10).toISOString(), confirmedName: '-', entries: [], code: null, you: 'a', updatedAt: new Date(20).toISOString(), leftSide: 'b' };
-  assert.equal(mergeRemote(swap({}), remote).left, 'b');
+  const m = mergeRemote(swap({ confirmedName: 'João' }), remote);
+  assert.equal(m.left, 'b');
+  assert.equal(m.terms.b.name, 'João', 'this phone keeps the name it already had');
+  assert.equal(m.confirmedName, 'João');
+  assert.equal(mergeRemote(swap({ terms: { ...terms, b: { name: '-', pct: 3 } } }), remote).terms.b.name, '-');
 });

@@ -58,7 +58,11 @@ export function GroupSettle({ g }: { g: SwapGroup }) {
           <Row key={`${x.from}-${x.to}`} gap={S.sm} style={{ alignItems: 'center', paddingVertical: 4 }}>
             <Ionicons name="arrow-forward-circle-outline" size={18} color={mine ? C.accent : C.muted} />
             <T v="body" style={{ flex: 1 }} color={mine ? C.text : C.textDim}>
-              {t('{from} paga a {to}', { from: seatLabel(g, x.from), to: seatLabel(g, x.to) })}
+              {x.to === g.seat
+                ? t('{from} paga-te', { from: seatLabel(g, x.from) })
+                : x.from === g.seat
+                  ? t('Pagas a {to}', { to: seatLabel(g, x.to) })
+                  : t('{from} paga a {to}', { from: seatLabel(g, x.from), to: seatLabel(g, x.to) })}
             </T>
             <T v="mono" color={mine ? (x.to === g.seat ? C.good : C.warn) : C.textDim}>
               {money(x.amount, g.terms.currency)}

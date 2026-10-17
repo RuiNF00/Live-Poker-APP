@@ -66,7 +66,7 @@ function NewGroupSwap() {
         out.push(n);
       }
     };
-    for (const s of swaps) push(swapNames(s)[s.side === 'a' ? 'b' : 'a']);
+    for (const s of swaps) if (!s.left) push(swapNames(s)[s.side === 'a' ? 'b' : 'a']);
     for (const g of groups) for (const s of g.seats) if (s.seat !== g.seat) push(s.name);
     return out.slice(0, 12);
   }, [swaps, groups]);

@@ -36,7 +36,7 @@ export function CurrencyPick({ value, onChange, home }: { value: string; onChang
 /** Both sides of the deal, as two lines anyone can check: "5% dos teus prémios vão para o João". */
 export function TermsCard({ terms, names, side, children }: { terms: SwapTerms; names: Record<SwapSide, string>; side: SwapSide | null; children?: React.ReactNode }) {
   const line = (s: SwapSide) => {
-    const from = side === s ? t('dos teus prémios') : t('dos prémios de {name}', { name: names[s] });
+    const from = side === s ? t('dos teus prémios') : terms[s].name === '-' ? t('dos prémios do outro jogador') : t('dos prémios de {name}', { name: names[s] });
     const to = side === other(s) ? t('vão para ti') : t('vão para {name}', { name: names[other(s)] });
     return `${from} ${to}`;
   };
@@ -70,7 +70,7 @@ export function Seal({ swap }: { swap: Pick<Swap, 'confirmedAt' | 'confirmedName
       <Row gap={6}>
         <Ionicons name="checkmark-circle" size={16} color={C.good} />
         <T v="small" color={C.good} style={{ flex: 1 }}>
-          {t('Confirmado por {name} · {date}, {time}', { name: swap.confirmedName || swap.terms.b.name, date: shortDate(swap.confirmedAt), time: timeOf(swap.confirmedAt) })}
+          {t('Confirmado por {name} · {date}, {time}', { name: swapNames(swap).b, date: shortDate(swap.confirmedAt), time: timeOf(swap.confirmedAt) })}
         </T>
       </Row>
       {swap.code ? (

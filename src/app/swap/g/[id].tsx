@@ -221,7 +221,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
         {ready ? <GroupHero g={g} /> : null}
 
         {someoneLeft && !g.gone ? (
-          <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('Um dos jogadores apagou os seus dados na Sweatbook. As contas ficam como estavam; já não dá para registar mais nada.')} />
+          <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('Um jogador apagou os dados. As contas ficam como estavam.')} />
         ) : null}
 
         {ready && !g.gone && !someoneLeft ? (

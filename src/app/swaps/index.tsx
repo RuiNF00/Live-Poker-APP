@@ -76,20 +76,7 @@ function SwapsScreen() {
             body={t('Combina uma percentagem com outro jogador para um evento ou para a série toda. Ele confirma por link, os termos e a hora ficam fixados, e quando alguém cobra a app diz quem deve a quem.')}
             action={
               <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
-                <Row gap={S.sm}>
-              <Button title={t('Novo swap')} icon="add" style={{ flex: 1 }} onPress={() => router.push('/swaps/new')} />
-              <Button title={t('Grupo')} kind="secondary" icon="people-outline" style={{ flex: 1 }} onPress={newGroup} />
-            </Row>
-            {tot.open ? (
-              <ListGroup>
-                <ListItem
-                  left={<Ionicons name="analytics-outline" size={22} color={C.accent} />}
-                  title={t('Histórico de swaps')}
-                  subtitle={t('Quanto ganhaste ou perdeste com swaps, por parceiro e por série')}
-                  onPress={() => router.push('/swaps/history')}
-                />
-              </ListGroup>
-            ) : null}
+                <Button title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
                 <Button title={t('Swap de grupo')} kind="secondary" icon="people-outline" onPress={newGroup} />
               </View>
             }
@@ -122,7 +109,20 @@ function SwapsScreen() {
               </T>
             </Card>
 
-            <Button title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
+            <Row gap={S.sm}>
+              <Button title={t('Novo swap')} icon="add" style={{ flex: 1 }} onPress={() => router.push('/swaps/new')} />
+              <Button title={t('Grupo')} kind="secondary" icon="people-outline" style={{ flex: 1 }} onPress={newGroup} />
+            </Row>
+            {tot.open || activeGroups.length ? (
+              <ListGroup>
+                <ListItem
+                  left={<Ionicons name="analytics-outline" size={22} color={C.accent} />}
+                  title={t('Histórico de swaps')}
+                  subtitle={t('Quanto ganhaste ou perdeste com swaps, por parceiro e por série')}
+                  onPress={() => router.push('/swaps/history')}
+                />
+              </ListGroup>
+            ) : null}
 
             {tot.open ? (
               <Section

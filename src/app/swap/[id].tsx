@@ -195,7 +195,7 @@ function OwnSwap({ s }: { s: Swap }) {
         <Head terms={s.terms} names={names} />
 
         {s.left && s.left !== s.side ? (
-          <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('O outro jogador apagou os seus dados na Sweatbook. As contas ficam como estavam; já não dá para registar mais nada.')} />
+          <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('O outro jogador apagou os dados. As contas ficam como estavam.')} />
         ) : s.gone ? (
           <Banner tone="warn" icon="trash-outline" title={t('Apagado do servidor')} body={t('Um dos jogadores apagou o link. Esta cópia fica no teu telemóvel como registo.')} />
         ) : offline || pending ? (

@@ -186,11 +186,18 @@ export function swapsTotal(list: Swap[]): SwapsTotal {
 export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): Swap {
   const onServer = new Set(remote.entries.filter((e) => e.side === local.side).map((e) => e.cid));
   const stillPending = local.entries.filter((e) => e.pending && !onServer.has(e.cid));
+  // A player who erased their data has their name scrubbed on the server; the copy on this
+  // phone already knew it and keeps it (a restored phone shows "o outro jogador").
+  const keep = (x: string, mine: string | undefined) => (x === '-' && mine && mine !== '-' ? mine : x);
+  const terms = remote.leftSide
+    ? { ...remote.terms, a: { ...remote.terms.a, name: keep(remote.terms.a.name, local.terms.a.name) }, b: { ...remote.terms.b, name: keep(remote.terms.b.name, local.terms.b.name) } }
+    : remote.terms;
+  const confirmedName = remote.confirmedName ?? undefined;
   return {
     ...local,
-    terms: remote.terms,
+    terms,
     confirmedAt: remote.confirmedAt ? Date.parse(remote.confirmedAt) : undefined,
-    confirmedName: remote.confirmedName ?? undefined,
+    confirmedName: remote.leftSide && confirmedName ? keep(confirmedName, local.confirmedName) : confirmedName,
     code: remote.code ?? undefined,
     left: remote.leftSide ?? undefined,
     entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
