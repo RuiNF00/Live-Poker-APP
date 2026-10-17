@@ -16,6 +16,9 @@ const notes = [];
 if (!pkg.dependencies?.['expo-updates']) problems.push('expo-updates is not installed');
 // Runtime = hash of the native code: an update never reaches a build it could crash.
 if (config.runtimeVersion?.policy !== 'fingerprint') problems.push(`runtimeVersion must be { "policy": "fingerprint" } (is ${JSON.stringify(config.runtimeVersion)})`);
+// npm scripts are not native code: editing one must not move the next update to a runtime no build has.
+const fp = (await import(root + 'fingerprint.config.js').catch(() => ({ default: {} }))).default;
+if (!fp.sourceSkips?.includes?.('PackageJsonScriptsAll')) problems.push('fingerprint.config.js must skip PackageJsonScriptsAll');
 const u = config.updates ?? {};
 // Downloaded on launch, applied on the next cold start: never a reload mid-hand.
 if (u.checkAutomatically !== 'ON_LOAD') problems.push(`updates.checkAutomatically must be "ON_LOAD" (is ${JSON.stringify(u.checkAutomatically)})`);
