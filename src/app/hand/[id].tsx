@@ -16,7 +16,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
-import { dropQueuedShare, isNetworkError, queueShare, useQueuedShare } from '@/lib/share-queue';
+import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
@@ -61,10 +61,18 @@ export default function HandScreen() {
     if (hand.shareId) return hand.shareId;
     setBusy(true);
     try {
+      // One public copy per hand: reuse a link made offline, or wait for the one being sent.
+      const slot = await takeDirectShare(hand.id);
+      if (slot.kind === 'ready') {
+        saveHand({ ...hand, ...slot.link });
+        return slot.link.shareId;
+      }
+      if (slot.kind === 'busy') {
+        Alert.alert(t('Link quase pronto'), t('Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.'));
+        return null;
+      }
       const { id: shareId, token } = await uploadHand(hand, { names: settings.shareNames, notes: settings.shareNotes });
       saveHand({ ...hand, shareId, shareToken: token });
-      // A link queued while offline is no longer needed.
-      dropQueuedShare(hand.id).catch(() => {});
       return shareId;
     } catch (e) {
       if (isNetworkError(e)) {

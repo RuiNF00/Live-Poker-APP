@@ -9,6 +9,7 @@ import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 import { deleteShare, uploadHand } from './share-api';
+import { takeSlot, type Slot } from './share-slot';
 import { outcomeOf, queue, registerSender, unqueue } from './sync';
 
 const KEY = 'sweatbook.share-queue.v1';
@@ -40,6 +41,20 @@ async function update(fn: (s: State) => void) {
   fn(s);
   for (const l of listeners) l();
   await AsyncStorage.setItem(KEY, JSON.stringify(s)).catch(() => {});
+}
+
+/**
+ * The player tapped Share: reuse a link made in the background, wait for one being
+ * sent, or (having taken any queued upload out) upload now. Never two uploads.
+ */
+export async function takeDirectShare(handId: string): Promise<Slot> {
+  const s = await load();
+  const cancelled = s.ready[handId] ? false : await unqueue('share-upload', handId);
+  let slot: Slot = { kind: 'upload' };
+  await update((x) => {
+    slot = takeSlot(x, handId, cancelled);
+  });
+  return slot;
 }
 
 /** True when the error means "no network" rather than "the server said no". */
