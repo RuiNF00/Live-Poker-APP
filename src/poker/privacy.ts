@@ -13,7 +13,7 @@ export interface ShareOptions {
 export const DEFAULT_SHARE: ShareOptions = { names: false, notes: true };
 
 export function publicHand(hand: Hand, opts: ShareOptions = DEFAULT_SHARE): Hand {
-  const { sessionId: _s, shareToken: _t, shareId: _i, voiceNote: _v, folders: _f, ...rest } = hand;
+  const { sessionId: _s, shareToken: _t, shareId: _i, voiceNote: _v, folders: _f, streetNotes: _n, review: _r, reviewNote: _rn, reviewedAt: _ra, ...rest } = hand;
   return {
     ...rest,
     players: hand.players.map(({ playerId: _p, ...p }, i) => (i === hand.hero || opts.names ? p : { ...p, name: '' })),

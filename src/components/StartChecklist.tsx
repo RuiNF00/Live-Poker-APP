@@ -4,9 +4,11 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { START_STEPS, startProgress, type StartStep } from '@/billing/onboarding';
+import { ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { FESTIVALS } from '@/poker/festivals';
+import { useFestivalPlan } from '@/store/festival-plan';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -23,12 +25,19 @@ export function useStartChecklist() {
   const { hands, sessions, transfers } = useStore();
   const [hidden, setHidden] = useState(true);
   const [now] = useState(() => Date.now());
+  // What they told us on first run: tournament players get a festival step.
+  const [plays, setPlays] = useState<string | null>(null);
+  const fest = useFestivalPlan(FESTIVALS[0]?.id ?? '');
   useEffect(() => {
-    AsyncStorage.getItem(HIDDEN)
-      .then((v) => setHidden(v === '1'))
+    AsyncStorage.multiGet([HIDDEN, ONBOARDING_KEY])
+      .then(([[, v], [, o]]) => {
+        setHidden(v === '1');
+        setPlays((o ? (JSON.parse(o) as { plays?: string }) : {}).plays ?? null);
+      })
       .catch(() => setHidden(false));
   }, []);
-  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length });
+  const START_STEPS = startSteps(plays);
+  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: fest.picked.length });
   const count = START_STEPS.filter((s) => done[s.key]).length;
   // First week means it: players whose first hand is older than two weeks don't need it.
   const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;
@@ -40,6 +49,7 @@ export function useStartChecklist() {
     if (k === 'hand') router.push('/hand/new');
     else if (k === 'session') router.push('/session');
     else if (k === 'bankroll') router.push('/bankroll');
+    else if (k === 'festival') router.push('/festival');
     else {
       const last = [...hands].sort((a, b) => b.createdAt - a.createdAt)[0];
       router.push({ pathname: '/hand/[id]', params: { id: last.id } });
@@ -49,12 +59,12 @@ export function useStartChecklist() {
     setHidden(true);
     AsyncStorage.setItem(HIDDEN, '1').catch(() => {});
   };
-  return { count, next, go, hide, handsCount: hands.length };
+  return { count, total: START_STEPS.length, next, go, hide, handsCount: hands.length };
 }
 
 /** Progress and the next step only: the full list would push the hands off screen. */
 export function StartChecklist({ state }: { state: NonNullable<ReturnType<typeof useStartChecklist>> }) {
-  const { count, next, go, hide, handsCount } = state;
+  const { count, total, next, go, hide, handsCount } = state;
   return (
     <Card style={{ gap: S.sm, paddingVertical: 12 }}>
       <Row gap={S.sm}>
@@ -62,14 +72,14 @@ export function StartChecklist({ state }: { state: NonNullable<ReturnType<typeof
           {t('Primeira semana')}
         </T>
         <T v="monoS" color={C.accent}>
-          {count}/{START_STEPS.length}
+          {count}/{total}
         </T>
         <Pressable onPress={hide} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Esconder')}>
           <Ionicons name="close" size={18} color={C.muted} />
         </Pressable>
       </Row>
       <View style={{ height: 4, borderRadius: 2, backgroundColor: C.surface3, overflow: 'hidden' }}>
-        <View style={{ width: `${(count / START_STEPS.length) * 100}%`, height: 4, backgroundColor: C.accent }} />
+        <View style={{ width: `${(count / total) * 100}%`, height: 4, backgroundColor: C.accent }} />
       </View>
       <Pressable onPress={() => go(next.key)} accessibilityRole="button" accessibilityLabel={t('Próximo: {step}', { step: t(next.label) })} style={{ minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
         <Ionicons name="ellipse-outline" size={20} color={C.muted} />

@@ -128,3 +128,23 @@ test('sortBankrolls: the auto bankroll stays first even when an import brings ol
   const later: Bankroll = { id: 'br_later', name: 'Bahamas', currency: '€', createdAt: 3000 };
   assert.deepEqual(sortBankrolls([later, online, auto]).map((b) => b.name), ['Principal', 'Online', 'Bahamas']);
 });
+
+test('restoring on a fresh phone: its own empty "Principal" gives way to the backup\'s', async () => {
+  const { dropUnusedAuto, ensureBankrolls } = await import('../bankroll-math');
+  const { mergeById } = await import('../backup');
+  // Fresh install in dollars; the backup is a euro player with a renamed-id Principal.
+  const fresh = ensureBankrolls([], [], '$', 1);
+  const backup: Bankroll[] = [{ id: 'br_old', name: 'Principal', currency: '€', createdAt: 0, updatedAt: 5 }];
+  const merged = mergeById(fresh, backup).list;
+  assert.equal(merged.length, 2);
+  assert.deepEqual(dropUnusedAuto(merged, backup, { bankrolls: fresh, sessions: [], transfers: [] }).map((b) => b.id), ['br_old']);
+  // Same currency, same stable id: merged by id, nothing dropped.
+  const eur = ensureBankrolls([], [], '€', 1);
+  const same = mergeById(eur, [{ ...eur[0], updatedAt: 9 }]).list;
+  assert.equal(dropUnusedAuto(same, [{ ...eur[0], updatedAt: 9 }], { bankrolls: eur, sessions: [], transfers: [] }).length, 1);
+  // A phone already in use keeps its own.
+  const used = dropUnusedAuto(merged, backup, { bankrolls: fresh, sessions: [], transfers: [{ id: 't', bankrollId: fresh[0].id, kind: 'deposit', amount: 1, at: 1, note: '' }] });
+  assert.equal(used.length, 2);
+  // Nothing in the backup: nothing changes.
+  assert.equal(dropUnusedAuto(fresh, [], { bankrolls: fresh, sessions: [], transfers: [] }), fresh);
+});

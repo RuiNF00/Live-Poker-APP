@@ -61,6 +61,11 @@ export const APP_EVENTS = [
   'link_opened',
   'invite_claimed',
   'cancel_flow',
+  'onboarding_step',
+  'paywall_closed',
+  'trial_start',
+  'lifetime_offer_shown',
+  'lifetime_purchased',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 

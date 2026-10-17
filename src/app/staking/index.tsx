@@ -16,8 +16,9 @@ import { useStore } from '@/store/store';
 import type { BackerLedger } from '@/store/staking';
 import type { Backer } from '@/store/types';
 import { C, S } from '@/theme';
+import { withPro } from '@/components/ProGate';
 
-export default function StakingScreen() {
+function StakingScreen() {
   const { backers, backing, saveBacker, settings, activeSession } = useStore();
   const { ledgers } = useStaking();
   const [edit, setEdit] = useState<Backer | null>(null);
@@ -204,3 +205,5 @@ function BalanceHeadline({
     </Card>
   );
 }
+
+export default withPro('staking', 'Staking', StakingScreen);
