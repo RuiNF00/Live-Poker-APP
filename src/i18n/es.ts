@@ -2869,6 +2869,9 @@ const es: Record<string, string> = {
   'Comentário denunciado': 'Comentario denunciado',
   'Partilhar imagem': 'Compartir imagen',
   'Partilhar noutra app (X, WhatsApp…)': 'Compartir en otra app (X, WhatsApp…)',
+  // Crash reports switch (Definições → Os teus dados).
+  'Enviar relatórios de erros': 'Enviar informes de errores',
+  'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Solo lo que falló y la versión, para corregirlo rápido. Sin nombres, manos ni importes.',
 };
 
 export default es;

@@ -2875,6 +2875,9 @@ const en: Record<string, string> = {
   'Comentário denunciado': 'Comment reported',
   'Partilhar imagem': 'Share image',
   'Partilhar noutra app (X, WhatsApp…)': 'Share to another app (X, WhatsApp…)',
+  // Crash reports switch (Definições → Os teus dados).
+  'Enviar relatórios de erros': 'Send crash reports',
+  'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Only what failed and the version, so we can fix it fast. No names, hands or amounts.',
 };
 
 export default en;

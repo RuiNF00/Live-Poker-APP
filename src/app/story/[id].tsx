@@ -15,7 +15,8 @@ import { shareLink } from '@/lib/share-api';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
-import { reelDurations, reelSteps } from '@/story/reel';
+import { motionTimeline } from '@/components/replayer/timeline';
+import { reelFrames } from '@/story/reel';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
@@ -52,7 +53,9 @@ export default function StoryScreen() {
   // The image goes public too: same privacy as the link.
   const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
   const moment = useMemo(() => (shown ? storyMoment(shown, video ? 'result' : mode, settings.inBB) : null), [shown, mode, video, settings.inBB]);
-  const reel = useMemo(() => (shown && moment ? reelSteps(shown, moment.replay) : []), [shown, moment]);
+  // The replayer's own motion timeline, so the video plays what the app shows.
+  const motion = useMemo(() => (shown && moment ? motionTimeline(shown, moment.replay) : []), [shown, moment]);
+  const reel = useMemo(() => (shown && moment ? reelFrames(shown, moment.replay, motion, withVoice ? voiceMs / 1000 : null) : []), [shown, moment, motion, withVoice, voiceMs]);
 
   // The preview plays the hand on a loop while video is picked.
   useEffect(() => {
@@ -112,7 +115,7 @@ export default function StoryScreen() {
       }
       setChip('preview');
       setProgress(withVoice ? t('A juntar a tua voz…') : t('A montar o vídeo…'));
-      const durations = reelDurations(moment.replay, reel, withVoice ? voiceMs / 1000 : null);
+      const durations = reel.map((f) => f.sec);
       let file: string;
       try {
         file = await renderReplayVideo(frames, durations, withVoice ? voice : null, withVoice ? voiceSlotPx() : null);
@@ -203,7 +206,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step] ?? 0) : undefined} />
+                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} />
               </View>
             </View>
           </View>
