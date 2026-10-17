@@ -41,7 +41,7 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
   const [attach, setAttach] = useState(true);
-  const [state, setState] = useState<'idle' | 'sending' | 'error' | 'limited' | 'offensive'>('idle');
+  const [state, setState] = useState<'idle' | 'sending' | 'error' | 'blocked' | 'limited' | 'offensive'>('idle');
   const [reported, setReported] = useState<Set<string>>(new Set());
 
   const report = async (commentId: string) => {
@@ -94,7 +94,8 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
       if (res.status === 429) return setState('limited');
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        return setState(err.error === 'offensive' ? 'offensive' : 'error');
+        // Blocked by the hand's owner: retrying never works, so no "try again".
+        return setState(err.error === 'offensive' ? 'offensive' : res.status === 403 ? 'blocked' : 'error');
       }
       const { comment } = await res.json();
       onAdded(comment);
@@ -195,6 +196,7 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
           .
         </p>
         {state === 'error' && <p className="error">{d.commentError}</p>}
+        {state === 'blocked' && <p className="error">{d.commentBlocked}</p>}
         {state === 'limited' && <p className="error">{d.rateLimited}</p>}
         {state === 'offensive' && <p className="error">{d.offensive}</p>}
       </form>

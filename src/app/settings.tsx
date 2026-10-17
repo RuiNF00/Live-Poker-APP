@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LOCAL_PRO, usePro } from '@/billing/pro';
+import { LOCAL_PRO, restoreNotice, usePro } from '@/billing/pro';
 import { manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
@@ -233,8 +233,7 @@ export default function SettingsScreen() {
               title={t('Restaurar compras')}
               subtitle={t('Já pagaste noutro telemóvel')}
               onPress={async () => {
-                const ok = await pro.restore();
-                note(ok ? t('Pro restaurado') : t('Não encontrámos compras nesta conta da loja.'));
+                restoreNotice(await pro.restore(), Platform.OS === 'android' ? 'Google Play' : 'App Store');
               }}
             />
             <ListItem icon="ticket-outline" title={t('Resgatar código')} subtitle={t('Um código de oferta da {store}', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })} onPress={() => void redeemCode()} />

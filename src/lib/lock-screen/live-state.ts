@@ -38,7 +38,9 @@ export interface LiveProps {
   nextBlinds: string;
   /** "Intervalo às 21:40 · 15 min" from the structure, '' when none is known. */
   breakAt: string;
-  labels: { time: string; stack: string; next: string; levelUp: string; newHand: string };
+  /** A tournament's chip-count story ("Partilhar stack"), one tap from the lock screen; '' for cash. */
+  shareUrl: string;
+  labels: { time: string; stack: string; next: string; levelUp: string; newHand: string; shareStack: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -148,12 +150,14 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     nextLevelAt: next ?? 0,
     nextBlinds: `${chips(after.sb)}/${chips(after.bb)}`,
     breakAt: breakLabel(breakOf(s, now), now),
+    shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
       next: t('Sobe em'),
       levelUp: t('Subir nível'),
       newHand: t('Nova mão'),
+      shareStack: t('Partilhar stack'),
     },
   };
 }

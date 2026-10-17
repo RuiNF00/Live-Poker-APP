@@ -6,12 +6,13 @@ import { Pressable, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
 import { SessionEndPro } from '@/components/SessionEndPro';
-import { Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
+import { Banner, Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, replay } from '@/poker/engine';
 import { bbs, duration, money } from '@/poker/format';
 import type { Hand } from '@/poker/types';
+import { unfinished } from '@/poker/unfinished';
 import { playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
@@ -37,6 +38,7 @@ export default function SessionSummary() {
   const s = sessions.find((x) => x.id === id);
   const mine = useMemo(() => hands.filter((h) => h.sessionId === id), [hands, id]);
   const { biggest, best } = useMemo(() => standouts(mine), [mine]);
+  const left = useMemo(() => unfinished(mine), [mine]);
   // Off when screenshotting at the table: no money on screen.
   const [hideMoney, setHideMoney] = useState(false);
 
@@ -97,6 +99,17 @@ export default function SessionSummary() {
             </Card>
           )}
         </Pressable>
+      ) : null}
+
+      {/* Hands saved with "Guardar já": one tap opens the oldest where it stopped. */}
+      {left.length > 0 ? (
+        <Banner
+          tone="warn"
+          icon="create-outline"
+          title={left.length === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: left.length })}
+          action={t('Acabar')}
+          onPress={() => router.push({ pathname: '/hand/new', params: { edit: left[0].id } })}
+        />
       ) : null}
 
       <Card padded={false}>

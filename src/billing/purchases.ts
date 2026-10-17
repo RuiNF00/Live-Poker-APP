@@ -8,6 +8,7 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
 import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
+import { buyError, type BuyResult } from './buy-result';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
@@ -79,7 +80,14 @@ function fallbackPlans(): StorePlan[] {
   return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), currency: 'USD', trialDays: PLANS[id].trialDays }));
 }
 
-const PLANS_TIMEOUT_MS = 12_000;
+const PLANS_TIMEOUT_MS = 8_000;
+const RESTORE_TIMEOUT_MS = 20_000;
+
+/** A card room's network can leave a store call hanging: give up so the screen can say so. */
+function withTimeout<T>(run: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([run, new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new Error('timeout')), ms)))]).finally(() => clearTimeout(timer));
+}
 
 /**
  * Store plans, or null when the store couldn't be reached. A real build never
@@ -89,29 +97,30 @@ const PLANS_TIMEOUT_MS = 12_000;
 export async function getPlans(): Promise<StorePlan[] | null> {
   if (!LIVE) return fallbackPlans();
   try {
-    // A card room's network can leave the request hanging: give up and show the retry instead of a spinner forever.
-    const offerings = await Promise.race([
-      (await rc()).getOfferings(),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), PLANS_TIMEOUT_MS)),
-    ]);
-    const pkgs = offerings.current?.availablePackages ?? [];
-    const plans: StorePlan[] = [];
-    for (const id of Object.keys(PRODUCTS) as PlanId[]) {
-      const pkg = pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id]) || p.packageType === (id === 'monthly' ? 'MONTHLY' : 'ANNUAL'));
-      if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: pkg.product.priceString, currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
-    }
-    if (Platform.OS === 'ios' && plans.length) {
-      // iOS lists the intro offer even to players who already used it, so ask.
-      const { default: Purchases, INTRO_ELIGIBILITY_STATUS } = await rcModule();
-      const elig = await Purchases.checkTrialOrIntroductoryPriceEligibility(plans.map((p) => p.pkg!.product.identifier));
-      for (const p of plans) {
-        if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
-      }
-    }
-    return plans.length ? plans : __DEV__ ? fallbackPlans() : null;
+    // Prices and trial eligibility under one deadline: the paywall shows a retry instead of a spinner forever.
+    return await withTimeout(loadPlans(), PLANS_TIMEOUT_MS);
   } catch {
     return __DEV__ ? fallbackPlans() : null;
   }
+}
+
+async function loadPlans(): Promise<StorePlan[] | null> {
+  const offerings = await (await rc()).getOfferings();
+  const pkgs = offerings.current?.availablePackages ?? [];
+  const plans: StorePlan[] = [];
+  for (const id of Object.keys(PRODUCTS) as PlanId[]) {
+    const pkg = pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id]) || p.packageType === (id === 'monthly' ? 'MONTHLY' : 'ANNUAL'));
+    if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: pkg.product.priceString, currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
+  }
+  if (Platform.OS === 'ios' && plans.length) {
+    // iOS lists the intro offer even to players who already used it, so ask.
+    const { default: Purchases, INTRO_ELIGIBILITY_STATUS } = await rcModule();
+    const elig = await Purchases.checkTrialOrIntroductoryPriceEligibility(plans.map((p) => p.pkg!.product.identifier));
+    for (const p of plans) {
+      if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
+    }
+  }
+  return plans.length ? plans : __DEV__ ? fallbackPlans() : null;
 }
 
 /**
@@ -221,11 +230,11 @@ async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Prom
   try {
     return hasPro((await run()).customerInfo) ? 'ok' : 'error';
   } catch (e) {
-    return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'error';
+    return buyError(e);
   }
 }
 
-export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
+export { buyError, type BuyResult } from './buy-result';
 
 /** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
 export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
@@ -246,20 +255,18 @@ export async function lifetimeOffer(): Promise<{ priceString: string; buy: () =>
 export async function buy(plan: StorePlan): Promise<BuyResult> {
   if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';
   if (!plan.pkg) return 'unavailable';
-  try {
-    const { customerInfo } = await (await rc()).purchasePackage(plan.pkg);
-    return hasPro(customerInfo) ? 'ok' : 'error';
-  } catch (e) {
-    return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'error';
-  }
+  return attempt(async () => (await rc()).purchasePackage(plan.pkg!));
 }
 
-export async function restore(): Promise<boolean> {
-  if (!LIVE) return false;
+/** 'none': the store answered and this account has no subscription; 'error': it didn't answer. */
+export type RestoreResult = 'ok' | 'none' | 'error';
+
+export async function restore(): Promise<RestoreResult> {
+  if (!LIVE) return 'none';
   try {
-    return hasPro(await (await rc()).restorePurchases());
+    return hasPro(await withTimeout((await rc()).restorePurchases(), RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
   } catch {
-    return false;
+    return 'error';
   }
 }
 

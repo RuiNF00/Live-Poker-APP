@@ -4,12 +4,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
-import { inviteStatus, type InviteStatus } from '@/lib/referrals';
+import { withLang } from '@/lib/link-lang';
+import { markShared, inviteStatus, type InviteStatus } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { C, F, R, S } from '@/theme';
 
@@ -23,18 +24,25 @@ export default function InviteScreen() {
     inviteStatus().then(setS);
   }, []);
 
-  const share = async () => {
+  // The friend's page opens in the inviter's language (the link carries ?lang=).
+  const share = async (to?: 'whatsapp') => {
     if (!s) return;
     tap('medium');
-    const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: {url}', { url: s.url });
-    track('link_shared', { channel: 'invite' });
-    if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
+    const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, ficamos os dois com 7 dias de Pro. {url}', { url: withLang(s.url, variant) });
+    track('link_shared', { channel: to === 'whatsapp' ? 'invite_whatsapp' : 'invite' });
+    void markShared();
+    if (to === 'whatsapp') {
+      // Straight to WhatsApp's chat picker: one tap less than the system sheet. Without WhatsApp, the usual sheet.
+      const text = encodeURIComponent(msg);
+      const url = Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`;
+      await Linking.openURL(url).catch(() => Share.share({ message: msg }));
+    } else if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
     else await Share.share({ message: msg });
   };
 
   const steps: [React.ComponentProps<typeof Ionicons>['name'], string][] = [
     ['paper-plane-outline', t('Envias o teu link a um amigo')],
-    ['download-outline', t('Ele instala e guarda a primeira mão')],
+    ['download-outline', t('O teu amigo instala e guarda a primeira mão')],
     ['flash-outline', t('Recebem os dois 7 dias de Pro')],
   ];
 
@@ -50,7 +58,7 @@ export default function InviteScreen() {
             {t('7 dias de Pro por amigo')}
           </T>
           <T v="callout" style={{ textAlign: 'center' }}>
-            {t('Para ti e para ele. Até 10 amigos por ano.')}
+            {t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
           </T>
         </View>
 
@@ -84,7 +92,8 @@ export default function InviteScreen() {
                 </T>
                 <Ionicons name="copy-outline" size={18} color={C.accent} />
               </Pressable>
-              <Button title={t('Partilhar convite')} icon="share-social" onPress={share} />
+              <Button title={t('Enviar no WhatsApp')} icon="logo-whatsapp" onPress={() => share('whatsapp')} />
+              <Button kind="secondary" title={t('Outras apps')} icon="share-social" onPress={() => share()} />
             </View>
             <StatGrid cols={3}>
               <Stat label={t('Convidados')} value={String(s.invited)} />

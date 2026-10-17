@@ -128,9 +128,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Azar ou sinal?'),
     body: t('Vê se o teu downswing é normal para os teus resultados.'),
   },
+  // Shown once the first live session is closed (TrialFollowUp), never at the table.
   sessionStart: {
-    title: t('Começa o teu Pro com esta sessão'),
-    body: t('Os dias grátis contam a partir de hoje, à mesa.'),
+    title: t('A próxima sessão, com Pro'),
+    body: t('Mãos sem limite na mesa. Os dias grátis contam a partir de hoje.'),
   },
   sessionEnd: {
     title: t('Cada sessão, toda revista'),

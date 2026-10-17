@@ -141,3 +141,12 @@ test('festival events from a file keep only the fields the planner knows', () =>
   const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, hands: [], sessions: [], players: [], festivalPlans: { x: { picked: [], events: [ev] } } }));
   assert.deepEqual(b.festivalPlans?.x.events, [{ id: 'o1', number: 100001, name: 'Deepstack', game: 'NLH', buyIn: 250, guarantee: 0, start: '2026-11-02T18:00', own: true }]);
 });
+
+test('backup carries weekly tournaments, checked field by field', () => {
+  const w = { id: 'w1', name: 'Quinta Deepstack', venue: 'Estoril', currency: '€', weekday: 4, time: '21:00', buyIn: 60, stack: 30000, levelMinutes: 20 };
+  const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w] });
+  assert.deepEqual(parseBackup(JSON.stringify(b)).weekly, [w]);
+  const junk = parseBackup(JSON.stringify({ ...b, weekly: [{ ...w, evil: 1 }, { ...w, id: 'w2', weekday: 7 }, { ...w, id: 'w3', time: '25:00' }, { ...w, id: 'w4', buyIn: 'x' }] }));
+  assert.deepEqual(junk.weekly, [w]);
+  assert.deepEqual(parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, hands: [], sessions: [], players: [] })).weekly, []);
+});

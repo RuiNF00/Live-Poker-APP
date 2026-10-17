@@ -17,7 +17,10 @@ import { deferState, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
-import { activateInvite, claimState } from '@/lib/referrals';
+import { t } from '@/i18n';
+import { notice } from '@/lib/notice';
+import { activateInvite, claimState, newInviteDays } from '@/lib/referrals';
+import { shortDate } from '@/poker/format';
 import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
 import { useStore } from '@/store/store';
 
@@ -42,7 +45,7 @@ interface ProValue {
   /** The paywall takes the pending `then` (once) when Pro arrives, or drops it when closed. */
   takeResume: () => (() => void) | null;
   purchase: (plan: PlanId, reason?: PaywallReason) => Promise<store.BuyResult>;
-  restore: () => Promise<boolean>;
+  restore: () => Promise<store.RestoreResult>;
   /** Re-plan the trial and come-back notifications (after the player allows them). */
   refreshNudges: () => void;
 }
@@ -92,7 +95,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     // Came through an invite? The first saved hand turns on both players' Pro days.
     if (kind === 'hand')
       activateInvite().then((granted) => {
-        if (granted) store.getIsPro().then((v) => v !== null && setPro(v));
+        if (!granted) return;
+        store.getIsPro().then((v) => v !== null && setPro(v));
+        // Said the moment it happens, in the same words as the invite: days of Pro, nothing to win.
+        notice(t('7 dias de Pro para os dois'), t('Guardaste a primeira mão: tu e quem te convidou têm Pro até {date}.', { date: shortDate(Date.now() + 7 * 86_400_000) }));
       });
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
@@ -140,9 +146,9 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   );
 
   const restore = useCallback(async () => {
-    const ok = await store.restore();
-    if (ok) setPro(true);
-    return ok;
+    const res = await store.restore();
+    if (res === 'ok') setPro(true);
+    return res;
   }, [setPro]);
 
   const handsLeft = isPro ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
@@ -153,10 +159,23 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => setLiveSession(!!activeSession), [activeSession]);
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
+  // The inviter hears about a friend's first hand on the next open, not only in Definições.
+  const inviteNews = useCallback(() => {
+    newInviteDays().then((days) => {
+      if (!days) return;
+      store.getIsPro().then((v) => v !== null && setPro(v));
+      notice(t('Um amigo guardou a primeira mão'), t('Têm os dois {n} dias de Pro.', { n: days }));
+    });
+  }, [setPro]);
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (st) => st === 'active' && refreshNudges());
+    inviteNews();
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      refreshNudges();
+      inviteNews();
+    });
     return () => sub.remove();
-  }, [refreshNudges]);
+  }, [refreshNudges, inviteNews]);
   const annualPrice = plans.find((p) => p.id === 'annual')?.priceString ?? '';
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -210,9 +229,11 @@ export function useOnboarding() {
  */
 export function useWelcomeOffer(handsSaved: number) {
   const { isPro, trialDays, paywall } = usePro();
+  // At the table the offer waits: a live session gets it once it is closed (TrialFollowUp).
+  const atTable = !!useStore().activeSession;
   useFocusEffect(
     useCallback(() => {
-      if (isPro || handsSaved < 1 || trialDays < 1) return;
+      if (isPro || atTable || handsSaved < 1 || trialDays < 1) return;
       let live = true;
       // Let the screen settle after coming back before sliding the offer up.
       const timer = setTimeout(async () => {
@@ -226,6 +247,13 @@ export function useWelcomeOffer(handsSaved: number) {
         live = false;
         clearTimeout(timer);
       };
-    }, [isPro, handsSaved, trialDays, paywall]),
+    }, [isPro, atTable, handsSaved, trialDays, paywall]),
   );
+}
+
+/** What a restore found, in the same words wherever it is tapped. Offline is not "no purchases". */
+export function restoreNotice(res: store.RestoreResult, storeName: string) {
+  if (res === 'ok') notice(t('Compras restauradas'), t('O teu Pro está ativo nesta conta da loja.'));
+  else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+  else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Sem rede. Tenta outra vez quando tiveres sinal.'));
 }

@@ -245,9 +245,9 @@ function BankrollTab() {
         {fresh ? (
           // A new player's one next step sits right under the balance, not below rules and tools.
           <Empty
-            icon="stats-chart"
+            compact
             title={t('Ainda sem sessões')}
-            body={t('Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.')}
+            body={t('O lucro e o €/hora aparecem aqui.')}
             action={
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
                 <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />
@@ -671,7 +671,8 @@ function Dots({ results }: { results: number[] }) {
     <Row gap={4} style={{ alignItems: 'center' }} accessible accessibilityLabel={t('Últimas {n} sessões: {won} a ganhar, {lost} a perder.', { n: results.length, won: results.filter((r) => r > 0).length, lost: results.filter((r) => r < 0).length })}>
       <T v="tiny">{t('Últimas {n}', { n: results.length })}</T>
       {results.map((r, i) => (
-        <View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r > 0 ? C.good : r < 0 ? C.bad : C.muted }} />
+        // A loss is a ring, not only a red dot: reads without telling red from green.
+        <View key={i} style={{ width: 8, height: 8, borderRadius: 4, ...(r < 0 ? { borderWidth: 1.5, borderColor: C.bad } : { backgroundColor: r > 0 ? C.good : C.muted }) }} />
       ))}
     </Row>
   );
@@ -702,7 +703,7 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
   );
   const shown = cols.flat().filter((c) => c.r !== undefined).length;
   return (
-    <Section title={t('Calendário')} hint={t('Cada quadrado é um dia: verde ganhaste, vermelho perdeste. Mais forte, mais dinheiro.')}>
+    <Section title={t('Calendário')} hint={t('Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.')}>
       <Card style={{ gap: S.md }}>
         <View
           style={{ flexDirection: 'row', gap: 3 }}
@@ -721,8 +722,10 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
                   style={{
                     aspectRatio: 1,
                     borderRadius: 3,
-                    backgroundColor: c.r === undefined ? (c.future ? 'transparent' : C.surface3) : c.r >= 0 ? C.good : C.bad,
-                    opacity: c.r === undefined ? 1 : 0.35 + 0.65 * Math.min(1, Math.abs(c.r) / max),
+                    // Losing days are outlined, winning days filled: not colour alone.
+                    backgroundColor: c.r === undefined ? (c.future ? 'transparent' : C.surface3) : c.r >= 0 ? C.good : 'transparent',
+                    ...(c.r !== undefined && c.r < 0 ? { borderWidth: 2, borderColor: C.bad } : null),
+                    opacity: c.r === undefined ? 1 : 0.5 + 0.5 * Math.min(1, Math.abs(c.r) / max),
                   }}
                 />
               ))}

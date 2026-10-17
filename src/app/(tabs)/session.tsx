@@ -39,7 +39,8 @@ import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-pla
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
-import { useStore } from '@/store/store';
+import { uid, useStore } from '@/store/store';
+import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { useSheetAnimation } from '@/lib/motion';
@@ -115,6 +116,7 @@ export default function SessionScreen() {
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
   const festivals = useFestivals();
+  const weekly = useWeekly();
   const [today] = useState(() => dayKey(Date.now()));
   const coming = useMemo(() => festivals.filter((f) => notOver(f, today)), [festivals, today]);
   // The tab is for starting a session: one festival row only when it's on or a week away (design/simplificar.md).
@@ -224,11 +226,32 @@ export default function SessionScreen() {
           bankrolls={bankrolls}
           recentNames={recentNames}
           recentVenues={recentVenues}
-          today={todays.map(({ f, e }) => {
-            const { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
-            const bankroll = bankrolls.find((b) => b.currency === f.currency);
-            return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
-          })}
+          today={[
+            // The player's own weekly tournaments first: the casino they play every week.
+            ...weeklyToday(weekly).map((w) => {
+              const bankroll = bankrolls.find((b) => b.currency === w.currency);
+              return {
+                key: 'w' + w.id,
+                label: `${w.time} ${w.name}`,
+                fill: {
+                  name: w.name,
+                  venue: w.venue,
+                  currency: w.currency,
+                  buyIn: w.buyIn,
+                  ...(w.stack ? { stack: w.stack, tourney: { startStack: w.stack } } : {}),
+                  levelMinutes: w.levelMinutes,
+                  levelStartedAt: weeklyLevelStart(w),
+                  ...(bankroll ? { bankrollId: bankroll.id } : {}),
+                },
+              };
+            }),
+            ...todays.map(({ f, e }) => {
+              const { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
+              const bankroll = bankrolls.find((b) => b.currency === f.currency);
+              return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
+            }),
+          ]}
+          weekly={{ list: weekly, onSave: (x, time) => saveWeekly(weeklyFrom(uid('wk_'), x, time)), onStop: deleteWeekly }}
           submitLabel={t('Começar agora')}
           submitRef={startRef}
           onSubmit={(s) => (settings.mindAsk === false || askedToday ? begin(s) : setArriving(s))}
@@ -447,30 +470,38 @@ function Live({ s }: { s: Session }) {
 
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
-          <Card onPress={() => setPad('stack')} style={{ flex: 1, gap: 4 }} accessibilityLabel={t('Atualizar stack')}>
-            <Row>
-              <T v="label" style={{ flex: 1 }}>
-                Stack
-              </T>
-              {mtt ? (
-                // The chip-count post of a festival day: card + text, chips only.
-                <Pressable onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Partilhar stack')} style={{ marginRight: 10 }}>
-                  <Ionicons name="share-outline" size={15} color={C.accent} />
-                </Pressable>
-              ) : null}
-              <Ionicons name="pencil" size={13} color={C.accent} />
-            </Row>
-            <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
-              {chips(s.stack)}
-            </T>
-            <Row gap={6}>
-              <T v="monoS">{bbs(s.stack, s.bb)}</T>
-              {delta ? (
-                <T v="monoS" color={delta > 0 ? C.good : C.bad}>
-                  {(delta > 0 ? '+' : '') + chips(delta)}
+          {/* The card opens the stack pad; the share icon sits on top of it, not inside, so the two taps aren't a button in a button. */}
+          <Card style={{ flex: 1 }}>
+            <Pressable onPress={() => setPad('stack')} accessibilityRole="button" accessibilityLabel={t('Atualizar stack')} style={({ pressed }) => ({ flex: 1, gap: 4, opacity: pressed ? 0.7 : 1 })}>
+              <Row>
+                <T v="label" style={{ flex: 1 }}>
+                  Stack
                 </T>
-              ) : null}
-            </Row>
+                <Ionicons name="pencil" size={13} color={C.accent} />
+              </Row>
+              <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+                {chips(s.stack)}
+              </T>
+              <Row gap={6}>
+                <T v="monoS">{bbs(s.stack, s.bb)}</T>
+                {delta ? (
+                  <T v="monoS" color={delta > 0 ? C.good : C.bad}>
+                    {(delta > 0 ? '+' : '') + chips(delta)}
+                  </T>
+                ) : null}
+              </Row>
+            </Pressable>
+            {mtt ? (
+              // The chip-count post of a festival day: card + text, chips only.
+              <Pressable
+                onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('Partilhar stack')}
+                style={{ position: 'absolute', top: S.lg, right: S.lg + 13 + 10 }}>
+                <Ionicons name="share-outline" size={15} color={C.accent} />
+              </Pressable>
+            ) : null}
           </Card>
           </View>
           <Card style={{ flex: 1, gap: 4 }}>
