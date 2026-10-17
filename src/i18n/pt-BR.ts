@@ -1406,11 +1406,15 @@ const ptBR: Record<string, string> = {
   'Estoril, maio 2027': 'Estoril, maio de 2027',
   'Las Vegas, verão 2027': 'Las Vegas, verão de 2027',
   'Ao comentar aceitas os': 'Ao comentar, você aceita os',
-  'Equity contra a tua grelha': 'Equity contra a sua grade',
+  'Equity contra a tua grelha': 'Equity contra o seu range',
   "prémios {amount}": "prêmios {amount}",
   "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
   'Toca duas vezes para avançar.': 'Toque duas vezes para avançar.',
   'tu': 'você',
+  'Win rate a sério': 'Win rate de verdade',
+  'Compara com os anteriores': 'Compare com os anteriores',
+  'Torneios a fundo': 'Torneios em detalhe',
+  'cartas tapadas': 'cartas fechadas',
 };
 
 export default ptBR;

@@ -12,7 +12,7 @@ const SUIT: Record<'pt' | 'en' | 'es', Record<string, string>> = {
   es: { s: 'picas', h: 'corazones', d: 'diamantes', c: 'tréboles' },
 };
 const OF = { pt: 'de', en: 'of', es: 'de' };
-const HIDDEN = { pt: 'carta tapada', en: 'face-down card', es: 'carta tapada' };
+const HIDDEN = { pt: 'carta tapada', 'pt-BR': 'carta fechada', en: 'face-down card', es: 'carta tapada' };
 
 const lang = (l: Locale) => (l === 'en' ? 'en' : l === 'es' ? 'es' : 'pt');
 
@@ -24,5 +24,5 @@ export function cardLabel(card: string, locale: Locale = 'pt'): string {
 }
 
 export function hiddenCardLabel(locale: Locale = 'pt'): string {
-  return HIDDEN[lang(locale)];
+  return locale === 'pt-BR' ? HIDDEN['pt-BR'] : HIDDEN[lang(locale)];
 }
