@@ -12,9 +12,13 @@ import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
+import { markCommentsSeen, rememberFriendHand } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
+import { comboLabel } from '@/poker/cards';
+import { blindsLabel } from '@/poker/format';
 import type { Hand } from '@/poker/types';
+import { useStore } from '@/store/store';
 import { BRAND, C, R } from '@/theme';
 
 export default function SharedHand() {
@@ -27,14 +31,25 @@ export default function SharedHand() {
   }, [id, r, utm_source, utm_medium]);
   const [hand, setHand] = useState<Hand | null>(null);
   const [err, setErr] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
+  const { hands } = useStore();
+  const mine = !!id && hands.some((h) => h.shareId === id);
 
   useEffect(() => {
     if (!id) return;
     fetchHand(id).then(setHand).catch(() => setErr(true));
-    fetchComments(id).then(setComments).catch(() => {});
+    fetchComments(id).then(setComments).catch(() => setComments([]));
   }, [id]);
+  // A friend's hand goes on "Mãos partilhadas", to come back to the conversation; yours is there already.
+  useEffect(() => {
+    if (!id || !hand || mine || Platform.OS === 'web') return;
+    const cards = hand.players[hand.hero]?.cards;
+    rememberFriendHand(id, [comboLabel(cards), blindsLabel(hand)].filter(Boolean).join(' · '));
+  }, [id, hand, mine]);
+  useEffect(() => {
+    if (id && comments) markCommentsSeen(id, comments.length);
+  }, [id, comments]);
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 60, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
@@ -59,7 +74,7 @@ export default function SharedHand() {
             quiz={q === '1'}
             onVote={(choice) =>
               postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
-                .then((c) => setComments((x) => [...x, c]))
+                .then((c) => setComments((x) => [...(x ?? []), c]))
                 .catch(() => {})
             }
           />
@@ -73,7 +88,7 @@ export default function SharedHand() {
             </Link>
           </View>
           <T v="h2">{t('Comentários')}</T>
-          <CommentsList shareId={id!} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} />
+          <CommentsList shareId={id!} comments={comments ?? []} onPosted={(c) => setComments((x) => [...(x ?? []), c])} />
           <Pressable
             disabled={reported}
             hitSlop={8}

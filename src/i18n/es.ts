@@ -2918,6 +2918,21 @@ const es: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tiene las fechas, salas y resultados que contiene. Nada de lo que ya tienes en Sweatbook va con él. Lo envías tú, desde tu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Acepto enviar este archivo a soporte',
   'Abrir o email': 'Abrir el email',
+  // Mãos partilhadas (friends' hands and new comments).
+  '1 comentário novo nas mãos partilhadas': '1 comentario nuevo en las manos compartidas',
+  '{n} comentários novos nas mãos partilhadas': '{n} comentarios nuevos en las manos compartidas',
+  'Mãos partilhadas': 'Manos compartidas',
+  'As mãos dos teus amigos e os comentários nas tuas': 'Las manos de tus amigos y los comentarios en las tuyas',
+  'Sem comentários': 'Sin comentarios',
+  'Ainda sem mãos partilhadas': 'Aún no hay manos compartidas',
+  'Partilha uma mão e os comentários dos teus amigos aparecem aqui. As mãos que eles te mandarem também.': 'Comparte una mano y los comentarios de tus amigos aparecen aquí. Las manos que te manden, también.',
+  'Dos teus amigos': 'De tus amigos',
+  'Quando abrires na app uma mão que um amigo te mandou, ela fica aqui para voltares à conversa.': 'Cuando abras en la app una mano que te mandó un amigo, queda aquí para que vuelvas a la conversación.',
+  'As tuas': 'Las tuyas',
+  'Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.': 'Comparte una mano (botón Compartir en la mano) para que tus amigos comenten.',
+  'Tirar da lista?': '¿Quitar de la lista?',
+  'A mão continua no link do teu amigo.': 'La mano sigue en el link de tu amigo.',
+  'Mão de um amigo': 'Mano de un amigo',
 };
 
 export default es;

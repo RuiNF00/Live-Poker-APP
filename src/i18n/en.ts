@@ -2924,6 +2924,21 @@ const en: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'It has the dates, venues and results in it. Nothing else from your Sweatbook goes with it. You send it yourself, from your email app.',
   'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
   'Abrir o email': 'Open email',
+  // Mãos partilhadas (friends' hands and new comments).
+  '1 comentário novo nas mãos partilhadas': '1 new comment on shared hands',
+  '{n} comentários novos nas mãos partilhadas': '{n} new comments on shared hands',
+  'Mãos partilhadas': 'Shared hands',
+  'As mãos dos teus amigos e os comentários nas tuas': 'Your friends\' hands and the comments on yours',
+  'Sem comentários': 'No comments',
+  'Ainda sem mãos partilhadas': 'No shared hands yet',
+  'Partilha uma mão e os comentários dos teus amigos aparecem aqui. As mãos que eles te mandarem também.': 'Share a hand and your friends\' comments show up here. So do the hands they send you.',
+  'Dos teus amigos': 'From your friends',
+  'Quando abrires na app uma mão que um amigo te mandou, ela fica aqui para voltares à conversa.': 'When you open a hand a friend sent you in the app, it stays here so you can come back to the conversation.',
+  'As tuas': 'Yours',
+  'Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.': 'Share a hand (the Share button on the hand) so your friends can comment.',
+  'Tirar da lista?': 'Remove from the list?',
+  'A mão continua no link do teu amigo.': 'The hand stays on your friend\'s link.',
+  'Mão de um amigo': 'A friend\'s hand',
 };
 
 export default en;

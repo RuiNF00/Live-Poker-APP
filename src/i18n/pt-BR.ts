@@ -1318,6 +1318,17 @@ const ptBR: Record<string, string> = {
   'Só vai este ficheiro': 'Só vai este arquivo',
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
+  // Mãos partilhadas (friends' hands and new comments).
+  '1 comentário novo nas mãos partilhadas': '1 comentário novo nas mãos compartilhadas',
+  '{n} comentários novos nas mãos partilhadas': '{n} comentários novos nas mãos compartilhadas',
+  'Mãos partilhadas': 'Mãos compartilhadas',
+  'As mãos dos teus amigos e os comentários nas tuas': 'As mãos dos seus amigos e os comentários nas suas',
+  'Ainda sem mãos partilhadas': 'Ainda sem mãos compartilhadas',
+  'Partilha uma mão e os comentários dos teus amigos aparecem aqui. As mãos que eles te mandarem também.': 'Compartilhe uma mão e os comentários dos seus amigos aparecem aqui. As mãos que eles mandarem para você também.',
+  'Dos teus amigos': 'Dos seus amigos',
+  'As tuas': 'As suas',
+  'Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.': 'Compartilhe uma mão (botão Compartilhar na mão) para seus amigos comentarem.',
+  'A mão continua no link do teu amigo.': 'A mão continua no link do seu amigo.',
 };
 
 export default ptBR;
