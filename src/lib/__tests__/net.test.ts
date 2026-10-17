@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { withTimeout } from '../net';
+import { longSignal, withTimeout } from '../net';
 
 // A server that never answers, but honours abort like real fetch does.
 const hanging = ((_: unknown, init?: RequestInit) =>
@@ -30,4 +30,11 @@ test('a fast answer goes through untouched', async () => {
   const f = withTimeout((async () => new Response('ok', { status: 201 })) as unknown as typeof fetch, 30);
   const r = await f('https://x.test', { method: 'POST' });
   assert.equal(r.status, 201);
+});
+
+test('big transfers get their own, longer limit', async () => {
+  const f = withTimeout(hanging, 30);
+  const t0 = Date.now();
+  await assert.rejects(f('https://x.test', { method: 'PUT', signal: longSignal(120) }), /aborted/);
+  assert.ok(Date.now() - t0 >= 100);
 });
