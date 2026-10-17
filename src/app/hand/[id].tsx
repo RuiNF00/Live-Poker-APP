@@ -22,6 +22,7 @@ import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Com
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
+import { openInGtoWizard } from '@/lib/gto-wizard';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Street } from '@/poker/types';
@@ -239,7 +240,7 @@ ${link}`;
             <ShareTile icon="help-circle-outline" label={t('Desafio')} sub={t('Votação')} disabled={busy} onPress={() => share(true)} />
             <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })} />
             <ShareTile icon="copy-outline" label={t('Texto')} sub={t('Fórum')} disabled={busy} onPress={askCopyText} />
-            <ShareTile icon="analytics-outline" label="Solver" sub="PokerStars" onPress={exportSolver} />
+            <ShareTile icon="analytics-outline" label="Solver" sub="GTO Wizard" onPress={() => openInGtoWizard([hand])} onLongPress={exportSolver} />
           </Row>
         </Section>
 
@@ -274,9 +275,24 @@ ${link}`;
   );
 }
 
-function ShareTile({ icon, label, sub, onPress, disabled }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; sub: string; onPress: () => void; disabled?: boolean }) {
+function ShareTile({
+  icon,
+  label,
+  sub,
+  onPress,
+  onLongPress,
+  disabled,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  sub: string;
+  onPress: () => void;
+  /** More options: the GTO Wizard tile keeps "copy text" and "save .txt" here. */
+  onLongPress?: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <Card onPress={disabled ? undefined : onPress} style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: S.md, paddingHorizontal: S.sm, opacity: disabled ? 0.5 : 1 }} accessibilityLabel={label}>
+    <Card onPress={disabled ? undefined : onPress} onLongPress={disabled ? undefined : onLongPress} style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: S.md, paddingHorizontal: S.sm, opacity: disabled ? 0.5 : 1 }} accessibilityLabel={label}>
       <Ionicons name={icon} size={22} color={C.text} />
       <T v="h3" style={{ fontSize: 14 }}>
         {label}

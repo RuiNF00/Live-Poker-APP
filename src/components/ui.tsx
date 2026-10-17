@@ -254,6 +254,7 @@ export function Card({
   style,
   tone = 'default',
   onPress,
+  onLongPress,
   padded = true,
   accessibilityLabel,
 }: {
@@ -261,6 +262,7 @@ export function Card({
   style?: StyleProp<ViewStyle>;
   tone?: CardTone;
   onPress?: () => void;
+  onLongPress?: () => void;
   padded?: boolean;
   accessibilityLabel?: string;
 }) {
@@ -274,6 +276,7 @@ export function Card({
         tap();
         onPress();
       }}
+      onLongPress={onLongPress}
       style={({ pressed }) => [base, pressed ? { opacity: 0.85, transform: [{ scale: 0.99 }] } : null, style]}>
       {children}
     </Pressable>

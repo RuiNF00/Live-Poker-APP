@@ -2000,6 +2000,16 @@ const en: Record<string, string> = {
   'E tu, como acabaste?': 'How did you finish?',
   'Quando {name} registar o resultado, recebes um aviso com as contas.': "When {name} records their result, you'll get a notification with the balance.",
   'Envia o link só a {name}: quem o abrir primeiro pode confirmar.': 'Send the link only to {name}: whoever opens it first can confirm.',
+  'O GTO Wizard só lê mãos completas. Acaba a mão primeiro.': 'GTO Wizard only reads finished hands. Finish the hand first.',
+  'Não conseguimos abrir o GTO Wizard.': 'We couldn\'t open GTO Wizard.',
+  '1 mão por completar ficou de fora.': '1 unfinished hand was left out.',
+  '{n} mãos por completar ficaram de fora.': '{n} unfinished hands were left out.',
+  'Mão copiada': 'Hand copied',
+  '{n} mãos copiadas': '{n} hands copied',
+  'No GTO Wizard, em Analyze › Upload, cola o texto e carrega em Upload.': 'In GTO Wizard, go to Analyze › Upload, paste the text and tap Upload.',
+  'Abrir GTO Wizard': 'Open GTO Wizard',
+  'Abrir no GTO Wizard': 'Open in GTO Wizard',
+  'Exportar {n} mãos': 'Export {n} hands',
 };
 
 export default en;
