@@ -150,7 +150,7 @@ export function Replayer({
 
   return (
     <View style={{ gap: 8 }}>
-      <ReplayerTable view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
+      <ReplayerTable animate view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
 
       {locked && k === last ? (
         <QuizPanel

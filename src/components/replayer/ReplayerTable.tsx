@@ -74,8 +74,11 @@ export function ReplayerTable({
   button,
   onTapLeft,
   onTapRight,
+  animate = false,
 }: {
   view: RpView;
+  /** Live motion between steps (the in-app replayer). Off for still renders such as Story frames. */
+  animate?: boolean;
   heroIndex: number;
   button: number;
   onTapLeft?: () => void;
@@ -101,7 +104,7 @@ export function ReplayerTable({
   };
 
   // Motion between steps: bets gather into the pot when a street is dealt, the pot slides to the winner.
-  const reduce = useReduceMotion();
+  const reduce = useReduceMotion() || !animate;
   const [flights, setFlights] = useState<Flight[]>([]);
   const prev = useRef<RpView | null>(null);
   const land = useCallback((id: string) => setFlights((fs) => fs.filter((f) => f.id !== id)), []);
