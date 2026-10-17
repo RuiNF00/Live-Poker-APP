@@ -21,6 +21,8 @@ export interface NewComment {
   name: string;
   text: string;
   stepIndex: number | null;
+  /** Hash of the commenter's app or browser id, so the hand's owner can block them. Never returned. */
+  authorKey?: string | null;
 }
 
 export interface ShareStore {
@@ -34,6 +36,10 @@ export interface ShareStore {
   addComment(id: string, c: NewComment): Promise<HandComment | null>;
   /** Hidden after 3 distinct reporters; 'hidden' when this report did it. */
   reportComment(commentId: string, reporterId: string): Promise<ReportResult>;
+  /** The hand's owner (edit token) hides a comment; with `block`, every comment of its author on that hand, now and later. */
+  removeComment(commentId: string, editToken: string, block: boolean): Promise<boolean>;
+  /** Visible comments per hand, for the app's list of shared hands. */
+  commentCounts(ids: string[]): Promise<Record<string, number>>;
   /** Taken down for review after 5 distinct reporters; 'hidden' when this report did it. */
   reportHand(id: string, reporterId: string, reason: string | null): Promise<ReportResult>;
   /** At most 5 voters per IP hash per hand. */
@@ -173,6 +179,7 @@ class SupabaseStore implements ShareStore {
       p_author_name: c.name,
       p_body: c.text,
       p_step_index: c.stepIndex,
+      p_author_key: c.authorKey ?? null,
     });
     if (error) throw error;
     const row = (Array.isArray(data) ? data[0] : data) as CommentRow | null;
@@ -183,6 +190,20 @@ class SupabaseStore implements ShareStore {
     const { data, error } = await this.db.rpc('report_hand_comment', { p_comment_id: commentId, p_reporter_id: reporterId });
     if (error) throw error;
     return data as ReportResult;
+  }
+
+  async removeComment(commentId: string, editToken: string, block: boolean) {
+    const { data, error } = block
+      ? await this.db.rpc('block_hand_commenter', { p_comment_id: commentId, p_edit_token: editToken })
+      : await this.db.rpc('hide_hand_comment', { p_comment_id: commentId, p_edit_token: editToken });
+    if (error) throw error;
+    return !!data;
+  }
+
+  async commentCounts(ids: string[]) {
+    const { data, error } = await this.db.rpc('hand_comment_counts', { p_ids: ids });
+    if (error) throw error;
+    return Object.fromEntries(((data ?? []) as { hand_id: string; comments: number }[]).map((r) => [r.hand_id, r.comments]));
   }
 
   async reportHand(id: string, reporterId: string, reason: string | null) {
@@ -228,6 +249,10 @@ interface LocalData {
   votes: Record<string, Record<string, VoteChoice>>;
   reports?: Record<string, string[]>;
   handReports?: Record<string, string[]>;
+  /** Hidden by the hand's owner. */
+  removed?: string[];
+  /** Blocked author keys per hand. */
+  blocks?: Record<string, string[]>;
   events?: (AppEvent & { createdAt: string })[];
 }
 
@@ -321,7 +346,30 @@ class LocalStore implements ShareStore {
 
   async listComments(id: string) {
     const d = await this.read();
-    return (d.comments[id] ?? []).filter((c) => (d.reports?.[c.id]?.length ?? 0) < 3);
+    return (d.comments[id] ?? [])
+      .filter((c) => (d.reports?.[c.id]?.length ?? 0) < 3 && !d.removed?.includes(c.id))
+      .map(({ authorKey: _k, ...c }: HandComment & { authorKey?: string | null }) => c);
+  }
+
+  async removeComment(commentId: string, editToken: string, block: boolean) {
+    return this.mutate((d) => {
+      const handId = Object.keys(d.comments).find((h) => d.comments[h].some((c) => c.id === commentId));
+      if (!handId || d.shares[handId]?.editTokenHash !== sha256(editToken)) return false;
+      const list = d.comments[handId] as (HandComment & { authorKey?: string | null })[];
+      const key = list.find((c) => c.id === commentId)?.authorKey ?? null;
+      if (block && key) ((d.blocks ??= {})[handId] ??= []).push(key);
+      d.removed = [...(d.removed ?? []), ...list.filter((c) => c.id === commentId || (block && key && c.authorKey === key)).map((c) => c.id)];
+      return true;
+    });
+  }
+
+  async commentCounts(ids: string[]) {
+    const out: Record<string, number> = {};
+    for (const id of ids.slice(0, 100)) {
+      const n = (await this.listComments(id)).length;
+      if (n) out[id] = n;
+    }
+    return out;
   }
 
   async reportComment(commentId: string, reporterId: string) {
@@ -337,6 +385,7 @@ class LocalStore implements ShareStore {
   async addComment(id: string, c: NewComment) {
     return this.mutate((d) => {
       if (!d.shares[id]?.allowComments) return null;
+      if (c.authorKey && d.blocks?.[id]?.includes(c.authorKey)) throw new Error('blocked');
       const comment = { id: randomUUID(), ...c, createdAt: Date.now() };
       (d.comments[id] ??= []).push(comment);
       return comment;

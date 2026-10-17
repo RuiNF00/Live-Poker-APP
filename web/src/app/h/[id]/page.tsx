@@ -11,6 +11,7 @@ import { ogLocale, pickLocale, previewLocale, t } from '@/lib/i18n';
 import { previewCopy } from '@/lib/preview-copy';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
 import { ShareView } from '@/components/ShareView';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -66,20 +67,23 @@ export default async function SharePage({ params, searchParams }: Params & Searc
   // up to the decision, and the rest (and the comments) comes back with the friend's vote.
   const comments = share.allowComments && !quiz ? await store.listComments(id) : [];
   return (
-    <ShareView
-      invite={invite}
-      utm={{ source: param(utm_source) ?? 'share', medium: param(utm_medium) ?? 'hand' }}
-      shareId={id}
-      hand={quiz ? challengeTeaser(resolved.hand, quiz) : resolved.hand}
-      teaser={!!quiz}
-      title={share.title}
-      revealAll={share.revealAll}
-      quiz={quiz}
-      allowComments={share.allowComments}
-      initialComments={comments}
-      viewCount={share.viewCount}
-      locale={locale}
-      shareUrl={`${brand.siteUrl}/h/${id}`}
-    />
+    <>
+      <ShareView
+        invite={invite}
+        utm={{ source: param(utm_source) ?? 'share', medium: param(utm_medium) ?? 'hand' }}
+        shareId={id}
+        hand={quiz ? challengeTeaser(resolved.hand, quiz) : resolved.hand}
+        teaser={!!quiz}
+        title={share.title}
+        revealAll={share.revealAll}
+        quiz={quiz}
+        allowComments={share.allowComments}
+        initialComments={comments}
+        viewCount={share.viewCount}
+        locale={locale}
+        shareUrl={`${brand.siteUrl}/h/${id}`}
+      />
+      <PageFooter locale={locale} page={`h/${id}`} />
+    </>
   );
 }

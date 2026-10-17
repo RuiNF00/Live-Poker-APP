@@ -12,6 +12,7 @@ import { pickLocale } from '@/lib/i18n';
 import { loadProfile as loadProfileByHandle, profileStore } from '@/lib/profiles';
 import { loadShare } from '@/lib/store';
 import { storeLinks } from '@/lib/storeLinks';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ handle: string }> };
 
@@ -60,5 +61,10 @@ export default async function Profile({ params }: Params) {
   const hands = (await Promise.all(rec.payload.hands.map(profileHand))).filter((h): h is ProfileHand => !!h);
   after(() => profileStore().recordView(rec.handle).catch(() => {}));
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'profile', utm_campaign: rec.handle }, rec.payload.ref);
-  return <ProfileView handle={rec.handle} profile={rec.payload} hands={hands} locale={locale} stores={stores} />;
+  return (
+    <>
+      <ProfileView handle={rec.handle} profile={rec.payload} hands={hands} locale={locale} stores={stores} />
+      <PageFooter locale={locale} page={`u/${rec.handle}`} />
+    </>
+  );
 }

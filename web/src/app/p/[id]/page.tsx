@@ -11,6 +11,7 @@ import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { PACK_ID_RE, packStore } from '@/lib/packs';
 import { normalizeCode } from '@/lib/refcode';
 import { getStore, loadShare } from '@/lib/store';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -82,14 +83,17 @@ export default async function PackPage({ params, searchParams }: Params & Search
     );
   }
   return (
-    <PackView
-      title={found.pack.title}
-      hands={found.hands}
-      hideAmounts={found.pack.hideAmounts}
-      locale={locale}
-      siteUrl={brand.siteUrl}
-      invite={typeof r === 'string' ? normalizeCode(r) : null}
-      utm={{ source: param(utm_source) ?? 'share', medium: param(utm_medium) ?? 'pack' }}
-    />
+    <>
+      <PackView
+        title={found.pack.title}
+        hands={found.hands}
+        hideAmounts={found.pack.hideAmounts}
+        locale={locale}
+        siteUrl={brand.siteUrl}
+        invite={typeof r === 'string' ? normalizeCode(r) : null}
+        utm={{ source: param(utm_source) ?? 'share', medium: param(utm_medium) ?? 'pack' }}
+      />
+      <PageFooter locale={locale} page={`p/${id}`} />
+    </>
   );
 }
