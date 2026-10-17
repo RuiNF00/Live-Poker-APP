@@ -2355,7 +2355,7 @@ const en: Record<string, string> = {
   'dás': 'you give',
   '{from} paga a {to}': '{from} pays {to}',
   '{from} paga-te': '{from} pays you',
-  'Sem rede: cria quando houver sinal': 'No signal: it\'s created when you\'re back online',
+  'Sem rede: é criado quando houver sinal': 'No signal: it\'s created when you\'re back online',
   'Mesmo grupo da última vez': 'Same group as last time',
   'Pagas {amount} a {to}': 'You pay {to} {amount}',
   '{from} paga-te {amount}': '{from} pays you {amount}',
