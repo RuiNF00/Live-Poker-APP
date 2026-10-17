@@ -20,6 +20,18 @@ const nextConfig: NextConfig = {
     '/og/invite': ['./assets/fonts/*.ttf'],
     '/opengraph-image': ['./assets/fonts/*.ttf'],
   },
+  // Coaching links carry their secret in the URL: never indexed, cached or sent on as a referrer.
+  async headers() {
+    const secret = [
+      { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+      { key: 'Cache-Control', value: 'private, no-store' },
+      { key: 'Referrer-Policy', value: 'no-referrer' },
+    ];
+    return [
+      { source: '/c/:token*', headers: secret },
+      { source: '/api/coach/:path*', headers: secret },
+    ];
+  },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
   async rewrites() {
     return ['privacy', 'terms', 'support', 'delete-account'].map((p) => ({ source: `/${p}`, destination: `/${p}.html` }));
