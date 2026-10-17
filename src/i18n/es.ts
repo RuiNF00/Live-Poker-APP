@@ -2395,6 +2395,12 @@ const es: Record<string, string> = {
   'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.': 'Resultados registrados por el jugador en Sweatbook. El resultado de cada sesión ya descuenta buy-ins, gastos, propinas y la parte de los backers.',
   'Dados recuperados': 'Datos recuperados',
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estaban guardados aparte se volvieron a abrir y están de vuelta en la app.',
+  'Nenhuma mão com estes filtros': 'Ninguna mano con estos filtros',
+  'Tira um filtro ou limpa todos para voltares a ver as mãos.': 'Quita un filtro o bórralos todos para volver a ver las manos.',
+  'Antes de começar': 'Antes de empezar',
+  'Não perguntar mais': 'No volver a preguntar',
+  'Como chegas e como sais de cada sessão. Só tu vês.': 'Cómo llegas y cómo sales de cada sesión. Solo lo ves tú.',
+  'Sessão em pausa · {time}': 'Sesión en pausa · {time}',
 };
 
 export default es;

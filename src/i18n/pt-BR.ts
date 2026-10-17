@@ -1042,6 +1042,8 @@ const ptBR: Record<string, string> = {
   '{v} no póquer': '{v} no poker',
   'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.': 'Resultados registrados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.',
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estavam salvos à parte voltaram a abrir e estão de volta no app.',
+  'Tira um filtro ou limpa todos para voltares a ver as mãos.': 'Tire um filtro ou limpe todos para voltar a ver as mãos.',
+  'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
 };
 
 export default ptBR;
