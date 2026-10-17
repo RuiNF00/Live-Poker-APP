@@ -48,7 +48,8 @@ export async function startCrashReports(): Promise<void> {
       dsn: DSN,
       release: Constants.expoConfig?.version,
       dist: Updates.updateId ?? undefined,
-      environment: Updates.channel || (__DEV__ ? 'development' : 'production'),
+      // TestFlight and Play test builds share the production update channel; the build channel tells testers' errors apart.
+      environment: process.env.EXPO_PUBLIC_BUILD_CHANNEL || Updates.channel || (__DEV__ ? 'development' : 'production'),
       sendDefaultPii: false,
       tracesSampleRate: 0,
       replaysSessionSampleRate: 0,
