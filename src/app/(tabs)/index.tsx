@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, SectionList, View } from 'react-native';
+import { Modal, Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro, useWelcomeOffer } from '@/billing/pro';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
-import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, Empty, IconButton, Pill, Row, ScreenHeader, SearchField, T, Wordmark } from '@/components/ui';
+import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
@@ -46,7 +46,7 @@ function dayTitle(day: number) {
 const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
-  const { hands, sessions, activeSession, settings, draft, setDraft } = useStore();
+  const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   const { handsLeft, trialDays, paywall } = usePro();
   useWelcomeOffer(hands.length);
   const [q, setQ] = useState('');
@@ -74,7 +74,24 @@ export default function HandsScreen() {
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
   const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
 
-  const renderItem = useCallback(({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} />, [settings.inBB]);
+  // Long-press a hand to start picking several; tap then adds or removes.
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const picking = picked.size > 0;
+  const togglePick = useCallback((id: string) => {
+    tap('select');
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const [tagging, setTagging] = useState(false);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} />,
+    [settings.inBB, picking, picked, togglePick],
+  );
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
   // Discarding a draft is one tap, so keep it for a few seconds behind an undo.
@@ -94,7 +111,7 @@ export default function HandsScreen() {
         stickySectionHeadersEnabled={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        contentContainerStyle={{ paddingHorizontal: S.gutter, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: S.gutter, paddingBottom: picking ? 110 : 40 }}
         ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <SafeTop>
@@ -178,7 +195,50 @@ export default function HandsScreen() {
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={7}
+        extraData={picked}
       />
+      {picking ? (
+        <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: S.md, flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.sm, paddingLeft: S.lg, borderRadius: R.lg, backgroundColor: C.surface3, borderWidth: 1, borderColor: C.borderStrong, ...SHADOW }}>
+          <T v="h3" style={{ flex: 1 }} accessibilityLiveRegion="polite">
+            {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
+          </T>
+          <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
+          <IconButton
+            name="trash-outline"
+            label={t('Apagar')}
+            color={C.danger}
+            onPress={() =>
+              confirmAction(picked.size === 1 ? t('Apagar mão?') : t('Apagar {n} mãos?', { n: picked.size }), t('Não dá para desfazer.'), t('Apagar'), () => {
+                picked.forEach((id) => deleteHand(id));
+                setPicked(new Set());
+              })
+            }
+          />
+          <IconButton name="close" label={t('Cancelar')} onPress={() => setPicked(new Set())} />
+        </View>
+      ) : null}
+      <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
+        <Pressable accessibilityLabel={t('Fechar')} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+            <SheetHeader title={picked.size === 1 ? t('Tag para 1 mão') : t('Tag para {n} mãos', { n: picked.size })} onClose={() => setTagging(false)} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+              {DEFAULT_TAGS.map((tg) => {
+                const list = hands.filter((h) => picked.has(h.id));
+                const all = list.length > 0 && list.every((h) => h.tags.includes(tg));
+                return (
+                  <Chip
+                    key={tg}
+                    big
+                    label={t(tg)}
+                    active={all}
+                    onPress={() => list.forEach((h) => saveHand({ ...h, tags: all ? h.tags.filter((x) => x !== tg) : h.tags.includes(tg) ? h.tags : [...h.tags, tg] }))}
+                  />
+                );
+              })}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -279,25 +339,29 @@ function rowSummary(hand: Hand) {
   return v;
 }
 
-const HandRow = React.memo(function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
+const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void }) {
   const { net, done } = rowSummary(hand);
   const pos = positions(hand.players.length, hand.button);
   const hero = hand.players[hand.hero];
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push({ pathname: '/hand/[id]', params: { id: hand.id } })}
+      accessibilityState={picking ? { selected: picked } : undefined}
+      onPress={() => (picking ? onPick(hand.id) : router.push({ pathname: '/hand/[id]', params: { id: hand.id } }))}
+      onLongPress={() => onPick(hand.id)}
+      delayLongPress={350}
       style={({ pressed }) => ({
-        backgroundColor: pressed ? C.surface2 : C.surface,
+        backgroundColor: picked ? C.accentSoft : pressed ? C.surface2 : C.surface,
         borderRadius: R.lg,
         borderWidth: 1,
-        borderColor: C.border,
+        borderColor: picked ? C.accentLine : C.border,
         paddingVertical: 12,
         paddingHorizontal: 12,
         gap: 10,
         ...SHADOW,
       })}>
       <Row gap={12}>
+        {picking ? <Ionicons name={picked ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={picked ? C.accent : C.muted} /> : null}
         {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" gap={2} /> : <View style={{ width: 62, height: 42, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: C.borderStrong }} />}
         <View style={{ flex: 1, gap: 3 }}>
           <Row gap={6}>

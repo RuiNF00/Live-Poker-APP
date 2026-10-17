@@ -548,6 +548,12 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  '1 selecionada': '1 selected',
+  '{n} selecionadas': '{n} selected',
+  'Pôr tag': 'Add tag',
+  'Apagar {n} mãos?': 'Delete {n} hands?',
+  'Tag para 1 mão': 'Tag 1 hand',
+  'Tag para {n} mãos': 'Tag {n} hands',
   'Como correu': 'How it went',
   'Focado': 'Focused',
   'Cansado': 'Tired',
