@@ -3069,6 +3069,7 @@ const en: Record<string, string> = {
   "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Tell me what you'd do, street by street. Comment right on the hand 👀",
   'Alguém entrou?': 'Someone came in?',
   'Cartas mostradas (opcional)': 'Cards shown (optional)',
+  'Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.': 'This file is XML. Export your sessions as CSV in the other app and pick that file.',
 };
 
 export default en;

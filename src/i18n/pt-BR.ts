@@ -1414,6 +1414,7 @@ const ptBR: Record<string, string> = {
   'Compara com os anteriores': 'Compare com os anteriores',
   'Torneios a fundo': 'Torneios em detalhe',
   'cartas tapadas': 'cartas fechadas',
+  'Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.': 'Este arquivo é XML. Exporte as sessões em CSV no outro app e escolha esse arquivo.',
 };
 
 export default ptBR;
