@@ -7,7 +7,9 @@
 //    comes in); whoever else came in is one tap on "alguém entrou?",
 //  - "salta para" chips fold/check everyone in between in one tap,
 //  - "só X paga" / "todos fold" / "todos check" close a street in one tap,
-//  - context (tournament, blinds, table) carries over from the session.
+//  - context (tournament, blinds, table) carries over from the session,
+//  - no time at the table: "Voz" records a note and saves the hand as it is,
+//    to be completed after the session.
 
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,9 +22,11 @@ import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
+import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
@@ -160,10 +164,12 @@ export default function NewHand() {
     update({ ...hand, board: [...hand.board, c] });
   };
 
-  const save = async () => {
+  const save = async (over?: Partial<Hand>) => {
     tap('medium');
+    const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
     if (!params.edit && !pro.canSaveHand()) {
+      if (over) update(hand);
       pro.paywall('hands');
       return;
     }
@@ -204,6 +210,11 @@ export default function NewHand() {
     }
     router.replace({ pathname: '/hand/[id]', params: { id: final.id } });
   };
+
+  const voice = useVoiceCapture(async (recording) => {
+    const voiceNote = await keepVoiceNote(recording, hand.id).catch(() => recording);
+    save({ voiceNote });
+  });
 
   const discard = () => {
     store.setDraft(null);
@@ -246,12 +257,23 @@ export default function NewHand() {
           ? t('Toca num lugar da mesa para saltar até ele')
           : null;
   const tableW = area.w && area.h ? Math.min(area.w, area.h / ASPECT) : 0;
+  // Two ways out at any point of the hand: a voice note (saved when it stops) or just save.
   const quickSave = (
-    <Pressable onPress={save} hitSlop={8}>
-      <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
-        {t('Guardar já')}
-      </T>
-    </Pressable>
+    <Row gap={14}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={voice.start} hitSlop={10}>
+        <Row gap={4}>
+          <Ionicons name="mic" size={15} color={C.accent} />
+          <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+            {t('Voz')}
+          </T>
+        </Row>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => save()} hitSlop={10}>
+        <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+          {t('Guardar já')}
+        </T>
+      </Pressable>
+    </Row>
   );
 
   return (
@@ -286,6 +308,7 @@ export default function NewHand() {
             BB
           </T>
         </Pressable>
+        {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} compact /> : null}
         <View style={{ opacity: history.length ? 1 : 0.35 }} pointerEvents={history.length ? 'auto' : 'none'}>
           <IconButton name="arrow-undo" label={t('Desfazer')} onPress={undo} />
         </View>
@@ -312,7 +335,8 @@ export default function NewHand() {
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
       <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
-        {phase === 'hero' && (
+        {voice.recording && <RecordingBar ms={voice.ms} onStop={voice.stop} onCancel={voice.cancel} />}
+        {!voice.recording && phase === 'hero' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
@@ -362,7 +386,7 @@ export default function NewHand() {
           </>
         )}
 
-        {phase === 'action' && l && (
+        {!voice.recording && phase === 'action' && l && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2" numberOfLines={1} style={{ flex: 1 }}>
@@ -433,7 +457,7 @@ export default function NewHand() {
           </>
         )}
 
-        {phase === 'board' && (
+        {!voice.recording && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
@@ -443,11 +467,11 @@ export default function NewHand() {
               {quickSave}
             </Row>
             <CardPicker used={usedCards(hand)} selected={hand.board.slice(s.boardCount)} onPick={pickBoard} />
-            {r.steps.length > 0 && s.bettingDone && <Button title={t('Guardar sem board')} kind="ghost" small onPress={save} />}
+            {r.steps.length > 0 && s.bettingDone && <Button title={t('Guardar sem board')} kind="ghost" small onPress={() => save()} />}
           </>
         )}
 
-        {(phase === 'showdown' || phase === 'done') && (
+        {!voice.recording && (phase === 'showdown' || phase === 'done') && (
           <>
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
               {phase === 'showdown' && (
@@ -519,7 +543,7 @@ export default function NewHand() {
               )}
               <FinishPanel hand={hand} onChange={(h) => setDraftState({ ...draft, hand: h })} />
             </ScrollView>
-            <Button title={t('Guardar e ver replay')} onPress={save} />
+            <Button title={t('Guardar e ver replay')} onPress={() => save()} />
           </>
         )}
       </View>
