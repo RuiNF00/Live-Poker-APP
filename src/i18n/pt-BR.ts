@@ -540,7 +540,7 @@ const ptBR: Record<string, string> = {
   '{name} pagou-te {amount} e ficam acertados.': '{name} te pagou {amount} e estão acertados.',
   'Como chegámos aqui': 'Como chegamos aqui',
   'Toca numa sessão para ver as contas passo a passo.': 'Toque em uma sessão para ver as contas passo a passo.',
-  'por pagar {amount}': 'a pagar {amount}',
+  'ação por pagar {amount}': 'ação a pagar {amount}',
   'pagaste {amount}': 'você pagou {amount}',
   'recebeste {amount}': 'você recebeu {amount}',
   'Estás acertado com os backers': 'Você está acertado com os backers',
@@ -701,7 +701,7 @@ const ptBR: Record<string, string> = {
   '{venue} aparece no link. Desligado, ninguém sabe onde estás.': '{venue} aparece no link. Desativado, ninguém sabe onde você está.',
   'Desligado, ninguém sabe onde estás.': 'Desativado, ninguém sabe onde você está.',
   'Este pacote já não existe': 'Este pacote não existe mais',
-  'A parte dele sai das sessões deste pacote e o link deixa de funcionar.': 'A parte dele sai das sessões deste pacote e o link para de funcionar.',
+  'A parte deste backer sai das sessões deste pacote e o link deixa de funcionar.': 'A parte deste backer sai das sessões deste pacote e o link para de funcionar.',
   'Escreve o teu nome para o backer saber de quem é o link.': 'Escreva seu nome para o backer saber de quem é o link.',
   'A tua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirma aqui o que combinámos: {url}': 'Sua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirme aqui o que combinamos: {url}',
   'Um dos nomes não passou no filtro. Muda-o e tenta outra vez.': 'Um dos nomes não passou no filtro. Mude e tente de novo.',
@@ -997,10 +997,10 @@ const ptBR: Record<string, string> = {
   'Partilhar resumo do festival': 'Compartilhar resumo do festival',
   'Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.': 'Tenha uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que você queira mostrá-los.',
   'Vende ações, faz swaps confirmados por link e acerta contas no fim.': 'Registre ações vendidas, faça swaps confirmados por link e acerte as contas no fim.',
+  'por pagar {amount}': 'a pagar {amount}',
   'O organizador não publicou o fecho do late reg (no World Championship as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'O organizador não publicou o fechamento do late reg (no World Championship as inscrições ficam abertas até o Dia 2): confirme no balcão do torneio.',
   'O World Championship não tem garantia publicada (o prémio adicionado não se aplica no Nevada).': 'O World Championship não tem garantia publicada (o prêmio adicionado não se aplica em Nevada).',
-  'ação por pagar {amount}': 'ação a pagar {amount}',
-  'A parte deste backer sai das sessões deste pacote e o link deixa de funcionar.': 'A parte deste backer sai das sessões deste pacote e o link para de funcionar.',
+  'A parte dele sai das sessões deste pacote e o link deixa de funcionar.': 'A parte dele sai das sessões deste pacote e o link para de funcionar.',
 };
 
 export default ptBR;
