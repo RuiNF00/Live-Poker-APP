@@ -3,6 +3,8 @@ import type { Tourney } from '@/poker/tourney';
 import type { SizeMemory } from '@/poker/entry';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
+import { deviceCurrency } from './currencies';
+
 export interface Session {
   id: string;
   kind: GameKind;
@@ -311,7 +313,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   inBB: false,
-  currency: '€',
+  currency: deviceCurrency(),
   nickname: '',
   defaultTableSize: 9,
   onboarded: false,
