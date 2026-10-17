@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { agreement, lineCost, lineRecords, newOffer, offerEvents, offerPackageIds, offerTotals, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, lineCost, lineRecords, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
 const picked = ['2', '3', '12-2A'];
@@ -71,4 +71,14 @@ test('sessions from the package events carry each backer, unpaid until marked pa
   const next = withOfferStakes([byHand, { backerId: 'b1', packageId: 'p1', share: 99, markup: 1 }], stakesFor([o], F.id, '3'), offerPackageIds([o]));
   assert.equal(next.length, 3);
   assert.deepEqual(next[0], byHand);
+});
+
+test('an unpaid piece is owed before any session, and moves to the sessions as they start', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 };
+  const o = pkg([line], 1.2);
+  // 10% of (26,000 + 50,000) × 1.2
+  assert.equal(pendingCost(F, o, line, {}), 9120);
+  // Event 2 started: its stake (unpaid) now carries it, only event 3 is left here.
+  assert.equal(pendingCost(F, o, line, { '2': 's1' }), 6000);
+  assert.equal(pendingCost(F, o, { ...line, paid: true }, {}), 0);
 });
