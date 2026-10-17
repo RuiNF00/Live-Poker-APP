@@ -58,8 +58,12 @@ export async function POST(req: Request, { params }: Ctx) {
     const comment = await getStore().addComment(id, { name, text, stepIndex, authorKey });
     if (!comment) return NextResponse.json({ error: 'comments_closed' }, { status: 404, headers: cors });
     const at = steps ? streetOfStep(steps, comment.stepIndex) : null;
-    // The owner hears about it (the database holds it in the quiet hours or until the last one is opened).
-    after(() => notifyOwner(id, at));
+    // The owner hears about it (the database holds it in the quiet hours or until the last one is
+    // opened), unless the owner wrote it: the app sends the hand's edit token with the owner's replies.
+    const owner = req.headers.get('x-edit-token');
+    after(async () => {
+      if (!owner || !(await getStore().ownsShare(id, owner))) await notifyOwner(id, at);
+    });
     return NextResponse.json({ comment: { ...comment, street: at } }, { status: 201, headers: cors });
   } catch (e) {
     if (String((e as Error)?.message).includes('blocked')) {

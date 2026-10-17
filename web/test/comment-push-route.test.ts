@@ -19,8 +19,10 @@ delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 const { getStore } = await import('@/lib/store');
 const { POST } = await import('../src/app/api/hands/[id]/comments/route');
 
-const post = (id: string, body: object) =>
-  POST(new Request(`http://x/api/hands/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
+const post = (id: string, body: object, owner?: string) =>
+  POST(new Request(`http://x/api/hands/${id}/comments`, { method: 'POST', body: JSON.stringify(body), headers: owner ? { 'x-edit-token': owner } : {} }), {
+    params: Promise.resolve({ id }),
+  });
 
 describe('the owner notice follows the comment', () => {
   it('a comment notifies the owner on its street; a blocked or offensive one never does', async () => {
@@ -35,5 +37,11 @@ describe('the owner notice follows the comment', () => {
     expect((await post(id, { name: 'Troll', text: 'outra vez', authorId: 'troll-device-1' })).status).toBe(403);
     expect((await post(id, { name: 'Zé', text: 'filho da puta' })).status).toBe(422);
     expect(notifyOwner).not.toHaveBeenCalled();
+    expect((await post(id, { name: 'Autor da mão', text: '@Ana obrigado' }, editToken)).status).toBe(201);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(notifyOwner).not.toHaveBeenCalled();
+    expect((await post(id, { name: 'Ana', text: 'de nada' }, 'not-the-token')).status).toBe(201);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(notifyOwner).toHaveBeenCalledOnce();
   });
 });
