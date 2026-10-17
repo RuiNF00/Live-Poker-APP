@@ -137,6 +137,7 @@ export default function SettingsScreen() {
           </Card>
           <ListGroup>
             <ToggleItem icon="calculator-outline" title={t('Valores em big blinds')} subtitle={t('Nas mãos, em vez de fichas')} value={settings.inBB} onChange={(inBB) => setSettings({ inBB })} />
+            <ToggleItem icon="phone-portrait-outline" title={t('Vibração')} subtitle={t('Só quando conta: guardar uma mão, fechar uma sessão')} value={settings.haptics !== false} onChange={(haptics) => setSettings({ haptics })} />
             <ListItem icon="language-outline" title={t('Idioma')} subtitle={lang === 'pt' ? 'Português' : 'English'} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
           </ListGroup>
         </Section>

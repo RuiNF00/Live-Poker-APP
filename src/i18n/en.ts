@@ -677,6 +677,8 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Vibração': 'Haptics',
+  'Só quando conta: guardar uma mão, fechar uma sessão': 'Only when it counts: saving a hand, closing a session',
   'Mais recentes': 'Most recent',
   'Mais bb ganhas': 'Most bb won',
   'Mais bb perdidas': 'Most bb lost',
