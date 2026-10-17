@@ -102,8 +102,12 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
                   </div>
                 ) : s.handLabel && !s.folded ? (
                   <div className="seat-tag">{s.handLabel}</div>
-                ) : s.lastAction ? (
-                  <div className={`seat-tag seat-tag-${s.lastAction.type}`}>{actionLabel(s.lastAction.type, locale)}</div>
+                ) : s.lastAction || s.committed > 0 ? (
+                  <div className={`seat-tag seat-tag-${s.lastAction?.type ?? 'bet'}`}>
+                    {s.lastAction && <span>{actionLabel(s.lastAction.type, locale)}</span>}
+                    {/* On a phone the board leaves no room for chips in front: the amount rides on the tag. */}
+                    {s.committed > 0 && <span className="seat-tag-amt">{fmt(s.committed)}</span>}
+                  </div>
                 ) : null}
               </div>
             </div>

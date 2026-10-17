@@ -128,7 +128,10 @@ export function ShareView(props: Props) {
   );
   const commentSteps = new Set(comments.map((c) => c.stepIndex).filter((x): x is number => x !== null));
 
+  const replayer = useRef<HTMLElement>(null);
   const finishQuiz = () => {
+    // The vote panel goes away: put the table back on screen for the reveal.
+    replayer.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setQuizState('done');
     setIndex(quizStep);
     setTimeout(() => setPlaying(true), 900);
@@ -138,7 +141,7 @@ export function ShareView(props: Props) {
     <main className="page">
       <Header {...props} spoilers={!quizHidesSpoilers} />
 
-      <section className="replayer" aria-label="Replayer">
+      <section className="replayer" aria-label="Replayer" ref={replayer}>
         <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
 
         <div className="step-line" aria-live="polite">
@@ -155,6 +158,10 @@ export function ShareView(props: Props) {
             locale={locale}
             onDone={finishQuiz}
           />
+        )}
+
+        {index === steps.length - 1 && !playing && quizState !== 'open' && (
+          <EndCard locale={locale} allowComments={props.allowComments} />
         )}
 
         <div className="scrub">
@@ -263,8 +270,32 @@ export function ShareView(props: Props) {
 
       <ReportHand shareId={props.shareId} locale={locale} />
 
-      <AppCta locale={locale} shareId={props.shareId} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} />
+      <AppCta locale={locale} shareId={props.shareId} hideSticky={quizState === 'open' && quizStep > 0} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} />
     </main>
+  );
+}
+
+/** The hand just ended: the friend's attention peaks here, so ask for a reply and show the app. */
+function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boolean }) {
+  const d = t(locale);
+  const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return (
+    <div className="end-card">
+      <div className="end-title">{d.endTitle}</div>
+      <div className="end-actions">
+        {allowComments && (
+          <button className="btn btn-ghost btn-sm" onClick={() => scroll('comments')}>
+            {d.endComment}
+          </button>
+        )}
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => scroll('app')}
+        >
+          {d.endApp}
+        </button>
+      </div>
+    </div>
   );
 }
 

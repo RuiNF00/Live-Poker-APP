@@ -26,7 +26,10 @@ export function AppCta({
   shareId,
   invite,
   utm,
+  hideSticky = false,
 }: {
+  /** While the friend is deciding on a challenge, the bar would cover the choices. */
+  hideSticky?: boolean;
   locale: Locale;
   shareId: string;
   invite: string | null;
@@ -44,7 +47,7 @@ export function AppCta({
 
   return (
     <>
-      <section className="cta">
+      <section className="cta" id="app">
         <div className="cta-logo">
           <Mark size={56} />
         </div>
@@ -61,7 +64,7 @@ export function AppCta({
         )}
       </section>
 
-      <div className="sticky-cta">
+      <div className={`sticky-cta${hideSticky ? ' sticky-cta-hidden' : ''}`}>
         <div className="sticky-brand">
           <Wordmark className="sticky-word" />
           <span>{brand.tagline[locale]}</span>

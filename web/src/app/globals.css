@@ -200,7 +200,7 @@ a {
 }
 
 .card-md {
-  --w: 31px;
+  --w: clamp(25px, 8vw, 31px);
   font-size: 15px;
 }
 
@@ -244,14 +244,14 @@ a {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 10px 10px 12px;
+  padding: 10px 6px 12px;
 }
 
 .table-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 0.8;
-  max-height: 68dvh;
+  aspect-ratio: 0.92;
+  max-height: 60dvh;
   margin: 0 auto;
 }
 
@@ -320,7 +320,7 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 74px;
+  width: clamp(64px, 19vw, 74px);
   transition: opacity 0.2s;
   z-index: 2;
 }
@@ -426,6 +426,14 @@ a {
   white-space: nowrap;
 }
 
+.seat-tag-amt {
+  font-variant-numeric: tabular-nums;
+}
+
+.seat-tag > span + .seat-tag-amt {
+  margin-left: 4px;
+}
+
 .seat-tag-fold {
   background: #3a2328;
   color: #f3a6ae;
@@ -456,7 +464,7 @@ a {
 .bet {
   position: absolute;
   transform: translate(-50%, -50%);
-  display: flex;
+  display: none;
   align-items: center;
   gap: 4px;
   font-size: 12px;
@@ -467,6 +475,15 @@ a {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   z-index: 1;
+}
+
+@media (min-width: 560px) {
+  .bet {
+    display: flex;
+  }
+  .seat-tag-amt {
+    display: none;
+  }
 }
 
 .chip {
@@ -487,6 +504,34 @@ a {
   min-height: 28px;
   font-size: 15px;
   font-weight: 600;
+}
+
+.end-card {
+  margin: 4px 0 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 106, 61, 0.08);
+  border: 1px solid rgba(255, 106, 61, 0.3);
+  text-align: center;
+  animation: deal 0.3s ease-out;
+}
+
+.end-title {
+  font-weight: 750;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.end-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.end-actions .btn {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 14px;
 }
 
 .street-pill {
@@ -674,6 +719,19 @@ a {
 .quiz-label,
 .quiz-pct {
   position: relative;
+}
+
+.quiz-amt {
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz-verdict {
+  display: block;
+  color: var(--text);
+  font-size: 15px;
+  margin-bottom: 2px;
 }
 
 .quiz-pct {
@@ -973,6 +1031,11 @@ a {
   background: rgba(12, 19, 17, 0.92);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--line);
+  transition: transform 0.25s ease-out;
+}
+
+.sticky-cta-hidden {
+  transform: translateY(110%);
 }
 
 .sticky-brand {
