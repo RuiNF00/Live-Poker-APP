@@ -7,8 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { t } from '@/i18n';
-import { money, shortDate } from '@/poker/format';
+import { locale, t } from '@/i18n';
+import { decimal, money, shortDate } from '@/poker/format';
 import type { Score, Summary } from '@/store/tourney-stats';
 import { MIN_SAMPLE } from '@/store/tourney-stats';
 import { C, F, ff } from '@/theme';
@@ -81,10 +81,10 @@ export function TourneyCard({ name, sum, scores, currency, since, hideMoney, bra
                     {s.name || t('Torneio')}
                   </Text>
                   <Text style={{ fontFamily: ff(600), fontSize: 12, color: C.textDim }} numberOfLines={1}>
-                    {(s.field ? t('de {n}', { n: s.field.toLocaleString() }) + ' · ' : '') + shortDate(s.at)}
+                    {(s.field ? t('de {n}', { n: s.field.toLocaleString(locale) }) + ' · ' : '') + shortDate(s.at)}
                   </Text>
                 </View>
-                <Text style={{ fontFamily: F.mono, fontSize: 15, color: C.text }}>{hideMoney ? `${s.multiple >= 10 ? Math.round(s.multiple) : s.multiple.toFixed(1)}×` : money(s.prize, currency)}</Text>
+                <Text style={{ fontFamily: F.mono, fontSize: 15, color: C.text }}>{hideMoney ? `${s.multiple >= 10 ? Math.round(s.multiple) : decimal(s.multiple)}×` : money(s.prize, currency)}</Text>
               </View>
             ))
           ) : (

@@ -12,7 +12,7 @@ import { usePro } from '@/billing/pro';
 import { SmallSample } from '@/components/SmallSample';
 import { Button, Card, Chip, ChipRow, Divider, Empty, ListGroup, ListItem, Row, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { compactMoney, money, shortDate } from '@/poker/format';
+import { compactMoney, decimal, money, shortDate } from '@/poker/format';
 import { byCurrency } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { BANDS, bandOf, biggestScores, finishedTourneys, gameOf, groupBy, MIN_GROUP, MIN_SAMPLE, summarize, tripOf, type Group, type StatsView } from '@/store/tourney-stats';
@@ -105,7 +105,7 @@ export default function TournamentStatsScreen() {
           {scores.length ? (
             <ListGroup>
               {scores.map((s) => (
-                <ListItem key={s.id} icon="trophy-outline" iconColor={C.accent} title={s.name || t('Torneio')} subtitle={[s.finish ? (s.field ? t('{p}º de {n}', { p: s.finish, n: s.field.toLocaleString(locale) }) : `${s.finish}º`) : null, shortDate(s.at), `${s.multiple >= 10 ? Math.round(s.multiple) : s.multiple.toFixed(1)}× ${t('o buy-in')}`].filter(Boolean).join(' · ')} value={hidden ? '•••' : money(s.prize, currency)} valueColor={C.good} onPress={() => router.push({ pathname: '/summary/[id]', params: { id: s.id } })} />
+                <ListItem key={s.id} icon="trophy-outline" iconColor={C.accent} title={s.name || t('Torneio')} subtitle={[s.finish ? (s.field ? t('{p}º de {n}', { p: s.finish, n: s.field.toLocaleString(locale) }) : `${s.finish}º`) : null, shortDate(s.at), `${s.multiple >= 10 ? Math.round(s.multiple) : decimal(s.multiple)}× ${t('o buy-in')}`].filter(Boolean).join(' · ')} value={hidden ? '•••' : money(s.prize, currency)} valueColor={C.good} onPress={() => router.push({ pathname: '/summary/[id]', params: { id: s.id } })} />
               ))}
             </ListGroup>
           ) : (
