@@ -4,7 +4,7 @@
 // hand's replay (or the invite page when the hand isn't shown). Free cards
 // always say "Feito com Sweatbook".
 
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePro } from '@/billing/pro';
 import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
-import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
+import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, shareStory } from '@/lib/instagram-story';
@@ -136,6 +136,15 @@ export default function FestivalCardScreen() {
               subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')}
               value={withBrand}
               onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+            />
+          </ListGroup>
+          <ListGroup style={{ marginTop: S.lg }}>
+            <ListItem
+              icon="albums-outline"
+              title={t('Carrossel para o feed')}
+              subtitle={t('Várias imagens 4:5: resumo, melhor mão, eventos e dias')}
+              chevron
+              onPress={() => router.push({ pathname: '/festival-carousel/[id]', params: { id: trip.id } })}
             />
           </ListGroup>
         </View>

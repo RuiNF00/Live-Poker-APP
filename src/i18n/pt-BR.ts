@@ -1180,6 +1180,14 @@ const ptBR: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Suas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.',
   'Podes levantar até {amount} e manter as regras ›': 'Você pode sacar até {amount} e manter as regras ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  'Não conseguimos preparar o carrossel. Tenta outra vez.': 'Não conseguimos preparar o carrossel. Tente de novo.',
+  'O Instagram não aceita a legenda de outra app: fica copiada, é só colar.': 'O Instagram não aceita a legenda de outro app: ela fica copiada, é só colar.',
+  'Desliza': 'Deslize',
+  '{c} de {n} nos prémios': '{c} de {n} nos prêmios',
+  'As tuas mãos e sessões ao vivo, revistas em 30 segundos.': 'Suas mãos e sessões ao vivo, revistas em 30 segundos.',
+  'Partilhar carrossel': 'Compartilhar carrossel',
+  '{c}/{n} nos prémios': '{c}/{n} nos prêmios',
+  'Registo as mãos e as sessões ao vivo com a Sweatbook: {link}': 'Registro minhas mãos e sessões ao vivo com o Sweatbook: {link}',
 };
 
 export default ptBR;
