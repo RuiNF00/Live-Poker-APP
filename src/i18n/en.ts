@@ -2981,6 +2981,7 @@ const en: Record<string, string> = {
   'Tirar da lista?': 'Remove from the list?',
   'A mão continua no link do teu amigo.': 'The hand stays on your friend\'s link.',
   'Mão de um amigo': 'A friend\'s hand',
+  'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'My {month} live: {sessions} sessions, {hours} hours and {hands} hands logged.',
 };
 
 export default en;

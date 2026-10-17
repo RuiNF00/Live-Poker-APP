@@ -1359,6 +1359,7 @@ const ptBR: Record<string, string> = {
   'As tuas': 'As suas',
   'Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.': 'Compartilhe uma mão (botão Compartilhar na mão) para seus amigos comentarem.',
   'A mão continua no link do teu amigo.': 'A mão continua no link do seu amigo.',
+  'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'Meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registradas.',
 };
 
 export default ptBR;
