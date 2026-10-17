@@ -3191,6 +3191,10 @@ const en: Record<string, string> = {
   'Hora oficial': 'Official time',
   'Punta Cana, janeiro 2027': 'Punta Cana, January 2027',
   'República Dominicana': 'Dominican Republic',
+  'AK, QQ+, BTN, torneio…': 'AK, QQ+, BTN, tournament…',
+  // Hands list: result chips (HandFilters RESULTS).
+  'Ganhei': 'Won',
+  'Perdi': 'Lost',
 };
 
 export default en;

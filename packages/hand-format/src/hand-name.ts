@@ -74,7 +74,7 @@ function namers(l: HandNameLocale): Namer[] {
       ([r]) => `Trío de ${many(r)}`,
       ([r]) => `Escalera ${to(r)}`,
       () => "Color",
-      ([a, b]) => `Full: ${many(a)} y ${many(b)}`,
+      ([a, b]) => `Full de ${many(a)} y ${many(b)}`,
       ([r]) => `Póker de ${many(r)}`,
       ([r]) => (r === 14 ? "Escalera real" : `Escalera de color ${to(r)}`),
     ];

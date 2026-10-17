@@ -18,8 +18,8 @@ import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { fileInFolder, needsReview } from '@/poker/review';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStat } from '@/components/StreakStat';
-import { filterPills, HandFilterSheet } from '@/components/HandFilters';
-import { activeFilters, handSearchText, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
+import { filterPills, HandFilterSheet, RESULTS } from '@/components/HandFilters';
+import { activeFilters, handSearchText, matches, matchesSearch, NO_FILTER, parseSearch, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
 import { useSharedHands } from '@/lib/friend-hands';
@@ -86,11 +86,18 @@ export default function HandsScreen() {
   const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
   const [searching, setSearching] = useState(false);
 
+  // The search also looks in the hand's session ("Main Event Dia 1", "Casino Lisboa").
+  const sessionText = useMemo(() => new Map(sessions.map((x) => [x.id, ` ${x.name} ${x.venue}`.toLowerCase()])), [sessions]);
   const sections = useMemo(() => {
-    const qq = q.trim().toLowerCase();
+    const words = parseSearch(q);
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)) && matches(h, filter));
+      .filter(
+        (h) =>
+          (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) &&
+          (!words.length || matchesSearch(h, words, searchText(h) + (h.sessionId ? (sessionText.get(h.sessionId) ?? '') : ''))) &&
+          matches(h, filter, netOf),
+      );
     // Sorted by result: one list, biggest first, instead of days.
     if (filter.sort !== 'recent') {
       const data = sortByResult(rows, filter.sort, (h) => rowSummary(h).net);
@@ -107,9 +114,22 @@ export default function HandsScreen() {
       out[out.length - 1].data.push(h);
     }
     return out;
-  }, [hands, q, tag, sentToCoach, filter]);
+  }, [hands, q, tag, sentToCoach, filter, sessionText]);
 
-  const pills = useMemo(() => filterPills(filter), [filter]);
+  const sessionName = useCallback((id: string) => {
+    const x = sessions.find((y) => y.id === id);
+    return x ? x.name || x.venue : '';
+  }, [sessions]);
+  // While searching, the chips under the box already show the result and session as on.
+  const pills = useMemo(() => filterPills(filter, sessionName).filter((x) => !searching || (x.key !== 'result' && x.key !== 'session')), [filter, sessionName, searching]);
+  // Quick picks under the search box: the last two sessions with hands in them.
+  const recentSessions = useMemo(() => {
+    const withHands = new Set(hands.map((h) => h.sessionId).filter(Boolean));
+    return sessions
+      .filter((x) => withHands.has(x.id) && (x.name || x.venue))
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .slice(0, 2);
+  }, [hands, sessions]);
   // While the list is narrowed, nudges about the rest of it get out of the way.
   const narrowed = !!tag || pills.length > 0;
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
@@ -172,7 +192,7 @@ export default function HandsScreen() {
                 title={<Wordmark size={narrow ? 25 : 30} />}
                 right={
                   <>
-                    {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ('')) : setSearching(true))} /> : null}
+                    {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ(''), setFilter((f) => ({ ...f, result: null, session: null }))) : setSearching(true))} /> : null}
                     {hands.length > 1 ? <IconButton name={activeFilters(filter) || filter.sort !== 'recent' ? 'options' : 'options-outline'} label={t('Filtrar mãos')} onPress={() => setFiltering(true)} /> : null}
                     <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
                     {/* New comments also show here, so they aren't lost when another card wins the one-card slot below. */}
@@ -246,7 +266,22 @@ export default function HandsScreen() {
               ) : !activeSession && idleDays >= 7 ? (
                 <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
               ) : null}
-              {searching ? <SearchField autoFocus value={q} onChange={setQ} placeholder={t('Torneio, jogador, AKs…')} /> : null}
+              {searching ? <SearchField autoFocus value={q} onChange={setQ} placeholder={t('AK, QQ+, BTN, torneio…')} /> : null}
+              {searching ? (
+                // One tap each for what players look for most: how it went, where, and the usual hands.
+                <ChipRow>
+                  {RESULTS.map((r) => (
+                    <Chip key={r.key} label={t(r.label)} active={filter.result === r.key} onPress={() => setFilter((f) => ({ ...f, result: f.result === r.key ? null : r.key }))} />
+                  ))}
+                  {recentSessions.map((x) => (
+                    <Chip key={x.id} icon="calendar-outline" label={x.name || x.venue} active={filter.session === x.id} onPress={() => setFilter((f) => ({ ...f, session: f.session === x.id ? null : x.id }))} />
+                  ))}
+                  {QUICK_WORDS.map((w) => {
+                    const on = q.split(/\s+/).some((x) => x.toLowerCase() === w.toLowerCase());
+                    return <Chip key={w} label={w} active={on} onPress={() => setQ((cur) => (on ? cur.split(/\s+/).filter((x) => x.toLowerCase() !== w.toLowerCase()).join(' ') : `${cur.trim()} ${w}`.trim()))} />;
+                  })}
+                </ChipRow>
+              ) : null}
               {usedTags.length > 0 || folders.length > 0 || toReview > 0 ? (
                 <ChipRow>
                   <Chip label={t('Todas')} active={!tag} onPress={() => setTag(null)} />
@@ -556,6 +591,10 @@ function rowSummary(hand: Hand) {
 }
 
 const isIncomplete = (h: Hand) => !rowSummary(h).done;
+const netOf = (h: Hand) => rowSummary(h).net;
+
+/** Hands players look up most, as one-tap words for the search box. */
+const QUICK_WORDS = ['AK', 'QQ+', 'BTN'];
 
 const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick, coach }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void; coach: number }) {
   const { net, done } = rowSummary(hand);

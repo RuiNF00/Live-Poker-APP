@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleShee
 import { t } from '@/i18n';
 import { RANKS } from '@/poker/cards';
 import type { Hand } from '@/poker/types';
-import { gameKey, gridCombo, heroPosition, NO_FILTER, STACK_BANDS, type HandFilter, type HandSort } from '@/store/hand-filters';
+import { gameKey, gridCombo, heroPosition, NO_FILTER, STACK_BANDS, type HandFilter, type HandResult, type HandSort } from '@/store/hand-filters';
 import { C, S, ff, F } from '@/theme';
 
 import { Button, Chip, Row, SheetHeader, T, tap, useSheetPad } from './ui';
@@ -16,9 +16,16 @@ export const SORTS: { key: HandSort; label: string }[] = [
   { key: 'lost', label: 'Mais bb perdidas' },
 ];
 
+export const RESULTS: { key: HandResult; label: string }[] = [
+  { key: 'won', label: 'Ganhei' },
+  { key: 'lost', label: 'Perdi' },
+];
+
 /** The removable pills for what is on, each with a way to clear just that. */
-export function filterPills(f: HandFilter): { key: string; label: string; clear: Partial<HandFilter> }[] {
+export function filterPills(f: HandFilter, sessionName?: (id: string) => string): { key: string; label: string; clear: Partial<HandFilter> }[] {
   const out: { key: string; label: string; clear: Partial<HandFilter> }[] = [];
+  if (f.session) out.push({ key: 'session', label: sessionName?.(f.session) || t('Sessão'), clear: { session: null } });
+  if (f.result) out.push({ key: 'result', label: t(RESULTS.find((r) => r.key === f.result)!.label), clear: { result: null } });
   if (f.pos.length) out.push({ key: 'pos', label: f.pos.join(', '), clear: { pos: [] } });
   if (f.stack) out.push({ key: 'stack', label: STACK_BANDS.find((b) => b.key === f.stack)!.label, clear: { stack: null } });
   if (f.game) out.push({ key: 'game', label: f.game, clear: { game: null } });
@@ -57,6 +64,12 @@ export function HandFilterSheet({ visible, onClose, value, onChange, hands }: { 
               <Group label={t('Ordenar')}>
                 {SORTS.map((s) => (
                   <Chip key={s.key} label={t(s.label)} active={value.sort === s.key} onPress={() => set({ sort: s.key })} />
+                ))}
+              </Group>
+
+              <Group label={t('Resultado')}>
+                {RESULTS.map((r) => (
+                  <Chip key={r.key} label={t(r.label)} active={value.result === r.key} onPress={() => set({ result: value.result === r.key ? null : r.key })} />
                 ))}
               </Group>
 
