@@ -12,6 +12,7 @@ import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } fr
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
+import { noteReviewBlocker } from '@/lib/review';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { BRAND, C, S } from '@/theme';
@@ -36,6 +37,7 @@ export default function Cancel() {
 
   useEffect(() => {
     track('cancel_flow', { step: 'open' });
+    void noteReviewBlocker('cancel');
     getSubscription().then((s) => {
       setPlan(s?.plan ?? null);
       setWillRenew(s?.willRenew ?? null);

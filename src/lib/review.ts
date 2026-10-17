@@ -74,7 +74,7 @@ export async function maybeAskForReview(moment: ReviewMoment): Promise<boolean> 
     if (!(await sr.isAvailableAsync())) return false;
     await save(noteAsk(s, n));
     // 'review_prompt' joins FunnelEvent with Conversão's event list (#145); until then the cast keeps tsc quiet.
-    track('review_prompt' as never, { moment });
+    track('review_prompt', { moment });
     await sr.requestReview();
     return true;
   } catch {
