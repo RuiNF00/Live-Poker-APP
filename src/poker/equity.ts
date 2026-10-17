@@ -7,7 +7,8 @@ import type { CardCode } from './types';
 
 const SUIT_INDEX: Record<string, number> = { s: 0, h: 1, d: 2, c: 3 };
 /** Card as rank (2..14) * 4 + suit, so the inner loop never touches strings. */
-const code = (c: CardCode) => rankValue(c) * 4 + SUIT_INDEX[c[1]];
+export const cardCode = (c: CardCode) => rankValue(c) * 4 + SUIT_INDEX[c[1]];
+const code = cardCode;
 
 /** Highest straight in a rank bitmask (bit r = rank r, ace also as bit 1), or 0. */
 function straightHigh(mask: number) {
@@ -23,8 +24,9 @@ const pack = (cat: number, k: number[]) => {
 };
 
 /**
- * Score of the best five of 5-7 cards; higher wins, equal ties. Same ordering as
- * evaluator.ts, written for speed: equity calls it hundreds of thousands of times.
+ * Score of the best five of 5-7 cards (see cardCode); higher wins, equal ties.
+ * Written for speed: equity calls it hundreds of thousands of times, and the
+ * evaluator uses it for every showdown the app replays.
  */
 export function score7(cards: number[]): number {
   const cnt = new Array<number>(15).fill(0);
