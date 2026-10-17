@@ -170,3 +170,13 @@ test('the other side leaving is kept from the server copy', () => {
   assert.equal(m.confirmedName, 'João');
   assert.equal(mergeRemote(swap({ terms: { ...terms, b: { name: '-', pct: 3 } } }), remote).terms.b.name, '-');
 });
+
+test('one event waits on the other side once my result is in', async () => {
+  const { waitingOn } = await import('../swaps');
+  const ev = { ...terms, scope: 'event' as const };
+  assert.equal(waitingOn(swap({ terms: ev })), null, 'nothing in yet');
+  assert.equal(waitingOn(swap({ terms: ev, entries: [e('a', 'result', 0)] })), 'b');
+  assert.equal(waitingOn(swap({ terms: ev, entries: [e('a', 'result', 0), e('b', 'result', 5000)] })), null);
+  assert.equal(waitingOn(swap({ entries: [e('a', 'result', 0)] })), null, 'a series never waits');
+  assert.equal(waitingOn(swap({ terms: ev, entries: [e('a', 'result', 0)], left: 'b' })), null);
+});

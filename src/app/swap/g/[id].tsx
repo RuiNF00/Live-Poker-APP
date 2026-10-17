@@ -11,14 +11,14 @@ import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react
 import { GroupEntryRow, GroupEntrySheet, GroupHero, GroupSettle, seatLabel, type GroupDraft } from '@/components/swaps/group-parts';
 import { useLocked } from '@/components/ProGate';
 import { AccountsLocked, pctLabel } from '@/components/swaps/parts';
-import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, ListGroup, Row, Screen, Section, T, tap } from '@/components/ui';
+import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { SwapError } from '@/lib/swap-api';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
 import { shortDate, timeOf } from '@/poker/format';
-import { groupFromRemote, groupReady, type GroupEntry, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
+import { groupFromRemote, groupReady, groupWaitingOn, type GroupEntry, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
 import { addGroupPrize, leaveGroupEverywhere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
 import { C, S } from '@/theme';
 
@@ -231,6 +231,29 @@ function OwnGroup({ g }: { g: SwapGroup }) {
             <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
             <Button title={t('Paguei')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
           </Row>
+        ) : null}
+
+        {groupWaitingOn(g).length ? (
+          <Card tone="inset" style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
+            <Ionicons name="hourglass-outline" size={18} color={C.textDim} />
+            <T v="small" style={{ flex: 1 }}>
+              {t('À espera do resultado de {name}', { name: groupWaitingOn(g).map((seat) => seatLabel(g, seat)).join(', ') })}
+            </T>
+          </Card>
+        ) : null}
+
+        {ready && !g.gone && !someoneLeft ? (
+          <Section hint={t('Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.')}>
+            <ListGroup>
+              <ToggleItem
+                icon="flash-outline"
+                title={t('Enviar o meu resultado sozinho')}
+                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.')}
+                value={!!g.autoShare}
+                onChange={(v) => saveGroup({ ...g, autoShare: v, updatedAt: Date.now() })}
+              />
+            </ListGroup>
+          </Section>
         ) : null}
 
         {ready && !locked ? <GroupSettle g={g} /> : null}

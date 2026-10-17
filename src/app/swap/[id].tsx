@@ -10,14 +10,14 @@ import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react
 
 import { useLocked } from '@/components/ProGate';
 import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, type EntryDraft } from '@/components/swaps/parts';
-import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap } from '@/components/ui';
+import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, SwapError, swapUrl } from '@/lib/swap-api';
 import { useStore } from '@/store/store';
-import { fromRemote, other, swapLedger, swapNames, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
+import { fromRemote, other, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
 import { addEntry, deleteSwapEverywhere, removeEntry, saveSwap, syncSwap, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
@@ -226,6 +226,29 @@ function OwnSwap({ s }: { s: Swap }) {
             <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
             <Button title={l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
           </Row>
+        ) : null}
+
+        {waitingOn(s) ? (
+          <Card tone="inset" style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
+            <Ionicons name="hourglass-outline" size={18} color={C.textDim} />
+            <T v="small" style={{ flex: 1 }}>
+              {t('À espera do resultado de {name}', { name: them })}
+            </T>
+          </Card>
+        ) : null}
+
+        {s.confirmedAt && !s.gone && !s.left ? (
+          <Section hint={t('Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.')}>
+            <ListGroup>
+              <ToggleItem
+                icon="flash-outline"
+                title={t('Enviar o meu resultado sozinho')}
+                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.')}
+                value={!!s.autoShare}
+                onChange={(v) => saveSwap({ ...s, autoShare: v, updatedAt: Date.now() })}
+              />
+            </ListGroup>
+          </Section>
         ) : null}
 
         <Section title={t('Acordo')}>
