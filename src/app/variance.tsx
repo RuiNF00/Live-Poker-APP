@@ -2,7 +2,7 @@
 // next N hours (cash) or N tournaments. Works with typed numbers for anyone;
 // filling them from your own sessions is Pro.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';

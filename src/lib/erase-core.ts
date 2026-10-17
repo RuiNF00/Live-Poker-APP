@@ -24,7 +24,10 @@ export const KEEP_KEYS = [
   'rl.firsthand.v1',
 ];
 
+/** Prefixes of every key the app writes. A new feature's key must start with one of them. */
+export const APP_PREFIXES = ['rl.', 'sweatbook.', 'pp.'];
+
 /** Every app key except the ones above. Keys of other libraries are left alone. */
 export function keysToErase(all: readonly string[]): string[] {
-  return all.filter((k) => (k.startsWith('rl.') || k.startsWith('sweatbook.')) && !KEEP_KEYS.includes(k));
+  return all.filter((k) => APP_PREFIXES.some((p) => k.startsWith(p)) && !KEEP_KEYS.includes(k));
 }

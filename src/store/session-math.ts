@@ -67,7 +67,7 @@ export function ownCost(s: Session): number {
  * plus your cut of a makeup package credited to this session (kept in sync by the store).
  */
 export function profit(s: Session): number {
-  return (s.cashOut || 0) - owedToBackers(s) - ownCost(s) + (s.makeupCut || 0);
+  return (s.cashOut || 0) - owedToBackers(s) - ownCost(s) + (s.makeupCut || 0) + (s.swapNet || 0);
 }
 
 /** Per-session makeup cuts, by session id. Missing ids are 0. */

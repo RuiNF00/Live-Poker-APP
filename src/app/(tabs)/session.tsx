@@ -2,7 +2,7 @@
 // screen you can update between hands. Hands recorded while a session is open
 // are linked to it and keep its stack up to date.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useMemo, useRef, useState } from 'react';

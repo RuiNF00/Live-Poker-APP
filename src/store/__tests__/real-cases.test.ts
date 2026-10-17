@@ -124,3 +124,16 @@ test('the tax view adds back expenses and tips, nothing else', () => {
   assert.equal(cents(gamblingResult(rebuys)), cents(EXPECTED.rebuys + 30 + 45));
   assert.equal(cents(gamblingResult(mtt)), EXPECTED.main);
 });
+
+test('swaps: the share given away and the share received land in every total', () => {
+  // 5% of the 12 000 prize goes to the other player; 5% of their 8 000 lands on the turbo.
+  const swapped = sessions.map((s) => (s.id === 'main' ? { ...s, swapNet: -600 } : s.id === 'pkg' ? { ...s, swapNet: 400 } : s));
+  const eur = cents(EUR - 600 + 400);
+  assert.equal(cents(totals(swapped.filter((s) => s.currency === '€'), '€').profit), eur);
+  assert.equal(cents(balanceOf({ bankrollId: 'br_eur' }, swapped, transfers, bankrolls).results), eur);
+  assert.equal(cents(buildReport({ sessions: swapped, transfers, bankrolls, range: {} }).currencies.find((c) => c.currency === '€')!.totals.profit), eur);
+  const [head, ...rows] = sessionsCsv(swapped, bankrolls).trim().split('\n');
+  const i = head.split(',').indexOf('profit');
+  const c = head.split(',').indexOf('currency');
+  assert.equal(cents(rows.filter((r) => r.split(',')[c] === '€').reduce((a, r) => a + Number(r.split(',')[i]), 0)), eur);
+});

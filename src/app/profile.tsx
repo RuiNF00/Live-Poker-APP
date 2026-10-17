@@ -1,7 +1,7 @@
 // Public profile: an opt-in page at sweatbook.poker/u/<handle> with the hands and
 // session cards the player ticks here. Off until created; amounts hidden by default.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';

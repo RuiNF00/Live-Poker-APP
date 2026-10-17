@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -16,9 +16,10 @@ const FORTNIGHT = 14 * 86_400_000;
 /**
  * First-week checklist on the hands list (Mural pattern): four things that
  * make the app stick, each one tap away. Goes once all four are done, or
- * when the player hides it.
+ * when the player hides it. The hook says whether it shows, so the home
+ * keeps a single context card at a time.
  */
-export function StartChecklist() {
+export function useStartChecklist() {
   const { hands, sessions, transfers } = useStore();
   const [hidden, setHidden] = useState(true);
   const [now] = useState(() => Date.now());
@@ -32,6 +33,7 @@ export function StartChecklist() {
   // First week means it: players whose first hand is older than two weeks don't need it.
   const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;
   if (hidden || hands.length === 0 || count === START_STEPS.length || now - first > FORTNIGHT) return null;
+  const next = START_STEPS.find((s) => !done[s.key])!;
 
   const go = (k: StartStep) => {
     tap();
@@ -47,9 +49,14 @@ export function StartChecklist() {
     setHidden(true);
     AsyncStorage.setItem(HIDDEN, '1').catch(() => {});
   };
+  return { count, next, go, hide, handsCount: hands.length };
+}
 
+/** Progress and the next step only: the full list would push the hands off screen. */
+export function StartChecklist({ state }: { state: NonNullable<ReturnType<typeof useStartChecklist>> }) {
+  const { count, next, go, hide, handsCount } = state;
   return (
-    <Card style={{ gap: S.sm }}>
+    <Card style={{ gap: S.sm, paddingVertical: 12 }}>
       <Row gap={S.sm}>
         <T v="h3" style={{ flex: 1 }}>
           {t('Primeira semana')}
@@ -64,20 +71,18 @@ export function StartChecklist() {
       <View style={{ height: 4, borderRadius: 2, backgroundColor: C.surface3, overflow: 'hidden' }}>
         <View style={{ width: `${(count / START_STEPS.length) * 100}%`, height: 4, backgroundColor: C.accent }} />
       </View>
-      {START_STEPS.map((s) => (
-        <Pressable key={s.key} disabled={done[s.key]} onPress={() => go(s.key)} accessibilityRole="button" accessibilityState={{ checked: done[s.key] }} style={{ minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-          <Ionicons name={done[s.key] ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={done[s.key] ? C.accent : C.muted} />
-          <T v="body" color={done[s.key] ? C.muted : C.text} style={{ flex: 1, textDecorationLine: done[s.key] ? 'line-through' : 'none' }}>
-            {t(s.label)}
+      <Pressable onPress={() => go(next.key)} accessibilityRole="button" accessibilityLabel={t('Próximo: {step}', { step: t(next.label) })} style={{ minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+        <Ionicons name="ellipse-outline" size={20} color={C.muted} />
+        <T v="body" style={{ flex: 1 }} numberOfLines={1}>
+          {t(next.label)}
+        </T>
+        {next.key === 'hand' ? (
+          <T v="monoS" color={C.textDim}>
+            {handsCount}/3
           </T>
-          {s.key === 'hand' && !done.hand ? (
-            <T v="monoS" color={C.textDim}>
-              {hands.length}/3
-            </T>
-          ) : null}
-          {done[s.key] ? null : <Ionicons name="chevron-forward" size={16} color={C.muted} />}
-        </Pressable>
-      ))}
+        ) : null}
+        <Ionicons name="chevron-forward" size={16} color={C.muted} />
+      </Pressable>
     </Card>
   );
 }

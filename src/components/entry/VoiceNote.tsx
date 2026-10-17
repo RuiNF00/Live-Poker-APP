@@ -2,7 +2,7 @@
 // tap records a voice note, one more stops it and saves the hand as it is; the
 // note plays back when the hand is completed after the session.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   RecordingPresets,
   requestRecordingPermissionsAsync,

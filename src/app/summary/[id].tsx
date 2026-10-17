@@ -1,5 +1,5 @@
 // Right after a session ends: the few numbers worth remembering, before the bankroll.
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';

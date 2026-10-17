@@ -2,7 +2,7 @@
 // stack, level and result as the web page, refreshed while the screen is open.
 // The player's own link goes straight to their session instead.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { AppState, ScrollView, View } from 'react-native';

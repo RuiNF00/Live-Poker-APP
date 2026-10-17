@@ -1,7 +1,7 @@
 // Settings: your name and defaults, backups (file, CSV, cloud code), purchases
 // and the legal pages the stores require.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
