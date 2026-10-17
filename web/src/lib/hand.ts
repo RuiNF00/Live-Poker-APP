@@ -61,3 +61,45 @@ export function voteFromComment(text: string): VoteChoice | null {
   const c = m[1].toLowerCase().replace('-', '');
   return c as VoteChoice;
 }
+
+const BOARD_AT: Record<Street, number> = { preflop: 0, flop: 3, turn: 4, river: 5 };
+const STREET_ORDER: Street[] = ['preflop', 'flop', 'turn', 'river'];
+
+/**
+ * What a challenge page may send before the friend votes: the hand up to the decision and
+ * nothing that gives the answer away. Opponents' cards, later streets, the board still to
+ * come, winners, tags and notes are dropped, and the decision itself becomes a stand-in fold
+ * (it pays nothing, so the friend still sees the stack and pot they decide with).
+ */
+export function challengeTeaser(hand: HandRecord, spot: QuizSpot): HandRecord {
+  const at = STREET_ORDER.indexOf(spot.street);
+  const actions: HandRecord['actions'] = {};
+  STREET_ORDER.forEach((street, i) => {
+    const list = hand.actions[street] ?? [];
+    if (i < at) actions[street] = list;
+    else if (i === at) {
+      const decision = list[spot.actionIndex];
+      actions[street] = [...list.slice(0, spot.actionIndex), ...(decision ? [{ seat: decision.seat, type: 'fold' as const }] : [])];
+    }
+  });
+  const shown = BOARD_AT[spot.street];
+  const board: HandRecord['board'] = {};
+  if (hand.board?.flop && shown >= 3) board.flop = hand.board.flop;
+  if (hand.board?.turn && shown >= 4) board.turn = hand.board.turn;
+  if (hand.board?.river && shown >= 5) board.river = hand.board.river;
+  return {
+    version: hand.version,
+    game: hand.game,
+    format: hand.format,
+    currency: hand.currency,
+    blinds: hand.blinds,
+    tableSize: hand.tableSize,
+    buttonSeat: hand.buttonSeat,
+    players: hand.players.map((p) => ({ seat: p.seat, name: p.name, stack: p.stack, isHero: p.isHero, cards: p.isHero ? p.cards : null })),
+    board,
+    actions,
+    tournament: hand.tournament,
+    playedAt: hand.playedAt,
+    location: hand.location,
+  };
+}

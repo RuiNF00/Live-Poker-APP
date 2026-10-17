@@ -5,7 +5,7 @@ import { after } from 'next/server';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { handTitle } from '@livepoker/hand-format';
-import { heroLastSpot, resolveHand } from '@/lib/hand';
+import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
 import { pickLocale, t } from '@/lib/i18n';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
@@ -59,16 +59,20 @@ export default async function SharePage({ params, searchParams }: Params & Searc
       </main>
     );
   }
-  const comments = share.allowComments ? await store.listComments(id) : [];
+  const quiz = share.quiz ?? (q === '1' ? heroLastSpot(resolved, share.payload) : null);
+  // A challenge page must not carry the answer, not even in the page source: it sends the hand
+  // up to the decision, and the rest (and the comments) comes back with the friend's vote.
+  const comments = share.allowComments && !quiz ? await store.listComments(id) : [];
   return (
     <ShareView
       invite={invite}
       utm={{ source: param(utm_source) ?? 'share', medium: param(utm_medium) ?? 'hand' }}
       shareId={id}
-      hand={resolved.hand}
+      hand={quiz ? challengeTeaser(resolved.hand, quiz) : resolved.hand}
+      teaser={!!quiz}
       title={share.title}
       revealAll={share.revealAll}
-      quiz={share.quiz ?? (q === '1' ? heroLastSpot(resolved, share.payload) : null)}
+      quiz={quiz}
       allowComments={share.allowComments}
       initialComments={comments}
       viewCount={share.viewCount}

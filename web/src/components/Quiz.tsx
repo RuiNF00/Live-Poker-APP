@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { actionLabel, formatAmount, type AmountMode, type ReplayStep } from '@livepoker/hand-format';
+import { actionLabel, formatAmount, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
 import { t, type Locale } from '@/lib/i18n';
 import type { VoteChoice } from '@/lib/types';
 import { voterId, writeLocal } from '@/lib/local';
@@ -13,10 +13,14 @@ interface Props {
   mode: AmountMode;
   locale: Locale;
   onDone: () => void;
+  /** The whole hand, sent back with the vote (a challenge page only has it up to the decision). */
+  onHand?: (hand: HandRecord) => void;
+  /** The step's action is a stand-in until the whole hand arrives: don't call it the real play. */
+  hideAnswer?: boolean;
 }
 
 /** "What do you do here?": friends vote before the player's real decision is revealed. */
-export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
+export function Quiz({ shareId, step, bb, mode, locale, onDone, onHand, hideAnswer }: Props) {
   const d = t(locale);
   const facing = step.facing ?? 0;
   const actor = step.seats.find((s) => s.seat === step.actingSeat);
@@ -47,6 +51,7 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
         body: JSON.stringify({ voterId: voterId(), choice }),
       });
       const data = await res.json();
+      if (data.hand) onHand?.(data.hand as HandRecord);
       setCounts(data.counts ?? { [choice]: 1 });
     } catch {
       setCounts({ [choice]: 1 });
@@ -56,7 +61,7 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
   };
 
   const total = counts ? Object.values(counts).reduce((n, v) => n + (v ?? 0), 0) : 0;
-  const played = step.action?.type;
+  const played = hideAnswer ? undefined : step.action?.type;
 
   return (
     <div className="quiz" role="dialog" aria-label={d.quizTitle} ref={box}>
