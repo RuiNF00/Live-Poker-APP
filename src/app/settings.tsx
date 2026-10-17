@@ -15,7 +15,7 @@ import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
 import { Button, Card, Chip, ChipRow, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
-import { LANG_KEY, lang, t } from '@/i18n';
+import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant } from '@/i18n';
 import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
@@ -31,7 +31,7 @@ function note(title: string, body?: string) {
 
 /** What support needs to reproduce a bug, and nothing about the player. */
 function bugParams() {
-  return new URLSearchParams({ topic: 'bug', app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang }).toString();
+  return new URLSearchParams({ topic: 'bug', app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang: variant }).toString();
 }
 
 /**
@@ -44,7 +44,8 @@ function switchLanguage() {
     return;
   }
   try {
-    localStorage.setItem(LANG_KEY, lang === 'pt' ? 'en' : 'pt');
+    // Web has no system per-app language: each tap moves to the next one.
+    localStorage.setItem(LANG_KEY, VARIANTS[(VARIANTS.indexOf(variant) + 1) % VARIANTS.length]);
     location.reload();
   } catch {
     // Storage blocked: nothing to remember the choice in.
@@ -137,7 +138,7 @@ export default function SettingsScreen() {
           </Card>
           <ListGroup>
             <ToggleItem icon="calculator-outline" title={t('Valores em big blinds')} subtitle={t('Nas mãos, em vez de fichas')} value={settings.inBB} onChange={(inBB) => setSettings({ inBB })} />
-            <ListItem icon="language-outline" title={t('Idioma')} subtitle={lang === 'pt' ? 'Português' : 'English'} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
+            <ListItem icon="language-outline" title={t('Idioma')} subtitle={VARIANT_NAME[variant]} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
           </ListGroup>
         </Section>
 

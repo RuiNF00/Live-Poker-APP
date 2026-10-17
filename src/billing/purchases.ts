@@ -6,7 +6,7 @@
 import { Linking, Platform } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
-import { lang } from '../i18n';
+import { currencyAfter, decimalComma, lang } from '../i18n';
 
 import { ENTITLEMENT, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
@@ -67,7 +67,8 @@ function hasPro(info: CustomerInfo): boolean {
 }
 
 function usd(n: number) {
-  return lang === 'pt' ? `${n.toFixed(2).replace('.', ',')} US$` : `$${n.toFixed(2)}`;
+  const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
+  return lang === 'en' ? `$${s}` : currencyAfter ? `${s} US$` : `US$ ${s}`;
 }
 
 function fallbackPlans(): StorePlan[] {

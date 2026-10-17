@@ -5,7 +5,7 @@ import type Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
-import { locale, t } from '@/i18n';
+import { decimalComma, locale, t } from '@/i18n';
 import { useRates } from '@/lib/fx';
 import { endOfDay, startOfDay } from '@/store/bankroll-math';
 import { rate as fxRate } from '@/store/fx-math';
@@ -48,7 +48,7 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
   const [x, setX] = useState(initial);
   const [fromText, setFromText] = useState(dd(initial.from));
   const [toText, setToText] = useState(dd(initial.to));
-  const [rateText, setRateText] = useState(initial.fx?.rate ? String(initial.fx.rate).replace('.', locale.startsWith('pt') ? ',' : '.') : '');
+  const [rateText, setRateText] = useState(initial.fx?.rate ? String(initial.fx.rate).replace('.', decimalComma ? ',' : '.') : '');
   const set = (p: Partial<Trip>) => setX((c) => ({ ...c, ...p }));
   const fxCur = x.fx?.currency && x.fx.currency !== x.currency ? x.fx.currency : x.currency === home ? CURRENCIES.find((c) => c !== x.currency)! : home;
   const rate = parseRate(rateText);

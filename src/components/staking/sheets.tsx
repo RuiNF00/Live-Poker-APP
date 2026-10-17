@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, ChipRow, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
-import { lang, t } from '@/i18n';
+import { decimalComma, t } from '@/i18n';
 import { money } from '@/poker/format';
 import { uid } from '@/store/store';
 import type { Backer, BackerPayment, StakePackage } from '@/store/types';
@@ -16,7 +16,7 @@ export const MARKUPS = [1, 1.05, 1.1, 1.15, 1.2, 1.3];
 const CUTS = [30, 40, 50, 60, 70];
 
 /** A decimal in the app's language: 1,20 in Portuguese, 1.20 in English. */
-export const dec = (n: number, digits = 2) => (lang === 'pt' ? n.toFixed(digits).replace('.', ',') : n.toFixed(digits));
+export const dec = (n: number, digits = 2) => (decimalComma ? n.toFixed(digits).replace('.', ',') : n.toFixed(digits));
 export const markupLabel = (m: number) => (m === 1 ? t('Sem markup') : dec(m));
 
 /** A page sheet with the standard header, scrolling content and room for the keyboard. */

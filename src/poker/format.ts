@@ -1,4 +1,4 @@
-import { lang, locale } from '../i18n';
+import { currencyAfter, locale } from '../i18n';
 
 import type { ActionKind, Hand } from './types';
 
@@ -61,7 +61,7 @@ export function rawMoney(n: number, currency = '€'): string {
   // Whole amounts stay short ("370€"); cents always show two digits in the
   // player's locale ("370,50€"), never a bare JS decimal point.
   const s = a >= 1000 ? numFmt().format(Math.round(a)) : cents % 100 === 0 ? String(cents / 100) : numFmt(2).format(cents / 100);
-  return lang === 'pt' ? `${sign}${s}${currency}` : `${sign}${currency}${s}`;
+  return currencyAfter ? `${sign}${s}${currency}` : `${sign}${currency}${s}`;
 }
 
 export const ACTION_LABEL: Record<ActionKind, string> = {

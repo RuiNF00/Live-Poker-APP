@@ -75,7 +75,8 @@
     "lint": "expo lint",
     "test": "tsx --test src/**/__tests__/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "bench": "tsx scripts/bench-storage.ts"
+    "bench": "tsx scripts/bench-storage.ts",
+    "i18n:missing": "tsx scripts/i18n-missing.ts"
   },
   "private": true
 }
