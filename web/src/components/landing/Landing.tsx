@@ -7,7 +7,7 @@ import { Mark, Wordmark } from '@/components/Brand';
 import { landingCopy } from './copy';
 import { Pricing } from './Pricing';
 import { LandingView, StoreButtons, type StoreLinks } from './StoreButtons';
-import { InviteHero } from './InviteBanner';
+import { InvalidInvite, InviteHero } from './InviteBanner';
 import { MainCta, StickyCta } from './Cta';
 import { Card, PhoneMock, Pos } from './Visuals';
 import '@/app/landing.css';
@@ -28,7 +28,7 @@ function utmFrom(search: Search): Utm {
  * The site's front page, phone first, in the app's "Noite" design. With `invite` (/r/<code>)
  * the invite takes the top of the page and the product story follows below.
  */
-export async function Landing({ search, invite }: { search: Search; invite?: string }) {
+export async function Landing({ search, invite }: { search: Search; invite?: string | null }) {
   const h = await headers();
   const lang = typeof search.lang === 'string' ? search.lang : null;
   const locale = lang === 'en' || lang === 'pt' ? lang : pickLocale(h.get('accept-language'));
@@ -57,6 +57,8 @@ export async function Landing({ search, invite }: { search: Search; invite?: str
       <main className="lp-main">
         {invite ? (
           <InviteHero code={invite} c={c} stores={stores} />
+        ) : invite === null ? (
+          <InvalidInvite c={c} stores={stores} />
         ) : (
           <section className="lp-hero">
             <span className="lp-eyebrow">

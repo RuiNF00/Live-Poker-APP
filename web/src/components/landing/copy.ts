@@ -113,6 +113,8 @@ export function landingCopy(locale: Locale) {
         steps: ['Install Sweatbook', 'Open this link again, or type the code', 'Save your first hand'],
         open: 'Already installed? Open in the app',
         more: 'What is Sweatbook?',
+        invalidTitle: 'This invite is not valid',
+        invalidBody: 'The link may be incomplete or mistyped. Ask your friend to send it again, or install Sweatbook anyway: the first hands are free.',
       },
     };
   }
@@ -209,6 +211,8 @@ export function landingCopy(locale: Locale) {
       steps: ['Instala o Sweatbook', 'Abre outra vez este link, ou escreve o código', 'Guarda a tua primeira mão'],
       open: 'Já instalaste? Abrir na app',
       more: 'O que é o Sweatbook?',
+      invalidTitle: 'Este convite não é válido',
+      invalidBody: 'O link pode estar incompleto ou mal copiado. Pede ao teu amigo que o mande outra vez, ou instala já o Sweatbook: as primeiras mãos são grátis.',
     },
   };
 }
