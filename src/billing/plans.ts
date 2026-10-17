@@ -113,6 +113,21 @@ export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATU
   return [...first, ...PRO_FEATURES.filter((f) => f.key !== key)].map((feature) => ({ feature, highlight: feature.key === key }));
 }
 
+type Cell = string | boolean;
+
+/** Free vs Pro, for the "table" paywall. Built from FREE so the limits never drift. Portuguese labels; show with t(). */
+export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
+  const n = (v: number | null): Cell => (v === null ? '∞' : String(v));
+  return [
+    { label: 'Mãos novas por dia', free: n(FREE.handsPerDay), pro: '∞' },
+    { label: 'Replayer e partilha por link', free: true, pro: true },
+    { label: 'Bankrolls', free: n(FREE.bankrolls), pro: '∞' },
+    { label: 'Filtros, salas e CSV', free: FREE.bankrollFilters, pro: true },
+    { label: 'Stories com voz', free: false, pro: true },
+    { label: 'Várias mãos para o solver', free: false, pro: true },
+  ];
+}
+
 export function perMonth(annualPrice: number): number {
   return Math.round((annualPrice / 12) * 100) / 100;
 }

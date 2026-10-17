@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { usePro } from '@/billing/pro';
 import { Replayer } from '@/components/Replayer';
 import { Button, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
+import { track } from '@/lib/events';
 import { claimState } from '@/lib/referrals';
 import { sampleHand } from '@/poker/sample';
 import { useStore } from '@/store/store';
@@ -31,10 +32,14 @@ export default function Welcome() {
   const sample = useMemo(() => sampleHand('sample'), []);
   const plan = planFor(a);
   const at = STEPS[step];
+  const [skipped, setSkipped] = useState(false);
+  // One event per screen reached, so the funnel shows where people stop.
+  useEffect(() => track('onboarding_step', { step: at, index: step }), [at, step]);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const finish = () => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
+    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
     router.back();
     // After the modal is gone, so the paywall slides up over the home screen.
     // Pro already, or invited (their Pro days come with the first hand): no paywall to end on.
@@ -60,7 +65,13 @@ export default function Welcome() {
             ))}
           </View>
           {at !== 'plan' ? (
-            <Pressable onPress={() => setStep(STEPS.length - 1)} hitSlop={10} accessibilityRole="button">
+            <Pressable
+              onPress={() => {
+                setSkipped(true);
+                setStep(STEPS.length - 1);
+              }}
+              hitSlop={10}
+              accessibilityRole="button">
               <T v="small" color={C.textDim}>
                 {t('Saltar')}
               </T>

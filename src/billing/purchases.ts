@@ -8,6 +8,7 @@ import Purchases, { INTRO_ELIGIBILITY_STATUS, type CustomerInfo, type PurchasesP
 
 import { lang } from '../i18n';
 
+import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
 const KEY = Platform.select({
@@ -77,6 +78,20 @@ export async function getPlans(): Promise<StorePlan[]> {
     return plans.length ? plans : fallbackPlans();
   } catch {
     return fallbackPlans();
+  }
+}
+
+/**
+ * The paywall layout and copy for this player's offering. With RevenueCat
+ * Experiments running, `current` is the offering the player was put in.
+ */
+export async function getPaywallConfig(): Promise<PaywallConfig> {
+  if (!LIVE) return DEFAULT_PAYWALL;
+  try {
+    const cur = (await Purchases.getOfferings()).current;
+    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang) : DEFAULT_PAYWALL;
+  } catch {
+    return DEFAULT_PAYWALL;
   }
 }
 

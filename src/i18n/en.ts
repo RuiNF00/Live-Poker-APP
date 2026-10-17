@@ -1544,6 +1544,13 @@ const en: Record<string, string> = {
   'A apagar…': 'Deleting…',
   'Apagar todos os meus dados': 'Delete all my data',
   'Neste telemóvel, na nuvem e nos links públicos': 'On this phone, in the cloud and in public links',
+  'Grátis': 'Free',
+  'Não': 'No',
+  'Mãos novas por dia': 'New hands per day',
+  'Replayer e partilha por link': 'Replayer and link sharing',
+  'Bankrolls': 'Bankrolls',
+  'Filtros, salas e CSV': 'Filters, rooms and CSV',
+  'Várias mãos para o solver': 'Many hands to the solver',
 };
 
 export default en;
