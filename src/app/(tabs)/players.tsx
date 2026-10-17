@@ -9,11 +9,12 @@ import { Avatar } from '@/components/Avatar';
 import { OpponentStatsRow } from '@/components/OpponentStats';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
+import { sampleColor, SmallSample } from '@/components/SmallSample';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
 import type { Hand } from '@/poker/types';
-import { handCounts, opponentStats, SMALL_SAMPLE } from '@/store/queries';
+import { handCounts, opponentStats } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
 import { C, S } from '@/theme';
@@ -95,11 +96,11 @@ export default function PlayersScreen() {
               ) : null}
               {st?.hands ? (
                 <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
-                  <T v="monoS" color={st.hands < SMALL_SAMPLE ? C.muted : C.textDim} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
+                  <T v="monoS" color={sampleColor(st.hands)} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
                     {`VPIP ${pct(st.vpip, st.hands)} · PFR ${pct(st.pfr, st.hands)} · 3-bet ${pct(st.threeBet, st.threeBetOpp)}`}
                   </T>
                   {/* Under 20 hands the numbers are a hint, never a read (same rule as the stats app). */}
-                  {st.hands < SMALL_SAMPLE ? <Pill label={t('amostra pequena')} color={C.warn} /> : null}
+                  <SmallSample n={st.hands} />
                 </Row>
               ) : null}
               {item.notes ? (
