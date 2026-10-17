@@ -64,7 +64,7 @@ export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 
 export function nextLevelAt(s: Session, now = Date.now()): number | undefined {
   if (!s.levelMinutes || !s.levelStartedAt || s.endedAt) return undefined;
   const from = s.levelStartedAt;
-  const paused = s.breaks.reduce((a, b) => a + Math.max(0, Math.min(b.end ?? now, now) - Math.max(b.start, from)), 0);
+  const paused = (s.breaks ?? []).reduce((a, b) => a + Math.max(0, Math.min(b.end ?? now, now) - Math.max(b.start, from)), 0);
   return from + s.levelMinutes * 60_000 + paused;
 }
 
