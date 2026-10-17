@@ -3124,6 +3124,8 @@ const en: Record<string, string> = {
   'Já jogaste? Junta uma sessão passada': 'Already played? Add a past session',
   'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Start a session when you sit down. Profit, €/hour and ROI show up here.',
   'Nada neste bankroll': 'Nothing in this bankroll',
+  'Check até ao fim': 'Check it down',
+  'Mais limps?': 'More limps?',
 };
 
 export default en;
