@@ -130,7 +130,7 @@ export default function SessionCardScreen() {
                   // A felt backdrop stands in for the photo the sticker goes on.
                   <LinearGradient colors={['#1F5A47', '#123327', '#0C1311']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ transform: [{ scale: Math.max(scale, 0.85) }] }}>
-                      <SessionCard ref={(r) => void (refs.current[i] = r)} session={s} stats={stats} look={k} brand={withBrand} />
+                      <SessionCard ref={(r) => void (refs.current[i] = r)} session={s} stats={stats} look={k} brand={withBrand} hideVenue={chipCount} />
                     </View>
                     <T v="tiny" color="rgba(238,242,239,0.7)" style={{ position: 'absolute', bottom: 14 }}>
                       {t('Fundo transparente: põe-no por cima da foto da mesa')}
@@ -145,7 +145,7 @@ export default function SessionCardScreen() {
                       look={k}
                       milestone={showMilestone ? milestone : null}
                       hideMoney={hideMoney}
-                      brand={withBrand}
+                      brand={withBrand} hideVenue={chipCount}
                     />
                   </View>
                 )}
