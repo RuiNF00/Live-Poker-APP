@@ -1,7 +1,7 @@
 // Final-table deal calculator: stacks and remaining payouts in, ICM and chip-chop
 // shares out. Works offline, no setup.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';

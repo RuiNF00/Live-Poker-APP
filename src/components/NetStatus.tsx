@@ -2,7 +2,7 @@
 // (it's all on the phone); it only says that sharing, backups and invites
 // will go out by themselves later.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
