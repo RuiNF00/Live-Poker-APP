@@ -47,7 +47,7 @@ CONTROLE DE BANCA PARA QUEM JOGA AO VIVO
 • Sem cadastro: suas mãos ficam no seu celular
 • Backup na nuvem opcional e criptografado, com código de recuperação e sem e-mail
 • Exporte tudo para um arquivo
-• App em português e inglês
+• App em português do Brasil, inglês e espanhol
 
 SWEATBOOK PRO
 Grátis: até 3 mãos salvas por dia. Com o Sweatbook Pro você tem mãos ilimitadas, os filtros de bankroll de 30 dias, 90 dias e 1 ano, a exportação de sessões em CSV e Stories com a sua voz e sem marca d'água. Assinatura mensal ou anual; o plano anual começa com 1 semana grátis para novos assinantes. O pagamento é cobrado na sua conta Apple quando você confirma a compra. A assinatura é renovada automaticamente, a não ser que você cancele pelo menos 24 horas antes do fim do período, nos ajustes da sua conta.

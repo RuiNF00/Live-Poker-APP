@@ -47,7 +47,7 @@ CONTROL DE BANKROLL PARA QUIEN JUEGA EN VIVO
 • Sin cuentas: tus manos se quedan en tu teléfono
 • Copia de seguridad en la nube opcional y cifrada, con código de recuperación y sin correo
 • Exporta todo a un archivo
-• App en inglés y portugués (español, próximamente)
+• App en español, inglés y portugués
 
 SWEATBOOK PRO
 Gratis: hasta 3 manos guardadas al día. Con Sweatbook Pro tienes manos ilimitadas, los filtros de bankroll de 30 días, 90 días y 1 año, la exportación de sesiones en CSV e historias con tu voz y sin marca de agua. Suscripción mensual o anual; el plan anual empieza con 1 semana gratis para nuevos suscriptores. El pago se carga a tu cuenta de Apple cuando confirmas la compra. La suscripción se renueva automáticamente, salvo que la canceles al menos 24 horas antes del final del periodo, en los ajustes de tu cuenta.

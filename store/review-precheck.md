@@ -3,7 +3,7 @@
 Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, ⚠ = needs action (owner in brackets).
 
 ## Apple
-- ✓ Paywall (3.1.2): price per period from the store, the trial ("Grátis durante 7 dias, depois …"), auto-renew + 24-hour cancellation text, Restore purchases, Terms and Privacy links, and a close button. `src/app/paywall.tsx`.
+- ✓ Paywall (3.1.2): price per period from the store, the trial ("Grátis durante 3 dias, depois …"; 3 days since Rui's decision on 17 Oct, `trialDays` in `src/billing/plans.ts` must read 3 before the review build), auto-renew + 24-hour cancellation text, Restore purchases, Terms and Privacy links, and a close button. `src/app/paywall.tsx`.
 - ✓ Terms/EULA link in the description, privacy URL. The App Store Connect "License agreement" field can stay on Apple's standard EULA because our Terms link to it.
 - ⚠ The subscriptions must be **submitted together with build 1.0** (with a paywall review screenshot each). Otherwise the reviewer sees "Ainda não disponível" and rejects under 2.1. [store thread, once the keys arrive]
 - ✓ Deleting data in the app (5.1.1(v)): shared link → "Apagar partilha" (`hand/[id].tsx`); backup → Settings → Cloud backup → Turn off (DELETE `/api/backup`). No accounts, so no account-deletion requirement.
@@ -38,3 +38,7 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 
 ## Pending review-note change
 - When Replayer #121 merges: replace the sharing instruction in review-risks.md with "Home → \"Ver uma mão de exemplo\" → \"Partilhar com amigos\" (the sample link does not count towards the free share limit)".
+
+## Over-the-air updates (8147048, #146)
+- expo-updates with EAS Update, `runtimeVersion` policy fingerprint, checked on launch. Allowed by Apple 3.3.1(b)/2.5.2 and Google Play's device-and-network-abuse policy only for JavaScript and asset fixes that don't change the app's purpose or add features that skip review: any new feature, price or Pro change goes through a store build. Rule for every thread: OTA only for fixes.
+- No new data: EAS Update downloads the bundle from Expo's CDN and sends only the runtime version, platform and channel; nothing to add to the privacy label, the manifest or Data safety. The privacy policy's provider list doesn't need Expo, as no personal data is processed for the app.

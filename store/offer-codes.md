@@ -19,3 +19,6 @@ Free Pro only, never tied to cash or results. 5–10 players and stable managers
 ## Rules
 - Never in exchange for money, rakeback, action or results; never mention it in public posts.
 - Keep a list of who got which code (name, store, date) in the private CSV, so a leaked code can be traced.
+
+## Beta testers' codes (programa-beta.md)
+The beta plan gives each tester 1 year of Pro on launch day. That is a separate batch from the Bahamas 3-month codes. Apple subscription offer codes allow free durations up to 1 year, so a "Free, 1 year" code on `sweatbook_pro_annual` works. On Google Play, check the longest free period the promo-code form allows on the day; if it is shorter than a year, use the longest allowed and tell the testers. The 3-day trial on the annual plan (Rui, 17 Oct) doesn't affect codes.
