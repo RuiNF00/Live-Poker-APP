@@ -174,6 +174,7 @@ export function LiveView({
         <p>{c.ctaBody}</p>
         <StoreButtons c={landingCopy(locale)} stores={stores} from="backer_live" fallback="/" />
       </section>
+      <p className="live-updated">{c.noMoney}</p>
     </main>
   );
 }

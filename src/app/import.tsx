@@ -2,7 +2,7 @@
 // Poker Analytics, any CSV, or a Sweatbook backup. Pick where it comes from,
 // pick the file, check what was read (and fix a column if needed), import.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';

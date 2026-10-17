@@ -1,4 +1,5 @@
 import type { Statement } from '@/lib/backing-link';
+import type { Tourney } from '@/poker/tourney';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
 export interface Session {
@@ -20,8 +21,12 @@ export interface Session {
   cashOut: number;
   finish?: number;
   field?: number;
-  /** Travel, hotel, tips: comes off your result. */
+  /** Travel, hotel, food: comes off your result. */
   expenses?: number;
+  /** Dealer tips: off your result like expenses, with their own total. */
+  tips?: number;
+  /** Hands dealt to you, when the player counts them (for hands per hour). */
+  handsDealt?: number;
   /** Action sold, in total: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%).
    *  Kept as the summary of `stakes` so older copies of the app still read it. */
   staking?: { sold: number; markup: number };
@@ -32,6 +37,8 @@ export interface Session {
   live?: { id: string; token: string; showVenue?: boolean };
   /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
   makeupCut?: number;
+  /** What swaps add to (their share of the other player's prizes) or take from (your share given away) this session. Derived (withSwaps). */
+  swapNet?: number;
   // Live table state, used to pre-fill every new hand.
   sb: number;
   bb: number;
@@ -51,6 +58,8 @@ export interface Session {
   notes: string;
   /** How it went, tapped when ending: focus, tilt, table. */
   tags?: string[];
+  /** Tournament mode: blind structure, field and payouts (see poker/tourney.ts). */
+  tourney?: Tourney;
   /** Tournament day this session is on, when past Day 1 (see store/multi-day.ts). */
   day?: number;
   /** Set when a tournament day ended with chips in the bag: the session waits for its next day. */
@@ -94,6 +103,21 @@ export interface Bankroll {
   currency: string;
   createdAt: number;
   updatedAt?: number;
+  /** The player's own limits for this bankroll. */
+  rules?: BankrollRules;
+}
+
+/** Bankroll rules; every amount is in the bankroll's currency. */
+export interface BankrollRules {
+  /** Buy-ins (100 big blinds each) the bankroll must hold to play a cash stake. */
+  cashBuyIns: number;
+  /** Buy-ins it must hold to play a tournament. */
+  mttBuyIns: number;
+  /** Stop after losing this much; 0 is off. */
+  stopLoss: number;
+  stopLossPer: 'session' | 'day';
+  /** Balance to reach; 0 is off. */
+  target: number;
 }
 
 /** Money moved into or out of a bankroll (not poker results). */
@@ -251,6 +275,8 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Count swaps in results (Session.swapNet). Missing = yes. */
+  includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
 }

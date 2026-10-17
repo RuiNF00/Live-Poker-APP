@@ -1,7 +1,7 @@
 // The live link for backers: the card on the session screen that creates,
 // shares and removes it, and the background sync that keeps the page current.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';

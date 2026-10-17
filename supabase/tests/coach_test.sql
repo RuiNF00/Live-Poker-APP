@@ -48,6 +48,20 @@ select purge_coach_links() = 1 as revoked_link_purged;
 select count(*) = 0 as comments_purged from coach_comments;
 select count(*) = 1 as other_link_kept from coach_links;
 
+-- Erased from the phone: gone at once, only with the owner token.
+select token as t3, owner_token as o3 from create_coach_link('', '', null, '[{"id":"y","payload":{}}]'::jsonb) \gset
+select add_coach_comment(:'t3', 'y', null, null, 'Ana', 'ok') is not null as comment_on_third;
+select delete_coach_link(:'t3', 'nope') = false as delete_needs_owner;
+select delete_coach_link(:'t3', :'o3') as deleted;
+select count(*) = 1 as deleted_link_gone from coach_links;
+select count(*) = 0 as deleted_link_comments_gone from coach_comments;
+
+-- No end date and 400 days quiet: purged too.
+select token as t4, owner_token as o4 from create_coach_link('', '', null, '[{"id":"z","payload":{}}]'::jsonb) \gset
+update coach_links set created_at = now() - interval '401 days' where token_hash = encode(sha256(convert_to(:'t4', 'utf8')), 'hex');
+select purge_coach_links() = 1 as quiet_open_link_purged;
+select count(*) = 1 as recent_open_link_kept from coach_links;
+
 reset role;
 set role anon;
 \set ON_ERROR_STOP off

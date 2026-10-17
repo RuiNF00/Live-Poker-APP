@@ -1,7 +1,7 @@
 // Cloud backup panel: turn it on (shows the recovery code), back up now,
 // restore on a new phone with the code, or turn it off.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, View } from 'react-native';

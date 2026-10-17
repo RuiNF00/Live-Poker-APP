@@ -66,6 +66,9 @@ export function SettlementCard({ l, name, currency }: { l: BackerLedger; name: s
         total
         color={balColor}
       />
+      <T v="tiny" style={{ paddingTop: S.sm }}>
+        {t('Os pagamentos fazem-se fora da app; aqui só os registas.')}
+      </T>
     </Card>
   );
 }

@@ -7,6 +7,8 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import { dayKey } from './fx-math';
+import type { Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
@@ -26,6 +28,8 @@ export interface BackupData {
   transfers?: Transfer[];
   /** Missing in backups made before trips existed. */
   trips?: Trip[];
+  /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
+  swaps?: Swap[];
   settings?: Partial<Settings>;
 }
 
@@ -41,6 +45,7 @@ export function buildBackup(
     payments?: BackerPayment[];
     trips?: Trip[];
     backing?: BackedPlayer[];
+    swaps?: Swap[];
     settings: Settings;
   },
   now = Date.now(),
@@ -59,6 +64,7 @@ export function buildBackup(
     payments: d.payments ?? [],
     trips: d.trips ?? [],
     backing: d.backing ?? [],
+    swaps: d.swaps ?? [],
     settings: d.settings,
   };
 }
@@ -95,6 +101,9 @@ export function parseBackup(text: string): BackupData {
       const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
+  const swaps = arr('swaps').filter(
+    (x) => isObj(x) && typeof x.token === 'string' && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+  ) as unknown as Swap[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -109,7 +118,35 @@ export function parseBackup(text: string): BackupData {
     bankrolls,
     transfers,
     trips,
+    swaps,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
+  };
+}
+
+/**
+ * Settings after a restore. On a phone with nothing on it yet (a new phone, a reinstall)
+ * the backup's preferences come back: currency, default bankroll, privacy mode and the
+ * rest. On a phone already in use, its own choices stay and only an empty nickname is filled.
+ */
+export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean): Settings {
+  if (!incoming) return cur;
+  if (!fresh) return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : '') };
+  const pick = <K extends keyof Settings>(k: K, ok: (v: unknown) => boolean): Partial<Settings> => (ok(incoming[k]) ? { [k]: incoming[k] } : {});
+  const isStr = (v: unknown) => typeof v === 'string';
+  const isBool = (v: unknown) => typeof v === 'boolean';
+  return {
+    ...cur,
+    ...pick('currency', (v) => isStr(v) && (v as string).length > 0 && (v as string).length <= 4),
+    ...pick('nickname', isStr),
+    ...pick('inBB', isBool),
+    ...pick('defaultTableSize', (v) => typeof v === 'number' && Number.isInteger(v) && v >= 2 && v <= 10),
+    ...pick('shareNames', isBool),
+    ...pick('shareNotes', isBool),
+    ...pick('bankrollId', isStr),
+    ...pick('hideAmounts', isBool),
+    ...pick('includeSwaps', isBool),
+    // Onboarding stays done: the restore itself happens after it.
+    onboarded: cur.onboarded || incoming.onboarded === true,
   };
 }
 
@@ -131,14 +168,21 @@ function cell(v: string | number | undefined): string {
 }
 
 /** Sessions, then deposits and withdrawals, then trip expenses, as CSV for spreadsheets and accountants. */
+/** Local 'HH:MM': the date and time the player saw, not UTC (a 20:00 session in Nassau is not the next day). */
+function clockOf(ts: number): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
-  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'place', 'field', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
     .map((s) =>
       [
-        new Date(s.startedAt).toISOString().slice(0, 10),
+        dayKey(s.startedAt),
+        clockOf(s.startedAt),
         s.kind,
         formatOf(s),
         bankrollOf(s, bankrolls)?.name ?? '',
@@ -146,6 +190,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         s.venue,
         s.currency,
         (playedMs(s) / 3600000).toFixed(2),
+        s.handsDealt ?? '',
         s.buyIn,
         s.entries,
         s.addOn || 0,
@@ -154,6 +199,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         stakingSummary(stakesOf(s))?.sold ?? 0,
         stakingSummary(stakesOf(s))?.markup ?? '',
         s.expenses ?? 0,
+        s.tips ?? 0,
         Math.round(profit(s) * 100) / 100,
         s.finish,
         s.field,
@@ -172,8 +218,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
     .map((x) => {
       const b = bankrolls.find((r) => r.id === x.bankrollId);
       const row: (string | number | undefined)[] = head.map(() => '');
-      row[0] = new Date(x.at).toISOString().slice(0, 10);
-      row[1] = x.kind;
+      row[0] = dayKey(x.at);
+      row[head.indexOf('type')] = x.kind;
       row[head.indexOf('bankroll')] = b?.name ?? '';
       row[head.indexOf('currency')] = b?.currency ?? '';
       row[head.indexOf('profit')] = x.kind === 'deposit' ? Math.abs(x.amount) : -Math.abs(x.amount);
@@ -185,8 +231,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
     .sort((a, b) => a.x.at - b.x.at)
     .map(({ trip, x }) => {
       const row: (string | number | undefined)[] = head.map(() => '');
-      row[0] = new Date(x.at).toISOString().slice(0, 10);
-      row[1] = 'expense';
+      row[0] = dayKey(x.at);
+      row[head.indexOf('type')] = 'expense';
       row[head.indexOf('game')] = trip.name;
       row[head.indexOf('venue')] = trip.venue;
       row[head.indexOf('currency')] = x.currency;

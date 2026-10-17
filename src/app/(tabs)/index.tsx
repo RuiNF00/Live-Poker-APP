@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View } from 'react-native';
@@ -6,15 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
-import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
+import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
-import { StreakStrip } from '@/components/StreakStrip';
+import { StreakStat } from '@/components/StreakStat';
+import { unreadByHand } from '@/lib/coach-core';
+import { useCoach } from '@/lib/coach-api';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
-import { StartChecklist } from '@/components/StartChecklist';
+import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -56,6 +58,8 @@ export default function HandsScreen() {
   useOnboarding();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
+  const coach = useCoach();
+  const unread = useMemo(() => unreadByHand(coach), [coach]);
   const [searching, setSearching] = useState(false);
 
   const sections = useMemo(() => {
@@ -78,6 +82,10 @@ export default function HandsScreen() {
 
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
   const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
+  const checklist = useStartChecklist();
+  const [now] = useState(() => Date.now());
+  const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
+  const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
 
   // Long-press a hand to start picking several; tap then adds or removes.
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
@@ -94,8 +102,8 @@ export default function HandsScreen() {
   const [tagging, setTagging] = useState(false);
 
   const renderItem = useCallback(
-    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} />,
-    [settings.inBB, picking, picked, togglePick],
+    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} />,
+    [settings.inBB, picking, picked, togglePick, unread],
   );
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
@@ -133,10 +141,17 @@ export default function HandsScreen() {
                   </>
                 }
               />
-              {!activeSession && sessions.length > 0 ? <Verdict sessions={sessions} incomplete={incomplete} onIncomplete={() => setTag(INCOMPLETE)} /> : null}
-              {hands.length > 0 && !searching ? <StreakStrip /> : null}
-              {!searching ? <StartChecklist /> : null}
-              {hasDraft ? (
+              {/* One summary row, then at most one context card, so a returning player still sees four hands. */}
+              {!searching ? (
+                <HomeSummary
+                  sessions={sessions}
+                  streak={hands.length > 0}
+                  handsLeft={hands.length > 0 ? handsLeft : null}
+                  cta={handsLeft === 0 && trialDays ? t('{days} dias grátis', { days: trialDays }) : t('Ver Pro')}
+                  onPro={() => paywall(handsLeft === 0 ? 'hands' : 'generic')}
+                />
+              ) : null}
+              {searching ? null : hasDraft ? (
                 <Banner
                   tone="warn"
                   icon="create-outline"
@@ -160,9 +175,18 @@ export default function HandsScreen() {
                     setDiscarded(null);
                   }}
                 />
-              ) : null}
-              {handsLeft !== null && hands.length > 0 ? (
-                <FreeMeter left={handsLeft} cta={handsLeft === 0 && trialDays ? t('{days} dias grátis', { days: trialDays }) : t('Ver Pro')} onPress={() => paywall(handsLeft === 0 ? 'hands' : 'generic')} />
+              ) : checklist ? (
+                <StartChecklist state={checklist} />
+              ) : incomplete > 0 && tag !== INCOMPLETE ? (
+                <Banner
+                  tone="warn"
+                  icon="alert-circle-outline"
+                  title={incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete })}
+                  action={t('Ver')}
+                  onPress={() => setTag(INCOMPLETE)}
+                />
+              ) : !activeSession && idleDays >= 7 ? (
+                <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
               ) : null}
               {searching ? <SearchField value={q} onChange={setQ} placeholder={t('Torneio, jogador, AKs…')} /> : null}
               {usedTags.length > 0 || folders.length > 0 ? (
@@ -182,6 +206,15 @@ export default function HandsScreen() {
                     {shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}
                   </T>
                   {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : tag.startsWith(FOLDER) ? tag.slice(FOLDER.length) : t(tag)} onClear={() => setTag(null)} /> : null}
+                  {tag?.startsWith(FOLDER) && shown > 0 ? (
+                    <Button
+                      kind="secondary"
+                      size="sm"
+                      icon="school-outline"
+                      title={t('Enviar ao coach')}
+                      onPress={() => router.push({ pathname: '/coach/new', params: { folder: tag.slice(FOLDER.length) } })}
+                    />
+                  ) : null}
                 </Row>
               ) : null}
             </View>
@@ -220,6 +253,14 @@ export default function HandsScreen() {
           <T v="h3" numberOfLines={1} style={{ flex: 1 }} accessibilityLiveRegion="polite">
             {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
           </T>
+          <IconButton
+            name="school-outline"
+            label={t('Enviar ao coach')}
+            onPress={() => {
+              router.push({ pathname: '/coach/new', params: { ids: [...picked].join(',') } });
+              setPicked(new Set());
+            }}
+          />
           <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
@@ -271,24 +312,91 @@ function SafeTop({ children }: { children: React.ReactNode }) {
 }
 
 /** Free plan: how many of today's hands are left, as a small meter. */
-function FreeMeter({ left, cta, onPress }: { left: number; cta: string; onPress: () => void }) {
-  const total = 3;
+/**
+ * The home verdict as one row of numbers: this month, the weekly streak and
+ * the free hands left today. Each cell opens where the number comes from.
+ */
+function HomeSummary({ sessions, streak, handsLeft, cta, onPro }: { sessions: Session[]; streak: boolean; handsLeft: number | null; cta: string; onPro: () => void }) {
+  const [now] = useState(() => Date.now());
+  const start = new Date(now);
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  const done = sessions.filter((x) => x.endedAt);
+  const cur = mainCurrency(done, '€');
+  const month = done.filter((x) => (x.endedAt ?? 0) >= start.getTime() && x.currency === cur);
+  const net = month.reduce((a, x) => a + profit(x), 0);
+  const cells: React.ReactNode[] = [];
+  if (done.length) {
+    cells.push(
+      <Pressable
+        key="month"
+        accessibilityRole="button"
+        accessibilityLabel={month.length ? `${t('Este mês')}: ${money(net, cur)}, ${month.length === 1 ? t('em 1 sessão') : t('em {n} sessões', { n: month.length })}` : t('Ainda sem sessões este mês')}
+        onPress={() => router.navigate('/bankroll')}
+        hitSlop={6}
+        style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
+        <T v="label" numberOfLines={1}>
+          {t('Este mês')}
+        </T>
+        {month.length ? <Amount value={net} text={money(net, cur)} v="mono" /> : <T v="mono" color={C.muted}>—</T>}
+      </Pressable>,
+    );
+  }
+  if (streak)
+    cells.push(
+      <View key="streak" style={sumSt.cell}>
+        <StreakStat />
+      </View>,
+    );
+  if (handsLeft !== null) {
+    const total = 3;
+    cells.push(
+      <Pressable
+        key="free"
+        accessibilityRole="button"
+        accessibilityLabel={`${handsLeft === 0 ? t('Mãos grátis de hoje esgotadas') : handsLeft === 1 ? t('Falta 1 mão grátis hoje') : t('Faltam {n} mãos grátis hoje', { n: handsLeft })}. ${cta}`}
+        onPress={onPro}
+        hitSlop={6}
+        style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
+        <T v="label" numberOfLines={1} color={handsLeft === 0 ? C.accent : undefined}>
+          {t('Grátis hoje')}
+        </T>
+        {handsLeft === 0 ? (
+          <T v="small" numberOfLines={1} color={C.accent} style={{ fontFamily: ff(800), lineHeight: 20 }}>
+            {cta}
+          </T>
+        ) : (
+          <Row gap={6}>
+            <Row gap={3}>
+              {Array.from({ length: total }, (_, i) => (
+                <View key={i} style={[sumSt.dot, { backgroundColor: i < total - handsLeft ? C.accent : C.surface3 }]} />
+              ))}
+            </Row>
+            <T v="mono">{handsLeft}</T>
+          </Row>
+        )}
+      </Pressable>,
+    );
+  }
+  if (!cells.length) return null;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 14, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1, borderColor: left === 0 ? C.accentLine : C.border, opacity: pressed ? 0.8 : 1 })}>
-      <Row gap={4}>
-        {Array.from({ length: total }, (_, i) => (
-          <View key={i} style={{ width: 14, height: 6, borderRadius: 3, backgroundColor: i < total - left ? C.accent : C.surface3 }} />
-        ))}
-      </Row>
-      <T v="small" style={{ flex: 1 }} numberOfLines={1}>
-        {left === 0 ? t('Mãos grátis de hoje esgotadas') : left === 1 ? t('Falta 1 mão grátis hoje') : t('Faltam {n} mãos grátis hoje', { n: left })}
-      </T>
-      <T v="small" color={C.accent} style={{ fontFamily: ff(800) }}>
-        {cta}
-      </T>
-    </Pressable>
+    <View style={[sumSt.wrap, handsLeft === 0 && { borderColor: C.accentLine }]}>
+      {cells.map((c, i) => (
+        <React.Fragment key={i}>
+          {i > 0 ? <View style={sumSt.divider} /> : null}
+          {c}
+        </React.Fragment>
+      ))}
+    </View>
   );
 }
+
+const sumSt = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
+  cell: { flex: 1, gap: 2 },
+  divider: { width: 1, alignSelf: 'stretch', backgroundColor: C.border },
+  dot: { width: 10, height: 5, borderRadius: 3 },
+});
 
 /** Empty state for a brand-new install: what the app does, in three steps. */
 function FirstRun() {
@@ -360,9 +468,11 @@ function rowSummary(hand: Hand) {
   return v;
 }
 
-const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void }) {
+const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick, coach }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void; coach: number }) {
   const { net, done } = rowSummary(hand);
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
+  // Next to a full board only two tags fit on the line at 390 pt.
+  const maxTags = hand.board.length > 3 || !done ? 2 : 3;
   const hero = hand.players[hand.hero];
   return (
     <Pressable
@@ -399,7 +509,7 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
           <T v="monoS">{timeOf(hand.createdAt)}</T>
         </View>
       </Row>
-      {hand.board.length || hand.tags.length || !done || hand.shareId ? (
+      {hand.board.length || hand.tags.length || !done || hand.shareId || coach ? (
         <Row gap={6} style={rowSt.wrap}>
           {hand.board.length ? (
             <Row gap={2} style={rowSt.board}>
@@ -408,11 +518,12 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
               ))}
             </Row>
           ) : null}
+          {coach ? <Pill icon="school" label={coach === 1 ? t('1 comentário do coach') : t('{n} comentários do coach', { n: coach })} color={C.accent} /> : null}
           {!done ? <Pill label={t('Por completar')} color={C.warn} /> : null}
-          {hand.tags.slice(0, 3).map((x) => (
+          {hand.tags.slice(0, maxTags).map((x) => (
             <Pill key={x} label={t(x)} />
           ))}
-          {hand.tags.length > 3 ? <Pill label={`+${hand.tags.length - 3}`} /> : null}
+          {hand.tags.length > maxTags ? <Pill label={`+${hand.tags.length - maxTags}`} /> : null}
           {hand.shareId ? <Pill icon="link" label={t('Partilhada')} color={C.info} /> : null}
         </Row>
       ) : null}
@@ -492,49 +603,6 @@ function FilterPill({ label, onClear }: { label: string; onClear: () => void }) 
   );
 }
 
-/** One line on how the month is going, then the next useful thing to do. */
-function Verdict({ sessions, incomplete, onIncomplete }: { sessions: Session[]; incomplete: number; onIncomplete: () => void }) {
-  const [now] = useState(() => Date.now());
-  const start = new Date(now);
-  start.setDate(1);
-  start.setHours(0, 0, 0, 0);
-  const done = sessions.filter((x) => x.endedAt);
-  const cur = mainCurrency(done, '€');
-  const month = done.filter((x) => (x.endedAt ?? 0) >= start.getTime() && x.currency === cur);
-  const net = month.reduce((a, x) => a + profit(x), 0);
-  const last = Math.max(0, ...done.map((x) => x.endedAt ?? 0));
-  const idle = last ? Math.floor((now - last) / DAY) : 0;
-  const next =
-    incomplete > 0
-      ? { text: incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete }), action: t('Ver'), go: onIncomplete }
-      : idle >= 7
-        ? { text: t('Sem sessões há {n} dias', { n: idle }), action: t('Começar'), go: () => router.navigate('/session') }
-        : null;
-  return (
-    <Card style={{ gap: 6, paddingVertical: 14 }}>
-      {month.length ? (
-        <Row gap={6} style={{ flexWrap: 'wrap' }}>
-          <T v="h3">{t('Este mês')}</T>
-          <Amount value={net} text={money(net, cur)} v="mono" />
-          <T v="small">{month.length === 1 ? t('em 1 sessão') : t('em {n} sessões', { n: month.length })}</T>
-        </Row>
-      ) : (
-        <T v="h3">{t('Ainda sem sessões este mês')}</T>
-      )}
-      {next ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${next.text}. ${next.action}`} onPress={next.go} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <T v="small" style={{ flex: 1 }}>
-            {next.text}
-          </T>
-          <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
-            {next.action}
-          </T>
-          <Ionicons name="chevron-forward" size={14} color={C.accent} />
-        </Pressable>
-      ) : null}
-    </Card>
-  );
-}
 
 /** Picked hands as one PokerStars file; unfinished hands are left out, and the player is told. */
 function exportSolver(list: Hand[]) {

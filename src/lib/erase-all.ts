@@ -1,11 +1,12 @@
 // "Delete all my data" (Settings): the phone forgets everything, and every public
-// copy goes too: share links, backer live pages, the cloud copy, and whatever a
-// feature registers with onEraseAll (public profile, statement links). Server
-// deletes go through the outbox, so they also work without signal.
+// copy goes too: share links, backer live pages, the cloud copy, the public profile,
+// and whatever a feature registers with onEraseAll. Server deletes go through the
+// outbox, so they also work without signal.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Hand } from '@/poker/types';
+import { clearOffers, getOffers } from '@/store/action-offer';
 import type { Session } from '@/store/types';
 
 import { lockSupported, saveLock } from './app-lock';
@@ -13,6 +14,8 @@ import { loadCloud, queueCloudDelete, saveCloud } from './cloud-backup';
 import { keysToErase } from './erase-core';
 import { queueLiveDelete } from './live-cleanup';
 import { notifications } from './lock-screen/reminder';
+import { queueAgreementDelete } from './offer-api';
+import { queueProfileDelete } from './public-profile';
 import { forgetHandShare } from './share-queue';
 
 type Eraser = () => void | Promise<void>;
@@ -31,11 +34,16 @@ export function onEraseAll(fn: Eraser): () => void {
 export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'shareToken'>[]; sessions: Pick<Session, 'live'>[] }) {
   for (const h of d.hands) await forgetHandShare(h).catch(() => {});
   for (const s of d.sessions) if (s.live) queueLiveDelete(s.live);
+  // Action-package links: one private page per backer. (Statement links keep their
+  // numbers in the URL fragment, so there's nothing of them on the server to delete.)
+  for (const o of getOffers()) for (const l of o.lines) if (l.remote) queueAgreementDelete(l.remote);
+  clearOffers();
   const cloud = await loadCloud();
   if (cloud) {
     queueCloudDelete(cloud);
     await saveCloud(null).catch(() => {});
   }
+  await queueProfileDelete().catch(() => {});
   for (const fn of erasers) await Promise.resolve(fn()).catch(() => {});
 }
 

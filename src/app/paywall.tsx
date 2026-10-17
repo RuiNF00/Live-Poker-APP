@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
@@ -339,7 +339,9 @@ function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; 
           ? t('Filtros, salas e jogos abertos.')
           : reason === 'solver'
             ? t('Seleciona as mãos e exporta para o solver.')
-            : t('Mãos sem limite, a partir de agora.');
+            : reason === 'coach'
+              ? t('Volta atrás e envia as mãos ao coach.')
+              : t('Mãos sem limite, a partir de agora.');
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: S.md, padding: S.xxl }}>
       <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>

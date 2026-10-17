@@ -59,7 +59,7 @@ export function owedToBackers(s: Session): number {
 
 /** Your own money in play. */
 export function ownCost(s: Session): number {
-  return cost(s) - stakeIn(s) + (s.expenses || 0);
+  return cost(s) - stakeIn(s) + (s.expenses || 0) + (s.tips || 0);
 }
 
 /**
@@ -67,7 +67,7 @@ export function ownCost(s: Session): number {
  * plus your cut of a makeup package credited to this session (kept in sync by the store).
  */
 export function profit(s: Session): number {
-  return (s.cashOut || 0) - owedToBackers(s) - ownCost(s) + (s.makeupCut || 0);
+  return (s.cashOut || 0) - owedToBackers(s) - ownCost(s) + (s.makeupCut || 0) + (s.swapNet || 0);
 }
 
 /** Per-session makeup cuts, by session id. Missing ids are 0. */
@@ -145,6 +145,10 @@ export interface Totals {
   itm: number | null;
   best: number;
   worst: number;
+  /** Dealer tips, already counted in profit. */
+  tips: number;
+  /** Over the sessions where hands were counted; null without any. */
+  handsPerHour: number | null;
 }
 
 /** Totals of the finished sessions in `currency` (default: the one most of them use). */
@@ -159,6 +163,8 @@ export function totals(list: Session[], currency?: string): Totals {
   const mttInv = mtts.reduce((a, s) => a + Math.max(0, ownCost(s)), 0);
   const mttProfit = mtts.reduce((a, s) => a + profit(s), 0);
   const profits = done.map(profit);
+  const counted = done.filter((s) => (s.handsDealt ?? 0) > 0);
+  const countedHours = counted.reduce((a, s) => a + playedMs(s), 0) / 3600000;
   return {
     currency: cur,
     otherCurrencies: byCurrency(ended).map((g) => g.currency).filter((c) => c !== cur),
@@ -171,6 +177,8 @@ export function totals(list: Session[], currency?: string): Totals {
     itm: mtts.length ? (mtts.filter((s) => s.cashOut > 0).length / mtts.length) * 100 : null,
     best: profits.length ? Math.max(...profits) : 0,
     worst: profits.length ? Math.min(...profits) : 0,
+    tips: done.reduce((a, s) => a + (s.tips || 0), 0),
+    handsPerHour: countedHours > 0 ? counted.reduce((a, s) => a + (s.handsDealt ?? 0), 0) / countedHours : null,
   };
 }
 
@@ -194,4 +202,23 @@ export function parseDay(v: string, now = Date.now(), future = false): number | 
   if (future) return d.getTime();
   if (!m[3] && d.getTime() > now) d.setFullYear(yy - 1);
   return d.getTime() > now ? null : d.getTime();
+}
+
+/** '20:30', '20h30', '2030' or '20' → minutes after midnight; null if it isn't a time. */
+export function parseClock(v: string): number | null {
+  const m = v.trim().match(/^(\d{1,2})(?:[:h.]?(\d{2}))?$/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2] ?? 0);
+  return h < 24 && min < 60 ? h * 60 + min : null;
+}
+
+/** '4h30', '4:30' → 270; '4,5' or '4.5' → 270; '4' → 240. Null outside 15 min–48 h. */
+export function parseDuration(v: string): number | null {
+  const x = v.trim().toLowerCase();
+  let m = x.match(/^(\d{1,2})\s*[h:]\s*(\d{1,2})?$/);
+  let mins: number | null = null;
+  if (m) mins = Number(m[1]) * 60 + Number(m[2] ?? 0);
+  else if ((m = x.match(/^(\d{1,2})(?:[.,](\d))?$/))) mins = Math.round((Number(m[1]) + Number(m[2] ?? 0) / 10) * 60);
+  return mins !== null && mins >= 15 && mins <= 48 * 60 ? mins : null;
 }

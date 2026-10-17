@@ -48,7 +48,7 @@ export interface TaxReport {
 
 /** The gambling result of a session: your share, before travel and other expenses (those are listed apart). */
 export function gamblingResult(s: Session): number {
-  return profit(s) + (s.expenses || 0);
+  return profit(s) + (s.expenses || 0) + (s.tips || 0);
 }
 
 /** Share of losses a US filer can deduct for a session in this year. */
@@ -115,10 +115,11 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { summar
         b.total += summary.byKind[k];
       }
   for (const s of list)
-    if (s.expenses) {
+    if (s.expenses || s.tips) {
+      // Dealer tips count with the expenses typed on sessions.
       const b = bucket(s.currency);
-      b.sessions += s.expenses;
-      b.total += s.expenses;
+      b.sessions += (s.expenses || 0) + (s.tips || 0);
+      b.total += (s.expenses || 0) + (s.tips || 0);
     }
   const expenses = [...exp.values()].map((b) => ({ ...b, sessions: r2(b.sessions), total: r2(b.total), byKind: Object.fromEntries(EXPENSE_KINDS.map((k) => [k, r2(b.byKind[k])])) as Record<ExpenseKind, number> }));
 

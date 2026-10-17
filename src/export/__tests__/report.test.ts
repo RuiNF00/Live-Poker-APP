@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { replay } from '../../poker/engine';
 import { sampleHand } from '../../poker/sample';
 import { sessionsCsv } from '../../store/backup';
+import { dayKey } from '../../store/fx-math';
 import type { Bankroll, Session, Transfer, Trip } from '../../store/types';
 import { buildReport, handsCsv } from '../report';
 import { reportHtml } from '../report-html';
@@ -89,7 +90,7 @@ test('trips in the range get their own table, after expenses, and expenses go to
   assert.ok(html.includes('Vegas &lt;WSOP&gt;'));
   const csv = sessionsCsv([], brs, [], [{ trip: vegas, x: vegas.expenses[0] }]).trim().split('\n');
   assert.equal(csv.length, 2);
-  assert.ok(csv[1].startsWith(`${new Date(at(5, 2)).toISOString().slice(0, 10)},expense,`));
+  assert.ok(csv[1].startsWith(`${dayKey(at(5, 2))},,expense,`), csv[1]);
   assert.ok(csv[1].includes(',-200,'));
   assert.ok(csv[1].endsWith('hotel: 3 nights'));
 });

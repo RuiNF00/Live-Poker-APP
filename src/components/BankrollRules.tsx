@@ -1,0 +1,160 @@
+// Bankroll rules: buy-ins per stake, a stop-loss and a target. The card on
+// Bankroll says which stakes the money allows; the banner on the live session
+// says, gently, when the stop-loss is close or reached.
+
+import React, { useMemo, useState } from 'react';
+import { View } from 'react-native';
+
+import { t } from '@/i18n';
+import { money } from '@/poker/format';
+import { bankrollOf, sessionsIn } from '@/store/bankroll-math';
+import { aboveRules, allowedStakes, DEFAULT_RULES, stopLoss, targetProgress } from '@/store/rules-math';
+import { useStore } from '@/store/store';
+import type { Bankroll, BankrollRules, Session } from '@/store/types';
+import { C, R, S } from '@/theme';
+
+import { Banner, Button, Card, IconButton, NumField, Row, Section, Segmented, T } from './ui';
+
+const DAY = 86400000;
+
+function Bar({ value, color }: { value: number; color: string }) {
+  return (
+    <View style={{ height: 6, borderRadius: R.pill, backgroundColor: C.surface3, overflow: 'hidden' }}>
+      <View style={{ width: `${Math.max(2, Math.min(1, value) * 100)}%`, height: 6, borderRadius: R.pill, backgroundColor: color }} />
+    </View>
+  );
+}
+
+/** On Bankroll, for one bankroll: what its rules allow today. */
+export function RulesCard({ bankroll, sessions, balance, hidden, onEdit }: { bankroll: Bankroll; sessions: Session[]; balance: number; hidden: boolean; onEdit: () => void }) {
+  const cur = bankroll.currency;
+  const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), cur));
+  const r = bankroll.rules;
+  const [now] = useState(() => Date.now());
+  const info = useMemo(() => {
+    if (!r) return null;
+    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance) };
+  }, [r, sessions, balance, now]);
+
+  if (!r || !info) {
+    return (
+      <Card tone="inset" onPress={onEdit} style={{ gap: S.xs }} accessibilityLabel={t('Definir regras de bankroll')}>
+        <T v="h3">{t('Regras de bankroll')}</T>
+        <T v="small">{t('Diz quantos buy-ins queres ter por stake, um stop-loss e um objetivo. Mostramos o que o teu saldo permite jogar.')}</T>
+        <T v="small" color={C.accent} style={{ marginTop: S.xs }}>
+          {t('Definir regras ›')}
+        </T>
+      </Card>
+    );
+  }
+  const { a, over, sl, goal } = info;
+  return (
+    <Section title={t('Regras de bankroll')}>
+      <Card style={{ gap: S.md }}>
+        <Row>
+          <View style={{ flex: 1, gap: 2 }}>
+            <T v="h3">{a.cash ? t('Podes jogar até {stake}', { stake: `${a.cash.sb}/${a.cash.bb}` }) : t('Ainda não chega para {stake}', { stake: `${a.next!.sb}/${a.next!.bb}` })}</T>
+            <T v="small">{t('Torneios até {amount} · {cash} buy-ins em cash, {mtt} em torneios', { amount: fmt(a.mttMax), cash: r.cashBuyIns, mtt: r.mttBuyIns })}</T>
+          </View>
+          <IconButton name="create-outline" size={36} label={t('Editar regras')} onPress={onEdit} />
+        </Row>
+        {a.next ? (
+          <View style={{ gap: 6 }}>
+            <Bar value={balance / a.next.need} color={C.accent} />
+            <T v="tiny">{t('Para {stake} precisas de {need}: faltam {missing}.', { stake: `${a.next.sb}/${a.next.bb}`, need: fmt(a.next.need), missing: fmt(a.next.missing) })}</T>
+          </View>
+        ) : null}
+        {over.length ? (
+          <T v="small" color={C.warn}>
+            {t('Nos últimos 30 dias jogaste acima das tuas regras: {list}.', { list: over.join(', ') })}
+          </T>
+        ) : null}
+        {r.stopLoss > 0 ? (
+          sl ? (
+            <View style={{ gap: 6 }}>
+              <T v="small">{sl.lost > 0 ? t('Stop-loss de hoje: perdeste {lost} de {limit}.', { lost: fmt(sl.lost), limit: fmt(sl.limit) }) : t('Stop-loss de {limit} por dia: hoje ainda não perdeste.', { limit: fmt(sl.limit) })}</T>
+              {sl.lost > 0 ? <Bar value={sl.lost / sl.limit} color={sl.near ? C.bad : C.warn} /> : null}
+            </View>
+          ) : (
+            <T v="small">{t('Stop-loss de {limit} por sessão: avisamos-te durante a sessão.', { limit: fmt(r.stopLoss) })}</T>
+          )
+        ) : null}
+        {goal !== null ? (
+          <View style={{ gap: 6 }}>
+            <T v="small">{goal >= 1 ? t('Objetivo de {target} atingido.', { target: fmt(r.target) }) : t('Objetivo {target}: faltam {missing}.', { target: fmt(r.target), missing: fmt(r.target - Math.max(0, balance)) })}</T>
+            <Bar value={goal} color={C.good} />
+          </View>
+        ) : null}
+      </Card>
+    </Section>
+  );
+}
+
+/** Sheet body to set or change a bankroll's rules. */
+export function RulesForm({ bankroll, balance, onSave, onRemove }: { bankroll: Bankroll; balance: number; onSave: (r: BankrollRules) => void; onRemove?: () => void }) {
+  const [r, setR] = useState<BankrollRules>(bankroll.rules ?? DEFAULT_RULES);
+  const set = (p: Partial<BankrollRules>) => setR((x) => ({ ...x, ...p }));
+  const cur = bankroll.currency;
+  const a = allowedStakes(balance, { ...r, cashBuyIns: Math.max(1, r.cashBuyIns), mttBuyIns: Math.max(1, r.mttBuyIns) });
+  return (
+    <View style={{ gap: S.lg }}>
+      <Section title={t('Buy-ins que queres ter')} hint={t('Um buy-in de cash são 100 big blinds: 30 buy-ins para 2/5 são {amount}.', { amount: money(30 * 500, cur) })}>
+        <Row>
+          <NumField label={t('Cash')} value={r.cashBuyIns} onChange={(v) => set({ cashBuyIns: Math.min(500, v) })} />
+          <NumField label={t('Torneios')} value={r.mttBuyIns} onChange={(v) => set({ mttBuyIns: Math.min(1000, v) })} />
+        </Row>
+        <T v="small">
+          {a.cash
+            ? t('Com {balance} podes jogar até {stake} e torneios até {mtt}.', { balance: money(Math.round(balance), cur), stake: `${a.cash.sb}/${a.cash.bb}`, mtt: money(a.mttMax, cur) })
+            : t('Com {balance} ainda não chega para {stake}.', { balance: money(Math.round(balance), cur), stake: `${a.next!.sb}/${a.next!.bb}` })}
+        </T>
+      </Section>
+      <Section title={t('Stop-loss')} hint={t('Quando perderes isto, avisamos-te na sessão. 0 desliga.')}>
+        <Row>
+          <NumField label={t('Limite ({currency})', { currency: cur })} value={r.stopLoss} onChange={(v) => set({ stopLoss: v })} />
+        </Row>
+        <Segmented
+          options={[
+            { key: 'session', label: t('Por sessão') },
+            { key: 'day', label: t('Por dia') },
+          ]}
+          value={r.stopLossPer}
+          onChange={(stopLossPer) => set({ stopLossPer })}
+        />
+      </Section>
+      <Section title={t('Objetivo')} hint={t('O saldo que queres atingir. 0 desliga.')}>
+        <Row>
+          <NumField label={t('Saldo ({currency})', { currency: cur })} value={r.target} onChange={(v) => set({ target: v })} />
+        </Row>
+      </Section>
+      <Button title={t('Guardar regras')} icon="checkmark" disabled={!(r.cashBuyIns > 0 && r.mttBuyIns > 0)} onPress={() => onSave(r)} />
+      {onRemove ? <Button title={t('Tirar regras')} kind="secondary" size="md" onPress={onRemove} /> : null}
+    </View>
+  );
+}
+
+/**
+ * For the live session screen: a quiet warning near the stop-loss and a
+ * clear one once it is reached. Nothing when the bankroll has no stop-loss.
+ */
+export function StopLossBanner({ s }: { s: Session }) {
+  const { sessions, bankrolls, settings } = useStore();
+  const b = bankrollOf(s, bankrolls);
+  const sl = useMemo(() => stopLoss(b?.rules, b ? sessionsIn({ bankrollId: b.id }, sessions, bankrolls) : [], s), [b, sessions, bankrolls, s]);
+  const [dismissed, setDismissed] = useState<'near' | 'hit' | null>(null);
+  if (!sl || !sl.near) return null;
+  const level = sl.hit ? 'hit' : 'near';
+  if (dismissed === level || (dismissed === 'hit' && level === 'near')) return null;
+  const fmt = (n: number) => (settings.hideAmounts ? '•••' : money(Math.round(n), s.currency));
+  const scope = sl.per === 'day' ? t('hoje') : t('nesta sessão');
+  return (
+    <Banner
+      tone="warn"
+      icon={sl.hit ? 'hand-left-outline' : 'alert-circle-outline'}
+      title={sl.hit ? t('Chegaste ao teu stop-loss') : t('Estás perto do teu stop-loss')}
+      body={sl.hit ? t('Perdeste {lost} {scope}; o teu limite é {limit}. Pode ser boa altura para parar.', { lost: fmt(sl.lost), scope, limit: fmt(sl.limit) }) : t('Faltam {left} para o limite de {limit} {scope}.', { left: fmt(sl.left), limit: fmt(sl.limit), scope })}
+      onDismiss={() => setDismissed(level)}
+      dismissLabel={t('Fechar aviso')}
+    />
+  );
+}

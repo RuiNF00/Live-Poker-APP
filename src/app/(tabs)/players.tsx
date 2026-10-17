@@ -92,9 +92,13 @@ export default function PlayersScreen() {
                 </Row>
               ) : null}
               {st?.hands ? (
-                <T v="monoS" color={st.hands < SMALL_SAMPLE ? C.muted : C.textDim} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
-                  {`VPIP ${pct(st.vpip, st.hands)} · PFR ${pct(st.pfr, st.hands)} · 3-bet ${pct(st.threeBet, st.threeBetOpp)}`}
-                </T>
+                <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+                  <T v="monoS" color={st.hands < SMALL_SAMPLE ? C.muted : C.textDim} accessibilityLabel={`VPIP ${pct(st.vpip, st.hands)}%, PFR ${pct(st.pfr, st.hands)}%`}>
+                    {`VPIP ${pct(st.vpip, st.hands)} · PFR ${pct(st.pfr, st.hands)} · 3-bet ${pct(st.threeBet, st.threeBetOpp)}`}
+                  </T>
+                  {/* Under 20 hands the numbers are a hint, never a read (same rule as the stats app). */}
+                  {st.hands < SMALL_SAMPLE ? <Pill label={t('amostra pequena')} color={C.warn} /> : null}
+                </Row>
               ) : null}
               {item.notes ? (
                 <T v="callout" numberOfLines={2} style={{ color: C.text }}>
