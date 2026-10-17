@@ -3072,6 +3072,11 @@ const es: Record<string, string> = {
   'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Tarjeta del mes para compartir: {h} h, {n} sesiones.',
   'Resultado por mês: {list}.': 'Resultado por mes: {list}.',
   'Gráfico das quedas: agora no pico, no máximo −{max}.': 'Gráfico de las caídas: ahora en el pico, como máximo −{max}.',
+  'Sticker Sondagem aqui': 'Sticker Encuesta aquí',
+  'O que aconteceu': 'Qué pasó',
+  'Junta a sondagem': 'Añade la encuesta',
+  'No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.': 'En Instagram, pon el sticker Encuesta en el espacio vacío con {options}. Luego publica la story Resultado o deja el enlace para que vean qué hiciste.',
+  'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Se detiene antes de tu decisión y deja espacio para la encuesta de Instagram.',
 };
 
 export default es;

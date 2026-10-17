@@ -70,6 +70,9 @@ export interface StoryCardProps {
   step?: number;
   /** Video frame mid-animation: ms into the step's motion (see replayer/timeline.ts). */
   at?: number;
+  /** Question story for Instagram: the options make way for the player's own Poll sticker.
+   * 'hint' marks the space (preview only), 'empty' leaves it clean for the capture. */
+  poll?: 'hint' | 'empty' | null;
   onLayout?: (e: LayoutChangeEvent) => void;
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
@@ -102,7 +105,7 @@ function LinkGlyph({ size = 12, color = C.accent }: { size?: number; color?: str
   );
 }
 
-export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, at, onLayout, ref }: StoryCardProps) {
+export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, at, poll = null, onLayout, ref }: StoryCardProps) {
   const g = hand.game;
   const reel = step !== undefined;
   const isQ = !reel && moment.mode === 'question';
@@ -126,7 +129,9 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
       : null;
   const heroNet = result?.resolved ? result.net[hand.hero] : 0;
   const heroHand = result?.handNames[hand.hero] ?? null;
-  const tableW = text ? 250 : 320;
+  // A smaller table leaves room for Instagram's Poll sticker above the reply bar.
+  const pollRoom = isQ && !!poll;
+  const tableW = pollRoom ? (text ? 200 : 256) : text ? 250 : 320;
   const tableTop = text ? 240 : 160;
   const bottomTop = tableTop + tableW * STAGE_RATIO + 8;
 
@@ -247,7 +252,29 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
 
       {/* Above Instagram's reply bar */}
       <View style={{ position: 'absolute', left: GUTTER, right: GUTTER, top: bottomTop, gap: 10 }}>
-        {isQ ? (
+        {isQ && poll ? (
+          // Instagram has no API for stickers: the player drops the Poll sticker here.
+          <View
+            style={{
+              height: 80,
+              borderRadius: R.lg,
+              borderWidth: poll === 'hint' ? 1.5 : 0,
+              borderStyle: 'dashed',
+              borderColor: C.accentLine,
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+            }}>
+            {poll === 'hint' ? (
+              <>
+                <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 12, color: C.accent }}>{t('Sticker Sondagem aqui')}</Text>
+                <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(600), fontSize: 11, color: C.muted }}>
+                  {moment.options.map((o) => o.label).join(' · ')}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        ) : isQ ? (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {moment.options.map((o, i) => (
               <View
@@ -328,7 +355,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <LinkGlyph />
           <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
-            {isQ ? t('Vota e vê o que aconteceu') : t('Replay completo')}{' '}
+            {isQ ? (poll ? t('O que aconteceu') : t('Vota e vê o que aconteceu')) : t('Replay completo')}{' '}
             <Text allowFontScaling={false} style={{ color: C.text }}>{brand ? t('em {host}', { host: linkHost }) : t('no link')}</Text>
           </Text>
         </View>
