@@ -675,6 +675,8 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Mais ferramentas': 'More tools',
+  'viagens': 'trips',
   'Mãos em que pôs dinheiro no pote antes do flop sem ser obrigado (as blinds não contam).': "Hands where they put money in before the flop without being forced to (blinds don't count).",
   'Mãos em que abriu ou subiu antes do flop. Perto do VPIP é agressivo; muito abaixo, paga muito.': 'Hands where they opened or raised before the flop. Close to VPIP is aggressive; far below means they call a lot.',
   'Vezes que voltou a subir antes do flop, entre as vezes em que alguém abriu antes dele.': 'How often they re-raised before the flop when someone had opened before them.',
