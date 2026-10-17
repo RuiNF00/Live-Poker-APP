@@ -169,7 +169,7 @@ function cell(v: string | number | undefined): string {
 
 /** Sessions, then deposits and withdrawals, then trip expenses, as CSV for spreadsheets and accountants. */
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
-  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
+  const head = ['date', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -192,6 +192,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         stakingSummary(stakesOf(s))?.markup ?? '',
         s.expenses ?? 0,
         Math.round(profit(s) * 100) / 100,
+        // Already inside profit when swaps count in results; listed so the number can be traced.
+        s.swapNet ? Math.round(s.swapNet * 100) / 100 : '',
         s.finish,
         s.field,
         // Multi-day tournaments: the day it reached, and the stack while it waits in the bag.

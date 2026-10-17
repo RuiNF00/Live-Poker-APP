@@ -196,6 +196,8 @@ function taxBlock(x: TaxReport): string {
 
 export function reportHtml(r: Report, opts: { player?: string; now?: number; tax?: TaxReport } = {}): string {
   const many = r.currencies.length > 1;
+  // Sessions only carry swapNet while swaps count in results (Settings), so this follows the toggle.
+  const swaps = r.currencies.some((c) => c.sessions.some((s) => s.swapNet));
   return `<!doctype html>
 <html lang="${locale.slice(0, 2)}">
 <head>
@@ -235,7 +237,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number; tax
     <div>
       <div class="brand">Sweat<span>book</span></div>
       <h1>${esc(t('Relatório de póquer'))}</h1>
-      <div class="muted">${esc(period(r))} · ${esc(r.scopeName)}</div>
+      <div class="muted">${esc(period(r))} · ${esc(r.scopeName)}${swaps ? ' · ' + esc(t('inclui swaps')) : ''}</div>
     </div>
     <div class="meta">${opts.player ? esc(opts.player) + '<br/>' : ''}${esc(t('Gerado a {date}', { date: day(opts.now ?? Date.now()) }))}</div>
   </header>

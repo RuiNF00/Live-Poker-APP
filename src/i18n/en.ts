@@ -1912,6 +1912,7 @@ const en: Record<string, string> = {
   'vs média': 'vs average',
   'Indicar': 'Set',
   'Estrutura, relógio sincronizado, prémios e deal': 'Structure, synced clock, payouts and deal',
+  'inclui swaps': 'includes swaps',
 };
 
 export default en;

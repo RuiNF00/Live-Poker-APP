@@ -35,7 +35,7 @@ test('csv quotes and computes profit', () => {
   const csv = sessionsCsv([sess(), sess({ id: 'live', endedAt: undefined })]);
   const lines = csv.trim().split('\n');
   assert.equal(lines.length, 2);
-  assert.match(lines[1], /^2026-10-01,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,200,1,0,200,450,0,,0,250,,,,,,,,,$/);
+  assert.match(lines[1], /^2026-10-01,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,200,1,0,200,450,0,,0,250,,,,,,,,,,$/);
 });
 
 test('csv says the day a multi-day tournament reached and the bagged stack', () => {
