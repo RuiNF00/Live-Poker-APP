@@ -1,6 +1,7 @@
 // Backup format: one JSON with everything on the device. Used by the file
 // export/import and by the cloud backup. Pure, so it can be tested.
 
+import { t } from '@/i18n';
 import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit } from './session-math';
@@ -95,4 +96,14 @@ export function sessionsCsv(list: Session[]): string {
         .join(','),
     );
   return [head.join(','), ...rows].join('\n') + '\n';
+}
+
+/** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */
+export function importSummary(n: { hands: number; sessions: number; players: number }): string {
+  const parts = [
+    n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
+    n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }),
+    n.players === 1 ? t('1 jogador') : t('{n} jogadores', { n: n.players }),
+  ];
+  return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }

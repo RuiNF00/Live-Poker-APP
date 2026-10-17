@@ -13,6 +13,7 @@ import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
 import { canShareStory, captureStory, ensureShareId, renderVoiceStory, shareStory } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
+import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
 import { useStore } from '@/store/store';
@@ -40,8 +41,10 @@ export default function StoryScreen() {
   const withVoice = !!voice && pro.isPro;
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
-  const moment = useMemo(() => (hand ? storyMoment(hand, mode, settings.inBB) : null), [hand, mode, settings.inBB]);
-  if (!hand || !moment) return <Empty title={t('Mão não encontrada')} />;
+  // The image goes public too: same privacy as the link.
+  const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
+  const moment = useMemo(() => (shown ? storyMoment(shown, mode, settings.inBB) : null), [shown, mode, settings.inBB]);
+  if (!hand || !shown || !moment) return <Empty title={t('Mão não encontrada')} />;
 
   // Preview fits the screen; the captured view inside stays 360×640.
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
@@ -69,7 +72,7 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(hand, saveHand);
+        shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
         Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
@@ -129,7 +132,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={hand} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} />
+                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} />
               </View>
             </View>
           </View>

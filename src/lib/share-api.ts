@@ -1,6 +1,9 @@
 // Client for the hand-sharing backend. Interface agreed with the sharing
 // thread; the implementation behind these URLs lives in /api.
 
+import * as Crypto from 'expo-crypto';
+
+import { publicHand, type ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 import { BRAND } from '@/theme';
 
@@ -38,16 +41,11 @@ export function shareLink(id: string, channel: ShareChannel, opts: { quiz?: bool
   return `${shareUrl(id)}?${q.toString()}`;
 }
 
-function publicHand(hand: Hand): Hand {
-  const { sessionId: _s, shareToken: _t, ...rest } = hand;
-  return rest as Hand;
-}
-
-export async function uploadHand(hand: Hand): Promise<{ id: string; token: string }> {
+export async function uploadHand(hand: Hand, opts?: ShareOptions): Promise<{ id: string; token: string }> {
   const res = await fetch(`${API}/api/hands`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ hand: publicHand(hand) }),
+    body: JSON.stringify({ hand: publicHand(hand, opts) }),
   });
   if (!res.ok) throw new Error('upload ' + res.status);
   return res.json();
@@ -96,12 +94,9 @@ export async function reportHand(id: string, reporterId: string, reason?: string
   });
 }
 
-/** RFC 4122 v4-shaped id for anonymous reports/votes (no accounts in v1). */
+/** Random v4 UUID from the platform's secure RNG (install ids double as credentials). */
 export function anonId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
+  return Crypto.randomUUID();
 }
 
 /** Friends' votes on "what do you do here?" (web votes + in-app vote comments). */

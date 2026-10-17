@@ -9,7 +9,7 @@ import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { shortDate } from '@/poker/format';
-import { buildBackup } from '@/store/backup';
+import { buildBackup, importSummary } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { C, F, R } from '@/theme';
 
@@ -78,7 +78,7 @@ export function CloudBackup() {
       setCloud(c);
       setRestoring(false);
       setCode('');
-      note(t('Cópia recuperada'), t('Novos: {h} mãos · {s} sessões · {p} jogadores. O que já tinhas ficou.', { h: n.hands, s: n.sessions, p: n.players }));
+      note(t('Cópia recuperada'), importSummary(n));
     } catch (e) {
       note(t('Não deu para recuperar'), errText(e));
     } finally {
