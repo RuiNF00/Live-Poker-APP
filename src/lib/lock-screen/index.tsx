@@ -35,9 +35,9 @@ function lockScreen(): Native | null {
   return native;
 }
 
-async function show(s: Session) {
+async function show(s: Session, hideAmounts: boolean) {
   try {
-    await lockScreen()?.showSession(liveProps(s));
+    await lockScreen()?.showSession(liveProps(s, Date.now(), hideAmounts));
   } catch (e) {
     // Live Activities switched off in Settings, notifications denied: the app works as before.
     console.warn('[lock-screen] show', e);
@@ -53,7 +53,8 @@ async function end() {
 }
 
 export function SessionLockScreen() {
-  const { activeSession } = useStore();
+  const { activeSession, settings } = useStore();
+  const hide = !!settings.hideAmounts;
   const asked = useRef<string | null>(null);
 
   useEffect(() => {
@@ -69,25 +70,25 @@ export function SessionLockScreen() {
         asked.current = s.id;
         await askNotificationPermission();
       }
-      await show(s);
+      await show(s, hide);
       await syncLevelReminder(s);
     })();
-  }, [activeSession]);
+  }, [activeSession, hide]);
 
   // Android can't run a clock in the notification: refresh the played time
   // every minute while the app is open, and once more on the way out.
   useEffect(() => {
     if (Platform.OS !== 'android' || !activeSession || !lockScreenAvailable) return;
     const s = activeSession;
-    const id = setInterval(() => void show(s), 60_000);
+    const id = setInterval(() => void show(s, hide), 60_000);
     const sub = AppState.addEventListener('change', (st) => {
-      if (st !== 'active') void show(s);
+      if (st !== 'active') void show(s, hide);
     });
     return () => {
       clearInterval(id);
       sub.remove();
     };
-  }, [activeSession]);
+  }, [activeSession, hide]);
 
   useEffect(() => onReminderTap((url) => void Linking.openURL(url).catch(() => {})), []);
 

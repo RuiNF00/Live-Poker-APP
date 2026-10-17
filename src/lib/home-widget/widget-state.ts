@@ -48,7 +48,7 @@ export interface WidgetInput {
 
 export function widgetProps(x: WidgetInput, now = Date.now()): WidgetProps {
   const s = x.activeSession;
-  const lp = s ? liveProps(s, now) : null;
+  const lp = s ? liveProps(s, now, x.hideAmounts) : null;
 
   // This week, in the main currency: other currencies don't add up.
   const from = weekStart(now);
