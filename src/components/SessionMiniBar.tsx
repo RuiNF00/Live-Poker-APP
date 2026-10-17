@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -11,6 +11,7 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 
 import { T, tap } from './ui';
+import { useNowAlways } from './useNow';
 
 /**
  * A live session pinned above the tab bar on every tab, like a music mini-player.
@@ -24,11 +25,7 @@ export function SessionMiniBar({ hidden }: { hidden?: boolean }) {
 
 function Bar({ s }: { s: Session }) {
   // Minutes are enough here; a 1 s tick would redraw every tab behind the bar.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNowAlways(30000);
   const paused = isPaused(s);
   const col = paused ? C.warn : C.good;
   return (
