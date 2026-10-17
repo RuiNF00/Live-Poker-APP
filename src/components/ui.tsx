@@ -254,6 +254,15 @@ export function ScreenHeader({ title, eyebrow, right, style }: { title: React.Re
   );
 }
 
+/**
+ * Bottom padding of a bottom sheet. iOS keeps the design's `base`. Android 15 draws
+ * edge to edge, so a sheet in a Modal runs under the navigation bar: never less than its inset.
+ */
+export function useSheetPad(base: number): number {
+  const insets = useSafeAreaInsets();
+  return Platform.OS === 'android' ? Math.max(base, insets.bottom + S.md) : base;
+}
+
 /** Header for a modal sheet: title on the left, a close button on the right. */
 export function SheetHeader({ title, onClose, right, closeLabel }: { title: string; onClose: () => void; right?: React.ReactNode; closeLabel?: string }) {
   return (

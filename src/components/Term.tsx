@@ -6,7 +6,7 @@ import { GLOSSARY, type TermKey } from '@/data/glossary';
 import { t } from '@/i18n';
 import { C, S } from '@/theme';
 
-import { SheetHeader, T, type TV } from './ui';
+import { SheetHeader, T, type TV, useSheetPad } from './ui';
 
 /**
  * A poker abbreviation the player can tap for a one-line definition.
@@ -28,10 +28,11 @@ export function Term({ k, v = 'label', style, color }: { k: TermKey; v?: TV; sty
 }
 
 export function TermSheet({ k, onClose }: { k: TermKey | null; onClose: () => void }) {
+  const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={!!k} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-        <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+        <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
           {k ? (
             <>
               <SheetHeader title={k} onClose={onClose} />

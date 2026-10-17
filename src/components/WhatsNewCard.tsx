@@ -14,7 +14,7 @@ import { WHATS_NEW } from '@/data/whats-new';
 import { t } from '@/i18n';
 import { whatsNewStep, type WhatsNewSeen } from '@/lib/whats-new-core';
 import { useStore } from '@/store/store';
-import { C, R } from '@/theme';
+import { C, ff, R } from '@/theme';
 
 const KEY = 'rl.whats-new.seen.v1';
 const VERSION = Constants.expoConfig?.version ?? '0';
@@ -67,7 +67,7 @@ export function WhatsNewCard({ item, onDismiss }: { item: { icon: string; title:
           </T>
           <T v="h3">{t(item.title)}</T>
           <T v="small">{t(item.body)}</T>
-          <T v="small" color={C.accent} style={{ fontWeight: '700', marginTop: 2 }}>
+          <T v="small" color={C.accent} style={{ fontFamily: ff(700), fontWeight: '700', marginTop: 2 }}>
             {t('Ver tudo')} ›
           </T>
         </Pressable>
