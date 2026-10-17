@@ -242,18 +242,20 @@ test('Sweatbook CSV round trip: export, import, and import again into the same p
     breaks: [{ start: start + i * 86_400_000 + 3_600_000, end: start + i * 86_400_000 + 3_600_000 + 25 * 60_000 }],
     buyIn: 200.37, entries: 1, addOn: 0, cashOut: 455.1, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: 'a, b\n"c"', bankrollId: 'b2', ...x,
   });
-  const list = [mk(0), mk(1, { kind: 'mtt', name: 'Main Event', buyIn: 1100, entries: 2, cashOut: 0, finish: 40, field: 900, day: 2, country: 'US', currency: '$', bankrollId: undefined, sb: 0, bb: 0 }), mk(2, { bankrollId: 'b1', format: 'online', tips: 4.5 })];
+  const list = [mk(0), mk(1, { kind: 'mtt', name: 'Main Event', buyIn: 1100, entries: 2, cashOut: 0, finish: 40, field: 900, day: 2, country: 'US', currency: '$', bankrollId: undefined, sb: 0, bb: 0 }), mk(2, { bankrollId: 'b1', format: 'online', tips: 4.5 }), mk(4, { kind: 'mtt', name: 'Main', buyIn: 1500, cashOut: 4567.89, makeupCut: 101.01, currency: 'R$', bankrollId: undefined, finish: 3, field: 200, sb: 0, bb: 0 })];
   const tx = [{ id: 't1', bankrollId: 'b2', kind: 'deposit' as const, amount: 500.5, at: start - 86_400_000, note: '' }];
   const trip = { id: 'tr', name: 'Vegas', venue: 'Bellagio', currency: '$', from: start, to: start + 3 * 86_400_000, expenses: [], createdAt: 0 };
   const csv = sessionsCsv(list, brs, tx, [{ trip, x: { id: 'e', kind: 'hotel', amount: 200, currency: '$', at: start, note: '' } }]);
   const r = run(csv);
   assert.equal(r.source, 'sweatbook');
-  assert.equal(r.sessions.length, 3, 'the trip expense does not become a session');
-  const back = place(r, { '€': 'b1', $: 'new' }, { source: r.source, appName: 'Sweatbook', bankrolls: brs, names: r.bankrollNames });
+  assert.equal(r.sessions.length, 4, 'the trip expense does not become a session');
+  const back = place(r, { '€': 'b1', $: 'new', R$: 'new' }, { source: r.source, appName: 'Sweatbook', bankrolls: brs, names: r.bankrollNames });
   for (const s of list) {
     const o = back.sessions.find((x) => x.id === s.id)!;
     assert.ok(o, s.id);
     assert.equal(Math.round(profit(o) * 100), Math.round(profit(s) * 100));
+    assert.equal(o.cashOut, s.cashOut, 'cash_out as entered, the makeup cut apart');
+    assert.equal(o.expenses ?? 0, s.expenses ?? 0);
     assert.equal(o.currency, s.currency);
     assert.equal(o.kind, s.kind);
     assert.equal(o.startedAt, s.startedAt);

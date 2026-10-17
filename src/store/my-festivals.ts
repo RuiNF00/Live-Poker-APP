@@ -1,7 +1,7 @@
 // Festivals the player adds themselves ("Adicionar o meu festival"): the series
 // we don't ship. Name, city, dates and currency only, no schedule. They sit in
 // the planner next to the shipped ones, make trips the same way and count as
-// "a festival is on". Kept on the phone like the festival plans.
+// "a festival is on". Kept on the phone like the festival plans, and in the backup.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
@@ -53,7 +53,7 @@ const KEY = 'rl.myFestivals.v1';
 let mine: Festival[] = [];
 const byStart = (l: Festival[]) => [...l].sort((a, b) => festivalSortKey(a).localeCompare(festivalSortKey(b)));
 let all: Festival[] = byStart(FESTIVALS);
-let loaded = false;
+let loaded: Promise<void> | null = null;
 let ready = false;
 const listeners = new Set<() => void>();
 
@@ -63,10 +63,8 @@ function set(next: Festival[]) {
   for (const l of listeners) l();
 }
 
-function load() {
-  if (loaded) return;
-  loaded = true;
-  AsyncStorage.getItem(KEY)
+function load(): Promise<void> {
+  loaded ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
       const saved = raw ? (JSON.parse(raw) as Festival[]).filter((f) => f && f.own && f.dates) : [];
       ready = true;
@@ -76,10 +74,11 @@ function load() {
       ready = true;
       set(mine);
     });
+  return loaded;
 }
 
 function subscribe(l: () => void) {
-  load();
+  void load();
   listeners.add(l);
   return () => listeners.delete(l);
 }
@@ -105,7 +104,7 @@ export function soon(f: Festival, today: string, days = 7): boolean {
 
 /** Shipped festivals and the player's own, by when they start. */
 export function allFestivals(): Festival[] {
-  load();
+  void load();
   return all;
 }
 
@@ -115,6 +114,22 @@ export function festivalById(id: string | undefined): Festival | undefined {
 
 export function saveOwnFestival(f: Festival) {
   set([...mine.filter((x) => x.id !== f.id), f]);
+  persist();
+}
+
+/** The player's own festivals, for the backup. */
+export function currentOwnFestivals(): Festival[] {
+  void load();
+  return mine;
+}
+
+/** A backup's own festivals that this phone doesn't have yet; the phone's copy of the rest stays. */
+export async function importOwnFestivals(incoming: Festival[]): Promise<void> {
+  if (!incoming.length) return;
+  await load();
+  const add = incoming.filter((f) => !mine.some((x) => x.id === f.id));
+  if (!add.length) return;
+  set([...mine, ...add]);
   persist();
 }
 

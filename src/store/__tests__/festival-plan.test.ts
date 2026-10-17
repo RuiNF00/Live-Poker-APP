@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -215,6 +215,20 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
   const pu = PUNTA_DEL_ESTE_DEC_2026.events.filter((e) => e.number === 8);
   assert.deepEqual(pu.map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '2']);
   assert.deepEqual([pu[0].buyIn, pu[0].stack, pu[0].levelMinutes, pu[0].guarantee], [2750, 20000, 30, 750_000]);
+});
+
+test('a restored plan joins this phone’s: nothing here goes away, this phone wins where both set something', () => {
+  const ev = (id: string) => ownEvent(id, { name: id, start: '2026-11-02T18:00', game: 'NLH', buyIn: 100 }, 1);
+  const local = { picked: ['1-A'], lateReg: { '1-A': 90 }, sessions: { '1-A': 's1' }, name: 'Meu', events: [ev('o1')] };
+  const incoming = { picked: ['1-A', '2-A'], lateReg: { '1-A': 120, '2-A': 60 }, sessions: { '2-A': 's2' }, name: 'Outro', events: [ev('o1'), ev('o2')] };
+  const m = mergePlan(local, incoming);
+  assert.deepEqual(m.picked, ['1-A', '2-A']);
+  assert.deepEqual(m.lateReg, { '1-A': 90, '2-A': 60 });
+  assert.deepEqual(m.sessions, { '1-A': 's1', '2-A': 's2' });
+  assert.equal(m.name, 'Meu');
+  assert.deepEqual(m.events?.map((e) => e.id), ['o1', 'o2']);
+  assert.equal(mergePlan({ ...EMPTY_PLAN, name: ' ' }, incoming).name, 'Outro');
+  assert.equal(mergePlan(undefined, incoming), incoming);
 });
 
 test('sharing the plan: by day in start order, days/times/names only, buy-ins only when asked', () => {

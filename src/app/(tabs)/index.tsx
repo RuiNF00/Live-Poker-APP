@@ -5,7 +5,7 @@ import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Se
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
-import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
+import { BackupHealthBanner, BackupSuggestion, useBackupSuggestion, useBackupWarning } from '@/components/CloudBackup';
 import { SharedHandsCard } from '@/components/SharedHandsCard';
 import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettleReminder';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
@@ -120,6 +120,8 @@ export default function HandsScreen() {
   const chargeEnd = useChargeNotice();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
+  // Once there's something to lose: the first saved hand or closed session.
+  const suggest = useBackupSuggestion(hands.length > 0 || lastEnd > 0);
   const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
 
   // Long-press a hand to start picking several; tap then adds or removes.
@@ -231,6 +233,8 @@ export default function HandsScreen() {
                 <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
               ) : !activeSession && news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
+              ) : !activeSession && suggest.show ? (
+                <BackupSuggestion onDone={suggest.dismiss} />
               ) : !activeSession && checklist ? (
                 <StartChecklist state={checklist} />
               ) : !activeSession && moment ? (

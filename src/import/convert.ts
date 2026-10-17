@@ -393,6 +393,8 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     const srcExp = Math.abs(parseNum(get(r, 'expenses')) ?? 0);
     const tips = Math.abs(parseNum(get(r, 'tips')) ?? 0);
     const handsDealt = parseNum(get(r, 'handsDealt'));
+    // Sweatbook's own CSV: the makeup cut is inside profit; kept apart so cash_out stays as entered.
+    const cut = opt.source === 'sweatbook' ? (parseNum(get(r, 'makeupCut')) ?? 0) : 0;
     // "cem" or "?" where an amount goes: reading it as 0 would change the result without a word.
     const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && /\p{L}|\?/u.test(v) && !NO_VALUE.test(v.trim()) && parseNum(v) === null);
     if (bad) {
@@ -423,7 +425,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
         if (g >= 0) out = g;
         else cost = -g;
       } else {
-        const diff = round2(net - (out - cost - Math.abs(addOn) - expenses - tips));
+        const diff = round2(net - (out - cost - Math.abs(addOn) - expenses - tips + cut));
         if (diff < 0) expenses = round2(expenses - diff);
         else if (diff > 0 && (kind === 'cash' || out > 0)) out = round2(out + diff);
         else if (diff > 0) expenses = round2(expenses - diff);
@@ -497,6 +499,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       field: kind === 'mtt' && field && field > 0 ? Math.round(field) : undefined,
       expenses: expenses ? round2(expenses) : undefined,
       ...(tips ? { tips: round2(tips) } : null),
+      ...(cut ? { fileCut: round2(cut) } : null),
       ...(handsDealt && handsDealt > 0 ? { handsDealt: Math.round(handsDealt) } : null),
       sb,
       bb,
@@ -523,4 +526,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut');
