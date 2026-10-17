@@ -59,7 +59,7 @@ BUILT FOR LIVE PLAYERS
 • Available in English and Portuguese
 
 SWEATBOOK PRO
-Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, multiple bankrolls, every bankroll filter (30 days, 90 days, 1 year, by stake), PDF and CSV reports and voice-over Instagram Stories without the watermark. Monthly or yearly subscription; the yearly plan starts with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
+Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, multiple bankrolls, every bankroll filter (30 days, 90 days, 1 year, by stake), where you win and lose by venue and game, unlimited trips, PDF and CSV reports, exporting many hands at once to your solver, unlimited coaching links and voice-over Instagram Stories without the watermark. Monthly or yearly subscription; the yearly plan starts with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
 
 {{APP_NAME}} is a logging and study tool: records and accounts only. No money moves through the app. It does not offer real-money gaming or betting of any kind. For adults 18+.
 

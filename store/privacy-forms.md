@@ -14,6 +14,7 @@ Data not linked to you:
 | User Content → Other User Content (optional cancellation feedback: reason + up to 120 characters) | Analytics |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
+| Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
 | User Content → Photos or Videos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | App Functionality |
 | Contact Info → Name (a nickname the user types for comments, the backer page or a public profile; optional, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
@@ -62,6 +63,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 | Data type | Collected | Optional | Purpose |
 |---|---|---|---|
 | App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
+| Financial info → Other financial info (amounts the user publishes on a live page, swap, public profile or action package; optional) | Yes | Yes | App functionality |
 | Photos and videos → Photos (receipt and tax-form photos, only inside the optional end-to-end encrypted cloud backup) | Yes | Yes | App functionality |
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
