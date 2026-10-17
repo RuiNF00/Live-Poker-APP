@@ -242,3 +242,27 @@ test("a backer's year: package by package, sessions counted in the year they sta
   assert.deepEqual([y.sessions, y.cost, y.prizes, y.net, y.makeup], [3, 720, 500, -120, 1000]);
   assert.equal(yearStatement(l, 2025, packages, pk).sessions, 1);
 });
+
+test('a package with sessions in two currencies counts its makeup in its own, at each day rate', () => {
+  const p = pkg({ id: 'px' });
+  const x = { backerId: 'b1', packageId: 'px', share: 100, markup: 1 };
+  const eur = mk({ buyIn: 100, cashOut: 0, stakes: [x] }); // −100€
+  const usdLoss = mk({ currency: '$', buyIn: 200, cashOut: 0, stakes: [x] }); // −200$ = −100€
+  const usdWin = mk({ currency: '$', buyIn: 200, cashOut: 1000, stakes: [x] }); // +800$ = +400€
+  const table = { [new Date(0).toISOString().slice(0, 10)]: { USD: 2 } };
+  const two = packageStates([eur, usdLoss], [p], { table }).states.get('px')!;
+  assert.deepEqual([two.currency, two.makeup, two.unconverted], ['€', 200, 0]);
+  const all = packageStates([eur, usdLoss, usdWin], [p], { table });
+  const st = all.states.get('px')!;
+  assert.deepEqual([st.makeup, st.net, st.cut], [0, 200, 100]);
+  // Your cut on that session in its own currency: 100€ = 200$.
+  assert.equal(all.cuts.get(usdWin.id), 200);
+  // No rate yet (offline): the dollar sessions stay out instead of being added as euros.
+  const off = packageStates([eur, usdLoss], [p]).states.get('px')!;
+  assert.deepEqual([off.makeup, off.unconverted], [100, 1]);
+  // Carried to a new package, the makeup keeps its currency even if the next session is in dollars.
+  const { next } = closePackage(p, two.makeup, true, 'py', 5, two.currency);
+  assert.equal(next!.currency, '€');
+  const after = packageStates([mk({ currency: '$', buyIn: 200, cashOut: 0, stakes: [{ ...x, packageId: 'py' }] })], [next!], { table }).states.get('py')!;
+  assert.deepEqual([after.currency, after.makeup], ['€', 300]);
+});

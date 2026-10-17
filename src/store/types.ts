@@ -247,6 +247,8 @@ export interface StakePackage {
   playerCut: number;
   /** Makeup deals: losses carried over from the package before it (the player chose to carry them when closing it). */
   makeupIn?: number;
+  /** The package's currency (its first session's): its makeup and makeupIn are counted in it. */
+  currency?: string;
   createdAt: number;
   closedAt?: number;
   updatedAt?: number;

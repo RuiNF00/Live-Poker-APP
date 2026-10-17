@@ -26,8 +26,8 @@ export function useStaking() {
   const table = useRates(since);
   const offers = useOffers();
   return useMemo(() => {
-    const pk = packageStates(sessions, packages);
     const manual = settings.fxManual ?? {};
+    const pk = packageStates(sessions, packages, { table, manual });
     const fx = { table, fallback: home, manual };
     const ledgers = new Map<string, BackerLedger>(backers.map((b) => [b.id, backerLedger(b.id, sessions, packages, payments, pk, fx)]));
     // Festival action not paid for yet, for events no session carries yet: the backer owes it already.
