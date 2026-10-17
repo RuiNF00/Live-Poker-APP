@@ -20,8 +20,7 @@ import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
 import { ContextSheet, inputStyle } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
-import { PlayingCard } from '@/components/PlayingCard';
-import { Table } from '@/components/Table';
+import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
@@ -63,6 +62,7 @@ export default function NewHand() {
   const [pad, setPad] = useState(false);
   const [inBB, setInBB] = useState(settings.inBB);
   // undefined: the picker opens by itself for the only opponent left; null: closed.
+  const [area, setArea] = useState({ w: 0, h: 0 });
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
 
   const hand = draft.hand;
@@ -219,11 +219,42 @@ export default function NewHand() {
   const sdSeat = showdownFor !== undefined ? showdownFor : liveVillains.length === 1 && (hand.players[liveVillains[0]].cards?.length ?? 0) < 2 ? liveVillains[0] : null;
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
+  const busy = hand.actions.length || heroCards.length || params.edit;
+  // Tapping a seat on the felt is how the action is entered: a seat the app
+  // folded by itself came in after all; a seat further round gets the turn,
+  // with everyone in between checking or folding. Anything else edits the seat.
+  const onSeat = (i: number) => {
+    if (phase === 'action') {
+      if (autoSeats.includes(i)) return rewind(i);
+      if (skips.slice(1).includes(i)) {
+        tap();
+        return pushActions(skipTo(hand, s, i));
+      }
+    }
+    setSeatEdit(i);
+  };
+  const seatHint =
+    phase !== 'action' || !l
+      ? null
+      : autoSeats.length
+        ? (l.p === hand.hero ? t('Fold de todos até ti') : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })) + ' · ' + t('alguém entrou? Toca no lugar dele na mesa')
+        : skips.length > 1
+          ? t('Toca num lugar da mesa para saltar até ele')
+          : null;
+  const tableW = area.w && area.h ? Math.min(area.w, area.h / ASPECT) : 0;
+  const quickSave = (
+    <Pressable onPress={save} hitSlop={8}>
+      <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+        {t('Guardar já')}
+      </T>
+    </Pressable>
+  );
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* header */}
-      <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 12, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Pressable onPress={() => (hand.actions.length || heroCards.length || params.edit ? router.back() : discard())} hitSlop={10}>
+      {/* header: one compact row, so the felt gets the screen */}
+      <View style={{ paddingTop: insets.top + 4, paddingHorizontal: 12, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Pressable onPress={() => (busy ? router.back() : discard())} hitSlop={10}>
           <Ionicons name="close" size={26} color={C.textDim} />
         </Pressable>
         <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.pill, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -233,274 +264,257 @@ export default function NewHand() {
           </T>
           <Ionicons name="chevron-down" size={14} color={C.muted} />
         </Pressable>
-        <Pressable onPress={undo} disabled={!history.length} hitSlop={10} style={{ opacity: history.length ? 1 : 0.3 }}>
-          <Ionicons name="arrow-undo" size={24} color={C.text} />
-        </Pressable>
-        <Pressable onPress={() => setInBB((b) => !b)} hitSlop={8} style={{ backgroundColor: inBB ? C.accentSoft : C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4 }}>
+        {levelUp && (
+          <Pressable
+            accessibilityLabel={t('Subiram as blinds? Toca para {blinds}', { blinds: blindsLabel({ ...hand, game: levelUp }) })}
+            onPress={() => {
+              tap();
+              update(hand.sessionId ? { ...hand, game: levelUp } : rescaleStacks(hand, levelUp));
+            }}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 }}>
+            <Ionicons name="trending-up" size={16} color={C.accent} />
+          </Pressable>
+        )}
+        <Pressable onPress={() => setInBB((b) => !b)} hitSlop={8} style={{ backgroundColor: inBB ? C.accentSoft : C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 }}>
           <T v="tiny" color={inBB ? C.accent : C.textDim} style={{ fontWeight: '800', fontFamily: ff(800) }}>
             BB
           </T>
         </Pressable>
+        <Pressable onPress={undo} disabled={!history.length} hitSlop={10} style={{ opacity: history.length ? 1 : 0.3 }}>
+          <Ionicons name="arrow-undo" size={24} color={C.text} />
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 24, gap: 12 }} keyboardShouldPersistTaps="handled">
-        <Table
-          seats={seatsView}
-          hero={hand.hero}
-          button={hand.button}
-          board={hand.board.slice(0, s.boardCount || (phase === 'board' ? hand.board.length : 0))}
-          pot={totalPot(s) > 0 ? amount(totalPot(s), hand, inBB) : undefined}
-          narration={phase === 'action' ? STREET_PT[s.street] : undefined}
-          watermark={BRAND.name}
-          onSeatPress={(i) => setSeatEdit(i)}
-        />
+      {/* the felt takes whatever the dock leaves */}
+      <View style={{ flex: 1, minHeight: 160, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }} onLayout={(e) => setArea({ w: e.nativeEvent.layout.width - 16, h: e.nativeEvent.layout.height })}>
+        {tableW > 0 && (
+          <View style={{ width: tableW }}>
+            <Table
+              seats={seatsView}
+              hero={hand.hero}
+              button={hand.button}
+              board={hand.board.slice(0, s.boardCount || (phase === 'board' ? hand.board.length : 0))}
+              pot={totalPot(s) > 0 ? amount(totalPot(s), hand, inBB) : undefined}
+              narration={phase === 'action' ? STREET_PT[s.street] : undefined}
+              watermark={BRAND.name}
+              onSeatPress={onSeat}
+              onSeatLongPress={(i) => setSeatEdit(i)}
+            />
+          </View>
+        )}
+      </View>
 
+      {/* dock: everything the thumb needs, pinned to the bottom */}
+      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: 12, paddingTop: 12, paddingBottom: insets.bottom + 10, gap: 10 }}>
         {phase === 'hero' && (
-          <View style={{ gap: 12 }}>
-            <View style={{ gap: 6 }}>
-              <T v="label">{t('A tua posição')}</T>
-              <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                {positionOrder(n).map((label) => (
-                  <Chip key={label} big label={label} active={draft.posChosen && pos[hand.hero] === label} onPress={() => setHeroPos(label)} />
-                ))}
-              </Row>
-            </View>
-            <View style={{ gap: 6 }}>
-              <Row style={{ justifyContent: 'space-between' }}>
-                <T v="label">{t('As tuas cartas')}</T>
-                <Row gap={4}>
-                  {[0, 1].map((k) => (
-                    <PlayingCard key={k} card={heroCards[k]} size="sm" faceDown={!heroCards[k]} />
-                  ))}
-                </Row>
-              </Row>
-              <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
-            </View>
-            {levelUp && (
-              <Pressable
-                onPress={() => {
-                  tap();
-                  update(hand.sessionId ? { ...hand, game: levelUp } : rescaleStacks(hand, levelUp));
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, padding: 12, borderRadius: R.md }}>
-                <Ionicons name="trending-up" size={16} color={C.accent} />
-                <T v="small" style={{ flex: 1 }}>
-                  {t('Subiram as blinds? Toca para {blinds}', { blinds: blindsLabel({ ...hand, game: levelUp }) })}
+          <>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
+              <Pressable onPress={() => setSeatEdit(hand.hero)} hitSlop={8}>
+                <T v="small">
+                  {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
                 </T>
               </Pressable>
-            )}
-            <Pressable onPress={() => setSeatEdit(hand.hero)} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: C.surface, padding: 12, borderRadius: R.md }}>
-              <T v="small">{t('O teu stack (toca num lugar para mudar nome ou stack)')}</T>
-              <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
-            </Pressable>
-          </View>
+            </Row>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {positionOrder(n).map((label) => {
+                const on = draft.posChosen && pos[hand.hero] === label;
+                return (
+                  <Pressable
+                    key={label}
+                    onPress={() => {
+                      tap('select');
+                      setHeroPos(label);
+                    }}
+                    style={({ pressed }) => ({
+                      flexGrow: 1,
+                      minWidth: 62,
+                      paddingVertical: 10,
+                      borderRadius: R.md,
+                      alignItems: 'center',
+                      backgroundColor: on ? C.accent : C.surface2,
+                      borderWidth: 1,
+                      borderColor: on ? C.accent : C.border,
+                      opacity: pressed ? 0.75 : 1,
+                    })}>
+                    <T v="body" color={on ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+                      {label}
+                    </T>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
+            {!settings.onboarded && !params.edit ? (
+              <T v="tiny" style={{ textAlign: 'center' }}>
+                {t('Posição e duas cartas. Os folds até ti são automáticos.')}
+              </T>
+            ) : null}
+          </>
         )}
 
         {phase === 'action' && l && (
-          <View style={{ gap: 10 }}>
+          <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2">
+              <T v="h2" numberOfLines={1} style={{ flex: 1 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
-              {l.toCall > 0 ? <T v="small">{t('para pagar {amount}', { amount: amount(l.toCall, hand, inBB) })}</T> : null}
+              {quickSave}
             </Row>
-            {autoSeats.length > 0 && (
-              <View style={{ gap: 6 }}>
-                <T v="small">
-                  {l.p === hand.hero ? t('Fold de todos até ti') : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })} ·{' '}
-                  <T v="small" color={C.accent}>{t('alguém entrou? Toca no lugar')}</T>
-                </T>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                  {autoSeats.map((i) => (
-                    <Chip key={i} label={pos[i] + (hand.players[i].name ? ` · ${hand.players[i].name}` : '')} onPress={() => rewind(i)} />
-                  ))}
-                </ScrollView>
-              </View>
+            {seatHint ? (
+              <T v="tiny" color={C.textDim} numberOfLines={2}>
+                {seatHint}
+              </T>
+            ) : null}
+            {(callers.length > 0 || checks.length > 0) && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
+                {callers.map((i) => (
+                  <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
+                ))}
+                {callers.length > 0 && <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />}
+                {checks.length > 0 && <Chip big label={t('Todos check')} onPress={() => pushActions(checks)} />}
+              </ScrollView>
             )}
-            {callers.length > 0 && (
-              <View style={{ gap: 6 }}>
-                <T v="label">{t('Resposta rápida (os outros fazem fold)')}</T>
-                <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                  {callers.map((i) => (
-                    <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
-                  ))}
-                  <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />
-                </Row>
-              </View>
-            )}
-            <Row gap={8}>
-              {l.canCall ? (
-                <Button title="Fold" kind="secondary" style={{ flex: 1 }} onPress={() => act('fold')} />
-              ) : null}
-              {l.canCheck ? (
-                <>
-                  <Button title="Check" kind="secondary" style={{ flex: 1 }} onPress={() => act('check')} />
-                  {checks.length > 0 ? <Button title={t('Todos check')} kind="secondary" style={{ flex: 1 }} onPress={() => { tap(); pushActions(checks); }} /> : null}
-                </>
-              ) : (
-                <Button title={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} style={{ flex: 1.4 }} onPress={() => act('call')} />
-              )}
-            </Row>
             {presets.length > 0 && (
-              <View style={{ gap: 6 }}>
+              <View style={{ gap: 4 }}>
                 <T v="label">{l.canBet ? raiseName(s) : t('{action} para', { action: raiseName(s) })}</T>
-                <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                <Row gap={6}>
                   {presets.map((p) => (
                     <Pressable
                       key={p.label}
                       onPress={() => act(l.canBet ? 'bet' : 'raise', p.to)}
                       style={({ pressed }) => ({
-                        minWidth: 70,
-                        flexGrow: 1,
-                        paddingVertical: 9,
-                        paddingHorizontal: 8,
+                        flex: 1,
+                        minHeight: 52,
+                        paddingVertical: 6,
                         borderRadius: R.md,
                         alignItems: 'center',
+                        justifyContent: 'center',
                         backgroundColor: p.allIn ? C.dangerSoft : 'rgba(245,184,61,0.12)',
                         borderWidth: 1,
                         borderColor: p.allIn ? C.danger : 'rgba(245,184,61,0.45)',
                         opacity: pressed ? 0.7 : 1,
                       })}>
-                      <T v="body" color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+                      <T v="body" numberOfLines={1} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
                         {p.label}
                       </T>
-                      <T v="tiny" color={C.textDim}>
+                      <T v="tiny" numberOfLines={1} color={C.textDim}>
                         {amount(p.to, hand, inBB)}
                       </T>
                     </Pressable>
                   ))}
                   <Pressable
+                    accessibilityLabel={t('Outro valor')}
                     onPress={() => setPad(true)}
-                    style={({ pressed }) => ({ minWidth: 70, flexGrow: 1, paddingVertical: 9, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: pressed ? 0.7 : 1 })}>
+                    style={({ pressed }) => ({ width: 46, minHeight: 52, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: pressed ? 0.7 : 1 })}>
                     <Ionicons name="keypad" size={18} color={C.text} />
                   </Pressable>
                 </Row>
               </View>
             )}
-            {skips.length > 1 && (
-              <View style={{ gap: 6 }}>
-                <T v="label">{t('Salta para (os do meio fazem {action})', { action: l.canCheck ? 'check' : 'fold' })}</T>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                  {skips.slice(1).map((i) => (
-                    <Chip
-                      key={i}
-                      label={(i === hand.hero ? '★ ' : '') + displayName(hand, i, pos) + (i === hand.hero ? '' : hand.players[i].name ? ` · ${pos[i]}` : '')}
-                      onPress={() => pushActions(skipTo(hand, s, i))}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-          </View>
+            <Row gap={8}>
+              {l.canCall ? <BigAction label="Fold" kind="fold" onPress={() => act('fold')} /> : null}
+              {l.canCheck ? (
+                <BigAction label="Check" kind="check" onPress={() => act('check')} />
+              ) : (
+                <BigAction label={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} kind="call" onPress={() => act('call')} />
+              )}
+            </Row>
+          </>
         )}
 
         {phase === 'board' && (
-          <View style={{ gap: 8 }}>
+          <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
-                {STREET_PT[s.street]} — {boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}
+                {STREET_PT[s.street]} · {boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}
+                {s.bettingDone ? <T v="small" color={C.allin}>  all-in</T> : null}
               </T>
-              {s.bettingDone ? <T v="small" color={C.allin}>all-in</T> : null}
+              {quickSave}
             </Row>
             <CardPicker used={usedCards(hand)} selected={hand.board.slice(s.boardCount)} onPick={pickBoard} />
-            {r.steps.length > 0 && s.bettingDone && (
-              <Button title={t('Guardar sem board')} kind="ghost" onPress={save} />
-            )}
-          </View>
+            {r.steps.length > 0 && s.bettingDone && <Button title={t('Guardar sem board')} kind="ghost" small onPress={save} />}
+          </>
         )}
 
         {(phase === 'showdown' || phase === 'done') && (
-          <View style={{ gap: 12 }}>
-            {phase === 'showdown' && (
-              <View style={{ gap: 8 }}>
-                <T v="h2">Showdown</T>
-                <T v="small">{t('Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)')}</T>
-                <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                  {hand.players.map((p, i) =>
-                    i === hand.hero || s.folded[i] ? null : (
-                      <Chip
-                        key={i}
-                        big
-                        active={sdSeat === i}
-                        label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
-                        onPress={() => setShowdownFor(sdSeat === i ? null : i)}
-                      />
-                    ),
+          <>
+            <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+              {phase === 'showdown' && (
+                <View style={{ gap: 8 }}>
+                  <T v="h2">Showdown</T>
+                  <T v="small">{t('Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)')}</T>
+                  <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                    {hand.players.map((p, i) =>
+                      i === hand.hero || s.folded[i] ? null : (
+                        <Chip
+                          key={i}
+                          big
+                          active={sdSeat === i}
+                          label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
+                          onPress={() => setShowdownFor(sdSeat === i ? null : i)}
+                        />
+                      ),
+                    )}
+                  </Row>
+                  {sdSeat !== null && (
+                    <CardPicker
+                      used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
+                      selected={hand.players[sdSeat].cards ?? []}
+                      onPick={(c) => {
+                        const p = hand.players[sdSeat];
+                        let cards = [...(p.cards ?? [])];
+                        if (cards.includes(c)) cards = cards.filter((x) => x !== c);
+                        else if (cards.length < 2) cards.push(c);
+                        else cards = [cards[1], c];
+                        setPlayer(sdSeat, { ...p, cards });
+                        if (cards.length === 2) setShowdownFor(null);
+                      }}
+                    />
                   )}
-                </Row>
-                {sdSeat !== null && (
-                  <CardPicker
-                    used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
-                    selected={hand.players[sdSeat].cards ?? []}
-                    onPick={(c) => {
-                      const p = hand.players[sdSeat];
-                      let cards = [...(p.cards ?? [])];
-                      if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-                      else if (cards.length < 2) cards.push(c);
-                      else cards = [cards[1], c];
-                      setPlayer(sdSeat, { ...p, cards });
-                      if (cards.length === 2) setShowdownFor(null);
-                    }}
-                  />
-                )}
-                {r.result && !r.result.resolved && (
-                  <View style={{ gap: 6 }}>
-                    <T v="label">{t('Quem ganhou?')}</T>
-                    <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                      {hand.players.map((p, i) =>
-                        s.folded[i] ? null : (
-                          <Chip
-                            key={i}
-                            big
-                            label={displayName(hand, i, pos)}
-                            active={hand.winners?.includes(i)}
-                            onPress={() => {
-                              const w = hand.winners ?? [];
-                              update({ ...hand, winners: w.includes(i) ? w.filter((x) => x !== i) : [...w, i] });
-                            }}
-                          />
-                        ),
-                      )}
-                    </Row>
-                  </View>
-                )}
-              </View>
-            )}
-            {r.result && (
-              <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <T v="small">{t('Resultado do herói')}</T>
-                {r.result.resolved ? (
-                  <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.good : C.bad}>
-                    {(r.result.net[hand.hero] >= 0 ? '+' : '') + amount(r.result.net[hand.hero], hand, inBB)}
-                  </T>
-                ) : (
-                  <T v="small">{t('Escolhe quem ganhou')}</T>
-                )}
-              </View>
-            )}
-            <FinishPanel hand={hand} onChange={(h) => setDraftState({ ...draft, hand: h })} />
+                  {r.result && !r.result.resolved && (
+                    <View style={{ gap: 6 }}>
+                      <T v="label">{t('Quem ganhou?')}</T>
+                      <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                        {hand.players.map((p, i) =>
+                          s.folded[i] ? null : (
+                            <Chip
+                              key={i}
+                              big
+                              label={displayName(hand, i, pos)}
+                              active={hand.winners?.includes(i)}
+                              onPress={() => {
+                                const w = hand.winners ?? [];
+                                update({ ...hand, winners: w.includes(i) ? w.filter((x) => x !== i) : [...w, i] });
+                              }}
+                            />
+                          ),
+                        )}
+                      </Row>
+                    </View>
+                  )}
+                </View>
+              )}
+              {r.result && (
+                <View style={{ backgroundColor: C.surface2, borderRadius: R.md, padding: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <T v="small">{t('Resultado do herói')}</T>
+                  {r.result.resolved ? (
+                    <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.good : C.bad}>
+                      {(r.result.net[hand.hero] >= 0 ? '+' : '') + amount(r.result.net[hand.hero], hand, inBB)}
+                    </T>
+                  ) : (
+                    <T v="small">{t('Escolhe quem ganhou')}</T>
+                  )}
+                </View>
+              )}
+              <FinishPanel hand={hand} onChange={(h) => setDraftState({ ...draft, hand: h })} />
+            </ScrollView>
             <Button title={t('Guardar e ver replay')} onPress={save} />
-          </View>
+          </>
         )}
-
-        {phase === 'hero' && !settings.onboarded && !params.edit && (
-          <View style={{ backgroundColor: C.accentSoft, borderRadius: R.md, padding: 12, gap: 4, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
-            <T v="h2">{t('Primeira mão? É rápido:')}</T>
-            <T v="small" style={{ color: C.text, lineHeight: 19 }}>
-              {t('1. Toca na tua posição e nas tuas duas cartas.\n2. Os folds até ti são automáticos: se alguém entrou, toca no lugar dele. Depois da tua ação, usa "Só X paga".\n3. Escolhe o flop e continua. Podes guardar a meio e completar depois.')}
-            </T>
-          </View>
-        )}
-        {(phase === 'action' || phase === 'board') && (
-          <Button title={t('Guardar rápido · completas depois')} kind="ghost" small onPress={save} />
-        )}
-        {phase === 'hero' && heroCards.length === 2 && !draft.posChosen ? (
-          <T v="small" style={{ textAlign: 'center' }}>
-            {t('Escolhe a tua posição para começar a ação.')}
-          </T>
-        ) : null}
-      </ScrollView>
+      </View>
 
       <ContextSheet
         visible={ctxOpen}
@@ -543,6 +557,29 @@ export default function NewHand() {
         />
       )}
     </KeyboardAvoidingView>
+  );
+}
+
+function BigAction({ label, kind, onPress }: { label: string; kind: 'fold' | 'check' | 'call'; onPress: () => void }) {
+  const solid = kind === 'call';
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: solid ? 1.4 : 1,
+        height: 56,
+        borderRadius: R.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: solid ? C.accent : C.surface3,
+        borderWidth: 1,
+        borderColor: solid ? C.accent : C.borderStrong,
+        opacity: pressed ? 0.8 : 1,
+      })}>
+      <T v="body" numberOfLines={1} color={solid ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 17 }}>
+        {label}
+      </T>
+    </Pressable>
   );
 }
 

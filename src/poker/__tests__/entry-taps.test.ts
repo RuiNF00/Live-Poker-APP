@@ -1,6 +1,7 @@
 /// <reference types="node" />
 // Tap budget for the hand-entry screen. A small driver plays the same moves the
-// screen offers (position + cards, presets, "só X paga", "alguém entrou?",
+// screen offers (position + cards, presets, "só X paga", a tap on a seat the
+// app folded by itself ("alguém entrou?"),
 // "todos check", board cards, save) and counts one tap per press, so a change
 // that makes the common hands slower fails here.
 import assert from 'node:assert/strict';

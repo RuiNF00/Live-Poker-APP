@@ -56,6 +56,7 @@ export function Table({
   pot,
   narration,
   onSeatPress,
+  onSeatLongPress,
   footer,
   watermark,
 }: {
@@ -67,6 +68,7 @@ export function Table({
   pot?: string;
   narration?: string;
   onSeatPress?: (i: number) => void;
+  onSeatLongPress?: (i: number) => void;
   footer?: React.ReactNode;
   watermark?: string;
 }) {
@@ -152,8 +154,9 @@ export function Table({
             return (
               <Pressable
                 key={'s' + i}
-                disabled={!onSeatPress}
+                disabled={!onSeatPress && !onSeatLongPress}
                 onPress={() => onSeatPress?.(i)}
+                onLongPress={onSeatLongPress ? () => onSeatLongPress(i) : undefined}
                 style={[styles.seat, { left: (p.x / 100) * w, top: (p.y / 100) * h, transform: [{ translateX: -44 }, { translateY: -38 }, { scale }] }]}>
                 <View style={[styles.cards, { opacity: s.folded ? 0.25 : 1 }]}>
                   {s.cards === undefined ? null : s.cards === null ? (
