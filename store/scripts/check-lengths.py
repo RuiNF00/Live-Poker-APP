@@ -18,6 +18,7 @@ LIMITS = {
     "Palavras-chave": (100, "bytes"), "Keywords": (100, "bytes"),
     "Descrição curta": (80, "chars"), "Short description": (80, "chars"),
     "Descrição": (4000, "chars"), "Description": (4000, "chars"),
+    "Nombre": (30, "chars"), "Palabras clave": (100, "bytes"), "Descripción corta": (80, "chars"), "Descripción": (4000, "chars"),
 }
 
 FIELD = re.compile(r"^\*\*(?P<label>[^*]+?)\*\* \(\d+[^)]*\):\s*(?P<inline>.*)$")

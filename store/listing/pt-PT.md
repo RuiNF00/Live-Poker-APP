@@ -6,7 +6,7 @@
 
 ## App Store
 
-**Nome** (30): {{APP_NAME}}
+**Nome** (30): {{STORE_NAME_PT}}
 
 **Subtítulo** (30): {{APP_SUBTITLE_PT}}
 
@@ -14,7 +14,7 @@
 Regista uma mão em segundos entre dois níveis e revê-a com o replayer. Partilha com um link e recebe a opinião dos teus amigos.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
-poker,póquer,mãos,replayer,torneio,live,cash,bankroll,sessões,holdem,mtt,staking,backers,notas
+póquer,histórico,replayer,sessões,torneio,mtt,cash,staking,swap,holdem,notas,resultados,icm,banca
 
 **Descrição** (4000):
 
@@ -74,10 +74,10 @@ Termos de utilização: https://{{WEB_DOMAIN}}/terms
 
 ## Google Play
 
-**Título** (30): {{APP_NAME}}
+**Título** (30): {{STORE_NAME_PT}}
 
 **Descrição curta** (80):
-Regista mãos de póquer live em segundos, revê no replayer e partilha.
+Regista mãos de poker live em segundos, revê-as e controla a tua bankroll.
 
 **Descrição completa** (4000): usar o mesmo texto da descrição da App Store acima, trocando "na tua conta Apple" por "na tua conta Google Play".
 

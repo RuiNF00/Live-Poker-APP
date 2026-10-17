@@ -6,7 +6,7 @@
 
 ## App Store
 
-**Name** (30): {{APP_NAME}}
+**Name** (30): {{STORE_NAME_EN}}
 
 **Subtitle** (30): {{APP_SUBTITLE_EN}}
 
@@ -14,7 +14,7 @@
 Log a hand in seconds between levels, then replay it street by street. Share it with a link and get feedback from your friends.
 
 **Keywords** (100 bytes, comma-separated, no spaces):
-poker,hand,replayer,tournament,live,cash,bankroll,session,holdem,mtt,staking,backer,tracker,stakes
+history,hands,session,tournament,mtt,cash,staking,swap,holdem,notes,stats,recorder,icm,backer,tax
 
 **Description** (4000):
 
@@ -73,10 +73,10 @@ Terms of Use: https://{{WEB_DOMAIN}}/terms
 
 ## Google Play
 
-**Title** (30): {{APP_NAME}}
+**Title** (30): {{STORE_NAME_EN}}
 
 **Short description** (80):
-Log live poker hands in seconds, replay them and share them with friends.
+Log live poker hands in seconds, replay them and track your bankroll.
 
 **Full description** (4000): same text as the App Store description above, with "your Apple account" changed to "your Google Play account".
 
