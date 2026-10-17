@@ -1520,6 +1520,9 @@ const ptBR: Record<string, string> = {
   'Registo do {event} fecha às {time}': 'Registro do {event} fecha às {time}',
   'Ainda dá para entrar. Toca para começar a sessão.': 'Ainda dá para entrar. Toque para começar a sessão.',
   'Avisamos-te {n} min antes de fechar.': 'A gente avisa {n} min antes de fechar.',
+  'Hora oficial': 'Horário oficial',
+  'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
+  'República Dominicana': 'República Dominicana',
 };
 
 export default ptBR;

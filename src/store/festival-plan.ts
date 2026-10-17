@@ -26,6 +26,11 @@ export interface FestivalPlan {
 
 export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} };
 
+/** When late reg closes, in minutes after the start: the player's own time, else the organiser's. */
+export function lateRegOf(plan: FestivalPlan, e: FestivalEvent): number | undefined {
+  return plan.lateReg[e.id] ?? e.lateRegMin;
+}
+
 /** Minutes before the start that the first reminder fires. */
 export const REMIND_BEFORE_MIN = 30;
 /** Minutes before late reg closes: late enough to still be on time, early enough to get to the cage. */
@@ -100,7 +105,7 @@ const DAY2_BUSY_MIN = 10 * 60;
  */
 export function clashes(f: Festival, plan: FestivalPlan): Map<string, FestivalEvent> {
   const list = planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start));
-  const busy = (e: FestivalEvent) => venueTime(f, e.start) + (e.day2 ? DAY2_BUSY_MIN : plan.lateReg[e.id] || LATE_DEFAULT_MIN) * 60_000;
+  const busy = (e: FestivalEvent) => venueTime(f, e.start) + (e.day2 ? DAY2_BUSY_MIN : lateRegOf(plan, e) || LATE_DEFAULT_MIN) * 60_000;
   const out = new Map<string, FestivalEvent>();
   for (let i = 0; i < list.length; i++) {
     for (let j = i + 1; j < list.length; j++) {
@@ -171,7 +176,7 @@ export const LATE_DEFAULT_MIN = 4 * 60;
 export function plannedNow(f: Festival, plan: FestivalPlan, sessions: Session[], now = Date.now()): { e: FestivalEvent; start: number; action: EventAction } | null {
   for (const e of planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))) {
     const start = venueTime(f, e.start);
-    if (now < start - 2 * 3_600_000 || now > start + (plan.lateReg[e.id] || LATE_DEFAULT_MIN) * 60_000) continue;
+    if (now < start - 2 * 3_600_000 || now > start + (lateRegOf(plan, e) || LATE_DEFAULT_MIN) * 60_000) continue;
     const action = eventAction(f, plan, sessions, e);
     if (action && action.kind !== 'view') return { e, start, action };
   }
@@ -217,7 +222,7 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
       body: name,
     });
     // Day 2 has no registration to miss.
-    const late = e.day2 ? 0 : plan.lateReg[e.id];
+    const late = e.day2 ? 0 : lateRegOf(plan, e);
     if (late) {
       const closes = start + late * 60_000;
       out.push({

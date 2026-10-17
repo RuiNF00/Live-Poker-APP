@@ -24,7 +24,7 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
+import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
@@ -360,7 +360,7 @@ function EventRow({
   onStart: () => void;
 }) {
   const on = plan.picked.includes(e.id);
-  const late = plan.lateReg[e.id];
+  const late = lateRegOf(plan, e);
   const start = venueTime(f, e.start);
   const lateLabel = late
     ? t('Late reg até {time}', { time: hm(new Date(start + late * 60_000), f.utcOffset) })
@@ -431,7 +431,7 @@ function EventRow({
                 {LATE_REG_HOURS.map((h) => (
                   <Chip key={h} label={`+${h}h · ${hm(new Date(start + h * 3_600_000), f.utcOffset)}`} active={late === h * 60} onPress={() => onSetLate(h * 60)} />
                 ))}
-                {late ? <Chip label={t('Limpar')} onPress={() => onSetLate(null)} /> : null}
+                {plan.lateReg[e.id] ? <Chip label={e.lateRegMin ? t('Hora oficial') : t('Limpar')} onPress={() => onSetLate(null)} /> : null}
               </ChipRow>
               {remind ? <T v="tiny">{t('Avisamos-te {n} min antes de fechar.', { n: LATE_REMIND_BEFORE_MIN })}</T> : null}
             </View>
