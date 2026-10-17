@@ -1173,6 +1173,9 @@ const en: Record<string, string> = {
   'Bahamas, dezembro 2026': 'Bahamas, December 2026',
   'site oficial do organizador': "the organiser's official site",
   'Nome do festival': 'Festival name',
+  // Home-screen widget
+  'Esta semana': 'This week',
+  'Sem sessões ainda': 'No sessions yet',
   'Festival': 'Festival',
   'Flights 2A e 2BC do Super Main Event tratados como Dia 2 (sem novo buy-in).': 'Super Main Event flights 2A and 2BC are treated as Day 2 (no new buy-in).',
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'No signal right now: the invite is saved and turns on by itself when you’re back online.',

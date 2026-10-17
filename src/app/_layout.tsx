@@ -23,6 +23,7 @@ import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
+import { HomeWidgetSync } from '@/lib/home-widget';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { bootReferrals } from '@/lib/referrals';
@@ -63,6 +64,7 @@ export default function RootLayout() {
           <AutoCloudBackup />
           <BackerLiveSync />
           <SessionLockScreen />
+          <HomeWidgetSync />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
