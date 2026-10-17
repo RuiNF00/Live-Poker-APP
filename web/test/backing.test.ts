@@ -22,4 +22,9 @@ describe('backer statement link', () => {
     expect(st.rows[0].l).toBeUndefined();
     expect(st.rows[0].sh).toBe(0);
   });
+
+  it('keeps the next event only with a venue clock', () => {
+    expect(checkStatement({ v: 1, id: 'k_abc123', rows: [], nx: { n: '#3 Main Event', s: '2026-12-08T12:00' } })!.nx).toEqual({ n: '#3 Main Event', s: '2026-12-08T12:00' });
+    expect(checkStatement({ v: 1, id: 'k_abc123', rows: [], nx: { n: 'x', s: '<script>' } })!.nx).toBeUndefined();
+  });
 });

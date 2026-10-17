@@ -12,7 +12,7 @@ import { BRAND, C, F, ff, posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
-import { spokenTable, type BadgeKind, type RpSeat, type RpView } from './model';
+import { spokenCard, spokenTable, type BadgeKind, type RpSeat, type RpView } from './model';
 import { FlipIn, FlyingChips, RiseIn, useReduceMotion, type Flight } from './motion';
 import { progressAt, type MotionAnim, type MotionStep } from './timeline';
 import { RpCard } from './RpCard';
@@ -43,7 +43,7 @@ function RunBoards({ boards, k, top, reduce }: { boards: string[][]; k: number; 
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: top - ch - gap / 2, alignItems: 'center', gap }}>
       {boards.map((b, j) => (
-        <View key={j} accessibilityLabel={`Board ${j + 1}`} style={{ flexDirection: 'row', alignItems: 'center', gap: SIZE.boardGap * 0.76 * k, marginLeft: -(tag + 3 * k) }}>
+        <View key={j} accessibilityLabel={`${t('Mesa')} ${j + 1}: ${b.map(spokenCard).join(', ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: SIZE.boardGap * 0.76 * k, marginLeft: -(tag + 3 * k) }}>
           <View
             style={{
               width: tag,
@@ -337,7 +337,8 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
   const ch = (s.hero ? SIZE.heroCardH : SIZE.seatCardH) * k;
   const pos = { bg: posColor(s.pos), fg: '#0C1311' };
-  const winNote = s.run ? RUN_MARK[s.run] : s.handName;
+  // The badge is narrow: "Full house" or "Par de Ases"; the line under the table says the rest.
+  const winNote = s.run ? RUN_MARK[s.run] : s.handName?.split(/[,:]/)[0];
   const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (winNote ? ` · ${winNote}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label: s.badge.label } : null;
   // Room beside the plate before the stage edge, on the tighter side.
   const spare = Math.max(5, Math.min(x - pw / 2, w - x - pw / 2) - EDGE * k);

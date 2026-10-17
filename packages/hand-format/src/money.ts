@@ -100,8 +100,9 @@ export function localeFormat(v: MoneyVariant, tag?: string): LocaleFormat {
 
 /**
  * Money as one language writes it: "370€" and "12,50€" in Portugal, "R$ 1.235" in
- * Brazil, "12.345 €" in Spain, "$1,235" in English and Mexico. From 1000 up amounts are
- * whole; below, cents show two digits when there are any, never a bare JS decimal point.
+ * Brazil, "12.345 €" in Spain, "$1,235" in English and Mexico. To the cent at any size:
+ * whole amounts stay clean ("1250€"), cents show two digits when there are any ("3744,33 $"),
+ * never a bare JS decimal point.
  */
 export function moneyIn(
   f: LocaleFormat,
@@ -113,7 +114,8 @@ export function moneyIn(
   const a = decimalsOf(currency) ? Math.abs(n) : Math.round(Math.abs(n));
   const sign = n < 0 && a > 0 ? '−' : '';
   const cents = Math.round(a * 100);
-  const s = a >= 1000 ? num().format(Math.round(a)) : cents % 100 === 0 ? String(cents / 100) : num(2).format(cents / 100);
+  // A backer's 3744,33 is what they are owed, not 3744: cents stay from 1000 up too.
+  const s = cents % 100 === 0 ? num().format(cents / 100) : num(2).format(cents / 100);
   const sym = symbolOf(currency);
   // Letter codes (CHF, SEK) always need a space; symbols follow the language.
   const gap = /^[A-Za-z]{2,}$/.test(sym) ? ' ' : f.currencySpace;

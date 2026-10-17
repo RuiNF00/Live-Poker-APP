@@ -9,6 +9,7 @@ import { storeLinks } from '@/lib/storeLinks';
 import { StoreButtons } from './landing/StoreButtons';
 import { landingCopy, REWARD_DAYS_PUBLIC } from './landing/copy';
 import { writeLocal } from '@/lib/local';
+import { appHref } from '@/lib/app-link';
 import '@/app/landing.css';
 
 type Platform = 'ios' | 'android' | 'other';
@@ -61,7 +62,7 @@ export function AppCta({
           <StoreButtons c={landingCopy(locale)} stores={{ ios, android }} from="share" fallback="/" shareId={shareId} />
         </div>
         {platform !== 'other' && (
-          <a className="cta-open" href={`${brand.appScheme}://h/${shareId}${invite ? `?r=${invite}` : ''}`}>
+          <a className="cta-open" href={appHref(`h/${shareId}${invite ? `?r=${invite}` : ''}`, platform === 'android')}>
             {d.openInApp}
           </a>
         )}

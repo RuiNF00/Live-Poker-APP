@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { brand } from '@/config/brand';
 import { writeLocal } from '@/lib/local';
+import { appHref, useAndroid } from '@/lib/app-link';
 import { REWARD_DAYS_PUBLIC, type LandingCopy } from './copy';
 import { MainCta } from './Cta';
 import type { StoreLinks } from './StoreButtons';
@@ -15,11 +15,10 @@ import type { StoreLinks } from './StoreButtons';
  */
 export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; stores: StoreLinks }) {
   const [ios, setIos] = useState(false);
-  const [android, setAndroid] = useState(false);
   const [copied, setCopied] = useState(false);
+  const android = useAndroid();
   useEffect(() => {
     setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent));
-    setAndroid(/Android/i.test(navigator.userAgent));
     writeLocal('invite', code);
   }, [code]);
   const copy = async () => {
@@ -65,8 +64,8 @@ export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; 
 
       <div id="hero-cta" className="lp-hero-actions">
         <MainCta label={c.ctaFree} stores={stores} from="invite" onClick={ios ? () => void navigator.clipboard?.writeText(`${location.origin}/r/${code}`).catch(() => {}) : undefined} />
-        {ios && (
-          <a className="lp-btn ghost" href={`${brand.appScheme}://r/${code}`}>
+        {(ios || android) && (
+          <a className="lp-btn ghost" href={appHref(`r/${code}`, android)}>
             {c.invite.open}
           </a>
         )}

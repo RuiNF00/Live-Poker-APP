@@ -11,9 +11,9 @@ import {
 } from '@livepoker/hand-format';
 import { numberFormat, numberTag, type Locale } from './i18n';
 
-// The shared hand-format package speaks pt-PT and English only. These wrappers give the site's
-// four locales the same functions: pt-PT goes straight through, the others get their own labels
-// and number formatting here (the package is shared with the app and stays as it is).
+// The shared hand-format package writes street and action words in pt-PT and English only. These
+// wrappers give the site's four locales the same functions, with their own labels and number
+// formatting (the package is shared with the app). Hand names come from the package in all four.
 
 type HfLocale = 'pt' | 'en';
 const hf = (l: Locale): HfLocale => (l === 'pt' || l === 'pt-BR' ? 'pt' : 'en');
@@ -27,29 +27,7 @@ const STREET: Record<Locale, Record<Street, string>> = {
 
 const START: Record<Locale, string> = { pt: 'Início da mão', 'pt-BR': 'Início da mão', en: 'Hand starts', es: 'Inicio de la mano' };
 const WINS: Record<Locale, string> = { pt: 'ganha', 'pt-BR': 'ganha', en: 'wins', es: 'gana' };
-
-/** Hand names the package writes (pt-PT or English) in the other two locales. */
-const CATEGORY: Partial<Record<Locale, Record<string, string>>> = {
-  'pt-BR': {
-    Trio: 'Trinca',
-    Cor: 'Flush',
-    Poker: 'Quadra',
-    'Sequência de cor': 'Straight flush',
-  },
-  es: {
-    'High card': 'Carta alta',
-    Pair: 'Pareja',
-    'Two pair': 'Doble pareja',
-    'Three of a kind': 'Trío',
-    Straight: 'Escalera',
-    Flush: 'Color',
-    'Full house': 'Full',
-    'Four of a kind': 'Póker',
-    'Straight flush': 'Escalera de color',
-  },
-};
-
-const relabel = (l: Locale, label: string | undefined) => (label === undefined ? label : CATEGORY[l]?.[label] ?? label);
+const BOARD: Record<Locale, string> = { pt: 'Mesa', 'pt-BR': 'Mesa', en: 'Board', es: 'Mesa' };
 
 export function streetLabel(street: Street, l: Locale): string {
   return STREET[l][street];
@@ -60,16 +38,8 @@ export function actionLabel(type: ActionType, l: Locale): string {
 }
 
 export function buildReplay(hand: HandRecord, opts: Omit<BuildOptions, 'locale'> & { locale: Locale }): ReplayStep[] {
-  const steps = hfBuildReplay(hand, { ...opts, locale: hf(opts.locale) });
-  if (!CATEGORY[opts.locale]) return steps;
-  const l = opts.locale;
-  const win = (w: { seat: number; amount: number; handLabel?: string }) => ({ ...w, handLabel: relabel(l, w.handLabel) });
-  return steps.map((s) => ({
-    ...s,
-    seats: s.seats.map((x) => ({ ...x, handLabel: relabel(l, x.handLabel) })),
-    winners: s.winners?.map(win),
-    runs: s.runs?.map((r) => ({ ...r, winners: r.winners.map(win) })),
-  }));
+  // The package names made hands in all four languages ("Par de Ases", "Pareja de Ases").
+  return hfBuildReplay(hand, opts);
 }
 
 /** Same rules as the app (plain number under 10k, then 12,5k / 250k / 1,25M), in the page's locale. */
@@ -114,6 +84,6 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode, l: 
         return `${s.name} ${WINS[l]} ${formatAmount(w.amount, bb, mode, l)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
       })
       .join(' · ');
-  if (step.runs) return step.runs.map((r, k) => `Board ${k + 1}: ${paid(r.winners)}`).join(' · ');
+  if (step.runs) return step.runs.map((r, k) => `${BOARD[l]} ${k + 1}: ${paid(r.winners)}`).join(' · ');
   return paid(step.winners ?? []);
 }

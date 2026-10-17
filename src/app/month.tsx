@@ -100,9 +100,9 @@ export default function MonthScreen() {
   };
 
   // Text G: time and volume only; the result stays on the card if the player shows it there.
-  const postText = async (to: 'x' | 'any') => {
+  const postText = async (to: 'x' | 'whatsapp' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`, variant);
+    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=month`, variant);
     const name = monthName(key);
     const line = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
       month: lang === 'en' ? name : name.toLowerCase(),
@@ -113,7 +113,7 @@ export default function MonthScreen() {
     return `${line}\n${link}`;
   };
 
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
@@ -140,7 +140,7 @@ export default function MonthScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Resumo do mês') }} />
-      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView
         style={{ flex: 1, backgroundColor: C.bg }}
         contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}

@@ -40,6 +40,7 @@ export const FIELDS = [
   'bankroll',
   'country',
   'day',
+  'makeupCut',
 ] as const;
 export type Field = (typeof FIELDS)[number];
 
@@ -83,6 +84,7 @@ const SYN: Record<Field, string[]> = {
   bankroll: [],
   country: [],
   day: [],
+  makeupCut: [],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());
@@ -177,6 +179,7 @@ export function mappingFor(source: SourceId, headers: string[]): Mapping {
       bankroll: idx(headers, 'bankroll'),
       country: idx(headers, 'country'),
       day: idx(headers, 'mttday'),
+      makeupCut: idx(headers, 'makeupcut'),
       hours: idx(headers, 'hours'),
       handsDealt: idx(headers, 'hands'),
       kind: idx(headers, 'type'),

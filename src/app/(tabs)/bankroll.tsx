@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { FREE } from '@/billing/plans';
@@ -8,7 +8,6 @@ import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
 import { blankSession, SessionForm } from '@/components/SessionForm';
-import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
@@ -21,7 +20,7 @@ import { usePaged } from '@/components/ShowMore';
 import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { WinRateCard } from '@/components/WinRate';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
-import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
+import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { chips, duration, money, shortDate } from '@/poker/format';
 import {
@@ -74,9 +73,12 @@ export default function BankrollScreen() {
   );
 }
 
+/** How long "Desfazer" stays on a deleted session before it really goes. */
+const UNDO_MS = 6000;
+
 function BankrollTab() {
   const fmt = useFmt();
-  const { sessions, transfers, bankrolls, defaultBankroll, saveSession, deleteSession, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, settings, setSettings } = useStore();
+  const { sessions: stored, transfers, bankrolls, defaultBankroll, saveSession, deleteSession, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, settings, setSettings } = useStore();
   const { isPro, paywall } = usePro();
   const insightsLocked = useLocked('insights');
   const [scopePick, setScope] = useState<Scope>({ bankrollId: defaultBankroll.id });
@@ -87,6 +89,41 @@ function BankrollTab() {
   const [stakes, setStakes] = useState<string[]>([]);
   const [sheet, setSheet] = useState<SheetState>(null);
   const locked = !isPro && !FREE.bankrollFilters;
+
+  // Apagar acts in one tap: the session leaves every total at once and "Desfazer" stays a few
+  // seconds before it really goes (a live link only goes with it then).
+  const [gone, setGone] = useState<Session | null>(null);
+  const goneRef = useRef<Session | null>(null);
+  const commitGone = useCallback(() => {
+    const g = goneRef.current;
+    goneRef.current = null;
+    if (g) deleteSession(g.id);
+  }, [deleteSession]);
+  const removeSession = (s: Session) => {
+    setSheet(null);
+    commitGone();
+    goneRef.current = s;
+    setGone(s);
+  };
+  const openCard = (s: Session) => {
+    setSheet(null);
+    router.push(`/session-card/${s.id}`);
+  };
+  const undoRemove = () => {
+    goneRef.current = null;
+    setGone(null);
+  };
+  useEffect(() => {
+    if (!gone) return;
+    const id = setTimeout(() => {
+      commitGone();
+      setGone(null);
+    }, UNDO_MS);
+    return () => clearTimeout(id);
+  }, [gone, commitGone]);
+  // Leaving the screen before it runs out: the delete goes through then.
+  useEffect(() => commitGone, [commitGone]);
+  const sessions = useMemo(() => (gone ? stored.filter((x) => x.id !== gone.id) : stored), [stored, gone]);
 
   // A deleted bankroll falls back to the default one.
   const scope = useMemo<Scope>(() => (scopeIds(scopePick, bankrolls).size ? scopePick : { bankrollId: defaultBankroll.id }), [scopePick, bankrolls, defaultBankroll.id]);
@@ -208,9 +245,9 @@ function BankrollTab() {
         {fresh ? (
           // A new player's one next step sits right under the balance, not below rules and tools.
           <Empty
-            icon="stats-chart"
+            compact
             title={t('Ainda sem sessões')}
-            body={t('Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.')}
+            body={t('O lucro e o €/hora aparecem aqui.')}
             action={
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
                 <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />
@@ -397,7 +434,6 @@ function BankrollTab() {
                       key={e.session.id}
                       s={e.session}
                       bankroll={single ? undefined : bankrollOf(e.session, bankrolls)?.name}
-                      onDelete={() => confirmAction(t('Apagar esta sessão?'), e.session.name || '', t('Apagar'), () => deleteSession(e.session.id))}
                       onEdit={() => setSheet({ type: 'session', s: e.session })}
                     />
                   ) : (
@@ -418,12 +454,34 @@ function BankrollTab() {
           <View style={{ height: 900 }} />
         )}
       </Screen>
+      {gone ? (
+        <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: S.md }}>
+          <Banner tone="info" icon="trash-outline" title={t('Sessão apagada')} action={t('Desfazer')} onPress={undoRemove} />
+        </View>
+      ) : null}
 
       <Sheet
         visible={sheet?.type === 'session'}
         title={sheet?.type === 'session' && sheet.s !== 'new' ? t('Editar sessão') : t('Sessão passada')}
         onClose={() => setSheet(null)}
-        footer={<Button title={t('Guardar sessão')} icon="checkmark" onPress={() => saveRef.current?.()} />}>
+        footer={
+          sheet?.type === 'session' && sheet.s !== 'new' ? (
+            // Editing: share and delete sit next to save, one tap each.
+            <Row gap={S.sm}>
+              <IconButton name="share-outline" size={48} label={t('Partilhar')} onPress={() => openCard(sheet.s as Session)} />
+              <IconButton name="trash-outline" size={48} color={C.bad} label={t('Apagar')} onPress={() => removeSession(sheet.s as Session)} />
+              <Button style={{ flex: 1 }} title={t('Guardar sessão')} icon="checkmark" onPress={() => saveRef.current?.()} />
+            </Row>
+          ) : (
+            <Button title={t('Guardar sessão')} icon="checkmark" onPress={() => saveRef.current?.()} />
+          )
+        }>
+        {sheet?.type === 'session' && sheet.s !== 'new' && (sheet.s.staking?.sold || sheet.s.makeupCut) ? (
+          // Worked out, not typed: what the backers get and the package's cut.
+          <T v="small">
+            {[sheet.s.staking?.sold ? t('Aos backers {amount}', { amount: fmt(owedToBackers(sheet.s), sheet.s.currency) }) : '', sheet.s.makeupCut ? t('A tua parte do pacote {amount}', { amount: fmt(sheet.s.makeupCut, sheet.s.currency) }) : ''].filter(Boolean).join(' · ')}
+          </T>
+        ) : null}
         {sheet?.type === 'session' ? (
           <SessionForm
             key={sheet.s === 'new' ? 'new' : sheet.s.id}
@@ -764,45 +822,25 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
   );
 }
 
-function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: string; onDelete: () => void; onEdit: () => void }) {
+function SessionRow({ s, bankroll, onEdit }: { s: Session; bankroll?: string; onEdit: () => void }) {
   const fmt = useFmt();
-  const [open, setOpen] = useState(false);
   const p = profit(s);
   const mtt = s.kind === 'mtt';
+  // One tap opens it to fix: the form has every number, with share and delete next to save.
   return (
-    <View>
-      <ListItem
-        icon={mtt ? 'trophy-outline' : 'cash-outline'}
-        iconColor={mtt ? C.warn : C.info}
-        title={s.name || (mtt ? t('Torneio') : 'Cash')}
-        subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
-        right={
-          <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
-            {(p > 0 ? '+' : '') + fmt(p, s.currency)}
-          </T>
-        }
-        chevron={false}
-        onPress={() => setOpen((o) => !o)}
-      />
-      {open && (
-        <View style={{ paddingHorizontal: S.lg, paddingBottom: S.md, gap: S.md }}>
-          <T v="small">
-            {s.entries} × {fmt(s.buyIn, s.currency)}
-            {s.addOn ? ` + ${s.kind === 'mtt' ? 'add-on' : 'top-up'} ${fmt(s.addOn, s.currency)}` : ''} → {fmt(s.cashOut, s.currency)}
-            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: dec(s.staking.markup), owed: fmt(owedToBackers(s), s.currency) }) : ''}
-            {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: fmt(s.makeupCut, s.currency) }) : ''}
-            {s.expenses ? '\n' + t('Despesas {amount}', { amount: fmt(s.expenses, s.currency) }) : ''}
-            {s.tips ? '\n' + t('Gorjetas {amount}', { amount: fmt(s.tips, s.currency) }) : ''}
-            {s.handsDealt ? '\n' + t('{n} mãos jogadas', { n: s.handsDealt }) : ''}
-          </T>
-          <Row gap={S.sm}>
-            <Button size="sm" kind="secondary" icon="share-outline" title={t('Partilhar')} onPress={() => router.push(`/session-card/${s.id}`)} />
-            <Button size="sm" kind="secondary" icon="pencil" title={t('Editar')} onPress={onEdit} />
-            <Button size="sm" kind="danger" icon="trash-outline" title={t('Apagar')} onPress={onDelete} />
-          </Row>
-        </View>
-      )}
-    </View>
+    <ListItem
+      icon={mtt ? 'trophy-outline' : 'cash-outline'}
+      iconColor={mtt ? C.warn : C.info}
+      title={s.name || (mtt ? t('Torneio') : 'Cash')}
+      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+      right={
+        <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
+          {(p > 0 ? '+' : '') + fmt(p, s.currency)}
+        </T>
+      }
+      chevron={false}
+      onPress={onEdit}
+    />
   );
 }
 

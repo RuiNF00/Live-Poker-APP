@@ -6,11 +6,15 @@ import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
+import { lastShare, rememberShare } from '@/lib/share-last';
+import { orderShare, type ShareKey } from '@/lib/share-order';
 import { C, R, S } from '@/theme';
 
 import { ListGroup, ListItem, SheetHeader, T, type IconName, useSheetPad } from './ui';
 
 export interface ShareOption {
+  /** A standard destination: sorted into the one order, the last used first, and remembered when tapped. */
+  key?: ShareKey;
   icon: IconName;
   label: string;
   sub?: string;
@@ -32,7 +36,7 @@ export function ShareSheet({ visible, title, header, groups, onClose }: { visibl
             <View key={k} style={{ gap: S.sm }}>
               {g.title ? <T v="label">{g.title}</T> : null}
               <ListGroup>
-                {g.options.map((o) => (
+                {orderShare(g.options, lastShare()).map((o) => (
                   <ListItem
                     key={o.label}
                     icon={o.icon}
@@ -43,6 +47,7 @@ export function ShareSheet({ visible, title, header, groups, onClose }: { visibl
                     onPress={() => {
                       // Close first: the system share sheet or the next screen opens over nothing.
                       onClose();
+                      if (o.key) rememberShare(o.key);
                       o.onPress();
                     }}
                   />

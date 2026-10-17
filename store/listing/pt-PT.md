@@ -38,7 +38,7 @@ REVÊ COM O REPLAYER
 
 PARTILHA E PEDE OPINIÃO
 • Envia a mão com um link: quem recebe vê o replayer no browser, sem instalar nada
-• Comentários rua a rua e votos dos amigos; as mãos que te mandam ficam em Mãos partilhadas
+• Comentários rua a rua e votos dos amigos, com aviso quando alguém comenta; as mãos que te mandam ficam em Mãos partilhadas
 • Publica a mão nas Stories do Instagram
 
 PARA QUEM JOGA LIVE

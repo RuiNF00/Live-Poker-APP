@@ -37,7 +37,7 @@ REPÁSALA EN EL REPLAYER
 
 COMPARTE Y PIDE OPINIÓN
 • Envía la mano con un link: quien la recibe ve el replayer en el navegador, sin instalar nada
-• Comentarios calle a calle y votos de tus amigos; las manos que te envían quedan en Manos compartidas
+• Comentarios calle a calle y votos de tus amigos, con aviso cuando alguien comenta; las manos que te envían quedan en Manos compartidas
 • Publica la mano en tus historias de Instagram
 
 CONTROL DE BANKROLL PARA QUIEN JUEGA EN VIVO
@@ -52,7 +52,7 @@ CONTROL DE BANKROLL PARA QUIEN JUEGA EN VIVO
 • App en español, inglés y portugués
 
 SWEATBOOK PRO
-Gratis: hasta 3 manos guardadas al día, compartir sin límite, exportar una mano al solver, importar y exportar sesiones en CSV, calculadora de odds, ICM, planificador de festivales con los horarios, crear swaps y registrar resultados, compartir tu conteo de fichas y bloqueo de la app. Con Sweatbook Pro tienes manos ilimitadas, gestión de staking (backers, makeup y liquidaciones), liquidación de swaps, informe anual de impuestos, resultados en varias monedas en un solo total, varios bankrolls, todos los filtros de bankroll (30 días, 90 días, 1 año, por stake), dónde ganas y dónde pierdes, win rate por juego, stake y sala, comparación de meses, la lectura de tu varianza en los downswings, el plan para subir de stake, el rango del villano en una cuadrícula 13×13 en el replayer, viajes ilimitados, informes en PDF y CSV por periodo, exportación de varias manos a la vez a tu solver, links ilimitados para tu coach e historias con tu voz o tu cara y sin marca de agua. La página para tus backers y confirmar un swap por link son siempre gratis. Suscripción mensual o anual; el plan anual empieza con 3 días gratis para nuevos suscriptores. El pago se carga a tu cuenta de Apple cuando confirmas la compra. La suscripción se renueva automáticamente, salvo que la canceles al menos 24 horas antes del final del periodo, en los ajustes de tu cuenta.
+Gratis: hasta 3 manos guardadas al día, compartir sin límite, exportar una mano al solver, importar y exportar sesiones en CSV, calculadora de odds, ICM, planificador de festivales con los horarios, crear swaps y registrar resultados, compartir tu conteo de fichas y bloqueo de la app. Con Sweatbook Pro tienes manos ilimitadas, gestión de staking (backers, makeup y liquidaciones), liquidación de swaps, informe anual de impuestos, resultados en varias monedas en un solo total, varios bankrolls, todos los filtros de bankroll (30 días, 90 días, 1 año, por stake), dónde ganas y dónde pierdes, win rate por juego, stake y sala, comparación de meses, la lectura de tu varianza en los downswings, el plan para subir de stake, el rango del villano en una cuadrícula 13×13 en el replayer, viajes ilimitados, informes en PDF y CSV por periodo, exportación de varias manos a la vez a tu solver, links ilimitados para tu coach y stories con tu voz o tu cara y sin marca de agua. La página para tus backers y confirmar un swap por link son siempre gratis. Suscripción mensual o anual; el plan anual empieza con 3 días gratis para nuevos suscriptores. El pago se carga a tu cuenta de Apple cuando confirmas la compra. La suscripción se renueva automáticamente, salvo que la canceles al menos 24 horas antes del final del periodo, en los ajustes de tu cuenta.
 
 Sweatbook es una herramienta de registro y estudio: solo registros y cuentas. Ningún dinero pasa por Sweatbook. No se puede jugar con dinero real. Para mayores de 18 años.
 

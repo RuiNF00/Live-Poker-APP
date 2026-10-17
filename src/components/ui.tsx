@@ -943,7 +943,8 @@ export function KeyboardDoneBar() {
 }
 
 /** Whole-number field: chips, money, places. */
-export function NumField({ label, value, onChange, suffix, autoFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean }) {
+/** `selectOnFocus`: the number is selected when the field opens, so typing replaces it (correcting a typo). */
+export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean; selectOnFocus?: boolean }) {
   return (
     <Field
       label={label}
@@ -953,6 +954,7 @@ export function NumField({ label, value, onChange, suffix, autoFocus }: { label:
       keyboardType="number-pad"
       inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_DONE_ID : undefined}
       autoFocus={autoFocus}
+      selectTextOnFocus={selectOnFocus}
       placeholder={suffix ? `0 ${suffix}` : '0'}
       inputStyle={{ fontFamily: F.mono, fontVariant: ['tabular-nums'] }}
     />
@@ -1062,9 +1064,10 @@ export function Banner({
   );
 }
 
-export function Empty({ title, body, action, icon }: { title: string; body?: string; action?: React.ReactNode; icon?: IconName }) {
+/** `compact`: under a card that already says where you are (the balance), less air so the action stays above the tab bar at 375. */
+export function Empty({ title, body, action, icon, compact }: { title: string; body?: string; action?: React.ReactNode; icon?: IconName; compact?: boolean }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 12, gap: 12 }}>
+    <View style={{ alignItems: 'center', paddingVertical: compact ? S.lg : 40, paddingHorizontal: 12, gap: 12 }}>
       {icon ? (
         <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
           <Ionicons name={icon} size={28} color={C.accent} />

@@ -134,7 +134,9 @@ export function replayArgs(
   frames.forEach((f, i) => {
     // Every frame but the last runs a fade longer, so the fades don't eat into the total.
     const len = durations[i] + (i < n - 1 ? FADE : 0);
-    inputs.push('-protocol_whitelist', 'file', '-f', 'image2', '-pattern_type', 'none', '-c:v', 'mjpeg', '-loop', '1', '-framerate', '24', '-t', len.toFixed(2), '-i', f);
+    // Read at 4 fps (the picture doesn't change) and doubled up to 24 below: each JPEG is decoded
+    // a few times instead of 24 times a second, the slowest part of the render.
+    inputs.push('-protocol_whitelist', 'file', '-f', 'image2', '-pattern_type', 'none', '-c:v', 'mjpeg', '-loop', '1', '-framerate', '4', '-t', len.toFixed(2), '-i', f);
   });
   const parts = frames.map((_, i) => `[${i}:v]scale=${STORY_W}:${STORY_H},setsar=1,fps=24,format=yuv420p,settb=AVTB[f${i}]`);
   let cur = 'f0';
@@ -150,8 +152,10 @@ export function replayArgs(
     // Square crop of the selfie, scaled into the circle; the last frame holds if the clip is shorter.
     inputs.push('-protocol_whitelist', 'file', '-f', 'mov', '-i', face.file);
     parts.push(
-      `[${n}:v]crop='min(iw,ih)':'min(iw,ih)',scale=${d}:${d},fps=24,tpad=stop_mode=clone:stop_duration=${MAX_SECONDS},format=yuva420p,` +
-        `geq=lum='p(X,Y)':cb='p(X,Y)':cr='p(X,Y)':a='if(lte(hypot(X-${d / 2},Y-${d / 2}),${d / 2}),255,0)'[fc]`,
+      `[${n}:v]crop='min(iw,ih)':'min(iw,ih)',scale=${d}:${d},fps=24,tpad=stop_mode=clone:stop_duration=${MAX_SECONDS},format=yuva420p[fv]`,
+      // The circle is drawn once (one frame) and held: alphamerge repeats the mask's last frame.
+      `color=c=black:s=${d}x${d}:r=1:d=1,format=gray,geq=lum='if(lte(hypot(X-${d / 2},Y-${d / 2}),${d / 2}),255,0)'[mask]`,
+      `[fv][mask]alphamerge[fc]`,
       `[${cur}][fc]overlay=${x}:${y}:shortest=1,format=yuv420p[v]`,
       `[${n}:a]apad,atrim=0:${T}[a]`,
     );

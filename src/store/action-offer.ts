@@ -129,6 +129,19 @@ export function lineRecords(name: string, backers: Backer[], title: string, o: A
   return { backer, isNew: !known, pkg, line };
 }
 
+/**
+ * What this backer usually takes: the % and markup of their newest deal, a festival piece
+ * (its staking package) or a piece sold on its own, so a repeat backer is one tap.
+ */
+export function usualTerms(backerId: string, packages: StakePackage[], sessions: Session[]): { pct: number; markup: number } | null {
+  let best: { at: number; pct: number; markup: number } | null = null;
+  for (const p of packages) if (p.backerId === backerId && p.kind === 'action' && p.share > 0 && (!best || p.createdAt > best.at)) best = { at: p.createdAt, pct: p.share, markup: p.markup || 1 };
+  for (const s of sessions)
+    for (const x of s.stakes ?? [])
+      if (x.backerId === backerId && !x.packageId && x.share > 0 && (!best || s.startedAt > best.at)) best = { at: s.startedAt, pct: x.share, markup: x.markup || 1 };
+  return best && { pct: best.pct, markup: best.markup };
+}
+
 /** The backers' stakes for a session started from this event. Pieces not marked paid count against the backer. */
 export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: string): Stake[] {
   const out: Stake[] = [];
@@ -145,6 +158,29 @@ const ASK_AFTER = 24 * 3600e3;
 /** Not played: the player said so and no session carries it. Never inferred. */
 function missed(o: ActionOffer, e: FestivalEvent, started: Record<string, string>): boolean {
   return !started[e.id] && !!o.skipped?.includes(e.id);
+}
+
+/** The next event a backer has a piece of that hasn't started: its title and the venue's wall clock. */
+export function nextEventFor(
+  festivals: Festival[],
+  offers: ActionOffer[],
+  backerId: string,
+  started: (festivalId: string) => Record<string, string>,
+  now = Date.now(),
+): { n: string; s: string } | null {
+  let next: { n: string; s: string; t: number } | null = null;
+  for (const o of offers) {
+    if (!o.lines.some((l) => l.backerId === backerId && l.pct > 0)) continue;
+    const f = festivals.find((x) => x.id === o.festivalId);
+    if (!f) continue;
+    const done = started(f.id);
+    for (const e of offerEvents(f, o)) {
+      const at = venueTime(f, e.start);
+      if (done[e.id] || o.skipped?.includes(e.id) || at < now) continue;
+      if (!next || at < next.t) next = { n: eventTitle(e), s: e.start, t: at };
+    }
+  }
+  return next && { n: next.n, s: next.s };
 }
 
 /** Events that went by with no session and no answer yet: "Não jogaste o Evento X?". */

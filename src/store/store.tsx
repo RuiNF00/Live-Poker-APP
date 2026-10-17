@@ -14,14 +14,15 @@ import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { notice } from '@/lib/notice';
 import { forgetHandShare } from '@/lib/share-queue';
-
+import type { Festival } from '@/poker/festivals';
 import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
 import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
-import { clearPlans } from './festival-plan';
-import { clearOwnFestivals } from './my-festivals';
+import { clearPlans, currentPlans, importPlans, type FestivalPlan } from './festival-plan';
+import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals } from './my-festivals';
+import { clearWeekly } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
@@ -90,6 +91,9 @@ interface StoreValue {
   /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
   readonly swaps: Swap[];
   readonly swapGroups: SwapGroup[];
+  /** Festival plans and the player's own festivals: their own stores, read here for the backup. */
+  readonly festivalPlans: Record<string, FestivalPlan>;
+  readonly ownFestivals: Festival[];
   importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
@@ -468,6 +472,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const sw = mergeSwaps(currentSwaps(), b.swaps ?? []).added;
       importSwaps(b.swaps ?? []).catch(() => {});
       importGroups(b.swapGroups ?? []).catch(() => {});
+      importPlans(b.festivalPlans ?? {}).catch(() => {});
+      importOwnFestivals(b.ownFestivals ?? []).catch(() => {});
       // Values another phone had set aside: kept here too; each launch tries them again with this version's checks.
       const q = (b.quarantine ?? []).filter(([k]) => !quarantine.some(([have]) => have === k));
       if (q.length) {
@@ -502,6 +508,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await eraseLocal();
     clearPlans();
     clearOwnFestivals();
+    clearWeekly();
     setHands([]);
     setSessions([]);
     setPlayers([]);
@@ -581,6 +588,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       get swapGroups() {
         return currentGroups();
+      },
+      get festivalPlans() {
+        return currentPlans();
+      },
+      get ownFestivals() {
+        return currentOwnFestivals();
       },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.

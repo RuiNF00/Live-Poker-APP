@@ -57,6 +57,8 @@ export interface Statement {
   rows: StatementRow[];
   /** Sent with "Enviar o resumo do ano". */
   yr?: StatementYear;
+  /** The next festival event the backer has a piece of: its name and the venue's wall clock, 'YYYY-MM-DDTHH:MM'. */
+  nx?: { n: string; s: string };
 }
 
 // ─── Decoding: base64url → UTF-8 → JSON ───
@@ -143,6 +145,8 @@ export function checkStatement(json: unknown): Statement | null {
       res: num(o.res, -MAX, MAX) ?? 0,
       rows,
     };
+    const nx = o.nx as Record<string, unknown> | undefined;
+    if (nx && typeof nx === 'object' && typeof nx.s === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(nx.s)) st.nx = { n: str(nx.n, 60), s: nx.s };
     const yr = o.yr as Record<string, unknown> | undefined;
     const y = yr && typeof yr === 'object' ? num(yr.y, 2000, 2200) : null;
     if (yr && y !== null && Array.isArray(yr.pk))

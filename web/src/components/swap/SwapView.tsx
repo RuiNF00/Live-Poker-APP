@@ -6,6 +6,7 @@ import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
 import { intlTag, numberTag, formatMoney, t as siteCopy, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
+import { appHref, useAndroid } from '@/lib/app-link';
 import { storeLinks } from '@/lib/storeLinks';
 import { OpenInApp } from '@/components/OpenInApp';
 import { swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
@@ -238,7 +239,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
       {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} owe={owe} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
 
-      {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/${id}?k=${token}`} /> : null}
+      {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`swap/${id}?k=${token}`} /> : null}
 
       <p className="live-updated">{c.autoRefresh}</p>
       {confirmed || you === 'a' ? (
@@ -408,8 +409,10 @@ export function AddEntry({
   );
 }
 
+/** `appLink` is the app path ("swap/<id>?k=…"); appHref turns it into the phone's link. */
 export function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink: string }) {
   const [copied, setCopied] = useState(false);
+  const android = useAndroid();
   return (
     <section className="live-card sw-form">
       <p className="sw-hint">{c.keepLink}</p>
@@ -426,7 +429,7 @@ export function PrivateLink({ c, link, appLink }: { c: C; link: string; appLink:
           {copied ? c.copied : c.copy}
         </button>
       </div>
-      <a className="lp-btn main sw-btn" href={appLink}>
+      <a className="lp-btn main sw-btn" href={appHref(appLink, android)}>
         {c.openApp}
       </a>
     </section>

@@ -12,13 +12,16 @@ import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
-import { withLang } from '@/lib/link-lang';
 import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
+import { withLang } from '@/lib/link-lang';
 import { shareRef } from '@/lib/referrals';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
+import { FESTIVALS } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
+import { nextEventFor, useOffers } from '@/store/action-offer';
+import { getPlan } from '@/store/festival-plan';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
 import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
@@ -36,6 +39,7 @@ function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sessions, backers, packages, payments, trips, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
   const { pk, ledgers, fx } = useStaking();
+  const offers = useOffers();
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
   const [paying, setPaying] = useState(false);
@@ -121,6 +125,9 @@ function BackerScreen() {
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
     const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined, l);
+    // "When": the next festival event they have a piece of, at the top of their page.
+    const nx = nextEventFor(FESTIVALS, offers, backer.id, (id) => getPlan(id).sessions);
+    if (nx) st.nx = nx;
     const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: withLang(statementUrl(st, ref), variant) })].join('\n');
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);

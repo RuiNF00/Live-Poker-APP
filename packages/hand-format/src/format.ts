@@ -62,6 +62,7 @@ const STREET_LABEL: Record<Locale, Record<Street, string>> = {
 
 const START: Record<Locale, string> = { pt: 'Início da mão', 'pt-BR': 'Início da mão', en: 'Hand starts', es: 'Inicio de la mano' };
 const WINS: Record<Locale, string> = { pt: 'ganha', 'pt-BR': 'ganha', en: 'wins', es: 'gana' };
+const BOARD: Record<Locale, string> = { pt: 'Mesa', 'pt-BR': 'Mesa', en: 'Board', es: 'Mesa' };
 
 export function streetLabel(street: Street, locale: Locale = 'pt'): string {
   return (STREET_LABEL[locale] ?? STREET_LABEL.en)[street];
@@ -99,7 +100,7 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
       })
       .join(' · ');
   // Run it twice: what each board paid.
-  if (step.runs) return step.runs.map((r, k) => `Board ${k + 1}: ${paid(r.winners)}`).join(' · ');
+  if (step.runs) return step.runs.map((r, k) => `${BOARD[locale] ?? BOARD.en} ${k + 1}: ${paid(r.winners)}`).join(' · ');
   return paid(step.winners ?? []);
 }
 

@@ -4,12 +4,13 @@
 
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Share, View } from 'react-native';
+import { Platform, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
 import { appUserId } from '@/billing/purchases';
 import { CurrencyPick, pctLabel } from '@/components/swaps/parts';
 import { useSwapSuggestions } from '@/components/swaps/suggest';
+import { sendsToWhatsapp, sendWhatsapp, SwapSend, type SwapLink } from '@/components/swaps/SwapSend';
 import { notice } from '@/lib/notice';
 import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
@@ -40,9 +41,16 @@ function NewGroupSwap() {
   const [typed, setTyped] = useState('');
   const [pct, setPct] = useState(2);
   const [scope, setScope] = useState<'event' | 'series'>(live || all.some((o) => o.from === 'plan') ? 'event' : 'series');
-  const [title, setTitle] = useState(live?.name ?? '');
-  const [venue, setVenue] = useState(live?.venue ?? '');
-  const [currency, setCurrency] = useState(live?.currency ?? (CURRENCIES.includes(settings.currency) ? settings.currency : '$'));
+  // Typed or picked; until then, the tournament you're in or the first one planned for today.
+  const [typedTitle, setTitle] = useState<string | null>(live?.name ?? null);
+  const [typedVenue, setVenue] = useState<string | null>(live?.venue ?? null);
+  const auto = typedTitle === null && scope === 'event' ? all.find((o) => o.from === 'plan') : undefined;
+  const title = typedTitle ?? auto?.title ?? '';
+  const venue = typedVenue ?? auto?.venue ?? '';
+  const [pickedCurrency, setCurrency] = useState<string | null>(live?.currency ?? null);
+  const currency = pickedCurrency ?? (auto && CURRENCIES.includes(auto.currency) ? auto.currency : CURRENCIES.includes(settings.currency) ? settings.currency : '$');
+  // Created, choosing where to send the link: the group screen opens when the sheet closes.
+  const [sent, setSent] = useState<{ id: string; link: SwapLink } | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   // No signal: everything typed stays, and the swap is created by itself when the signal is back.
@@ -119,10 +127,15 @@ function NewGroupSwap() {
       const ref = await shareRef().catch(() => '');
       const url = groupUrl(group.id, invite, ref);
       track('link_shared', { channel: 'swap' });
-      router.replace({ pathname: '/swap/g/[id]', params: { id: group.id } });
       const msg = t('Swap de grupo de {pct} no {title}. Escolhe o teu nome para entrar: {url}', { pct: pctLabel(pct), title: terms.title, url });
-      if (Platform.OS === 'web') await Clipboard.setStringAsync(url);
-      else await Share.share({ message: msg });
+      const open = () => router.replace({ pathname: '/swap/g/[id]', params: { id: group.id } });
+      if (Platform.OS === 'web') {
+        open();
+        await Clipboard.setStringAsync(url);
+      } else if (sendsToWhatsapp()) {
+        open();
+        await sendWhatsapp(msg);
+      } else setSent({ id: group.id, link: { url, message: msg } });
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
       setBusy(false);
@@ -240,8 +253,8 @@ function NewGroupSwap() {
 
         <View style={{ gap: S.sm }}>
           <Button lines={2}
-            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: é criado quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
-            icon="paper-plane-outline"
+            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: é criado quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : sendsToWhatsapp() ? t('Criar e enviar por WhatsApp') : t('Criar e enviar link')}
+            icon={sendsToWhatsapp() && !busy && !waiting && size >= GROUP_MIN ? 'logo-whatsapp' : 'paper-plane-outline'}
             disabled={!ok}
             onPress={create}
           />
@@ -253,6 +266,13 @@ function NewGroupSwap() {
           </T>
         </View>
       </Screen>
+      <SwapSend
+        link={sent?.link ?? null}
+        onDone={() => {
+          if (sent) router.replace({ pathname: '/swap/g/[id]', params: { id: sent.id } });
+          setSent(null);
+        }}
+      />
     </>
   );
 }

@@ -129,8 +129,9 @@ export function spokenSeat(s: SeatState, fmt: (n: number) => string, locale: Loc
   return bits.join(', ');
 }
 
-export function spokenBoard(board: string[], locale: Locale): string {
-  return `${WORDS[locale].board}: ${cards(board, locale)}`;
+/** "Mesa: …", or "Mesa 2: …" for one board of a run it twice. */
+export function spokenBoard(board: string[], locale: Locale, run?: number): string {
+  return `${WORDS[locale].board}${run ? ` ${run}` : ''}: ${cards(board, locale)}`;
 }
 
 export function spokenPot(amount: string, locale: Locale): string {

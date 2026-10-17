@@ -1,0 +1,27 @@
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { buildBackup } from '../backup';
+import { mergeBackups, writtenElsewhere } from '../backup-merge';
+import { DEFAULT_SETTINGS, type PlayerNote } from '../types';
+
+const note = (id: string, updatedAt: number, text = id): PlayerNote => ({ id, name: id, notes: text, updatedAt }) as unknown as PlayerNote;
+
+test('two phones: the upload keeps both phones’ items, the newer copy of each, and this phone’s settings', () => {
+  const a = buildBackup({ hands: [], sessions: [], players: [note('p1', 5, 'A'), note('p2', 1)], settings: { ...DEFAULT_SETTINGS, currency: '€' }, festivalPlans: { lis: { picked: ['1'], lateReg: {}, sessions: {} } } }, 100);
+  const b = buildBackup({ hands: [], sessions: [], players: [note('p1', 9, 'B'), note('p3', 2)], settings: { ...DEFAULT_SETTINGS, currency: '$' }, festivalPlans: { lis: { picked: ['2'], lateReg: {}, sessions: {} } }, quarantine: [['rl.quarantine.v1.x', '{']] }, 90);
+  const m = mergeBackups(a, b);
+  assert.deepEqual(m.players.map((p) => [p.id, (p as unknown as { notes: string }).notes]).sort(), [['p1', 'B'], ['p2', 'p2'], ['p3', 'p3']]);
+  assert.equal(m.settings?.currency, '€');
+  assert.equal(m.exportedAt, 100);
+  assert.deepEqual(m.festivalPlans?.lis.picked, ['1', '2']);
+  assert.deepEqual(m.quarantine, [['rl.quarantine.v1.x', '{']]);
+});
+
+test('only a copy another phone wrote is joined in', () => {
+  assert.equal(writtenElsewhere({ exportedAt: 100 }, 100), false);
+  assert.equal(writtenElsewhere({ exportedAt: 120 }, 100), true);
+  // Copies made before this check existed: joined once, which loses nothing.
+  assert.equal(writtenElsewhere({ exportedAt: 100 }, undefined), true);
+});

@@ -82,14 +82,14 @@ export default function FestivalCardScreen() {
 
   // X: the card as a picture with the best hand's replay (or the invite) in the post text.
   // The post text (same as the carousel caption) with the best hand's replay, or the invite.
-  const postText = async (to: 'x' | 'any') => {
+  const postText = async (to: 'x' | 'whatsapp' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`, variant);
-    if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'x' ? 'x' : 'link', { ref });
+    let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'any' ? 'app' : to}&utm_medium=post&utm_campaign=festival`, variant);
+    if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'any' ? 'link' : to, { ref });
     return carouselCaption(recap, link, { showResult, showMoney });
   };
 
-  const postTo = async (to: 'x' | 'any') => {
+  const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
@@ -110,7 +110,7 @@ export default function FestivalCardScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Partilhar festival') }} />
-      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
           horizontal

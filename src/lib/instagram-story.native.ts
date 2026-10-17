@@ -276,20 +276,21 @@ export async function shareCarousel(files: string[], caption: string): Promise<S
 
 /**
  * A post with the images and the text (which carries the link): straight to X
- * when `to` is 'x' and X takes it, otherwise the system share sheet (X,
+ * or WhatsApp when `to` names it and it takes it, otherwise the system share sheet (X,
  * WhatsApp, save images…). X takes up to 4 images. The text is also copied, in
  * case the app picked drops it.
  */
-export async function sharePost(files: string[], text: string, to: 'x' | 'any' = 'any'): Promise<void> {
+export async function sharePost(files: string[], text: string, to: 'x' | 'whatsapp' | 'any' = 'any'): Promise<void> {
   await Clipboard.setStringAsync(text).catch(() => {});
   const Share = nativeShare();
   if (Share) {
-    if (to === 'x' && files.length === 1) {
+    if (to !== 'any' && files.length === 1) {
       try {
-        await Share.shareSingle({ social: Share.Social.TWITTER as Social.Twitter, url: files[0], message: text, type: 'image/png' });
+        const social = to === 'x' ? (Share.Social.TWITTER as Social.Twitter) : (Share.Social.WHATSAPP as Social.Whatsapp);
+        await Share.shareSingle({ social, url: files[0], message: text, type: 'image/png' });
         return;
       } catch {
-        // X not installed (or not reachable): the share sheet below.
+        // The app is not installed (or not reachable): the share sheet below.
       }
     }
     await Share.open({ urls: files.slice(0, 4), message: text, type: 'image/png', failOnCancel: false, title: t('Partilhar') });

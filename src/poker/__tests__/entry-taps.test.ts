@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { autoFold, callerCandidates, checkAround, checkDownNext, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
-import { newHand, nextLevel, sameTable } from '../factory';
+import { allInFor, autoActions, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
 function mk(heroPos: string, heroCards: string[], n = 9, kind: 'mtt' | 'cash' = 'mtt'): Hand {
@@ -56,7 +56,7 @@ class Entry {
     const s = this.s;
     const len = this.hand.actions.length;
     if (s.needsBoard || s.toAct === null || this.done.has(this.key())) return;
-    const acts = autoFold(this.hand, s);
+    const acts = autoActions(this.hand, s);
     if (!acts.length) return;
     this.done.add(this.key());
     this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
@@ -118,7 +118,7 @@ class Entry {
   }
   /** "Check até ao fim": this street now, every later street once its card is in. */
   checkDown() {
-    this.push(checkAround(this.hand, this.s));
+    this.push(checkDownNow(this.hand, this.s));
     this.down = true;
   }
   private down = false;
@@ -140,6 +140,34 @@ class Entry {
     this.taps += 2;
     this.hand = { ...this.hand, players: this.hand.players.map((p, i) => (i === this.seat(label) ? { ...p, cards } : p)) };
   }
+  /** The seat sheet: long-press the seat, open the stack field, type, Confirmar, Guardar. */
+  stack(label: string, chips: number, keys: number) {
+    this.taps += 1 + 1 + keys + 1 + 1;
+    const i = this.seat(label);
+    this.hand = { ...this.hand, players: this.hand.players.map((p, k) => (k === i ? { ...p, stack: chips } : p)) };
+  }
+  /** "All-in" on the keypad (or the "All-in com menos" chip): open, type, one tap. */
+  allIn(to: number, keys: number) {
+    const next = allInFor(this.hand, this.s, to);
+    assert.ok(next);
+    this.taps += 1 + keys + 1;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    this.hand = next;
+    this.autoFrom = undefined;
+    this.settle();
+  }
+  /** Multiway showdown: a tap on the seat, then its two cards. */
+  showsPick(label: string, cards: string[]) {
+    this.taps++;
+    this.shows(label, cards);
+  }
+  /** Straddle: the chip next to the stack (1 tap) or the context sheet (open, chip, close). */
+  straddle(chip: boolean) {
+    this.taps += chip ? 1 : 3;
+    this.done.clear();
+    this.hand = { ...this.hand, game: { ...this.hand.game, straddles: 1, straddleFrom: 'utg' }, actions: [] };
+    this.settle();
+  }
   undo() {
     const prev = this.history.pop()!;
     this.taps++;
@@ -159,12 +187,13 @@ class Entry {
 }
 
 test('the typical hand (open, call, c-bet, fold) stays within the goal of 12 taps', () => {
-  for (const [caller, taps] of [['BTN', 11], ['BB', 12]] as const) {
+  for (const [caller, taps] of [['BTN', 11], ['BB', 11]] as const) {
     const e = new Entry('CO', ['Ah', 'Kd']);
     e.size('2.5x');
     e.only(caller);
     e.board('Kc', '8d', '3s');
-    if (caller === 'BB') e.act('check');
+    // BB checks to hero by itself (round 4): hero's c-bet is the next tap.
+    if (caller === 'BB') assert.equal(e.s.toAct, e.hand.hero);
     e.size('⅓');
     e.act('fold');
     const r = e.save();
@@ -198,7 +227,7 @@ test('single-raised pot: hero opens CO, BTN calls, c-bet called, gives up on the
   assert.equal(r.final.foldWin, true);
 });
 
-test('3-bet pot: HJ opens, hero 3-bets on the BTN, HJ calls and folds the flop — 14 taps (was 16)', () => {
+test('3-bet pot: HJ opens, hero 3-bets on the BTN, HJ calls and folds the flop — 13 taps (was 16)', () => {
   const e = new Entry('BTN', ['Qs', 'Qc']);
   e.entered('HJ');
   e.size('2.5x');
@@ -206,11 +235,11 @@ test('3-bet pot: HJ opens, hero 3-bets on the BTN, HJ calls and folds the flop �
   e.size('3x');
   e.only('HJ');
   e.board('Jh', '8c', '3d');
-  e.act('check');
+  assert.equal(e.s.toAct, e.hand.hero, 'HJ checks to the 3-bettor by itself');
   e.size('⅓');
   e.act('fold');
   const r = e.save();
-  assert.equal(e.taps, 14);
+  assert.equal(e.taps, 13);
   assert.equal(r.final.foldWin, true);
   assert.equal(r.result!.net[0] > 0, true);
 });
@@ -506,7 +535,7 @@ test('round 3 · open, call, c-bet, fold — 11 taps (10 at the same table)', ()
   assert.equal(e.taps, 11);
 });
 
-test('round 3 · 3-bet pot to showdown, checked down from the turn — 19 taps (was 20)', () => {
+test('round 3 · 3-bet pot to showdown, checked down from the turn — 18 taps (was 20; 19 before the check to the raiser)', () => {
   const run = (down: boolean) => {
     const e = new Entry('BTN', ['Qs', 'Qc']);
     e.entered('CO');
@@ -514,21 +543,21 @@ test('round 3 · 3-bet pot to showdown, checked down from the turn — 19 taps (
     e.size('3x');
     e.only('CO');
     e.board('Jh', '8c', '3d');
-    e.act('check');
     e.size('⅓');
     e.act('call');
     e.board('2s');
+    // CO checks to hero by itself on each street; checking it down is hero's tap.
     if (down) e.checkDown();
-    else e.checkAround();
+    else e.act('check');
     e.board('7d');
-    if (!down) e.checkAround();
+    if (!down) e.act('check');
     e.shows('CO', ['Ad', 'Jd']);
     const r = e.save();
     assert.equal(r.result!.resolved, true);
     return e.taps;
   };
-  assert.equal(run(false), 20);
-  assert.equal(run(true), 19);
+  assert.equal(run(false), 19);
+  assert.equal(run(true), 18);
 });
 
 test('round 3 · limped pot checked down to the river — 16 taps (was 20)', () => {
@@ -569,4 +598,122 @@ test('mais limps: only after a limp and before any raise', () => {
   e.entered('UTG');
   e.size('2.5x');
   assert.equal(limpedPot(e.hand, e.autoFrom), false, 'after an open the chip gives the seat its turn');
+});
+
+// Round 4: where the taps still go, and the live cases (multiway all-in, straddle, BB ante).
+test('round 4 · multiway all-in with a side pot — 25 taps (was 31)', () => {
+  const run = (now: boolean) => {
+    const e = new Entry('BTN', ['Ah', 'Kh']);
+    e.entered('CO');
+    // CO is all-in for 15 bb (3000); SB calls all-in for 4000; BB folds.
+    if (now) e.allIn(3000, 2);
+    else {
+      e.stack('CO', 3000, 2);
+      e.size('All-in');
+    }
+    e.size('All-in');
+    if (now) {
+      assert.equal(sizePresets(e.hand, e.s).length, 0, 'facing more than it has: the "All-in com menos" chip is the way in');
+      e.allIn(4000, 2);
+      e.act('fold');
+    } else {
+      e.stack('SB', 4000, 2);
+      e.only('SB');
+    }
+    e.board('Kd', '9s', '4c', '2h', '7d');
+    e.showsPick('CO', ['Qs', 'Qd']);
+    if (now) e.shows('SB', ['Jc', 'Tc']);
+    else e.showsPick('SB', ['Jc', 'Tc']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    assert.equal(r.result!.pots.length, 2, 'main pot and a side pot');
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 31);
+  assert.equal(after.taps, 25);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 4 · all-in on the keypad: less than the bet is a call for less, more is a raise', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.allIn(150, 3);
+  assert.equal(e.hand.actions.at(-1)!.kind, 'call', 'less than the big blind: a call for less');
+  assert.equal(e.hand.players[e.seat('CO')].stack, 150);
+  assert.ok(e.s.allIn[e.seat('CO')]);
+});
+
+test('round 4 · UTG straddle in cash: one tap (was 3)', () => {
+  const run = (chip: boolean) => {
+    const e = new Entry('CO', ['Jh', 'Jd'], 'cash');
+    e.straddle(chip);
+    assert.equal(e.s.currentBet, 2 * e.hand.game.bb, 'the straddle is the bet to beat');
+    const open = sizePresets(e.hand, e.s)[0];
+    e.size(open.label.replace(',', '.'));
+    e.only(null);
+    assert.equal(e.save().final.foldWin, true);
+    return e.taps;
+  };
+  assert.equal(run(false), 9);
+  assert.equal(run(true), 7);
+});
+
+test('round 4 · BB ante costs no tap: it is how a new tournament hand starts', () => {
+  const g = defaultGame('mtt');
+  assert.equal(g.anteType, 'bb');
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  assert.equal(e.s.pot, g.ante, 'the big blind posts the ante for the table');
+});
+
+test('a hand saved before its end ("Guardar já") hands its starting stacks to the next hand, so no chips go missing', () => {
+  const e = new Entry('BTN', ['As', 'Kd']);
+  e.size('2.5x');
+  e.only('BB');
+  e.board('Kc', '8d', '3s'); // saved on the flop: the preflop pot and the BB ante are in the middle
+  const last = { ...e.hand, createdAt: Date.now() };
+  const next = newHand({ id: 'n', last });
+  assert.deepEqual(next.players.map((p) => p.stack), last.players.map((p) => p.stack));
+  assert.equal(next.button, (last.button + 1) % last.players.length, 'the button still moves on');
+});
+
+test('round 4 · checks to the raiser: after the flop the seats before hero check by themselves when hero bet last', () => {
+  // Hero opens CO, BB calls, c-bet called, barrel on the turn, BB folds.
+  const e = new Entry('CO', ['As', 'Qd']);
+  e.size('2.5x');
+  e.only('BB');
+  e.board('Kh', '7c', '2d');
+  assert.equal(e.s.toAct, e.hand.hero, 'BB checked to the raiser');
+  e.size('⅓');
+  e.act('call');
+  e.board('9s');
+  assert.equal(e.s.toAct, e.hand.hero, 'and again on the turn');
+  e.size('½');
+  e.act('fold');
+  assert.equal(e.save().final.foldWin, true);
+  assert.equal(e.taps, 14, 'was 16: one check per street');
+});
+
+test('round 4 · checks to the raiser: a donk bet is one tap on "Alguém fez bet?", and nothing is checked for a seat that is not before hero', () => {
+  const e = new Entry('CO', ['As', 'Qd']);
+  e.size('2.5x');
+  e.only('BB');
+  e.board('Kh', '7c', '2d');
+  e.entered('BB'); // the chip gives BB its turn back
+  assert.equal(e.s.toAct, e.seat('BB'));
+  e.size('⅓');
+  assert.equal(e.s.toAct, e.hand.hero, 'facing a bet: nothing is entered for hero');
+  e.act('call');
+  e.board('9s');
+  assert.equal(e.s.toAct, e.seat('BB'), 'BB bet last: no check to hero');
+  // Hero OOP, after hero checks: the seat behind is never checked for.
+  const o = new Entry('BB', ['9c', '8c']);
+  o.entered('BTN');
+  o.size('2.5x');
+  o.act('call');
+  o.board('Ts', '7d', '2h');
+  assert.equal(o.s.toAct, o.hand.hero);
+  o.act('check');
+  assert.equal(o.s.toAct, o.seat('BTN'));
 });
