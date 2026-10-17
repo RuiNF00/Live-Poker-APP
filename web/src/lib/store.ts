@@ -441,7 +441,6 @@ class LocalStore implements ShareStore {
         const keep = list.filter((c) => c.authorKey !== authorKey);
         n += list.length - keep.length;
         d.comments[h] = keep;
-        if (d.blocks?.[h]) d.blocks[h] = d.blocks[h].filter((k) => k !== authorKey);
       }
       return n;
     });
