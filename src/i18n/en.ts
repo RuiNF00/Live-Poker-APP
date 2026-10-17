@@ -1800,6 +1800,7 @@ const en: Record<string, string> = {
   'México': 'Mexico',
   'Canadá': 'Canada',
   'Brasil': 'Brazil',
+  'EUA': 'USA',
   'Uruguai': 'Uruguay',
   'Austrália': 'Australia',
   'Macau': 'Macau',

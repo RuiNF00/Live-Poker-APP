@@ -114,7 +114,7 @@ export default function FestivalScreen() {
             />
             <Ionicons name="pencil" size={16} color={C.textDim} />
           </Row>
-          <T v="label">{`${f.venue} · ${f.city}`}</T>
+          <T v="label">{`${f.venue} · ${t(f.city)}`}</T>
           {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
         </View>
 
@@ -382,7 +382,7 @@ function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bank
   return {
     ...base,
     name: sessionName(e),
-    venue: `${f.venue}, ${f.city.split(',')[0]}`,
+    venue: `${f.venue}, ${t(f.city.split(',')[0])}`,
     buyIn: e.buyIn,
     bankrollId,
     // Backers who bought a piece of this event through an action package.
