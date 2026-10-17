@@ -307,7 +307,8 @@ ${link}`;
 
   const edit = () => router.push({ pathname: '/hand/new', params: { edit: hand.id } });
   // Live, or the latest hand of a table still going: the next hand is one tap away.
-  const nextHere = (!!activeSession && hand.sessionId === activeSession.id) || (hands[0]?.id === hand.id && sameTable(hand, null));
+  // Only once the hand is finished: an unfinished pot would carry the wrong stacks over.
+  const nextHere = isComplete(hand) && ((!!activeSession && hand.sessionId === activeSession.id) || (hands[0]?.id === hand.id && sameTable(hand, null)));
   return (
     <>
       <Stack.Screen
