@@ -10,8 +10,9 @@ import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Empty, Field, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
+import { withLang } from '@/lib/link-lang';
 import { createPack } from '@/lib/pack-api';
 import { MAX_PACK_HANDS, packHands } from '@/lib/pack-core';
 import { shareRef } from '@/lib/referrals';
@@ -72,7 +73,7 @@ export default function NewPack() {
     }
     for (let i = 0; i < r.uploaded; i++) pro.record('share');
     const ref = await shareRef();
-    const url = ref ? `${r.pack.url}?r=${encodeURIComponent(ref)}` : r.pack.url;
+    const url = withLang(ref ? `${r.pack.url}?r=${encodeURIComponent(ref)}` : r.pack.url, variant);
     track('link_shared', { channel: 'pack', hands: send.length, ref });
     const msg = `${t('{n} mãos para rever: o que fazias em cada uma? 👀', { n: send.length })}\n${url}`;
     router.replace('/pack');

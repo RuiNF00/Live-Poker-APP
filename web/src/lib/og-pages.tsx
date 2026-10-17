@@ -2,7 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { brand } from '@/config/brand';
-import { formatMoney } from '@/lib/i18n';
+import { numberTag, type Locale } from '@/lib/i18n';
+import { liveCopy } from '@/components/live/copy';
+import { previewCopy } from '@/lib/preview-copy';
 import { MARK_LINES, MARK_PATH } from '@/components/Brand';
 import { SUIT_PATHS } from '@/components/PlayingCard';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
@@ -217,34 +219,47 @@ export function inviteOgImage(days: number) {
 
 const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
 const num = (n: number) => fmt.format(n);
-// The live card is written in pt-PT: money as the app writes it there.
-const money = (n: number, cur: string) => formatMoney(n, cur, 'pt');
 
-/** A backer live page (/live/<id>): the session as it stands. Short cache, it changes. */
-export function liveOgImage(s: LiveSnapshot | null) {
+/**
+ * A backer live page (/live/<id>): the session as it stands, in the sharer's language. Short cache,
+ * it changes. No money: the link gets forwarded to group chats, so buy-ins, prizes, results and the
+ * share sold stay on the page; the preview shows the stack, the level and the place.
+ */
+export function liveOgImage(s: LiveSnapshot | null, locale: Locale = 'pt') {
   if (!s) return siteOgImage();
+  const c = liveCopy(locale);
+  const nf = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 });
+  // The narrow group space (12 345), as on the page.
+  const n = (v: number) => nf.format(v).replace(/[\u00a0\u202f]/g, '\u202f');
   const mtt = s.kind === 'mtt';
   // A bagged day shows its stack, like a running one: there is no result yet.
   const bagged = !!s.endedAt && s.bagged;
   const ended = !!s.endedAt && !bagged;
-  const kind = mtt ? 'Torneio' : 'Cash game';
-  const title = s.name || kind;
+  const title = s.name || (mtt ? c.tournament : c.cash);
   const sub = [s.player, s.venue].filter(Boolean).join(' · ');
   const first = s.stackLog[0]?.stack ?? s.stack;
   const delta = s.stack - first;
   const bb = s.bb ? Math.round((s.stack / s.bb) * 10) / 10 : null;
-  const result = s.cashOut - s.invested;
+  const hours = Math.floor(s.playedMs / 3_600_000);
+  const played = `${hours}h${String(Math.floor((s.playedMs % 3_600_000) / 60_000)).padStart(2, '0')}`;
+  const stage = s.stage ? c.stages[s.stage] : null;
   const tiles: [string, string][] = [
-    [s.level ? `Nível ${s.level}` : 'Blinds', `${num(s.sb)}/${num(s.bb)}`],
-    ['Entradas', `${s.entries} × ${money(s.buyIn, s.currency)}`],
-    ...(s.sold ? ([['Ação vendida', `${num(s.sold)}%`]] as [string, string][]) : []),
+    [s.level ? c.level(s.level) : c.blinds, `${n(s.sb)}/${n(s.bb)}`],
+    ...(stage && !ended ? ([[c.stage, stage]] as [string, string][]) : []),
+    [c.time, played],
   ];
+  // Ended: a tournament shows the place (or the bust), a cash game only that it ended.
+  const bigLabel = ended ? (mtt ? (s.finish ? c.result : c.busted) : c.ended) : c.stack;
+  const big = ended ? (mtt && s.finish ? c.place(s.finish, s.field) : '—') : n(s.stack);
   return render(
     <Frame>
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo />
-          <Eyebrow label={ended ? 'Terminada' : bagged ? `Ensacado · Dia ${s.day}` : s.paused ? 'Em pausa' : 'Em direto'} color={ended ? K.muted : bagged || s.paused ? K.warn : K.good} />
+          <Eyebrow
+            label={ended ? c.ended : bagged ? `${c.bagged} · ${c.day(s.day)}` : s.paused ? c.paused : c.live}
+            color={ended ? K.muted : bagged || s.paused ? K.warn : K.good}
+          />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', fontSize: 58, fontWeight: 800, letterSpacing: -2, lineHeight: 1.05, maxWidth: 1056 }}>{title.slice(0, 48)}</div>
@@ -262,30 +277,19 @@ export function liveOgImage(s: LiveSnapshot | null) {
               minWidth: 420,
             }}
           >
-            <div style={{ display: 'flex', fontSize: 22, fontWeight: 800, letterSpacing: 2, color: K.muted }}>
-              {ended ? (mtt ? (s.cashOut ? 'PRÉMIO' : 'ELIMINADO') : 'CASH-OUT') : 'STACK'}
-            </div>
-            <div style={{ display: 'flex', fontSize: 84, fontWeight: 800, letterSpacing: -3, lineHeight: 1.05 }}>
-              {ended ? (s.cashOut || !mtt ? money(s.cashOut, s.currency) : s.finish ? `${s.finish}º` : '—') : num(s.stack)}
-            </div>
-            <div style={{ display: 'flex', gap: 18, fontSize: 26, fontWeight: 500, color: K.dim }}>
-              {ended ? (
-                <span style={{ color: result >= 0 ? K.good : K.bad }}>
-                  Resultado {result > 0 ? '+' : ''}
-                  {money(result, s.currency)}
-                </span>
-              ) : (
-                <>
-                  {bb !== null ? <span>{num(bb)} BB</span> : null}
-                  {delta ? (
-                    <span style={{ color: delta > 0 ? K.good : K.bad, marginLeft: 18 }}>
-                      {delta > 0 ? '+' : '−'}
-                      {num(Math.abs(delta))}
-                    </span>
-                  ) : null}
-                </>
-              )}
-            </div>
+            <div style={{ display: 'flex', fontSize: 22, fontWeight: 800, letterSpacing: 2, color: K.muted, textTransform: 'uppercase' }}>{bigLabel}</div>
+            <div style={{ display: 'flex', fontSize: 84, fontWeight: 800, letterSpacing: -3, lineHeight: 1.05 }}>{big}</div>
+            {!ended ? (
+              <div style={{ display: 'flex', gap: 18, fontSize: 26, fontWeight: 500, color: K.dim }}>
+                {bb !== null ? <span>{n(bb)} BB</span> : null}
+                {delta ? (
+                  <span style={{ color: delta > 0 ? K.good : K.bad, marginLeft: 18 }}>
+                    {delta > 0 ? '+' : '−'}
+                    {n(Math.abs(delta))}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {tiles.map(([k, v]) => (
@@ -299,6 +303,53 @@ export function liveOgImage(s: LiveSnapshot | null) {
       </div>
     </Frame>,
     60,
+  );
+}
+
+/**
+ * A swap (/swap/<id>): the two players and the event, never the percentages or amounts (the chat it
+ * lands in may have more than the two of them).
+ */
+export function swapOgImage(sw: { a: string; b: string; title: string } | null, locale: Locale = 'pt') {
+  if (!sw) return siteOgImage();
+  const c = previewCopy(locale);
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 1056, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <Eyebrow label={c.swap} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 26, fontSize: 76, fontWeight: 800, letterSpacing: -2.5, lineHeight: 1.04 }}>
+            <span>{sw.a.slice(0, 18)}</span>
+            <span style={{ color: K.accent }}>×</span>
+            <span>{sw.b.slice(0, 18)}</span>
+          </div>
+          {sw.title ? <div style={{ display: 'flex', fontSize: 36, fontWeight: 500, color: K.dim }}>{sw.title.slice(0, 60)}</div> : null}
+        </div>
+        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{c.swapSubline}</div>
+      </div>
+    </Frame>,
+    3600,
+  );
+}
+
+/** A pack of hands (/p/<id>): how many and its title, never whose or the amounts. */
+export function packOgImage(pack: { title: string; hands: number } | null, locale: Locale = 'pt') {
+  if (!pack) return siteOgImage();
+  const c = previewCopy(locale);
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 720, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <Eyebrow label={c.packHands(pack.hands)} />
+          <div style={{ display: 'flex', fontSize: 66, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>{(pack.title || c.packHeadline).slice(0, 60)}</div>
+        </div>
+        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{pack.title ? c.packHeadline : c.subline}</div>
+      </div>
+      <Hand />
+    </Frame>,
+    3600,
   );
 }
 

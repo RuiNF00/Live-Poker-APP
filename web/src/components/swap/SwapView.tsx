@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
+import { intlTag, numberTag, formatMoney, t as siteCopy, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
+import { OpenInApp } from '@/components/OpenInApp';
 import { swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
@@ -233,6 +234,10 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
           <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
         </section>
       ) : null}
+      {/* Whoever has the app can confirm and keep it there, before or after. */}
+      <p className="live-updated">
+        <OpenInApp path={`swap/${id}`} invite={invite} label={siteCopy(locale).openInApp} />
+      </p>
     </main>
   );
 }

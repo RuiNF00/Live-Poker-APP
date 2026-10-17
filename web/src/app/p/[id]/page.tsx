@@ -7,7 +7,7 @@ import { PackView, type PackHand } from '@/components/pack/PackView';
 import { packCopy } from '@/components/pack/copy';
 import { brand } from '@/config/brand';
 import { resolveHand } from '@/lib/hand';
-import { pickLocale } from '@/lib/i18n';
+import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { PACK_ID_RE, packStore } from '@/lib/packs';
 import { normalizeCode } from '@/lib/refcode';
 import { getStore, loadShare } from '@/lib/store';
@@ -39,18 +39,29 @@ const loadPack = cache(async (id: string) => {
 });
 
 // Neutral on purpose: a preview in a group chat says how many hands, never whose or the amounts.
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params & SearchParams): Promise<Metadata> {
   const { id } = await params;
-  const locale = pickLocale((await headers()).get('accept-language'));
+  const { lang } = await searchParams;
+  const locale = previewLocale(lang, (await headers()).get('accept-language'));
   const c = packCopy(locale);
   const found = await loadPack(id);
   const title = found ? c.metaTitle(found.pack.title, found.hands.length) : c.gone;
+  const image = { url: `/p/${id}/og?lang=${locale}`, width: 1200, height: 630, alt: title };
   return {
     title: { absolute: `${title} · ${brand.name}` },
     description: c.metaDescription,
     robots: { index: false, follow: false, nocache: true },
     referrer: 'no-referrer',
-    openGraph: { title, description: c.metaDescription, type: 'website', siteName: brand.name },
+    openGraph: {
+      title,
+      description: c.metaDescription,
+      type: 'website',
+      url: `${brand.siteUrl}/p/${id}`,
+      siteName: brand.name,
+      locale: ogLocale(locale),
+      ...(found ? { images: [image] } : {}),
+    },
+    twitter: { card: found ? 'summary_large_image' : 'summary', title, description: c.metaDescription, ...(found ? { images: [image.url] } : {}) },
   };
 }
 
