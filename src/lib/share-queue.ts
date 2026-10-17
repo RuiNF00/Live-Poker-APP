@@ -104,16 +104,25 @@ registerSender('share-delete', async (p) => {
  */
 export async function forgetHandShare(hand: Pick<Hand, 'id' | 'shareId' | 'shareToken'>) {
   if (hand.shareId && hand.shareToken) queueShareDelete(hand.shareId, hand.shareToken);
-  const cancelled = await unqueue('share-upload', hand.id);
+  await dropQueuedShare(hand.id);
+}
+
+/**
+ * The hand got its link another way (a direct upload once the signal was back):
+ * any background upload for it is cancelled, or its link deleted as soon as it
+ * exists, so no second public copy is left without a token.
+ */
+export async function dropQueuedShare(handId: string) {
+  const cancelled = await unqueue('share-upload', handId);
   await update((s) => {
-    const r = s.ready[hand.id];
+    const r = s.ready[handId];
     if (r) {
       queueShareDelete(r.shareId, r.shareToken);
-      delete s.ready[hand.id];
+      delete s.ready[handId];
     }
     // Still listed as waiting but no longer in the queue: it is being sent right now.
-    if (s.waiting.includes(hand.id) && !cancelled && !s.dropped.includes(hand.id)) s.dropped.push(hand.id);
-    s.waiting = s.waiting.filter((id) => id !== hand.id);
+    if (s.waiting.includes(handId) && !cancelled && !s.dropped.includes(handId)) s.dropped.push(handId);
+    s.waiting = s.waiting.filter((id) => id !== handId);
   });
 }
 
@@ -139,6 +148,8 @@ export function useQueuedShare(hand: Hand | undefined, save: (h: Hand) => void):
       const r = s.ready[id];
       const h = latest.current;
       if (r && h && !h.shareId) save({ ...h, ...r });
+      // The hand already has another link: this one would be public with nobody holding its token.
+      else if (r && h && h.shareId !== r.shareId) queueShareDelete(r.shareId, r.shareToken);
       if (r) await update((x) => void delete x.ready[id]);
       setWaiting(!r && !has && s.waiting.includes(id));
     };

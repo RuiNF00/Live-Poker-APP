@@ -16,7 +16,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
-import { isNetworkError, queueShare, useQueuedShare } from '@/lib/share-queue';
+import { dropQueuedShare, isNetworkError, queueShare, useQueuedShare } from '@/lib/share-queue';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
@@ -63,6 +63,8 @@ export default function HandScreen() {
     try {
       const { id: shareId, token } = await uploadHand(hand, { names: settings.shareNames, notes: settings.shareNotes });
       saveHand({ ...hand, shareId, shareToken: token });
+      // A link queued while offline is no longer needed.
+      dropQueuedShare(hand.id).catch(() => {});
       return shareId;
     } catch (e) {
       if (isNetworkError(e)) {
