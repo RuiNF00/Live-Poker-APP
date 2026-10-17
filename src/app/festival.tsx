@@ -229,7 +229,7 @@ function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {
   const trip = trips.find((x) => x.festivalId === f.id);
   const open = () => {
     if (trip) return router.push(`/trips/${trip.id}`);
-    if (!isPro && FREE.trips !== null && trips.length >= FREE.trips) return paywall('stats');
+    if (!isPro && FREE.trips !== null && trips.length >= FREE.trips) return paywall('trips');
     tap('medium');
     const x = tripFromFestival(uid('tr_'), f, plan, f.currency !== settings.currency ? { currency: settings.currency, rate: 0 } : undefined);
     saveTrip(x);

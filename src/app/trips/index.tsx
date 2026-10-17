@@ -30,9 +30,9 @@ export default function TripsScreen() {
   const festival = BAHAMAS_DEC_2026;
   const hasFestival = trips.some((x) => x.festivalId === festival.id);
 
-  const add = () => (locked ? paywall('stats') : setEdit(blankTrip(uid('tr_'), settings.currency)));
+  const add = () => (locked ? paywall('trips') : setEdit(blankTrip(uid('tr_'), settings.currency)));
   const fromFestival = () => {
-    if (locked) return paywall('stats');
+    if (locked) return paywall('trips');
     const x = tripFromFestival(uid('tr_'), festival, getPlan(festival.id), festival.currency !== settings.currency ? { currency: settings.currency, rate: 0 } : undefined);
     saveTrip(x);
     router.push(`/trips/${x.id}`);

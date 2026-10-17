@@ -3058,6 +3058,9 @@ const es: Record<string, string> = {
   'Par, {rank}': 'Pareja, {rank}',
   '{a} e {b}, mesmo naipe': '{a} y {b}, del mismo palo',
   '{a} e {b}, naipes diferentes': '{a} y {b}, de palos distintos',
+  'Todas as tuas viagens': 'Todos tus viajes',
+  'Despesas e resultado líquido de cada festival.': 'Gastos y resultado neto de cada festival.',
+  'Despesas e líquido por festival': 'Gastos y neto por festival',
 };
 
 export default es;
