@@ -40,13 +40,17 @@ PARTILHA E PEDE OPINIÃO
 • Publica a mão nas Stories do Instagram
 
 PARA QUEM JOGA LIVE
-• Torneios e cash games
-• Organiza por torneio, sessão e data
+• Torneios e cash games, com relógio de sessão e registo do stack
+• Bankroll e resultados por casino, com staking (percentagem vendida, markup) e despesas
+• Calculadora de deal para a mesa final (ICM e chip chop)
+• Leituras dos jogadores da tua mesa durante a sessão
 • Sem contas: as tuas mãos ficam no teu telemóvel
+• Cópia de segurança na nuvem opcional, com código de recuperação e sem email
+• Exporta tudo para um ficheiro
 • Disponível em português e inglês
 
 SWEATBOOK PRO
-Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas, os filtros de bankroll de 30 dias, 90 dias e 1 ano e Stories com a tua voz e sem marca de água. Subscrição mensal ou anual; o plano anual começa com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
+Grátis: até 3 mãos guardadas por dia. Com o Sweatbook Pro tens mãos ilimitadas, os filtros de bankroll de 30 dias, 90 dias e 1 ano, a exportação de sessões em CSV e Stories com a tua voz e sem marca de água. Subscrição mensal ou anual; o plano anual começa com 1 semana grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
 
 {{APP_NAME}} é uma ferramenta de registo e estudo. Não permite apostar nem jogar a dinheiro.
 
