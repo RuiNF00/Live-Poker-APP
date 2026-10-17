@@ -40,12 +40,13 @@ export function CoachMarks({ id, steps }: { id: string; steps: CoachStep[] }) {
     if (i < 0 || i >= steps.length) return;
     const node = steps[i].target.current;
     if (!node) {
-      // Not on screen: skip this step.
+      // Not on screen: skip this step. Skipping past the last one still counts as seen.
+      if (i + 1 >= steps.length) AsyncStorage.setItem(key, '1').catch(() => {});
       const id = requestAnimationFrame(() => setI((n) => n + 1));
       return () => cancelAnimationFrame(id);
     }
     node.measureInWindow((x, y, w, h) => setBox(w && h ? { x: x - PAD, y: y - PAD, w: w + 2 * PAD, h: h + 2 * PAD } : null));
-  }, [i, steps]);
+  }, [i, steps, key]);
 
   const done = () => {
     setI(steps.length);

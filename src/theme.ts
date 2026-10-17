@@ -9,6 +9,7 @@ export const BRAND = {
   tagline: t('O teu caderno de póquer live'),
   webUrl: (process.env.EXPO_PUBLIC_WEB_URL as string | undefined) ?? 'https://sweatbook.poker',
   scheme: 'sweatbook',
+  supportEmail: 'support@sweatbook.poker',
 };
 
 export const C = {
