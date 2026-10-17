@@ -56,6 +56,8 @@ test('reminders: 30 min before start, and 30 min before late reg closes when set
   );
   // Past ones are dropped.
   assert.deepEqual(planReminders(F, p, start12).map((x) => x.id), ['bahamas-dez-2026:12-A:late']);
+  // A tap opens this festival on this event, not whichever festival comes first.
+  assert.equal(r[1].url, 'sweatbook://festival?id=bahamas-dez-2026&event=12-A');
 });
 
 test('ships without an event brand; the player can name the festival', () => {

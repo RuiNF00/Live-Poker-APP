@@ -5,7 +5,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
@@ -20,14 +20,17 @@ import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
 import { FestivalItem, PlannedNow } from '@/components/FestivalItem';
+import { sessionFromEvent, sessionName } from '@/components/useStartEvent';
 import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
+import { eventDay } from '@/poker/festivals';
+import { updatePlan } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { useStore } from '@/store/store';
@@ -65,10 +68,14 @@ function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
   );
 }
 
-function LevelAlarm({ s }: { s: Session }) {
+function LevelAlarm({ s, onDue }: { s: Session; onDue: () => void }) {
   const now = useTick(1000);
   const nextAt = nextLevelAt(s, now);
   const levelDue = !!nextAt && nextAt <= now;
+  // A tournament's level goes up by itself when the clock runs out (see levelsDue); cash just shows it.
+  useEffect(() => {
+    if (levelDue && s.kind === 'mtt') onDue();
+  }, [levelDue, s.kind, onDue]);
   const color = levelDue ? C.accent : s.levelMinutes ? C.textDim : C.muted;
   return (
     <Row gap={4} style={{ marginTop: 2 }}>
@@ -115,6 +122,15 @@ export default function SessionScreen() {
   // The tab is for starting a session: one festival row only when it's on or a week away (design/simplificar.md).
   const near = coming.find((f) => soon(f, today));
   const next = coming.find((f) => f !== near);
+  // Today's festival tournaments, for the form's chips (Day 2s carry on from "Por continuar").
+  const todays = useMemo(
+    () =>
+      coming
+        .flatMap((f) => f.events.filter((e) => !e.day2 && eventDay(e) === today).map((e) => ({ f, e })))
+        .sort((a, b) => a.e.start.localeCompare(b.e.start))
+        .slice(0, 8),
+    [coming, today],
+  );
 
   const startRef = useRef<(() => void) | null>(null);
   const [bar, onBarLayout] = useBarHeight();
@@ -123,6 +139,9 @@ export default function SessionScreen() {
   const begin = (s: Session) => {
     tap('success');
     saveSession(s);
+    // Started from a today chip: the festival plan knows, for re-entries and Day 2.
+    const hit = todays.find(({ e }) => sessionName(e) === s.name && e.buyIn === s.buyIn);
+    if (hit) updatePlan(hit.f.id, (p) => ({ ...p, picked: p.picked.includes(hit.e.id) ? p.picked : [...p.picked, hit.e.id], sessions: { ...p.sessions, [hit.e.id]: s.id } }));
     track('session_started', { kind: s.kind });
     // The next session goes to the same bankroll.
     if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
@@ -185,6 +204,11 @@ export default function SessionScreen() {
           bankrolls={bankrolls}
           recentNames={recentNames}
           recentVenues={recentVenues}
+          today={todays.map(({ f, e }) => {
+            const { name, venue, currency, buyIn, stack, levelMinutes, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
+            const bankroll = bankrolls.find((b) => b.currency === f.currency);
+            return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
+          })}
           submitLabel={t('Começar agora')}
           submitRef={startRef}
           onSubmit={(s) => (settings.mindAsk === false ? begin(s) : setArriving(s))}
@@ -292,6 +316,10 @@ function Live({ s }: { s: Session }) {
     }
     save({ levelMinutes, levelStartedAt: undefined });
   };
+  const levelUp = () => {
+    const p = levelsDue(s);
+    if (p) save(p);
+  };
   const togglePause = () => {
     tap();
     const now = Date.now();
@@ -368,7 +396,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
             <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
-              <LevelAlarm s={s} />
+              <LevelAlarm s={s} onDue={levelUp} />
             </Pressable>
           </Card>
         </Row>

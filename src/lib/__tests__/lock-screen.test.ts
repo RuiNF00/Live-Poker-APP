@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Session } from '../../store/types';
-import { breakEndMessage, breakLabel, breakOf, levelAfter, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
+import { breakEndMessage, breakLabel, breakOf, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
 
 const MIN = 60_000;
 
@@ -118,4 +118,17 @@ test('breaks on the structure: lock-screen line, the level-up reminder and the c
   assert.equal(liveProps(mk({ levelMinutes: 30, levelStartedAt: 60 * MIN }), 70 * MIN).breakAt, '');
   assert.equal(breakOf({ ...at(1), kind: 'cash' }, 70 * MIN), null);
   assert.equal(breakOf({ ...at(1), levelMinutes: undefined }, 70 * MIN), null);
+});
+
+test('levelsDue: the level moves up by itself when its clock runs out, on the floor\'s time', () => {
+  const s = mk({ levelMinutes: 30, levelStartedAt: 10 * MIN });
+  assert.equal(levelsDue(s, 39 * MIN), null);
+  assert.deepEqual(levelsDue(s, 41 * MIN), { ...levelAfter(s, 1), levelMinutes: 30, levelStartedAt: 40 * MIN });
+  // Away for two levels: both, and the third level's clock started at 70 min.
+  const two = levelsDue(s, 75 * MIN)!;
+  assert.equal(two.level, (s.level ?? 1) + 2);
+  assert.equal(two.levelStartedAt, 70 * MIN);
+  // No clock, a cash game, or a finished session: nothing.
+  assert.equal(levelsDue(mk(), 99 * MIN), null);
+  assert.equal(levelsDue(mk({ kind: 'cash', levelMinutes: 30, levelStartedAt: 10 * MIN }), 99 * MIN), null);
 });

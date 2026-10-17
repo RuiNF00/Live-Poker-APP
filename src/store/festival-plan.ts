@@ -106,6 +106,8 @@ function day2Takes(f: Festival, plan: FestivalPlan, e: FestivalEvent, s: Session
 
 export interface PlanReminder {
   id: string;
+  /** Opens the planner on this event (its "Começar sessão"). */
+  url: string;
   at: number;
   title: string;
   body: string;
@@ -117,8 +119,10 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
   for (const e of planned(f, plan)) {
     const start = venueTime(f, e.start);
     const name = eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '');
+    const url = `sweatbook://festival?id=${encodeURIComponent(f.id)}&event=${encodeURIComponent(e.id)}`;
     out.push({
       id: `${f.id}:${e.id}:start`,
+      url,
       at: start - REMIND_BEFORE_MIN * 60_000,
       title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }),
       body: name,
@@ -127,6 +131,7 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
     if (late) {
       out.push({
         id: `${f.id}:${e.id}:late`,
+        url,
         at: start + (late - REMIND_BEFORE_MIN) * 60_000,
         title: t('Late reg fecha daqui a {n} min', { n: REMIND_BEFORE_MIN }),
         body: name,

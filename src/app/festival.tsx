@@ -5,7 +5,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { spanLabel } from '@/components/FestivalItem';
@@ -37,15 +37,16 @@ function dayLabel(day: string) {
 }
 
 export default function FestivalScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // `event`: from a reminder, scroll to that event's row (its "Começar sessão").
+  const { id, event } = useLocalSearchParams<{ id?: string; event?: string }>();
   const festivals = useFestivals();
   const ready = useFestivalsReady();
   // An own festival's id before the list is read: wait, so nothing (a trip) attaches to another festival.
   const f = festivals.find((x) => x.id === id) ?? (ready || !id ? festivals[0] : undefined);
-  return f ? <FestivalView key={f.id} f={f} /> : null;
+  return f ? <FestivalView key={f.id} f={f} focus={event} /> : null;
 }
 
-function FestivalView({ f }: { f: Festival }) {
+function FestivalView({ f, focus }: { f: Festival; focus?: string }) {
   const plan = useFestivalPlan(f.id);
   const { sessions, transfers, bankrolls, defaultBankroll, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
@@ -83,12 +84,21 @@ function FestivalView({ f }: { f: Festival }) {
   };
 
   const start = useStartEvent();
+  // Opened from a reminder: scroll once to that event, whose card shows "Começar sessão".
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const focusAt = useRef({ day: -1, row: -1, done: !focus });
+  const scrollToFocus = (p: Partial<{ day: number; row: number }>) => {
+    const y = Object.assign(focusAt.current, p);
+    if (y.done || y.day < 0 || y.row < 0) return;
+    y.done = true;
+    scroll.current?.scrollTo({ y: y.day + y.row, animated: true });
+  };
 
   return (
     <>
       <Stack.Screen options={{ title: t('Festival') }} />
       {softAsk}
-      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
+      <ScrollView ref={scroll} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <View style={{ gap: 4 }}>
           {f.own ? (
             <Row gap={8}>
@@ -158,11 +168,12 @@ function FestivalView({ f }: { f: Festival }) {
         ) : null}
 
         {days.map(([day, list]) => (
-          <Section key={day} title={dayLabel(day)}>
+          <View key={day} onLayout={list.some((e) => e.id === focus) ? (ev) => scrollToFocus({ day: ev.nativeEvent.layout.y }) : undefined}>
+          <Section title={dayLabel(day)}>
             <View style={{ gap: S.sm }}>
               {list.map((e) => (
+                <View key={e.id} onLayout={e.id === focus ? (ev) => scrollToFocus({ row: ev.nativeEvent.layout.y }) : undefined}>
                 <EventRow
-                  key={e.id}
                   f={f}
                   e={e}
                   plan={plan}
@@ -182,9 +193,11 @@ function FestivalView({ f }: { f: Festival }) {
                   }}
                   onStart={() => start(f, e)}
                 />
+                </View>
               ))}
             </View>
           </Section>
+          </View>
         ))}
 
         {f.own ? null : (
