@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Alert, AppState } from 'react-native';
 
 import { t } from '@/i18n';
+import { withLevelClock } from '@/lib/lock-screen/live-state';
 
 import type { Hand } from '@/poker/types';
 
@@ -185,7 +186,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
   const deleteHand = useCallback((id: string) => setHands((l) => l.filter((x) => x.id !== id)), []);
-  const saveSession = useCallback((s: Session) => setSessions((l) => upsert(l, { ...s, updatedAt: Date.now() })), []);
+  const saveSession = useCallback(
+    (s: Session) =>
+      setSessions((l) => {
+        const now = Date.now();
+        return upsert(l, { ...withLevelClock(l.find((x) => x.id === s.id), s, now), updatedAt: now });
+      }),
+    [],
+  );
   const deleteSession = useCallback((id: string) => setSessions((l) => l.filter((x) => x.id !== id)), []);
   const savePlayer = useCallback(
     (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),

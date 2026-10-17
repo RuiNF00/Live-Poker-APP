@@ -20,6 +20,7 @@ import { AutoCloudBackup } from '@/components/CloudBackup';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { SessionLockScreen } from '@/lib/lock-screen';
 import { installFetchTimeout } from '@/lib/net';
 import { bootReferrals } from '@/lib/referrals';
 import { StoreProvider } from '@/store/store';
@@ -56,6 +57,7 @@ export default function RootLayout() {
           <HideSplash />
           <StatusBar style="light" />
           <AutoCloudBackup />
+          <SessionLockScreen />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },

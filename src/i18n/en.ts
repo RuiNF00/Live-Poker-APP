@@ -488,6 +488,18 @@ const en: Record<string, string> = {
   'Algo correu mal neste ecrã': 'Something went wrong on this screen',
   'As tuas mãos estão guardadas no telemóvel. Tenta de novo; se voltar a acontecer, fecha e abre a app.': 'Your hands are saved on your phone. Try again; if it happens again, close and reopen the app.',
   'Tentar de novo': 'Try again',
+  // Lock screen (Live Activity, Android notification, level reminder)
+  'A jogar': 'Playing',
+  'Em pausa': 'On break',
+  'desde {time}': 'since {time}',
+  'Tempo': 'Time',
+  'Sobe em': 'Up in',
+  'Subida de nível': 'Level up',
+  'Nível {n}: blinds {blinds}. Toca para atualizar a sessão.': 'Level {n}: blinds {blinds}. Tap to update your session.',
+  'Duração do nível': 'Level length',
+  'Aviso de nível': 'Level alert',
+  '{min} min · subir nível': '{min} min · level up',
+  '{min} min · sobe em {time}': '{min} min · up in {time}',
 };
 
 export default en;
