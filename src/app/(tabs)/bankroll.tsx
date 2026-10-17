@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { FREE } from '@/billing/plans';
@@ -47,7 +47,7 @@ import {
 } from '@/store/bankroll-math';
 import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
-import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
+import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
@@ -128,6 +128,11 @@ function BankrollTab() {
   const pct = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
   const signedMoney = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : '') + fmt(n, cur));
   const pastBankroll = single ?? scopeBankrolls[0] ?? defaultBankroll;
+  const saveRef = useRef<(() => void) | null>(null);
+  const newPast = (): Session => {
+    const last = lastPlayed(pastBankroll.currency, sessions);
+    return { ...blankSession(last.kind ?? 'mtt', pastBankroll.currency, settings.defaultTableSize), ...last, bankrollId: pastBankroll.id };
+  };
   // What each bankroll's own rules let come out (a new withdrawal only).
   const keepFor = (id: string) => {
     const b = bankrolls.find((x) => x.id === id);
@@ -403,13 +408,19 @@ function BankrollTab() {
         ) : null}
       </Screen>
 
-      <Sheet visible={sheet?.type === 'session'} title={sheet?.type === 'session' && sheet.s !== 'new' ? t('Editar sessão') : t('Sessão passada')} onClose={() => setSheet(null)}>
+      <Sheet
+        visible={sheet?.type === 'session'}
+        title={sheet?.type === 'session' && sheet.s !== 'new' ? t('Editar sessão') : t('Sessão passada')}
+        onClose={() => setSheet(null)}
+        footer={<Button title={t('Guardar sessão')} icon="checkmark" onPress={() => saveRef.current?.()} />}>
         {sheet?.type === 'session' ? (
           <SessionForm
             key={sheet.s === 'new' ? 'new' : sheet.s.id}
             past
             bankrolls={bankrolls}
-            initial={sheet.s === 'new' ? { ...blankSession('mtt', pastBankroll.currency, settings.defaultTableSize), bankrollId: pastBankroll.id } : sheet.s}
+            // A new one starts as the last game played in this bankroll's currency: the result is what's left to type.
+            initial={sheet.s === 'new' ? newPast() : sheet.s}
+            submitRef={saveRef}
             recentNames={[...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8)}
             recentVenues={[...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8)}
             submitLabel={t('Guardar sessão')}
