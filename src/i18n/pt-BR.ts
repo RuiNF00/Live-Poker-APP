@@ -1441,6 +1441,9 @@ const ptBR: Record<string, string> = {
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
   'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou o horário de cada flight.',
+  'Importar': 'Importar',
+  'Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV': 'Cópia do Sweatbook ou de outro app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV',
+  'O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.': 'O arquivo não diz se é cash ou torneio. Começamos pelo que você mais joga; você pode mudar cada sessão depois.',
 };
 
 export default ptBR;

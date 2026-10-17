@@ -3091,6 +3091,9 @@ const es: Record<string, string> = {
   'Mais detalhes': 'Más detalles',
   'Menos detalhes': 'Menos detalles',
   'Ainda faltam os torneios de $600 e $800 com seis flights no início do festival: o organizador não publicou a hora de cada flight.': 'Aún faltan los torneos de $600 y $800 con seis flights al inicio del festival: el organizador no ha publicado la hora de cada flight.',
+  'Importar': 'Importar',
+  'Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV': 'Copia de Sweatbook o de otra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV',
+  'O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.': 'El archivo no dice si es cash o torneo. Empezamos por lo que más juegas; puedes cambiar cada sesión después.',
 };
 
 export default es;

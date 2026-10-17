@@ -19,11 +19,11 @@ import { Badge, Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, P
 import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
-import { pickTextFile, saveTextFile } from '@/lib/files';
+import { saveTextFile } from '@/lib/files';
 import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
-import { buildBackup, importSummary, parseBackup } from '@/store/backup';
+import { buildBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
@@ -94,21 +94,6 @@ export default function SettingsScreen() {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }
   };
-  const importFile = async () => {
-    tap();
-    setBusy(true);
-    try {
-      const text = await pickTextFile();
-      if (text === null) return;
-      const n = store.importData(parseBackup(text));
-      note(t('Cópia importada'), importSummary(n));
-    } catch {
-      note(t('Ficheiro inválido'), t('Escolhe um ficheiro .json exportado pelo Sweatbook.'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const eraseAll = () => {
     tap();
     // Swaps still owing money: the other player keeps their own read-only copy, but say so first.
@@ -198,8 +183,8 @@ export default function SettingsScreen() {
           <DataRecovery />
           <ListGroup>
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
-            <ListItem icon="push-outline" title={busy ? t('A importar…') : t('Importar ficheiro')} subtitle={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
-            <ListItem icon="swap-horizontal-outline" iconColor={C.info} title={t('Importar de outra app')} subtitle={t('Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
+            {/* One way in: the import screen reads Sweatbook copies and other apps' files alike. */}
+            <ListItem icon="push-outline" title={t('Importar')} subtitle={t('Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV')} onPress={() => router.push('/import')} />
             <ListItem icon="document-text-outline" title={t('Relatório PDF e CSV')} subtitle={t('Por ano ou datas: sessões, mãos, resultados')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={() => router.push('/export')} />
           </ListGroup>
         </Section>
