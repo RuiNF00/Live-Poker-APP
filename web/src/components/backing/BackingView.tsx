@@ -5,7 +5,7 @@ import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
 import { decodeStatement, type Statement } from '@/lib/backing';
-import { intlTag, numberTag, withCurrency, type Locale } from '@/lib/i18n';
+import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
 import { writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
 import { track } from '@/lib/track';
@@ -37,11 +37,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
   }, [invite]);
 
   const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
-  const money = (n: number, cur: string) => {
-    const a = fmt.format(Math.abs(n));
-    const sign = n < 0 ? '−' : '';
-    return withCurrency(a, cur, locale, sign);
-  };
+  const money = (n: number, cur: string) => formatMoney(n, cur, locale);
   const date = (t: number) => new Date(t).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' });
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'backer_statement' }, invite);
 

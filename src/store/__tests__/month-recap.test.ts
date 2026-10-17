@@ -83,13 +83,13 @@ test('the notification on the 1st, and privacy mode', () => {
   assert.match(mtt.title, /: 8 h, \+1/);
 });
 
-test('next recap: the 1st at 10:00, for the month just finished', () => {
+test('next recap: the 1st at 13:00, for the month just finished', () => {
   const mid = nextRecap(new Date(2026, 9, 17, 15).getTime());
-  assert.equal(mid.at, new Date(2026, 10, 1, 10).getTime());
+  assert.equal(mid.at, new Date(2026, 10, 1, 13).getTime());
   assert.equal(mid.key, '2026-10');
   // Early on the 1st, it is still today.
   const early = nextRecap(new Date(2026, 10, 1, 8).getTime());
-  assert.equal(early.at, new Date(2026, 10, 1, 10).getTime());
+  assert.equal(early.at, new Date(2026, 10, 1, 13).getTime());
   assert.equal(early.key, '2026-10');
   const dec = nextRecap(new Date(2026, 11, 5).getTime());
   assert.equal(dec.key, '2026-12');
