@@ -36,7 +36,10 @@ test('reads the Poker Bankroll Tracker export with its title line', () => {
   const r = run(PBT);
   assert.equal(r.source, 'pbt');
   assert.equal(r.sessions.length, 3);
-  assert.equal(r.transfers, 1);
+  assert.equal(r.transfers, 0);
+  assert.equal(r.moves.length, 1);
+  assert.deepEqual([r.moves[0].kind, r.moves[0].amount, r.moves[0].currency], ['deposit', 1060, '€']);
+  assert.deepEqual(r.sessions.map((s) => s.format), ['live', undefined, 'live']);
   const [cash, cash2, mtt] = r.sessions;
   assert.equal(cash.kind, 'cash');
   assert.equal(cash.name, 'NLH 0,5/0,5');
@@ -131,4 +134,28 @@ test('numbers and dates', () => {
   assert.equal(parseDate('2025-02-30', 'dmy'), null);
   assert.equal(new Date(parseDate('17 Oct 2025', 'dmy')!.t).getMonth(), 9);
   assert.deepEqual(parseCsv('a,"b ""c""\nd",e\r\n1,2,3'), [['a', 'b "c"\nd', 'e'], ['1', '2', '3']]);
+});
+
+test('online sessions and withdrawals in a generic file', () => {
+  const csv = 'Date,Type,Site,Result,Note\n2025-05-01,Cash,PokerStars,120,\n2025-05-02,Cash,Casino Estoril,-40,\n2025-05-03,Withdrawal,,-500,levantei\n2025-05-04,Deposit,,300,\n';
+  const r = run(csv);
+  assert.deepEqual(r.sessions.map((s) => s.format), ['online', undefined], 'missing means live');
+  assert.deepEqual(r.moves.map((m) => [m.kind, m.amount, m.note]), [['withdrawal', 500, 'levantei'], ['deposit', 300, '']]);
+});
+
+test('Sweatbook CSV with deposits and withdrawals comes back whole', () => {
+  const s: Session = {
+    id: 'x', kind: 'cash', name: 'NLH 1/2', venue: 'Estoril', currency: '€', startedAt: new Date(2026, 8, 1, 20).getTime(), endedAt: new Date(2026, 8, 1, 23).getTime(),
+    breaks: [], buyIn: 200, entries: 1, addOn: 0, cashOut: 450, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '', format: 'online',
+  };
+  const br = [{ id: 'b', name: 'Principal', currency: '€', createdAt: 0 }];
+  const tx = [
+    { id: 't1', bankrollId: 'b', kind: 'deposit' as const, amount: 1000, at: new Date(2026, 7, 1).getTime(), note: 'início' },
+    { id: 't2', bankrollId: 'b', kind: 'withdrawal' as const, amount: 250, at: new Date(2026, 8, 5).getTime(), note: '' },
+  ];
+  const r = run(sessionsCsv([s], br, tx));
+  assert.equal(r.source, 'sweatbook');
+  assert.equal(r.sessions.length, 1);
+  assert.equal(r.sessions[0].format, 'online');
+  assert.deepEqual(r.moves.map((m) => [m.kind, m.amount]), [['deposit', 1000], ['withdrawal', 250]]);
 });
