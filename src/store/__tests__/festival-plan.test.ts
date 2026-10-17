@@ -280,3 +280,13 @@ test('late reg: the organiser\'s close time sets the reminder until the player p
   // No official time and none picked: no late reminder.
   assert.ok(!planReminders(F, plan, 0).some((x) => x.id.endsWith(':late')));
 });
+
+test('Punta del Este Main: the official 00:30 close fills late reg and its reminder', () => {
+  const f = PUNTA_DEL_ESTE_DEC_2026;
+  const e = f.events.find((x) => x.id === '8-1A')!;
+  const plan = { ...EMPTY_PLAN, picked: ['8-1A'] };
+  const r = planReminders(f, plan, 0).find((x) => x.id.endsWith(':late'))!;
+  assert.equal(r.at, venueTime(f, '2026-12-05T00:10'));
+  assert.equal(r.title, 'Registo do #8 Main Event · Flight 1A fecha às 00:30');
+  assert.equal(lateRegOf(plan, e), 270);
+});
