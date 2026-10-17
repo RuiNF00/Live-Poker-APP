@@ -3,7 +3,7 @@
 // antes, every action with Stars' wording, board, showdown and summary.
 // Opponents are named by position, so table reads never leave the phone.
 
-import { positions, replay, totalPot, type Replay } from './engine';
+import { positions, replay, straddleSeats, totalPot, type Replay } from './engine';
 import type { Hand, Street } from './types';
 
 const STREET_HEAD: Record<Exclude<Street, 'preflop'>, string> = { flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
@@ -71,7 +71,9 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
     const buyIn = g.buyIn ? `${g.currency in CURRENCY ? g.currency : '$'}${g.buyIn}+${g.currency in CURRENCY ? g.currency : '$'}0 ${code}` : 'Freeroll';
     out.push(`PokerStars Hand #${id}: Tournament #${tid}, ${buyIn} Hold'em No Limit - Level ${roman(g.level || 1)} (${fmt(g.sb)}/${fmt(g.bb)}) - ${when}`);
   }
-  const table = cash ? clean(g.name || g.venue || 'Sweatbook') : `${num(hand.sessionId || g.name || hand.id, 10)} 1`;
+  // Stars has no bomb pots; the table name is free text trackers keep, so the note goes there.
+  const base = cash ? clean(g.name || g.venue || 'Sweatbook') : `${num(hand.sessionId || g.name || hand.id, 10)} 1`;
+  const table = g.bombPot ? `${base} - Bomb pot ${fmt(g.bombPot)}` : base;
   out.push(`Table '${table}' ${n <= 2 ? 2 : n <= 6 ? 6 : n <= 9 ? 9 : 10}-max Seat #${hand.button + 1} is the button`);
   hand.players.forEach((p, i) => out.push(`Seat ${i + 1}: ${name(i)} (${fmt(p.stack)} in chips)`));
 
@@ -82,6 +84,8 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const bbI = n === 2 ? (hand.button + 1) % n : (hand.button + 2) % n;
   if (s0.bets[sbI] > 0) out.push(`${name(sbI)}: posts small blind ${fmt(s0.bets[sbI])}${s0.allIn[sbI] ? ' and is all-in' : ''}`);
   if (s0.bets[bbI] > 0) out.push(`${name(bbI)}: posts big blind ${fmt(s0.bets[bbI])}${s0.allIn[bbI] ? ' and is all-in' : ''}`);
+  // Live straddles, the way Hold'em Manager and PokerTracker read them.
+  for (const [i] of straddleSeats(hand)) if (s0.bets[i] > 0) out.push(`${name(i)}: posts straddle ${fmt(s0.bets[i])}${s0.allIn[i] ? ' and is all-in' : ''}`);
 
   out.push('*** HOLE CARDS ***');
   const heroCards = hand.players[hand.hero].cards;
@@ -129,7 +133,7 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const board = hand.board.slice(0, fin.boardCount);
   if (board.length) out.push(`Board [${board.join(' ')}]`);
   for (let i = 0; i < n; i++) {
-    const role = i === hand.button ? ' (button)' : i === sbI ? ' (small blind)' : i === bbI ? ' (big blind)' : '';
+    const role = i === hand.button ? ' (button)' : g.bombPot ? '' : i === sbI ? ' (small blind)' : i === bbI ? ' (big blind)' : '';
     const won = res?.won[i] ?? 0;
     let what: string;
     if (foldedOn[i]) {

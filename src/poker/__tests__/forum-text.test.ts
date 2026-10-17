@@ -95,3 +95,16 @@ test('tournament header and all-in run-out', () => {
   assert.ok(txt.includes('River (41 bb): 3c'), txt);
   assert.ok(txt.includes('BB shows Kc Ks\nHero wins 41 bb'), txt);
 });
+
+test('live extras: straddles, button ante and bomb pots show in the header', () => {
+  const g = mk().game;
+  const str = forumText(mk({ game: { ...g, straddles: 2, straddleFrom: 'utg', ante: 2, anteType: 'btn' } }));
+  assert.equal(str.split('\n')[0], "NL Hold'em · Cash · Casino Lisboa · 1/2 (2 button ante) · UTG straddle 4, HJ re-straddle 8 · 6-handed");
+  assert.ok(str.includes('Preflop (8.5 bb)'), str);
+  const btn = forumText(mk({ game: { ...g, straddles: 1, straddleFrom: 'btn' } }));
+  assert.ok(btn.split('\n')[0].includes('BTN (Hero) straddle 4'), btn);
+  const bomb = forumText(mk({ game: { ...g, bombPot: 10 }, board: ['Qd', '8h', '3h'], actions: [{ p: 1, kind: 'check' }] }));
+  assert.ok(bomb.split('\n')[0].includes('Bomb pot: 5 bb each, starts on the flop'), bomb);
+  assert.ok(!bomb.includes('Preflop'), bomb);
+  assert.ok(bomb.includes('Flop (30 bb): Qd 8h 3h\nSB checks'), bomb);
+});
