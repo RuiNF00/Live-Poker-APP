@@ -4,9 +4,11 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { START_STEPS, startProgress, type StartStep } from '@/billing/onboarding';
+import { ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { FESTIVALS } from '@/poker/festivals';
+import { useFestivalPlan } from '@/store/festival-plan';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -22,12 +24,19 @@ export function StartChecklist() {
   const { hands, sessions, transfers } = useStore();
   const [hidden, setHidden] = useState(true);
   const [now] = useState(() => Date.now());
+  // What they told us on first run: tournament players get a festival step.
+  const [plays, setPlays] = useState<string | null>(null);
+  const fest = useFestivalPlan(FESTIVALS[0]?.id ?? '');
   useEffect(() => {
-    AsyncStorage.getItem(HIDDEN)
-      .then((v) => setHidden(v === '1'))
+    AsyncStorage.multiGet([HIDDEN, ONBOARDING_KEY])
+      .then(([[, v], [, o]]) => {
+        setHidden(v === '1');
+        setPlays((o ? (JSON.parse(o) as { plays?: string }) : {}).plays ?? null);
+      })
       .catch(() => setHidden(false));
   }, []);
-  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length });
+  const START_STEPS = startSteps(plays);
+  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: fest.picked.length });
   const count = START_STEPS.filter((s) => done[s.key]).length;
   // First week means it: players whose first hand is older than two weeks don't need it.
   const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;
@@ -38,6 +47,7 @@ export function StartChecklist() {
     if (k === 'hand') router.push('/hand/new');
     else if (k === 'session') router.push('/session');
     else if (k === 'bankroll') router.push('/bankroll');
+    else if (k === 'festival') router.push('/festival');
     else {
       const last = [...hands].sort((a, b) => b.createdAt - a.createdAt)[0];
       router.push({ pathname: '/hand/[id]', params: { id: last.id } });
