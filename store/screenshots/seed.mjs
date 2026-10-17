@@ -1,4 +1,5 @@
-const DAY = 86400000, now = Date.parse('2026-10-16T23:40:00Z');
+export const now = Date.parse('2026-10-16T23:40:00Z');
+const DAY = 86400000;
 const base = (o) => ({ v: 1, createdAt: o.t, updatedAt: o.t, notes: '', ...o });
 const P = (n, s, c) => (c ? { name: n, stack: s, cards: c } : { name: n, stack: s });
 const g = (name, sb, bb, stage, level, left) => ({ kind: 'mtt', name, sb, bb, ante: bb, anteType: 'bb', currency: '$', stage, level, playersLeft: left });
