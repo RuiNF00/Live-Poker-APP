@@ -2604,6 +2604,11 @@ const es: Record<string, string> = {
   'Swaps e staking': 'Swaps y staking',
   'fez fold': 'foldeó',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} a {to}; el máximo fue {max}.',
+  // Replayer: scrubber and hidden names
+  'Posição na mão': 'Posición en la mano',
+  'Passo {n} de {total}': 'Paso {n} de {total}',
+  'Esconder nomes': 'Ocultar nombres',
+  'Mostrar nomes': 'Mostrar nombres',
 };
 
 export default es;
