@@ -84,21 +84,21 @@ export default function BackedPlayerScreen() {
                     <Row gap={6} style={{ flexWrap: 'wrap' }}>
                       <T v="small">{[shortDate(r.d), `${r.sh}%`, r.mu !== 1 ? markupLabel(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}</T>
                       {!r.e ? <Pill label={snap?.paused ? t('Em pausa') : t('A decorrer')} color={snap?.paused ? C.warn : C.good} icon="ellipse" /> : null}
-                      {r.u ? <Pill label={t('Por pagar {amount}', { amount: money(r.c, cur) })} color={C.warn} /> : null}
+                      {r.u ? <Pill label={t('Por pagar {amount}', { amount: money(r.c, r.cu ?? cur) })} color={C.warn} /> : null}
                     </Row>
                   }
                   right={
                     r.e ? (
-                      <Amount value={net} text={money(net, cur)} style={{ fontSize: 14 }} />
+                      <Amount value={net} text={money(net, r.cu ?? cur)} style={{ fontSize: 14 }} />
                     ) : snap ? (
                       <View style={{ alignItems: 'flex-end' }}>
                         <T v="mono" style={{ fontSize: 14 }}>
                           {chips(snap.stack)}
                         </T>
-                        <T v="tiny">{t('pagaste {amount}', { amount: money(r.c, cur) })}</T>
+                        <T v="tiny">{t('pagaste {amount}', { amount: money(r.c, r.cu ?? cur) })}</T>
                       </View>
                     ) : (
-                      <T v="tiny">{t('pagaste {amount}', { amount: money(r.c, cur) })}</T>
+                      <T v="tiny">{t('pagaste {amount}', { amount: money(r.c, r.cu ?? cur) })}</T>
                     )
                   }
                   chevron={!!r.l}

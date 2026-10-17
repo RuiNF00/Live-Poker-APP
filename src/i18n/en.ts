@@ -3141,6 +3141,7 @@ const en: Record<string, string> = {
   'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': '#7 is missing (PKO Turbo, 27 November at 22:00): the organiser has not published its buy-in yet.',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Main Event: €550, 40,000 starting stack, 45-minute levels. The organiser has not published the flight days and times yet.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'The organiser publishes each tournament\'s starting stack but not its level length, except for a few.',
+  'Sem câmbio para {list}: contas aproximadas até haver rede.': 'No exchange rate for {list}: approximate until you are back online.',
 };
 
 export default en;

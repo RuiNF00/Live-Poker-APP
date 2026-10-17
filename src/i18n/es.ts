@@ -3135,6 +3135,7 @@ const es: Record<string, string> = {
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'El organizador publica el stack inicial de cada torneo, pero no la duración de los niveles, salvo en algunos.',
   'Lisboa': 'Lisboa',
   'Praga': 'Praga',
+  'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
 };
 
 export default es;
