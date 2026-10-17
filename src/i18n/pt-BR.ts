@@ -1457,6 +1457,9 @@ const ptBR: Record<string, string> = {
   'Explica a mão a falar, com a tua cara num canto.': 'Explique a mão falando, com seu rosto em um canto.',
   'Vídeo com a tua cara': 'Vídeo com seu rosto',
   'A explicar a mão, num canto': 'Explicando a mão, em um canto',
+  'Partilhar stack': 'Compartilhar stack',
+  'No saco': 'Fichas guardadas',
+  '{name} · Dia {n} ensacado: {chips}': '{name} · Fim do Dia {n}: {chips}',
 };
 
 export default ptBR;

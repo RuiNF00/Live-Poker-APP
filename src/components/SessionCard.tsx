@@ -62,6 +62,8 @@ export interface SessionCardProps {
   look: CardStyle;
   milestone?: Milestone | null;
   hideMoney?: boolean;
+  /** Stack card mid-festival: no venue, so the post doesn't say where the player is right now. */
+  hideVenue?: boolean;
   /** Sweatbook wordmark and "Feito com Sweatbook". Free cards always carry it. */
   brand?: boolean;
   ref?: React.Ref<React.ComponentRef<typeof View>>;
@@ -71,7 +73,7 @@ export function SessionCard(props: SessionCardProps) {
   return props.look === 'sticker' ? <SessionSticker {...props} /> : <FullCard {...props} />;
 }
 
-function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true, ref }: SessionCardProps) {
+function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, brand = true, ref }: SessionCardProps) {
   const accent = look === 'brasa';
   const fg = accent ? INK : C.text;
   const dim = accent ? 'rgba(26,10,4,0.62)' : C.textDim;
@@ -107,7 +109,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true,
 
       <View style={{ position: 'absolute', top: 118, left: 26, right: 26, gap: 6 }}>
         <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 11, letterSpacing: 1.6, color: dim }}>
-          {(s.venue || (s.kind === 'mtt' ? t('Torneio') : 'Cash')).toUpperCase()}
+          {((!hideVenue && s.venue) || (s.kind === 'mtt' ? t('Torneio') : 'Cash')).toUpperCase()}
         </Text>
         <Text allowFontScaling={false} numberOfLines={2} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: 26, lineHeight: 30, color: fg, letterSpacing: -0.6 }}>
           {title}
@@ -167,7 +169,7 @@ function FullCard({ session: s, stats, look, milestone, hideMoney, brand = true,
 }
 
 /** Transparent sticker for a photo of the table: no background outside the panel. */
-function SessionSticker({ session: s, stats, brand = true, ref }: SessionCardProps) {
+function SessionSticker({ session: s, stats, hideVenue, brand = true, ref }: SessionCardProps) {
   const title = s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash');
   return (
     <View ref={ref} collapsable={false} style={{ width: STICKER_W, height: STICKER_H, backgroundColor: 'transparent' }}>
@@ -201,7 +203,7 @@ function SessionSticker({ session: s, stats, brand = true, ref }: SessionCardPro
           ))}
         </View>
         <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 10, color: C.textDim }}>
-          {[s.venue, shortDate(s.startedAt)].filter(Boolean).join(' · ')}
+          {[hideVenue ? null : s.venue, shortDate(s.startedAt)].filter(Boolean).join(' · ')}
           {brand ? '  ·  ' + linkHost : ''}
         </Text>
       </View>
