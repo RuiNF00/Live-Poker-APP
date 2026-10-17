@@ -112,7 +112,7 @@ a:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
   <div class="eyebrow">App de póquer live · proposta de marca</div>
   <h1>Dez nomes, dez identidades. Escolhe um.</h1>
   <p class="lede">Cada opção tem logótipo, ícone da app, cores, letra e o ecrã de registar mão já vestido com a marca. Por baixo do telemóvel está o que o teu amigo recebe quando lhe partilhas uma mão, porque é aí que a app ganha clientes.</p>
-  <div class="rec"><b>A minha escolha: Railbird.</b> No póquer, o railbird é quem está à grade a ver a mão dos amigos, que é exatamente o que a partilha faz. É fácil de dizer em português e em inglês e dá um ícone simpático. A segunda escolha é <b>Sweat</b>, pela mesma razão: "suar uma mão" com os amigos.</div>
+  <div class="rec"><b>Todos os nomes foram verificados.</b> Como o Railbird já estava a ser usado, substituí os nomes comuns por nomes inventados que nenhuma empresa usa. <b>A minha escolha: Feltbird</b>, que guarda a ideia do Railbird (os amigos a ver a tua mão) num nome só nosso. A segunda é <b>Railhand</b>.</div>
 </header>
 
 <nav class="wrap index" id="index" aria-label="As dez opções"></nav>
@@ -120,83 +120,84 @@ a:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
 <main id="brands"></main>
 
 <footer class="wrap">
-  <p><b>Para escolher</b>, responde no fio com o nome (por exemplo "Railbird") ou com uma mistura ("nome do Sweat com as cores do Ante"). Enquanto não escolhes, a app usa uma marca provisória e é fácil trocar depois.</p>
-  <p>Verificação rápida feita a 17 de outubro de 2026: procurei cada nome na App Store e na web e não encontrei nenhuma app de póquer com o mesmo nome. Foi descartado Straddle (já existe "Straddled: Poker Tracker"), Hijack (Hijack Poker, sala online no Texas), Riverlog e TableMate (apps já publicadas). Antes de lançar convém um registo de marca a sério e confirmar o domínio .app.</p>
+  <p><b>Para escolher</b>, responde no fio com o nome (por exemplo "Feltbird") ou com uma mistura ("nome Feltbird com as cores do Antebook"). Enquanto não escolhes, a app usa uma marca provisória e é fácil trocar depois.</p>
+  <p><b>Como verifiquei</b> (17 de outubro de 2026): pesquisei cada nome entre aspas na web, que inclui as páginas das apps da App Store, à procura de empresas, apps, produtos ou marcas com o mesmo nome. Testei cerca de 40 nomes e só ficaram os 10 sem nenhum resultado. Ficaram de fora, por já existirem: Railbird (app Railbird Pool e software Railbird), Sweat, Muck, Kicker, Ante, Tells, Shove e Stackd (palavras comuns usadas por várias marcas), Straddle (Straddled: Poker Tracker), Hijack (Hijack Poker), Riverlog, TableMate, Railmate, Railnote, Showline, Showbird, Stackbird, Flopbird (parecido com Floppy Bird), Flopnote (parecido com Flipnote da Nintendo), Feltpad (nome de produto de protetores de feltro), Riverkin e Handloop.</p>
+  <p><b>O que falta confirmar</b>: daqui não consigo consultar as bases oficiais de marcas registadas (EUIPO, INPI e USPTO) nem saber se o domínio .app está livre. Antes de registares, faz-se essa pesquisa oficial ao nome escolhido; é gratuita e demora minutos.</p>
 </footer>
 
 <script>
 const B = [
- {id:"railbird", name:"Railbird", tag:"Os teus amigos à grade, em cada mão.",
-  why:"O railbird é quem assiste da grade. A app transforma cada mão partilhada num convite para os amigos verem e comentarem. Tom amigável, verde de mesa escuro com âmbar de luz de sala.",
+ {id:"feltbird", name:"Feltbird", tag:"Os teus amigos à volta da mesa, em cada mão.",
+  why:"O pássaro que pousa no pano: quem assiste à mão e dá a sua opinião. Mantém a ideia do Railbird (os amigos a ver a tua mão) num nome que é só nosso. Tom amigável, verde de mesa escuro com âmbar de luz de sala.",
   disp:'"Bricolage Grotesque",system-ui,sans-serif', body:'"DM Sans",system-ui,sans-serif', dw:800, track:"-0.02em",
   fonts:"Bricolage Grotesque + DM Sans",
   c:{bg:"#0E3B3A",ink:"#F2EFE6",acc:"#F2B33D",onacc:"#1B1A14",acc2:"#E8674A",onacc2:"#fff",scr:"#0B2F2E",sink:"#F2EFE6",card:"#164A48",felt:"#1F6B5A",rail:"#08201F"},
   sw:[["#0E3B3A","Grade"],["#F2B33D","Âmbar"],["#E8674A","Coral"],["#F2EFE6","Giz"],["#1F6B5A","Pano"]],
-  check:"Existe uma app de bilhar chamada Railbird Pool. Não é póquer, mas convém o nome completo ser \"Railbird Poker\" nas lojas.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. O mais parecido que apareceu foram moldes de artesanato \"felt bird\" (pássaros de feltro), sem marca.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="46" width="52" height="4" rx="2" fill="var(--b-ink)"/><path d="M20 33 L7 27 L11 40 Z" fill="var(--b-acc)"/><ellipse cx="30" cy="35" rx="13" ry="9.5" fill="var(--b-acc)"/><circle cx="41" cy="25" r="7" fill="var(--b-acc)"/><path d="M47 23.5 L55 26 L47 28.5 Z" fill="var(--b-acc2)"/><circle cx="42.5" cy="24" r="1.6" fill="var(--b-bg)"/><rect x="26" y="43" width="2" height="4" fill="var(--b-ink)"/><rect x="32" y="43" width="2" height="4" fill="var(--b-ink)"/></svg>`},
- {id:"sweat", name:"Sweat", tag:"Partilha a mão. Deixa os amigos suar contigo.",
-  why:"\"Sweat a hand\" é acompanhar a mão de um amigo como se fosse tua. Marca energética e clara, a única em fundo claro, pensada para a imagem de partilha se destacar em qualquer chat.",
+ {id:"sweatbook", name:"Sweatbook", tag:"Partilha a mão. Deixa os amigos suar contigo.",
+  why:"\"Sweat a hand\" é acompanhar a mão de um amigo como se fosse tua, e o book é onde ficam todas. Marca energética e clara, a única em fundo claro, pensada para a imagem de partilha se destacar em qualquer chat.",
   disp:'"Anton",Impact,sans-serif', body:'"Barlow",system-ui,sans-serif', dw:400, tt:"uppercase", track:"0.01em",
   fonts:"Anton + Barlow",
   c:{bg:"#FFF1E8",ink:"#2B1A14",acc:"#FF5A36",onacc:"#fff",acc2:"#2E5BFF",onacc2:"#fff",scr:"#FFF8F3",sink:"#2B1A14",card:"#FFE3D4",felt:"#2E5BFF",rail:"#1B2C73"},
   sw:[["#FF5A36","Calor"],["#2E5BFF","Azul"],["#2B1A14","Café"],["#FFF1E8","Pele"],["#1B2C73","Noite"]],
-  check:"Sem app de póquer com este nome. \"Sweat\" é palavra comum, por isso nas lojas fica \"Sweat: Live Poker Hands\".",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 C32 4 12 28 12 41 a20 20 0 0 0 40 0 C52 28 32 4 32 4Z" fill="var(--b-acc)"/><path d="M32 26 c-6 6 -10 9 -10 13 a5 5 0 0 0 8.5 3.4 l-2.5 7.6 h8 l-2.5 -7.6 a5 5 0 0 0 8.5 -3.4 c0 -4 -4 -7 -10 -13z" fill="var(--b-bg)"/></svg>`},
- {id:"muck", name:"Muck", tag:"Nenhuma mão vai para o lixo.",
+ {id:"muckly", name:"Muckly", tag:"Nenhuma mão vai para o lixo.",
   why:"O muck é onde vão as cartas que ninguém vê. A ideia é o contrário: guardar e mostrar todas. Tom irreverente e social, ameixa com rosa, para um público mais novo que vive nos grupos de WhatsApp.",
   disp:'"Bowlby One",Impact,sans-serif', body:'"Work Sans",system-ui,sans-serif', dw:400, track:"0",
   fonts:"Bowlby One + Work Sans",
   c:{bg:"#2D1B3D",ink:"#FCE9F1",acc:"#FF7AB6",onacc:"#2D1B3D",acc2:"#FFD166",onacc2:"#2D1B3D",scr:"#24152F",sink:"#FCE9F1",card:"#3D2852",felt:"#5B3A7A",rail:"#160D1E"},
   sw:[["#2D1B3D","Ameixa"],["#FF7AB6","Rosa"],["#FFD166","Ficha"],["#FCE9F1","Leite"],["#5B3A7A","Pano"]],
-  check:"Existe um jogo de PC chamado Muck (sobrevivência). Não é póquer, mas a pesquisa nas lojas fica mais disputada.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Só aparece a palavra inglesa \"mucky\" nos dicionários.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="12" width="26" height="36" rx="4" fill="var(--b-acc2)" transform="rotate(-14 25 30)"/><rect x="25" y="15" width="26" height="36" rx="4" fill="var(--b-acc)" transform="rotate(10 38 33)"/><g transform="rotate(10 38 33)" stroke="var(--b-bg)" stroke-width="2" fill="none"><rect x="29" y="19" width="18" height="28" rx="2"/><path d="M29 26 L47 40 M29 40 L47 26"/></g></svg>`},
- {id:"kicker", name:"Kicker", tag:"Regista a mão antes do próximo deal.",
-  why:"O kicker decide mãos empatadas. Nome curto, desportivo e com movimento, que puxa pela promessa principal: registar uma mão em segundos. Amarelo forte que se reconhece no ecrã inicial.",
+ {id:"kickerbook", name:"Kickerbook", tag:"Regista a mão antes do próximo deal.",
+  why:"O kicker decide mãos empatadas. Nome desportivo e com movimento, que puxa pela promessa principal: registar uma mão em segundos. Amarelo forte que se reconhece no ecrã inicial.",
   disp:'"Chivo",system-ui,sans-serif', body:'"Chivo",system-ui,sans-serif', dw:900, ds:"italic", track:"-0.03em",
   fonts:"Chivo Black Italic + Chivo",
   c:{bg:"#FFD23F",ink:"#141414",acc:"#141414",onacc:"#FFD23F",acc2:"#E63946",onacc2:"#fff",scr:"#FFF7D6",sink:"#141414",card:"#FFE88A",felt:"#1E7A4D",rail:"#141414"},
   sw:[["#FFD23F","Amarelo"],["#141414","Preto"],["#E63946","Vermelho"],["#FFF7D6","Papel"],["#1E7A4D","Pano"]],
-  check:"Sem app de póquer com este nome. Há uma \"Roulette Kicker\" de casino, sem relação.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Aparecem só livros com \"Kicker\" no título.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="21" width="11" height="3.5" rx="1.5" fill="var(--b-acc2)"/><rect x="6" y="29" width="8" height="3.5" rx="1.5" fill="var(--b-acc2)"/><rect x="3" y="37" width="11" height="3.5" rx="1.5" fill="var(--b-acc2)"/><g transform="skewX(-10) translate(6 0)"><rect x="18" y="12" width="9" height="40" fill="var(--b-ink)"/><path d="M27 31 L44 12 H55 L35 34 Z" fill="var(--b-ink)"/><path d="M31 30 L55 52 H44 L27 37 Z" fill="var(--b-ink)"/></g></svg>`},
- {id:"feltpad", name:"Feltpad", tag:"O bloco de notas da tua mesa.",
-  why:"Pano verde e caderno de notas numa palavra. É a opção clássica de casino, com dourado e serifa elegante, para quem quer que a app pareça séria e premium desde o primeiro dia.",
+ {id:"handfelt", name:"Handfelt", tag:"Cada mão, sentida no pano.",
+  why:"Hand e felt: a mão e o pano verde, e em inglês soa a \"sentida\". É a opção clássica de casino, com dourado e serifa elegante, para quem quer que a app pareça séria e premium desde o primeiro dia.",
   disp:'"DM Serif Display",Georgia,serif', body:'"Manrope",system-ui,sans-serif', dw:400, track:"0",
   fonts:"DM Serif Display + Manrope",
   c:{bg:"#0B4D2C",ink:"#F6F1E1",acc:"#C9A24A",onacc:"#1A1408",acc2:"#8C1C13",onacc2:"#F6F1E1",scr:"#083D23",sink:"#F6F1E1",card:"#0F5E37",felt:"#117A43",rail:"#3A2412"},
   sw:[["#0B4D2C","Pano"],["#C9A24A","Ouro"],["#8C1C13","Bordô"],["#F6F1E1","Marfim"],["#3A2412","Madeira"]],
-  check:"Sem resultados para Feltpad em lojas ou web. Nome inventado, mais fácil de registar.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Só aparecem artigos de feltro feitos à mão (\"hand felted\"), sem marca.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="32" rx="27" ry="19" fill="none" stroke="var(--b-acc)" stroke-width="4"/><ellipse cx="32" cy="32" rx="20" ry="12.5" fill="var(--b-felt)"/><path d="M21 27 H43 M19 32 H45 M21 37 H37" stroke="var(--b-ink)" stroke-width="2" stroke-linecap="round"/><circle cx="45" cy="37" r="3" fill="var(--b-acc)"/></svg>`},
- {id:"stackd", name:"Stackd", tag:"Cada mão, cada sessão, cada euro.",
-  why:"Fala do stack e do que se acumula: mãos, horas, lucro. Encaixa melhor na segunda parte da app (bankroll e sessões). Visual de app financeira, com números em letra monoespaçada.",
+ {id:"nutsheet", name:"Nutsheet", tag:"Cada mão, cada sessão, cada euro.",
+  why:"As nuts (a melhor mão possível) numa folha de registo, e um trocadilho com \"nutshell\" (em resumo). Encaixa bem na segunda parte da app: sessões, bankroll e números. Visual de app financeira.",
   disp:'"Sora",system-ui,sans-serif', body:'"Sora",system-ui,sans-serif', dw:700, track:"-0.03em",
   fonts:"Sora + JetBrains Mono para números",
   c:{bg:"#0F1720",ink:"#E6EEF5",acc:"#3DDC97",onacc:"#06140D",acc2:"#5B8CFF",onacc2:"#fff",scr:"#0B1219",sink:"#E6EEF5",card:"#18232F",felt:"#1A3A4A",rail:"#060A0E"},
   sw:[["#0F1720","Ardósia"],["#3DDC97","Lucro"],["#5B8CFF","Azul"],["#E6EEF5","Névoa"],["#1A3A4A","Pano"]],
-  check:"Existem StackTracker e StackTrack, apps de stack. O nome é parecido, por isso é a opção com mais risco de confusão.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Só aparecem peças de parafusaria (\"nut\" + \"sheet\") em catálogos técnicos.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="30" cy="46" rx="21" ry="7" fill="var(--b-acc2)"/><ellipse cx="34" cy="35" rx="21" ry="7" fill="var(--b-acc)"/><ellipse cx="30" cy="24" rx="21" ry="7" fill="var(--b-ink)"/><ellipse cx="30" cy="24" rx="12" ry="3.6" fill="none" stroke="var(--b-bg)" stroke-width="2" stroke-dasharray="4 3"/></svg>`},
- {id:"shove", name:"Shove", tag:"All-in na partilha.",
-  why:"Empurrar as fichas todas, e empurrar a mão para o grupo. Nome de ação, curto, com logótipo em setas que sugere rapidez. Azul elétrico para fugir do verde de póquer que toda a gente usa.",
+ {id:"railhand", name:"Railhand", tag:"A tua mão, vista da grade.",
+  why:"Fica com a palavra rail do Railbird: a mão que mostras a quem está à grade. Nome de ação e partilha, azul elétrico para fugir do verde de póquer que toda a gente usa.",
   disp:'"Syne",system-ui,sans-serif', body:'"Outfit",system-ui,sans-serif', dw:800, track:"-0.02em",
   fonts:"Syne ExtraBold + Outfit",
   c:{bg:"#2443FF",ink:"#FFFFFF",acc:"#FFE066",onacc:"#14206B",acc2:"#FF6FA5",onacc2:"#14206B",scr:"#1A33D6",sink:"#FFFFFF",card:"#3654FF",felt:"#0F2499",rail:"#0A1560"},
   sw:[["#2443FF","Elétrico"],["#FFE066","Limão"],["#FF6FA5","Chiclete"],["#FFFFFF","Branco"],["#0F2499","Pano"]],
-  check:"Existe a SnapShove (calculadora de push/fold). O nome não é igual, mas partilha a palavra.",
-  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 14 H20 L38 32 L20 50 H6 L24 32 Z" fill="var(--b-acc)"/><path d="M28 14 H40 L58 32 L40 50 H28 L46 32 Z" fill="var(--b-acc2)"/></svg>`},
- {id:"ante", name:"Ante", tag:"Antes de tudo, a mão.",
-  why:"O ante é a primeira coisa que entra no pote. Marca minimalista e elegante, quase de relojoaria, para jogadores de torneio que gostam de coisas bem feitas. Fundo claro e bronze discreto.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Aparecem só apps de comboios com \"Rail\" no nome, nenhuma Railhand.",
+  logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="10" width="22" height="32" rx="3.5" fill="var(--b-acc2)" transform="rotate(-12 27 26)"/><rect x="26" y="10" width="22" height="32" rx="3.5" fill="var(--b-acc)" transform="rotate(10 37 26)"/><rect x="6" y="46" width="52" height="5" rx="2.5" fill="var(--b-ink)"/><rect x="12" y="51" width="4" height="8" fill="var(--b-ink)"/><rect x="48" y="51" width="4" height="8" fill="var(--b-ink)"/></svg>`},
+ {id:"antebook", name:"Antebook", tag:"Antes de tudo, a mão.",
+  why:"O ante é a primeira coisa que entra no pote, e o book é o teu caderno de mãos. Marca minimalista e elegante, quase de relojoaria, para jogadores de torneio que gostam de coisas bem feitas.",
   disp:'"Italiana",Georgia,serif', body:'"Karla",system-ui,sans-serif', dw:400, tt:"uppercase", track:"0.18em",
   fonts:"Italiana + Karla",
   c:{bg:"#EEF0F2",ink:"#1C2230",acc:"#8A6D3B",onacc:"#fff",acc2:"#1C2230",onacc2:"#EEF0F2",scr:"#F7F8F9",sink:"#1C2230",card:"#E3E6EA",felt:"#3B5B8A",rail:"#1C2230"},
   sw:[["#EEF0F2","Pérola"],["#1C2230","Tinta"],["#8A6D3B","Bronze"],["#3B5B8A","Aço"],["#FFFFFF","Branco"]],
-  check:"Sem app de póquer com este nome. Palavra muito curta, por isso o domínio pode ser caro.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--b-acc)" stroke-width="2.2"/><circle cx="32" cy="32" r="20.5" fill="none" stroke="var(--b-acc)" stroke-width="1" stroke-dasharray="3 3"/><path d="M22 45 L32 18 L42 45 M26 36 H38" fill="none" stroke="var(--b-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
- {id:"tells", name:"Tells", tag:"Conta a mão. Eles leem-te.",
-  why:"Um tell é o que denuncia o jogador, e \"tell\" é também contar. A mão partilhada é uma história contada aos amigos. Tom editorial, azul-noite com dourado, olho com um ouro (♦) na pupila.",
+ {id:"feltwise", name:"Feltwise", tag:"Lê a mesa. Partilha a leitura.",
+  why:"Quem é \"wise\" no pano lê os adversários. A mão partilhada é a tua leitura posta à prova pelos amigos. Tom editorial, azul-noite com dourado, olho com um ouro (♦) na pupila.",
   disp:'"Instrument Serif",Georgia,serif', body:'"IBM Plex Sans",system-ui,sans-serif', dw:400, ds:"italic", track:"-0.01em",
   fonts:"Instrument Serif Italic + IBM Plex Sans",
   c:{bg:"#1F2A44",ink:"#F1EEE6",acc:"#E9C46A",onacc:"#1F2A44",acc2:"#7FB7BE",onacc2:"#10202A",scr:"#18213A",sink:"#F1EEE6",card:"#2A3757",felt:"#2E4A6B",rail:"#0E1424"},
   sw:[["#1F2A44","Noite"],["#E9C46A","Dourado"],["#7FB7BE","Água"],["#F1EEE6","Papel"],["#2E4A6B","Pano"]],
-  check:"Sem app de póquer com este nome nas pesquisas feitas.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Apareceram só sites de artigos de feltro.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 32 Q32 6 60 32 Q32 58 4 32Z" fill="var(--b-ink)"/><circle cx="32" cy="32" r="11" fill="var(--b-acc)"/><path d="M32 24 L39 32 L32 40 L25 32 Z" fill="var(--b-bg)"/></svg>`},
  {id:"chipnote", name:"Chipnote", tag:"Uma ficha, uma nota, uma mão.",
   why:"A opção mais simpática e fácil de perceber à primeira: fichas e notas. Formas redondas, cores alegres, pensada para quem joga em clubes e home games e quer algo leve.",
@@ -204,7 +205,7 @@ const B = [
   fonts:"Fredoka + Nunito",
   c:{bg:"#E3F1FF",ink:"#10324F",acc:"#FF6B6B",onacc:"#fff",acc2:"#2BB673",onacc2:"#fff",scr:"#F5FAFF",sink:"#10324F",card:"#D6E9FB",felt:"#2BB673",rail:"#10324F"},
   sw:[["#E3F1FF","Céu"],["#FF6B6B","Coral"],["#2BB673","Menta"],["#10324F","Marinho"],["#FFFFFF","Branco"]],
-  check:"Sem resultados para Chipnote em lojas ou web. Nome inventado, mais fácil de registar.",
+  check:"Pesquisa exata na web (que inclui páginas da App Store): nenhuma empresa, app ou produto usa este nome. Aparecem só notícias sobre chips eletrónicos em notas de banco.",
   logo:`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="var(--b-acc)"/><circle cx="32" cy="32" r="21" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="8 8.5"/><circle cx="32" cy="32" r="14" fill="#fff"/><path d="M25 29 H39 M25 34 H35" stroke="var(--b-ink)" stroke-width="2.6" stroke-linecap="round"/></svg>`}
 ];
 
