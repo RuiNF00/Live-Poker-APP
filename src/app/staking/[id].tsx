@@ -9,7 +9,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
-import { balanceLabel, useStaking } from '@/components/staking/use-staking';
+import { balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { buildStatement, statementUrl } from '@/lib/backing-link';
@@ -28,7 +28,7 @@ import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerL
 import { currentTrip } from '@/store/trip-math';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
-import { withPro } from '@/components/ProGate';
+import { ReadOnlyNote, useProReadOnly, withPro } from '@/components/ProGate';
 
 function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')) {
   if (Platform.OS === 'web') ok();
@@ -45,6 +45,8 @@ function BackerScreen() {
   const [paying, setPaying] = useState(false);
   const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
   const [year, setYear] = useState<number | null>(null);
+  // After Pro ended: everything shows, and each change goes through "Ver com Pro".
+  const { readOnly, gate } = useProReadOnly('staking');
   const backer = backers.find((b) => b.id === id);
   const l = backer ? ledgers.get(backer.id) : undefined;
   // Totals are in the deal's currency; each session row in its own.
@@ -154,10 +156,11 @@ function BackerScreen() {
         options={{
           title: backer.name,
           headerBackTitle: 'Staking',
-          headerRight: () => <IconButton name="create-outline" size={36} label={t('Editar')} onPress={() => setEditing(true)} />,
+          headerRight: () => <IconButton name="create-outline" size={36} label={t('Editar')} onPress={gate(() => setEditing(true))} />,
         }}
       />
       <Screen contentStyle={{ paddingTop: S.lg }}>
+        {readOnly ? <ReadOnlyNote feature="staking" body={t('As contas com {name} ficam aqui. Para registar pagamentos ou mudar pacotes, é com o Pro.', { name: backer.name })} /> : null}
         <Card tone="raised" style={{ gap: S.md, alignItems: 'center', paddingVertical: S.xl }}>
           <Avatar name={backer.name} size={56} />
           <T v="monoXL" color={bal.color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 34, lineHeight: 40 }}>
@@ -177,16 +180,16 @@ function BackerScreen() {
           {square ? (
             <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
               <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
-              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={() => setPaying(true)} />
+              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={gate(() => setPaying(true))} />
             </Row>
           ) : (
             // Stacked: "Marcar como pago" (and "Marcar como pagado" in es) doesn't fit half the width of an iPhone.
             <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
-              <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={markPaid} />
+              <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={gate(markPaid)} />
               <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
             </View>
           )}
-          {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={() => setPaying(true)} />}
+          {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={gate(() => setPaying(true))} />}
         </Card>
 
         <Section title={t('Como chegámos aqui')}>
@@ -199,9 +202,9 @@ function BackerScreen() {
           <Stat label="Makeup" value={money(l.makeup, cur)} tone={l.makeup ? 'warn' : undefined} />
         </StatGrid>
 
-        <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages)))}>
+        <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={gate(() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages))))}>
           {mine.length === 0 ? (
-            <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages)))}>
+            <Card tone="inset" onPress={gate(() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages))))}>
               <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao registar ação vendida numa sessão, escolhes o pacote.')}</T>
             </Card>
           ) : (
@@ -238,7 +241,7 @@ function BackerScreen() {
                         <Amount value={st.net} text={money(st.net, st.currency || cur)} style={{ fontSize: 14 }} />
                       ) : undefined
                     }
-                    onPress={() => setPkg(p)}
+                    onPress={gate(() => setPkg(p))}
                   />
                 );
               })}
@@ -329,7 +332,7 @@ function BackerScreen() {
                     subtitle={[shortDate(h.p.at), h.p.note].filter(Boolean).join(' · ')}
                     value={money(Math.abs(h.p.amount), cur)}
                     chevron={false}
-                    onPress={() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), cur), () => deletePayment(h.p.id), t('Apagar'))}
+                    onPress={gate(() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), cur), () => deletePayment(h.p.id), t('Apagar')))}
                   />
                 ) : (
                   <ListItem
@@ -399,7 +402,7 @@ function BackerScreen() {
         pkgName={pkgName(piece?.stake.packageId)}
         currency={piece?.session.currency || cur}
         onClose={() => setPiece(null)}
-        onTogglePaid={togglePaid}
+        onTogglePaid={gate(togglePaid)}
       />
       <PaymentSheet
         backer={paying ? backer : null}
@@ -417,4 +420,4 @@ function BackerScreen() {
   );
 }
 
-export default withPro('staking', 'Staking', BackerScreen);
+export default withPro('staking', 'Staking', BackerScreen, useHasBackers);

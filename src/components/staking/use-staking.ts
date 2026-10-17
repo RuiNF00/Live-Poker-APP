@@ -65,3 +65,6 @@ export function balanceLabel(balance: number, currency: string): { text: string;
     ? { text: t('Deves {amount}', { amount: money(balance, currency) }), color: C.warn }
     : { text: t('Deve-te {amount}', { amount: money(-balance, currency) }), color: C.good };
 }
+
+/** Backers made while Pro stay visible after it ends (withPro's `keep`). */
+export const useHasBackers = () => useStore().backers.length > 0;

@@ -13,7 +13,7 @@ import { ONBOARDING_KEY } from './onboarding';
 import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
-import { deferState, markSessionOffer } from './trial-moments';
+import { deferState, markProEnded, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
@@ -72,7 +72,11 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   const setPro = useCallback((v: boolean) => {
     setIsPro(v);
-    AsyncStorage.setItem(KEYS.pro, v ? '1' : '0').catch(() => {});
+    // The store said Pro is gone where the last answer had it: remember when, for the one notice (TrialFollowUp).
+    AsyncStorage.getItem(KEYS.pro)
+      .then((prev) => (prev === '1' && !v ? markProEnded() : undefined))
+      .catch(() => {})
+      .finally(() => AsyncStorage.setItem(KEYS.pro, v ? '1' : '0').catch(() => {}));
   }, []);
 
   useEffect(() => {

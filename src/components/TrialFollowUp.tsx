@@ -1,6 +1,6 @@
 // No UI of its own: opens the trial paywall once, when the first live session
 // has been closed (never at the table), and the one-time "trial off" or "trial
-// over" screen. See src/billing/trial-moments.ts.
+// over" screen, or one line when Pro ends another way. See src/billing/trial-moments.ts.
 
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -8,7 +8,9 @@ import { AppState } from 'react-native';
 
 import { currentTrial } from '@/billing/nudges-sync';
 import { usePro } from '@/billing/pro';
-import { deferState, markNotice, markSessionOffer, seenNotices, sessionStartOffer, trialNotice, withLastTrial } from '@/billing/trial-moments';
+import { deferState, inQuietHours, markNotice, markProEndSeen, markSessionOffer, proEnded, proEndNotice, proEndSeen, seenNotices, sessionStartOffer, trialNotice, withLastTrial } from '@/billing/trial-moments';
+import { t } from '@/i18n';
+import { notice } from '@/lib/notice';
 import { claimState } from '@/lib/referrals';
 import { useStore } from '@/store/store';
 
@@ -50,15 +52,23 @@ export function TrialFollowUp() {
     return () => sub.remove();
   }, []);
   useEffect(() => {
-    // Not at the table: the screen waits for the next open after the session.
-    if (!ready || sessionId) return;
+    // Not at the table, and not in the quiet hours: the screen waits for the next open after them.
+    if (!ready || sessionId || inQuietHours(new Date().getHours())) return;
     let live = true;
     const timer = setTimeout(async () => {
+      const now = Date.now();
       const trial = await withLastTrial(await currentTrial());
-      const kind = trialNotice(trial, await seenNotices(), { isPro, now: Date.now() });
-      if (!live || !trial || !kind) return;
-      await markNotice(kind, trial.start);
-      if (live) router.push({ pathname: '/trial', params: { kind, end: String(trial.end) } });
+      const kind = trialNotice(trial, await seenNotices(), { isPro, now });
+      if (live && trial && kind) {
+        await markNotice(kind, trial.start);
+        if (live) router.push({ pathname: '/trial', params: { kind, end: String(trial.end) } });
+        return;
+      }
+      // Pro that ended another way (invite days, a cancelled subscription): one calm line, nothing to buy.
+      const [ended, seen] = await Promise.all([proEnded(), proEndSeen()]);
+      if (!live || !ended || !proEndNotice(ended, seen, trial?.end ?? null, { isPro, now })) return;
+      await markProEndSeen(ended);
+      notice(t('O teu Pro acabou'), t('Nada do que registaste se perde. O que fizeste com o Pro continua aqui, só para ver, e o resto da app fica igual.'));
     }, 2500);
     return () => {
       live = false;
