@@ -161,16 +161,18 @@ class LocalGroups implements GroupStore {
   async create(terms: GroupTerms, names: string[], own?: { token: string; invite: string }) {
     const token = own?.token ?? randomBytes(32).toString('hex');
     const invite = own?.invite ?? randomBytes(32).toString('hex');
-    const again = Object.values(await this.read()).find((g) => g.hashes[0] === sha256(token) && g.inviteHash === sha256(invite));
-    if (again) return { id: again.id, token, invite };
-    const id = shortId();
-    const now = new Date().toISOString();
-    await this.mutate((d) => {
+    // Looked up inside the write, so two sends of the same draft at once make one group.
+    const id = await this.mutate((d) => {
+      const again = Object.values(d).find((g) => g.hashes[0] === sha256(token) && g.inviteHash === sha256(invite));
+      if (again) return again.id;
+      const id = shortId();
+      const now = new Date().toISOString();
       d[id] = {
         id, terms, entries: [], createdAt: now, updatedAt: now, inviteHash: sha256(invite),
         seats: names.map((name, seat) => ({ seat, name, confirmedAt: seat === 0 ? now : null })),
         hashes: names.map((_, i) => (i === 0 ? sha256(token) : null)),
       };
+      return id;
     });
     return { id, token, invite };
   }

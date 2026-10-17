@@ -37,6 +37,15 @@ describe('a create sent again (automatic retry after a lost answer)', () => {
     expect((await g.create(gt, ['Rui', 'Ana', 'João'], { token: k('c'), invite: k('e') })).id).not.toBe(one.id);
   });
 
+  it('two sends of the same draft at the same moment make one swap and one group', async () => {
+    const [one, two] = await Promise.all([swapStore().create(terms, k('7')), swapStore().create(terms, k('7'))]);
+    expect(two.id).toBe(one.id);
+    const gt = { v: 1, scope: 'event', title: 'Main', venue: '', currency: '$', pct: 2, note: '', createdAt: 1 } as never;
+    const keys = { token: k('8'), invite: k('9') };
+    const [g1, g2] = await Promise.all([groupStore().create(gt, ['Rui', 'Ana', 'João'], keys), groupStore().create(gt, ['Rui', 'Ana', 'João'], keys)]);
+    expect(g2.id).toBe(g1.id);
+  });
+
   it('only takes 64 hex characters from the app', () => {
     expect(ownToken(k('a'))).toBe(k('a'));
     expect(ownToken('abc')).toBeUndefined();

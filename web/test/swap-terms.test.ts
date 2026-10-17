@@ -104,3 +104,20 @@ describe('received (the creditor marks what the other side paid)', () => {
     expect(done.net).toBe(0);
   });
 });
+
+describe('rounding (same as the app)', () => {
+  it('rounds each prize share to the cent, so a settled swap is 0,00 on both', () => {
+    const terms = { a: { name: 'Eva', pct: 7.5 }, b: { name: 'Ana', pct: 7.5 } };
+    // Two prizes of 1234,50 at 7,5%: 92,59 + 92,59 = 185,18 (not 185,175 → 185,17).
+    const b = swapBalance(terms, [
+      { side: 'a', kind: 'result', amount: 1234.5 },
+      { side: 'a', kind: 'result', amount: 1234.5 },
+    ]);
+    expect(b.aOwes).toBe(185.18);
+    expect(swapBalance(terms, [
+      { side: 'a', kind: 'result', amount: 1234.5 },
+      { side: 'a', kind: 'result', amount: 1234.5 },
+      { side: 'a', kind: 'payment', amount: 185.18 },
+    ]).net).toBe(0);
+  });
+});

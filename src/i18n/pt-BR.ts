@@ -1596,7 +1596,7 @@ const ptBR: Record<string, string> = {
   'Convite ativado. Guarda uma mão e recebem os dois 50% no primeiro mês do Pro.': 'Convite ativado. Salve uma mão e vocês dois recebem 50% no primeiro mês do Pro.',
   // Swaps: settling up with one player, received payments, payout slips.
   'deves {amount}': 'você deve {amount}',
-  'Cada swap fica a 0,00: onde deves fica o teu pagamento, onde te devem fica que recebeste. {name} vê o mesmo em cada swap.': 'Cada swap fica em 0,00: onde você deve fica o seu pagamento, onde te devem fica que você recebeu. {name} vê o mesmo em cada swap.',
+  'Cada swap fica a 0,00: onde deves fica o teu pagamento, onde te devem fica que recebeste. {name} vê o mesmo em cada swap.': 'Cada swap fica em 0,00: onde você deve fica o seu pagamento, onde devem a você fica que você recebeu. {name} vê o mesmo em cada swap.',
   'Ler o recibo do prémio': 'Ler o recibo do prêmio',
   'Escreve o prémio à mão.': 'Digite o prêmio à mão.',
   'Este swap é em {b}. Escreve o prémio à mão.': 'Este swap é em {b}. Digite o prêmio à mão.',
@@ -1604,6 +1604,15 @@ const ptBR: Record<string, string> = {
   '{name} recebeu o teu pagamento': '{name} recebeu o seu pagamento',
   '{name} deve-te {amount} neste momento. Regista o que recebeste e o swap fica acertado dos dois lados.': '{name} te deve {amount} agora. Registre o que você recebeu e o swap fica acertado para os dois.',
   'Regista o que {name} te pagou.': 'Registre o que {name} te pagou.',
+  'deve-te {amount}': 'te deve {amount}',
+  '{name} paga-te': '{name} te paga',
+  'Pagas a {name}': 'Você paga a {name}',
+  'Desliga um swap para o deixar de fora.': 'Desligue um swap para deixá-lo de fora.',
+  'Já não há swaps por acertar com este jogador.': 'Não há mais swaps para acertar com este jogador.',
+  'Recebeste de {name}': 'Você recebeu de {name}',
+  'Avisamos-te quando o coach comentar': 'Avisamos você quando o coach comentar',
+  'As mãos por completar não entram no link. Acaba-as primeiro.': 'As mãos incompletas não entram no link. Termine-as primeiro.',
+  'Pagas uma vez. Depois cancelas a subscrição na {store}.': 'Você paga uma vez. Depois cancela a assinatura na {store}.',
 };
 
 export default ptBR;
