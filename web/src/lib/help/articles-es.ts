@@ -18,6 +18,15 @@ export const ES: Record<string, ArticleText> = {
       'Abajo tienes las pestañas Manos, Sesión, Bankroll y Jugadores. Los Ajustes están en el engranaje, arriba en la pestaña Manos.',
     ],
   },
+  'late-reg-reminder': {
+    slug: 'recordatorio-late-reg',
+    title: 'Recordatorio del late reg',
+    summary: 'Marca los torneos del festival y te avisamos antes del cierre.',
+    body: [
+      'Sesión → Festivales → elige el festival y toca los eventos que vas a jugar. Te avisamos 30 min antes de cada uno y antes de que cierre el late reg.',
+      'Si el organizador no publicó el cierre, toca Hora del late reg en el evento. Desactívalo en Ajustes → Notificaciones → Torneos planeados.',
+    ],
+  },
   'log-a-hand': {
     slug: 'registrar-una-mano',
     title: 'Registrar una mano rápido',
@@ -89,6 +98,15 @@ export const ES: Record<string, ArticleText> = {
       },
       'Compartir por link es ilimitado, también en el plan gratis. Sin conexión, el link queda listo cuando vuelva la señal.',
       { note: 'Para desactivar un link: en la página de la mano, en Comentarios, toca Dejar de compartir. El link deja de funcionar y se borran los comentarios; la mano se queda en tu cuaderno.' },
+    ],
+  },
+  comments: {
+    slug: 'comentarios',
+    title: 'Comentarios en manos compartidas',
+    summary: 'Quien abre el link comenta; tú decides qué se queda.',
+    body: [
+      'Los comentarios aparecen en la página de la mano, en Comentarios. En cada uno, Eliminar quita ese comentario y Bloquear impide que esa persona vuelva a comentar en esta mano (no se le avisa).',
+      'Recibes una notificación por mano hasta que la abres, solo con la street. Entre las 23 h y las 12 h espera y llega a las 12 h. Actívala o desactívala en Ajustes → Notificaciones → Comentarios en tus manos.',
     ],
   },
   'what-a-link-shows': {
@@ -189,6 +207,8 @@ export const ES: Record<string, ArticleText> = {
         steps: ['En el teléfono nuevo, instala Sweatbook.', 'Ve a Ajustes → Copia de seguridad → Recuperar con código.', 'Pega el código y toca Recuperar.'],
       },
       'También puedes guardar un archivo: Exportar todo crea un .json con todo, siempre gratis. Importar archivo junta ese archivo con lo que ya tienes, sin borrar nada.',
+      'La copia lleva manos, sesiones, notas de jugadores, bankroll, staking y ajustes. Los recibos se quedan solo en el teléfono. Si ves «La copia es demasiado grande para la nube», usa Exportar todo.',
+      'Dos teléfonos con el mismo código comparten una sola copia, y el último en enviar reemplaza la anterior. En el segundo, toca primero Recuperar con código: junta todo y se queda la versión más reciente de cada cosa.',
       { note: 'Sin el código nadie puede leer la copia, ni nosotros. Si lo pierdes, no hay forma de recuperarla.' },
     ],
   },

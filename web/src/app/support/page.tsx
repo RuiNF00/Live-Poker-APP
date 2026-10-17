@@ -25,7 +25,7 @@ const SUGGESTED: Record<Topic, string[]> = {
 };
 
 /** The questions both stores expect a support page to answer, from the help articles. */
-const FAQ = ['import', 'backup', 'share-a-hand', 'cancel', 'restore-purchases', 'erase-all'];
+const FAQ = ['late-reg-reminder', 'import', 'export', 'backup', 'share-a-hand', 'comments', 'cancel', 'restore-purchases', 'erase-all'];
 
 async function localeFor(search: Search): Promise<HelpLocale> {
   const fromApp = helpLocale(one(search.lang));
