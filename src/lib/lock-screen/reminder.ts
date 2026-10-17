@@ -9,9 +9,12 @@ import { t } from '@/i18n';
 import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
-import { levelUpMessage, nextLevelAt } from './live-state';
+import { breakEndMessage, breakOf, levelUpMessage, nextLevelAt } from './live-state';
 
 const ID = 'sweatbook-level-up';
+const BREAK_ID = 'sweatbook-break-end';
+/** How long before the end of a break the player is called back to the table. */
+const BREAK_WARNING = 2 * 60_000;
 const CHANNEL = 'level-up';
 /** Opened when the reminder is tapped: the session screen, where the level goes up. */
 export const LEVEL_UP_URL = 'sweatbook://session';
@@ -77,6 +80,8 @@ export async function syncLevelReminder(s: Session | null, now = Date.now()): Pr
   try {
     await setup(n);
     await n.cancelScheduledNotificationAsync(ID);
+    // Paused for the break: keep the call back to the table that was set before it.
+    if (!s || !isPaused(s)) await n.cancelScheduledNotificationAsync(BREAK_ID);
     if (!s || isPaused(s)) return;
     const at = nextLevelAt(s, now);
     if (!at || at <= now + 5_000) return;
@@ -87,6 +92,16 @@ export async function syncLevelReminder(s: Session | null, now = Date.now()): Pr
       content: { title, body, data: { url: LEVEL_UP_URL }, sound: true },
       trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
     });
+    // The structure's next break: a call back a couple of minutes before play starts again.
+    const b = breakOf(s, now);
+    const back = b ? b.at + b.minutes * 60_000 - BREAK_WARNING : 0;
+    if (b && back > now + 5_000) {
+      await n.scheduleNotificationAsync({
+        identifier: BREAK_ID,
+        content: { ...breakEndMessage(s, b), data: { url: LEVEL_UP_URL }, sound: true },
+        trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: back, channelId: CHANNEL },
+      });
+    }
   } catch (e) {
     console.warn('[lock-screen] reminder', e);
   }
