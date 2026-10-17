@@ -98,7 +98,7 @@ export function structureText(raw: string[]): string {
     else if (x.kind === 'blinds') {
       const after: number[] = [];
       let j = i + 1;
-      while (j < toks.length && toks[j].kind === 'num') after.push((toks[j] as { n: number }).n), j++;
+      for (let t = toks[j]; t?.kind === 'num'; t = toks[++j]) after.push(t.n);
       // The cell before the next blinds is that level's number (1, 2, 3…): not ours.
       const next = toks[j];
       const level = out.filter((l) => !BREAK.test(l)).length + 2;
