@@ -8,6 +8,7 @@ import { normalizeCode } from '@/lib/refcode';
 import { loadSwap as loadSwapById, publicSwap } from '@/lib/swaps';
 import { SwapView } from '@/components/swap/SwapView';
 import { swapCopy } from '@/components/swap/copy';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -42,5 +43,10 @@ export default async function SwapPage({ params, searchParams }: Params & Search
   if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
-  return <SwapView locale={locale} initial={publicSwap(rec, null)} invite={invite} />;
+  return (
+    <>
+      <SwapView locale={locale} initial={publicSwap(rec, null)} invite={invite} />
+      <PageFooter locale={locale} page={`swap/${id}`} />
+    </>
+  );
 }

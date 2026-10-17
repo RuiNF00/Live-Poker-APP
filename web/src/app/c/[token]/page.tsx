@@ -8,6 +8,7 @@ import { coachStore, TOKEN_RE } from '@/lib/coach';
 import { resolveHand } from '@/lib/hand';
 import { pickLocale } from '@/lib/i18n';
 import '@/components/coach/coach.css';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -41,5 +42,10 @@ export default async function CoachLink({ params }: Params) {
     const title = (h.payload as { title?: unknown }).title;
     hands.push({ id: h.id, hand: r.hand, title: typeof title === 'string' && title.trim() ? title.trim() : handTitle(r.hand) });
   }
-  return <CoachView token={token} title={link.title} player={link.player} expiresAt={link.expiresAt} hands={hands} comments={link.comments} locale={locale} />;
+  return (
+    <>
+      <CoachView token={token} title={link.title} player={link.player} expiresAt={link.expiresAt} hands={hands} comments={link.comments} locale={locale} />
+      <PageFooter locale={locale} page={`c`} />
+    </>
+  );
 }
