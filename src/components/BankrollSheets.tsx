@@ -157,7 +157,7 @@ export function TransferForm({
         onChange={(kind) => set({ kind })}
       />
       <Row>
-        <NumField label={t('Valor ({currency})', { currency: cur })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} autoFocus={!onDelete} />
+        <NumField money label={t('Valor ({currency})', { currency: cur })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} autoFocus={!onDelete} />
       </Row>
       {k && fmt ? <KeepHint k={k} amount={x.amount} fmt={(n) => fmt(n, cur)} onFill={(amount) => set({ amount })} /> : null}
       {bankrolls.length > 1 ? (
@@ -224,7 +224,7 @@ export function BankrollForm({
             </ChipRow>
           </Section>
           <Row>
-            <NumField label={t('Saldo inicial ({currency})', { currency })} value={start} onChange={(v) => setStart(Math.max(0, v))} />
+            <NumField money label={t('Saldo inicial ({currency})', { currency })} value={start} onChange={(v) => setStart(Math.max(0, v))} />
           </Row>
         </>
       ) : (

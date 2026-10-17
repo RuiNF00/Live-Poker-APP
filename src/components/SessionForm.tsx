@@ -178,11 +178,11 @@ export function SessionForm({
         <Card style={{ gap: S.lg }}>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
             <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} selectOnFocus />
-            <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} autoFocus={fresh} selectOnFocus />
+            <NumField money label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} autoFocus={fresh} selectOnFocus />
           </Row>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-            <NumField label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} selectOnFocus />
-            <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} selectOnFocus />
+            <NumField money label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} selectOnFocus />
+            <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} selectOnFocus />
           </Row>
           <Row>
             <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
@@ -218,7 +218,7 @@ export function SessionForm({
           )}
         </View>
         <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-          <NumField label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} selectOnFocus={past} />
+          <NumField money label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} selectOnFocus={past} />
           {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
         </Row>
       </Card>

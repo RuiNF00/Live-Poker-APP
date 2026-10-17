@@ -129,7 +129,7 @@ export function ExpenseForm({ initial, trip, onSave, onDelete }: { initial: Expe
         ))}
       </ChipRow>
       <Row gap={S.sm} style={{ alignItems: 'flex-end' }}>
-        <NumField label={t('Valor ({currency})', { currency: x.currency })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} autoFocus={!onDelete} />
+        <NumField money label={t('Valor ({currency})', { currency: x.currency })} value={x.amount} onChange={(amount) => set({ amount: Math.abs(amount) })} autoFocus={!onDelete} />
         {other ? (
           <View style={{ width: 132 }}>
             <Segmented

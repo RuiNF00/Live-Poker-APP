@@ -130,7 +130,7 @@ export function ContextSheet({
               <Row gap={10}>
                 <NumField label={t('Nível')} value={game.level ?? 0} onChange={(level) => set({ level: level || undefined })} />
                 <NumField label={t('Jogadores restantes')} value={game.playersLeft ?? 0} onChange={(p) => set({ playersLeft: p || undefined })} />
-                <NumField label="Buy-in" value={game.buyIn ?? 0} onChange={(b) => set({ buyIn: b || undefined })} />
+                <NumField money label="Buy-in" value={game.buyIn ?? 0} onChange={(b) => set({ buyIn: b || undefined })} />
               </Row>
             </>
           )}

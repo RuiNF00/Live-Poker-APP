@@ -30,7 +30,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { t } from '@/i18n';
+import { decimalComma, t } from '@/i18n';
+import { numText, parseNum, syncText } from '@/lib/num-input';
 import { MASK, moneyMasked } from '@/poker/format';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
@@ -946,9 +947,14 @@ export function KeyboardDoneBar() {
   );
 }
 
-/** Whole-number field: chips, money, places. */
+/** Number field: chips and places are whole; `money` takes cents, typed with "," or ".". */
 /** `selectOnFocus`: the number is selected when the field opens, so typing replaces it (correcting a typo). */
-export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean; selectOnFocus?: boolean }) {
+export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFocus, money }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean; selectOnFocus?: boolean; money?: boolean }) {
+  const m = !!money;
+  // The text is kept as typed ("537," on the way to "537,55"); it is rebuilt only when the value
+  // changes from outside, never on focus or selection.
+  const [text, setText] = useState(() => numText(value, m, decimalComma));
+  const shown = syncText(text, value, m, decimalComma);
   return (
     // Side by side in rows of 2-3: with big system text a label shrinks to one line instead of
     // breaking mid-word ("INSCRITO/S") and pushing its box below the others.
@@ -956,9 +962,13 @@ export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFo
       label={label}
       oneLineLabel
       style={{ flex: 1, justifyContent: 'flex-end' }}
-      value={value ? String(value) : ''}
-      onChangeText={(x) => onChange(parseInt(x.replace(/\D/g, ''), 10) || 0)}
-      keyboardType="number-pad"
+      value={shown}
+      onChangeText={(x) => {
+        setText(x);
+        onChange(parseNum(x, m, decimalComma));
+      }}
+      onBlur={() => setText(numText(value, m, decimalComma))}
+      keyboardType={m ? 'decimal-pad' : 'number-pad'}
       inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_DONE_ID : undefined}
       autoFocus={autoFocus}
       selectTextOnFocus={selectOnFocus}

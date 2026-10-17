@@ -60,7 +60,7 @@ export function TaxFields({ s, onChange }: { s: Session; onChange: (p: Partial<S
       <Section title={t('Retido na fonte')} hint={w?.form === '1042-S' ? t('Não residentes nos EUA: 30% se o teu país não tem tratado. Pode pedir-se de volta até 3 anos depois.') : undefined}>
         <Card style={{ gap: S.lg }}>
           <Row gap={S.sm}>
-            <NumField label={t('Imposto retido ({currency})', { currency: s.currency })} value={w?.amount ?? 0} onChange={(amount) => setWithheld({ amount })} />
+            <NumField money label={t('Imposto retido ({currency})', { currency: s.currency })} value={w?.amount ?? 0} onChange={(amount) => setWithheld({ amount })} />
           </Row>
           {w?.amount ? (
             <>

@@ -231,7 +231,7 @@ function PaymentForm({ backer, balance, currency, onSave }: { backer: Backer; ba
         onChange={setDir}
       />
       <View style={{ flexDirection: 'row' }}>
-        <NumField label={t('Valor ({currency})', { currency })} value={amount} onChange={setAmount} />
+        <NumField money label={t('Valor ({currency})', { currency })} value={amount} onChange={setAmount} />
       </View>
       {balance ? (
         <T v="small">
