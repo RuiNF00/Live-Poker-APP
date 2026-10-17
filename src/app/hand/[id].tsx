@@ -5,9 +5,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
-import { CommentsList } from '@/components/Comments';
+import { CoachThread } from '@/components/CoachThread';
+import { CommentsList, PrivateStreetNotes } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
-import { isComplete } from '@/poker/engine';
+import { isComplete, replay } from '@/poker/engine';
 import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
@@ -23,6 +24,7 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
+import type { Street } from '@/poker/types';
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,6 +46,20 @@ export default function HandScreen() {
     fetchVotes(hand.shareId).then(setVotes).catch(() => {});
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
+  // The street on screen in the replayer: comments mark it "you are here", and tapping a street jumps there.
+  const [street, setStreet] = useState<Street>('preflop');
+  const [seek, setSeek] = useState<{ street: Street; n: number }>();
+  const jumpStreet = (st: Street) => setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }));
+  const streets = useMemo(() => {
+    if (!hand) return [];
+    const seen = new Set(replay(hand).steps.map((s) => s.street));
+    return (['preflop', 'flop', 'turn', 'river'] as Street[]).filter((x) => seen.has(x));
+  }, [hand]);
+  const saveNote = (st: Street, text: string) => {
+    if (!hand) return;
+    const next = { ...hand.streetNotes, [st]: text || undefined };
+    saveHand({ ...hand, streetNotes: next, updatedAt: Date.now() });
+  };
 
   if (!hand) return <Empty title={t('Mão não encontrada')} />;
 
@@ -214,7 +230,8 @@ ${link}`;
         </View>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
-        <Replayer hand={hand} initialInBB={settings.inBB} />
+        <Replayer hand={hand} initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <CoachThread hand={hand} name={settings.nickname} />
 
         <Section title={t('Partilhar')}>
           <Button title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : shareWaiting ? t('Link à espera de rede') : t('Partilhar com amigos')} icon="share-social" disabled={busy} onPress={() => share()} />
@@ -229,13 +246,28 @@ ${link}`;
         {hand.shareId ? (
           <Section title={t('Comentários')} action={t('Atualizar')} onAction={loadComments}>
             <VoteTally votes={votes} />
-            <CommentsList shareId={hand.shareId} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} defaultName={settings.nickname} />
+            <CommentsList
+              shareId={hand.shareId}
+              comments={comments}
+              onPosted={(c) => setComments((x) => [...x, c])}
+              defaultName={settings.nickname}
+              streets={streets}
+              street={street}
+              onJumpStreet={jumpStreet}
+              notes={hand.streetNotes}
+              onNote={saveNote}
+            />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>
         ) : (
-          <T v="small" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
-            {t('Os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}
-          </T>
+          <>
+            <Section title={t('As tuas notas')} hint={t('Uma nota por rua, só tu vês. Nunca sai do telemóvel.')}>
+              <PrivateStreetNotes streets={streets} street={street} onJumpStreet={jumpStreet} notes={hand.streetNotes} onNote={saveNote} />
+            </Section>
+            <T v="small" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
+              {t('Os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}
+            </T>
+          </>
         )}
       </ScrollView>
     </>

@@ -11,6 +11,7 @@ import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-n
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { usePro } from '@/billing/pro';
 import { FREE } from '@/billing/plans';
+import { ActionOffers } from '@/components/staking/ActionOffers';
 import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -18,6 +19,7 @@ import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { eventDay, eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
+import { getOffers, stakesFor } from '@/store/action-offer';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
 import { dayOf, reenterFlight, resumeDay } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
@@ -125,6 +127,8 @@ export default function FestivalScreen() {
 
         <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} />
         <TripLink f={f} plan={plan} />
+
+        <ActionOffers f={f} picked={plan.picked} />
 
         <ChipRow>
           {(
@@ -378,6 +382,8 @@ function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: number, bank
     venue: `${f.venue}, ${f.city.split(',')[0]}`,
     buyIn: e.buyIn,
     bankrollId,
+    // Backers who bought a piece of this event through an action package.
+    stakes: stakesFor(getOffers(), f.id, e.id),
     startedAt: now,
     stackLog: [{ t: now, stack: base.stack, level: base.level }],
   };

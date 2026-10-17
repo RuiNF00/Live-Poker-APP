@@ -152,7 +152,7 @@ export default function BackerScreen() {
         </Section>
 
         <StatGrid cols={3}>
-          <Stat label={t('Investido')} value={money(l.invested, cur)} />
+          <Stat label={t('Custo')} value={money(l.invested, cur)} />
           <Stat label={t('Resultado')} value={money(l.result, cur)} tone={l.result > 0 ? 'good' : l.result < 0 ? 'bad' : undefined} />
           <Stat label="Makeup" value={money(l.makeup, cur)} tone={l.makeup ? 'warn' : undefined} />
         </StatGrid>
@@ -160,7 +160,7 @@ export default function BackerScreen() {
         <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id))}>
           {mine.length === 0 ? (
             <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id))}>
-              <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao vender ação numa sessão, escolhes o pacote.')}</T>
+              <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao registar ação vendida numa sessão, escolhes o pacote.')}</T>
             </Card>
           ) : (
             <ListGroup>

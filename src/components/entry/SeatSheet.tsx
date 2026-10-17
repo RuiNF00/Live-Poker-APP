@@ -12,6 +12,15 @@ import { AmountPad } from '../AmountPad';
 import { OpponentStatsRow } from '../OpponentStats';
 import { Button, Chip, ChipRow, Field, inputStyle, Row, SheetHeader, T } from '../ui';
 
+export interface SeatChanges {
+  /** Other villain seats this player can swap with, by position. */
+  swapWith: { index: number; label: string }[];
+  onNewPlayer: () => void;
+  onLeave?: () => void;
+  onJoin?: () => void;
+  onSwap: (index: number) => void;
+}
+
 export function SeatSheet({
   visible,
   title,
@@ -23,6 +32,7 @@ export function SeatSheet({
   stats,
   onSave,
   onClose,
+  reseat,
 }: {
   visible: boolean;
   title: string;
@@ -35,6 +45,8 @@ export function SeatSheet({
   stats?: Map<string, OpponentStats>;
   onSave: (p: Player, applyStackToAll?: boolean) => void;
   onClose: () => void;
+  /** Table changes between hands, one tap each; left out once the hand has actions. */
+  reseat?: SeatChanges;
 }) {
   const [name, setName] = useState('');
   const [stack, setStack] = useState(0);
@@ -97,6 +109,23 @@ export function SeatSheet({
             ))}
           </ChipRow>
         </View>
+        {!isHero && reseat ? (
+          <View style={{ gap: S.sm }}>
+            <T v="label">{t('Mudanças na mesa')}</T>
+            <ChipRow>
+              <Chip label={t('Outro jogador')} onPress={reseat.onNewPlayer} />
+              {reseat.onLeave ? <Chip label={t('Saiu')} onPress={reseat.onLeave} /> : null}
+              {reseat.onJoin ? <Chip label={t('Entrou alguém')} onPress={reseat.onJoin} /> : null}
+            </ChipRow>
+            {reseat.swapWith.length > 0 ? (
+              <ChipRow>
+                {reseat.swapWith.map((x) => (
+                  <Chip key={x.index} label={t('Trocou com {pos}', { pos: x.label })} onPress={() => reseat.onSwap(x.index)} />
+                ))}
+              </ChipRow>
+            ) : null}
+          </View>
+        ) : null}
         <Row gap={10}>
           {isHero ? (
             <Button title={t('Aplicar a todos')} kind="secondary" style={{ flex: 1 }} onPress={() => onSave({ ...player, name, stack, playerId }, true)} />

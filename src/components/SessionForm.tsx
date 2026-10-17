@@ -5,7 +5,7 @@ import { locale, t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { parseDay, playedMs } from '@/store/session-math';
+import { parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { countryOfVenue } from '@/tax/countries';
@@ -69,11 +69,16 @@ export function SessionForm({
   const { sessions } = useStore();
   // A venue played before brings its country (for the tax report).
   const s = s0.country !== undefined || !s0.venue ? s0 : { ...s0, country: countryOfVenue(s0.venue, sessions) };
-  const initHours = initial.endedAt ? Math.max(1, Math.round(playedMs(initial) / 3600000)) : 4;
-  const [hours, setHours] = useState(initHours);
-  const initDay = dayStart(initial.endedAt ?? Date.now());
+  // Duration in minutes (4h30 is common live); start time as the player typed it.
+  const initMins = initial.endedAt ? Math.max(15, Math.round(playedMs(initial) / 60000)) : 240;
+  const [mins, setMins] = useState(initMins);
+  const [minsText, setMinsText] = useState('');
+  const initDay = dayStart(initial.endedAt ? initial.startedAt : Date.now());
   const [day, setDay] = useState(initDay);
   const [dateText, setDateText] = useState('');
+  const initTime = initial.endedAt ? clockOf(initial.startedAt) : '';
+  const [timeText, setTimeText] = useState(initTime);
+  const startMin = parseClock(timeText);
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
@@ -81,11 +86,16 @@ export function SessionForm({
   const online = s.format === 'online';
   const submit = () => {
     if (past) {
-      // Unchanged date and duration keep the original times (and breaks).
-      if (initial.endedAt && day === initDay && hours === initHours) return onSubmit(s);
-      const today = dayStart(Date.now());
-      const end = day >= today ? Date.now() : day + 23 * 3600000;
-      onSubmit({ ...s, startedAt: end - hours * 3600000, endedAt: end, breaks: [], stackLog: [] });
+      // Unchanged date, start and duration keep the original times (and breaks).
+      if (initial.endedAt && day === initDay && mins === initMins && timeText === initTime) return onSubmit(s);
+      let start: number;
+      if (startMin !== null) start = day + startMin * 60000;
+      else {
+        // No start time: it ended now (today) or late that evening.
+        const end = day >= dayStart(Date.now()) ? Date.now() : day + 23 * 3600000;
+        start = end - mins * 60000;
+      }
+      onSubmit({ ...s, startedAt: start, endedAt: start + mins * 60000, breaks: [], stackLog: [] });
     } else onSubmit({ ...s, startedAt: Date.now(), stackLog: [{ t: Date.now(), stack: s.stack, level: s.level }] });
   };
   useEffect(() => {
@@ -136,7 +146,7 @@ export function SessionForm({
           )}
         </View>
         <View style={{ gap: S.sm }}>
-          <Field label={online ? t('Sala online') : t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={online ? t('Ex.: PokerStars') : t('Ex.: Casino Estoril')} />
+          <Field label={online ? t('Sala online') : t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={online ? t('Ex.: a tua sala online') : t('Ex.: Casino da cidade')} />
           {recentVenues.length > 0 && (
             <ChipRow style={{ marginHorizontal: -S.lg }}>
               {recentVenues.map((n) => (
@@ -165,6 +175,13 @@ export function SessionForm({
             <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
               <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
               <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} />
+            </Row>
+            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+              <NumField label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} />
+              <NumField label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} />
+            </Row>
+            <Row>
+              <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
             </Row>
           </Card>
           <Section title={t('Quando')}>
@@ -196,12 +213,43 @@ export function SessionForm({
             />
             {day < dayStart(Date.now()) - 6 * 86400000 ? <T v="tiny">{fullDay(day)}</T> : null}
           </Section>
+          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+            <Field
+              label={t('Começou às')}
+              style={{ flex: 1 }}
+              value={timeText}
+              onChangeText={(v) => setTimeText(v.slice(0, 5))}
+              placeholder="20:00"
+              keyboardType="numbers-and-punctuation"
+              hint={timeText && startMin === null ? t('Escreve como 20:30') : undefined}
+            />
+            <Field
+              label={t('Outra duração')}
+              style={{ flex: 1 }}
+              value={minsText}
+              onChangeText={(v) => {
+                setMinsText(v.slice(0, 5));
+                const m = parseDuration(v);
+                if (m !== null) setMins(m);
+              }}
+              placeholder="4h30"
+              keyboardType="numbers-and-punctuation"
+            />
+          </Row>
           <Section title={t('Duração')}>
             <ChipRow>
-              {[...new Set([1, 2, 3, 4, 5, 6, 8, 10, 12, initHours])]
+              {[...new Set([60, 120, 180, 240, 300, 360, 480, 600, 720, mins])]
                 .sort((a, b) => a - b)
-                .map((h) => (
-                  <Chip key={h} label={`${h}h`} active={hours === h} onPress={() => setHours(h)} />
+                .map((m) => (
+                  <Chip
+                    key={m}
+                    label={durationLabel(m)}
+                    active={mins === m}
+                    onPress={() => {
+                      setMins(m);
+                      setMinsText('');
+                    }}
+                  />
                 ))}
             </ChipRow>
           </Section>
@@ -218,6 +266,15 @@ function dayStart(ts: number): number {
   const d = new Date(ts);
   d.setHours(0, 0, 0, 0);
   return d.getTime();
+}
+
+function clockOf(ts: number): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function durationLabel(m: number): string {
+  return m % 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}` : `${m / 60}h`;
 }
 
 function shortDay(ts: number): string {

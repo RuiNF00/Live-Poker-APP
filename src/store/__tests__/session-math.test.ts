@@ -64,3 +64,19 @@ test('money shows cents with two digits in pt-PT', async () => {
   assert.equal(money(-12.25, '€'), '−12,25€');
   assert.equal(money(370, '€'), '370€');
 });
+
+test('start time and duration as players type them', async () => {
+  const { parseClock, parseDuration } = await import('../session-math');
+  assert.equal(parseClock('20:30'), 20 * 60 + 30);
+  assert.equal(parseClock('20h30'), 20 * 60 + 30);
+  assert.equal(parseClock('2030'), 20 * 60 + 30);
+  assert.equal(parseClock('9'), 9 * 60);
+  assert.equal(parseClock('25:00'), null);
+  assert.equal(parseClock('abc'), null);
+  assert.equal(parseDuration('4h30'), 270);
+  assert.equal(parseDuration('4:30'), 270);
+  assert.equal(parseDuration('4,5'), 270);
+  assert.equal(parseDuration('4'), 240);
+  assert.equal(parseDuration('0'), null);
+  assert.equal(parseDuration('60'), null);
+});

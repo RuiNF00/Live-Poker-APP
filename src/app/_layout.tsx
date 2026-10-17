@@ -19,6 +19,7 @@ import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
+import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
@@ -27,11 +28,14 @@ import { SessionLockScreen } from '@/lib/lock-screen';
 import { HomeWidgetSync } from '@/lib/home-widget';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
+import { startCoachSync } from '@/lib/coach-api';
 import { bootReferrals } from '@/lib/referrals';
 // Registers the queued share-link sender before the outbox first drains.
 import '@/lib/share-queue';
 // Registers the swap delete sender ("Delete all my data").
 import '@/lib/swap-cleanup';
+// Same for the public profile's delete.
+import '@/lib/public-profile';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 
@@ -43,6 +47,7 @@ const theme = {
 SplashScreen.preventAutoHideAsync().catch(() => {});
 installFetchTimeout();
 startSync();
+startCoachSync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -70,6 +75,7 @@ export default function RootLayout() {
           <BackerLiveSync />
           <SessionLockScreen />
           <HomeWidgetSync />
+          <SwapReminder />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
@@ -96,6 +102,8 @@ export default function RootLayout() {
             <Stack.Screen name="odds" options={{ title: t('Calculadora de odds') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="profile" options={{ title: t('Perfil público') }} />
+            <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
+            <Stack.Screen name="coach/new" options={{ title: t('Enviar ao coach'), presentation: 'modal' }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
             <Stack.Screen name="export" options={{ title: t('Exportar') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
