@@ -44,8 +44,9 @@ export default function SharedHand() {
     fetchComments(id).then(setComments).catch(() => setComments([]));
   }, [id]);
   // A friend's hand goes on "Mãos partilhadas", to come back to the conversation; yours is there already.
+  // On the web build too, so the PC test link behaves like the phone.
   useEffect(() => {
-    if (!id || !hand || mine || Platform.OS === 'web') return;
+    if (!id || !hand || mine) return;
     const cards = hand.players[hand.hero]?.cards;
     // The ante in brackets reads like a typo in a one-line title: blinds only.
     rememberFriendHand(id, [comboLabel(cards), blindsLabel({ game: { ...hand.game, ante: 0 } })].filter(Boolean).join(' · '), cards);
