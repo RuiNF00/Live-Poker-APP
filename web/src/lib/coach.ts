@@ -228,7 +228,8 @@ class LocalCoach implements CoachStore {
     await this.mutate((d) => {
       for (const [k, l] of Object.entries(d)) {
         const end = l.revokedAt ?? l.expiresAt;
-        if (end && Date.parse(end) < cutoff) delete d[k];
+        const quiet = !l.expiresAt && Math.max(Date.parse(l.createdAt), ...l.comments.map((c) => Date.parse(c.createdAt))) < Date.now() - 400 * 86400000;
+        if ((end && Date.parse(end) < cutoff) || quiet) delete d[k];
       }
     });
   }

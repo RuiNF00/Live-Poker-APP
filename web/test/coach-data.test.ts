@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expiryFrom, OWNER_RE, parseComment, TOKEN_RE } from '../src/lib/coach-data';
+import { expiryFrom, OWNER_RE, parseComment, stripPrivate, TOKEN_RE } from '../src/lib/coach-data';
 
 describe('coach links', () => {
   it('keeps a well-formed comment and drops the rest', () => {
@@ -28,5 +28,14 @@ describe('coach links', () => {
     expect(TOKEN_RE.test('F52668A690418BEE4F6FFFEFA10F57F4')).toBe(false);
     expect(OWNER_RE.test('a'.repeat(64))).toBe(true);
     expect(OWNER_RE.test('a'.repeat(63))).toBe(false);
+  });
+});
+
+describe('stripPrivate', () => {
+  it('drops session, share, voice, folders and player ids, keeps the rest', () => {
+    const out = stripPrivate({ id: 'h1', sessionId: 's', shareToken: 't', shareId: 'x', voiceNote: 'file://a', folders: ['f'], notes: 'n', players: [{ name: 'Ana', playerId: 'p1', stack: 1 }] }) as Record<string, unknown>;
+    expect(Object.keys(out).sort()).toEqual(['id', 'notes', 'players']);
+    expect(out.players).toEqual([{ name: 'Ana', stack: 1 }]);
+    expect(stripPrivate(null)).toBe(null);
   });
 });
