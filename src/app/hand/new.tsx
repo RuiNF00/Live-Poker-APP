@@ -476,7 +476,8 @@ export default function NewHand() {
                 <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
                   {t('Alguém entrou?')}
                 </T>
-                {autoSeats.map((i) => (
+                {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
+                {[...autoSeats].reverse().map((i) => (
                   <Chip key={i} label={displayName(hand, i, pos)} onPress={() => rewind(i)} />
                 ))}
               </ChipRow>
