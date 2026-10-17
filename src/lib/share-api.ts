@@ -82,3 +82,11 @@ export function anonId(): string {
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
 }
+
+/** Friends' votes on "what do you do here?" (web votes + in-app vote comments). */
+export async function fetchVotes(id: string): Promise<Record<string, number>> {
+  const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/vote`);
+  if (!res.ok) return {};
+  const j = await res.json();
+  return (j.counts ?? {}) as Record<string, number>;
+}

@@ -1,5 +1,6 @@
 import type { Session } from '@/store/types';
 
+import { replay } from './engine';
 import type { GameInfo, Hand } from './types';
 
 export const MTT_LEVELS: [number, number][] = [
@@ -49,7 +50,11 @@ export function newHand(opts: {
   } else if (last) {
     game = { ...last.game };
     n = last.players.length;
-    stack = last.players[last.hero].stack;
+    // Carry hero's stack over from where the last hand ended.
+    const r = replay(last);
+    const s = r.final;
+    const end = s.stacks[last.hero] + (r.result ? r.result.won[last.hero] : s.bets[last.hero]);
+    stack = end > 0 ? end : last.players[last.hero].stack;
   } else {
     game = defaultGame('mtt', opts.currency);
     n = opts.tableSize ?? 9;
@@ -81,4 +86,11 @@ export function newHand(opts: {
 export function resizeTable(hand: Hand, n: number): Hand {
   const players = Array.from({ length: n }, (_, i) => hand.players[i] ?? { name: '', stack: hand.players[hand.hero].stack });
   return { ...hand, players, button: Math.min(hand.button, n - 1), actions: [], winners: undefined };
+}
+
+/** New blinds before any action: keep stacks at the same depth in big blinds. */
+export function rescaleStacks(hand: Hand, game: GameInfo): Hand {
+  if (hand.actions.length || !hand.game.bb || !game.bb || game.bb === hand.game.bb) return { ...hand, game };
+  const f = game.bb / hand.game.bb;
+  return { ...hand, game, players: hand.players.map((p) => ({ ...p, stack: Math.max(game.bb, Math.round(p.stack * f)) })) };
 }

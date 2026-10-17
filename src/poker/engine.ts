@@ -543,5 +543,5 @@ export function totalPot(s: TableState): number {
 /** False while the hand still waits for an action, a board card or hero's cards. */
 export function isComplete(hand: Hand, r: Replay = replay(hand)): boolean {
   const s = r.final;
-  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && s.toAct === null;
+  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && s.toAct === null && (!r.result || r.result.resolved);
 }

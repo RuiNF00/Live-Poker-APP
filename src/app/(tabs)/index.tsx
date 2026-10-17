@@ -11,14 +11,13 @@ import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { positions, replay, isComplete } from '@/poker/engine';
 import { amount, blindsLabel, duration, shortDate, timeOf } from '@/poker/format';
-import { sampleHand } from '@/poker/sample';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
-import { uid, useStore } from '@/store/store';
+import { useStore } from '@/store/store';
 import { BRAND, C, R, ff } from '@/theme';
 
 export default function HandsScreen() {
   const insets = useSafeAreaInsets();
-  const { hands, activeSession, saveHand, settings, draft } = useStore();
+  const { hands, activeSession, settings, draft, setDraft } = useStore();
   const { handsLeft, paywall } = usePro();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
@@ -57,11 +56,14 @@ export default function HandsScreen() {
                 </T>
               </Pressable>
             ) : null}
-            {draft ? (
-              <Pressable onPress={() => router.push('/hand/new')} style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: 'rgba(245,184,61,0.4)' }}>
-                <T v="small" color={C.warn} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+            {draft && (draft.actions.length || draft.players[draft.hero].cards?.length) ? (
+              <Pressable onPress={() => router.push('/hand/new')} style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: 'rgba(245,184,61,0.4)', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <T v="small" color={C.warn} style={{ flex: 1, fontWeight: '800', fontFamily: ff(800) }}>
                   {t('Tens uma mão a meio — toca para continuar')}
                 </T>
+                <Pressable hitSlop={8} onPress={() => setDraft(null)}>
+                  <T v="tiny">{t('Descartar')}</T>
+                </Pressable>
               </Pressable>
             ) : null}
             {activeSession ? (
@@ -112,11 +114,7 @@ export default function HandsScreen() {
                   <Button
                     title={t('Ver uma mão de exemplo')}
                     kind="ghost"
-                    onPress={() => {
-                      const h = sampleHand(uid('h_'));
-                      saveHand(h);
-                      router.push({ pathname: '/hand/[id]', params: { id: h.id } });
-                    }}
+                    onPress={() => router.push({ pathname: '/hand/[id]', params: { id: 'sample' } })}
                   />
                 </View>
               }
@@ -134,7 +132,7 @@ export default function HandsScreen() {
 function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
   const r = useMemo(() => replay(hand), [hand]);
   const pos = positions(hand.players.length, hand.button);
-  const net = r.result?.net[hand.hero];
+  const net = r.result?.resolved ? r.result.net[hand.hero] : undefined;
   const hero = hand.players[hand.hero];
   return (
     <Pressable

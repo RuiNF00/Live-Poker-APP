@@ -85,7 +85,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
   const meta = [g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash'), blindsLabel(hand), stage].filter(Boolean).join('  ·  ');
   const text = comment.trim();
   const long = text.length > 90;
-  const heroNet = result ? result.net[hand.hero] : 0;
+  const heroNet = result?.resolved ? result.net[hand.hero] : 0;
   const tableW = text ? 276 : 316;
 
   return (

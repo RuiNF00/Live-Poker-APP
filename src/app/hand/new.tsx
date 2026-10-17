@@ -24,7 +24,7 @@ import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { callerCandidates, onlyCaller, sizePresets, skipTargets, skipTo } from '@/poker/entry';
-import { newHand, resizeTable } from '@/poker/factory';
+import { newHand, rescaleStacks, resizeTable } from '@/poker/factory';
 import { amount, blindsLabel, chips } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
@@ -201,7 +201,7 @@ export default function NewHand() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
       {/* header */}
       <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 12, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Pressable onPress={() => (hand.actions.length || heroCards.length ? discard() : router.back())} hitSlop={10}>
+        <Pressable onPress={() => (hand.actions.length || heroCards.length || params.edit ? router.back() : discard())} hitSlop={10}>
           <Ionicons name="close" size={26} color={C.textDim} />
         </Pressable>
         <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.pill, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -426,9 +426,13 @@ export default function NewHand() {
             {r.result && (
               <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
                 <T v="small">{t('Resultado do herói')}</T>
-                <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.good : C.bad}>
-                  {(r.result.net[hand.hero] >= 0 ? '+' : '') + amount(r.result.net[hand.hero], hand, inBB)}
-                </T>
+                {r.result.resolved ? (
+                  <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.good : C.bad}>
+                    {(r.result.net[hand.hero] >= 0 ? '+' : '') + amount(r.result.net[hand.hero], hand, inBB)}
+                  </T>
+                ) : (
+                  <T v="small">{t('Escolhe quem ganhou')}</T>
+                )}
               </View>
             )}
             <FinishPanel hand={hand} onChange={(h) => setDraftState({ ...draft, hand: h })} />
@@ -459,7 +463,7 @@ export default function NewHand() {
         game={hand.game}
         tableSize={n}
         recentNames={recentNames}
-        onChange={(game) => update({ ...hand, game })}
+        onChange={(game) => update(hand.sessionId ? { ...hand, game } : rescaleStacks(hand, game))}
         onTableSize={(k) => update(resizeTable(hand, k), false)}
         onClose={() => setCtxOpen(false)}
       />

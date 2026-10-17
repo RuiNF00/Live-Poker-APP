@@ -40,14 +40,17 @@ export function Replayer({
   const [answered, setAnswered] = useState<string | null>(null);
   const locked = quizAt > 0 && !answered;
   const last = locked ? quizAt - 1 : steps.length - 1;
-  const [i, setI] = useState(autoPlay ? 0 : last);
-  const [playing, setPlaying] = useState(autoPlay);
+  // A challenge opens straight on hero's decision: friends shouldn't sit through the folds.
+  const start = locked || !autoPlay ? last : 0;
+  const [i, setI] = useState(start);
+  const [playing, setPlaying] = useState(autoPlay && !locked);
   const [inBB, setInBB] = useState(initialInBB);
   const [revealAll, setRevealAll] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    setI(autoPlay ? 0 : last);
+    setI(start);
+    setPlaying(autoPlay && !locked);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand, autoPlay]);
 

@@ -73,7 +73,6 @@ export const PRO_FEATURES: { icon: string; title: string; body: string }[] = [
   { icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Guarda todas as mãos da sessão, não só 3 por dia.') },
   { icon: 'logo-instagram', title: t('Stories com a tua voz'), body: t('Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.') },
   { icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros por período, ROI, ITM e por hora.') },
-  { icon: 'people', title: t('Partilha sem limites'), body: t('Os teus amigos comentam e votam no browser, sem app.') },
 ];
 
 export function perMonth(annualPrice: number): number {

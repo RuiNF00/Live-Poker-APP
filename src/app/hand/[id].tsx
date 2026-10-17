@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CommentsList } from '@/components/Comments';
 import { isComplete } from '@/poker/engine';
+import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { deleteShare, fetchComments, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
+import { deleteShare, fetchComments, fetchVotes, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
 import { C, R } from '@/theme';
@@ -20,16 +21,31 @@ export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { hands, saveHand, deleteHand, settings } = useStore();
   const pro = usePro();
-  const hand = hands.find((h) => h.id === id);
+  // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
+  const isSample = id === 'sample';
+  const sample = useMemo(() => (isSample ? sampleHand('sample') : undefined), [isSample]);
+  const hand = sample ?? hands.find((h) => h.id === id);
   const [busy, setBusy] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
 
+  const [votes, setVotes] = useState<Record<string, number>>({});
   const loadComments = useCallback(() => {
-    if (hand?.shareId) fetchComments(hand.shareId).then(setComments).catch(() => {});
+    if (!hand?.shareId) return;
+    fetchComments(hand.shareId).then(setComments).catch(() => {});
+    fetchVotes(hand.shareId).then(setVotes).catch(() => {});
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
 
   if (!hand) return <Empty title={t('Mão não encontrada')} />;
+
+  if (isSample)
+    return (
+      <ScrollView contentContainerStyle={{ padding: 12, gap: 14, paddingBottom: 48 }}>
+        <HandHeader hand={hand} />
+        <Replayer hand={hand} initialInBB={settings.inBB} autoPlay />
+        <Button title={t('Registar a minha primeira mão')} onPress={() => router.replace('/hand/new')} />
+      </ScrollView>
+    );
 
   const ensureLink = async (): Promise<string | null> => {
     if (hand.shareId) return shareUrl(hand.shareId);
@@ -63,7 +79,7 @@ ${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));
-    } else await Share.share({ message: msg, url: link });
+    } else await Share.share({ message: msg });
   };
 
   const copyText = async () => {
@@ -161,6 +177,7 @@ ${link}`;
                 <Ionicons name="refresh" size={18} color={C.textDim} />
               </Pressable>
             </Row>
+            <VoteTally votes={votes} />
             <CommentsList shareId={hand.shareId} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} defaultName={settings.nickname} />
             {hand.shareToken ? (
               <Pressable onPress={unshare} hitSlop={8} style={{ alignSelf: 'center', paddingTop: 8 }}>
@@ -177,5 +194,34 @@ ${link}`;
         )}
       </ScrollView>
     </>
+  );
+}
+
+function VoteTally({ votes }: { votes: Record<string, number> }) {
+  const total = Object.values(votes).reduce((a, b) => a + b, 0);
+  if (!total) return null;
+  const rows = Object.entries(votes)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]);
+  return (
+    <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, gap: 8, borderWidth: 1, borderColor: C.border }}>
+      <T v="label">{total === 1 ? t('1 voto') : t('{n} votos', { n: total })}</T>
+      {rows.map(([choice, v]) => {
+        const pct = Math.round((v / total) * 100);
+        return (
+          <View key={choice} style={{ gap: 3 }}>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <T v="small" style={{ color: C.text, textTransform: 'capitalize' }}>
+                {choice}
+              </T>
+              <T v="mono">{pct}%</T>
+            </Row>
+            <View style={{ height: 6, borderRadius: 3, backgroundColor: C.surface3 }}>
+              <View style={{ width: `${pct}%`, height: 6, borderRadius: 3, backgroundColor: C.accent }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
   );
 }

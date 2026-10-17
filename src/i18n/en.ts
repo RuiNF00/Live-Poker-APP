@@ -303,6 +303,11 @@ const en: Record<string, string> = {
   'Os teus amigos comentam e votam no browser, sem app.': 'Your friends comment and vote in their browser, no app needed.',
   'Primeira mão? É rápido:': 'First hand? It\'s quick:',
   '1. Toca na tua posição e nas tuas duas cartas.\n2. Os folds até ti são automáticos. Depois do teu raise, usa "Só X paga".\n3. Escolhe o flop e continua. Podes guardar a meio e completar depois.': '1. Tap your position and your two cards.\n2. Folds up to you are automatic. After your raise, use "Only X calls".\n3. Pick the flop and keep going. You can save halfway and finish later.',
+  'Registar a minha primeira mão': 'Record my first hand',
+  'Descartar': 'Discard',
+  'Escolhe quem ganhou': 'Pick the winner',
+  '1 voto': '1 vote',
+  '{n} votos': '{n} votes',
 };
 
 export default en;

@@ -7,7 +7,7 @@ import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { Button, Chip, Empty, Panel, Row, T } from '@/components/ui';
-import { t } from '@/i18n';
+import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
 import { curve, playedMs, profit, totals } from '@/store/session-math';
 import { useStore } from '@/store/store';
@@ -61,8 +61,8 @@ export default function BankrollScreen() {
               <LineChart values={pts} />
             </Panel>
             <Row gap={10} style={{ flexWrap: 'wrap' }}>
-              <Stat label={t('Por hora')} value={money(Math.round(tot.hourly), cur)} />
-              <Stat label={t('Horas')} value={tot.hours.toFixed(1)} />
+              <Stat label={t('Por hora')} value={tot.hours >= 0.25 ? money(Math.round(tot.hourly), cur) : '—'} />
+              <Stat label={t('Horas')} value={tot.hours.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} />
               <Stat label={t('Sessões')} value={String(tot.sessions)} />
               {tot.roi !== null ? <Stat label={t('ROI torneios')} value={`${tot.roi.toFixed(0)}%`} /> : null}
               {tot.itm !== null ? <Stat label="ITM" value={`${tot.itm.toFixed(0)}%`} /> : null}
