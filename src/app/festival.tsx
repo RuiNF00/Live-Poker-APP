@@ -17,6 +17,7 @@ import { blankSession } from '@/components/SessionForm';
 import { Button, Card, Chip, ChipRow, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
+import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
@@ -54,9 +55,10 @@ export default function FestivalScreen() {
   const tot = planTotals(f, plan);
   const share = sameCurrency ? bankrollShare(tot.buyIns, balance) : null;
 
+  const remindersOn = kindOn(settings, 'festival');
   useEffect(() => {
-    void syncFestivalReminders(f, plan);
-  }, [f, plan]);
+    void syncFestivalReminders(f, plan, remindersOn);
+  }, [f, plan, remindersOn]);
 
   const days = useMemo(() => {
     const list = f.events.filter((e) => (filter === 'all' ? true : filter === 'mine' ? plan.picked.includes(e.id) : e.game === filter));
