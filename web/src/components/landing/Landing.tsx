@@ -4,11 +4,12 @@ import { brand } from '@/config/brand';
 import { pickLocale } from '@/lib/i18n';
 import { storeLinks, type Utm } from '@/lib/storeLinks';
 import { Mark, Wordmark } from '@/components/Brand';
-import { PlayingCard } from '@/components/PlayingCard';
 import { landingCopy } from './copy';
 import { Pricing } from './Pricing';
 import { LandingView, StoreButtons, type StoreLinks } from './StoreButtons';
-import { InviteBanner } from './InviteBanner';
+import { InviteHero } from './InviteBanner';
+import { MainCta, StickyCta } from './Cta';
+import { Card, PhoneMock, Pos } from './Visuals';
 import '@/app/landing.css';
 
 export type Search = Record<string, string | string[] | undefined>;
@@ -23,7 +24,10 @@ function utmFrom(search: Search): Utm {
   return utm;
 }
 
-/** The landing page; with `invite` it also shows the friend's referral offer (/r/<code>). */
+/**
+ * The site's front page, phone first, in the app's "Noite" design. With `invite` (/r/<code>)
+ * the invite takes the top of the page and the product story follows below.
+ */
 export async function Landing({ search, invite }: { search: Search; invite?: string }) {
   const h = await headers();
   const lang = typeof search.lang === 'string' ? search.lang : null;
@@ -36,95 +40,134 @@ export async function Landing({ search, invite }: { search: Search; invite?: str
   return (
     <div className="lp">
       <LandingView />
-      <div className="lp-wrap">
-        <nav className="lp-nav">
-          <Link className="lp-logo" href="/" aria-label={brand.name}>
-            <Mark size={30} />
-            <Wordmark />
-          </Link>
-          <div className="lp-links">
-            <a className="hide-sm" href="#como">
-              {c.nav.how}
-            </a>
-            <a href="#precos">{c.nav.pricing}</a>
-            <a href="#faq">{c.nav.faq}</a>
-          </div>
+      <header className="lp-bar">
+        <Link className="lp-logo" href="/" aria-label={brand.name}>
+          <Mark size={28} />
+          <Wordmark />
+        </Link>
+        <nav className="lp-links" aria-label="Menu">
+          <a href="#como">{c.nav.how}</a>
+          <a href="#precos">{c.nav.pricing}</a>
+          <a className="lp-pill" href="#baixar">
+            {c.get}
+          </a>
         </nav>
+      </header>
 
-        <header className="lp-hero">
-          <div>
-            {invite && <InviteBanner code={invite} locale={locale} />}
+      <main className="lp-main">
+        {invite ? (
+          <InviteHero code={invite} c={c} stores={stores} />
+        ) : (
+          <section className="lp-hero">
+            <span className="lp-eyebrow">
+              <span className="lp-live" /> {c.eyebrow}
+            </span>
             <h1>
               {c.heroTitle[0]} <em>{c.heroTitle[1]}</em>
             </h1>
             <p className="lp-lede">{c.heroBody}</p>
-            <StoreButtons c={c} stores={stores} from="hero" />
-            <p className="lp-note">
-              {c.heroNote}{' '}
-              <Link href="/h/demo?q=1">{c.tryDemo} →</Link>
-            </p>
-          </div>
+            <div id="hero-cta" className="lp-hero-actions">
+              <MainCta label={c.ctaFree} stores={stores} from="hero" />
+              <Link className="lp-btn ghost" href="/h/demo?q=1">
+                {c.tryDemo}
+              </Link>
+            </div>
+            <p className="lp-note">{c.heroNote}</p>
+          </section>
+        )}
 
-          <Link className="lp-hand" href="/h/demo?q=1" aria-label={c.handVote}>
-            <div className="lp-meta">{c.handMeta}</div>
-            <div className="lp-felt">
-              <div className="lp-cards">
-                <PlayingCard card="Ks" size="sm" />
-                <PlayingCard card="9h" size="sm" />
-                <PlayingCard card="4h" size="sm" />
-                <PlayingCard card="2c" size="sm" />
-                <PlayingCard size="sm" faceDown />
-              </div>
-              <span className="lp-pot">{c.handPot}</span>
-              <div className="lp-cards">
-                <PlayingCard card="Ah" size="md" />
-                <PlayingCard card="Qh" size="md" />
-              </div>
-            </div>
-            <div className="lp-q">{c.handQ}</div>
-            <div className="lp-votes">
-              {c.votes.map((v, i) => (
-                <div className="lp-vote" key={v}>
-                  {v}
-                  <div className="lp-bar">
-                    <span style={{ width: `${[23, 60, 17][i]}%` }} />
-                  </div>
-                  <span className="lp-n">{[12, 31, 9][i]}</span>
-                </div>
-              ))}
-            </div>
-            <span className="lp-hand-cta">{c.handVote} →</span>
-          </Link>
-        </header>
+        <div className="lp-stage">
+          <div className="lp-glow" aria-hidden />
+          <PhoneMock m={c.mock} />
+        </div>
+
+        <ul className="lp-proof">
+          {c.proof.map(([k, v]) => (
+            <li key={k}>
+              <b>{k}</b>
+              <span>{v}</span>
+            </li>
+          ))}
+        </ul>
 
         <section id="como" className="lp-section">
           <h2>{c.howTitle}</h2>
-          <p className="lp-sub">{c.howSub}</p>
-          <div className="lp-how">
-            {c.how.map(([k, title, body]) => (
-              <div key={k}>
-                <span className="lp-k">{k}</span>
-                <b>{title}</b>
-                <p>{body}</p>
+          <div className="lp-steps-cards">
+            <article className="lp-card">
+              <div className="lp-card-art">
+                <div className="lp-pos-row">
+                  {['UTG', 'LJ', 'HJ', 'CO', 'BTN'].map((p) => (
+                    <Pos key={p} label={p} active={p === 'HJ' || p === 'BTN'} />
+                  ))}
+                </div>
+                <div className="lp-tap" aria-hidden />
               </div>
-            ))}
+              <span className="lp-k">{c.how[0][0]}</span>
+              <h3>{c.how[0][1]}</h3>
+              <p>{c.how[0][2]}</p>
+            </article>
+            <article className="lp-card">
+              <div className="lp-card-art">
+                <div className="lp-seg">
+                  {['Preflop', 'Flop', 'Turn', 'River'].map((s) => (
+                    <span key={s} className={s === 'Turn' ? 'on' : ''}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <div className="lp-mini-board">
+                  <Card code="Ks" size="sm" />
+                  <Card code="9h" size="sm" />
+                  <Card code="4h" size="sm" />
+                  <Card code="2c" size="sm" />
+                </div>
+              </div>
+              <span className="lp-k">{c.how[1][0]}</span>
+              <h3>{c.how[1][1]}</h3>
+              <p>{c.how[1][2]}</p>
+            </article>
+            <article className="lp-card">
+              <div className="lp-card-art">
+                <div className="lp-bars">
+                  <span style={{ width: '64%' }}>
+                    <b>Call</b> 64%
+                  </span>
+                  <span style={{ width: '36%' }} className="dim">
+                    <b>Fold</b> 36%
+                  </span>
+                </div>
+              </div>
+              <span className="lp-k">{c.how[2][0]}</span>
+              <h3>{c.how[2][1]}</h3>
+              <p>{c.how[2][2]}</p>
+            </article>
           </div>
         </section>
 
-        <section className="lp-section lp-share">
-          <div>
-            <h2>{c.shareTitle}</h2>
-            <p className="lp-sub">{c.shareSub}</p>
-            <Link className="lp-cta alt lp-inline" href="/h/demo?q=1">
-              {c.shareCta}
-            </Link>
-          </div>
-          <div className="lp-phones">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/landing/vote.webp" alt="" width={585} height={996} loading="lazy" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/landing/replay.webp" alt="" width={585} height={996} loading="lazy" />
-          </div>
+        <section className="lp-section">
+          <h2>{c.shareTitle}</h2>
+          <p className="lp-sub">{c.shareSub}</p>
+          <Link className="lp-challenge" href="/h/demo?q=1">
+            <span className="lp-challenge-meta">{c.handMeta}</span>
+            <div className="lp-challenge-hand">
+              <div className="lp-mini-board">
+                <Card code="Ks" size="sm" />
+                <Card code="9h" size="sm" />
+                <Card code="4h" size="sm" />
+                <Card code="2c" size="sm" />
+              </div>
+              <div className="lp-hole">
+                <Card code="Ah" size="md" />
+                <Card code="Qh" size="md" />
+              </div>
+            </div>
+            <p className="lp-challenge-q">{c.handQ}</p>
+            <div className="lp-challenge-votes">
+              <span className="lp-vote-btn">{c.votes[0]}</span>
+              <span className="lp-vote-btn main">{c.votes[1]}</span>
+            </div>
+            <span className="lp-challenge-cta">{c.shareCta} →</span>
+          </Link>
         </section>
 
         <section id="precos" className="lp-section">
@@ -146,19 +189,22 @@ export async function Landing({ search, invite }: { search: Search; invite?: str
         </section>
 
         <section id="baixar" className="lp-section lp-final">
-          <Mark size={56} />
+          <Mark size={52} />
           <h2>{c.finalTitle}</h2>
           <StoreButtons c={c} stores={stores} from="final" />
+          <p className="lp-note">{c.heroNote}</p>
         </section>
+      </main>
 
-        <footer className="lp-footer">
-          <span>© 2026 {brand.name}</span>
-          <a href="/privacy">{c.privacy}</a>
-          <a href="/terms">{c.terms}</a>
-          <a href="/support">{c.support}</a>
-          <a href={locale === 'pt' ? '/?lang=en' : '/?lang=pt'}>{locale === 'pt' ? 'English' : 'Português'}</a>
-        </footer>
-      </div>
+      <footer className="lp-footer">
+        <span>© 2026 {brand.name}</span>
+        <a href="/privacy">{c.privacy}</a>
+        <a href="/terms">{c.terms}</a>
+        <a href="/support">{c.support}</a>
+        <a href={`${invite ? `/r/${invite}` : '/'}?lang=${locale === 'pt' ? 'en' : 'pt'}`}>{locale === 'pt' ? 'English' : 'Português'}</a>
+      </footer>
+
+      <StickyCta label={c.ctaFree} note={c.heroNote} stores={stores} />
     </div>
   );
 }
