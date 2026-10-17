@@ -23,6 +23,8 @@ Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 day
 
 Voice notes on hands (PR #25) stay on the device and are not declared; only Instagram story voice notes are (Audio, processed ephemerally).
 
+PostHog EU (#106, optional): our server forwards usage events (install id, event name, small props; no IP, no free text) to PostHog as our processor. Still Analytics / not linked / not tracking on Apple; on Play, transfers to a service provider acting on our behalf are not "sharing", so "Shared: No" stays.
+
 Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.app (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
 
 App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device (photos enter the backup only end-to-end encrypted, which the backup row already covers): no new rows. Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
