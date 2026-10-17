@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,7 +43,7 @@ export default function HandsScreen() {
     const qq = q.trim().toLowerCase();
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || h.tags.includes(tag)) && (!qq || [h.game.name, h.notes, h.title, comboLabel(h.players[h.hero].cards), ...h.players.map((p) => p.name)].join(' ').toLowerCase().includes(qq)));
+      .filter((h) => (!tag || h.tags.includes(tag)) && (!qq || searchText(h).includes(qq)));
     const out: { title: string; data: Hand[] }[] = [];
     let cur = -1;
     for (const h of rows) {
@@ -56,6 +56,8 @@ export default function HandsScreen() {
     }
     return out;
   }, [hands, q, tag]);
+
+  const renderItem = useCallback(({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} />, [settings.inBB]);
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
   const hasDraft = !!draft && (draft.actions.length > 0 || !!draft.players[draft.hero].cards?.length);
@@ -123,7 +125,12 @@ export default function HandsScreen() {
             <Empty icon="search" title={t('Nada encontrado')} body={t('Tenta outro nome, torneio ou mão.')} />
           )
         }
-        renderItem={({ item }) => <HandRow hand={item} inBB={settings.inBB} />}
+        renderItem={renderItem}
+        // Long histories: render a screenful first, keep a small window
+        // mounted and build the rest in idle batches.
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
       />
     </View>
   );
@@ -201,7 +208,18 @@ function FirstRun() {
   );
 }
 
-function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
+// Search text per hand, built once per hand version rather than on every keystroke.
+const searchCache = new WeakMap<Hand, string>();
+function searchText(h: Hand): string {
+  let s = searchCache.get(h);
+  if (s === undefined) {
+    s = [h.game.name, h.notes, h.title, comboLabel(h.players[h.hero].cards), ...h.players.map((p) => p.name)].join(' ').toLowerCase();
+    searchCache.set(h, s);
+  }
+  return s;
+}
+
+const HandRow = React.memo(function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
   const r = useMemo(() => replay(hand), [hand]);
   const pos = positions(hand.players.length, hand.button);
   const net = r.result?.resolved ? r.result.net[hand.hero] : undefined;
@@ -266,4 +284,4 @@ function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
       ) : null}
     </Pressable>
   );
-}
+});
