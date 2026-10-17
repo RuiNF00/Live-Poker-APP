@@ -686,7 +686,7 @@ function FilterPill({ label, onClear }: { label: string; onClear: () => void }) 
 function toSolver(list: Hand[]) {
   tap();
   if (Platform.OS === 'web') return openInGtoWizard(list);
-  Alert.alert(t('Exportar {n} mãos', { n: list.length }), t('Formato PokerStars: GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+  Alert.alert(t('Exportar {n} mãos', { n: list.length }), t('Formato hand history (.txt): GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
     { text: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard(list) },
     { text: t('Guardar ficheiro .txt'), onPress: () => exportSolver(list) },
     { text: t('Cancelar'), style: 'cancel' },

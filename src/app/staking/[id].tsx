@@ -270,7 +270,7 @@ function BackerScreen() {
         <Section title={t('Sessões')} hint={t('Toca numa sessão para ver as contas passo a passo.')}>
           {l.rows.length === 0 ? (
             <Card tone="inset">
-              <T v="small">{t('Ainda sem sessões. Na sessão, em Staking, vende uma parte a {name}.', { name: backer.name })}</T>
+              <T v="small">{t('Ainda sem sessões. Na sessão, em Staking, regista a parte vendida a {name}.', { name: backer.name })}</T>
             </Card>
           ) : (
             <ListGroup>

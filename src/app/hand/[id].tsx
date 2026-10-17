@@ -208,7 +208,7 @@ ${link}`;
     }
     const save = () => saveSolverFile([hand]).catch(() => Alert.alert(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
     if (Platform.OS === 'web') return save();
-    Alert.alert(t('Exportar para solver'), t('Formato PokerStars: GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+    Alert.alert(t('Exportar para solver'), t('Formato hand history (.txt): GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
       {
         text: t('Copiar texto'),
         onPress: async () => {
@@ -371,7 +371,7 @@ ${link}`;
               { icon: 'help-circle-outline', label: t('Desafio'), sub: t('Os amigos votam antes de ver o resultado'), onPress: () => share(true) },
               { icon: 'copy-outline', label: t('Texto para fórum'), sub: t('TwoPlusTwo, Reddit, grupos'), onPress: askCopyText },
               { icon: 'analytics-outline', label: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard([hand]) },
-              { icon: 'document-text-outline', label: t('Exportar para solver'), sub: t('Formato PokerStars'), onPress: exportSolver },
+              { icon: 'document-text-outline', label: t('Exportar para solver'), sub: t('Formato hand history (.txt)'), onPress: exportSolver },
             ],
           },
         ]}
