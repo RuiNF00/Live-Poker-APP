@@ -2876,6 +2876,7 @@ const es: Record<string, string> = {
   'Na {store}': 'En {store}',
   'Novo na versão {v}': 'Novedad en la versión {v}',
   'Ver tudo': 'Ver todo',
+  'Estou à mesa: registar uma mão já': 'Estoy en la mesa: registrar una mano ya',
 };
 
 export default es;

@@ -34,14 +34,13 @@ export default function Welcome() {
   const play = PLAYS.find((p) => p.key === a.plays);
   const volume = VOLUMES.find((v) => v.key === a.volume);
   const at = STEPS[step];
-  const [skipped, setSkipped] = useState(false);
   // One event per screen reached, so the funnel shows where people stop.
   useEffect(() => track('onboarding_step', { step: at, index: step }), [at, step]);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const finish = () => {
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
-    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
+    track('onboarding_step', { step: 'done', index: STEPS.length, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
     router.back();
     // After the modal is gone, so the paywall slides up over the home screen.
     // Pro already, or invited (their Pro days come with the first hand): no paywall to end on.
@@ -51,6 +50,13 @@ export default function Welcome() {
         const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
         if (!isPro && !invited) setTimeout(() => paywall('plan'), 350);
       });
+  };
+  // At the table, or skipping: close with no paywall. The questions don't block anyone.
+  const close = (path: 'mesa' | 'saltar') => {
+    AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
+    track('onboarding_step', { step: path === 'mesa' ? 'table' : 'skip', index: step, path });
+    router.back();
+    if (path === 'mesa') setTimeout(() => router.push('/hand/new'), 350);
   };
   // Coming from another app: the history first (the import is free), the questions can wait.
   const switchApp = () => {
@@ -81,10 +87,7 @@ export default function Welcome() {
           </View>
           {at !== 'plan' ? (
             <Pressable
-              onPress={() => {
-                setSkipped(true);
-                setStep(STEPS.length - 1);
-              }}
+              onPress={() => close('saltar')}
               hitSlop={10}
               accessibilityRole="button">
               <T v="small" color={C.textDim}>
@@ -230,6 +233,7 @@ export default function Welcome() {
         {at === 'hero' ? (
           <View style={{ gap: S.xs }}>
             <Button title={t('Começar')} iconRight="chevron-forward" onPress={next} />
+            <Button kind="secondary" icon="flash-outline" title={t('Estou à mesa: registar uma mão já')} onPress={() => close('mesa')} />
             <Button kind="ghost" size="sm" icon="swap-horizontal-outline" title={t('Já uso outra app: mudar em 1 minuto')} onPress={switchApp} />
           </View>
         ) : null}

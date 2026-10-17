@@ -688,6 +688,7 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Estou à mesa: registar uma mão já': 'At the table: log a hand now',
   'Enviar feedback': 'Send feedback',
   'O que corre mal, o que falta ou o que mudavas': 'What goes wrong, what\'s missing or what you\'d change',
   'Avaliar a Sweatbook': 'Rate Sweatbook',
