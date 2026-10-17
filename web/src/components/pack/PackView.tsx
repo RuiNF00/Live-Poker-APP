@@ -6,6 +6,7 @@ import { ShareView } from '@/components/ShareView';
 import { PlayingCard } from '@/components/PlayingCard';
 import type { Locale } from '@/lib/i18n';
 import type { HandComment } from '@/lib/types';
+import { scrollMode } from '@/lib/motion';
 import { packCopy } from './copy';
 import './pack.css';
 
@@ -48,7 +49,7 @@ export function PackView({ title, hands, hideAmounts, locale, siteUrl, invite, u
       const next = Math.max(0, Math.min(hands.length - 1, n));
       setI(next);
       history.replaceState(null, '', `#${next + 1}`);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: scrollMode() });
     },
     [hands.length],
   );

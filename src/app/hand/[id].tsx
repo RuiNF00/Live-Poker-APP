@@ -39,6 +39,7 @@ import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
+import { reduceMotion } from '@/lib/motion';
 
 /** How long "Desfazer" stays on a removed comment before it really goes. */
 const UNDO_MS = 5000;
@@ -126,7 +127,7 @@ export default function HandScreen() {
   const onCommentsLayout = (y: number) => {
     if (!toComments.current || !comments.length) return;
     toComments.current = false;
-    scroller.current?.scrollTo({ y: Math.max(0, y - S.sm), animated: true });
+    scroller.current?.scrollTo({ y: Math.max(0, y - S.sm), animated: !reduceMotion() });
   };
   const streets = useMemo(() => {
     if (!hand) return [];
@@ -452,7 +453,7 @@ ${link}`;
               pending={pending}
               onUndo={undoRemove}
               ownerToken={hand.shareToken}
-              onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 350)}
+              onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: !reduceMotion() }), 350)}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>

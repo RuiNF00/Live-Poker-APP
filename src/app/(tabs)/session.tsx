@@ -43,7 +43,7 @@ import { uid, useStore } from '@/store/store';
 import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
-import { useSheetAnimation } from '@/lib/motion';
+import { reduceMotion, useSheetAnimation } from '@/lib/motion';
 
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
@@ -586,7 +586,7 @@ function Live({ s }: { s: Session }) {
                 scrollToEnd.current = false;
                 const y = Math.max(0, e.nativeEvent.layout.y - S.lg);
                 // A frame later, once the taller content is in the scroll view.
-                requestAnimationFrame(() => scrollRef.current?.scrollTo({ y, animated: true }));
+                requestAnimationFrame(() => scrollRef.current?.scrollTo({ y, animated: !reduceMotion() }));
               }}
             >
             <Section title={t('Terminar sessão')}>

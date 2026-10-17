@@ -24,6 +24,7 @@ import { countInSlices } from '@/lib/idle-count';
 import { cachedPotBB, defaultYear, FREE_YEAR_CARDS, handsOfYear, reviewYears, YEAR_MIN_SESSIONS, yearCards, yearReview, type YearCardKind } from '@/share/year-review';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
+import { reduceMotion } from '@/lib/motion';
 
 const CARD_TITLE: Record<YearCardKind, string> = {
   year: t('O teu ano'),
@@ -66,7 +67,7 @@ export default function YearScreen() {
   const scale = Math.min((width - 48) / STORY_W, (height - insets.top - insets.bottom - 210) / STORY_H, 1);
   const go = (p: number) => {
     const n = Math.max(0, Math.min(cards.length - 1, p));
-    pager.current?.scrollTo({ x: n * width, animated: true });
+    pager.current?.scrollTo({ x: n * width, animated: !reduceMotion() });
     if (n !== page) tap('select');
     setPage(n);
   };
