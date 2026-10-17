@@ -239,7 +239,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
         </>
       ) : (
         <>
-          <Text numberOfLines={1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
+          <Text numberOfLines={view.board2 ? 2 : 1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
             {view.narration}
           </Text>
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
@@ -323,7 +323,7 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                 }}
               />
             </View>
-            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street ? 0.8 : 0 }}>
+            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
               {it.label}
             </Text>
             {it.detail ? (

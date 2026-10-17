@@ -29,11 +29,11 @@ export const BET_SPOTS: Record<number, Pt[]> = {
   3: [{ x: 50, y: 71 }, { x: 30, y: 36 }, { x: 70, y: 36 }],
   4: [{ x: 50, y: 71 }, { x: 27, y: 57 }, { x: 50, y: 30 }, { x: 73, y: 57 }],
   5: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 34, y: 33 }, { x: 66, y: 33 }, { x: 67, y: 66 }],
-  6: [{ x: 50, y: 71 }, { x: 32, y: 66 }, { x: 29, y: 38 }, { x: 50, y: 29 }, { x: 71, y: 38 }, { x: 68, y: 66 }],
-  7: [{ x: 50, y: 71 }, { x: 32, y: 66 }, { x: 32, y: 38 }, { x: 40, y: 29 }, { x: 60, y: 29 }, { x: 68, y: 38 }, { x: 68, y: 66 }],
+  6: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 29, y: 38 }, { x: 50, y: 29 }, { x: 71, y: 38 }, { x: 67, y: 66 }],
+  7: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 33, y: 38 }, { x: 40, y: 29 }, { x: 60, y: 29 }, { x: 67, y: 38 }, { x: 67, y: 66 }],
   8: [{ x: 50, y: 71 }, { x: 33, y: 66 }, { x: 27, y: 56 }, { x: 30, y: 32 }, { x: 50, y: 27 }, { x: 70, y: 32 }, { x: 73, y: 56 }, { x: 67, y: 66 }],
   9: [{ x: 50, y: 71 }, { x: 34, y: 66 }, { x: 27, y: 59 }, { x: 29, y: 38 }, { x: 40, y: 29 }, { x: 60, y: 29 }, { x: 71, y: 38 }, { x: 73, y: 59 }, { x: 66, y: 66 }],
-  10: [{ x: 50, y: 71 }, { x: 38, y: 66 }, { x: 27, y: 61 }, { x: 31, y: 38 }, { x: 34, y: 31 }, { x: 50, y: 26 }, { x: 66, y: 31 }, { x: 69, y: 38 }, { x: 73, y: 61 }, { x: 62, y: 66 }],
+  10: [{ x: 50, y: 71 }, { x: 38, y: 66 }, { x: 27, y: 61 }, { x: 33, y: 38 }, { x: 34, y: 31 }, { x: 50, y: 26 }, { x: 66, y: 31 }, { x: 67, y: 38 }, { x: 73, y: 61 }, { x: 62, y: 66 }],
 };
 
 /** Share of a seat's hole cards that shows above its plate; the rest tucks under it. Hero's big cards tuck more. */
@@ -44,6 +44,9 @@ export const cardShow = (hero: boolean) => (hero ? HERO_CARD_SHOW : CARD_SHOW);
 export const BOARD_Y = 47;
 export const POT_Y = 60;
 export const BRAND_Y = 36;
+
+/** Plates keep this far (px at k = 1) from the stage edges, so a full-width table never touches the screen edge. */
+export const EDGE = 8;
 
 /** Scale factor for a stage of width w. */
 export const scaleFor = (w: number) => Math.max(0.82, Math.min(1.18, w / 366));
@@ -77,10 +80,22 @@ export const overlaps = (a: Box, b: Box) => a.left < b.right && b.left < a.right
 
 const at = (p: Pt, w: number) => ({ x: (p.x / 100) * w, y: (p.y / 100) * w * STAGE_RATIO });
 
+/** A seat's plate centre in px, pulled in from the side so the plate stays EDGE clear of it. */
+export function seatCenter(p: Pt, w: number): { x: number; y: number } {
+  const c = at(p, w);
+  const min = (SIZE.plateW / 2 + EDGE) * scaleFor(w);
+  return { x: Math.max(min, Math.min(w - min, c.x)), y: c.y };
+}
+
+/** The board shrinks a little when side seats sit level with it (4, 8, 9 and 10 seats). */
+export function boardScale(n: number): number {
+  return tableMap(n).seats.some((p) => Math.abs(p.y - BOARD_Y) < 9) ? 0.9 : 1;
+}
+
 /** Plate plus the cards tucked above it (or the FOLD label), in px. */
 export function seatBox(p: Pt, w: number, hero = false): Box {
   const k = scaleFor(w);
-  const c = at(p, w);
+  const c = seatCenter(p, w);
   const cardsH = (hero ? SIZE.heroCardH : SIZE.seatCardH) * k * cardShow(hero);
   return {
     left: c.x - (SIZE.plateW * k) / 2,
@@ -96,8 +111,8 @@ export function betBox(p: Pt, w: number): Box {
   return { left: c.x - (SIZE.betW * k) / 2, right: c.x + (SIZE.betW * k) / 2, top: c.y - (SIZE.betH * k) / 2, bottom: c.y + (SIZE.betH * k) / 2 };
 }
 
-export function boardBox(w: number): Box {
-  const k = scaleFor(w);
+export function boardBox(w: number, n = 6): Box {
+  const k = scaleFor(w) * boardScale(n);
   const c = at({ x: 50, y: BOARD_Y }, w);
   const half = ((5 * SIZE.boardCardW + 4 * SIZE.boardGap) * k) / 2;
   return { left: c.x - half, right: c.x + half, top: c.y - (SIZE.boardCardH * k) / 2, bottom: c.y + (SIZE.boardCardH * k) / 2 };
