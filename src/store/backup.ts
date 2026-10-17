@@ -216,5 +216,5 @@ export function importSummary(n: { hands: number; sessions: number; players: num
 function decodeBacked(x: Record<string, unknown>): BackedPlayer | null {
   const st = isObj(x.statement) ? checkStatement(x.statement) : null;
   if (!st || st.id !== x.id) return null;
-  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, updatedAt: typeof x.updatedAt === 'number' ? x.updatedAt : undefined };
+  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, ...(typeof x.updatedAt === 'number' ? { updatedAt: x.updatedAt } : {}) };
 }
