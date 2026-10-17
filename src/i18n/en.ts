@@ -3227,6 +3227,7 @@ const en: Record<string, string> = {
   // Hands list: result chips (HandFilters RESULTS).
   'Ganhei': 'Won',
   'Perdi': 'Lost',
+  'Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.': 'Each square is a day: solid green you won, red outline you lost. Stronger, more money.',
 };
 
 export default en;
