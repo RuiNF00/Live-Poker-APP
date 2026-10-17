@@ -12,27 +12,34 @@ import { getStore, loadShare as loadShareById } from '@/lib/store';
 import { ShareView } from '@/components/ShareView';
 
 type Params = { params: Promise<{ id: string }> };
+type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 const loadShare = cache(loadShareById);
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params & SearchParams): Promise<Metadata> {
   const { id } = await params;
+  const { q } = await searchParams;
   const share = await loadShare(id);
   const hand = share && resolveHand(share.payload)?.hand;
   if (!share || !hand) return { title: 'Mão não encontrada', robots: { index: false } };
-  const title = share.title || handTitle(hand);
+  const challenge = q === '1' || !!share.quiz;
+  const title = challenge ? `Desafio: o que fazes aqui? · ${share.title || handTitle(hand)}` : share.title || handTitle(hand);
   const where = hand.tournament?.name || hand.location;
-  const description = [where, 'Vê a mão e diz como jogavas.'].filter(Boolean).join(' · ');
+  const description = [where, challenge ? 'Vota no que fazias antes de veres a jogada.' : 'Vê a mão e diz como jogavas.']
+    .filter(Boolean)
+    .join(' · ');
+  // The challenge preview stops at the hero's decision so it never spoils the result.
+  const image = { url: `/h/${id}/og${challenge ? '?q=1' : ''}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,
     robots: { index: false },
-    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/h/${id}`, siteName: brand.name },
-    twitter: { card: 'summary_large_image', title, description },
+    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/h/${id}${q === '1' ? '?q=1' : ''}`, siteName: brand.name, images: [image] },
+    twitter: { card: 'summary_large_image', title, description, images: [image.url] },
   };
 }
 
-export default async function SharePage({ params, searchParams }: Params & { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function SharePage({ params, searchParams }: Params & SearchParams) {
   const { id } = await params;
   const { q, r, utm_source, utm_medium } = await searchParams;
   const param = (v: unknown) => (typeof v === 'string' && /^[\w.-]{1,40}$/.test(v) ? v : null);
