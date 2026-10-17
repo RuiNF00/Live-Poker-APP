@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { breakdown, owedToBackers, profit, totals } from '../session-math';
+import { breakdown, owedToBackers, parseDay, profit, totals } from '../session-math';
 import type { Session } from '../types';
 
 function mk(over: Partial<Session> = {}): Session {
@@ -46,4 +46,14 @@ test('breakdown groups by venue, case-insensitive, skips blanks and live session
   const b = breakdown(list, 'venue');
   assert.deepEqual(b.map((x) => [x.key, x.sessions, x.profit]), [['Estoril', 2, 100], ['Lisboa', 1, -100]]);
   assert.equal(b[0].hours, 8);
+});
+
+test('parseDay reads dd/mm[/yyyy] and refuses the future', () => {
+  const now = new Date(2026, 9, 17, 12).getTime();
+  assert.equal(parseDay('3/10', now), new Date(2026, 9, 3).getTime());
+  assert.equal(parseDay('03-10-25', now), new Date(2025, 9, 3).getTime());
+  assert.equal(parseDay('20/12', now), new Date(2025, 11, 20).getTime());
+  assert.equal(parseDay('31/02/2026', now), null);
+  assert.equal(parseDay('1/1/2030', now), null);
+  assert.equal(parseDay('ontem', now), null);
 });

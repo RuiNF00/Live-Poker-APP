@@ -57,7 +57,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   stats: {
     title: t('Vê o teu bankroll a fundo'),
-    body: t('Filtra por 30 dias, 90 dias ou ano e percebe onde estás a ganhar.'),
+    body: t('Filtra por período, vê em que salas e jogos ganhas e exporta as sessões em CSV.'),
   },
   story: {
     title: t('Stories com a tua voz'),
@@ -72,7 +72,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
 export const PRO_FEATURES: { icon: string; title: string; body: string }[] = [
   { icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Guarda todas as mãos da sessão, não só 3 por dia.') },
   { icon: 'logo-instagram', title: t('Stories com a tua voz'), body: t('Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.') },
-  { icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros por período, ROI, ITM e por hora.') },
+  { icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros por período, resultados por sala e jogo, export CSV.') },
 ];
 
 export function perMonth(annualPrice: number): number {

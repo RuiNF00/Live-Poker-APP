@@ -23,7 +23,8 @@ export default function BankrollScreen() {
   const { isPro, paywall } = usePro();
   const [kind, setKind] = useState<Kind>('all');
   const [period, setPeriod] = useState<Period>(0);
-  const [adding, setAdding] = useState(false);
+  // 'new' for a past session, or the session being edited.
+  const [editing, setEditing] = useState<Session | 'new' | null>(null);
   const cur = settings.currency;
 
   const list = useMemo(() => {
@@ -39,7 +40,7 @@ export default function BankrollScreen() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, padding: 14, gap: 14, paddingBottom: 60 }}>
         <Row style={{ justifyContent: 'space-between' }}>
           <T v="title">Bankroll</T>
-          <Button small kind="secondary" title={t('+ Sessão passada')} onPress={() => setAdding(true)} />
+          <Button small kind="secondary" title={t('+ Sessão passada')} onPress={() => setEditing('new')} />
         </Row>
         <Row gap={6} style={{ flexWrap: 'wrap' }}>
           <Chip label={t('Tudo')} active={kind === 'all'} onPress={() => setKind('all')} />
@@ -64,7 +65,7 @@ export default function BankrollScreen() {
               <Stat label={t('Por hora')} value={tot.hours >= 0.25 ? money(Math.round(tot.hourly), cur) : '—'} />
               <Stat label={t('Horas')} value={tot.hours.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} />
               <Stat label={t('Sessões')} value={String(tot.sessions)} />
-              {tot.roi !== null ? <Stat label={t('ROI torneios')} value={`${tot.roi.toFixed(0)}%`} /> : null}
+              {tot.roi !== null ? <Stat label={t('ROI torneios')} value={`${tot.roi < 0 ? '−' : ''}${Math.abs(tot.roi).toFixed(0)}%`} /> : null}
               {tot.itm !== null ? <Stat label="ITM" value={`${tot.itm.toFixed(0)}%`} /> : null}
               <Stat label={t('Investido')} value={money(tot.invested, cur)} />
               <Stat label={t('Melhor')} value={money(tot.best, cur)} />
@@ -73,33 +74,36 @@ export default function BankrollScreen() {
             <Breakdowns list={list} cur={cur} />
             <T v="h2">{t('Histórico')}</T>
             {done.map((s) => (
-              <SessionRow key={s.id} s={s} onDelete={() => deleteSession(s.id)} />
+              <SessionRow key={s.id} s={s} onDelete={() => deleteSession(s.id)} onEdit={() => setEditing(s)} />
             ))}
           </>
         )}
       </ScrollView>
-      <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)} presentationStyle="pageSheet">
+      <Modal visible={!!editing} animationType="slide" onRequestClose={() => setEditing(null)} presentationStyle="pageSheet">
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingTop: 24 }} keyboardShouldPersistTaps="handled">
           <Row style={{ justifyContent: 'space-between' }}>
-            <T v="h1">{t('Sessão passada')}</T>
-            <Pressable onPress={() => setAdding(false)}>
+            <T v="h1">{editing && editing !== 'new' ? t('Editar sessão') : t('Sessão passada')}</T>
+            <Pressable onPress={() => setEditing(null)}>
               <T v="body" color={C.textDim}>
                 {t('Fechar')}
               </T>
             </Pressable>
           </Row>
+          {editing ? (
           <SessionForm
+            key={editing === 'new' ? 'new' : editing.id}
             past
-            initial={blankSession('mtt', cur, settings.defaultTableSize)}
+            initial={editing === 'new' ? blankSession('mtt', cur, settings.defaultTableSize) : editing}
             recentNames={[...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8)}
             recentVenues={[...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8)}
             submitLabel={t('Guardar sessão')}
             onSubmit={(s) => {
-              // The sheet can stay mounted between opens: never reuse the last id.
-              saveSession({ ...s, id: uid('s_') });
-              setAdding(false);
+              // A new past session always gets a fresh id; an edit keeps its own.
+              saveSession(editing === 'new' ? { ...s, id: uid('s_') } : s);
+              setEditing(null);
             }}
           />
+          ) : null}
         </ScrollView>
       </Modal>
     </View>
@@ -145,7 +149,7 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
       {!isPro && rows.length > 1 ? (
         <Pressable onPress={() => paywall('stats')} hitSlop={6}>
           <T v="small" color={C.accent}>
-            {t('Ver as {n} todas · Pro', { n: rows.length })}
+            {t('Ver todas ({n}) · Pro', { n: rows.length })}
           </T>
         </Pressable>
       ) : null}
@@ -162,7 +166,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SessionRow({ s, onDelete }: { s: Session; onDelete: () => void }) {
+function SessionRow({ s, onDelete, onEdit }: { s: Session; onDelete: () => void; onEdit: () => void }) {
   const [open, setOpen] = useState(false);
   const p = profit(s);
   return (
@@ -190,11 +194,18 @@ function SessionRow({ s, onDelete }: { s: Session; onDelete: () => void }) {
             {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: money(owedToBackers(s), s.currency) }) : ''}
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: money(s.expenses, s.currency) }) : ''}
           </T>
-          <Pressable onPress={onDelete} hitSlop={8}>
-            <T v="small" color={C.danger}>
-              {t('Apagar')}
-            </T>
-          </Pressable>
+          <Row gap={14}>
+            <Pressable onPress={onEdit} hitSlop={8}>
+              <T v="small" color={C.accent}>
+                {t('Editar')}
+              </T>
+            </Pressable>
+            <Pressable onPress={onDelete} hitSlop={8}>
+              <T v="small" color={C.danger}>
+                {t('Apagar')}
+              </T>
+            </Pressable>
+          </Row>
         </Row>
       )}
     </Pressable>

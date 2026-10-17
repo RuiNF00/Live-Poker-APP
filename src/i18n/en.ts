@@ -425,6 +425,17 @@ const en: Record<string, string> = {
   'Não encontrámos esse código.': "We couldn't find that code.",
   'Os convites ainda não estão disponíveis.': "Invites aren't available yet.",
   'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.': "Cloud backup isn't available yet. For now, export to a file.",
+  'Editar sessão': 'Edit session',
+  'Ver todas ({n}) · Pro': 'See all ({n}) · Pro',
+  'Editar': 'Edit',
+  '1 jogador': '1 player',
+  '{n} jogadores': '{n} players',
+  'Filtra por período, vê em que salas e jogos ganhas e exporta as sessões em CSV.': 'Filter by period, see which venues and games you win at, and export your sessions to CSV.',
+  'Filtros por período, resultados por sala e jogo, export CSV.': 'Period filters, results by venue and game, CSV export.',
+  'Quando': 'When',
+  'Hoje': 'Today',
+  'Ontem': 'Yesterday',
+  'Outra data: dd/mm/aaaa': 'Other date: dd/mm/yyyy',
 };
 
 export default en;

@@ -252,7 +252,7 @@ function TableReads({ roster }: { roster: string[] }) {
       {known.map(({ seat, name, note }) => (
         <View key={seat} style={{ gap: 1 }}>
           <T v="body" style={{ fontWeight: '700', fontFamily: ff(700) }}>
-            {t('Lugar {n}', { n: seat + 1 })} · {name}
+            {name}
             {note!.tags.length ? <T v="small" color={C.accent}>{'  ' + note!.tags.map((x) => t(x)).join(' · ')}</T> : null}
           </T>
           {note!.notes || note!.look ? (

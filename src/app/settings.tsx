@@ -101,7 +101,7 @@ export default function SettingsScreen() {
         </T>
         <CloudBackup />
         <Panel style={{ gap: 0, padding: 0 }}>
-          <Item icon="download-outline" label={t('Exportar tudo (ficheiro)')} hint={t('{h} mãos · {s} sessões · {p} jogadores', { h: hands.length, s: sessions.length, p: players.length })} onPress={exportAll} />
+          <Item icon="download-outline" label={t('Exportar tudo (ficheiro)')} hint={[hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length }), sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length }), players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })].join(' · ')} onPress={exportAll} />
           <Item icon="cloud-upload-outline" label={busy ? t('A importar…') : t('Importar ficheiro')} hint={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
           <Item icon="grid-outline" label={t('Sessões em CSV') + (pro.isPro ? '' : ' · Pro')} hint={t('Para Excel, Google Sheets ou o contabilista')} onPress={exportCsv} last />
         </Panel>
