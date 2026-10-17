@@ -1412,6 +1412,8 @@ const es: Record<string, string> = {
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'Sin conexión ahora: la invitación queda guardada y se activa sola cuando haya señal.',
   'O link é desligado assim que houver sinal.': 'El enlace se desactiva en cuanto haya señal.',
   'Sem rede: copia quando voltar': 'Sin conexión: se copia cuando vuelva',
+  'Algo correu mal': 'Algo salió mal',
+  'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'La mano que estabas registrando y la sesión en vivo quedaron guardadas. Vuelve y sigue; si vuelve a pasar, cierra y abre la app.',
   'Sem rede': 'Sin conexión',
   'Sem rede · {n} por enviar': 'Sin conexión · {n} por enviar',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Todo guardado en el teléfono. Se envía cuando haya señal.',

@@ -682,6 +682,7 @@ const ptBR: Record<string, string> = {
   'Apagar para todos': 'Excluir para todos',
   'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'O organizador não publicou o fim do late reg (no Main Event as inscrições ficam abertas até o Dia 2): confirme no balcão do torneio.',
   'Sem rede: copia quando voltar': 'Sem conexão: copia quando voltar',
+  'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'A mão que você estava registrando e a sessão ao vivo ficaram salvas. Volte e continue; se acontecer de novo, feche e abra o app.',
   'Sem rede': 'Sem conexão',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Tudo salvo no celular. Envia quando houver sinal.',

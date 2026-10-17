@@ -8,6 +8,10 @@ const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 // 9+ digits with optional separators and a leading +: phone numbers, never a stack line number.
 const PHONE = /\+?\d[\d\s().-]{7,}\d/g;
 const LONG = 200;
+// Cards (Ah, KdQs, T♠): a hand in an error message ("bad action for AhKd") is poker the player didn't share.
+const CARDS = /(?<![A-Za-z0-9])(?:[2-9TJQKA][shdc♠♥♦♣]){1,7}(?![A-Za-z0-9])/g;
+// Money: a number next to a currency sign or code (€1.250, $ 500, 30,50 EUR, R$ 99).
+const MONEY = /(?:R\$|US\$|[€$£¥₹])\s?\d[\d.,]*|\b\d[\d.,]*\s?(?:€|EUR|USD|BRL|GBP|MXN|ARS)\b/g;
 
 /** Tags a report may carry; anything else is dropped (never install id, RevenueCat id, names or amounts). */
 export const TAGS = ['channel', 'platform', 'locale', 'pro', 'live_session'] as const;
@@ -18,7 +22,7 @@ const URL_IN_TEXT = /\b(?:https?|sweatbook|exp):\/\/[^\s"'<>)]+/gi;
 export function scrubString(s: string): string {
   if (s.length > LONG) return `[${s.length} chars removed]`;
   // URLs first: fetch errors quote the whole link, token included.
-  return s.replace(URL_IN_TEXT, stripUrl).replace(EMAIL, '[email]').replace(PHONE, '[number]');
+  return s.replace(URL_IN_TEXT, stripUrl).replace(EMAIL, '[email]').replace(PHONE, '[number]').replace(MONEY, '[amount]').replace(CARDS, '[cards]');
 }
 
 /**
@@ -71,6 +75,8 @@ export function scrubEvent<E extends object>(event: E): E {
       delete d.id;
       c.device = d;
     }
+    // Any other context (React's component stack, app, os) goes through the same string filter.
+    for (const k of Object.keys(c)) if (k !== 'device') c[k] = deep(c[k]);
     e.contexts = c;
   }
   if (e.tags && typeof e.tags === 'object') {
@@ -80,10 +86,18 @@ export function scrubEvent<E extends object>(event: E): E {
   if (e.extra != null) e.extra = deep(e.extra);
   if (e.exception && typeof e.exception === 'object') {
     const ex = e.exception as { values?: Obj[] };
-    e.exception = { ...ex, values: ex.values?.map((v) => ({ ...v, value: typeof v.value === 'string' ? scrubString(v.value) : v.value })) };
+    e.exception = { ...ex, values: ex.values?.map((v) => ({ ...v, value: typeof v.value === 'string' ? scrubString(v.value) : v.value, stacktrace: noVars(v.stacktrace) })) };
   }
   if (Array.isArray(e.breadcrumbs)) e.breadcrumbs = (e.breadcrumbs as Obj[]).map((x) => scrubBreadcrumb(x)).filter(Boolean);
   return e as unknown as E;
+}
+
+/** Stack frames keep file, function and line; local variables (a hand, a session) never leave. */
+function noVars(st: unknown): unknown {
+  if (!st || typeof st !== 'object') return st;
+  const frames = (st as { frames?: Obj[] }).frames;
+  if (!Array.isArray(frames)) return st;
+  return { ...(st as Obj), frames: frames.map(({ vars: _v, ...f }) => f) };
 }
 
 /**

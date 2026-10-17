@@ -1515,6 +1515,8 @@ const en: Record<string, string> = {
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'No signal right now: the invite is saved and turns on by itself when you’re back online.',
   'O link é desligado assim que houver sinal.': 'The link turns off as soon as you’re back online.',
   'Sem rede: copia quando voltar': 'Offline: copies when you’re back online',
+  'Algo correu mal': 'Something went wrong',
+  'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'The hand you were entering and your live session are saved. Go back and carry on; if it happens again, close and reopen the app.',
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',

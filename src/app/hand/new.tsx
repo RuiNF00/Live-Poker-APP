@@ -42,6 +42,7 @@ import { displayName, seatViews } from '@/poker/view';
 import { opponentStats, sessionsSeen } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { BRAND, C, R, S, SHADOW, ff, posColor } from '@/theme';
+import { crashProbe } from '@/lib/crash-probe';
 
 const STREET_PT = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
@@ -55,6 +56,7 @@ interface Draft {
 }
 
 export default function NewHand() {
+  crashProbe('hand');
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ edit?: string }>();
   const store = useStore();

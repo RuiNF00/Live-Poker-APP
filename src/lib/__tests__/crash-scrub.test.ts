@@ -55,3 +55,20 @@ test('migalhas de consola e de toques são deitadas fora; navegação só com a 
   assert.equal(scrubBreadcrumb({ category: 'touch', data: { label: 'Ana' } }), null);
   assert.deepEqual(scrubBreadcrumb({ category: 'navigation', data: { from: '/hand/h_1?x=2', to: '/bankroll' } }), { category: 'navigation', data: { from: '/hand/:id', to: '/bankroll' } });
 });
+
+test('cartas e montantes saem do texto do erro', () => {
+  assert.equal(scrubString('bad action for AhKd on Qs7c2d'), 'bad action for [cards] on [cards]');
+  assert.equal(scrubString('stack €1.250,50 vs 300 EUR'), 'stack [amount] vs [amount]');
+  assert.equal(scrubString('buy-in $ 500 and R$ 99'), 'buy-in [amount] and [amount]');
+  // Code and HTTP codes stay readable.
+  assert.equal(scrubString('live 500 at Thing.render (index.bundle:12:345)'), 'live 500 at Thing.render (index.bundle:12:345)');
+});
+
+test('as variáveis locais das linhas da pilha não saem; ficheiro e linha ficam', () => {
+  const e = scrubEvent({
+    exception: { values: [{ type: 'Error', value: 'x', stacktrace: { frames: [{ filename: 'app.js', lineno: 3, function: 'save', vars: { hand: { cards: 'AhKd' } } }] } }] },
+    contexts: { react: { componentStack: 'at Hand (rui@exemplo.pt)' } },
+  }) as { exception: { values: { stacktrace: { frames: Record<string, unknown>[] } }[] }; contexts: { react: { componentStack: string } } };
+  assert.deepEqual(e.exception.values[0].stacktrace.frames[0], { filename: 'app.js', lineno: 3, function: 'save' });
+  assert.equal(e.contexts.react.componentStack, 'at Hand ([email])');
+});
