@@ -160,6 +160,8 @@ const en: Record<string, string> = {
   'alguém entrou? Toca no lugar dele na mesa': 'someone came in? Tap their seat on the table',
   'Toca num lugar da mesa para saltar até ele': 'Tap a seat on the table to skip to it',
   'Guardar já': 'Save now',
+  'Desfazer': 'Undo',
+  'Valores em big blinds': 'Amounts in big blinds',
   'Outro valor': 'Other amount',
   'Posição e duas cartas. Os folds até ti são automáticos.': 'Position and two cards. Folds up to you are automatic.',
   'Subiram as blinds? Toca para {blinds}': 'Blinds went up? Tap for {blinds}',
@@ -179,7 +181,6 @@ const en: Record<string, string> = {
   'Tu': 'You',
   'Lugar {pos}': 'Seat {pos}',
   'Notas (o que pensaste, reads, dúvidas…)': 'Notes (what you thought, reads, doubts…)',
-  'Stack inicial do herói: {stack}': 'Hero\'s starting stack: {stack}',
   // Hand screen and sharing
   'Não deu para criar o link agora. Podes partilhar o texto da mão.': 'Couldn\'t create the link right now. You can share the hand as text.',
   'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
