@@ -251,6 +251,19 @@ export default function HandsScreen() {
                 <SwapSettleCard {...settle} />
               ) : !activeSession && shared.newTotal > 0 ? (
                 <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
+              ) : incomplete > 0 && tag !== INCOMPLETE ? (
+                <Banner
+                  tone="warn"
+                  icon="alert-circle-outline"
+                  title={incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete })}
+                  action={incomplete === 1 ? t('Acabar') : t('Ver')}
+                  onPress={() => {
+                    // Just one: straight into the editor, where it stopped.
+                    const only = incomplete === 1 ? hands.find(isIncomplete) : undefined;
+                    if (only) router.push({ pathname: '/hand/new', params: { edit: only.id } });
+                    else setTag(INCOMPLETE);
+                  }}
+                />
               ) : !activeSession && news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : !activeSession && suggest.show ? (
@@ -259,14 +272,6 @@ export default function HandsScreen() {
                 <StartChecklist state={checklist} />
               ) : !activeSession && moment ? (
                 <ProMoment state={moment} />
-              ) : incomplete > 0 && tag !== INCOMPLETE ? (
-                <Banner
-                  tone="warn"
-                  icon="alert-circle-outline"
-                  title={incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete })}
-                  action={t('Ver')}
-                  onPress={() => setTag(INCOMPLETE)}
-                />
               ) : !activeSession && idleDays >= 7 ? (
                 <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
               ) : null}
@@ -611,7 +616,8 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
     <Pressable
       accessibilityRole="button"
       accessibilityState={picking ? { selected: picked } : undefined}
-      onPress={() => (picking ? onPick(hand.id) : router.push({ pathname: '/hand/[id]', params: { id: hand.id } }))}
+      // An unfinished hand opens where it stopped: finishing it is why it's tapped.
+      onPress={() => (picking ? onPick(hand.id) : done ? router.push({ pathname: '/hand/[id]', params: { id: hand.id } }) : router.push({ pathname: '/hand/new', params: { edit: hand.id } }))}
       onLongPress={() => onPick(hand.id)}
       delayLongPress={350}
       style={({ pressed }) => (picked ? rowSt.picked : pressed ? rowSt.pressed : rowSt.row)}>
