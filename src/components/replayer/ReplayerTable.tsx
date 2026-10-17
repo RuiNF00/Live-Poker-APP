@@ -2,8 +2,8 @@
 // seats placed by hand for every table size (layout.ts), ivory cards, chip stacks
 // and an action badge on each plate. Visual base: the stats-app replayer.
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { PanResponder, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { t } from '@/i18n';
@@ -73,6 +73,7 @@ export function ReplayerTable({
   button,
   onTapLeft,
   onTapRight,
+  onSwipe,
   animate = false,
   motion,
   at,
@@ -88,6 +89,8 @@ export function ReplayerTable({
   button: number;
   onTapLeft?: () => void;
   onTapRight?: () => void;
+  /** A sideways swipe on the table: 1 = towards the next street (finger moves left), -1 = back. */
+  onSwipe?: (dir: 1 | -1) => void;
 }) {
   const [w, setW] = useState(0);
   const h = w * STAGE_RATIO;
@@ -97,6 +100,23 @@ export function ReplayerTable({
   const vis = (i: number) => (i - heroIndex + n) % n;
 
   const onLayout = (e: LayoutChangeEvent) => setW(Math.round(e.nativeEvent.layout.width));
+  // A clear sideways swipe changes street; anything shorter stays a tap, and vertical drags scroll the page.
+  const swipeRef = useRef(onSwipe);
+  // On the web a press still lands after the swipe ends: that one is swallowed.
+  const swipedAt = useRef(0);
+  useEffect(() => {
+    swipeRef.current = onSwipe;
+  });
+  const [swipe] = useState(() =>
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_, g) => !!swipeRef.current && Math.abs(g.dx) > 24 && Math.abs(g.dx) > 2 * Math.abs(g.dy),
+      onPanResponderRelease: (_, g) => {
+        if (Math.abs(g.dx) <= 40) return;
+        swipedAt.current = Date.now();
+        swipeRef.current?.(g.dx < 0 ? 1 : -1);
+      },
+    }),
+  );
 
 
   const bestEquity = Math.max(-1, ...view.seats.map((s) => s.equity ?? -1));
@@ -138,11 +158,15 @@ export function ReplayerTable({
   const riseAt = (c: number) => (still?.anims ?? motion?.anims)?.find((x) => x.kind === 'boardRise' && x.card === c);
 
   return (
-    <View onLayout={onLayout} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO }}>
+    <View onLayout={onLayout} {...swipe.panHandlers} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO }}>
       {w > 0 && (
         <Pressable
           style={{ flex: 1 }}
-          onPress={(e) => (e.nativeEvent.locationX < w * 0.35 ? onTapLeft?.() : onTapRight?.())}
+          onPress={(e) => {
+            if (Date.now() - swipedAt.current < 400) return;
+            if (e.nativeEvent.locationX < w * 0.35) onTapLeft?.();
+            else onTapRight?.();
+          }}
           accessibilityLabel={spokenTable(view)}
           accessibilityHint={onTapRight ? t('Toca duas vezes para avançar.') : undefined}
           accessibilityActions={[{ name: 'activate' }]}

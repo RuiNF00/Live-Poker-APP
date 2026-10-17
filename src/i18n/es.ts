@@ -644,7 +644,7 @@ const es: Record<string, string> = {
   'Link quase pronto': 'Link casi listo',
   'Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.': 'Estamos creando el link ahora. Toca Compartir otra vez en un momento.',
   'Percebi': 'Entendido',
-  'Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.': 'Toca a la derecha de la mesa para avanzar y a la izquierda para retroceder. Toca una acción abajo para saltar a ella.',
+  'Toca à direita da mesa para avançar e à esquerda para recuar. Desliza na mesa para mudar de street.': 'Toca a la derecha de la mesa para avanzar y a la izquierda para retroceder. Desliza sobre la mesa para cambiar de street.',
   'Próxima street': 'Siguiente street',
   'Velocidade': 'Velocidad',
   'Mostrar cartas': 'Mostrar cartas',

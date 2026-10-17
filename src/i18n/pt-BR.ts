@@ -309,7 +309,7 @@ const ptBR: Record<string, string> = {
   'Link à espera de rede': 'Link esperando sinal',
   'Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.': 'Estamos criando o link agora. Toque de novo em Compartilhar daqui a pouco.',
   'Percebi': 'Entendi',
-  'Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.': 'Toque à direita da mesa para avançar e à esquerda para voltar. Toque em uma ação abaixo para pular para ela.',
+  'Toca à direita da mesa para avançar e à esquerda para recuar. Desliza na mesa para mudar de street.': 'Toque à direita da mesa para avançar e à esquerda para voltar. Deslize na mesa para mudar de street.',
   'Vê o que aconteceu.': 'Veja o que aconteceu.',
   'Seguinte': 'Próximo',
   'Só quando conta: guardar uma mão, fechar uma sessão': 'Só quando importa: salvar uma mão, fechar uma sessão',

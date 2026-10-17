@@ -673,7 +673,7 @@ const en: Record<string, string> = {
   'Link quase pronto': 'Link almost ready',
   'Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.': "We're creating the link right now. Tap Share again in a moment.",
   'Percebi': 'Got it',
-  'Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.': 'Tap the right of the table to step forward and the left to step back. Tap an action below to jump to it.',
+  'Toca à direita da mesa para avançar e à esquerda para recuar. Desliza na mesa para mudar de street.': 'Tap the right of the table to step forward and the left to step back. Swipe across the table to change street.',
   'Próxima street': 'Next street',
   'Velocidade': 'Speed',
   'Mostrar cartas': 'Show cards',
