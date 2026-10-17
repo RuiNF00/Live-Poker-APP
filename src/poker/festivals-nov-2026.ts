@@ -230,6 +230,7 @@ export const TORRELODONES_NOV_2026: Festival = {
 };
 
 /** Lisbon, 23–29 November 2026, events #1–#10 and two satellites. */
+// lateRegMin: the official "LATE REG. ENDS" break in each event's structure, where it closes on the same playing day.
 export const LISBOA_NOV_2026: Festival = {
   id: 'lisboa-nov-2026',
   name: 'Lisboa, novembro 2026',
@@ -251,17 +252,17 @@ export const LISBOA_NOV_2026: Festival = {
     { id: '3-2', number: 3, name: 'High Roller', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 100_000, start: '2026-11-26T15:30' },
     { id: '12-261530', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T15:30', stack: 25000, levelMinutes: 25 },
     { id: '2-1C', number: 2, name: 'Main Event', flight: '1C', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-26T17:30', stack: 60000, levelMinutes: 35 },
-    { id: '4', number: 4, name: 'PLO Knockout', game: 'PLO', buyIn: 550, guarantee: 20_000, start: '2026-11-26T18:30', stack: 40000, levelMinutes: 20 },
+    { id: '4', number: 4, name: 'PLO Knockout', game: 'PLO', buyIn: 550, guarantee: 20_000, start: '2026-11-26T18:30', stack: 40000, levelMinutes: 20, lateRegMin: 160 },
     { id: '12-262100', number: 12, name: 'Satellite to Main Event Day 1C', unnumbered: true, game: 'NLH', buyIn: 120, guarantee: 0, start: '2026-11-26T21:00', stack: 25000, levelMinutes: 30 },
-    { id: '5', number: 5, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-26T22:00', stack: 40000, levelMinutes: 12 },
+    { id: '5', number: 5, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-26T22:00', stack: 40000, levelMinutes: 12, lateRegMin: 120 },
     { id: '2-1D', number: 2, name: 'Main Event', flight: '1D', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T15:30', stack: 60000, levelMinutes: 35 },
-    { id: '6', number: 6, name: 'Deepstack', game: 'NLH', buyIn: 150, guarantee: 20_000, start: '2026-11-27T16:30', stack: 60000, levelMinutes: 20 },
-    { id: '7', number: 7, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-27T22:00', stack: 40000, levelMinutes: 12 },
+    { id: '6', number: 6, name: 'Deepstack', game: 'NLH', buyIn: 150, guarantee: 20_000, start: '2026-11-27T16:30', stack: 60000, levelMinutes: 20, lateRegMin: 215 },
+    { id: '7', number: 7, name: 'PKO Turbo', game: 'NLH', buyIn: 125, guarantee: 7_500, start: '2026-11-27T22:00', stack: 40000, levelMinutes: 12, lateRegMin: 120 },
     { id: '2-1E', number: 2, name: 'Main Event', flight: '1E Turbo', game: 'NLH', buyIn: 550, guarantee: 200_000, start: '2026-11-27T23:30', stack: 60000, levelMinutes: 15 },
     { id: '2-2', number: 2, name: 'Main Event', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 200_000, start: '2026-11-28T15:30' },
     { id: '8', number: 8, name: 'Mini Main Event', game: 'NLH', buyIn: 250, guarantee: 50_000, start: '2026-11-28T18:30', stack: 60000, levelMinutes: 30 },
-    { id: '9', number: 9, name: 'Super High Roller Knockout', game: 'NLH', buyIn: 1100, guarantee: 25_000, start: '2026-11-28T19:30', stack: 200000, levelMinutes: 20 },
-    { id: '10', number: 10, name: 'PKO', game: 'NLH', buyIn: 250, guarantee: 20_000, start: '2026-11-29T17:00', stack: 40000, levelMinutes: 25 },
+    { id: '9', number: 9, name: 'Super High Roller Knockout', game: 'NLH', buyIn: 1100, guarantee: 25_000, start: '2026-11-28T19:30', stack: 200000, levelMinutes: 20, lateRegMin: 210 },
+    { id: '10', number: 10, name: 'PKO', game: 'NLH', buyIn: 250, guarantee: 20_000, start: '2026-11-29T17:00', stack: 40000, levelMinutes: 25, lateRegMin: 215 },
   ],
 };
 
