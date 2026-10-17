@@ -552,6 +552,9 @@ const en: Record<string, string> = {
   'Algo correu mal neste ecrã': 'Something went wrong on this screen',
   'As tuas mãos estão guardadas no telemóvel. Tenta de novo; se voltar a acontecer, fecha e abre a app.': 'Your hands are saved on your phone. Try again; if it happens again, close and reopen the app.',
   'Tentar de novo': 'Try again',
+  'Apagar esta sessão?': 'Delete this session?',
+  'Apagar {name}?': 'Delete {name}?',
+  'As notas sobre este jogador desaparecem. As mãos ficam.': 'Your notes on this player go away. The hands stay.',
 };
 
 export default en;

@@ -5,7 +5,7 @@ import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
-import { Button, Card, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
+import { Button, Card, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
 import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
@@ -89,7 +89,7 @@ export default function BankrollScreen() {
             <Section title={t('Histórico')}>
               <ListGroup>
                 {done.map((s) => (
-                  <SessionRow key={s.id} s={s} onDelete={() => deleteSession(s.id)} onEdit={() => setEditing(s)} />
+                  <SessionRow key={s.id} s={s} onDelete={() => confirmAction(t('Apagar esta sessão?'), s.name || '', t('Apagar'), () => deleteSession(s.id))} onEdit={() => setEditing(s)} />
                 ))}
               </ListGroup>
             </Section>

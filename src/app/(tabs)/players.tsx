@@ -7,7 +7,7 @@ import { FlatList, Modal, ScrollView, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { CardRow } from '@/components/PlayingCard';
-import { Button, Card, Chip, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
+import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
@@ -107,10 +107,12 @@ export default function PlayersScreen() {
               savePlayer(p);
               setEdit(null);
             }}
-            onDelete={() => {
-              deletePlayer(edit.id);
-              setEdit(null);
-            }}
+            onDelete={() =>
+              confirmAction(t('Apagar {name}?', { name: edit.name }), t('As notas sobre este jogador desaparecem. As mãos ficam.'), t('Apagar'), () => {
+                deletePlayer(edit.id);
+                setEdit(null);
+              })
+            }
           />
         )}
       </Modal>

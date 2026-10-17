@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -34,6 +35,18 @@ export function tap(kind: 'light' | 'medium' | 'select' = 'light') {
   if (Platform.OS === 'web') return;
   if (kind === 'select') Haptics.selectionAsync().catch(() => {});
   else Haptics.impactAsync(kind === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+}
+
+/** Asks before something that can't be undone (delete, end). */
+export function confirmAction(title: string, body: string, okLabel: string, onOk: () => void, destructive = true) {
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined' || window.confirm(body ? `${title}\n\n${body}` : title)) onOk();
+    return;
+  }
+  Alert.alert(title, body, [
+    { text: t('Cancelar'), style: 'cancel' },
+    { text: okLabel, style: destructive ? 'destructive' : 'default', onPress: onOk },
+  ]);
 }
 
 // ─── Type ────────────────────────────────────────────────────────────────────
@@ -387,6 +400,8 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }
           trackColor={{ true: C.accent, false: C.surface3 }}
           thumbColor="#FFFFFF"
           ios_backgroundColor={C.surface3}
+          // react-native-web only: its default "on" thumb is teal.
+          {...({ activeThumbColor: '#FFFFFF' } as object)}
         />
       }
     />
