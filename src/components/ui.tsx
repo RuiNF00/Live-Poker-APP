@@ -1064,9 +1064,10 @@ export function Banner({
   );
 }
 
-export function Empty({ title, body, action, icon }: { title: string; body?: string; action?: React.ReactNode; icon?: IconName }) {
+/** `compact`: under a card that already says where you are (the balance), less air so the action stays above the tab bar at 375. */
+export function Empty({ title, body, action, icon, compact }: { title: string; body?: string; action?: React.ReactNode; icon?: IconName; compact?: boolean }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 12, gap: 12 }}>
+    <View style={{ alignItems: 'center', paddingVertical: compact ? S.lg : 40, paddingHorizontal: 12, gap: 12 }}>
       {icon ? (
         <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
           <Ionicons name={icon} size={28} color={C.accent} />

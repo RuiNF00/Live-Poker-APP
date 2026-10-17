@@ -342,3 +342,15 @@ test('after bagging: the Day 2 that takes this flight', () => {
   assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2B')!)?.kind, 'resume');
   assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2A')!), null);
 });
+
+test('São Paulo: official late reg per flight, past midnight included', () => {
+  const sp = SAO_PAULO_NOV_2026;
+  const byId = (id: string) => sp.events.find((e) => e.id === id)!;
+  assert.equal(byId('26-1A').lateRegMin, 465); // 12:00 → 19:45
+  assert.equal(byId('26-1B').lateRegMin, 300); // 20:00 → 01:00 next day
+  assert.equal(sp.events.filter((e) => e.lateRegMin).length, 123);
+  assert.ok(sp.events.every((e) => !e.day2 || !e.lateRegMin));
+  const r = planReminders(sp, { ...EMPTY_PLAN, picked: ['26-1B'] }, 0).find((x) => x.id.endsWith(':late'))!;
+  assert.equal(r.at, venueTime(sp, '2026-11-17T00:40'));
+  assert.equal(r.title, 'Registo do #26 Main Event · Flight 1B fecha às 01:00');
+});

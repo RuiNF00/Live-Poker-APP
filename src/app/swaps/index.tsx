@@ -63,7 +63,7 @@ function SwapsScreen() {
           <Empty
             icon="swap-horizontal"
             title={t('Swaps por escrito')}
-            body={t('Combina uma percentagem com outro jogador para um evento ou para a série toda. Ele confirma por link, os termos e a hora ficam fixados, e quando alguém cobra a app diz quem deve a quem.')}
+            body={t('Combina uma percentagem com outro jogador. A app diz quem deve a quem.')}
             action={
               // One main action; a group swap is the quieter second choice.
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>

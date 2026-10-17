@@ -18,7 +18,8 @@ export function ActionOffers({ f, picked }: { f: Festival; picked: string[] }) {
   const start = () => {
     const o = newOffer(f, picked, uid('o'));
     saveOffer(o);
-    router.push({ pathname: '/action/[id]', params: { id: o.id } });
+    // Straight to the first backer: most of the time it's the one from last time.
+    router.push({ pathname: '/action/[id]', params: { id: o.id, add: '1' } });
   };
   if (!offers.length)
     return (

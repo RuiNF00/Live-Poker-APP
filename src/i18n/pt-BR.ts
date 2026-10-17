@@ -1548,6 +1548,15 @@ const ptBR: Record<string, string> = {
   'Dia {n} a {date}: lembrar-me': 'Dia {n} em {date}: me lembre',
   'Avisamos-te {n} min antes.': 'A gente avisa {n} min antes.',
   'Avisamos-te antes do Dia {n}': 'A gente avisa antes do Dia {n}',
+  'Repetir todas as semanas': 'Repetir toda semana',
+  '{day} às {time}, pronto a começar com um toque': '{day} às {time}, pronto para começar com um toque',
+  '{day} de cada semana, pronto a começar com um toque': '{day} de toda semana, pronto para começar com um toque',
+  'Começa às': 'Começa às',
+  'Custo da parte: {cost} · markup {markup}': 'Custo da parte: {cost} · markup {markup}',
+  'O lucro e o €/hora aparecem aqui.': 'O lucro e o €/hora aparecem aqui.',
+  'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Só datas publicadas pelos organizadores. Falta o seu? Adicione.',
+  'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Combine uma porcentagem com outro jogador. O app diz quem deve a quem.',
+  'Partilha uma mão e os comentários aparecem aqui.': 'Compartilhe uma mão e os comentários aparecem aqui.',
 };
 
 export default ptBR;

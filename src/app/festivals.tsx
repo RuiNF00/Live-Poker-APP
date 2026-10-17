@@ -19,7 +19,7 @@ export default function FestivalsScreen() {
       <Stack.Screen options={{ title: t('Festivais'), headerBackTitle: t('Voltar') }} />
       <Screen contentStyle={{ paddingTop: S.lg }}>
         <T v="small" style={{ marginTop: -S.sm }}>
-          {t('O calendário só tem datas publicadas pelos organizadores. Joga outro festival? Adiciona-o: a viagem e o planeador funcionam da mesma forma.')}
+          {t('Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.')}
         </T>
         <Button title={t('Adicionar o meu festival')} icon="add" kind="secondary" lines={2} onPress={() => router.push('/festival-new')} />
         {coming.length ? (

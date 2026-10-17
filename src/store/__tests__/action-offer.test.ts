@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import type { Session } from '../types';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
@@ -161,5 +161,18 @@ test("a backer's next event: the first of their package not started, skipped or 
   assert.equal(nextEventFor([F], [{ ...o, skipped: ['2'] }], 'b1', () => ({}), before)?.s, e3.start);
   assert.equal(nextEventFor([F], [o], 'b1', () => ({}), venueTime(F, e3.start) + 1), null);
   assert.equal(nextEventFor([F], [o], 'b2', () => ({}), before), null);
+});
+
+test("a backer's usual terms: their newest piece, from a festival package or sold on its own", () => {
+  const pkgOld = { id: 'p1', backerId: 'b1', name: 'Lisboa', kind: 'action' as const, share: 10, markup: 1.15, playerCut: 0, createdAt: 100 };
+  const loose = { id: 's1', startedAt: 200, stakes: [{ backerId: 'b1', share: 7.5, markup: 1.1 }] } as unknown as Session;
+  const pkgNew = { ...pkgOld, id: 'p2', share: 12.5, markup: 1.2, createdAt: 300 };
+  assert.equal(usualTerms('b1', [], []), null);
+  assert.deepEqual(usualTerms('b1', [pkgOld], []), { pct: 10, markup: 1.15 });
+  assert.deepEqual(usualTerms('b1', [pkgOld], [loose]), { pct: 7.5, markup: 1.1 });
+  assert.deepEqual(usualTerms('b1', [pkgOld, pkgNew], [loose]), { pct: 12.5, markup: 1.2 });
+  // Makeup deals and other backers don't count.
+  assert.equal(usualTerms('b1', [{ ...pkgNew, kind: 'makeup' as const }], []), null);
+  assert.equal(usualTerms('b2', [pkgOld], [loose]), null);
 });
 

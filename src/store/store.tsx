@@ -22,6 +22,7 @@ import { mergeById, restoredSettings, type BackupData } from './backup';
 import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans, currentPlans, importPlans, type FestivalPlan } from './festival-plan';
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals } from './my-festivals';
+import { clearWeekly } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
@@ -507,6 +508,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await eraseLocal();
     clearPlans();
     clearOwnFestivals();
+    clearWeekly();
     setHands([]);
     setSessions([]);
     setPlayers([]);

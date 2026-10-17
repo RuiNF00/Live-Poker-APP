@@ -1640,7 +1640,6 @@ const en: Record<string, string> = {
   'Mudar os torneios ou o markup pede a cada backer que confirme outra vez.': 'Changing the tournaments or markup asks each backer to confirm again.',
   'Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.': 'Payments happen outside the app; here you only log them. Each link is private and shows only that backer\'s piece.',
   '% de cada torneio': '% of each tournament',
-  'Custo da parte: {cost}': 'The piece costs {cost}',
   'Registar': 'Log',
   'Mais': 'More',
   'Menos': 'Less',
@@ -3218,6 +3217,19 @@ const en: Record<string, string> = {
   'Acabar': 'Finish',
   'Falta 1 mão por completar': '1 more hand to finish',
   'Faltam {n} mãos por completar': '{n} more hands to finish',
+  'Repetir todas as semanas': 'Repeat every week',
+  '{day} às {time}, pronto a começar com um toque': '{day} at {time}, ready to start in one tap',
+  '{day} de cada semana, pronto a começar com um toque': 'Every {day}, ready to start in one tap',
+  'Começa às': 'Starts at',
+  'Custo da parte: {cost} · markup {markup}': 'The piece costs {cost} · markup {markup}',
+  'O lucro e o €/hora aparecem aqui.': 'Profit and €/hour show up here.',
+  'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Only dates published by organisers. Yours missing? Add it.',
+  'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Agree a percentage with another player. The app works out who owes whom.',
+  'Partilha uma mão e os comentários aparecem aqui.': 'Share a hand and the comments show up here.',
+  'AK, QQ+, BTN, torneio…': 'AK, QQ+, BTN, tournament…',
+  // Hands list: result chips (HandFilters RESULTS).
+  'Ganhei': 'Won',
+  'Perdi': 'Lost',
 };
 
 export default en;

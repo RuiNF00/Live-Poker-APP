@@ -1533,7 +1533,6 @@ const es: Record<string, string> = {
   'Mudar os torneios ou o markup pede a cada backer que confirme outra vez.': 'Cambiar los torneos o el markup pide a cada backer que confirme de nuevo.',
   'Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.': 'Los pagos se hacen fuera de la app; aquí solo los registras. Cada link es privado y muestra solo la parte de ese backer.',
   '% de cada torneio': '% de cada torneo',
-  'Custo da parte: {cost}': 'Costo de la parte: {cost}',
   'Registar': 'Registrar',
   'Mais': 'Más',
   'Menos': 'Menos',
@@ -3212,6 +3211,19 @@ const es: Record<string, string> = {
   'Acabar': 'Terminar',
   'Falta 1 mão por completar': 'Falta 1 mano por completar',
   'Faltam {n} mãos por completar': 'Faltan {n} manos por completar',
+  'Repetir todas as semanas': 'Repetir cada semana',
+  '{day} às {time}, pronto a começar com um toque': '{day} a las {time}, listo para empezar con un toque',
+  '{day} de cada semana, pronto a começar com um toque': 'Cada {day}, listo para empezar con un toque',
+  'Começa às': 'Empieza a las',
+  'Custo da parte: {cost} · markup {markup}': 'Costo de la parte: {cost} · markup {markup}',
+  'O lucro e o €/hora aparecem aqui.': 'Aquí aparecen la ganancia y los €/hora.',
+  'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Solo fechas publicadas por los organizadores. ¿Falta el tuyo? Añádelo.',
+  'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Acuerda un porcentaje con otro jugador. La app dice quién le debe a quién.',
+  'Partilha uma mão e os comentários aparecem aqui.': 'Comparte una mano y los comentarios aparecen aquí.',
+  'AK, QQ+, BTN, torneio…': 'AK, QQ+, BTN, torneo…',
+  // Hands list: result chips (HandFilters RESULTS).
+  'Ganhei': 'Gané',
+  'Perdi': 'Perdí',
 };
 
 export default es;

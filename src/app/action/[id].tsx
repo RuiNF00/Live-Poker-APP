@@ -39,6 +39,7 @@ import {
   updateLine,
   updateOffer,
   useOffers,
+  usualTerms,
   withOfferStakes,
   type ActionOffer,
   type LineSettlement,
@@ -53,7 +54,7 @@ import { C, R, S } from '@/theme';
 const pct = (n: number) => `${String(n).replace('.', ',')}%`;
 
 export default function ActionPackageScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const offers = useOffers();
   const o = offers.find((x) => x.id === id);
   const f = FESTIVALS.find((x) => x.id === o?.festivalId);
@@ -62,7 +63,8 @@ export default function ActionPackageScreen() {
   const pro = usePro();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  // A new package opens on its first backer.
+  const [adding, setAdding] = useState(add === '1');
   const [logging, setLogging] = useState<FestivalEvent | null>(null);
   const [softAsk, askNotify] = useNotifySoftAsk();
 
@@ -178,13 +180,14 @@ export default function ActionPackageScreen() {
     applyToSessions(before);
   };
 
-  const addLine = (name: string, piece: number) => {
+  const addLine = (name: string, piece: number, markup: number) => {
     tap('success');
     const before = offerPackageIds(getOffers());
-    const r = lineRecords(name, backers, title, o, piece, { line: uid('l'), backer: uid('b'), pkg: uid('p') });
+    // The first backer sets the package's markup (their usual one); later ones join at the package's.
+    const r = lineRecords(name, backers, title, { ...o, markup }, piece, { line: uid('l'), backer: uid('b'), pkg: uid('p') });
     if (r.isNew) saveBacker(r.backer);
     savePackage(r.pkg);
-    updateOffer(o.id, (x) => ({ ...x, lines: [...x.lines, r.line] }));
+    updateOffer(o.id, (x) => ({ ...x, markup, lines: [...x.lines, r.line] }));
     applyToSessions(before);
     setAdding(false);
     // The first backer: offer the reminder that closes the accounts after each event (only asks once allowed or refused).
@@ -337,8 +340,20 @@ export default function ActionPackageScreen() {
                 />
               </Card>
             ))}
-            {adding ? (
-              <AddLine cur={f.currency} names={offerNames} cost={(p) => lineCost(f, o, p)} onAdd={addLine} onCancel={() => setAdding(false)} />
+            {adding && events.length ? (
+              <AddLine
+                cur={f.currency}
+                names={offerNames}
+                markup={o.markup}
+                firstLine={!o.lines.length}
+                usual={(n) => {
+                  const b = backers.find((x) => x.name.trim().toLowerCase() === n.trim().toLowerCase());
+                  return b ? usualTerms(b.id, packages, sessions) : null;
+                }}
+                cost={(p, m) => lineCost(f, { ...o, markup: m }, p)}
+                onAdd={addLine}
+                onCancel={() => setAdding(false)}
+              />
             ) : (
               <Button
                 kind={o.lines.length ? 'outline' : 'primary'}
@@ -426,9 +441,36 @@ export default function ActionPackageScreen() {
   );
 }
 
-function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: string[]; cost: (pct: number) => number; onAdd: (name: string, pct: number) => void; onCancel: () => void }) {
+function AddLine({
+  cur,
+  names,
+  markup,
+  firstLine,
+  usual,
+  cost,
+  onAdd,
+  onCancel,
+}: {
+  cur: string;
+  names: string[];
+  /** The package's markup; the first backer brings their usual one instead. */
+  markup: number;
+  firstLine: boolean;
+  usual: (name: string) => { pct: number; markup: number } | null;
+  cost: (pct: number, markup: number) => number;
+  onAdd: (name: string, pct: number, markup: number) => void;
+  onCancel: () => void;
+}) {
   const [name, setName] = useState(names[0] ?? '');
-  const [piece, setPiece] = useState(5);
+  // A repeat backer comes with what they took last time.
+  const [piece, setPiece] = useState(() => (names[0] ? usual(names[0])?.pct : undefined) ?? 5);
+  const u = usual(name);
+  const m = firstLine && u ? u.markup : markup;
+  const pick = (n: string) => {
+    setName(n);
+    const x = usual(n);
+    if (x) setPiece(x.pct);
+  };
   const ok = name.trim().length > 0 && piece > 0;
   return (
     <Card tone="raised" style={{ gap: S.md }}>
@@ -436,7 +478,7 @@ function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: st
       {names.length ? (
         <ChipRow>
           {names.slice(0, 8).map((n) => (
-            <Chip key={n} label={n} active={name.trim().toLowerCase() === n.trim().toLowerCase()} onPress={() => setName(n)} />
+            <Chip key={n} label={n} active={name.trim().toLowerCase() === n.trim().toLowerCase()} onPress={() => pick(n)} />
           ))}
         </ChipRow>
       ) : null}
@@ -450,11 +492,11 @@ function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: st
             <Chip key={p} label={`${p}%`} active={piece === p} onPress={() => setPiece(p)} />
           ))}
         </ChipRow>
-        <T v="small">{t('Custo da parte: {cost}', { cost: money(cost(piece), cur) })}</T>
+        <T v="small">{t('Custo da parte: {cost} · markup {markup}', { cost: money(cost(piece, m), cur), markup: markupLabel(m) })}</T>
       </View>
       <Row gap={S.sm}>
         <Button size="md" kind="ghost" style={{ flex: 1 }} title={t('Cancelar')} onPress={onCancel} />
-        <Button size="md" style={{ flex: 1.4 }} icon="checkmark" title={t('Registar')} onPress={() => onAdd(name, piece)} disabled={!ok} />
+        <Button size="md" style={{ flex: 1.4 }} icon="checkmark" title={t('Registar')} onPress={() => onAdd(name, piece, m)} disabled={!ok} />
       </Row>
     </Card>
   );
