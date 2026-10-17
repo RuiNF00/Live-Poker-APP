@@ -79,3 +79,29 @@ export function skipTo(hand: Hand, s: TableState, target: number): HandAction[] 
   }
   return acts;
 }
+
+/**
+ * After hero bets or raises: "only X calls" (or nobody does) in one tap. Every
+ * other player still to act folds, `target` calls; null means everyone folds.
+ * Returns [] when the shortcut does not apply.
+ */
+export function onlyCaller(hand: Hand, s: TableState, target: number | null): HandAction[] {
+  if (s.toAct === null || s.toAct === hand.hero || s.lastAggressor !== hand.hero) return [];
+  const acts: HandAction[] = [];
+  let st: TableState | null = s;
+  for (let guard = 0; st && st.toAct !== null && st.toAct !== hand.hero && guard < 20; guard++) {
+    const a: HandAction = { p: st.toAct, kind: st.toAct === target ? 'call' : 'fold' };
+    const next: TableState | null = apply(st, a, hand);
+    if (!next) break;
+    acts.push(a);
+    st = next;
+    if (next.street !== s.street) break;
+  }
+  return acts;
+}
+
+/** Opponents who could be "the only caller" right now. */
+export function callerCandidates(hand: Hand, s: TableState): number[] {
+  if (s.toAct === null || s.toAct === hand.hero || s.lastAggressor !== hand.hero) return [];
+  return hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i] && !s.allIn[i] && s.bets[i] < s.currentBet);
+}

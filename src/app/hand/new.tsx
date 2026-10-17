@@ -8,7 +8,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,7 +22,7 @@ import { Table } from '@/components/Table';
 import { Button, Chip, Row, T, tap } from '@/components/ui';
 import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { sizePresets, skipTargets, skipTo } from '@/poker/entry';
+import { callerCandidates, onlyCaller, sizePresets, skipTargets, skipTo } from '@/poker/entry';
 import { newHand, resizeTable } from '@/poker/factory';
 import { amount, blindsLabel, chips } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
@@ -91,6 +91,19 @@ export default function NewHand() {
   else if (s.toAct !== null) phase = 'action';
   else if (r.result && !s.foldWin) phase = 'showdown';
   else phase = 'done';
+
+  // Most hands fold to hero: do that automatically once per position. Undo
+  // brings back the seats before hero if someone did enter the pot.
+  const autoFolded = useRef('');
+  useEffect(() => {
+    const key = `${hand.id}:${hand.button}`;
+    if (phase !== 'action' || hand.actions.length || s.street !== 'preflop' || s.toAct === hand.hero || autoFolded.current === key) return;
+    autoFolded.current = key;
+    const acts = skipTo(hand, s, hand.hero);
+    if (acts.length) pushActions(acts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hand.actions.length, hand.button]);
+  const autoFoldCount = autoFolded.current === `${hand.id}:${hand.button}` && hand.actions.length && hand.actions.every((a) => a.kind === 'fold' && a.p !== hand.hero) ? hand.actions.length : 0;
 
   const setPlayer = (i: number, p: Player) => {
     const players = hand.players.map((x, k) => (k === i ? p : x));
@@ -179,6 +192,7 @@ export default function NewHand() {
   const l = legal(s);
   const presets = phase === 'action' ? sizePresets(hand, s) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
+  const callers = phase === 'action' ? callerCandidates(hand, s) : [];
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
   return (
@@ -250,10 +264,28 @@ export default function NewHand() {
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
-                {l.p === hand.hero ? '' : ` (${pos[l.p]})`}
+                {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
               {l.toCall > 0 ? <T v="small">para pagar {amount(l.toCall, hand, inBB)}</T> : null}
             </Row>
+            {autoFoldCount > 0 && l.p === hand.hero && (
+              <Pressable onPress={undo} hitSlop={6}>
+                <T v="small">
+                  Fold de todos até ti · <T v="small" color={C.accent}>alguém entrou antes? Desfaz</T>
+                </T>
+              </Pressable>
+            )}
+            {callers.length > 0 && (
+              <View style={{ gap: 6 }}>
+                <T v="label">Resposta rápida (os outros fazem fold)</T>
+                <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                  {callers.map((i) => (
+                    <Chip key={i} big label={`Só ${displayName(hand, i, pos)}${hand.players[i].name ? ` (${pos[i]})` : ''} paga`} onPress={() => pushActions(onlyCaller(hand, s, i))} />
+                  ))}
+                  <Chip big label="Todos fold" onPress={() => pushActions(onlyCaller(hand, s, null))} />
+                </Row>
+              </View>
+            )}
             <Row gap={8}>
               {l.canCall ? (
                 <Button title="Fold" kind="secondary" style={{ flex: 1 }} onPress={() => act('fold')} />
