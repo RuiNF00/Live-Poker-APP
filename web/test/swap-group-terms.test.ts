@@ -44,3 +44,14 @@ describe('seat gaps', () => {
     expect(minTransfers(net).reduce((a, x) => a + x.amount, 0)).toBe(4500);
   });
 });
+
+describe('to the cent', () => {
+  it('0,40 and 0,01 are still paid; only 0,00 is settled', () => {
+    const net = new Map([[0, 0.4], [1, -0.41], [2, 0.01]]);
+    expect(minTransfers(net)).toEqual([
+      { from: 1, to: 0, amount: 0.4 },
+      { from: 1, to: 2, amount: 0.01 },
+    ]);
+    expect(minTransfers(new Map([[0, 0.004], [1, -0.004]]))).toEqual([]);
+  });
+});

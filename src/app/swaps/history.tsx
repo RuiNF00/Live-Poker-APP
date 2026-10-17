@@ -11,6 +11,7 @@ import { Avatar } from '@/components/Avatar';
 import { Card, Empty, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
+import { HALF_CENT } from '@/store/swap-groups';
 import { useStore } from '@/store/store';
 import { MIN_PRIZES, MIN_SESSIONS, swapHistory, type HistoryLine } from '@/store/swap-history';
 import { useGroups } from '@/store/swap-groups-store';
@@ -129,7 +130,7 @@ function Line({ x, show, group, series }: { x: HistoryLine; show: (n: number, cu
         </T>
       }
       right={
-        <T v="mono" color={x.net > 0.5 ? C.good : x.net < -0.5 ? C.warn : C.textDim} style={{ fontSize: 15 }}>
+        <T v="mono" color={x.net > HALF_CENT ? C.good : x.net < -HALF_CENT ? C.warn : C.textDim} style={{ fontSize: 15 }}>
           {show(x.net, x.currency)}
         </T>
       }

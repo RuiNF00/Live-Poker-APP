@@ -4,7 +4,7 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
-import { assignGroups, groupLedger, groupNet, groupReady, minTransfers, type SwapGroup } from './swap-groups';
+import { assignGroups, groupLedger, groupNet, groupReady, HALF_CENT, minTransfers, type SwapGroup } from './swap-groups';
 import { t } from '@/i18n';
 
 import type { Session } from './types';
@@ -166,7 +166,7 @@ export function swapLedger(s: Pick<Swap, 'terms' | 'entries' | 'side'>): SwapLed
   };
 }
 
-export const settled = (l: SwapLedger) => Math.abs(l.balance) < 0.5;
+export const settled = (l: SwapLedger) => Math.abs(l.balance) < HALF_CENT;
 
 export interface SwapsTotal {
   /** Per currency: what others owe me minus what I owe, over every open swap. */
@@ -360,7 +360,7 @@ export function newFromOther(before: Swap | undefined, after: Swap): SwapEntry[]
 /** Swaps and groups where money is still owed either way ("Delete all my data" warns about them). */
 export function unsettledSwaps(swaps: Swap[], groups: SwapGroup[]): number {
   const pairs = swaps.filter((s) => s.confirmedAt && !s.gone && !s.archived && !s.left && !settled(swapLedger(s))).length;
-  const grps = groups.filter((g) => groupReady(g) && !g.gone && !g.archived && Math.abs(groupLedger(g).balance) >= 0.5).length;
+  const grps = groups.filter((g) => groupReady(g) && !g.gone && !g.archived && Math.abs(groupLedger(g).balance) >= HALF_CENT).length;
   return pairs + grps;
 }
 

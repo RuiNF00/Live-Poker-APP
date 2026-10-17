@@ -124,10 +124,13 @@ export interface Transfer {
   amount: number;
 }
 
+/** Money is counted to the cent: under half a cent is 0,00, anything else is still owed. */
+export const HALF_CENT = 0.005;
+
 /** The fewest payments that settle everyone: who owes most pays who is owed most, repeated. */
 export function minTransfers(net: Map<number, number>): Transfer[] {
-  const debt = [...net].filter(([, v]) => v <= -0.5).map(([seat, v]) => ({ seat, v: -v }));
-  const cred = [...net].filter(([, v]) => v >= 0.5).map(([seat, v]) => ({ seat, v }));
+  const debt = [...net].filter(([, v]) => v <= -HALF_CENT).map(([seat, v]) => ({ seat, v: -v }));
+  const cred = [...net].filter(([, v]) => v >= HALF_CENT).map(([seat, v]) => ({ seat, v }));
   const out: Transfer[] = [];
   while (debt.length && cred.length) {
     debt.sort((a, b) => b.v - a.v || a.seat - b.seat);
@@ -135,11 +138,11 @@ export function minTransfers(net: Map<number, number>): Transfer[] {
     const d = debt[0];
     const c = cred[0];
     const x = r2(Math.min(d.v, c.v));
-    if (x >= 0.5) out.push({ from: d.seat, to: c.seat, amount: x });
+    if (x >= HALF_CENT) out.push({ from: d.seat, to: c.seat, amount: x });
     d.v = r2(d.v - x);
     c.v = r2(c.v - x);
-    if (d.v < 0.5) debt.shift();
-    if (c.v < 0.5) cred.shift();
+    if (d.v < HALF_CENT) debt.shift();
+    if (c.v < HALF_CENT) cred.shift();
   }
   return out;
 }

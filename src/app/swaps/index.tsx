@@ -15,7 +15,7 @@ import { usePendingSwapCreates } from '@/lib/swap-create-queue';
 import type { PendingCreate } from '@/lib/swap-create-core';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
-import { assignGroups, groupLedger, groupNet, groupReady, minTransfers, type SwapGroup } from '@/store/swap-groups';
+import { assignGroups, groupLedger, groupNet, groupReady, HALF_CENT, minTransfers, type SwapGroup } from '@/store/swap-groups';
 import { syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
@@ -42,7 +42,7 @@ function SwapsScreen() {
   const activeGroups = groups.filter((g) => !g.archived && !g.gone);
   const pastGroups = groups.filter((g) => g.archived || g.gone);
   const locked = useLocked('swaps');
-  const totals = locked ? [] : [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= 0.5);
+  const totals = locked ? [] : [...tot.byCurrency.entries()].filter(([, v]) => Math.abs(v.net) >= HALF_CENT);
   const any = swaps.length + groups.length + waiting.length > 0;
   const newGroup = () => router.push('/swaps/group-new');
 
@@ -85,7 +85,7 @@ function SwapsScreen() {
                     <T v="monoXL" color={v.net > 0 ? C.good : C.warn} numberOfLines={1} adjustsFontSizeToFit>
                       {money(Math.abs(v.net), cur)}
                     </T>
-                    {v.owedToMe >= 0.5 && v.iOwe >= 0.5 ? (
+                    {v.owedToMe >= HALF_CENT && v.iOwe >= HALF_CENT ? (
                       <T v="small">{t('devem-te {a} · deves {b}', { a: money(v.owedToMe, cur), b: money(v.iOwe, cur) })}</T>
                     ) : null}
                   </View>
@@ -232,7 +232,7 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
   const ready = groupReady(g);
   const l = groupLedger(g);
   const cur = g.terms.currency;
-  const square = Math.abs(l.balance) < 0.5;
+  const square = Math.abs(l.balance) < HALF_CENT;
   const missing = g.seats.filter((s) => !s.confirmedAt).length;
   // Who pays whom, right in the list: no need to open the group to settle up.
   const mine = ready && !locked && !square && !g.gone && !g.archived ? minTransfers(groupNet(g)).filter((x) => x.from === g.seat || x.to === g.seat) : [];

@@ -111,3 +111,12 @@ test('a seat dropped before anyone took it leaves a gap in the numbers, and the 
   assert.ok(tr.every((x) => x.from === 3 && (x.to === 0 || x.to === 1)));
   assert.equal(tr.reduce((a, x) => a + x.amount, 0), 4500);
 });
+
+test('group transfers count to the cent: 0,40 and 0,01 are still paid', () => {
+  const net = new Map([[0, 0.4], [1, -0.41], [2, 0.01]]);
+  assert.deepEqual(minTransfers(net), [
+    { from: 1, to: 0, amount: 0.4 },
+    { from: 1, to: 2, amount: 0.01 },
+  ]);
+  assert.deepEqual(minTransfers(new Map([[0, 0.004], [1, -0.004]])), []);
+});

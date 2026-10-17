@@ -4,6 +4,7 @@ import React from 'react';
 import { ListGroup, ListItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
+import { HALF_CENT } from '@/store/swap-groups';
 import { swapsTotal } from '@/store/swaps';
 import { useGroups } from '@/store/swap-groups-store';
 import { useSwaps } from '@/store/swaps-store';
@@ -18,7 +19,7 @@ export function SwapsEntry() {
   const tot = swapsTotal(swaps, groups);
   // Without Pro the amounts stay in the app's Pro screens; the row still counts what's open.
   const parts = [...(locked ? [] : tot.byCurrency.entries())]
-    .filter(([, v]) => Math.abs(v.net) >= 0.5)
+    .filter(([, v]) => Math.abs(v.net) >= HALF_CENT)
     .map(([cur, v]) => (v.net > 0 ? t('Devem-te {amount}', { amount: money(v.net, cur) }) : t('Deves {amount}', { amount: money(-v.net, cur) })));
   if (locked && tot.open) parts.push(tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open }));
   if (tot.pending) parts.push(tot.pending === 1 ? t('1 por confirmar') : t('{n} por confirmar', { n: tot.pending }));

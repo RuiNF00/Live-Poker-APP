@@ -9,7 +9,7 @@ import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, 
 import { t } from '@/i18n';
 import { money, shortDate } from '@/poker/format';
 import { useStore } from '@/store/store';
-import { groupLedger, groupNet, groupOwedOn, groupShareOf, minTransfers, seatName, type GroupEntry, type SwapGroup } from '@/store/swap-groups';
+import { groupLedger, groupNet, groupOwedOn, groupShareOf, HALF_CENT, minTransfers, seatName, type GroupEntry, type SwapGroup } from '@/store/swap-groups';
 import { C, S } from '@/theme';
 
 import { pctLabel, signed } from './parts';
@@ -25,9 +25,9 @@ export function seatLabel(g: SwapGroup, seat: number): string {
 export function GroupHero({ g }: { g: SwapGroup }) {
   const l = groupLedger(g);
   const cur = g.terms.currency;
-  const square = Math.abs(l.balance) < 0.5;
+  const square = Math.abs(l.balance) < HALF_CENT;
   const verdict = square ? (l.myPrizes || l.othersPrizes ? t('Contas acertadas com o grupo') : t('Ainda ninguém cobrou')) : l.balance > 0 ? t('O grupo deve-te') : t('Deves ao grupo');
-  const effect = Math.abs(l.effect) >= 0.5 ? (l.effect > 0 ? t('O swap soma {amount} ao teu resultado', { amount: money(l.effect, cur) }) : t('O swap tira {amount} ao teu resultado', { amount: money(-l.effect, cur) })) : '';
+  const effect = Math.abs(l.effect) >= HALF_CENT ? (l.effect > 0 ? t('O swap soma {amount} ao teu resultado', { amount: money(l.effect, cur) }) : t('O swap tira {amount} ao teu resultado', { amount: money(-l.effect, cur) })) : '';
   return (
     <Card tone="raised" style={{ gap: S.xs, paddingVertical: S.xl }}>
       <T v="label">{verdict}</T>
