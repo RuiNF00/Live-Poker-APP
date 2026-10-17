@@ -396,7 +396,7 @@ function Live({ s }: { s: Session }) {
 
         <Section title={t('Dinheiro')}>
           <ListGroup>
-            <ListItem icon="wallet-outline" title={t('Investido')} value={money(cost(s), s.currency)} />
+            <ListItem icon="wallet-outline" title={t('Buy-ins')} value={money(cost(s), s.currency)} />
             <ListItem
               icon="add-circle-outline"
               iconColor={C.accent}

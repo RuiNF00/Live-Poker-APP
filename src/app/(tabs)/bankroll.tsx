@@ -286,7 +286,7 @@ function BankrollTab() {
               <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={tot.hours >= 0.25 ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
               {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
               {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
-              <Stat label={t('Investido')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
+              <Stat label={t('Buy-ins')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
               {tot.tips ? <Stat label={t('Gorjetas')} sub={t('Já descontadas')} value={fmt(tot.tips, cur)} /> : null}
               {tot.handsPerHour !== null ? <Stat label={t('Mãos por hora')} sub={t('Onde as contaste')} value={Math.round(tot.handsPerHour).toLocaleString(locale)} /> : null}
               <Stat label={t('Melhor')} sub={t('Melhor sessão')} value={fmt(tot.best, cur)} tone="good" />

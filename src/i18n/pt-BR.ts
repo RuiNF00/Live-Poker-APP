@@ -877,11 +877,9 @@ const ptBR: Record<string, string> = {
   'Perdes dinheiro em todas as salas; em {best} perdes menos.': 'Você perde dinheiro em todas as salas; em {best} perde menos.',
   'Perdes dinheiro em todas as stakes; a {best} perdes menos.': 'Você perde dinheiro em todos os stakes; no {best} perde menos.',
   'Onde ganhas e onde perdes': 'Onde você ganha e onde perde',
-  'Investido': 'Buy-ins',
   'Vê em que salas, jogos e stakes ganhas mais.': 'Veja em que salas, jogos e stakes você ganha mais.',
-  'Por cada 100 investidos, voltaram {x}.': 'A cada 100 em buy-ins, voltaram {x}.',
-  'Por cada 100 investidos, voltaram {x}. Em torneios, a variância é longa.': 'A cada 100 em buy-ins, voltaram {x}. Em torneios, a variância é longa.',
-  'Sem dinheiro investido nesta vista.': 'Sem buy-ins nesta vista.',
+  'Por cada 100 em buy-ins, voltaram {x}.': 'A cada 100 em buy-ins, voltaram {x}.',
+  'Por cada 100 em buy-ins, voltaram {x}. Em torneios, a variância é longa.': 'A cada 100 em buy-ins, voltaram {x}. Em torneios, a variância é longa.',
   'Vê onde ganhas e onde perdes, com Pro.': 'Veja onde você ganha e onde perde, com o Pro.',
   'Com mais sessões mostramos-te onde ganhas e onde perdes: horas, dias, salas, stakes e o que acontece depois de uma perda grande.': 'Com mais sessões mostramos onde você ganha e onde perde: horas, dias, salas, stakes e o que acontece depois de uma perda grande.',
   'Tens {n} sessões. As primeiras conclusões aparecem por volta das {m}.': 'Você tem {n} sessões. As primeiras conclusões aparecem por volta de {m}.',
@@ -1276,6 +1274,7 @@ const ptBR: Record<string, string> = {
   'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Você pode escolher quais nas Configurações da Sweatbook.',
   'Aviso antes de cobrar': 'Aviso antes da cobrança',
   'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante o teste grátis, avisamos você antes de cobrar.',
+  'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
 };
 
 export default ptBR;
