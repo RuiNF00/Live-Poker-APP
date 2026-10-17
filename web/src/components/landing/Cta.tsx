@@ -5,10 +5,16 @@ import { track } from '@/lib/track';
 import { useStoreLink, type StoreLinks } from './StoreButtons';
 
 /** The one big button: this phone's store, or the download section while stores aren't live. */
-export function MainCta({ label, stores, from, className = '' }: { label: string; stores: StoreLinks; from: string; className?: string }) {
+export function MainCta({ label, stores, from, className = '', onClick }: { label: string; stores: StoreLinks; from: string; className?: string; onClick?: () => void }) {
   const href = useStoreLink(stores);
   return (
-    <a className={`lp-btn main ${className}`} href={href} onClick={() => track('store_click', { from, live: href !== '#baixar' })}>
+    <a
+      className={`lp-btn main ${className}`}
+      href={href}
+      onClick={() => {
+        onClick?.();
+        track('store_click', { from, live: href !== '#baixar' });
+      }}>
       <DownloadIcon />
       {label}
     </a>

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FIRST_CURRENCIES, GOALS, isMtt, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type Goal } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
+import { InvitePaste } from '@/components/InvitePaste';
 import { Replayer } from '@/components/Replayer';
 import { Button, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
@@ -108,6 +109,8 @@ export default function Welcome() {
               <T v="title">{t('A tua mão, revista em 30 segundos')}</T>
               <T v="callout">{t('Regista entre mãos. Revê rua a rua.')}</T>
             </View>
+            {/* Invited on an iPhone: the code survives the App Store through the clipboard, then straight to the first hand. */}
+            <InvitePaste onClaimed={() => close('mesa')} />
           </>
         ) : null}
 

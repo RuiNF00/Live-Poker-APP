@@ -17,7 +17,10 @@ import { deferState, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
-import { activateInvite, claimState } from '@/lib/referrals';
+import { t } from '@/i18n';
+import { notice } from '@/lib/notice';
+import { activateInvite, claimState, newInviteDays } from '@/lib/referrals';
+import { shortDate } from '@/poker/format';
 import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
 import { useStore } from '@/store/store';
 
@@ -92,7 +95,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     // Came through an invite? The first saved hand turns on both players' Pro days.
     if (kind === 'hand')
       activateInvite().then((granted) => {
-        if (granted) store.getIsPro().then((v) => v !== null && setPro(v));
+        if (!granted) return;
+        store.getIsPro().then((v) => v !== null && setPro(v));
+        // Said the moment it happens, in the same words as the invite: days of Pro, nothing to win.
+        notice(t('7 dias de Pro para os dois'), t('Guardaste a primeira mão: tu e quem te convidou têm Pro até {date}.', { date: shortDate(Date.now() + 7 * 86_400_000) }));
       });
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
@@ -153,10 +159,23 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => setLiveSession(!!activeSession), [activeSession]);
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
+  // The inviter hears about a friend's first hand on the next open, not only in Definições.
+  const inviteNews = useCallback(() => {
+    newInviteDays().then((days) => {
+      if (!days) return;
+      store.getIsPro().then((v) => v !== null && setPro(v));
+      notice(t('Um amigo guardou a primeira mão'), t('Têm os dois {n} dias de Pro.', { n: days }));
+    });
+  }, [setPro]);
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (st) => st === 'active' && refreshNudges());
+    inviteNews();
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      refreshNudges();
+      inviteNews();
+    });
     return () => sub.remove();
-  }, [refreshNudges]);
+  }, [refreshNudges, inviteNews]);
   const annualPrice = plans.find((p) => p.id === 'annual')?.priceString ?? '';
   useEffect(() => {
     const timer = setTimeout(() => {

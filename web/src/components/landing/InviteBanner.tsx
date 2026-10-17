@@ -9,8 +9,9 @@ import type { StoreLinks } from './StoreButtons';
 
 /**
  * The friend's side of an invite (/r/<code>). Android picks the code up from the Play
- * referrer; on iPhone the friend comes back to this link after installing, and the universal
- * link (or the button) opens the app with the code. The code is also easy to copy.
+ * referrer. On iPhone, tapping the App Store button also copies this invite link, and the
+ * app's first screen has Apple's paste button to read it (one tap, no prompt, no device id).
+ * Coming back to this link after installing still works too (universal link or the button).
  */
 export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; stores: StoreLinks }) {
   const [ios, setIos] = useState(false);
@@ -60,7 +61,7 @@ export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; 
       </ol>
 
       <div id="hero-cta" className="lp-hero-actions">
-        <MainCta label={c.ctaFree} stores={stores} from="invite" />
+        <MainCta label={c.ctaFree} stores={stores} from="invite" onClick={ios ? () => void navigator.clipboard?.writeText(`${location.origin}/r/${code}`).catch(() => {}) : undefined} />
         {ios && (
           <a className="lp-btn ghost" href={`${brand.appScheme}://r/${code}`}>
             {c.invite.open}
