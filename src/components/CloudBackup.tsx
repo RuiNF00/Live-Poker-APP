@@ -8,7 +8,7 @@ import { Alert, Platform, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, parseCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
-import { autoBackup, countsOf } from '@/lib/cloud-guard';
+import { autoBackup, countsOf, uploadBlock } from '@/lib/cloud-guard';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary } from '@/store/backup';
 import { useStore } from '@/store/store';
@@ -117,6 +117,8 @@ export function CloudBackup() {
   };
 
   if (cloud === undefined) return null;
+  // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
+  const stalled = !!cloud && !!uploadBlock(countsOf(store), cloud);
 
   return (
     <Card style={{ gap: S.md }}>
@@ -126,7 +128,13 @@ export function CloudBackup() {
         </View>
         <View style={{ flex: 1 }}>
           <T v="h3">{t('Cópia na nuvem')}</T>
-          <T v="tiny">{cloud ? (cloud.lastAt ? t('Ligada · última {date}', { date: shortDate(cloud.lastAt) }) : t('Ligada')) : t('Sem conta e sem email')}</T>
+          {stalled ? (
+            <T v="tiny" color={C.warn}>
+              {t('Cópia parada: tens menos do que a nuvem')}
+            </T>
+          ) : (
+            <T v="tiny">{cloud ? (cloud.lastAt ? t('Ligada · última {date}', { date: shortDate(cloud.lastAt) }) : t('Ligada')) : t('Sem conta e sem email')}</T>
+          )}
         </View>
       </Row>
       {cloud ? (

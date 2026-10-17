@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Alert, AppState } from 'react-native';
 
 import { t } from '@/i18n';
+import { noteDeleted } from '@/lib/cloud-backup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 
 import type { Hand } from '@/poker/types';
@@ -307,7 +308,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [sessions, settings.currency]);
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
-  const deleteHand = useCallback((id: string) => setHands((l) => l.filter((x) => x.id !== id)), []);
+  const deleteHand = useCallback((id: string) => {
+    setHands((l) => l.filter((x) => x.id !== id));
+    noteDeleted('hands');
+  }, []);
   const saveSession = useCallback(
     (s: Session) =>
       setSessions((l) => {
@@ -316,12 +320,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }),
     [],
   );
-  const deleteSession = useCallback((id: string) => setSessions((l) => l.filter((x) => x.id !== id)), []);
+  const deleteSession = useCallback((id: string) => {
+    setSessions((l) => l.filter((x) => x.id !== id));
+    noteDeleted('sessions');
+  }, []);
   const savePlayer = useCallback(
     (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),
     [],
   );
-  const deletePlayer = useCallback((id: string) => setPlayers((l) => l.filter((x) => x.id !== id)), []);
+  const deletePlayer = useCallback((id: string) => {
+    setPlayers((l) => l.filter((x) => x.id !== id));
+    noteDeleted('players');
+  }, []);
   const saveBankroll = useCallback((b: Bankroll) => setBankrolls((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
   const saveTransfer = useCallback((x: Transfer) => setTransfers((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
   const deleteTransfer = useCallback((id: string) => setTransfers((l) => l.filter((x) => x.id !== id)), []);

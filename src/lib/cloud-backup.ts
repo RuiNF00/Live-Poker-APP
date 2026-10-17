@@ -10,7 +10,7 @@ import { BRAND } from '@/theme';
 
 import { deriveKeys, seal, unseal } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
-import { countsOf, uploadBlock } from './cloud-guard';
+import { afterDelete, countsOf, uploadBlock, type Counts } from './cloud-guard';
 import { longSignal } from './net';
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
@@ -38,6 +38,17 @@ export async function loadCloud(): Promise<CloudState | null> {
 export async function saveCloud(c: CloudState | null): Promise<void> {
   if (c) await AsyncStorage.setItem(KEY, JSON.stringify(c));
   else await AsyncStorage.removeItem(KEY);
+}
+
+let deletes: Promise<void> = Promise.resolve();
+/** Called by the store on a deliberate delete, so the guard doesn't hold backups back (in order, never two at once). */
+export function noteDeleted(kind: keyof Counts): void {
+  deletes = deletes
+    .then(async () => {
+      const c = await loadCloud();
+      if (c?.counts) await saveCloud(afterDelete(c, kind));
+    })
+    .catch(() => {});
 }
 
 export function newCloud(): CloudState {

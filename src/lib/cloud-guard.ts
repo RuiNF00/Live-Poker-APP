@@ -29,6 +29,15 @@ export function uploadBlock(data: Counts, c: CloudState, force = false): 'would_
   return null;
 }
 
+/**
+ * The player deleted one item on purpose: the cloud copy may now hold one more
+ * than the phone without anything being lost, so the next backup can go out.
+ */
+export function afterDelete(c: CloudState, kind: keyof Counts): CloudState {
+  if (!c.counts) return c;
+  return { ...c, counts: { ...c.counts, [kind]: Math.max(0, c.counts[kind] - 1) } };
+}
+
 /** What the launch auto-backup does: nothing, or upload. It never forces. */
 export function autoBackup(c: CloudState | null, data: Counts, now: number): 'skip' | 'upload' {
   if (!c || (c.lastAt && now - c.lastAt < AUTO_EVERY_MS)) return 'skip';

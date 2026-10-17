@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, uploadBlock } from '../cloud-guard';
+import { afterDelete, autoBackup, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -37,4 +37,16 @@ test('upload() rule: empty or smaller never replaces the server copy unless forc
   assert.equal(uploadBlock(full, known), null);
   // Brand-new code, or the user confirmed deleting things on purpose.
   assert.equal(uploadBlock(empty, known, true), null);
+});
+
+test('a deliberate delete does not stop backups for good', () => {
+  const t0 = 1_000_000_000_000;
+  let c: CloudState = { ...code, lastAt: t0, counts: { hands: 3, sessions: 1, players: 2 } };
+  // QA repro: delete one player note, then add 10 hands.
+  assert.equal(autoBackup(c, { hands: 13, sessions: 1, players: 1 }, t0 + 7 * H), 'skip');
+  c = afterDelete(c, 'players');
+  assert.equal(autoBackup(c, { hands: 13, sessions: 1, players: 1 }, t0 + 7 * H), 'upload');
+  // Never below zero; legacy states without counts are left alone.
+  assert.equal(afterDelete(afterDelete(c, 'sessions'), 'sessions').counts?.sessions, 0);
+  assert.deepEqual(afterDelete(code, 'hands'), code);
 });

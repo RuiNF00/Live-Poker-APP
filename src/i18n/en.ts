@@ -876,6 +876,7 @@ const en: Record<string, string> = {
   'MB Way, dinheiro, transferência…': 'Cash, bank transfer…',
   'Acertado': 'Square',
   'Deve-te {amount}': 'Owes you {amount}',
+  'Cópia parada: tens menos do que a nuvem': 'Backup paused: this phone has less than the cloud',
 };
 
 export default en;
