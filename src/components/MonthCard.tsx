@@ -61,7 +61,7 @@ export function MonthCard({ r, hideMoney = true, brand = true, ref }: { r: Month
         <View style={{ height: 1, backgroundColor: LINE }} />
         <View style={{ flexDirection: 'row', gap: 16 }}>
           <Stat label={t('Sessões')} value={String(r.sessions)} />
-          {bb ? <Stat label="BB/h" value={bb} /> : r.mtts ? <Stat label="ITM" value={`${r.cashes}/${r.mtts}`} /> : null}
+          {bb ? <Stat label={r.cashSessions === r.sessions ? 'BB/h' : t('BB/h cash')} value={bb} /> : r.mtts ? <Stat label="ITM" value={`${r.cashes}/${r.mtts}`} /> : null}
           {r.venues ? <Stat label={t('Salas')} value={String(r.venues)} /> : null}
         </View>
         {b ? (

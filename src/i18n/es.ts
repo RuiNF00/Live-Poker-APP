@@ -2480,6 +2480,15 @@ const es: Record<string, string> = {
   '1 sessão em {stake}, resultado {amount}. Ainda podes perder {left} buy-ins antes de voltares.': '1 sesión en {stake}, resultado {amount}. Aún puedes perder {left} buy-ins antes de volver.',
   '1 swap': '1 swap',
   '{n} swaps': '{n} swaps',
+  'Cash: {h} h': 'Cash: {h} h',
+  'horas de cash': 'horas de cash',
+  'BB/h cash': 'BB/h cash',
+  'torneios de {amount}': 'torneos de {amount}',
+  'Levantar {amount}': 'Retirar {amount}',
+  'Podes levantar até {amount} e manter as tuas regras ({n} buy-ins para {stake}).': 'Puedes retirar hasta {amount} y mantener tus reglas ({n} buy-ins para {stake}).',
+  'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'Después de este retiro quedas por debajo de tus reglas ({n} buy-ins para {stake}).',
+  'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Tus reglas piden {need} ({n} buy-ins para {stake}): el saldo no pasa de eso.',
+  'Podes levantar até {amount} e manter as regras ›': 'Puedes retirar hasta {amount} y mantener tus reglas ›',
 };
 
 export default es;

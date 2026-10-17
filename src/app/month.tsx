@@ -11,6 +11,7 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { MonthCard } from '@/components/MonthCard';
+import { SmallSample } from '@/components/SmallSample';
 import { useLocked } from '@/components/ProGate';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
@@ -22,7 +23,7 @@ import { recapHidden } from '@/lib/month-recap';
 import { shareRef } from '@/lib/referrals';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
-import { compareMonths, defaultMonth, inMonth, monthName, monthRecap, recapMonths, recapNotice, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
+import { compareMonths, defaultMonth, inMonth, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
 import { breakdown, playedMs } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -117,11 +118,22 @@ export default function MonthScreen() {
               t('{h} h', { h: r.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
               r.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: r.sessions }),
               r.hours >= 0.25 ? t('{amount}/h', { amount: signed(r.hourly) }) : '',
-              r.bbHourly !== null ? `${r.bbHourly > 0 ? '+' : ''}${r.bbHourly.toLocaleString(locale, { maximumFractionDigits: 1 })} BB/h` : '',
             ]
               .filter(Boolean)
               .join(' · ')}
           </T>
+          {/* BB/h is cash only, so it gets its own line next to a total that may hold tournaments. */}
+          {r.cashSessions > 0 && (r.cashSessions !== r.sessions || r.bbHourly !== null) ? (
+            <T v="small">
+              {[
+                r.cashSessions === r.sessions ? '' : t('Cash: {h} h', { h: r.cashHours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
+                r.bbHourly !== null ? `${r.bbHourly > 0 ? '+' : ''}${r.bbHourly.toLocaleString(locale, { maximumFractionDigits: 1 })} BB/h` : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </T>
+          ) : null}
+          {r.cashSessions > 0 && r.bbHourly === null ? <SmallSample n={Math.floor(r.cashHours * 10) / 10} min={MIN_BB_HOURS} variant="note" unit={t('horas de cash')} /> : null}
           {r.mtts ? <T v="small">{t('Torneios com prémio: {cashes} de {n}', { cashes: r.cashes, n: r.mtts })}</T> : null}
           {r.best ? <Line label={t('Melhor sessão')} s={r.best} value={signed(r.best.profit)} /> : null}
           {r.worst && r.worst.profit < 0 ? <Line label={t('Pior sessão')} s={r.worst} value={signed(r.worst.profit)} /> : null}

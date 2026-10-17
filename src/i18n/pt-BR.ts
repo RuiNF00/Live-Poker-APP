@@ -1096,6 +1096,15 @@ const ptBR: Record<string, string> = {
   'Já mudaste de app': 'Você já trocou de app',
   'Mudar de app em 1 minuto': 'Troque de app em 1 minuto',
   'Já uso outra app: mudar em 1 minuto': 'Já uso outro app: trocar em 1 minuto',
+  'Cash: {h} h': 'Cash: {h} h',
+  'horas de cash': 'horas de cash',
+  'BB/h cash': 'BB/h cash',
+  'torneios de {amount}': 'torneios de {amount}',
+  'Levantar {amount}': 'Sacar {amount}',
+  'Podes levantar até {amount} e manter as tuas regras ({n} buy-ins para {stake}).': 'Você pode sacar até {amount} e manter suas regras ({n} buy-ins para {stake}).',
+  'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'Depois deste saque você fica abaixo das suas regras ({n} buy-ins para {stake}).',
+  'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Suas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.',
+  'Podes levantar até {amount} e manter as regras ›': 'Você pode sacar até {amount} e manter as regras ›',
 };
 
 export default ptBR;

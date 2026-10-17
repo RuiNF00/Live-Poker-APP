@@ -50,6 +50,7 @@ import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/sto
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
+import { withdrawable } from '@/store/moveup-math';
 import { defaultMonth, monthName, monthRecap } from '@/store/month-recap';
 import type { Bankroll, Session, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
@@ -115,6 +116,13 @@ function BankrollTab() {
   const pct = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
   const signedMoney = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : '') + fmt(n, cur));
   const pastBankroll = single ?? scopeBankrolls[0] ?? defaultBankroll;
+  // What each bankroll's own rules let come out (a new withdrawal only).
+  const keepFor = (id: string) => {
+    const b = bankrolls.find((x) => x.id === id);
+    if (!b?.rules) return null;
+    return withdrawable(balanceOf({ bankrollId: id }, sessions, transfers, bankrolls).balance, sessionsIn({ bankrollId: id }, sessions, bankrolls), b.rules);
+  };
+  const withdraw = (amount = 0) => setSheet({ type: 'transfer', x: { ...blankTransfer(pastBankroll.id, 'withdrawal'), amount }, isNew: true });
 
   const newBankroll = () => (!isPro && FREE.bankrolls !== null && bankrolls.length >= FREE.bankrolls ? paywall('stats') : setSheet({ type: 'bankroll' }));
   const openFilters = () => (locked ? paywall('stats') : setSheet({ type: 'filters' }));
@@ -166,11 +174,11 @@ function BankrollTab() {
           </T>
           <Row gap={S.sm} style={{ marginTop: S.xs }}>
             <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-down" title={t('Depositar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })} />
-            <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'withdrawal'), isNew: true })} />
+            <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />
           </Row>
         </Card>
 
-        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} /> : null}
+        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} onMoveUp={() => router.push({ pathname: '/moveup', params: { bankroll: single.id } })} onWithdraw={withdraw} /> : null}
 
         <MoreTools />
 
@@ -398,6 +406,8 @@ function BankrollTab() {
             initial={sheet.x}
             // Money moves within one currency: the scope's bankrolls, or the transfer's own.
             bankrolls={bankrolls.filter((b) => b.currency === (bankrolls.find((r) => r.id === sheet.x.bankrollId)?.currency ?? cur))}
+            keep={sheet.isNew ? keepFor : undefined}
+            fmt={fmt}
             onSave={(x) => {
               saveTransfer(x);
               setSheet(null);

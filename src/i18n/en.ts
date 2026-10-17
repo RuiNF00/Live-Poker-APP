@@ -2510,6 +2510,15 @@ const en: Record<string, string> = {
   'A probabilidade de perderes o bankroll todo. Usamos o limite de baixo do teu win rate ({lo} BB/h, a média é {bb}) e o teu desvio padrão de {sd} BB/h: é a conta prudente.': 'The chance of losing your whole bankroll. We use the bottom of your win rate range ({lo} BB/h; the average is {bb}) and your standard deviation of {sd} BB/h: the prudent count.',
   'O teu win rate ainda pode ser zero ou negativo: com esta incerteza, o risco não fica limitado em nenhuma stake. Mais horas na tua stake tornam a conta mais firme.': 'Your win rate could still be zero or negative: with that uncertainty, the risk has no limit at any stake. More hours at your stake make the count firmer.',
   '1 sessão em {stake}, resultado {amount}. Ainda podes perder {left} buy-ins antes de voltares.': '1 session at {stake}, result {amount}. You can still lose {left} buy-ins before going back.',
+  'Cash: {h} h': 'Cash: {h} h',
+  'horas de cash': 'cash hours',
+  'BB/h cash': 'Cash BB/h',
+  'torneios de {amount}': '{amount} tournaments',
+  'Levantar {amount}': 'Withdraw {amount}',
+  'Podes levantar até {amount} e manter as tuas regras ({n} buy-ins para {stake}).': 'You can withdraw up to {amount} and keep your rules ({n} buy-ins for {stake}).',
+  'Depois deste levantamento ficas abaixo das tuas regras ({n} buy-ins para {stake}).': 'After this withdrawal you\'ll be below your rules ({n} buy-ins for {stake}).',
+  'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Your rules ask for {need} ({n} buy-ins for {stake}): the balance isn\'t above that.',
+  'Podes levantar até {amount} e manter as regras ›': 'You can withdraw up to {amount} and keep your rules ›',
 };
 
 export default en;
