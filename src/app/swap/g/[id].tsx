@@ -26,7 +26,12 @@ const POLL_MS = 30000;
 const HEX = /^[a-f0-9]{32,128}$/;
 
 export default function GroupSwapScreen() {
-  const { id, k, i, r } = useLocalSearchParams<{ id: string; k?: string; i?: string; r?: string }>();
+  const params = useLocalSearchParams<{ id: string; k?: string; i?: string; r?: string; '#'?: string }>();
+  const { id, r } = params;
+  // +native-intent moves #i= and #k= into the query; a link opened inside the app keeps them in '#'.
+  const frag = new URLSearchParams(typeof params['#'] === 'string' ? params['#'] : '');
+  const k = params.k ?? frag.get('k') ?? undefined;
+  const i = params.i ?? frag.get('i') ?? undefined;
   const { groups, ready } = useGroups();
   const own = groups.find((g) => g.id === id);
   const [remote, setRemote] = useState<RemoteGroup | null | undefined>(undefined);

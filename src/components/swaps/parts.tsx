@@ -173,7 +173,7 @@ export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: Sw
           </T>
         ) : null}
         <T v="mono" color={e.kind === 'payment' ? C.textDim : mine ? C.warn : C.good}>
-          {!owe ? '—' : e.kind === 'payment' ? money(owe, cur) : signed(mine ? -owe : owe, cur)}
+          {!owe ? '—' : money(owe, cur)}
         </T>
       </View>
       )}

@@ -9,6 +9,7 @@ import { appUserId } from '@/billing/purchases';
 import { SwapError, newCid } from '@/lib/swap-api';
 import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
 
+import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
 
@@ -28,7 +29,9 @@ function emit(next: SwapGroup[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<SwapGroup>(kv, SPEC).then((d) => {
+  booting ??= loadCollection<SwapGroup>(kv, SPEC).then(async (d) => {
+    // Records that no longer parse are kept aside (backup and support file), not dropped.
+    await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swap-groups] write failed', e));
     const ids = new Set(state.groups.map((g) => g.id));
     emit([...state.groups, ...d.items.filter((g) => !ids.has(g.id))]);

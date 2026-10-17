@@ -226,7 +226,7 @@ function OwnSwap({ s }: { s: Swap }) {
         {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm}>
             <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
-            <Button title={l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
+            <Button title={!locked && l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
           </Row>
         ) : null}
 
@@ -322,7 +322,7 @@ function OwnSwap({ s }: { s: Swap }) {
           />
         </View>
       </Screen>
-      <EntrySheet swap={sheet ? s : null} kind={sheet ?? 'result'} owe={Math.max(0, -l.balance)} onClose={() => setSheet(null)} onSave={save} />
+      <EntrySheet swap={sheet ? s : null} kind={sheet ?? 'result'} owe={locked ? 0 : Math.max(0, -l.balance)} onClose={() => setSheet(null)} onSave={save} />
     </>
   );
 }
