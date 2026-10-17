@@ -2,7 +2,7 @@
 // it: position + cards, then the action seat by seat, the board when a street
 // closes, showdown, tags. Every step is one tap where possible:
 //  - one tap per card (full-deck grid),
-//  - one tap per action, with sizes as presets (2.2x, 33%, pote…),
+//  - one tap per action, with sizes as presets (2.5x, ⅓, pote…),
 //  - preflop, folds up to hero are automatic (again after each opponent who
 //    comes in); whoever else came in is one tap on "alguém entrou?",
 //  - "salta para" chips fold/check everyone in between in one tap,
@@ -12,6 +12,7 @@
 //    to be completed after the session.
 
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -31,7 +32,7 @@ import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { autoFold, callerCandidates, checkAround, onlyCaller, rewindTo, sizePresets, skipTargets, skipTo } from '@/poker/entry';
 import { newHand, nextLevel, rescaleStacks, resizeTable } from '@/poker/factory';
-import { amount, blindsLabel } from '@/poker/format';
+import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
 import { opponentStats } from '@/store/queries';
@@ -185,6 +186,7 @@ export default function NewHand() {
     });
     const final = { ...hand, players, updatedAt: Date.now() };
     store.saveHand(final);
+    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     // Keep the session's live table state in sync, so the next hand is pre-filled.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
     if (sess && !params.edit) {
@@ -316,6 +318,8 @@ export default function NewHand() {
         </View>
       </View>
 
+      {phase !== 'hero' && <StreetDots street={s.street} done={phase === 'showdown' || phase === 'done'} />}
+
       {/* the felt takes whatever the dock leaves */}
       <View style={{ flex: 1, minHeight: 160, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }} onLayout={(e) => setArea({ w: e.nativeEvent.layout.width - 16, h: e.nativeEvent.layout.height })}>
         {tableW > 0 && (
@@ -421,8 +425,8 @@ export default function NewHand() {
                       onPress={() => act(l.canBet ? 'bet' : 'raise', p.to)}
                       style={({ pressed }) => ({
                         flex: 1,
-                        minHeight: 52,
-                        paddingVertical: 6,
+                        minHeight: 58,
+                        paddingVertical: 5,
                         borderRadius: R.md,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -437,12 +441,17 @@ export default function NewHand() {
                       <T v="monoS" numberOfLines={1}>
                         {amount(p.to, hand, inBB)}
                       </T>
+                      {!inBB && !p.allIn ? (
+                        <T v="tiny" numberOfLines={1} color={C.muted}>
+                          {bbs(p.to, hand.game.bb)}
+                        </T>
+                      ) : null}
                     </Pressable>
                   ))}
                   <Pressable
                     accessibilityLabel={t('Outro valor')}
                     onPress={() => setPad(true)}
-                    style={({ pressed }) => ({ width: 46, minHeight: 52, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: pressed ? 0.7 : 1 })}>
+                    style={({ pressed }) => ({ width: 46, minHeight: 58, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: pressed ? 0.7 : 1 })}>
                     <Ionicons name="keypad" size={18} color={C.text} />
                   </Pressable>
                 </Row>
@@ -631,5 +640,29 @@ function FinishPanel({ hand, onChange }: { hand: Hand; onChange: (h: Hand) => vo
       </ChipRow>
       <Field value={hand.notes} onChangeText={(notes) => onChange({ ...hand, notes })} placeholder={t('Notas (o que pensaste, reads, dúvidas…)')} multiline inputStyle={{ minHeight: 70 }} />
     </View>
+  );
+}
+
+const STREET_ORDER = ['preflop', 'flop', 'turn', 'river'] as const;
+
+/** Pré-flop • Flop • Turn • River: where the hand is, at a glance. */
+function StreetDots({ street, done }: { street: (typeof STREET_ORDER)[number]; done: boolean }) {
+  const at = STREET_ORDER.indexOf(street);
+  return (
+    <Row gap={6} style={{ justifyContent: 'center', paddingVertical: 2 }}>
+      {STREET_ORDER.map((st, i) => {
+        const now = i === at && !done;
+        const past = i < at || (done && i <= at);
+        return (
+          <Row key={st} gap={4}>
+            {i > 0 ? <View style={{ width: 10, height: 1, backgroundColor: past || now ? C.accentLine : C.border }} /> : null}
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: now ? C.accent : past ? C.textDim : C.border }} />
+            <T v="tiny" color={now ? C.text : past ? C.textDim : C.muted} style={now ? { fontWeight: '700', fontFamily: ff(700) } : undefined}>
+              {STREET_PT[st]}
+            </T>
+          </Row>
+        );
+      })}
+    </Row>
   );
 }

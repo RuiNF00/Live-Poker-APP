@@ -18,6 +18,9 @@ export function defaultGame(kind: 'mtt' | 'cash', currency = '€'): GameInfo {
     : { kind, name: '', sb: 1, bb: 2, ante: 0, anteType: 'none', currency };
 }
 
+/** Hands this close together are taken to be at the same table. */
+const SAME_TABLE_MS = 6 * 3600 * 1000;
+
 export function newHand(opts: {
   id: string;
   session?: Session | null;
@@ -55,6 +58,8 @@ export function newHand(opts: {
     const s = r.final;
     const end = s.stacks[last.hero] + (r.result ? r.result.won[last.hero] : s.bets[last.hero]);
     stack = end > 0 ? end : last.players[last.hero].stack;
+    // Same table a moment ago: the villains are still in their seats.
+    if (last.hero === 0 && Date.now() - last.createdAt < SAME_TABLE_MS) names = last.players.map((p) => p.name);
   } else {
     game = defaultGame('mtt', opts.currency);
     n = opts.tableSize ?? 9;

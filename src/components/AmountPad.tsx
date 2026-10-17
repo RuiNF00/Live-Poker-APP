@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
-import { chips } from '@/poker/format';
+import { bbs, chips } from '@/poker/format';
 import { C, F, R, S } from '@/theme';
 
 import { Button, Row, Segmented, T, tap } from './ui';
@@ -68,7 +68,7 @@ export function AmountPad({
             <Text style={{ color: C.muted, fontSize: 18 }}>{inBB ? ' bb' : ''}</Text>
           </Text>
           <T v="monoS" color={tooLow ? C.danger : C.muted}>
-            = {chips(capped)} {t('fichas')}
+            = {inBB ? chips(capped) + ' ' + t('fichas') : bbs(capped, bb)}
             {max !== undefined && value >= max ? ' (all-in)' : ''}
             {tooLow ? ' · ' + t('mínimo {amount}', { amount: chips(min!) }) : ''}
           </T>
@@ -96,7 +96,7 @@ export function AmountPad({
         </View>
         <Button
           title={t('Confirmar')}
-          disabled={value <= 0}
+          disabled={value <= 0 || tooLow}
           onPress={() => {
             onDone(capped);
             setTxt('');
