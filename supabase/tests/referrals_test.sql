@@ -99,3 +99,6 @@ select referral_code_for('eeeeeeee-0000-0000-0000-000000000001', 'SELF2345', 'rc
        claim_referral('eeeeeeee-0000-0000-0000-000000000001', 'FARM2345', 'link');
 select count(*) = 0 as same_rc_user_earns_nothing from activate_referral('eeeeeeee-0000-0000-0000-000000000001');
 reset role;
+set role service_role;
+select referral_activated(:friend) and not referral_activated('dddddddd-0000-0000-0000-000000000001') as activated_flag;
+reset role;

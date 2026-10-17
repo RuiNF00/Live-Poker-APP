@@ -34,6 +34,8 @@ interface ReferralBackend {
   claim(friend: string, code: string, source: ReferralSource, shareId: string | null): Promise<ClaimResult>;
   /** The friend's stored RevenueCat user while a claimed referral awaits activation, else null. */
   awaitingRc(friend: string): Promise<string | null>;
+  /** The referral of this install is activated (rewards booked, or none due). */
+  activated(friend: string): Promise<boolean>;
   activate(friend: string): Promise<Grant[]>;
   pending(installId: string): Promise<Grant[]>;
   markGranted(installId: string, until: string): Promise<void>;
@@ -60,6 +62,9 @@ class SupabaseReferrals implements ReferralBackend {
   }
   async awaitingRc(friend: string) {
     return (await this.rpc<string | null>('referral_awaiting_rc', { p_friend: friend })) ?? null;
+  }
+  async activated(friend: string) {
+    return (await this.rpc<boolean>('referral_activated', { p_friend: friend })) === true;
   }
   async activate(friend: string) {
     return (await this.rpc<Grant[]>('activate_referral', { p_friend: friend, p_days: REWARD_DAYS })) ?? [];
@@ -133,6 +138,9 @@ class LocalBackend implements ReferralBackend {
     const d = await this.read();
     const r = d.referrals[friend];
     return r && !r.activatedAt ? (d.codes[friend]?.rcUserId ?? null) : null;
+  }
+  async activated(friend: string) {
+    return !!(await this.read()).referrals[friend]?.activatedAt;
   }
   // Same rules as activate_referral(), per RevenueCat user.
   async activate(friend: string) {
