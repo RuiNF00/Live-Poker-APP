@@ -4,8 +4,11 @@ import Svg, { Defs, LinearGradient, Line, Path, Stop } from 'react-native-svg';
 
 import { C } from '@/theme';
 
-/** Minimal area/line chart for profit curves and stack graphs. */
-export function LineChart({ values, height = 140, zeroLine = true }: { values: number[]; height?: number; zeroLine?: boolean }) {
+/**
+ * Minimal area/line chart for profit curves and stack graphs. With `peaks`
+ * (the running high), the fall below each peak is shaded: the drawdowns.
+ */
+export function LineChart({ values, height = 140, zeroLine = true, peaks }: { values: number[]; height?: number; zeroLine?: boolean; peaks?: number[] }) {
   const [w, setW] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width);
   const pts = values.length === 1 ? [values[0], values[0]] : values;
@@ -18,6 +21,10 @@ export function LineChart({ values, height = 140, zeroLine = true }: { values: n
   const up = pts[pts.length - 1] >= pts[0];
   const col = up ? C.good : C.bad;
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const pk = peaks && peaks.length === values.length && values.length > 1 ? peaks : null;
+  const pd = pk ? pk.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ') : '';
+  // Peak line forward, curve back: the area between them is time spent below a high.
+  const under = pk ? `${pd} ${[...pts].reverse().map((v, k) => `L${x(pts.length - 1 - k).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} Z` : '';
   return (
     <View onLayout={onLayout} style={{ height }}>
       {w > 0 && (
@@ -30,6 +37,8 @@ export function LineChart({ values, height = 140, zeroLine = true }: { values: n
           </Defs>
           {zeroLine && <Line x1={0} x2={w} y1={y(0)} y2={y(0)} stroke={C.border} strokeDasharray="4 4" />}
           <Path d={`${d} L${w},${height} L0,${height} Z`} fill="url(#g)" />
+          {pk ? <Path d={under} fill={C.bad} fillOpacity={0.16} /> : null}
+          {pk ? <Path d={pd} stroke={C.muted} strokeWidth={1} strokeDasharray="3 3" fill="none" /> : null}
           <Path d={d} stroke={col} strokeWidth={2.5} fill="none" strokeLinejoin="round" />
         </Svg>
       )}

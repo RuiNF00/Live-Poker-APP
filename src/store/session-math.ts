@@ -102,22 +102,33 @@ export interface Breakdown {
   profit: number;
   hours: number;
   hourly: number;
+  /** Tournaments in the group and their ROI on your own money (null without tournaments). */
+  mtts: number;
+  roi: number | null;
 }
 
-/** Results grouped by venue or game, best first, in one currency. */
-export function breakdown(list: Session[], by: 'venue' | 'name', currency = mainCurrency(list)): Breakdown[] {
-  const m = new Map<string, Breakdown>();
+/** Results grouped by venue, game or any key (blank keys skipped), best first, in one currency. */
+export function breakdown(list: Session[], by: 'venue' | 'name' | ((s: Session) => string), currency = mainCurrency(list)): Breakdown[] {
+  const m = new Map<string, Breakdown & { mttInv: number; mttProfit: number }>();
   for (const s of inCurrency(list, currency)) {
     if (!s.endedAt) continue;
-    const key = (s[by] || '').trim();
+    const key = (typeof by === 'function' ? by(s) : s[by] || '').trim();
     if (!key) continue;
-    const b = m.get(key.toLowerCase()) ?? { key, sessions: 0, profit: 0, hours: 0, hourly: 0 };
+    const b = m.get(key.toLowerCase()) ?? { key, sessions: 0, profit: 0, hours: 0, hourly: 0, mtts: 0, roi: null, mttInv: 0, mttProfit: 0 };
+    const p = profit(s);
     b.sessions++;
-    b.profit += profit(s);
+    b.profit += p;
     b.hours += playedMs(s) / 3600000;
+    if (s.kind === 'mtt') {
+      b.mtts++;
+      b.mttInv += Math.max(0, ownCost(s));
+      b.mttProfit += p;
+    }
     m.set(key.toLowerCase(), b);
   }
-  return [...m.values()].map((b) => ({ ...b, hourly: b.hours > 0 ? b.profit / b.hours : 0 })).sort((a, b) => b.profit - a.profit);
+  return [...m.values()]
+    .map(({ mttInv, mttProfit, ...b }) => ({ ...b, hourly: b.hours > 0 ? b.profit / b.hours : 0, roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null }))
+    .sort((a, b) => b.profit - a.profit);
 }
 
 export interface Totals {
