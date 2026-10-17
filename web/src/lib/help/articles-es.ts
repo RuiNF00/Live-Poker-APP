@@ -245,6 +245,7 @@ export const ES: Record<string, ArticleText> = {
         ],
       },
       'No se puede deshacer. Si quieres guardar algo, usa antes Exportar todo.',
+      'En Android, si reinstalas la app justo después, la copia automática de Google todavía puede traer los datos antiguos durante un día.',
       { note: 'Borrar tus datos no cancela el Pro. Para eso, cancélalo en la App Store o en Google Play (ver Cancelar el Pro).' },
     ],
   },
