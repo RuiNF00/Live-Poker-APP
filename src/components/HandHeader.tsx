@@ -5,7 +5,7 @@ import { comboLabel } from '@/poker/cards';
 import { positions } from '@/poker/engine';
 import { blindsLabel, shortDate, timeOf } from '@/poker/format';
 import { STAGES, type Hand } from '@/poker/types';
-import { C, R } from '@/theme';
+import { C, R, ff } from '@/theme';
 
 import { CardRow } from './PlayingCard';
 import { Row, T } from './ui';
@@ -39,7 +39,7 @@ export function HandHeader({ hand }: { hand: Hand }) {
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
           {hand.tags.map((t) => (
             <View key={t} style={{ backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
-              <T v="tiny" color={C.accent} style={{ fontWeight: '800' }}>
+              <T v="tiny" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>
                 {t}
               </T>
             </View>

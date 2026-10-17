@@ -5,7 +5,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 
 import { tap } from '@/components/ui';
-import { C } from '@/theme';
+import { C, ff } from '@/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -51,7 +51,7 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.border, height: 84, paddingTop: 6 },
         tabBarActiveTintColor: C.accent,
         tabBarInactiveTintColor: C.muted,
-        tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
+        tabBarLabelStyle: { fontWeight: '700', fontFamily: ff(700), fontSize: 11 },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Mãos', tabBarIcon: icon('albums') }} />
       <Tabs.Screen name="session" options={{ title: 'Sessão', tabBarIcon: icon('timer') }} />

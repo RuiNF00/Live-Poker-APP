@@ -12,7 +12,7 @@ import { amount, blindsLabel, duration, shortDate, timeOf } from '@/poker/format
 import { sampleHand } from '@/poker/sample';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { uid, useStore } from '@/store/store';
-import { BRAND, C, R } from '@/theme';
+import { BRAND, C, R, ff } from '@/theme';
 
 export default function HandsScreen() {
   const insets = useSafeAreaInsets();
@@ -43,16 +43,16 @@ export default function HandsScreen() {
             </Row>
             {draft ? (
               <Pressable onPress={() => router.push('/hand/new')} style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: 'rgba(245,184,61,0.4)' }}>
-                <T v="small" color={C.warn} style={{ fontWeight: '800' }}>
+                <T v="small" color={C.warn} style={{ fontWeight: '800', fontFamily: ff(800) }}>
                   Tens uma mão a meio — toca para continuar
                 </T>
               </Pressable>
             ) : null}
             {activeSession ? (
-              <Pressable onPress={() => router.push('/session')} style={{ backgroundColor: C.accentSoft, borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: 'rgba(61,220,151,0.35)', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Pressable onPress={() => router.push('/session')} style={{ backgroundColor: C.accentSoft, borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.accent }} />
                 <View style={{ flex: 1 }}>
-                  <T v="small" color={C.accent} style={{ fontWeight: '800' }}>
+                  <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>
                     Sessão em curso · {duration(Date.now() - activeSession.startedAt)}
                   </T>
                   <T v="tiny">
@@ -127,7 +127,7 @@ function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
       {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" gap={2} /> : <View style={{ width: 62 }} />}
       <View style={{ flex: 1, gap: 3 }}>
         <Row gap={6}>
-          <T v="body" style={{ fontWeight: '800' }}>
+          <T v="body" style={{ fontWeight: '800', fontFamily: ff(800) }}>
             {comboLabel(hero.cards)} {pos[hand.hero]}
           </T>
           {hand.board.length ? (
@@ -147,7 +147,7 @@ function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
       </View>
       <View style={{ alignItems: 'flex-end', gap: 3 }}>
         {net !== undefined ? (
-          <T v="mono" color={net > 0 ? C.accent : net < 0 ? C.danger : C.textDim}>
+          <T v="mono" color={net > 0 ? C.good : net < 0 ? C.bad : C.textDim}>
             {(net > 0 ? '+' : '') + amount(net, hand, inBB)}
           </T>
         ) : null}

@@ -13,7 +13,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { C, R, S } from '@/theme';
+import { C, F, R, S, ff } from '@/theme';
 
 export function tap(kind: 'light' | 'medium' | 'select' = 'light') {
   if (Platform.OS === 'web') return;
@@ -28,14 +28,14 @@ export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; c
 }
 
 const ts = StyleSheet.create<Record<TV, TextStyle>>({
-  title: { color: C.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
-  h1: { color: C.text, fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
-  h2: { color: C.text, fontSize: 17, fontWeight: '700' },
-  body: { color: C.text, fontSize: 15 },
-  small: { color: C.textDim, fontSize: 13 },
-  tiny: { color: C.muted, fontSize: 11 },
-  label: { color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
-  mono: { color: C.text, fontSize: 13, fontVariant: ['tabular-nums'], fontWeight: '700' },
+  title: { color: C.text, fontSize: 30, fontWeight: '800', fontFamily: ff(800), letterSpacing: -0.5 },
+  h1: { color: C.text, fontSize: 22, fontWeight: '800', fontFamily: ff(800), letterSpacing: -0.3 },
+  h2: { color: C.text, fontSize: 17, fontWeight: '700', fontFamily: ff(700) },
+  body: { color: C.text, fontSize: 15, fontFamily: F.regular },
+  small: { color: C.textDim, fontSize: 13, fontFamily: F.regular },
+  tiny: { color: C.muted, fontSize: 11, fontFamily: F.medium },
+  label: { color: C.muted, fontSize: 11, fontWeight: '700', fontFamily: ff(700), letterSpacing: 1, textTransform: 'uppercase' },
+  mono: { color: C.text, fontSize: 13, fontVariant: ['tabular-nums'], fontWeight: '700', fontFamily: F.mono },
 });
 
 type BtnKind = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -85,7 +85,7 @@ export function Button({
         style,
       ]}>
       {icon}
-      <RNText style={{ color: fg, fontWeight: '800', fontSize: small ? 13 : 16 }}>{title}</RNText>
+      <RNText style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: small ? 13 : 16 }}>{title}</RNText>
     </Pressable>
   );
 }
@@ -124,7 +124,7 @@ export function Chip({
         },
         style,
       ]}>
-      <RNText style={{ color: active ? col : C.textDim, fontWeight: '700', fontSize: big ? 15 : 13 }}>{label}</RNText>
+      <RNText style={{ color: active ? col : C.textDim, fontWeight: '700', fontFamily: ff(700), fontSize: big ? 15 : 13 }}>{label}</RNText>
     </Pressable>
   );
 }

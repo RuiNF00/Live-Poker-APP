@@ -7,7 +7,7 @@ import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import { displayRank, RANKS, SUIT_SYMBOL, SUITS } from '@/poker/cards';
 import type { CardCode } from '@/poker/types';
-import { C } from '@/theme';
+import { C, ff } from '@/theme';
 
 import { tap } from './ui';
 
@@ -52,7 +52,7 @@ export function CardPicker({
                     alignItems: 'center',
                     justifyContent: 'center',
                   })}>
-                  <Text style={{ color: isUsed ? C.muted : '#fff', fontWeight: '900', fontSize: cw > 26 ? 15 : 13, letterSpacing: -0.5 }}>
+                  <Text style={{ color: isUsed ? C.muted : '#fff', fontWeight: '900', fontFamily: ff(900), fontSize: cw > 26 ? 15 : 13, letterSpacing: -0.5 }}>
                     {displayRank(c)}
                   </Text>
                   <Text style={{ color: isUsed ? C.muted : 'rgba(255,255,255,0.85)', fontSize: 9, lineHeight: 10 }}>{SUIT_SYMBOL[s]}</Text>

@@ -3,7 +3,7 @@ import { TextInput, View } from 'react-native';
 
 import { postComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
-import { C, R } from '@/theme';
+import { C, R, ff } from '@/theme';
 
 import { inputStyle } from './entry/ContextSheet';
 import { Button, Row, T } from './ui';
@@ -43,7 +43,7 @@ export function CommentsList({
       {comments.map((c) => (
         <View key={c.id} style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 10, gap: 3, borderWidth: 1, borderColor: C.border }}>
           <Row style={{ justifyContent: 'space-between' }}>
-            <T v="small" style={{ color: C.text, fontWeight: '800' }}>
+            <T v="small" style={{ color: C.text, fontWeight: '800', fontFamily: ff(800) }}>
               {c.name}
             </T>
             <T v="tiny">

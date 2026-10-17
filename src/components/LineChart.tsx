@@ -16,7 +16,7 @@ export function LineChart({ values, height = 140, zeroLine = true }: { values: n
   const x = (i: number) => (i / Math.max(1, pts.length - 1)) * w;
   const y = (v: number) => pad + (1 - (v - min) / span) * (height - pad * 2);
   const up = pts[pts.length - 1] >= pts[0];
-  const col = up ? C.accent : C.danger;
+  const col = up ? C.good : C.bad;
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   return (
     <View onLayout={onLayout} style={{ height }}>

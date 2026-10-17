@@ -42,7 +42,7 @@ export default function SharedHand() {
         <>
           <HandHeader hand={hand} />
           <Replayer hand={hand} autoPlay />
-          <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(61,220,151,0.35)' }}>
+          <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
             <T v="h2">Regista as tuas mãos live em segundos</T>
             <T v="small">
               {BRAND.name} grava mãos em poucos toques, faz o replay e partilha com os teus amigos. Sessões, bankroll e notas de jogadores incluídos.

@@ -6,7 +6,7 @@ import { positions, replay, totalPot, type Step } from '@/poker/engine';
 import { amount } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { actionColor, actionLabel, displayName, narrate, seatViews } from '@/poker/view';
-import { BRAND, C, R } from '@/theme';
+import { BRAND, C, R, ff } from '@/theme';
 
 import { Table } from './Table';
 import { Chip, Row, T, tap } from './ui';
@@ -121,7 +121,7 @@ export function Replayer({
           <Pressable
             onPress={() => setInBB((b) => !b)}
             style={{ height: 36, paddingHorizontal: 10, borderRadius: 18, backgroundColor: inBB ? C.accentSoft : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: inBB ? C.accent : C.textDim, fontWeight: '800', fontSize: 12 }}>BB</Text>
+            <Text style={{ color: inBB ? C.accent : C.textDim, fontWeight: '800', fontFamily: ff(800), fontSize: 12 }}>BB</Text>
           </Pressable>
         </Row>
       </Row>
@@ -151,7 +151,7 @@ export function Replayer({
                   onPress={() => go(k)}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5, paddingHorizontal: 8, borderRadius: R.sm, backgroundColor: k === i ? C.surface3 : 'transparent' }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: actionColor(a) }} />
-                  <T v="small" style={{ color: a.p === hand.hero ? C.accent : C.text, fontWeight: '700', width: 92 }} numberOfLines={1}>
+                  <T v="small" style={{ color: a.p === hand.hero ? C.accent : C.text, fontWeight: '700', fontFamily: ff(700), width: 92 }} numberOfLines={1}>
                     {displayName(hand, a.p, pos)}
                   </T>
                   <T v="small" style={{ flex: 1 }}>

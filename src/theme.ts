@@ -1,44 +1,46 @@
-// Brand + design tokens. The brand is a placeholder until Rui picks one of the
-// name/design proposals: everything visual reads from here, so a rebrand is
-// this file plus the icon assets.
+// Brand + design tokens: Sweatbook, "Noite" direction (dark, felt-green night
+// with the orange of the sweat as the only strong colour). Everything visual
+// reads from here.
 
 export const BRAND = {
-  name: 'Riverlog',
-  tagline: 'O teu diário de póquer live',
-  webUrl: 'https://riverlog.vercel.app',
-  scheme: 'riverlog',
+  name: 'Sweatbook',
+  tagline: 'O teu caderno de póquer live',
+  webUrl: 'https://sweatbook.vercel.app',
+  scheme: 'sweatbook',
 };
 
 export const C = {
-  bg: '#0A0C0B',
-  surface: '#121614',
-  surface2: '#1A1F1C',
-  surface3: '#232925',
-  border: '#2A312D',
-  borderStrong: '#3A433E',
-  text: '#F1F4F2',
-  textDim: '#A4ADA7',
-  muted: '#6C766F',
-  accent: '#3DDC97',
-  accentInk: '#04140D',
-  accentSoft: 'rgba(61,220,151,0.14)',
-  danger: '#F2645F',
-  dangerSoft: 'rgba(242,100,95,0.14)',
+  bg: '#0C1311',
+  surface: '#16201D',
+  surface2: '#1B2723',
+  surface3: '#22302B',
+  border: '#24302C',
+  borderStrong: '#33433D',
+  text: '#EEF2EF',
+  textDim: '#B3BEB9',
+  muted: '#8C9A94',
+  accent: '#FF6A3D',
+  accentInk: '#1A0A04',
+  accentSoft: 'rgba(255,106,61,0.14)',
+  good: '#4ADE80',
+  bad: '#FF8A7A',
+  danger: '#FF7A6B',
+  dangerSoft: 'rgba(255,122,107,0.14)',
   warn: '#F5B83D',
   info: '#5AA9FF',
   // Table
-  felt: '#0F2A20',
-  feltEdge: '#0A1D16',
-  rail: '#070908',
-  railLine: 'rgba(61,220,151,0.28)',
-  chip: '#E9E4D4',
+  felt: '#1C4A3C',
+  feltEdge: '#163D31',
+  rail: '#0F1B17',
+  railLine: 'rgba(238,242,239,0.16)',
+  chip: '#F4F1EA',
   // Actions
-  fold: '#5C6460',
-  check: '#7FB8A0',
-  call: '#3DDC97',
+  fold: '#5C6A64',
+  check: '#9DB3AA',
+  call: '#4ADE80',
   bet: '#F5B83D',
   raise: '#F5B83D',
-  allin: '#F2645F',
+  allin: '#FF5A5F',
   // Cards (4-colour deck reads faster at a glance)
   suit: { s: '#1B1D1C', h: '#D93A3A', d: '#2F6FE0', c: '#1F9D57' } as Record<string, string>,
 };
@@ -47,5 +49,21 @@ export const R = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 };
 export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 
 export const F = {
-  mono: 'Menlo',
+  regular: 'HankenGrotesk_400Regular',
+  medium: 'HankenGrotesk_500Medium',
+  semibold: 'HankenGrotesk_600SemiBold',
+  bold: 'HankenGrotesk_700Bold',
+  black: 'HankenGrotesk_800ExtraBold',
+  mono: 'JetBrainsMono_700Bold',
+  monoRegular: 'JetBrainsMono_500Medium',
 };
+
+/** Font family for a weight, since custom fonts ignore fontWeight on Android. */
+export function ff(weight?: string | number): string {
+  const w = Number(weight ?? 400);
+  if (w >= 800) return F.black;
+  if (w >= 700) return F.bold;
+  if (w >= 600) return F.semibold;
+  if (w >= 500) return F.medium;
+  return F.regular;
+}

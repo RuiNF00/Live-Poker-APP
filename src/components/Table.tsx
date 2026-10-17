@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import type { CardCode } from '@/poker/types';
-import { C } from '@/theme';
+import { C, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
 
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     bottom: '9%',
     backgroundColor: C.felt,
     borderWidth: 1,
-    borderColor: 'rgba(61,220,151,0.18)',
+    borderColor: 'rgba(238,242,239,0.18)',
     overflow: 'hidden',
   },
   feltLine: {
@@ -252,15 +252,15 @@ const styles = StyleSheet.create({
     top: '4%',
     bottom: '4%',
     borderWidth: 1,
-    borderColor: 'rgba(61,220,151,0.10)',
+    borderColor: 'rgba(238,242,239,0.10)',
   },
   watermark: {
     position: 'absolute',
     left: 0,
     right: 0,
     textAlign: 'center',
-    color: 'rgba(61,220,151,0.22)',
-    fontWeight: '800',
+    color: 'rgba(238,242,239,0.22)',
+    fontWeight: '800', fontFamily: ff(800),
     letterSpacing: 6,
   },
   board: {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: 'rgba(61,220,151,0.22)',
+    borderColor: 'rgba(238,242,239,0.22)',
   },
   potWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   pot: {
@@ -290,11 +290,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: 'rgba(61,220,151,0.3)',
+    borderColor: 'rgba(238,242,239,0.3)',
   },
   potChip: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.chip, borderWidth: 2, borderColor: C.accent },
-  potText: { color: C.text, fontWeight: '800', fontSize: 13, fontVariant: ['tabular-nums'] },
-  narration: { color: C.textDim, fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
+  potText: { color: C.text, fontWeight: '800', fontFamily: ff(800), fontSize: 13, fontVariant: ['tabular-nums'] },
+  narration: { color: C.textDim, fontSize: 12, fontWeight: '700', fontFamily: ff(700), letterSpacing: 0.3 },
   bet: {
     position: 'absolute',
     flexDirection: 'row',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   betChip: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.bet, borderWidth: 2, borderColor: '#FFF3' },
-  betText: { color: '#FFE7B0', fontWeight: '800', fontSize: 12, fontVariant: ['tabular-nums'] },
+  betText: { color: '#FFE7B0', fontWeight: '800', fontFamily: ff(800), fontSize: 12, fontVariant: ['tabular-nums'] },
   dealer: {
     position: 'absolute',
     width: 22,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#B9AF92',
   },
-  dealerText: { color: '#3B3424', fontWeight: '900', fontSize: 12 },
+  dealerText: { color: '#3B3424', fontWeight: '900', fontFamily: ff(900), fontSize: 12 },
   seat: { position: 'absolute', width: 88, alignItems: 'center' },
   cards: { flexDirection: 'row', height: 40, alignItems: 'flex-end', marginBottom: -12, zIndex: 0 },
   plate: {
@@ -328,22 +328,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#0E1110',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(61,220,151,0.16)',
+    borderColor: 'rgba(238,242,239,0.16)',
     paddingHorizontal: 7,
     paddingVertical: 4,
     zIndex: 1,
   },
-  plateHero: { borderColor: 'rgba(61,220,151,0.6)' },
+  plateHero: { borderColor: 'rgba(238,242,239,0.6)' },
   plateActing: { borderColor: C.warn, borderWidth: 2 },
-  plateWinner: { borderColor: C.accent, borderWidth: 2, backgroundColor: '#0F241B' },
+  plateWinner: { borderColor: C.good, borderWidth: 2, backgroundColor: '#10261C' },
   plateTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 3 },
-  name: { color: C.text, fontSize: 11, fontWeight: '700', flexShrink: 1 },
+  name: { color: C.text, fontSize: 11, fontWeight: '700', fontFamily: ff(700), flexShrink: 1 },
   pos: { backgroundColor: C.surface3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
-  posText: { color: C.textDim, fontSize: 9, fontWeight: '800' },
-  stack: { color: '#CFE9DC', fontSize: 12, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  posText: { color: C.textDim, fontSize: 9, fontWeight: '800', fontFamily: ff(800) },
+  stack: { color: '#CFE9DC', fontSize: 12, fontWeight: '800', fontFamily: ff(800), fontVariant: ['tabular-nums'] },
   action: { marginTop: 3, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1, maxWidth: 96 },
-  actionText: { color: '#0A0C0B', fontSize: 10, fontWeight: '900', letterSpacing: 0.3 },
-  win: { marginTop: 3, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, backgroundColor: C.accent },
-  winText: { color: C.accentInk, fontSize: 10, fontWeight: '900' },
-  handName: { marginTop: 2, color: C.textDim, fontSize: 10, fontWeight: '700' },
+  actionText: { color: '#0A0C0B', fontSize: 10, fontWeight: '900', fontFamily: ff(900), letterSpacing: 0.3 },
+  win: { marginTop: 3, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, backgroundColor: C.good },
+  winText: { color: '#06200F', fontSize: 10, fontWeight: '900', fontFamily: ff(900) },
+  handName: { marginTop: 2, color: C.textDim, fontSize: 10, fontWeight: '700', fontFamily: ff(700) },
 });

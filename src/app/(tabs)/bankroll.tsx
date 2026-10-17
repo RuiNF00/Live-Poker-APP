@@ -9,7 +9,7 @@ import { duration, money, shortDate } from '@/poker/format';
 import { curve, playedMs, profit, totals } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
-import { C, R } from '@/theme';
+import { C, R, ff } from '@/theme';
 
 type Kind = 'all' | 'mtt' | 'cash';
 type Period = 30 | 90 | 365 | 0;
@@ -53,7 +53,7 @@ export default function BankrollScreen() {
           <>
             <Panel style={{ gap: 4 }}>
               <T v="label">Lucro</T>
-              <T style={{ fontSize: 38, fontWeight: '800', color: t.profit >= 0 ? C.accent : C.danger }}>{money(t.profit, cur)}</T>
+              <T style={{ fontSize: 38, fontWeight: '800', fontFamily: ff(800), color: t.profit >= 0 ? C.good : C.bad }}>{money(t.profit, cur)}</T>
               <LineChart values={pts} />
             </Panel>
             <Row gap={10} style={{ flexWrap: 'wrap' }}>
@@ -116,7 +116,7 @@ function SessionRow({ s, onDelete }: { s: Session; onDelete: () => void }) {
     <Pressable onPress={() => setOpen((o) => !o)} style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: C.border, gap: 6 }}>
       <Row style={{ justifyContent: 'space-between' }}>
         <View style={{ flex: 1 }}>
-          <T v="body" style={{ fontWeight: '700' }} numberOfLines={1}>
+          <T v="body" style={{ fontWeight: '700', fontFamily: ff(700) }} numberOfLines={1}>
             {s.name || (s.kind === 'mtt' ? 'Torneio' : 'Cash')}
           </T>
           <T v="tiny">
@@ -125,7 +125,7 @@ function SessionRow({ s, onDelete }: { s: Session; onDelete: () => void }) {
             {s.finish ? ` · ${s.finish}º${s.field ? '/' + s.field : ''}` : ''}
           </T>
         </View>
-        <T v="mono" color={p >= 0 ? C.accent : C.danger}>
+        <T v="mono" color={p >= 0 ? C.good : C.bad}>
           {money(p, s.currency)}
         </T>
       </Row>

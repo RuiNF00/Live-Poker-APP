@@ -4,7 +4,7 @@ import { Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import { STAGES, type GameInfo } from '@/poker/types';
-import { C, R } from '@/theme';
+import { C, R, ff } from '@/theme';
 
 import { Button, Chip, Row, T } from '../ui';
 
@@ -34,6 +34,7 @@ export const inputStyle = {
   paddingVertical: 11,
   fontSize: 16,
   fontWeight: '600' as const,
+  fontFamily: ff(600),
 };
 
 export function ContextSheet({

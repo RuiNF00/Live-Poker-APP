@@ -3,7 +3,7 @@ import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { displayRank, SUIT_SYMBOL } from '@/poker/cards';
 import type { CardCode, Suit } from '@/poker/types';
-import { C } from '@/theme';
+import { C, ff } from '@/theme';
 
 export type CardSize = 'xs' | 'sm' | 'md' | 'lg';
 
@@ -38,9 +38,9 @@ export function PlayingCard({
             width: d.w,
             height: d.h,
             borderRadius: d.r,
-            backgroundColor: '#15392B',
+            backgroundColor: '#22302B',
             borderWidth: 1.5,
-            borderColor: '#2C6B52',
+            borderColor: '#FF6A3D',
             alignItems: 'center',
             justifyContent: 'center',
             opacity: dim ? 0.35 : 1,
@@ -53,8 +53,8 @@ export function PlayingCard({
             height: d.h - 8,
             borderRadius: d.r - 2,
             borderWidth: 1,
-            borderColor: 'rgba(61,220,151,0.35)',
-            backgroundColor: '#123124',
+            borderColor: 'rgba(255,106,61,0.45)',
+            backgroundColor: '#1B2723',
           }}
         />
       </View>
@@ -84,7 +84,7 @@ export function PlayingCard({
         },
         style,
       ]}>
-      <Text style={{ color: '#fff', fontSize: d.rank, fontWeight: '900', lineHeight: d.rank * 1.05, letterSpacing: -1 }}>
+      <Text style={{ color: '#fff', fontSize: d.rank, fontWeight: '900', fontFamily: ff(900), lineHeight: d.rank * 1.05, letterSpacing: -1 }}>
         {displayRank(card)}
       </Text>
       <Text

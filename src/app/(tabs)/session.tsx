@@ -20,7 +20,7 @@ import { STAGES } from '@/poker/types';
 import { cost, isPaused, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
-import { C } from '@/theme';
+import { C, ff } from '@/theme';
 
 function useTick(ms = 1000) {
   const [, setT] = useState(0);
@@ -100,7 +100,7 @@ function Live({ s }: { s: Session }) {
         <T v="h1" numberOfLines={1}>
           {s.name || 'Sessão'}
         </T>
-        <T style={{ fontSize: 44, fontWeight: '800', color: paused ? C.warn : C.text, fontVariant: ['tabular-nums'] }}>{clock(playedMs(s))}</T>
+        <T style={{ fontSize: 44, fontWeight: '800', fontFamily: ff(800), color: paused ? C.warn : C.text, fontVariant: ['tabular-nums'] }}>{clock(playedMs(s))}</T>
         <Row gap={8}>
           <Button small kind="secondary" title={paused ? 'Retomar' : 'Pausa'} onPress={togglePause} icon={<Ionicons name={paused ? 'play' : 'pause'} size={14} color={C.text} />} />
           <Button small kind="secondary" title={`${nHands} mãos`} onPress={() => router.push('/')} />
@@ -168,7 +168,7 @@ function Live({ s }: { s: Session }) {
           </Row>
           <Row style={{ justifyContent: 'space-between' }}>
             <T v="small">Resultado</T>
-            <T v="mono" color={finish.cashOut - cost(s) >= 0 ? C.accent : C.danger}>
+            <T v="mono" color={finish.cashOut - cost(s) >= 0 ? C.good : C.bad}>
               {money(finish.cashOut - cost(s), s.currency)}
             </T>
           </Row>

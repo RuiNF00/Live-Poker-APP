@@ -27,7 +27,7 @@ import { amount, blindsLabel, chips } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
 import { uid, useStore } from '@/store/store';
-import { BRAND, C, R } from '@/theme';
+import { BRAND, C, R, ff } from '@/theme';
 
 const STREET_PT = { preflop: 'Pré-flop', flop: 'Flop', turn: 'Turn', river: 'River' } as const;
 
@@ -180,7 +180,7 @@ export default function NewHand() {
         </Pressable>
         <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.pill, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name={hand.game.kind === 'mtt' ? 'trophy' : 'cash'} size={14} color={C.accent} />
-          <T v="small" numberOfLines={1} style={{ flex: 1, color: C.text, fontWeight: '700' }}>
+          <T v="small" numberOfLines={1} style={{ flex: 1, color: C.text, fontWeight: '700', fontFamily: ff(700) }}>
             {(hand.game.name || (hand.game.kind === 'mtt' ? 'Torneio' : 'Cash')) + ' · ' + blindsLabel(hand) + (stage ? ' · ' + stage : '') + ' · ' + n + ' jog.'}
           </T>
           <Ionicons name="chevron-down" size={14} color={C.muted} />
@@ -189,7 +189,7 @@ export default function NewHand() {
           <Ionicons name="arrow-undo" size={24} color={C.text} />
         </Pressable>
         <Pressable onPress={() => setInBB((b) => !b)} hitSlop={8} style={{ backgroundColor: inBB ? C.accentSoft : C.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4 }}>
-          <T v="tiny" color={inBB ? C.accent : C.textDim} style={{ fontWeight: '800' }}>
+          <T v="tiny" color={inBB ? C.accent : C.textDim} style={{ fontWeight: '800', fontFamily: ff(800) }}>
             BB
           </T>
         </Pressable>
@@ -274,7 +274,7 @@ export default function NewHand() {
                         borderColor: p.allIn ? C.danger : 'rgba(245,184,61,0.45)',
                         opacity: pressed ? 0.7 : 1,
                       })}>
-                      <T v="body" color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800' }}>
+                      <T v="body" color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800) }}>
                         {p.label}
                       </T>
                       <T v="tiny" color={C.textDim}>
@@ -382,7 +382,7 @@ export default function NewHand() {
             {r.result && (
               <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
                 <T v="small">Resultado do herói</T>
-                <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.accent : C.danger}>
+                <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.good : C.bad}>
                   {(r.result.net[hand.hero] >= 0 ? '+' : '') + amount(r.result.net[hand.hero], hand, inBB)}
                 </T>
               </View>

@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
 import { chips } from '@/poker/format';
-import { C, R } from '@/theme';
+import { C, R, ff } from '@/theme';
 
 import { Button, Chip, Row, T, tap } from './ui';
 
@@ -55,7 +55,7 @@ export function AmountPad({
           </Row>
         </Row>
         <View style={{ backgroundColor: C.bg, borderRadius: R.md, padding: 14, alignItems: 'flex-end' }}>
-          <Text style={{ color: C.text, fontSize: 34, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
+          <Text style={{ color: C.text, fontSize: 34, fontWeight: '800', fontFamily: ff(800), fontVariant: ['tabular-nums'] }}>
             {txt || '0'}
             <Text style={{ color: C.muted, fontSize: 18 }}>{inBB ? ' bb' : ''}</Text>
           </Text>
@@ -76,7 +76,7 @@ export function AmountPad({
                 backgroundColor: pressed ? C.surface3 : C.surface2,
                 alignItems: 'center',
               })}>
-              <Text style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>{k}</Text>
+              <Text style={{ color: C.text, fontSize: 22, fontWeight: '700', fontFamily: ff(700) }}>{k}</Text>
             </Pressable>
           ))}
         </View>
