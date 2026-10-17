@@ -15,10 +15,10 @@
         "applinks:sweatbook.poker"
       ],
       "config": {
-        "usesNonExemptEncryption": false
+        "usesNonExemptEncryption": true
       },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": true
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
