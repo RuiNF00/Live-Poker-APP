@@ -1203,6 +1203,7 @@ const en: Record<string, string> = {
   'pagaste {amount}': 'you paid {amount}',
   'recebeste {amount}': 'you received {amount}',
   'Estás acertado com os backers': 'You are square with your backers',
+  'cerca de': 'about',
   'No total, deves aos backers': 'Overall, you owe your backers',
   'No total, os backers devem-te': 'Overall, your backers owe you',
   'deves {amount} a 1 backer': 'you owe 1 backer {amount}',
