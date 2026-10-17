@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
@@ -63,12 +64,12 @@ export function SessionForm({
   return (
     <View style={{ gap: 14 }}>
       <Row>
-        <Chip big label="Torneio" active={mtt} onPress={() => setS({ ...blankSession('mtt', s.currency), id: s.id, name: s.name, venue: s.venue })} />
+        <Chip big label={t('Torneio')} active={mtt} onPress={() => setS({ ...blankSession('mtt', s.currency), id: s.id, name: s.name, venue: s.venue })} />
         <Chip big label="Cash game" active={!mtt} onPress={() => setS({ ...blankSession('cash', s.currency), id: s.id, name: s.name, venue: s.venue })} />
       </Row>
       <View style={{ gap: 6 }}>
-        <T v="label">{mtt ? 'Torneio' : 'Jogo'}</T>
-        <TextInput value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? 'Ex.: Main Event €550' : 'Ex.: NLH 1/2'} placeholderTextColor={C.muted} style={inputStyle} />
+        <T v="label">{mtt ? t('Torneio') : t('Jogo')}</T>
+        <TextInput value={s.name} onChangeText={(name) => set({ name })} placeholder={mtt ? t('Ex.: Main Event €550') : t('Ex.: NLH 1/2')} placeholderTextColor={C.muted} style={inputStyle} />
         {recentNames.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
             {recentNames.map((n) => (
@@ -78,8 +79,8 @@ export function SessionForm({
         )}
       </View>
       <View style={{ gap: 6 }}>
-        <T v="label">Casino / sala</T>
-        <TextInput value={s.venue} onChangeText={(venue) => set({ venue })} placeholder="Ex.: Casino Estoril" placeholderTextColor={C.muted} style={inputStyle} />
+        <T v="label">{t('Casino / sala')}</T>
+        <TextInput value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={t('Ex.: Casino Estoril')} placeholderTextColor={C.muted} style={inputStyle} />
         {recentVenues.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
             {recentVenues.map((n) => (
@@ -89,8 +90,8 @@ export function SessionForm({
         )}
       </View>
       <Row gap={10}>
-        <NumField label={mtt ? `Buy-in (${s.currency})` : `Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} />
-        {mtt ? <NumField label="Stack inicial" value={s.stack} onChange={(stack) => set({ stack })} /> : null}
+        <NumField label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} />
+        {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
       </Row>
       {!past && (
         <View style={{ gap: 6 }}>
@@ -105,11 +106,11 @@ export function SessionForm({
       {past && (
         <>
           <Row gap={10}>
-            <NumField label={mtt ? 'Entradas' : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
-            <NumField label={mtt ? `Prémio (${s.currency})` : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} />
+            <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} />
+            <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} />
           </Row>
           <View style={{ gap: 6 }}>
-            <T v="label">Duração</T>
+            <T v="label">{t('Duração')}</T>
             <Row style={{ flexWrap: 'wrap' }} gap={6}>
               {[1, 2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
                 <Chip key={h} label={`${h}h`} active={hours === h} onPress={() => setHours(h)} />

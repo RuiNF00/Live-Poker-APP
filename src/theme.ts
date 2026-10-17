@@ -2,9 +2,11 @@
 // with the orange of the sweat as the only strong colour). Everything visual
 // reads from here.
 
+import { t } from './i18n';
+
 export const BRAND = {
   name: 'Sweatbook',
-  tagline: 'O teu caderno de póquer live',
+  tagline: t('O teu caderno de póquer live'),
   webUrl: (process.env.EXPO_PUBLIC_WEB_URL as string | undefined) ?? 'https://sweatbook.poker',
   scheme: 'sweatbook',
 };

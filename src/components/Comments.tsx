@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { postComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
 import { C, R, ff } from '@/theme';
@@ -28,18 +29,18 @@ export function CommentsList({
     setBusy(true);
     setErr('');
     try {
-      const c = await postComment(shareId, { name: name.trim() || 'Anónimo', text: text.trim() });
+      const c = await postComment(shareId, { name: name.trim() || t('Anónimo'), text: text.trim() });
       onPosted(c);
       setText('');
     } catch (e) {
-      setErr(e instanceof Error && e.message === 'offensive' ? 'Comentário recusado: linguagem ofensiva.' : 'Não deu para enviar. Tenta outra vez.');
+      setErr(e instanceof Error && e.message === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : t('Não deu para enviar. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
   };
   return (
     <View style={{ gap: 8 }}>
-      {comments.length === 0 ? <T v="small">Ainda sem comentários. Sê o primeiro a dar a tua opinião.</T> : null}
+      {comments.length === 0 ? <T v="small">{t('Ainda sem comentários. Sê o primeiro a dar a tua opinião.')}</T> : null}
       {comments.map((c) => (
         <View key={c.id} style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 10, gap: 3, borderWidth: 1, borderColor: C.border }}>
           <Row style={{ justifyContent: 'space-between' }}>
@@ -56,17 +57,17 @@ export function CommentsList({
         </View>
       ))}
       <View style={{ gap: 6 }}>
-        <TextInput value={name} onChangeText={setName} placeholder="O teu nome" placeholderTextColor={C.muted} style={inputStyle} />
+        <TextInput value={name} onChangeText={setName} placeholder={t('O teu nome')} placeholderTextColor={C.muted} style={inputStyle} />
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="O que fazias? Fold, call, shove…"
+          placeholder={t('O que fazias? Fold, call, shove…')}
           placeholderTextColor={C.muted}
           multiline
           style={[inputStyle, { minHeight: 64, textAlignVertical: 'top' }]}
         />
         {err ? <T v="small" color={C.danger}>{err}</T> : null}
-        <Button title={busy ? 'A enviar…' : 'Comentar'} disabled={busy || !text.trim()} onPress={send} />
+        <Button title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
       </View>
     </View>
   );

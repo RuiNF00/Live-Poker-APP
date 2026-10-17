@@ -1,12 +1,14 @@
 // Plain-text hand history, for pasting into WhatsApp/Discord or a coach.
 
+import { t } from '../i18n';
+
 import { comboLabel, SUIT_SYMBOL } from './cards';
 import { positions, replay } from './engine';
 import { amount, blindsLabel } from './format';
 import { STAGES, type Hand, type Street, type Suit } from './types';
 import { actionLabel, displayName } from './view';
 
-const STREET_PT: Record<Street, string> = { preflop: 'PRÉ-FLOP', flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
+const STREET_PT: Record<Street, string> = { preflop: t('PRÉ-FLOP'), flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
 
 function card(c: string) {
   return c[0] + SUIT_SYMBOL[c[1] as Suit];
@@ -20,7 +22,7 @@ export function handText(hand: Hand, opts: { inBB?: boolean; link?: string } = {
   const lines: string[] = [];
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   lines.push(
-    [g.name || (g.kind === 'mtt' ? 'Torneio' : 'Cash'), blindsLabel(hand), g.level ? `Nível ${g.level}` : '', stage ?? '', g.playersLeft ? `${g.playersLeft} restantes` : '']
+    [g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash'), blindsLabel(hand), g.level ? t('Nível {n}', { n: g.level }) : '', stage ?? '', g.playersLeft ? t('{n} restantes', { n: g.playersLeft }) : '']
       .filter(Boolean)
       .join(' · '),
   );
@@ -52,14 +54,14 @@ export function handText(hand: Hand, opts: { inBB?: boolean; link?: string } = {
   }
   if (r.result) {
     const shown = hand.players
-      .map((p, i) => (i !== hand.hero && !r.final.folded[i] && p.cards?.length === 2 ? `${displayName(hand, i, pos)} mostra ${p.cards.map(card).join(' ')}` : ''))
+      .map((p, i) => (i !== hand.hero && !r.final.folded[i] && p.cards?.length === 2 ? t('{name} mostra {cards}', { name: displayName(hand, i, pos), cards: p.cards.map(card).join(' ') }) : ''))
       .filter(Boolean);
     if (shown.length) lines.push(shown.join(' · '));
-    const winners = r.result.won.map((w, i) => (w > 0 ? `${displayName(hand, i, pos)} ganha ${amount(w, hand, inBB)}` : '')).filter(Boolean);
+    const winners = r.result.won.map((w, i) => (w > 0 ? t('{name} ganha {amount}', { name: displayName(hand, i, pos), amount: amount(w, hand, inBB) }) : '')).filter(Boolean);
     if (winners.length) lines.push(winners.join(' · '));
   }
-  if (hand.tags.length) lines.push('Tags: ' + hand.tags.join(', '));
-  if (hand.notes) lines.push('Notas: ' + hand.notes);
+  if (hand.tags.length) lines.push('Tags: ' + hand.tags.map((x) => t(x)).join(', '));
+  if (hand.notes) lines.push(t('Notas: ') + hand.notes);
   if (opts.link) lines.push('', 'Replay: ' + opts.link);
   return lines.join('\n');
 }

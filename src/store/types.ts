@@ -34,6 +34,7 @@ export interface Session {
   notes: string;
 }
 
+/** Stored in Portuguese; translate with t() only when shown. */
 export const PLAYER_TAGS = [
   'Fish',
   'Reg',

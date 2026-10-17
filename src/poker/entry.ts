@@ -1,6 +1,8 @@
 // Entry shortcuts: the logic that makes hand entry a few taps. Pure helpers so
 // they can be tested without the UI.
 
+import { t } from '../i18n';
+
 import { apply, legal, totalPot, type TableState } from './engine';
 import type { Hand, HandAction } from './types';
 
@@ -22,9 +24,9 @@ export function sizePresets(hand: Hand, s: TableState): SizePreset[] {
   const unit = Math.max(1, Math.round(bb / 4));
   const out: SizePreset[] = [];
   const add = (label: string, to: number) => {
-    const t = Math.min(l.maxTo, Math.max(l.minTo, to));
-    if (t >= l.maxTo) return;
-    if (!out.some((o) => o.to === t)) out.push({ label, to: t });
+    const v = Math.min(l.maxTo, Math.max(l.minTo, to));
+    if (v >= l.maxTo) return;
+    if (!out.some((o) => o.to === v)) out.push({ label, to: v });
   };
   if (s.street === 'preflop') {
     const unopened = s.currentBet <= bb;
@@ -36,7 +38,7 @@ export function sizePresets(hand: Hand, s: TableState): SizePreset[] {
     }
   } else if (s.currentBet === 0) {
     const pot = totalPot(s);
-    for (const [label, f] of [['25%', 0.25], ['33%', 0.33], ['50%', 0.5], ['75%', 0.75], ['Pote', 1], ['150%', 1.5]] as const)
+    for (const [label, f] of [['25%', 0.25], ['33%', 0.33], ['50%', 0.5], ['75%', 0.75], [t('Pote'), 1], ['150%', 1.5]] as const)
       add(label, roundTo(pot * f, unit));
   } else {
     for (const x of [2.5, 3, 4]) add(`${x}x`, roundTo(x * s.currentBet, unit));

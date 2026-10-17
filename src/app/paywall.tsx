@@ -8,12 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { annualSavingPct, FREE, LEGAL, PAYWALL_COPY, perMonth, PLANS, PRO_FEATURES, type PaywallReason, type PlanId } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { Row, T, tap } from '@/components/ui';
+import { lang, t } from '@/i18n';
 import { BRAND, C, R, ff } from '@/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 function money(n: number) {
-  return `${n.toFixed(2).replace('.', ',')} US$`;
+  return lang === 'pt' ? `${n.toFixed(2).replace('.', ',')} US$` : `$${n.toFixed(2)}`;
 }
 
 export default function Paywall() {
@@ -38,8 +39,8 @@ export default function Paywall() {
     const res = await purchase(sel);
     setBusy(null);
     if (res === 'ok') close();
-    else if (res === 'unavailable') Alert.alert('Ainda não disponível', 'As subscrições ainda não estão ativas nesta versão.');
-    else if (res === 'error') Alert.alert('Não deu para concluir', 'Não foi cobrado nada. Tenta outra vez daqui a pouco.');
+    else if (res === 'unavailable') Alert.alert(t('Ainda não disponível'), t('As subscrições ainda não estão ativas nesta versão.'));
+    else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
 
   const onRestore = async () => {
@@ -47,20 +48,20 @@ export default function Paywall() {
     const ok = await restore();
     setBusy(null);
     if (ok) close();
-    else Alert.alert('Sem compras', 'Não encontrámos nenhuma subscrição nesta conta da loja.');
+    else Alert.alert(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
   };
 
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
-  const after = chosen ? `${chosen.priceString} por ${PLANS[sel].period}` : '';
+  const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[sel].period) }) : '';
 
   if (isPro)
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
         <Ionicons name="checkmark-circle" size={56} color={C.accent} />
-        <T v="h1">Já és Pro</T>
+        <T v="h1">{t('Já és Pro')}</T>
         <Pressable onPress={close}>
           <T v="body" color={C.accent}>
-            Voltar
+            {t('Voltar')}
           </T>
         </Pressable>
       </View>
@@ -69,7 +70,7 @@ export default function Paywall() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 18, paddingBottom: 24, gap: 18 }}>
-        <Pressable accessibilityLabel="Fechar" onPress={close} hitSlop={12} style={{ alignSelf: 'flex-start', padding: 4 }}>
+        <Pressable accessibilityLabel={t('Fechar')} onPress={close} hitSlop={12} style={{ alignSelf: 'flex-start', padding: 4 }}>
           <Ionicons name="close" size={26} color={C.textDim} />
         </Pressable>
 
@@ -111,13 +112,13 @@ export default function Paywall() {
               <PlanCard
                 active={sel === 'annual'}
                 onPress={() => setSel('annual')}
-                title="Anual"
-                price={annual.priceString + ' / ano'}
-                sub={`${money(perMonth(annual.price))} por mês`}
-                badge={annual.trialDays ? `${annual.trialDays} dias grátis · poupa ${saving}%` : `Poupa ${saving}%`}
+                title={t('Anual')}
+                price={annual.priceString + ' / ' + t('ano')}
+                sub={t('{price} por mês', { price: money(perMonth(annual.price)) })}
+                badge={annual.trialDays ? t('{days} dias grátis · poupa {pct}%', { days: annual.trialDays, pct: saving }) : t('Poupa {pct}%', { pct: saving })}
               />
             ) : null}
-            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title="Mensal" price={monthly.priceString + ' / mês'} sub="Cancela quando quiseres" /> : null}
+            {monthly ? <PlanCard active={sel === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} price={monthly.priceString + ' / ' + t('mês')} sub={t('Cancela quando quiseres')} /> : null}
           </View>
         )}
       </ScrollView>
@@ -136,34 +137,34 @@ export default function Paywall() {
           {busy === 'buy' ? (
             <ActivityIndicator color={C.accentInk} />
           ) : (
-            <T style={{ color: C.accentInk, fontSize: 17, fontWeight: '800', fontFamily: ff(800) }}>{trial ? `Experimentar ${trial} dias grátis` : 'Subscrever Pro'}</T>
+            <T style={{ color: C.accentInk, fontSize: 17, fontWeight: '800', fontFamily: ff(800) }}>{trial ? t('Experimentar {days} dias grátis', { days: trial }) : t('Subscrever Pro')}</T>
           )}
         </Pressable>
         <T v="tiny" style={{ textAlign: 'center', lineHeight: 15 }}>
-          {trial ? `Grátis durante ${trial} dias, depois ${after}. ` : after ? `${after}. ` : ''}
-          Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.
+          {trial ? t('Grátis durante {days} dias, depois {after}.', { days: trial, after }) + ' ' : after ? `${after}. ` : ''}
+          {t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
         </T>
         <Row style={{ justifyContent: 'center' }} gap={18}>
           <Pressable onPress={onRestore} disabled={!!busy} hitSlop={6}>
             <T v="tiny" color={C.textDim}>
-              {busy === 'restore' ? 'A restaurar…' : 'Restaurar compras'}
+              {busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')}
             </T>
           </Pressable>
           <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} hitSlop={6}>
             <T v="tiny" color={C.textDim}>
-              Termos
+              {t('Termos')}
             </T>
           </Pressable>
           <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.privacy)} hitSlop={6}>
             <T v="tiny" color={C.textDim}>
-              Privacidade
+              {t('Privacidade')}
             </T>
           </Pressable>
         </Row>
         {reason === 'hands' && FREE.handsPerDay ? (
           <Pressable onPress={close} hitSlop={6}>
             <T v="small" style={{ textAlign: 'center' }} color={C.muted}>
-              Continuar grátis · amanhã tens mais {FREE.handsPerDay} mãos
+              {t('Continuar grátis · amanhã tens mais {n} mãos', { n: FREE.handsPerDay })}
             </T>
           </Pressable>
         ) : null}

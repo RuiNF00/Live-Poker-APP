@@ -20,6 +20,7 @@ import { SeatSheet } from '@/components/entry/SeatSheet';
 import { PlayingCard } from '@/components/PlayingCard';
 import { Table } from '@/components/Table';
 import { Button, Chip, Row, T, tap } from '@/components/ui';
+import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { callerCandidates, onlyCaller, sizePresets, skipTargets, skipTo } from '@/poker/entry';
@@ -30,7 +31,7 @@ import { displayName, seatViews } from '@/poker/view';
 import { uid, useStore } from '@/store/store';
 import { BRAND, C, R, ff } from '@/theme';
 
-const STREET_PT = { preflop: 'Pré-flop', flop: 'Flop', turn: 'Turn', river: 'River' } as const;
+const STREET_PT = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
 interface Draft {
   hand: Hand;
@@ -205,7 +206,7 @@ export default function NewHand() {
         <Pressable onPress={() => setCtxOpen(true)} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.pill, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name={hand.game.kind === 'mtt' ? 'trophy' : 'cash'} size={14} color={C.accent} />
           <T v="small" numberOfLines={1} style={{ flex: 1, color: C.text, fontWeight: '700', fontFamily: ff(700) }}>
-            {(hand.game.name || (hand.game.kind === 'mtt' ? 'Torneio' : 'Cash')) + ' · ' + blindsLabel(hand) + (stage ? ' · ' + stage : '') + ' · ' + n + ' jog.'}
+            {(hand.game.name || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ' · ' + blindsLabel(hand) + (stage ? ' · ' + stage : '') + ' · ' + t('{n} jog.', { n })}
           </T>
           <Ionicons name="chevron-down" size={14} color={C.muted} />
         </Pressable>
@@ -234,7 +235,7 @@ export default function NewHand() {
         {phase === 'hero' && (
           <View style={{ gap: 12 }}>
             <View style={{ gap: 6 }}>
-              <T v="label">A tua posição</T>
+              <T v="label">{t('A tua posição')}</T>
               <Row style={{ flexWrap: 'wrap' }} gap={6}>
                 {positionOrder(n).map((label) => (
                   <Chip key={label} big label={label} active={draft.posChosen && pos[hand.hero] === label} onPress={() => setHeroPos(label)} />
@@ -243,7 +244,7 @@ export default function NewHand() {
             </View>
             <View style={{ gap: 6 }}>
               <Row style={{ justifyContent: 'space-between' }}>
-                <T v="label">As tuas cartas</T>
+                <T v="label">{t('As tuas cartas')}</T>
                 <Row gap={4}>
                   {[0, 1].map((k) => (
                     <PlayingCard key={k} card={heroCards[k]} size="sm" faceDown={!heroCards[k]} />
@@ -253,7 +254,7 @@ export default function NewHand() {
               <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
             </View>
             <Pressable onPress={() => setSeatEdit(hand.hero)} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: C.surface, padding: 12, borderRadius: R.md }}>
-              <T v="small">O teu stack (toca num lugar para mudar nome ou stack)</T>
+              <T v="small">{t('O teu stack (toca num lugar para mudar nome ou stack)')}</T>
               <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
             </Pressable>
           </View>
@@ -266,23 +267,23 @@ export default function NewHand() {
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
-              {l.toCall > 0 ? <T v="small">para pagar {amount(l.toCall, hand, inBB)}</T> : null}
+              {l.toCall > 0 ? <T v="small">{t('para pagar {amount}', { amount: amount(l.toCall, hand, inBB) })}</T> : null}
             </Row>
             {autoFoldCount > 0 && l.p === hand.hero && (
               <Pressable onPress={undo} hitSlop={6}>
                 <T v="small">
-                  Fold de todos até ti · <T v="small" color={C.accent}>alguém entrou antes? Desfaz</T>
+                  {t('Fold de todos até ti')} · <T v="small" color={C.accent}>{t('alguém entrou antes? Desfaz')}</T>
                 </T>
               </Pressable>
             )}
             {callers.length > 0 && (
               <View style={{ gap: 6 }}>
-                <T v="label">Resposta rápida (os outros fazem fold)</T>
+                <T v="label">{t('Resposta rápida (os outros fazem fold)')}</T>
                 <Row style={{ flexWrap: 'wrap' }} gap={6}>
                   {callers.map((i) => (
-                    <Chip key={i} big label={`Só ${displayName(hand, i, pos)}${hand.players[i].name ? ` (${pos[i]})` : ''} paga`} onPress={() => pushActions(onlyCaller(hand, s, i))} />
+                    <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
                   ))}
-                  <Chip big label="Todos fold" onPress={() => pushActions(onlyCaller(hand, s, null))} />
+                  <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />
                 </Row>
               </View>
             )}
@@ -298,7 +299,7 @@ export default function NewHand() {
             </Row>
             {presets.length > 0 && (
               <View style={{ gap: 6 }}>
-                <T v="label">{raiseName(s) + (l.canBet ? '' : ' para')}</T>
+                <T v="label">{l.canBet ? raiseName(s) : t('{action} para', { action: raiseName(s) })}</T>
                 <Row style={{ flexWrap: 'wrap' }} gap={6}>
                   {presets.map((p) => (
                     <Pressable
@@ -334,7 +335,7 @@ export default function NewHand() {
             )}
             {skips.length > 1 && (
               <View style={{ gap: 6 }}>
-                <T v="label">Salta para (os do meio fazem {l.canCheck ? 'check' : 'fold'})</T>
+                <T v="label">{t('Salta para (os do meio fazem {action})', { action: l.canCheck ? 'check' : 'fold' })}</T>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
                   {skips.slice(1).map((i) => (
                     <Chip
@@ -353,13 +354,13 @@ export default function NewHand() {
           <View style={{ gap: 8 }}>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
-                {STREET_PT[s.street]} — escolhe {boardNeeded - hand.board.length} carta{boardNeeded - hand.board.length > 1 ? 's' : ''}
+                {STREET_PT[s.street]} — {boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}
               </T>
               {s.bettingDone ? <T v="small" color={C.allin}>all-in</T> : null}
             </Row>
             <CardPicker used={usedCards(hand)} selected={hand.board.slice(s.boardCount)} onPick={pickBoard} />
             {r.steps.length > 0 && s.bettingDone && (
-              <Button title="Guardar sem board" kind="ghost" onPress={save} />
+              <Button title={t('Guardar sem board')} kind="ghost" onPress={save} />
             )}
           </View>
         )}
@@ -369,7 +370,7 @@ export default function NewHand() {
             {phase === 'showdown' && (
               <View style={{ gap: 8 }}>
                 <T v="h2">Showdown</T>
-                <T v="small">Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)</T>
+                <T v="small">{t('Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)')}</T>
                 <Row style={{ flexWrap: 'wrap' }} gap={6}>
                   {hand.players.map((p, i) =>
                     i === hand.hero || s.folded[i] ? null : (
@@ -400,7 +401,7 @@ export default function NewHand() {
                 )}
                 {r.result && !r.result.resolved && (
                   <View style={{ gap: 6 }}>
-                    <T v="label">Quem ganhou?</T>
+                    <T v="label">{t('Quem ganhou?')}</T>
                     <Row style={{ flexWrap: 'wrap' }} gap={6}>
                       {hand.players.map((p, i) =>
                         s.folded[i] ? null : (
@@ -423,23 +424,23 @@ export default function NewHand() {
             )}
             {r.result && (
               <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <T v="small">Resultado do herói</T>
+                <T v="small">{t('Resultado do herói')}</T>
                 <T v="mono" color={r.result.net[hand.hero] >= 0 ? C.good : C.bad}>
                   {(r.result.net[hand.hero] >= 0 ? '+' : '') + amount(r.result.net[hand.hero], hand, inBB)}
                 </T>
               </View>
             )}
             <FinishPanel hand={hand} onChange={(h) => setDraftState({ ...draft, hand: h })} />
-            <Button title="Guardar e ver replay" onPress={save} />
+            <Button title={t('Guardar e ver replay')} onPress={save} />
           </View>
         )}
 
         {(phase === 'action' || phase === 'board') && (
-          <Button title="Guardar rápido · completas depois" kind="ghost" small onPress={save} />
+          <Button title={t('Guardar rápido · completas depois')} kind="ghost" small onPress={save} />
         )}
         {phase === 'hero' && heroCards.length === 2 && !draft.posChosen ? (
           <T v="small" style={{ textAlign: 'center' }}>
-            Escolhe a tua posição para começar a ação.
+            {t('Escolhe a tua posição para começar a ação.')}
           </T>
         ) : null}
       </ScrollView>
@@ -455,7 +456,7 @@ export default function NewHand() {
       />
       <SeatSheet
         visible={seatEdit !== null}
-        title={seatEdit === null ? '' : seatEdit === hand.hero ? 'Tu' : `Lugar ${pos[seatEdit]}`}
+        title={seatEdit === null ? '' : seatEdit === hand.hero ? t('Tu') : t('Lugar {pos}', { pos: pos[seatEdit] })}
         player={seatEdit === null ? null : hand.players[seatEdit]}
         isHero={seatEdit === hand.hero}
         heroStack={hand.players[hand.hero].stack}
@@ -472,7 +473,7 @@ export default function NewHand() {
       {l && (
         <AmountPad
           visible={pad}
-          title={l.canBet ? 'Bet' : 'Raise para'}
+          title={l.canBet ? 'Bet' : t('Raise para')}
           bb={hand.game.bb}
           initialInBB={inBB}
           min={l.minTo}
@@ -489,25 +490,25 @@ export default function NewHand() {
 }
 
 function FinishPanel({ hand, onChange }: { hand: Hand; onChange: (h: Hand) => void }) {
-  const toggle = (t: string) =>
-    onChange({ ...hand, tags: hand.tags.includes(t) ? hand.tags.filter((x) => x !== t) : [...hand.tags, t] });
+  const toggle = (tg: string) =>
+    onChange({ ...hand, tags: hand.tags.includes(tg) ? hand.tags.filter((x) => x !== tg) : [...hand.tags, tg] });
   return (
     <View style={{ gap: 10 }}>
       <T v="label">Tags</T>
       <Row style={{ flexWrap: 'wrap' }} gap={6}>
-        {DEFAULT_TAGS.map((t) => (
-          <Chip key={t} label={t} active={hand.tags.includes(t)} onPress={() => toggle(t)} />
+        {DEFAULT_TAGS.map((tg) => (
+          <Chip key={tg} label={t(tg)} active={hand.tags.includes(tg)} onPress={() => toggle(tg)} />
         ))}
       </Row>
       <TextInput
         value={hand.notes}
         onChangeText={(notes) => onChange({ ...hand, notes })}
-        placeholder="Notas (o que pensaste, reads, dúvidas…)"
+        placeholder={t('Notas (o que pensaste, reads, dúvidas…)')}
         placeholderTextColor={C.muted}
         multiline
         style={[inputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
       />
-      <T v="tiny">Stack inicial do herói: {chips(hand.players[hand.hero].stack)}</T>
+      <T v="tiny">{t('Stack inicial do herói: {stack}', { stack: chips(hand.players[hand.hero].stack) })}</T>
     </View>
   );
 }

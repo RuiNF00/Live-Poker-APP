@@ -10,6 +10,7 @@ import { isComplete } from '@/poker/engine';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
+import { t } from '@/i18n';
 import { deleteShare, fetchComments, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
@@ -28,7 +29,7 @@ export default function HandScreen() {
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
 
-  if (!hand) return <Empty title="Mão não encontrada" />;
+  if (!hand) return <Empty title={t('Mão não encontrada')} />;
 
   const ensureLink = async (): Promise<string | null> => {
     if (hand.shareId) return shareUrl(hand.shareId);
@@ -38,7 +39,7 @@ export default function HandScreen() {
       saveHand({ ...hand, shareId, shareToken: token });
       return shareUrl(shareId);
     } catch {
-      Alert.alert('Sem ligação', 'Não deu para criar o link agora. Podes partilhar o texto da mão.');
+      Alert.alert(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
     } finally {
       setBusy(false);
@@ -56,21 +57,19 @@ export default function HandScreen() {
     if (!base) return;
     if (isNew) pro.record('share');
     const link = quiz ? base + '?q=1' : base;
-    const msg = quiz
-      ? `${hand.game.name ? hand.game.name + ' — ' : ''}desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️
-${link}`
-      : `${hand.game.name ? hand.game.name + ' — ' : ''}o que fazias aqui? 👀
+    const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
+    const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}
 ${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
-      Alert.alert('Link copiado');
+      Alert.alert(t('Link copiado'));
     } else await Share.share({ message: msg, url: link });
   };
 
   const copyText = async () => {
     tap();
     await Clipboard.setStringAsync(handText(hand, { inBB: settings.inBB, link: hand.shareId ? shareUrl(hand.shareId) : undefined }));
-    Alert.alert('Texto copiado', 'Cola no WhatsApp, Discord ou onde quiseres.');
+    Alert.alert(t('Texto copiado'), t('Cola no WhatsApp, Discord ou onde quiseres.'));
   };
 
   const unshare = () => {
@@ -81,14 +80,14 @@ ${link}`;
         saveHand({ ...hand, shareId: undefined, shareToken: undefined });
         setComments([]);
       } catch {
-        Alert.alert('Sem ligação', 'Não deu para apagar a partilha agora. Tenta outra vez.');
+        Alert.alert(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
       }
     };
     if (Platform.OS === 'web') doIt();
     else
-      Alert.alert('Apagar partilha?', 'O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Apagar', style: 'destructive', onPress: doIt },
+      Alert.alert(t('Apagar partilha?'), t('O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.'), [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Apagar'), style: 'destructive', onPress: doIt },
       ]);
   };
 
@@ -101,9 +100,9 @@ ${link}`;
     };
     if (Platform.OS === 'web') doIt();
     else
-      Alert.alert('Apagar mão?', 'Não dá para desfazer.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Apagar', style: 'destructive', onPress: doIt },
+      Alert.alert(t('Apagar mão?'), t('Não dá para desfazer.'), [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Apagar'), style: 'destructive', onPress: doIt },
       ]);
   };
 
@@ -132,32 +131,32 @@ ${link}`;
             style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderColor: 'rgba(245,184,61,0.45)', borderWidth: 1, borderRadius: R.md, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name="create-outline" size={18} color={C.warn} />
             <T v="small" style={{ flex: 1, color: C.text }}>
-              Mão por completar. Toca para continuar onde ficaste.
+              {t('Mão por completar. Toca para continuar onde ficaste.')}
             </T>
           </Pressable>
         )}
         <Replayer hand={hand} initialInBB={settings.inBB} />
         <Button
-          title="Story no Instagram"
+          title={t('Story no Instagram')}
           icon={<Ionicons name="logo-instagram" size={19} color={C.accentInk} />}
           onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })}
         />
         <Row gap={8}>
           <Button
-            title={busy ? 'A criar link…' : hand.shareId ? 'Partilhar link' : 'Partilhar com amigos'}
+            title={busy ? t('A criar link…') : hand.shareId ? t('Partilhar link') : t('Partilhar com amigos')}
             kind="secondary"
             icon={<Ionicons name="share-social" size={18} color={C.text} />}
             style={{ flex: 1 }}
             disabled={busy}
             onPress={() => share()}
           />
-          <Button title="Desafio" kind="secondary" icon={<Ionicons name="help-circle-outline" size={16} color={C.text} />} disabled={busy} onPress={() => share(true)} />
-          <Button title="Texto" kind="secondary" icon={<Ionicons name="copy-outline" size={16} color={C.text} />} onPress={copyText} />
+          <Button title={t('Desafio')} kind="secondary" icon={<Ionicons name="help-circle-outline" size={16} color={C.text} />} disabled={busy} onPress={() => share(true)} />
+          <Button title={t('Texto')} kind="secondary" icon={<Ionicons name="copy-outline" size={16} color={C.text} />} onPress={copyText} />
         </Row>
         {hand.shareId ? (
           <View style={{ gap: 8 }}>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2">Comentários</T>
+              <T v="h2">{t('Comentários')}</T>
               <Pressable onPress={loadComments} hitSlop={8}>
                 <Ionicons name="refresh" size={18} color={C.textDim} />
               </Pressable>
@@ -166,14 +165,14 @@ ${link}`;
             {hand.shareToken ? (
               <Pressable onPress={unshare} hitSlop={8} style={{ alignSelf: 'center', paddingTop: 8 }}>
                 <T v="small" color={C.danger}>
-                  Apagar partilha
+                  {t('Apagar partilha')}
                 </T>
               </Pressable>
             ) : null}
           </View>
         ) : (
           <T v="small" style={{ textAlign: 'center' }}>
-            Partilha o link: os teus amigos veem o replay no browser e comentam, mesmo sem a app.
+            {t('Partilha o link: os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}
           </T>
         )}
       </ScrollView>

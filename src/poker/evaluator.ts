@@ -1,15 +1,17 @@
+import { t } from '../i18n';
+
 import { rankValue, suitOf } from './cards';
 import type { CardCode } from './types';
 
 export const HAND_NAMES = [
-  'Carta alta',
-  'Par',
-  'Dois pares',
-  'Trio',
-  'Sequência',
-  'Cor',
+  t('Carta alta'),
+  t('Par'),
+  t('Dois pares'),
+  t('Trio'),
+  t('Sequência'),
+  t('Cor'),
   'Full house',
-  'Poker',
+  t('Poker'),
   'Straight flush',
 ];
 

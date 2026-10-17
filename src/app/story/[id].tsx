@@ -8,6 +8,7 @@ import { usePro } from '@/billing/pro';
 import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, Empty, Row, T, tap } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { t } from '@/i18n';
 import { canShareStory, captureStory, ensureShareLink, renderVoiceStory, shareStory } from '@/lib/instagram-story';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
@@ -15,7 +16,7 @@ import { useStore } from '@/store/store';
 import { C, F, R } from '@/theme';
 
 const MAX_COMMENT = 140;
-const PROMPTS = ['Fold é melhor?', 'Call ou fold?', 'Como jogavas isto?', 'Hero call ou spew?', 'Cooler ou erro meu?'];
+const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?'), t('Hero call ou spew?'), t('Cooler ou erro meu?')];
 
 export default function StoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,7 +38,7 @@ export default function StoryScreen() {
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
   const moment = useMemo(() => (hand ? storyMoment(hand, mode, settings.inBB) : null), [hand, mode, settings.inBB]);
-  if (!hand || !moment) return <Empty title="Mão não encontrada" />;
+  if (!hand || !moment) return <Empty title={t('Mão não encontrada')} />;
 
   // Preview fits the screen; the captured view inside stays 360×640.
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
@@ -67,7 +68,7 @@ export default function StoryScreen() {
       try {
         link = await ensureShareLink(hand, saveHand);
       } catch {
-        Alert.alert('Sem ligação', 'Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.');
+        Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share');
@@ -82,9 +83,9 @@ export default function StoryScreen() {
           video = await renderVoiceStory(frame, voice, voiceSlotPx());
         } catch {
           const goOn = await new Promise<boolean>((resolve) =>
-            Alert.alert('Não deu para juntar a voz', 'Podes publicar a história sem voz ou tentar daqui a pouco.', [
-              { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Sem voz', onPress: () => resolve(true) },
+            Alert.alert(t('Não deu para juntar a voz'), t('Podes publicar a história sem voz ou tentar daqui a pouco.'), [
+              { text: t('Cancelar'), style: 'cancel', onPress: () => resolve(false) },
+              { text: t('Sem voz'), onPress: () => resolve(true) },
             ]),
           );
           if (!goOn) return;
@@ -93,9 +94,9 @@ export default function StoryScreen() {
       } else {
         target = await shareStory(await captureStory(card), link);
       }
-      if (target === 'sheet') Alert.alert('Link copiado', 'No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.');
+      if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
-      Alert.alert('Não deu', 'Não conseguimos abrir o Instagram. Tenta outra vez.');
+      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -103,7 +104,7 @@ export default function StoryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Story no Instagram' }} />
+      <Stack.Screen options={{ title: t('Story no Instagram') }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center' }}>
@@ -129,10 +130,10 @@ export default function StoryScreen() {
           </View>
 
           <Row gap={8} style={{ justifyContent: 'center' }}>
-            <Chip label="Pergunta" active={mode === 'question'} onPress={() => ask && setMode('question')} style={!ask ? { opacity: 0.4 } : null} />
-            <Chip label="Resultado" active={mode === 'result'} onPress={() => setMode('result')} />
+            <Chip label={t('Pergunta')} active={mode === 'question'} onPress={() => ask && setMode('question')} style={!ask ? { opacity: 0.4 } : null} />
+            <Chip label={t('Resultado')} active={mode === 'result'} onPress={() => setMode('result')} />
             <Chip
-              label={pro.isPro ? 'Com marca' : 'Com marca · Pro'}
+              label={pro.isPro ? t('Com marca') : t('Com marca') + ' · Pro'}
               active={brand || !pro.isPro}
               color={C.textDim}
               onPress={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
@@ -140,18 +141,18 @@ export default function StoryScreen() {
           </Row>
           <T v="tiny" style={{ textAlign: 'center', marginTop: -6 }}>
             {mode === 'question'
-              ? 'Pára antes da tua decisão e esconde o resultado. Quem quiser saber tem de abrir o link.'
-              : 'Mostra a mão até ao fim, com as cartas e quem ganhou.'}
+              ? t('Pára antes da tua decisão e esconde o resultado. Quem quiser saber tem de abrir o link.')
+              : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 
           {canShareStory ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
 
           <View style={{ gap: 8 }}>
-            <T v="label">O teu comentário</T>
+            <T v="label">{t('O teu comentário')}</T>
             <TextInput
               value={comment}
-              onChangeText={(t) => setComment(t.slice(0, MAX_COMMENT))}
-              placeholder="Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?"
+              onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))}
+              placeholder={t('Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?')}
               placeholderTextColor={C.muted}
               multiline
               style={{
@@ -168,7 +169,7 @@ export default function StoryScreen() {
               }}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
-              {noteHint ? <Chip label="Usar as notas" onPress={() => setComment(noteHint)} /> : null}
+              {noteHint ? <Chip label={t('Usar as notas')} onPress={() => setComment(noteHint)} /> : null}
               {PROMPTS.map((p) => (
                 <Chip key={p} label={p} onPress={() => setComment(p)} />
               ))}
@@ -178,14 +179,14 @@ export default function StoryScreen() {
         <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bg }}>
           {canShareStory ? (
             <Button
-              title={busy ? (withVoice ? 'A juntar a tua voz…' : 'A preparar…') : 'Partilhar no Instagram'}
+              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : t('Partilhar no Instagram')}
               icon={<Ionicons name="logo-instagram" size={19} color={C.accentInk} />}
               disabled={busy}
               onPress={post}
             />
           ) : (
             <T v="small" style={{ textAlign: 'center' }}>
-              Abre a app no telemóvel para publicar no Instagram.
+              {t('Abre a app no telemóvel para publicar no Instagram.')}
             </T>
           )}
         </View>

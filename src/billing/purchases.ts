@@ -6,6 +6,8 @@
 import { Platform } from 'react-native';
 import Purchases, { INTRO_ELIGIBILITY_STATUS, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases';
 
+import { lang } from '../i18n';
+
 import { ENTITLEMENT, PLANS, PRODUCTS, type PlanId } from './plans';
 
 const KEY = Platform.select({
@@ -46,7 +48,7 @@ function hasPro(info: CustomerInfo): boolean {
 }
 
 function usd(n: number) {
-  return `${n.toFixed(2).replace('.', ',')} US$`;
+  return lang === 'pt' ? `${n.toFixed(2).replace('.', ',')} US$` : `$${n.toFixed(2)}`;
 }
 
 function fallbackPlans(): StorePlan[] {

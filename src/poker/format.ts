@@ -1,3 +1,5 @@
+import { lang, locale } from '../i18n';
+
 import type { ActionKind, Hand } from './types';
 
 function trim(n: number, digits: number) {
@@ -8,7 +10,7 @@ function trim(n: number, digits: number) {
 export function chips(n: number): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10000) return sign + Math.round(a).toLocaleString('pt-PT').replace(/\s/g, ' ');
+  if (a < 10000) return sign + Math.round(a).toLocaleString(locale).replace(/\s/g, ' ');
   if (a < 1e6) return sign + trim(a / 1000, a < 100000 ? 1 : 0) + 'k';
   return sign + trim(a / 1e6, 2) + 'M';
 }
@@ -26,8 +28,8 @@ export function amount(n: number, hand: Pick<Hand, 'game'>, inBB: boolean): stri
 export function money(n: number, currency = '€'): string {
   const sign = n < 0 ? '−' : '';
   const a = Math.abs(n);
-  const s = a >= 1000 ? Math.round(a).toLocaleString('pt-PT') : trim(a, 2);
-  return `${sign}${s}${currency}`;
+  const s = a >= 1000 ? Math.round(a).toLocaleString(locale) : trim(a, 2);
+  return lang === 'pt' ? `${sign}${s}${currency}` : `${sign}${currency}${s}`;
 }
 
 export const ACTION_LABEL: Record<ActionKind, string> = {
@@ -54,10 +56,10 @@ export function duration(ms: number): string {
 
 export function shortDate(ts: number): string {
   const d = new Date(ts);
-  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
 }
 
 export function timeOf(ts: number): string {
   const d = new Date(ts);
-  return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }

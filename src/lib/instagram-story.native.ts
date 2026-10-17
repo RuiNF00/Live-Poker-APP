@@ -13,6 +13,7 @@ import { Linking, Platform, type View } from 'react-native';
 import Share, { Social } from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
 
+import { t } from '@/i18n';
 import { API, shareUrl, uploadHand } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 
@@ -75,7 +76,7 @@ export async function shareStory(file: string, link: string, kind: 'image' | 'vi
         appId: META_APP_ID,
         ...(kind === 'video' ? { backgroundVideo: file } : { backgroundImage: file }),
         linkUrl: link,
-        linkText: 'Vota aqui',
+        linkText: t('Vota aqui'),
         attributionURL: link,
       });
       return 'instagram';
@@ -86,8 +87,8 @@ export async function shareStory(file: string, link: string, kind: 'image' | 'vi
   await Sharing.shareAsync(
     file,
     kind === 'video'
-      ? { mimeType: 'video/mp4', UTI: 'public.mpeg-4', dialogTitle: 'Partilhar história' }
-      : { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Partilhar história' },
+      ? { mimeType: 'video/mp4', UTI: 'public.mpeg-4', dialogTitle: t('Partilhar história') }
+      : { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('Partilhar história') },
   );
   return 'sheet';
 }
