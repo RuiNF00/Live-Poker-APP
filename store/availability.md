@@ -17,4 +17,4 @@ Gulf states (United Arab Emirates, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman), 
 Available, including the US (all states), Canada, the UK, the EU except France, Brazil, Mexico, Latin America, Australia, Asia ex-China.
 
 ## Languages
-v1 metadata: PT-PT (primary) and EN-US (App Store also EN-GB copy of EN-US). PT-BR, ES-ES and ES-MX listings can be added without code changes when the translation thread delivers them; the app UI itself stays PT/EN and follows the device language (others fall back to EN).
+v1 metadata: PT-PT (primary), EN-US (App Store also EN-GB, a copy of EN-US), PT-BR (`store/listing/pt-BR.md`), ES-ES and ES-MX (both from `store/listing/es-ES.md`). The app UI ships in pt-PT, pt-BR, es and en since #131 (merged at 174ec64) and follows the device language; anything else falls back to English. Screenshots exist for all four (`final/{ios,android}/{pt,en,pt-BR,es}`).
