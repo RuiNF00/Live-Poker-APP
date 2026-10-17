@@ -3,6 +3,8 @@
 // include the fee, times are local to the venue. When a schedule changes,
 // update the rows and `source.checked` together.
 
+import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
+
 export interface FestivalEvent {
   /** Stable across app versions: plans and sessions point at it. */
   id: string;
@@ -20,6 +22,8 @@ export interface FestivalEvent {
   guarantee: number;
   /** Local wall-clock start at the venue, 'YYYY-MM-DDTHH:MM'. */
   start: string;
+  /** Added by the player (see FestivalPlan.events). */
+  own?: boolean;
   /** Starting stack and level length as published; left out when the organiser hasn't (a session then starts with the defaults). */
   stack?: number;
   levelMinutes?: number;
@@ -115,7 +119,7 @@ const lv = (...a: Parameters<typeof ev>): FestivalEvent => ({ ...ev(...a), unnum
  * organiser's schedule PDF:
  * https://cdn.wynnresorts.com/image/upload/v1757097329/visitwynn_pdfs_files/Poker/WPT/WPT_World_Championship_Schedule.pdf
  * Turbo flights run a faster structure the PDF doesn't give, and a Day 2 is a restart: neither gets one.
- * The High Roller (24) isn't confirmed yet and is left out.
+ * The High Roller (24) is on the PDF's page 2: 40-min levels, 60 later.
  */
 const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   1: [30000, 30],
@@ -141,6 +145,7 @@ const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   21: [40000, 40],
   22: [40000, 40],
   23: [40000, 40],
+  24: [200000, 40],
   25: [40000, 40],
   26: [100000, 30],
   27: [30000, 20],
@@ -552,6 +557,13 @@ export const FESTIVALS: Festival[] = [
   MONACO_MAY_2027,
   ESTORIL_MAY_2027,
   LAS_VEGAS_SUMMER_2027,
+  // November 2026 (festivals-nov-2026.ts). Lists sort by start; FESTIVALS[0] stays the first-run checklist's festival.
+  TORRELODONES_NOV_2026,
+  SAO_PAULO_NOV_2026,
+  LISBOA_NOV_2026,
+  PERALADA_NOV_2026,
+  ESPINHO_DEC_2026,
+  PRAGUE_DEC_2026,
 ];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */

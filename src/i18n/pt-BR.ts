@@ -1467,6 +1467,19 @@ const ptBR: Record<string, string> = {
   'Já jogaste? Junta uma sessão passada': 'Já jogou? Adicione uma sessão passada',
   'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Comece uma sessão quando se sentar. O lucro, o €/hora e o ROI aparecem aqui.',
   'Nada neste bankroll': 'Nada neste bankroll',
+  'Apagar torneio': 'Excluir torneio',
+  'Adicionar torneio': 'Adicionar torneio',
+  'Hora (local)': 'Horário (local)',
+  'São Paulo, novembro 2026': 'São Paulo, novembro de 2026',
+  'Torrelodones, novembro 2026': 'Torrelodones, novembro de 2026',
+  'Lisboa, novembro 2026': 'Lisboa, novembro de 2026',
+  'Peralada, novembro 2026': 'Peralada, novembro de 2026',
+  'Espinho, dezembro 2026': 'Espinho, dezembro de 2026',
+  'Praga, dezembro 2026': 'Praga, dezembro de 2026',
+  'O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.': 'O Dia 1B do #94, em 28 de novembro, ainda não tem horário publicado.',
+  'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': 'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.',
+  'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
+  'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
 };
 
 export default ptBR;
