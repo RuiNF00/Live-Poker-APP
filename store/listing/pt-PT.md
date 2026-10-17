@@ -11,7 +11,7 @@
 **Subtítulo** (30): {{APP_SUBTITLE_PT}}
 
 **Texto promocional** (170):
-Regista uma mão em segundos entre dois níveis e revê-a com o replayer. Partilha com um link e recebe a opinião dos teus amigos.
+Novo: regista uma mão ao vivo em 11 toques entre níveis, revê-a rua a rua e partilha um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
 póquer,histórico,replayer,sessões,torneio,mtt,cash,staking,swap,holdem,notas,resultados,icm,banca
@@ -66,6 +66,7 @@ Grátis: até 3 mãos guardadas por dia, partilha sem limite, importar, calculad
 Suporte: {{SUPPORT_EMAIL}}
 Privacidade: https://{{WEB_DOMAIN}}/privacy
 Termos de utilização: https://{{WEB_DOMAIN}}/terms
+EULA da Apple: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 **Novidades da versão 1.0**: Primeira versão. Regista mãos de póquer live em segundos, revê-as no replayer e partilha-as com um link.
 

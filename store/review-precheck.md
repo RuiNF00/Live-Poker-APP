@@ -42,3 +42,6 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 ## Over-the-air updates (8147048, #146)
 - expo-updates with EAS Update, `runtimeVersion` policy fingerprint, checked on launch. Allowed by Apple 3.3.1(b)/2.5.2 and Google Play's device-and-network-abuse policy only for JavaScript and asset fixes that don't change the app's purpose or add features that skip review: any new feature, price or Pro change goes through a store build. Rule for every thread: OTA only for fixes.
 - No new data: EAS Update downloads the bundle from Expo's CDN and sends only the runtime version, platform and channel; nothing to add to the privacy label, the manifest or Data safety. The privacy policy's provider list doesn't need Expo, as no personal data is processed for the app.
+
+## Android exact alarms (#170)
+- `SCHEDULE_EXACT_ALARM` only, requested in context with an inexact fallback; never `USE_EXACT_ALARM` (Play limits it to alarm-clock/calendar apps with a declaration). Details in `privacy-forms.md`. Before the Play upload, check the merged manifest has no `USE_EXACT_ALARM` from a library.
