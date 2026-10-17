@@ -82,6 +82,8 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
           name: name.trim(),
           text: body.trim(),
           stepIndex: attach && currentStep > 0 ? currentStep : null,
+          // So the player who shared can block this browser (only a hash is kept).
+          authorId: voterId(),
         }),
       });
       if (res.status === 429) return setState('limited');

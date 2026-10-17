@@ -21,10 +21,11 @@ import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
 import { canShareImage, shareImage } from '@/lib/share-image';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
+import { maybeAskForReview } from '@/lib/review';
 import { shareRef } from '@/lib/referrals';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
-import { compareMonths, defaultMonth, inMonth, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
+import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
 import { breakdown, playedMs } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -53,6 +54,14 @@ export default function MonthScreen() {
       .then((p) => setGranted(p.granted))
       .catch(() => setGranted(false));
   }, []);
+
+  // Store-review moment B (design/pedido-avaliacao.md): on leaving, after scrolling to the end of a finished month at ≥ 0.
+  const sawEnd = useRef(false);
+  const goodMonth = useRef(false);
+  useEffect(() => {
+    goodMonth.current = !!key && !!r && r.sessions > 0 && r.profit >= 0 && key < monthKey(Date.now());
+  }, [key, r]);
+  useEffect(() => () => void (sawEnd.current && goodMonth.current && maybeAskForReview('month')), []);
 
   if (!key || !r || !cmp || !r.sessions) {
     return (
@@ -107,7 +116,13 @@ export default function MonthScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Resumo do mês') }} />
-      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: C.bg }}
+        contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}
+        scrollEventThrottle={200}
+        onScroll={({ nativeEvent: e }) => {
+          if (e.layoutMeasurement.height + e.contentOffset.y >= e.contentSize.height - 80) sawEnd.current = true;
+        }}>
         {months.length > 1 ? (
           <ChipRow>
             {months.map((m) => (

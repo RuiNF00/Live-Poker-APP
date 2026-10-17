@@ -99,6 +99,14 @@
             ]
           },
           {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeCrashData",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeAdvertisingData",
             "NSPrivacyCollectedDataTypeLinked": false,
             "NSPrivacyCollectedDataTypeTracking": false,
