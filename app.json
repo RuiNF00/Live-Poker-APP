@@ -132,6 +132,9 @@
             ]
           }
         ]
+      },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
       }
     },
     "android": {
