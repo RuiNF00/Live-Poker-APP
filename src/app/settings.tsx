@@ -21,12 +21,14 @@ import { lockSupported } from '@/lib/app-lock';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { openStoreReviewPage } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
+import { crashReportsAvailable } from '@/lib/crash-report';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
 import { DataRecovery } from '@/components/DataRecovery';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { CrashReportsToggle } from '@/components/CrashReportsToggle';
 
 
 function note(title: string, body?: string) {
@@ -251,6 +253,7 @@ export default function SettingsScreen() {
 
         <Section title={t('Os teus dados')} hint={t('Antes de apagar, podes guardar tudo com «Exportar tudo».')}>
           <ListGroup>
+            {crashReportsAvailable ? <CrashReportsToggle /> : null}
             <ListItem icon="trash-outline" destructive title={busy ? t('A apagar…') : t('Apagar todos os meus dados')} subtitle={t('Neste telemóvel, na nuvem e nos links públicos')} onPress={busy ? undefined : eraseAll} />
           </ListGroup>
         </Section>
