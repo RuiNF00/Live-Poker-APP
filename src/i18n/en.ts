@@ -678,6 +678,7 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Sessão em pausa · {time}': 'Session on break · {time}',
   'Já vem com o jogo, as blinds e o teu stack. Se fores chamado, fica guardada a meio.': "It comes with the game, blinds and your stack. If you're called away, it's saved halfway.",
   'Mãos guardadas': 'Hands saved',
   'Amostra pequena: {n} de {min} {unit}. Por agora é só uma pista.': 'Small sample: {n} of {min} {unit}. Just a hint for now.',
