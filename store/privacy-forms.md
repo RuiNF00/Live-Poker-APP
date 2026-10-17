@@ -24,6 +24,9 @@ Data not linked to you:
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward) | Analytics, App Functionality |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
+| Usage Data → Advertising Data (iOS: the Apple Ads attribution token, collected by RevenueCat with `enableAdServicesAttributionTokenCollection` in `src/billing/purchases.ts`, which tells us which Apple Ads campaign and keyword led to a trial or purchase; plus the first-touch install source sent with our usage events: a source label such as invite or shared hand and a short campaign tag from our own links, `src/lib/attribution.ts`. No IDFA, no ATT prompt, no ad SDK) | Analytics |
+
+Advertising Data (Security decision, scorecard #9): declared, **not linked, not used for tracking, Analytics**, matching the manifest at ae923f4. No ATT prompt is needed: the AdServices token is not tracking and holds no IDFA. The Apple Ads campaign and keyword stay in RevenueCat and never go into our usage events or PostHog with the install ID. Play: no change (iOS only).
 
 Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
 
@@ -81,12 +84,14 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
 | App activity → App interactions (first-party usage events; also the referral check) | Yes | No | Analytics, App functionality |
 
+Install source (`src/lib/attribution.ts`: source label + campaign tag from our own links, sent with usage events) has no own Play category; it is covered by App interactions above. The Apple Ads token is iOS only, so nothing changes on Play. Apple gets its own Advertising Data row to match the privacy manifest (added at ae923f4).
+
 Processed ephemerally: No, except audio (Yes).
 
 ## Google Play: App content declarations
 
 - Privacy policy: `https://{{WEB_DOMAIN}}/privacy`
-- Ads: **No ads**.
+- Ads: **No**: the app shows no ads.
 - App access: all functionality available without special access (paid features: give the reviewer a note that a test subscription can be bought with Play's license testers).
 - Target audience: **18 and over only**.
 - Content rating (IARC): category "Utility, Productivity, Communication, or Other" (not Game). No real or simulated gambling. Users can interact / share content: **Yes**. Digital purchases: **Yes**.
