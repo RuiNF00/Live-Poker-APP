@@ -9,6 +9,25 @@ export const isLocale = (v: unknown): v is Locale => typeof v === 'string' && (L
 /** Both Portuguese variants (for grammar and layout choices shared by pt-PT and pt-BR). */
 export const isPt = (l: Locale): l is 'pt' | 'pt-BR' => l === 'pt' || l === 'pt-BR';
 
+/**
+ * The language of a link preview. The app adds the sharer's language to every link it shares
+ * (?lang=pt-PT), because WhatsApp, Telegram and Instagram fetch the preview without one; without it,
+ * the reader's browser decides, as for the page itself.
+ */
+export function previewLocale(lang: unknown, acceptLanguage: string | null | undefined): Locale {
+  const t = typeof lang === 'string' ? lang.trim().toLowerCase().replace('_', '-') : '';
+  if (t === 'pt-br') return 'pt-BR';
+  if (t === 'pt-pt' || t === 'pt') return 'pt';
+  if (t === 'es') return 'es';
+  if (t === 'en') return 'en';
+  return pickLocale(acceptLanguage);
+}
+
+/** og:locale (pt_PT): chat apps use it to pick fonts and text direction. */
+export function ogLocale(l: Locale): string {
+  return l === 'pt' ? 'pt_PT' : l === 'pt-BR' ? 'pt_BR' : l === 'es' ? 'es_ES' : 'en_GB';
+}
+
 /** BCP 47 tag for dates and times (Intl / toLocale*String). */
 export function intlTag(l: Locale): string {
   return l === 'pt' ? 'pt-PT' : l === 'pt-BR' ? 'pt-BR' : l === 'es' ? 'es' : 'en-GB';

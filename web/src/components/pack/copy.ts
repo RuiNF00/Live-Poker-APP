@@ -20,5 +20,27 @@ const en: typeof pt = {
   metaDescription: 'Replay each hand and say how you would play it.',
 };
 
+const ptBR: typeof pt = {
+  kicker: (n) => (n === 1 ? '1 mão compartilhada' : `${n} mãos compartilhadas`),
+  of: (i, n) => `Mão ${i} de ${n}`,
+  prev: 'Mão anterior',
+  next: 'Próxima mão',
+  gone: 'Estas mãos não estão mais compartilhadas.',
+  metaTitle: (title, n) => (title ? `${title} · ${n} mãos` : `${n} mãos para revisar`),
+  metaDescription: 'Veja cada mão no replay e diga como você jogaria.',
+};
+
+const es: typeof pt = {
+  kicker: (n) => (n === 1 ? '1 mano compartida' : `${n} manos compartidas`),
+  of: (i, n) => `Mano ${i} de ${n}`,
+  prev: 'Mano anterior',
+  next: 'Mano siguiente',
+  gone: 'Estas manos ya no están compartidas.',
+  metaTitle: (title, n) => (title ? `${title} · ${n} manos` : `${n} manos para revisar`),
+  metaDescription: 'Mira cada mano en el replay y di cómo la jugarías.',
+};
+
+const COPY: Record<Locale, typeof pt> = { pt, 'pt-BR': ptBR, es, en };
+
 export type PackCopy = typeof pt;
-export const packCopy = (l: Locale): PackCopy => (l === 'en' ? en : pt);
+export const packCopy = (l: Locale): PackCopy => COPY[l];

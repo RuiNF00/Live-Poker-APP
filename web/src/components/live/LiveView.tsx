@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
 import { landingCopy } from '@/components/landing/copy';
-import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
+import { intlTag, numberTag, formatMoney, t as siteCopy, type Locale } from '@/lib/i18n';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
 import { writeLocal } from '@/lib/local';
 import { storeLinks } from '@/lib/storeLinks';
+import { OpenInApp } from '@/components/OpenInApp';
 import { track } from '@/lib/track';
 import { liveCopy } from './copy';
 import '@/app/landing.css';
@@ -178,6 +179,7 @@ export function LiveView({
         <h2>{c.ctaTitle}</h2>
         <p>{c.ctaBody}</p>
         <StoreButtons c={landingCopy(locale)} stores={stores} from="backer_live" fallback="/" />
+        <OpenInApp path={`live/${id}`} invite={invite} label={siteCopy(locale).openInApp} />
       </section>
       <p className="live-updated">{c.noMoney}</p>
     </main>

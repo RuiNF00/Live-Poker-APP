@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { brand } from '@/config/brand';
-import { pickLocale } from '@/lib/i18n';
+import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { limited } from '@/lib/abuse';
 import { liveStore, loadLive as loadLiveById } from '@/lib/live';
 import { normalizeCode } from '@/lib/refcode';
@@ -16,22 +16,23 @@ type SearchParams = { searchParams: Promise<Record<string, string | string[] | u
 
 const loadLive = cache(loadLiveById);
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params & SearchParams): Promise<Metadata> {
   const { id } = await params;
+  const { lang } = await searchParams;
   const rec = await loadLive(id);
-  const locale = pickLocale((await headers()).get('accept-language'));
+  const locale = previewLocale(lang, (await headers()).get('accept-language'));
   const c = liveCopy(locale);
   if (!rec) return { title: c.notFound, robots: { index: false } };
   const s = rec.snapshot;
   const title = c.metaTitle(s.player, s.name || (s.kind === 'mtt' ? c.tournament : c.cash));
   const description = [s.venue, c.metaDescription].filter(Boolean).join(' · ');
   // Versioned by the last update, so WhatsApp doesn't keep showing an old stack forever.
-  const image = { url: `/live/${id}/og?v=${Date.parse(rec.updatedAt) || 0}`, width: 1200, height: 630, alt: title };
+  const image = { url: `/live/${id}/og?v=${Date.parse(rec.updatedAt) || 0}&lang=${locale}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,
     robots: { index: false },
-    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/live/${id}`, siteName: brand.name, images: [image] },
+    openGraph: { title, description, type: 'website', url: `${brand.siteUrl}/live/${id}`, siteName: brand.name, locale: ogLocale(locale), images: [image] },
     twitter: { card: 'summary_large_image', title, description, images: [image.url] },
   };
 }

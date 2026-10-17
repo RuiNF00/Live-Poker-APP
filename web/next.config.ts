@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     // Brand font for the link preview images.
     '/h/[id]/og': ['./assets/fonts/*.ttf'],
     '/live/[id]/og': ['./assets/fonts/*.ttf'],
+    '/swap/[id]/og': ['./assets/fonts/*.ttf'],
+    '/p/[id]/og': ['./assets/fonts/*.ttf'],
     '/u/[handle]/og': ['./assets/fonts/*.ttf'],
     '/og/invite': ['./assets/fonts/*.ttf'],
     '/opengraph-image': ['./assets/fonts/*.ttf'],
