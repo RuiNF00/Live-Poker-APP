@@ -19,9 +19,10 @@ import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, Nu
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
-import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
+import { FESTIVALS, type Festival } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
 import { festivalName, useFestivalPlan } from '@/store/festival-plan';
+import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -89,9 +90,9 @@ function confirm(title: string, body: string, ok: () => void) {
 
 export default function SessionScreen() {
   const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
-  const festivalPlan = useFestivalPlan(BAHAMAS_DEC_2026.id);
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
+  const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
 
   const startRef = useRef<(() => void) | null>(null);
   if (activeSession) return <Live s={activeSession} />;
@@ -100,15 +101,36 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: 96 }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
-          <ListItem
-            icon="calendar-outline"
-            iconColor={C.accent}
-            title={festivalName(BAHAMAS_DEC_2026, festivalPlan)}
-            subtitle={t('Planear o festival: eventos, buy-ins e avisos')}
-            chevron
-            onPress={() => router.push('/festival')}
-          />
+          {FESTIVALS.map((f) => (
+            <FestivalItem key={f.id} f={f} />
+          ))}
         </ListGroup>
+        {bagged.length ? (
+          <Section title={t('Por continuar')}>
+            <ListGroup>
+              {bagged.map((b) => (
+                <ListItem
+                  key={b.id}
+                  icon="bag-handle-outline"
+                  iconColor={C.accent}
+                  title={b.name || t('Torneio')}
+                  subtitle={t('Dia {n} · {chips} no saco', { n: dayOf(b), chips: chips(b.bag!.stack) })}
+                  right={
+                    <Button
+                      size="sm"
+                      title={t('Dia {n}', { n: dayOf(b) + 1 })}
+                      icon="play"
+                      onPress={() => {
+                        tap('success');
+                        saveSession(resumeDay(b));
+                      }}
+                    />
+                  }
+                />
+              ))}
+            </ListGroup>
+          </Section>
+        ) : null}
         <SessionForm
           initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
           bankrolls={bankrolls}
@@ -132,11 +154,25 @@ export default function SessionScreen() {
   );
 }
 
+function FestivalItem({ f }: { f: Festival }) {
+  const plan = useFestivalPlan(f.id);
+  return (
+    <ListItem
+      icon="calendar-outline"
+      iconColor={C.accent}
+      title={festivalName(f, plan)}
+      subtitle={`${f.venue} · ${t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size })}`}
+      chevron
+      onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
+    />
+  );
+}
+
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
   const { saveSession, hands } = useStore();
-  const [pad, setPad] = useState<null | 'stack' | 'cashout'>(null);
+  const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
@@ -176,7 +212,7 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
-      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
+      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
           <PlayClock s={s} paused={paused} />
@@ -257,7 +293,10 @@ function Live({ s }: { s: Session }) {
         </Section>
 
         {!ending ? (
-          <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+          <View style={{ gap: S.sm }}>
+            {mtt ? <Button title={t('Ensacar fichas (fim do dia {n})', { n: dayOf(s) })} kind="secondary" size="md" icon="bag-handle-outline" onPress={() => setPad('bag')} /> : null}
+            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+          </View>
         ) : (
           <Section title={t('Terminar sessão')}>
             <Card style={{ gap: S.md }}>
@@ -323,6 +362,17 @@ function Live({ s }: { s: Session }) {
           </Section>
         )}
 
+        <AmountPad
+          visible={pad === 'bag'}
+          title={t('Fichas no saco')}
+          bb={s.bb}
+          onClose={() => setPad(null)}
+          onDone={(v) => {
+            setPad(null);
+            tap('success');
+            saveSession(bagDay(s, v));
+          }}
+        />
         <AmountPad
           visible={pad === 'stack'}
           title={t('Stack atual')}
