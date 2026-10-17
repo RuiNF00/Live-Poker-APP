@@ -7,6 +7,8 @@ import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 
+import { cancelFestivalReminders } from '@/lib/festival-reminders';
+import { kindOn } from '@/lib/notify-policy';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 
@@ -54,7 +56,10 @@ async function end() {
 
 export function SessionLockScreen() {
   const { activeSession, settings } = useStore();
-  const hide = !!settings.hideAmounts;
+  // Money stays off the lock screen unless the player turned on "Mostrar valores nas notificações" (notificacoes.md rule 5).
+  const hide = !!settings.hideAmounts || !settings.notifyAmounts;
+  const levelsOn = kindOn(settings, 'levels');
+  const festivalOn = kindOn(settings, 'festival');
 
   useEffect(() => {
     const s = activeSession;
@@ -67,9 +72,14 @@ export function SessionLockScreen() {
       // No system prompt here: the session screen asks with its own primer
       // first. Without permission Android simply shows no notification.
       await show(s, hide);
-      await syncLevelReminder(s);
+      await syncLevelReminder(levelsOn ? s : null);
     })();
-  }, [activeSession, hide]);
+  }, [activeSession, hide, levelsOn]);
+
+  // "Torneios planeados" switched off in Settings: what was planned goes too (the planner reschedules when it's back on).
+  useEffect(() => {
+    if (!festivalOn) void cancelFestivalReminders();
+  }, [festivalOn]);
 
   // Android can't run a clock in the notification: refresh the played time
   // every minute while the app is open, and once more on the way out.

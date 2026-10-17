@@ -1,0 +1,129 @@
+// Festivals the player adds themselves ("Adicionar o meu festival"): the series
+// we don't ship. Name, city, dates and currency only, no schedule. They sit in
+// the planner next to the shipped ones, make trips the same way and count as
+// "a festival is on". Kept on the phone like the festival plans.
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSyncExternalStore } from 'react';
+
+import { FESTIVALS, festivalSortKey, festivalSpan, type Festival } from '@/poker/festivals';
+
+export interface OwnFestivalInput {
+  name: string;
+  city: string;
+  currency: string;
+  /** 'YYYY-MM-DD', local days. */
+  from: string;
+  to: string;
+}
+
+/** 'YYYY-MM-DD' of a local timestamp. */
+export function dayKey(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** What the form checks before saving: a name and an end on or after the start. */
+export function ownFestivalOk(x: OwnFestivalInput): boolean {
+  return !!x.name.trim() && /^\d{4}-\d{2}-\d{2}$/.test(x.from) && /^\d{4}-\d{2}-\d{2}$/.test(x.to) && x.to >= x.from;
+}
+
+/** The festival record. Times are the phone's: the player is where the festival is. */
+export function ownFestival(id: string, x: OwnFestivalInput, now = Date.now()): Festival {
+  const city = x.city.trim();
+  return {
+    id,
+    name: x.name.trim().slice(0, 60),
+    venue: city,
+    city: '',
+    currency: x.currency,
+    utcOffset: -new Date(now).getTimezoneOffset(),
+    source: { label: '', checked: dayKey(now) },
+    notes: [],
+    events: [],
+    dates: { from: x.from, to: x.to },
+    own: true,
+  };
+}
+
+// ─── Persistence ─────────────────────────────────────────────────────────────
+
+const KEY = 'rl.myFestivals.v1';
+
+let mine: Festival[] = [];
+const byStart = (l: Festival[]) => [...l].sort((a, b) => festivalSortKey(a).localeCompare(festivalSortKey(b)));
+let all: Festival[] = byStart(FESTIVALS);
+let loaded = false;
+let ready = false;
+const listeners = new Set<() => void>();
+
+function set(next: Festival[]) {
+  mine = next;
+  all = byStart([...FESTIVALS, ...mine]);
+  for (const l of listeners) l();
+}
+
+function load() {
+  if (loaded) return;
+  loaded = true;
+  AsyncStorage.getItem(KEY)
+    .then((raw) => {
+      const saved = raw ? (JSON.parse(raw) as Festival[]).filter((f) => f && f.own && f.dates) : [];
+      ready = true;
+      set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]);
+    })
+    .catch(() => {
+      ready = true;
+      set(mine);
+    });
+}
+
+function subscribe(l: () => void) {
+  load();
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+
+function persist() {
+  AsyncStorage.setItem(KEY, JSON.stringify(mine)).catch(() => {});
+}
+
+/** Not over yet on `today` ('YYYY-MM-DD'): running, coming, or with no dates out. */
+export function notOver(f: Festival, today: string): boolean {
+  const span = festivalSpan(f);
+  return span ? span.to >= today : !f.month || f.month >= today.slice(0, 7);
+}
+
+/** Shipped festivals and the player's own, by when they start. */
+export function allFestivals(): Festival[] {
+  load();
+  return all;
+}
+
+export function festivalById(id: string | undefined): Festival | undefined {
+  return id ? allFestivals().find((f) => f.id === id) : undefined;
+}
+
+export function saveOwnFestival(f: Festival) {
+  set([...mine.filter((x) => x.id !== f.id), f]);
+  persist();
+}
+
+export function deleteOwnFestival(id: string) {
+  set(mine.filter((x) => x.id !== id));
+  persist();
+}
+
+/** Delete all my data: the stored list is already gone, forget the one in memory. */
+export function clearOwnFestivals() {
+  set([]);
+}
+
+export function useFestivals(): Festival[] {
+  return useSyncExternalStore(subscribe, allFestivals, allFestivals);
+}
+
+/** False until the player's own festivals are read from the phone: an id not found yet may still be one of them. */
+export function useFestivalsReady(): boolean {
+  return useSyncExternalStore(subscribe, () => ready, () => ready);
+}

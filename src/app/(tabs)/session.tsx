@@ -19,16 +19,16 @@ import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
+import { FestivalItem } from '@/components/FestivalItem';
 import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
-import { FESTIVALS, type Festival } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
-import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
+import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -109,6 +109,9 @@ export default function SessionScreen() {
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
+  const festivals = useFestivals();
+  const [today] = useState(() => dayKey(Date.now()));
+  const coming = useMemo(() => festivals.filter((f) => notOver(f, today)), [festivals, today]);
 
   const startRef = useRef<(() => void) | null>(null);
   const [bar, onBarLayout] = useBarHeight();
@@ -127,9 +130,10 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: bar + S.lg }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
-          {FESTIVALS.map((f) => (
+          {coming.slice(0, 3).map((f) => (
             <FestivalItem key={f.id} f={f} />
           ))}
+          <ListItem icon="albums-outline" iconColor={C.textDim} title={t('Todos os festivais')} subtitle={t('Os do calendário e os que adicionares')} chevron onPress={() => router.push('/festivals')} />
         </ListGroup>
         {bagged.length ? (
           <Section title={t('Por continuar')}>
@@ -242,20 +246,6 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
         </View>
       </View>
     </Modal>
-  );
-}
-
-function FestivalItem({ f }: { f: Festival }) {
-  const plan = useFestivalPlan(f.id);
-  return (
-    <ListItem
-      icon="calendar-outline"
-      iconColor={C.accent}
-      title={festivalName(f, plan)}
-      subtitle={`${f.venue} · ${f.events.length ? t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size }) : t('Datas a confirmar')}`}
-      chevron
-      onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
-    />
   );
 }
 
@@ -419,7 +409,12 @@ function Live({ s }: { s: Session }) {
         {!ending ? (
           <View style={{ gap: S.sm }}>
             {mtt ? <Button title={t('Ensacar fichas (fim do dia {n})', { n: dayOf(s) })} kind="secondary" size="md" icon="bag-handle-outline" onPress={() => setPad('bag')} /> : null}
-            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => {
+                // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
+                if (!mtt) setFinish((f) => ({ ...f, cashOut: s.stack }));
+                setEnding(true);
+              }}
+            />
           </View>
         ) : (
           <Section title={t('Terminar sessão')}>

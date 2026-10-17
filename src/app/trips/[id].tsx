@@ -9,9 +9,11 @@ import { Sheet } from '@/components/BankrollSheets';
 import { ExpenseForm, KIND, TripForm, tripDates } from '@/components/TripSheets';
 import { Button, Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
 import { decimalComma, locale, t } from '@/i18n';
-import { FESTIVALS } from '@/poker/festivals';
+import { spanLabel } from '@/components/FestivalItem';
+import { festivalSpan } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { planTotals, useFestivalPlan } from '@/store/festival-plan';
+import { useFestivals } from '@/store/my-festivals';
 import { playedMs, profit } from '@/store/session-math';
 import { useStore, uid } from '@/store/store';
 import { blankExpense, EXPENSE_KINDS, toTripCurrency, tripSessions, tripSummary } from '@/store/trip-math';
@@ -276,22 +278,28 @@ function PokerVsCosts({
 
 /** Buy-ins of the festival plan the trip came from, so the player sees what's still ahead. */
 function FestivalPlanCard({ trip, fmt }: { trip: Trip; fmt: (n: number) => string }) {
-  const f = FESTIVALS.find((x) => x.id === trip.festivalId);
+  // The player's own festivals too, not only the shipped ones.
+  const f = useFestivals().find((x) => x.id === trip.festivalId);
   const plan = useFestivalPlan(trip.festivalId ?? '');
   if (!f) return null;
   const tot = planTotals(f, plan);
+  const span = festivalSpan(f);
   return (
     <Card tone="inset" style={{ gap: S.xs }}>
       <Row>
         <T v="h3" style={{ flex: 1 }}>
           {t('Plano do festival')}
         </T>
-        <T v="small" color={C.accent} onPress={() => router.push('/festival')}>
+        <T v="small" color={C.accent} onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}>
           {t('Abrir')}
         </T>
       </Row>
       <T v="small">
-        {tot.events
+        {!f.events.length
+          ? span
+            ? spanLabel(span.from, span.to)
+            : t('Datas a confirmar')
+          : tot.events
           ? t('{n} eventos marcados · {amount} em buy-ins', { n: tot.events, amount: f.currency === trip.currency ? fmt(tot.buyIns) : money(tot.buyIns, f.currency) })
           : t('Ainda não marcaste eventos. Marca-os no plano para veres os buy-ins aqui.')}
       </T>

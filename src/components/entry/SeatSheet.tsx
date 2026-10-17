@@ -10,7 +10,7 @@ import type { PlayerNote } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 import { AmountPad } from '../AmountPad';
-import { OpponentStatsRow } from '../OpponentStats';
+import { OpponentStatsRow, PlayerRead } from '../OpponentStats';
 import { Button, Chip, ChipRow, Field, inputStyle, Row, SheetHeader, T } from '../ui';
 
 export interface SeatChanges {
@@ -31,6 +31,7 @@ export function SeatSheet({
   bb,
   known,
   stats,
+  seen,
   onSave,
   onClose,
   reseat,
@@ -44,6 +45,8 @@ export function SeatSheet({
   known: PlayerNote[];
   /** Reads per known player, shown once the seat is someone you know. */
   stats?: Map<string, OpponentStats>;
+  /** Sessions each known player was seen in. */
+  seen?: Map<string, number>;
   onSave: (p: Player, applyStackToAll?: boolean) => void;
   onClose: () => void;
   /** Table changes between hands, one tap each; left out once the hand has actions. */
@@ -65,6 +68,7 @@ export function SeatSheet({
   const q = name.trim().toLowerCase();
   const sugg = known.filter((k) => !q || k.name.toLowerCase().includes(q)).slice(0, 8);
   const knownId = playerId ?? known.find((k) => q && k.name.trim().toLowerCase() === q)?.id;
+  const knownNote = knownId ? known.find((k) => k.id === knownId) : undefined;
   const quick = [20, 40, 60, 100].map((x) => x * bb);
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
@@ -96,6 +100,7 @@ export function SeatSheet({
               ))}
             </ChipRow>
           )}
+          {!isHero && knownNote ? <PlayerRead player={knownNote} sessions={seen?.get(knownNote.id) ?? 0} /> : null}
           {!isHero && knownId && stats ? <OpponentStatsRow stats={stats.get(knownId)} /> : null}
         </View>
         <View style={{ gap: S.sm }}>
