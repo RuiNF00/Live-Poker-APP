@@ -217,7 +217,7 @@ export function Replayer({
           }}
         />
       ) : (
-        <InfoBar view={view} onRange={editRange} />
+        <InfoBar view={view} onRange={editRange} rangeLocked={rangeLocked} />
       )}
       {view.rangeEq ? (
         <RangeSheet
@@ -333,7 +333,7 @@ function TipBubble({ onClose }: { onClose: () => void }) {
 }
 
 /** "Hero facing" bar when hero has a decision (pot odds, MDF), otherwise pot and stacks. */
-function InfoBar({ view, onRange }: { view: ReturnType<typeof viewAt>; onRange: () => void }) {
+function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewAt>; onRange: () => void; rangeLocked: boolean }) {
   const f = view.facing;
   return (
     <View
@@ -362,7 +362,7 @@ function InfoBar({ view, onRange }: { view: ReturnType<typeof viewAt>; onRange: 
           <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
           <Stat label={t('Aposta')} value={pct(f.betPct)} color={C.text} />
           <Stat label="V:B" value={ratio(f.vb)} color={C.warn} />
-          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} /> : null}
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} locked={rangeLocked} /> : null}
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
@@ -392,7 +392,7 @@ function InfoBar({ view, onRange }: { view: ReturnType<typeof viewAt>; onRange: 
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
-          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} /> : null}
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} locked={rangeLocked} /> : null}
         </>
       ) : (
         <>
@@ -402,23 +402,32 @@ function InfoBar({ view, onRange }: { view: ReturnType<typeof viewAt>; onRange: 
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
-          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} /> : null}
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} locked={rangeLocked} /> : null}
         </>
       )}
     </View>
   );
 }
 
-/** Hero's equity against villain's range, e.g. "Equity 54% vs top 20%". Tapping it opens the range to edit. */
-function RangeEq({ eq, onPress }: { eq: NonNullable<ReturnType<typeof viewAt>['rangeEq']>; onPress: () => void }) {
+/** Hero's equity against villain's range, e.g. "Equity 54%" and a chip "vs top 20% ›" that opens the range to edit. */
+function RangeEq({ eq, onPress, locked }: { eq: NonNullable<ReturnType<typeof viewAt>['rangeEq']>; onPress: () => void; locked: boolean }) {
   const vs = eq.custom ? `${t('vs a tua range')} ${pct(eq.pct / 100, 1)}` : `${t('vs top')} ${eq.pct}%`;
   return (
-    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Equity ${pct(eq.equity)} ${vs}. ${t('Editar a range do vilão')}`} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
-        Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{pct(eq.equity)}</Text> <Text style={{ textDecorationLine: 'underline', textDecorationStyle: 'dotted' }}>{vs}</Text>
+        Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{pct(eq.equity)}</Text>
       </Text>
-      <Ionicons name="grid-outline" size={11} color={C.accent} />
-    </Pressable>
+      <Pressable
+        onPress={onPress}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`${vs}. ${t('Editar a range do vilão')}${locked ? ', Pro' : ''}`}
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: R.pill, borderWidth: 1, borderColor: C.border, backgroundColor: pressed ? C.surface3 : C.surface2 })}>
+        <Text style={{ color: C.text, fontFamily: F.medium, fontSize: 12 }}>{vs}</Text>
+        {locked ? <Ionicons name="lock-closed" size={11} color={C.accent} /> : null}
+        <Ionicons name="chevron-forward" size={11} color={C.textDim} />
+      </Pressable>
+    </View>
   );
 }
 

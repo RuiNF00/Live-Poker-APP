@@ -38,6 +38,14 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
   );
   const streets = items.filter((it) => it.kind !== 'action' && it.k > 0 && it.k <= last);
   const x = (s: number) => PAD + (last > 0 ? s / last : 0) * Math.max(0, w - PAD * 2);
+  // Streets close together (an all-in run out) would print "FlopTurnRiverFim": label a tick only with room for it.
+  const labeled = new Set<number>();
+  let lastX = -Infinity;
+  for (const s of streets) {
+    if (x(s.k) - lastX < LABEL_GAP) continue;
+    labeled.add(s.k);
+    lastX = x(s.k);
+  }
   const street = [...items].reverse().find((it) => it.kind !== 'action' && it.k <= k)?.label ?? '';
   return (
     <View
@@ -96,6 +104,7 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
                   backgroundColor: s.k <= k ? C.accent : C.muted,
                 }}
               />
+              {labeled.has(s.k) ? (
               <Text
                 pointerEvents="none"
                 numberOfLines={1}
@@ -113,6 +122,7 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
               >
                 {s.kind === 'end' ? t('Fim') : s.label.slice(0, 1) + s.label.slice(1).toLowerCase()}
               </Text>
+              ) : null}
             </React.Fragment>
           ))}
           <View
@@ -136,3 +146,5 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
 }
 
 const PAD = 10;
+/** Room one tick label needs, in px ("River" or "Turn" at 9 pt). */
+const LABEL_GAP = 26;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { stakesText, type ActionType, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
+import { stakesText, straddleOf, type ActionType, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
 import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
 import { t, type Locale } from '@/lib/i18n';
 import type { HandComment, QuizSpot } from '@/lib/types';
@@ -338,7 +338,7 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
 function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers: boolean }) {
   const d = t(locale);
   const tour = hand.tournament;
-  const stakes = stakesText(hand.blinds, (n) => formatAmount(n, hand.blinds.bb, 'chips', locale));
+  const stakes = stakesText(hand.blinds, (n) => formatAmount(n, hand.blinds.bb, 'chips', locale), undefined, straddleOf(hand));
   const meta = [
     hand.format === 'tournament' ? tour?.name || d.tournament : d.cash,
     tour?.level ? `${d.level} ${tour.level}` : null,
