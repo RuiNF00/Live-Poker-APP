@@ -9,7 +9,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, SwapError } from '@/lib/swap-api';
 
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
-import { mergeRemote, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { mergeRemote, mergeSwaps, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -48,9 +48,25 @@ export async function getAllSwaps(): Promise<Swap[]> {
   return state.swaps;
 }
 
+/**
+ * A backup coming in: swaps this phone doesn't have are added; for one it has, the copy
+ * changed last wins, keeping entries this phone hasn't sent yet. Returns how many are new.
+ */
+export async function importSwaps(incoming: Swap[]): Promise<number> {
+  await boot();
+  const r = mergeSwaps(state.swaps, incoming);
+  if (r.list !== state.swaps) emit(r.list);
+  return r.added;
+}
+
 /** After "Delete all my data": the keys are already gone from disk, this empties memory. */
 export function forgetSwapsLocally() {
   emit([]);
+}
+
+/** The list as it is now (empty until loaded, which starts when this module is imported). */
+export function currentSwaps(): Swap[] {
+  return state.swaps;
 }
 
 export function getSwap(id: string): Swap | undefined {
@@ -150,3 +166,6 @@ export function useSwaps() {
     return { ready: snap.ready, swaps: sorted };
   }, [snap]);
 }
+
+// Start reading at launch, so a backup taken early already has the swaps.
+boot();

@@ -189,3 +189,23 @@ export function fromRemote(remote: RemoteSwap, token: string, side: SwapSide, no
 export function swapDeleteJobs(list: Pick<Swap, 'id' | 'token' | 'gone'>[]): { id: string; token: string }[] {
   return list.filter((s) => !s.gone && !!s.token).map((s) => ({ id: s.id, token: s.token }));
 }
+
+/** Merges a backup's swaps in: new ones added, the later copy of each wins, pending entries kept. */
+export function mergeSwaps(local: Swap[], incoming: Swap[]): { list: Swap[]; added: number } {
+  const byId = new Map(local.map((s) => [s.id, s]));
+  let added = 0;
+  let changed = false;
+  for (const x of incoming) {
+    const cur = byId.get(x.id);
+    if (!cur) {
+      byId.set(x.id, x);
+      added++;
+      changed = true;
+    } else if (x.updatedAt > cur.updatedAt) {
+      const cids = new Set(x.entries.map((e) => e.side + e.cid));
+      byId.set(x.id, { ...x, entries: [...x.entries, ...cur.entries.filter((e) => e.pending && !cids.has(e.side + e.cid))] });
+      changed = true;
+    }
+  }
+  return { list: changed ? [...byId.values()] : local, added };
+}

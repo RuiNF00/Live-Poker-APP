@@ -21,6 +21,8 @@ import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
+import type { Swap } from './swaps';
+import { currentSwaps, importSwaps } from './swaps-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
 const KEYS = {
@@ -95,6 +97,8 @@ interface StoreValue {
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
+  /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
+  readonly swaps: Swap[];
   importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
@@ -478,6 +482,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setTrips(tr.list);
       setBacking(mergeById(backing, b.backing ?? []).list);
       setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
+      importSwaps(b.swaps ?? []).catch(() => {});
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added, trips: tr.added };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing],
@@ -577,6 +582,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setDraft,
       eraseAll,
       importData,
+      get swaps() {
+        return currentSwaps();
+      },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { mergeRemote, swapDeleteJobs, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { buildBackup, parseBackup } from '../backup';
+import { DEFAULT_SETTINGS } from '../types';
+import { mergeRemote, mergeSwaps, swapDeleteJobs, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -69,4 +71,20 @@ test('erasing queues a delete for every swap still on the server, with its own t
     { id: 'mine', token: 'ta' },
     { id: 'theirs', token: 'tb' },
   ]);
+});
+
+test('swaps survive a backup round trip, and a restore keeps entries not sent yet', () => {
+  const s = swap({ entries: [e('b', 'result', 100)] });
+  const back = parseBackup(JSON.stringify(buildBackup({ hands: [], sessions: [], players: [], swaps: [s, { id: 'broken' } as unknown as Swap], settings: DEFAULT_SETTINGS })));
+  assert.equal(back.swaps?.length, 1);
+  assert.equal(back.swaps?.[0].token, 'tok');
+
+  const pending = e('a', 'result', 5, { pending: true, cid: 'p9' });
+  const local = [swap({ updatedAt: 1, entries: [pending] })];
+  const fresh = mergeSwaps(local, [swap({ updatedAt: 5, entries: [e('b', 'result', 100)] }), swap({ id: 'new' })]);
+  assert.equal(fresh.added, 1);
+  const merged = fresh.list.find((x) => x.id === 's1')!;
+  assert.equal(merged.entries.length, 2);
+  assert.ok(merged.entries.some((x) => x.cid === 'p9'));
+  assert.equal(mergeSwaps(local, [swap({ updatedAt: 0 })]).list, local);
 });
