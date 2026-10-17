@@ -6,6 +6,7 @@
 //  - "salta para" chips fold/check everyone in between in one tap,
 //  - context (tournament, blinds, table) carries over from the session.
 
+import { gate } from '@/lib/gate';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -123,8 +124,9 @@ export default function NewHand() {
     update({ ...hand, board: [...hand.board, c] });
   };
 
-  const save = () => {
+  const save = async () => {
     tap('medium');
+    if (!(await gate('save', { hand, hands: store.hands }))) return;
     // Named villains go into the player notes, so the next time they are one tap away.
     const players = hand.players.map((p, i) => {
       if (i === hand.hero || !p.name.trim() || p.playerId) return p;
