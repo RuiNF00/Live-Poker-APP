@@ -76,10 +76,13 @@ test('erasing queues a delete for every swap still on the server, with its own t
 });
 
 test('swaps survive a backup round trip, and a restore keeps entries not sent yet', () => {
-  const s = swap({ entries: [e('b', 'result', 100)] });
-  const back = parseBackup(JSON.stringify(buildBackup({ hands: [], sessions: [], players: [], swaps: [s, { id: 'broken' } as unknown as Swap], settings: DEFAULT_SETTINGS })));
+  const tok = 'ab12'.repeat(16);
+  const s = swap({ id: 'Ab3dE6gH9k', token: tok, entries: [e('b', 'result', 100)] });
+  // Ids and tokens go into URLs and headers: anything not shaped like the server's is dropped.
+  const bad = [{ id: 'broken' }, { ...s, id: '../../x' }, { ...s, token: 'tok' }, { ...s, token: tok + '\n' }] as unknown as Swap[];
+  const back = parseBackup(JSON.stringify(buildBackup({ hands: [], sessions: [], players: [], swaps: [s, ...bad], settings: DEFAULT_SETTINGS })));
   assert.equal(back.swaps?.length, 1);
-  assert.equal(back.swaps?.[0].token, 'tok');
+  assert.equal(back.swaps?.[0].token, tok);
 
   const pending = e('a', 'result', 5, { pending: true, cid: 'p9' });
   const local = [swap({ updatedAt: 1, entries: [pending] })];

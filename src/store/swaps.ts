@@ -73,6 +73,11 @@ export interface Swap {
   updatedAt: number;
 }
 
+/** Server ids (short_id(), as web/src/lib/swaps.ts validId) and side tokens (64 hex). Checked
+ * before either goes into a URL or a header, e.g. from a restored backup or a link. */
+export const validSwapId = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z0-9]{6,16}$/.test(x);
+export const validSwapToken = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x);
+
 export const other = (s: SwapSide): SwapSide => (s === 'a' ? 'b' : 'a');
 
 /** Names as both players see them: the confirmed name wins over what the proposer typed. */
