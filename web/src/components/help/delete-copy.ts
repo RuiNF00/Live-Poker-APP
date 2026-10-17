@@ -71,13 +71,13 @@ export const DELETE_COPY: Record<HelpLocale, DeleteCopy> = {
         ['Mãos, sessões, notas de jogadores, bankroll, staking, definições e bloqueio no telemóvel', 'De imediato.'],
         ['Cópia na nuvem', 'De imediato. Uma cópia que não é atualizada durante 18 meses é apagada sozinha.'],
         ['Tudo o que partilhaste por link: mãos (com comentários e votos), sessões em direto, perfil público, links para o coach e acordos enviados a backers', 'Os links deixam de funcionar de imediato. Os registos saem dos servidores em até 60 dias.'],
-        ['Swaps ainda por confirmar', 'De imediato.'],
-        ['Swaps confirmados', 'O teu nome e a tua chave saem de imediato. O outro jogador fica com uma cópia só de leitura dos valores, com a nota de que apagaste os teus dados, para saber como ficam as contas dele. Essa cópia sai dos servidores 90 dias depois de apagares.'],
+        ['Swaps e grupos de swaps', 'O teu nome e a tua chave de acesso são apagados do servidor de imediato. Um swap que nunca foi confirmado é apagado logo, e um grupo que criaste é apagado logo para todos. Num swap confirmado, os outros jogadores ficam no servidor com uma cópia só de leitura dos valores que registaram juntos durante 90 dias, e depois é apagada. As cópias nos telemóveis dos outros jogadores não são tocadas.'],
       ],
     },
     kept: {
       h: 'O que fica',
       items: [
+        'Mesmo sem apagares nada, um swap ou grupo por confirmar sai do servidor 30 dias depois de criado, e um confirmado 400 dias depois da última atividade.',
         'Estatísticas de utilização anónimas (por exemplo "mão guardada"), com um ID aleatório da instalação. Não identificam ninguém e são apagadas ao fim de 12 meses.',
         'Os registos de compra, na Apple, na Google e na RevenueCat (o estado da subscrição), pelo tempo que a lei exige.',
       ],
@@ -137,13 +137,13 @@ export const DELETE_COPY: Record<HelpLocale, DeleteCopy> = {
         ['Mãos, sessões, notas de jogadores, bankroll, staking, configurações e bloqueio no celular', 'Na hora.'],
         ['Cópia na nuvem', 'Na hora. Uma cópia que não é atualizada por 18 meses é excluída automaticamente.'],
         ['Tudo o que você compartilhou por link: mãos (com comentários e votos), sessões ao vivo, perfil público, links para o coach e acordos enviados a backers', 'Os links param de funcionar na hora. Os registros saem dos servidores em até 60 dias.'],
-        ['Swaps ainda não confirmados', 'Na hora.'],
-        ['Swaps confirmados', 'Seu nome e sua chave saem na hora. O outro jogador fica com uma cópia só de leitura dos valores, com a nota de que você excluiu seus dados, para saber como ficam as contas dele. Essa cópia sai dos servidores 90 dias depois da exclusão.'],
+        ['Swaps e grupos de swaps', 'Seu nome e sua chave de acesso são excluídos do servidor na hora. Um swap que nunca foi confirmado é excluído na hora, e um grupo que você criou é excluído na hora para todos. Num swap confirmado, os outros jogadores ficam no servidor com uma cópia só de leitura dos valores que vocês registraram por 90 dias, e depois ela é excluída. As cópias nos celulares dos outros jogadores não são afetadas.'],
       ],
     },
     kept: {
       h: 'O que fica',
       items: [
+        'Mesmo sem você excluir nada, um swap ou grupo não confirmado sai do servidor 30 dias depois de criado, e um confirmado 400 dias depois da última atividade.',
         'Estatísticas de uso anônimas (por exemplo "mão salva"), com um ID aleatório da instalação. Não identificam ninguém e são excluídas depois de 12 meses.',
         'Os registros de compra, na Apple, no Google e na RevenueCat (o status da assinatura), pelo tempo que a lei exige.',
       ],
@@ -203,13 +203,13 @@ export const DELETE_COPY: Record<HelpLocale, DeleteCopy> = {
         ['Manos, sesiones, notas de jugadores, bankroll, staking, ajustes y bloqueo en el teléfono', 'Al momento.'],
         ['Copia en la nube', 'Al momento. Una copia que no se actualiza durante 18 meses se elimina sola.'],
         ['Todo lo que compartiste por link: manos (con comentarios y votos), sesiones en directo, perfil público, links para el coach y acuerdos enviados a backers', 'Los links dejan de funcionar al momento. Los registros salen de los servidores en un plazo máximo de 60 días.'],
-        ['Swaps sin confirmar', 'Al momento.'],
-        ['Swaps confirmados', 'Tu nombre y tu llave se eliminan al momento. El otro jugador conserva una copia de solo lectura de los importes, con la nota de que eliminaste tus datos, para saber cómo quedan sus cuentas. Esa copia sale de los servidores 90 días después de que elimines tus datos.'],
+        ['Swaps y grupos de swaps', 'Tu nombre y tu llave de acceso se eliminan del servidor al momento. Un swap que nunca se confirmó se elimina al momento, y un grupo que creaste se elimina al momento para todos. En un swap confirmado, los otros jugadores conservan en el servidor una copia de solo lectura de los importes que registraron juntos durante 90 días, y después se elimina. Las copias en los teléfonos de los otros jugadores no se tocan.'],
       ],
     },
     kept: {
       h: 'Qué se conserva',
       items: [
+        'Aunque no elimines nada, un swap o grupo sin confirmar sale del servidor 30 días después de crearse, y uno confirmado 400 días después de la última actividad.',
         'Estadísticas de uso anónimas (por ejemplo "mano guardada"), con un ID aleatorio de la instalación. No identifican a nadie y se eliminan a los 12 meses.',
         'Los registros de compra, en Apple, Google y RevenueCat (el estado de la suscripción), durante el tiempo que exige la ley.',
       ],
@@ -269,13 +269,13 @@ export const DELETE_COPY: Record<HelpLocale, DeleteCopy> = {
         ['Hands, sessions, player notes, bankroll, staking, settings and the app lock on your phone', 'Straight away.'],
         ['Cloud backup', 'Straight away. A backup not updated for 18 months is deleted automatically.'],
         ['Everything you shared by link: hands (with comments and votes), live sessions, public profile, coach links and agreements sent to backers', 'The links stop working straight away. The records leave our servers within 60 days.'],
-        ['Swaps not yet confirmed', 'Straight away.'],
-        ['Confirmed swaps', 'Your name and key go straight away. The other player keeps a read-only copy of the amounts, with a note that you deleted your data, so they still know where their accounts stand. That copy leaves our servers 90 days after you delete.'],
+        ['Swaps and swap groups', 'Your name and access token are deleted from the server immediately. A swap that was never confirmed is deleted at once, and a group you created is deleted for everyone at once. For a confirmed swap, the other player(s) keep a read-only copy of the amounts you both recorded on the server for 90 days, then it is deleted. The copies on the other players\' phones are not touched.'],
       ],
     },
     kept: {
       h: 'What we keep',
       items: [
+        'Even if you delete nothing, an unconfirmed swap or group is deleted from the server 30 days after creation, and a confirmed one 400 days after the last activity.',
         'Anonymous usage statistics (for example "hand saved"), with a random install ID. They identify no one and are deleted after 12 months.',
         'Purchase records, at Apple, Google and RevenueCat (your subscription status), for as long as the law requires.',
       ],
