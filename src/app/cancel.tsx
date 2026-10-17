@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
-import { usePro } from '@/billing/pro';
+import { restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } from '@/billing/purchases';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -78,6 +78,7 @@ export default function Cancel() {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: what, result: res });
     // The store's own sheet already confirmed it: straight back, no extra alert.
     if (res === 'ok') router.back();
+    else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
     else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
   // Pro for good, but the subscription is still running: send them to the store to stop it.
@@ -87,12 +88,12 @@ export default function Cancel() {
       track('lifetime_purchased', lifetimeProps());
       // The subscription keeps renewing until the player cancels it: straight to the store's page (payments audit §7).
       toStore();
-    } else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    } else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
+    else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
   const onRestore = async () => {
     track('cancel_flow', { step: 'restore' });
-    const ok = await restore();
-    notice(ok ? t('Compras restauradas') : t('Sem compras'), ok ? t('O teu Pro está ativo nesta conta da loja.') : t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+    restoreNotice(await restore(), Platform.OS === 'android' ? 'Google Play' : 'App Store');
   };
   const send = () => {
     track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: scrubNote(note) });

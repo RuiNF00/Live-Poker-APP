@@ -148,12 +148,13 @@ export function Replayer({
   useEffect(() => {
     let live = true;
     AsyncStorage.getItem(TIPS_KEY)
-      .then((v) => live && !v && setTips(true))
+      // A replay that plays by itself (the welcome screen, the sample hand) needs no tip yet.
+      .then((v) => live && !v && !autoPlay && setTips(true))
       .catch(() => {});
     return () => {
       live = false;
     };
-  }, []);
+  }, [autoPlay]);
   const doneTips = () => {
     if (!tips) return;
     setTips(false);

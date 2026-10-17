@@ -22,7 +22,7 @@ import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
 import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import { money, shortDate } from '@/poker/format';
+import { money, num, shortDate } from '@/poker/format';
 import {
   MARKUPS,
   PIECES,
@@ -51,7 +51,7 @@ import { uid, useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
-const pct = (n: number) => `${String(n).replace('.', ',')}%`;
+const pct = (n: number) => `${num(n)}%`;
 
 export default function ActionPackageScreen() {
   const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();

@@ -2,7 +2,7 @@
 // Thursday game at their casino, typed once. Each week on its day it shows in
 // the Sessão tab's "today" chips and fills the form in one tap. No outside
 // data: the name and venue are the player's. Kept on the phone like the
-// festival plans.
+// festival plans, and in the backup.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
@@ -74,7 +74,7 @@ export function roundedClock(now = Date.now()): string {
 const KEY = 'rl.weekly.v1';
 
 let list: WeeklyTournament[] = [];
-let loaded = false;
+let loaded: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
 function set(next: WeeklyTournament[]) {
@@ -82,19 +82,18 @@ function set(next: WeeklyTournament[]) {
   for (const l of listeners) l();
 }
 
-function load() {
-  if (loaded) return;
-  loaded = true;
-  AsyncStorage.getItem(KEY)
+function load(): Promise<void> {
+  loaded ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
       const saved = raw ? (JSON.parse(raw) as WeeklyTournament[]) : [];
       set([...saved.filter((w) => !list.some((x) => x.id === w.id)), ...list]);
     })
     .catch(() => {});
+  return loaded;
 }
 
 function subscribe(l: () => void) {
-  load();
+  void load();
   listeners.add(l);
   return () => listeners.delete(l);
 }
@@ -119,6 +118,22 @@ export function saveWeekly(w: WeeklyTournament) {
 
 export function deleteWeekly(id: string) {
   set(list.filter((x) => x.id !== id));
+  persist();
+}
+
+/** Every weekly tournament, for the backup. */
+export function currentWeekly(): WeeklyTournament[] {
+  void load();
+  return list;
+}
+
+/** A backup's weekly tournaments this phone doesn't have yet (by id); the phone's copy of the rest stays. */
+export async function importWeekly(incoming: WeeklyTournament[]): Promise<void> {
+  if (!incoming.length) return;
+  await load();
+  const add = incoming.filter((w) => !list.some((x) => x.id === w.id));
+  if (!add.length) return;
+  set([...list, ...add]);
   persist();
 }
 

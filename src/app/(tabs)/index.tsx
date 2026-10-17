@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert, BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
@@ -147,6 +147,22 @@ export default function HandsScreen() {
   // Long-press a hand to start picking several; tap then adds or removes.
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const picking = picked.size > 0;
+  // Android back closes the selection or the search first, instead of leaving the app.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || (!picking && !searching)) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (picking) setPicked(new Set());
+        else {
+          setSearching(false);
+          setQ('');
+          setFilter((f) => ({ ...f, result: null, session: null }));
+        }
+        return true;
+      });
+      return () => sub.remove();
+    }, [picking, searching]),
+  );
   const togglePick = useCallback((id: string) => {
     tap('select');
     setPicked((cur) => {
@@ -251,6 +267,19 @@ export default function HandsScreen() {
                 <SwapSettleCard {...settle} />
               ) : !activeSession && shared.newTotal > 0 ? (
                 <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
+              ) : incomplete > 0 && tag !== INCOMPLETE ? (
+                <Banner
+                  tone="warn"
+                  icon="alert-circle-outline"
+                  title={incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete })}
+                  action={incomplete === 1 ? t('Acabar') : t('Ver')}
+                  onPress={() => {
+                    // Just one: straight into the editor, where it stopped.
+                    const only = incomplete === 1 ? hands.find(isIncomplete) : undefined;
+                    if (only) router.push({ pathname: '/hand/new', params: { edit: only.id } });
+                    else setTag(INCOMPLETE);
+                  }}
+                />
               ) : !activeSession && news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : !activeSession && suggest.show ? (
@@ -259,14 +288,6 @@ export default function HandsScreen() {
                 <StartChecklist state={checklist} />
               ) : !activeSession && moment ? (
                 <ProMoment state={moment} />
-              ) : incomplete > 0 && tag !== INCOMPLETE ? (
-                <Banner
-                  tone="warn"
-                  icon="alert-circle-outline"
-                  title={incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete })}
-                  action={t('Ver')}
-                  onPress={() => setTag(INCOMPLETE)}
-                />
               ) : !activeSession && idleDays >= 7 ? (
                 <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
               ) : null}
@@ -611,7 +632,8 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
     <Pressable
       accessibilityRole="button"
       accessibilityState={picking ? { selected: picked } : undefined}
-      onPress={() => (picking ? onPick(hand.id) : router.push({ pathname: '/hand/[id]', params: { id: hand.id } }))}
+      // An unfinished hand opens where it stopped: finishing it is why it's tapped.
+      onPress={() => (picking ? onPick(hand.id) : done ? router.push({ pathname: '/hand/[id]', params: { id: hand.id } }) : router.push({ pathname: '/hand/new', params: { edit: hand.id } }))}
       onLongPress={() => onPick(hand.id)}
       delayLongPress={350}
       style={({ pressed }) => (picked ? rowSt.picked : pressed ? rowSt.pressed : rowSt.row)}>

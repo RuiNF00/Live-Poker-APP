@@ -3,6 +3,7 @@
 // session cards. Amounts are hidden unless the player turns them on: the
 // record (cashes, ITM, deepest runs) reads well without them.
 
+import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -13,7 +14,7 @@ import type { Score, Summary } from '@/store/tourney-stats';
 import { MIN_SAMPLE } from '@/store/tourney-stats';
 import { C, F, ff } from '@/theme';
 
-import { linkHost, STORY_H, STORY_W, Wordmark } from './StoryCard';
+import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './StoryCard';
 
 export interface TourneyCardProps {
   name: string;
@@ -24,6 +25,8 @@ export interface TourneyCardProps {
   since: number;
   hideMoney: boolean;
   brand: boolean;
+  /** 'post': 4:5 for X and other apps, with the best result only (three don't fit with the prizes line). */
+  format?: 'story' | 'post';
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
 
@@ -34,19 +37,19 @@ function Big({ label, value, tone }: { label: string; value: string; tone?: stri
   return (
     <View style={{ flex: 1, gap: 2 }}>
       <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 11, letterSpacing: 1.2, color: C.muted }}>{label.toUpperCase()}</Text>
-      <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 30, letterSpacing: -1, color: tone ?? C.text }} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
+      <FitText style={{ fontFamily: F.mono, fontSize: 30, letterSpacing: -1, color: tone ?? C.text }}>{value}</FitText>
     </View>
   );
 }
 
-export function TourneyCard({ name, sum, scores, currency, since, hideMoney, brand, ref }: TourneyCardProps) {
+export function TourneyCard({ name, sum, scores: all, currency, since, hideMoney, brand, format = 'story', ref }: TourneyCardProps) {
+  const post = format === 'post';
+  const scores = post ? all.slice(0, 1) : all;
   const roiOk = sum.roi !== null && sum.count >= MIN_SAMPLE;
   return (
-    <View ref={ref} collapsable={false} style={{ width: STORY_W, height: STORY_H, backgroundColor: C.bg, overflow: 'hidden' }}>
+    <View ref={ref} collapsable={false} style={{ width: STORY_W, height: post ? POST_H : STORY_H, backgroundColor: C.bg, overflow: 'hidden' }}>
       <LinearGradient colors={['#2A140B', C.bg, C.bg, C.bgDeep]} locations={[0, 0.35, 0.75, 1]} style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }} />
-      <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: 48, paddingBottom: 28, gap: 22 }}>
+      <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: post ? 26 : 48, paddingBottom: post ? 18 : 28, gap: post ? 14 : 22 }}>
         <View style={{ gap: 6 }}>
           <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 12, letterSpacing: 2, color: C.accent }}>{t('CURRÍCULO DE TORNEIOS')}</Text>
           <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 30, lineHeight: 34, letterSpacing: -0.6, color: C.text }} numberOfLines={2}>
@@ -64,9 +67,7 @@ export function TourneyCard({ name, sum, scores, currency, since, hideMoney, bra
         {!hideMoney ? (
           <View style={{ gap: 2 }}>
             <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 11, letterSpacing: 1.2, color: C.muted }}>{t('EM PRÉMIOS')}</Text>
-            <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 40, letterSpacing: -1.5, color: C.text }} numberOfLines={1} adjustsFontSizeToFit>
-              {money(sum.prizes, currency)}
-            </Text>
+            <FitText style={{ fontFamily: F.mono, fontSize: 40, letterSpacing: -1.5, color: C.text }}>{money(sum.prizes, currency)}</FitText>
           </View>
         ) : null}
 

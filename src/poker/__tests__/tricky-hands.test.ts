@@ -5,10 +5,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildReplay, describeStep, fromAppHand } from '../../../packages/hand-format/src';
+import { buildReplay, describeStep, fromAppHand, stakesText, straddleOf } from '../../../packages/hand-format/src';
 import { spokenTable, timeline, viewAt } from '../../components/replayer/model';
 import { motionTimeline } from '../../components/replayer/timeline';
 import { isComplete, positions, replay, totalPot } from '../engine';
+import { blindsLabel } from '../format';
 import { pokerStarsText } from '../pokerstars';
 import { publicHand } from '../privacy';
 import type { GameInfo, Hand, HandAction } from '../types';
@@ -201,4 +202,174 @@ test('hero folds preflop with the hand shown: the others play on, hero just lose
   assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
   const end = viewAt(h, o.r, o.r.steps.length - 1, { inBB: false, reveal: false, atEnd: true });
   assert.equal(end.seats[1].folded, true);
+});
+
+// Ponto 6: side pots, straddles, run it twice and split pots together, as Registo round 4 logs them.
+const won = (o: { res: { won: number[] } }, n: number, pos: string) => o.res.won[positions(n, 0).indexOf(pos)];
+
+test('4-way all-in with cent blinds: three pots, each to the cent, a chop in the middle one', () => {
+  const seats = [
+    { pos: 'BTN', stack: 20.1, cards: ['Ah', 'Ad'], name: 'Hero' },
+    { pos: 'SB', stack: 35.35, cards: ['Kc', 'Qc'] },
+    { pos: 'BB', stack: 50, cards: ['Kd', 'Qd'] },
+    { pos: 'UTG', stack: 80.75, cards: ['7s', '7h'] },
+  ];
+  const h = mk({ kind: 'cash', sb: 0.25, bb: 0.5 }, seats,
+    [['UTG', 'raise', 80.75], ['BTN', 'call'], ['SB', 'call'], ['BB', 'call']],
+    ['Kh', 'Qs', '2c', '5d', '9h']);
+  const o = run(h);
+  // Main 4×20.10 = 80.40 → BTN? No: KQ two pair beats aces. KQ chop the main and the first side.
+  // Main 80.40 → SB/BB 40.20 each. Side 1: 3×15.25 = 45.75 → 22.88 / 22.87. Side 2: 2×14.65 = 29.30 → BB.
+  // UTG's last 30.75 are uncalled and come back.
+  assert.equal(o.res.pots.length, 3);
+  assert.equal(won(o, 4, 'BTN'), 0);
+  assert.equal(Math.round((won(o, 4, 'SB') + won(o, 4, 'BB')) * 100), Math.round((80.4 + 45.75 + 29.3) * 100));
+  assert.ok(Math.abs(won(o, 4, 'BB') - (40.2 + 22.87 + 29.3)) < 1e-9 || Math.abs(won(o, 4, 'BB') - (40.2 + 22.88 + 29.3)) < 1e-9, `BB ${won(o, 4, 'BB')}`);
+  assert.ok(near(o.appStacks, o.webStacks), `stacks app ${o.appStacks} web ${o.webStacks}`);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
+  // Every amount on the shared page is a whole number of cents.
+  for (const w of o.last.winners ?? []) assert.equal(Math.round(w.amount * 100) / 100, w.amount, `${w.amount}`);
+});
+
+test('straddle and side pots: the straddler all-in short, two others play a side pot', () => {
+  const h = mk(
+    { straddles: 1 },
+    SIX([1000, 1000, 1000, 8, 1000, 1000], { BTN: ['Ah', 'Kh'], UTG: ['2s', '2d'], CO: ['Js', 'Jd'] }),
+    // UTG straddles 10 but only has 8: all-in for the straddle.
+    [['HJ', 'fold'], ['CO', 'raise', 30], ['BTN', 'call'], ['SB', 'fold'], ['BB', 'fold'],
+     ['CO', 'check'], ['BTN', 'bet', 50], ['CO', 'call'], ['CO', 'check'], ['BTN', 'check'], ['CO', 'check'], ['BTN', 'check']],
+    ['Kd', '7c', '2h', '9h', '3d'],
+  );
+  const r = replay(h);
+  if (r.invalidAt !== null) return; // a short straddle isn't loggable in the app; nothing to compare
+  const o = run(h);
+  assert.ok(near(o.appStacks, o.webStacks), `stacks app ${o.appStacks} web ${o.webStacks}`);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
+});
+
+test('straddle: the blinds line reads 2/5/10 on both pages and the straddler posts before the action', () => {
+  const h = mk(
+    { straddles: 1 },
+    SIX([1000, 1000, 1000, 1000, 1000, 1000], { BTN: ['Ah', 'Kh'], UTG: ['Qs', 'Qd'] }),
+    [['HJ', 'fold'], ['CO', 'fold'], ['BTN', 'raise', 35], ['SB', 'fold'], ['BB', 'fold'], ['UTG', 'call'],
+     ['UTG', 'check'], ['BTN', 'check'], ['UTG', 'check'], ['BTN', 'check'], ['UTG', 'check'], ['BTN', 'check']],
+    ['Kd', '7c', '2s', '9h', '3d'],
+  );
+  const o = run(h);
+  const { hand: rec } = fromAppHand(publicHand(h, { names: true, notes: false }) as never);
+  assert.equal(stakesText(rec.blinds, String, ' · ', straddleOf(rec)), '2/5/10');
+  assert.match(blindsLabel(h), /^2\/5\/10/);
+  // The start step already has the straddle in front of UTG, and the first action is HJ's.
+  const start = o.steps[0];
+  assert.equal(start.seats.find((s) => s.seat === positions(6, 0).indexOf('UTG') + 1)!.committed, 10);
+  assert.equal(o.steps[1].actingSeat, positions(6, 0).indexOf('HJ') + 1);
+  const v0 = viewAt(h, o.r, 0, { inBB: false, reveal: false, atEnd: false });
+  assert.match(spokenTable(v0), /10/);
+});
+
+test('run it twice with side pots and known cards: each board pays each pot, both pages agree', () => {
+  const seats = [
+    { pos: 'BTN', stack: 200, cards: ['Ah', 'Ad'], name: 'Hero' },
+    { pos: 'SB', stack: 500, cards: ['Kc', 'Kd'] },
+    { pos: 'BB', stack: 500, cards: ['Qh', 'Qs'] },
+  ];
+  const h = mk({ kind: 'cash', sb: 2, bb: 5 }, seats,
+    [['BTN', 'raise', 200], ['SB', 'raise', 500], ['BB', 'call']],
+    ['Kh', '7c', '2d', '9s', '3c'], { board2: ['Qc', '8h', '4s', '6d', 'Jc'] });
+  const o = run(h);
+  // Main 600 split per board: 300 to SB (set of kings, board 1), 300 to BB (set of queens, board 2).
+  // Side 2×300 = 600: same, 300 each. Aces win nothing.
+  assert.equal(won(o, 3, 'BTN'), 0);
+  assert.equal(won(o, 3, 'SB'), 600);
+  assert.equal(won(o, 3, 'BB'), 600);
+  assert.equal(o.last.runs?.length, 2);
+  assert.ok(near(o.appStacks, o.webStacks), `stacks app ${o.appStacks} web ${o.webStacks}`);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
+  // Each run lists what it paid, and the two runs add up to the pot.
+  const perRun = o.last.runs!.map((run) => run.winners.reduce((a, w) => a + w.amount, 0));
+  assert.equal(perRun[0] + perRun[1], 1200);
+});
+
+test('run it twice with cent blinds: the pot halves to the cent', () => {
+  const seats = [
+    { pos: 'BTN', stack: 10, cards: ['Ah', 'Kd'], name: 'Hero' },
+    { pos: 'SB', stack: 10 },
+    { pos: 'BB', stack: 10, cards: ['Qh', 'Qd'] },
+  ];
+  // 10 + 10 + 0.25 dead = 20.25: one run gets 10.13, the other 10.12.
+  const h = mk({ kind: 'cash', sb: 0.25, bb: 0.5 }, seats, [['BTN', 'raise', 10], ['SB', 'fold'], ['BB', 'call']],
+    ['Ac', '7c', '2d', '9s', '3c'], { board2: ['Qc', '8h', '4s', '6d', 'Jc'] });
+  const o = run(h);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
+  for (const run of o.last.runs!) for (const w of run.winners) assert.equal(Math.round(w.amount * 100) / 100, w.amount, `${w.amount}`);
+});
+
+test('split pot: both winners are named with their hand on both pages', () => {
+  const seats = [
+    { pos: 'BTN', stack: 500, cards: ['Ah', 'Kd'], name: 'Hero' },
+    { pos: 'SB', stack: 500 },
+    { pos: 'BB', stack: 500, cards: ['As', 'Kc'] },
+  ];
+  const h = mk({ kind: 'cash', sb: 2, bb: 5 }, seats,
+    [['BTN', 'raise', 15], ['SB', 'fold'], ['BB', 'call'], ['BB', 'check'], ['BTN', 'check'], ['BB', 'check'], ['BTN', 'check'], ['BB', 'check'], ['BTN', 'check']],
+    ['Ac', '7d', '9s', 'Jh', '4c']);
+  const o = run(h);
+  assert.equal(o.res.won[0], 16);
+  assert.equal(o.res.won[2], 16);
+  const end = viewAt(h, o.r, o.r.steps.length - 1, { inBB: false, reveal: true, atEnd: true });
+  assert.equal(end.seats[0].handName, 'Par de Ases');
+  assert.equal(end.seats[2].handName, 'Par de Ases');
+  const said = spokenTable(end);
+  assert.equal((said.match(/Par de Ases/g) ?? []).length >= 2, true, said);
+  const labels = (o.last.winners ?? []).map((w) => w.handLabel);
+  assert.deepEqual(labels, ['Par de Ases', 'Par de Ases']);
+  const text = describeStep(o.last, 5, 'chips', 'pt');
+  assert.equal((text.match(/Par de Ases/g) ?? []).length, 2, text);
+});
+
+test('run it twice at 0.25/0.50 with a round pot: €3 halves to 1.50 + 1.50, not 2 + 1', () => {
+  const seats = [
+    { pos: 'BTN', stack: 1, cards: ['Ah', 'Kd'], name: 'Hero' },
+    { pos: 'SB', stack: 1, cards: ['Jh', 'Jd'] },
+    { pos: 'BB', stack: 1, cards: ['Qh', 'Qd'] },
+  ];
+  const h = mk({ kind: 'cash', sb: 0.25, bb: 0.5 }, seats, [['BTN', 'raise', 1], ['SB', 'call'], ['BB', 'call']],
+    ['Ac', '7c', '2d', '9s', '3c'], { board2: ['Qc', '8h', '4s', '6d', 'Jc'] });
+  const o = run(h);
+  assert.equal(won(o, 3, 'BTN'), 1.5);
+  assert.equal(won(o, 3, 'BB'), 1.5);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
+  assert.deepEqual(o.last.runs!.map((run) => run.winners.map((w) => w.amount)), [[1.5], [1.5]]);
+  // The replayer says what each board paid, to the cent.
+  const end = viewAt(h, o.r, o.r.steps.length - 1, { inBB: false, reveal: true, atEnd: true });
+  assert.match(end.narration, /Mesa 1: .*1,50.*Mesa 2: .*1,50/);
+});
+
+test('run it twice with cent blinds: the replayer pays each board what the engine paid', () => {
+  const seats = [
+    { pos: 'BTN', stack: 10, cards: ['Ah', 'Kd'], name: 'Hero' },
+    { pos: 'SB', stack: 10 },
+    { pos: 'BB', stack: 10, cards: ['Qh', 'Qd'] },
+  ];
+  const h = mk({ kind: 'cash', sb: 0.25, bb: 0.5 }, seats, [['BTN', 'raise', 10], ['SB', 'fold'], ['BB', 'call']],
+    ['Ac', '7c', '2d', '9s', '3c'], { board2: ['Qc', '8h', '4s', '6d', 'Jc'] });
+  const o = run(h);
+  const end = viewAt(h, o.r, o.r.steps.length - 1, { inBB: false, reveal: true, atEnd: true });
+  // 20.25 in the middle: board 1 pays 10.13, board 2 pays 10.12 (not 11 and 9.25).
+  assert.match(end.narration, /Mesa 1: .*10,13.*Mesa 2: .*10,12/);
+});
+
+test('chop with a folded small blind at 0.25/0.50: €2.50 is 1.25 each on both pages, not 1.26 / 1.24', () => {
+  const seats = [
+    { pos: 'BTN', stack: 50, cards: ['Ah', 'Kd'], name: 'Hero' },
+    { pos: 'SB', stack: 50 },
+    { pos: 'BB', stack: 50, cards: ['Ac', 'Ks'] },
+  ];
+  const h = mk({ kind: 'cash', sb: 0.25, bb: 0.5 }, seats,
+    [['BTN', 'raise', 1.125], ['SB', 'fold'], ['BB', 'call'], ['BB', 'check'], ['BTN', 'check'], ['BB', 'check'], ['BTN', 'check'], ['BB', 'check'], ['BTN', 'check']],
+    ['2c', '7d', '9s', 'Jh', '4c']);
+  const o = run(h);
+  assert.equal(won(o, 3, 'BTN'), 1.25);
+  assert.equal(won(o, 3, 'BB'), 1.25);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
 });

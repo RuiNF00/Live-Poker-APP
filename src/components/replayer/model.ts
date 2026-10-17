@@ -1,10 +1,11 @@
 // What the replayer shows at each step, worked out from the engine. Pure, testable.
 
 import { t } from '@/i18n';
-import { positions, totalPot, type HandResult, type Replay, type Step } from '@/poker/engine';
+import { centGame, positions, totalPot, type HandResult, type Replay, type Step } from '@/poker/engine';
 import { equity } from '@/poker/equity';
 import { evaluate } from '@/poker/evaluator';
 import { amount, decimal, pct } from '@/poker/format';
+import { runWinnings } from '@/poker/pokerstars';
 import { equityVsRange, rangeOf, rangePct, rangePctForRaises, topClasses } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
@@ -313,7 +314,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   // Run it twice: each board pays half of every pot.
   const board2 = result && r.boards.length === 2 ? r.boards[1] : null;
   if (result && board2) {
-    const runs = runPayouts(result, hand.players.length);
+    const runs = runWinnings(result, centGame(hand));
     for (const s of seats) {
       if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
       if (s.cards && s.handName) s.handName2 = evaluate([...s.cards, ...board2]).name;
@@ -422,26 +423,6 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     end: !!result,
     ...(opts.at != null ? { motion: { anims: motionTimeline(hand, r)[k]?.anims ?? [], at: opts.at } } : {}),
   };
-}
-
-/** Run it twice: what each run paid each player, split as the engine splits it. */
-export function runPayouts(result: HandResult, n: number): number[][] {
-  const out = [new Array(n).fill(0), new Array(n).fill(0)];
-  const pay = (run: number, amount: number, winners: number[] | null | undefined) => {
-    if (!winners?.length) return;
-    const share = Math.floor(amount / winners.length);
-    let odd = amount - share * winners.length;
-    for (const w of winners) {
-      out[run][w] += share + (odd > 0 ? 1 : 0);
-      if (odd > 0) odd--;
-    }
-  };
-  for (const pot of result.pots) {
-    const first = Math.ceil(pot.amount / 2);
-    pay(0, first, pot.winners);
-    pay(1, pot.amount - first, pot.winners2);
-  }
-  return out;
 }
 
 export interface TimelineItem {

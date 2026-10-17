@@ -51,7 +51,7 @@ export function runWinnings(res: HandResult, cents = false): number[][] {
     splitPot(amount, winners.length, cents).forEach((x, k) => (row[winners[k]] += x));
   };
   for (const p of res.pots) {
-    const [first] = splitPot(p.amount, 2);
+    const [first] = splitPot(p.amount, 2, cents);
     pay(runs[0], first, p.winners);
     pay(runs[1], p.amount - first, p.winners2);
   }

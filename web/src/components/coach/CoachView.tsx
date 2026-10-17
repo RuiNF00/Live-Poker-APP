@@ -9,6 +9,7 @@ import { PlayingCard } from '@/components/PlayingCard';
 import type { CoachComment, Mark } from '@/lib/coach-data';
 import { intlTag, t, type Locale } from '@/lib/i18n';
 import { readLocal, writeLocal } from '@/lib/local';
+import { scrollMode } from '@/lib/motion';
 import { coachCopy, type CoachCopy } from './copy';
 import './coach.css';
 
@@ -69,7 +70,7 @@ export function CoachView(props: Props) {
   const pick = (i: number) => {
     setAt(i);
     window.history.replaceState(null, '', `#${i + 1}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: scrollMode() });
   };
 
   const expires = props.expiresAt

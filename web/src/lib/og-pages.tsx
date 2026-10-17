@@ -191,7 +191,8 @@ export function inviteOgImage(days: number, c: { eyebrow: string; title: string;
         <Logo />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
           <Eyebrow label={c.eyebrow} />
-          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>{c.title}</div>
+          {/* Up to where the cards start: "Um amigo convidou você" ran into them. */}
+          <div style={{ display: 'flex', maxWidth: 640, fontSize: 60, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2 }}>{c.title}</div>
         </div>
         <div
           style={{
@@ -219,6 +220,8 @@ export function inviteOgImage(days: number, c: { eyebrow: string; title: string;
 }
 
 const fmt = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1 });
+/** At most `n` characters, with "…" when cut, never in the middle of a word. */
+const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, '') + '…');
 const num = (n: number) => fmt.format(n);
 
 /**
@@ -302,18 +305,23 @@ export function liveOgImage(s: LiveSnapshot | null, locale: Locale = 'pt') {
 export function swapOgImage(sw: { a: string; b: string; title: string } | null, locale: Locale = 'pt') {
   if (!sw) return siteOgImage();
   const c = previewCopy(locale);
+  // About 0.55 em per character in the brand font, bold.
+  const names = Math.min(76, Math.floor(1056 / (0.55 * Math.max(sw.a.length, sw.b.length + 2))));
   return render(
     <Frame>
       <div style={{ display: 'flex', flexDirection: 'column', width: 1056, justifyContent: 'space-between' }}>
         <Logo />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           <Eyebrow label={c.swap} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 26, fontSize: 76, fontWeight: 800, letterSpacing: -2.5, lineHeight: 1.04 }}>
-            <span>{sw.a.slice(0, 18)}</span>
-            <span style={{ color: K.accent }}>×</span>
-            <span>{sw.b.slice(0, 18)}</span>
+          {/* One name per line, in a size that fits the whole name (up to 40 characters) instead of cutting it mid-word. */}
+          <div style={{ display: 'flex', flexDirection: 'column', fontSize: names, fontWeight: 800, letterSpacing: -2, lineHeight: 1.08 }}>
+            <span>{sw.a}</span>
+            <div style={{ display: 'flex', gap: 18 }}>
+              <span style={{ color: K.accent }}>×</span>
+              <span>{sw.b}</span>
+            </div>
           </div>
-          {sw.title ? <div style={{ display: 'flex', fontSize: 36, fontWeight: 500, color: K.dim }}>{sw.title.slice(0, 60)}</div> : null}
+          {sw.title ? <div style={{ display: 'flex', fontSize: 34, fontWeight: 500, color: K.dim }}>{clip(sw.title, 56)}</div> : null}
         </div>
         <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{c.swapSubline}</div>
       </div>

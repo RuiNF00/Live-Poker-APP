@@ -45,7 +45,7 @@ interface ProValue {
   /** The paywall takes the pending `then` (once) when Pro arrives, or drops it when closed. */
   takeResume: () => (() => void) | null;
   purchase: (plan: PlanId, reason?: PaywallReason) => Promise<store.BuyResult>;
-  restore: () => Promise<boolean>;
+  restore: () => Promise<store.RestoreResult>;
   /** Re-plan the trial and come-back notifications (after the player allows them). */
   refreshNudges: () => void;
 }
@@ -146,9 +146,9 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   );
 
   const restore = useCallback(async () => {
-    const ok = await store.restore();
-    if (ok) setPro(true);
-    return ok;
+    const res = await store.restore();
+    if (res === 'ok') setPro(true);
+    return res;
   }, [setPro]);
 
   const handsLeft = isPro ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
@@ -249,4 +249,11 @@ export function useWelcomeOffer(handsSaved: number) {
       };
     }, [isPro, atTable, handsSaved, trialDays, paywall]),
   );
+}
+
+/** What a restore found, in the same words wherever it is tapped. Offline is not "no purchases". */
+export function restoreNotice(res: store.RestoreResult, storeName: string) {
+  if (res === 'ok') notice(t('Compras restauradas'), t('O teu Pro está ativo nesta conta da loja.'));
+  else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+  else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Sem rede. Tenta outra vez quando tiveres sinal.'));
 }

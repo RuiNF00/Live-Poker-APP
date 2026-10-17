@@ -12,6 +12,7 @@ import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
 import { sameTable } from '@/poker/factory';
 import { sampleHand } from '@/poker/sample';
+import { unfinished } from '@/poker/unfinished';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
@@ -39,6 +40,7 @@ import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
+import { reduceMotion } from '@/lib/motion';
 
 /** How long "Desfazer" stays on a removed comment before it really goes. */
 const UNDO_MS = 5000;
@@ -49,13 +51,19 @@ const without = <V,>(o: Record<string, V>, k: string) => {
 
 export default function HandScreen() {
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
-  const { id, c: fresh } = useLocalSearchParams<{ id: string; c?: string }>();
+  // `f`: this hand was just finished in the editor; the next unfinished one is offered.
+  const { id, c: fresh, f: justFinished } = useLocalSearchParams<{ id: string; c?: string; f?: string }>();
   const { hands, saveHand, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
   const isSample = id === 'sample';
   const sample = useMemo(() => (isSample ? sampleHand('sample') : undefined), [isSample]);
   const hand = sample ?? hands.find((h) => h.id === id);
+  const nextLeft = useMemo(() => {
+    if (!justFinished) return null;
+    const left = unfinished(hands).filter((h) => h.id !== id);
+    return left.length ? { n: left.length, id: left[0].id } : null;
+  }, [justFinished, hands, id]);
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   // Shown at the top of the link; only before the link exists.
@@ -126,7 +134,7 @@ export default function HandScreen() {
   const onCommentsLayout = (y: number) => {
     if (!toComments.current || !comments.length) return;
     toComments.current = false;
-    scroller.current?.scrollTo({ y: Math.max(0, y - S.sm), animated: true });
+    scroller.current?.scrollTo({ y: Math.max(0, y - S.sm), animated: !reduceMotion() });
   };
   const streets = useMemo(() => {
     if (!hand) return [];
@@ -421,6 +429,15 @@ ${link}`;
           {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
         </Row>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
+        {nextLeft ? (
+          <Banner
+            tone="warn"
+            icon="create-outline"
+            title={nextLeft.n === 1 ? t('Falta 1 mão por completar') : t('Faltam {n} mãos por completar', { n: nextLeft.n })}
+            action={t('Acabar')}
+            onPress={() => router.replace({ pathname: '/hand/new', params: { edit: nextLeft.id } })}
+          />
+        ) : null}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
@@ -452,7 +469,7 @@ ${link}`;
               pending={pending}
               onUndo={undoRemove}
               ownerToken={hand.shareToken}
-              onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 350)}
+              onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: !reduceMotion() }), 350)}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>

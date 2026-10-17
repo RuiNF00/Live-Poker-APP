@@ -267,8 +267,8 @@ export function planReminders(f: Festival, plan: FestivalPlan, now = Date.now())
       title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }),
       body: name,
     });
-    // Day 2 has no registration to miss.
-    const late = e.day2 ? 0 : lateRegOf(plan, e);
+    // Day 2 has no registration to miss; nor does an event the player is already in.
+    const late = e.day2 || plan.sessions[e.id] ? 0 : lateRegOf(plan, e);
     if (late) {
       const closes = start + late * 60_000;
       out.push({

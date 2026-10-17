@@ -9,6 +9,7 @@ import type { Hand } from '@/poker/types';
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
 import type { FestivalPlan } from './festival-plan';
+import type { WeeklyTournament } from './weekly';
 import type { SwapGroup } from './swap-groups';
 import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
@@ -39,6 +40,8 @@ export interface BackupData {
   /** Festival plans by festival id, and the festivals the player added (absent before they were backed up). */
   festivalPlans?: Record<string, FestivalPlan>;
   ownFestivals?: Festival[];
+  /** The player's weekly tournaments (absent before they were backed up). */
+  weekly?: WeeklyTournament[];
   settings?: Partial<Settings>;
   /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
   quarantine?: [string, string][];
@@ -63,6 +66,7 @@ export function buildBackup(
     swapGroups?: SwapGroup[];
     festivalPlans?: Record<string, FestivalPlan>;
     ownFestivals?: Festival[];
+    weekly?: WeeklyTournament[];
     settings: Settings;
     quarantine?: [string, string][];
   },
@@ -86,6 +90,7 @@ export function buildBackup(
     swapGroups: d.swapGroups ?? [],
     festivalPlans: d.festivalPlans ?? {},
     ownFestivals: d.ownFestivals ?? [],
+    weekly: d.weekly ?? [],
     settings: d.settings,
     ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
@@ -144,6 +149,26 @@ function decodePlans(x: unknown): Record<string, FestivalPlan> {
     };
   }
   return out;
+}
+
+const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Only the fields the Sessão tab reads, each checked. */
+function decodeWeekly(x: unknown): WeeklyTournament[] {
+  if (!Array.isArray(x)) return [];
+  return x
+    .filter((w): w is Record<string, unknown> => withId(w) && isObj(w) && isStr(w.name) && isStr(w.currency) && Number.isInteger(w.weekday) && (w.weekday as number) >= 0 && (w.weekday as number) <= 6 && isStr(w.time) && CLOCK.test(w.time) && isNum(w.buyIn))
+    .map((w) => ({
+      id: (w.id as string).slice(0, 100),
+      name: (w.name as string).slice(0, 60),
+      venue: isStr(w.venue) ? w.venue.slice(0, 80) : '',
+      currency: (w.currency as string).slice(0, 8),
+      weekday: w.weekday as number,
+      time: w.time as string,
+      buyIn: w.buyIn as number,
+      ...(isNum(w.stack) ? { stack: w.stack } : {}),
+      ...(isNum(w.levelMinutes) ? { levelMinutes: w.levelMinutes } : {}),
+    }));
 }
 
 function decodeOwnFestivals(x: unknown): Festival[] {
@@ -226,6 +251,7 @@ export function parseBackup(text: string): BackupData {
     swapGroups,
     festivalPlans: decodePlans(j.festivalPlans),
     ownFestivals: decodeOwnFestivals(j.ownFestivals),
+    weekly: decodeWeekly(j.weekly),
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
     // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
     quarantine: Array.isArray(j.quarantine)

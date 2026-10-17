@@ -145,6 +145,8 @@ const ptBR: Record<string, string> = {
   'Subscrever Pro': 'Assinar o Pro',
   'Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.': 'Renova automaticamente até você cancelar nas configurações da {store}, pelo menos 24 horas antes do fim do período.',
   'A restaurar…': 'Restaurando…',
+  'O Pro liga-se sozinho quando a {store} confirmar o pagamento.': 'O Pro ativa sozinho quando a {store} confirmar o pagamento.',
+  'A carregar os preços da {store}…': 'Carregando os preços da {store}…',
   'Sem compromisso. Cancela quando quiseres.': 'Sem compromisso. Cancele quando quiser.',
   'Guarda 3 mãos': 'Salve 3 mãos',
   'Regista uma sessão': 'Registre uma sessão',
@@ -246,7 +248,6 @@ const ptBR: Record<string, string> = {
   'Importar ficheiro': 'Importar arquivo',
   'Junta ao que já tens, não apaga nada': 'Soma ao que você já tem, não apaga nada',
   'Para Excel, Google Sheets ou o contabilista': 'Para Excel, Google Sheets ou o contador',
-  'Não encontrámos compras nesta conta da loja.': 'Não encontramos compras nesta conta da loja.',
   'Ajuda e contacto': 'Ajuda e contato',
   'Não deu para ativar': 'Não foi possível ativar',
   'Não deu para fazer a cópia': 'Não foi possível fazer o backup',
@@ -1242,7 +1243,7 @@ const ptBR: Record<string, string> = {
   'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': 'A programação ainda não saiu. Os torneios aparecem aqui quando o organizador publicar; você já pode criar a viagem.',
   'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Datas a confirmar: por enquanto o organizador só publicou os dias do festival. Os torneios aparecem aqui quando sair a programação.',
   'Com o telemóvel parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos chegam à hora; o relógio aqui está sempre certo.': 'Com o celular parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos eles chegam na hora; o relógio aqui está sempre certo.',
-  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'Sem tempo? Posição e cartas já bastam: toque em «Salvar agora» e complete depois.',
+  'Sem tempo? «Guardar já» e completas depois.': 'Sem tempo? Toque em «Salvar agora» e complete depois.',
   // Swaps: groups, history, read-only copy
   "Tens 1 swap por acertar. A outra pessoa fica com a cópia dela.": "Você tem 1 swap por acertar. A outra pessoa fica com a cópia dela.",
   "Tens {n} swaps por acertar. A outra pessoa fica com a cópia dela.": "Você tem {n} swaps por acertar. A outra pessoa fica com a cópia dela.",
@@ -1564,6 +1565,11 @@ const ptBR: Record<string, string> = {
   'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Combine uma porcentagem com outro jogador. O app diz quem deve a quem.',
   'Partilha uma mão e os comentários aparecem aqui.': 'Compartilhe uma mão e os comentários aparecem aqui.',
   'Cada quadrado é um dia: cheio a verde ganhaste, contorno vermelho perdeste. Mais forte, mais dinheiro.': 'Cada quadrado é um dia: verde cheio você ganhou, contorno vermelho você perdeu. Mais forte, mais dinheiro.',
+  'Calendário das últimas 15 semanas: 1 dia jogado, {won} a ganhar, {lost} a perder.': 'Calendário das últimas 15 semanas: 1 dia jogado, {won} no positivo, {lost} no negativo.',
+  'O teu melhor dia é {day}: {amount} em 1 sessão.': 'Seu melhor dia é {day}: {amount} em 1 sessão.',
+  'Cartão do mês a partilhar: {h} h, 1 sessão.': 'Card do mês para compartilhar: {h} h, 1 sessão.',
+  'Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.': 'Você tem 1 sessão. As primeiras conclusões aparecem por volta de {m}.',
+  'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Ainda observando (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.',
   'Enviar o meu resultado para o swap': 'Enviar meu resultado para o swap',
 };
 

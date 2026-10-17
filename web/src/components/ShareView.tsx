@@ -151,7 +151,9 @@ export function ShareView(props: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest('input, textarea')) return;
+      // Typing, the browser's own shortcuts (⌘← is Back) and a focused button keep their keys.
+      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest('input, textarea, select, [contenteditable]')) return;
+      if (e.key === ' ' && (e.target as HTMLElement)?.closest('button, a')) return;
       if (e.key === 'ArrowRight') goTo(indexRef.current + 1);
       else if (e.key === 'ArrowLeft') goTo(indexRef.current - 1);
       else if (e.key === ' ') {

@@ -120,7 +120,7 @@ function Groups({ groups, cur, hidden }: { groups: WinRateGroup[]; cur: string; 
           </Row>
           <Interval lo={g.w.lo} hi={g.w.hi} mid={g.w.hourly} span={span} />
           <T v="tiny">
-            {[t('entre {lo} e {hi}', { lo: signed(Math.round(g.w.lo), fmt), hi: signed(Math.round(g.w.hi), fmt) }), t('{h} h em {n} sessões', { h: n0(g.w.hours), n: g.w.sessions })].join(' · ')}
+            {[t('entre {lo} e {hi}', { lo: signed(Math.round(g.w.lo), fmt), hi: signed(Math.round(g.w.hi), fmt) }), g.w.sessions === 1 ? t('{h} h em 1 sessão', { h: n0(g.w.hours) }) : t('{h} h em {n} sessões', { h: n0(g.w.hours), n: g.w.sessions })].join(' · ')}
           </T>
           {g.w.small ? <WinRateSample w={g.w} pill /> : null}
         </View>

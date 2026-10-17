@@ -3,6 +3,7 @@
 // hand of the trip, whose replay is the story's link. Laid out at 360×640
 // points and captured at 1080×1920 like the other stories.
 
+import { FitText } from "./FitText";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Text, View } from "react-native";
@@ -358,10 +359,7 @@ export function FestivalCard({
                 >
                   {x.label.toUpperCase()}
                 </Text>
-                <Text allowFontScaling={false}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.6}
+                <FitText
                   style={{
                     fontFamily: x.key === "place" ? ff(800) : F.mono,
                     fontSize: 24,
@@ -370,7 +368,7 @@ export function FestivalCard({
                   }}
                 >
                   {x.value}
-                </Text>
+                </FitText>
               </View>
             ))}
           </View>

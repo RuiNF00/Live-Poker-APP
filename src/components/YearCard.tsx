@@ -2,6 +2,7 @@
 // session cards and captured at 1080×1920 for an Instagram story. Each card
 // says one thing with one big number; amounts go when money is hidden.
 
+import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -109,9 +110,7 @@ function Kicker({ children, dim }: { children: string; dim: string }) {
 
 function Big({ children, color, size = 64, font = F.mono }: { children: string; color: string; size?: number; font?: string }) {
   return (
-    <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} style={{ fontFamily: font, fontSize: size, lineHeight: size * 1.12, color, letterSpacing: size > 40 ? -2 : -0.5 }}>
-      {children}
-    </Text>
+    <FitText style={{ fontFamily: font, fontSize: size, lineHeight: size * 1.12, color, letterSpacing: size > 40 ? -2 : -0.5 }}>{children}</FitText>
   );
 }
 
@@ -129,9 +128,7 @@ function Stat({ label, value, fg, dim }: { label: string; value: string; fg: str
       <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: dim }}>
         {label.toUpperCase()}
       </Text>
-      <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: F.mono, fontSize: 30, lineHeight: 36, color: fg }}>
-        {value}
-      </Text>
+      <FitText style={{ fontFamily: F.mono, fontSize: 30, lineHeight: 36, color: fg }}>{value}</FitText>
     </View>
   );
 }
@@ -206,11 +203,9 @@ function StakeLine({ label, x, other, r, fg, dim, hideMoney }: { label: string; 
   return (
     <View style={{ gap: 4 }}>
       <Kicker dim={dim}>{label}</Kicker>
-      <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: F.mono, fontSize: 44, lineHeight: 50, color: fg, letterSpacing: -1 }}>
-        {stakeName(x, r.currency, hideMoney, other)}
-      </Text>
+      <FitText style={{ fontFamily: F.mono, fontSize: 44, lineHeight: 50, color: fg, letterSpacing: -1 }}>{stakeName(x, r.currency, hideMoney, other)}</FitText>
       {rate ? <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 24, lineHeight: 30, color: toneOf(v) ?? fg }}>{rate}</Text> : null}
-      <Caption dim={dim}>{t('{n} sessões · {h}h', { n: x.sessions, h: Math.round(x.hours) })}</Caption>
+      <Caption dim={dim}>{x.sessions === 1 ? t('1 sessão · {h}h', { h: Math.round(x.hours) }) : t('{n} sessões · {h}h', { n: x.sessions, h: Math.round(x.hours) })}</Caption>
     </View>
   );
 }

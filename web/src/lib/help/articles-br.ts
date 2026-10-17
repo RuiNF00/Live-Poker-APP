@@ -241,6 +241,7 @@ export const BR: Record<string, ArticleText> = {
         ],
       },
       'Não dá para desfazer. Se quiser guardar algo, use antes Exportar tudo.',
+      'No Android, se você reinstalar o app logo depois, o backup automático do Google ainda pode trazer os dados antigos por até um dia.',
       { note: 'Apagar os dados não cancela o Pro. Para isso, cancele na App Store ou no Google Play (veja Cancelar o Pro).' },
     ],
   },

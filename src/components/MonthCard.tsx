@@ -2,6 +2,7 @@
 // the year cards, captured at 1080×1920. Amounts go when money is hidden;
 // the hours, sessions and BB/h say enough on their own.
 
+import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -30,9 +31,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.4, color: DIM }}>
         {label.toUpperCase()}
       </Text>
-      <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={{ fontFamily: F.mono, fontSize: 30, lineHeight: 36, color: INK }}>
-        {value}
-      </Text>
+      <FitText style={{ fontFamily: F.mono, fontSize: 30, lineHeight: 36, color: INK }}>{value}</FitText>
     </View>
   );
 }
@@ -67,9 +66,7 @@ export function MonthCard({
       <View style={{ position: 'absolute', top: post ? 52 : 120, left: 26, right: 26, bottom: post ? 52 : 150, justifyContent: 'center', gap: post ? 12 : 18 }}>
         <View style={{ gap: 2 }}>
           <Kicker>{monthName(r.key, true)}</Kicker>
-          <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} style={{ fontFamily: F.mono, fontSize: 88, lineHeight: 98, color: INK, letterSpacing: -2 }}>
-            {hideMoney ? `${Math.round(r.hours)}h` : signed(r.profit, r.currency)}
-          </Text>
+          <FitText style={{ fontFamily: F.mono, fontSize: 88, lineHeight: 98, color: INK, letterSpacing: -2 }}>{hideMoney ? `${Math.round(r.hours)}h` : signed(r.profit, r.currency)}</FitText>
           <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 13, color: DIM }}>{hideMoney ? t('na mesa') : t('{h} h na mesa', { h: Math.round(r.hours) })}</Text>
         </View>
         <View style={{ height: 1, backgroundColor: LINE }} />
@@ -81,9 +78,7 @@ export function MonthCard({
         {b ? (
           <View style={{ gap: 4 }}>
             <Kicker>{t('Melhor sessão')}</Kicker>
-            <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: F.mono, fontSize: 40, lineHeight: 46, color: INK, letterSpacing: -1 }}>
-              {hideMoney ? duration(playedMs(b.session)) : signed(b.profit, r.currency)}
-            </Text>
+            <FitText style={{ fontFamily: F.mono, fontSize: 40, lineHeight: 46, color: INK, letterSpacing: -1 }}>{hideMoney ? duration(playedMs(b.session)) : signed(b.profit, r.currency)}</FitText>
             <Text allowFontScaling={false} numberOfLines={2} style={{ fontFamily: ff(700), fontSize: 13, lineHeight: 18, color: DIM }}>
               {[b.session.name || b.session.venue, shortDate(b.session.startedAt)].filter(Boolean).join(' · ')}
             </Text>
