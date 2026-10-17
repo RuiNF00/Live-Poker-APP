@@ -15,7 +15,7 @@ Data not linked to you:
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform) | Analytics |
-| Identifiers → Device ID (random per-install ID for those events; not the IDFA) | Analytics |
+| Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -48,7 +48,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 |---|---|---|---|
 | App activity → Other user-generated content (shared hands, comments) | Yes | Yes (only when the user shares or comments) | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
-| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events) | No | App functionality, Analytics |
+| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
 | App activity → App interactions (first-party usage events) | Yes | No | Analytics |
 
