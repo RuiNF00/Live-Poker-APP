@@ -6,6 +6,7 @@ const ptBR: Record<string, string> = {
   'O teu caderno de póquer live': 'Seu caderno de poker ao vivo',
   'Guardar': 'Salvar',
   'Apagar': 'Excluir',
+  'Comentário apagado': 'Comentário excluído',
   'Sem ligação': 'Sem conexão',
   'Cor': 'Flush',
   'Poker': 'Quadra',

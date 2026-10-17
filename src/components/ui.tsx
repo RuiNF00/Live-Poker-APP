@@ -883,7 +883,7 @@ export const inputStyle = {
   fontFamily: ff(600),
 };
 
-export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInputProps & { label?: string; hint?: string; inputStyle?: StyleProp<TextStyle> }) {
+export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInputProps & { label?: string; hint?: string; inputStyle?: StyleProp<TextStyle>; ref?: React.Ref<React.ComponentRef<typeof TextInput>> }) {
   const [focus, setFocus] = React.useState(false);
   return (
     <View style={[{ gap: 6, flex: rest.multiline ? undefined : undefined }, style as StyleProp<ViewStyle>]}>

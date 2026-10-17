@@ -35,6 +35,13 @@ import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
 
+/** How long "Desfazer" stays on a removed comment before it really goes. */
+const UNDO_MS = 5000;
+const without = <V,>(o: Record<string, V>, k: string) => {
+  const { [k]: _gone, ...rest } = o;
+  return rest;
+};
+
 export default function HandScreen() {
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   const { id, c: fresh } = useLocalSearchParams<{ id: string; c?: string }>();
@@ -53,6 +60,21 @@ export default function HandScreen() {
   const [comments, setComments] = useState<Comment[]>([]);
 
   const [votes, setVotes] = useState<Record<string, number>>({});
+  const [pending, setPending] = useState<Record<string, 'remove' | 'block'>>({});
+  const later = useRef(new Map<string, { run: () => void; timer: ReturnType<typeof setTimeout> }>());
+  // Leaving the hand before "Desfazer" runs out: the removal goes through then.
+  useEffect(() => {
+    const queued = later.current;
+    return () => {
+      for (const p of queued.values()) {
+        clearTimeout(p.timer);
+        p.run();
+      }
+    };
+  }, []);
+  const scroller = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  // Opened for new comments: the screen scrolls to them once they're laid out.
+  const toComments = useRef(Number(fresh) > 0);
   const loadComments = useCallback(() => {
     if (!hand?.shareId) return;
     const sid = hand.shareId;
@@ -77,6 +99,11 @@ export default function HandScreen() {
     const st = streetOfNew(comments, Number(fresh));
     if (st) setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }));
   }, [comments, fresh]);
+  const onCommentsLayout = (y: number) => {
+    if (!toComments.current || !comments.length) return;
+    toComments.current = false;
+    scroller.current?.scrollTo({ y: Math.max(0, y - S.sm), animated: true });
+  };
   const streets = useMemo(() => {
     if (!hand) return [];
     const seen = new Set(replay(hand).steps.map((s) => s.street));
@@ -238,24 +265,30 @@ ${link}`;
     ]);
   };
 
-  const removeOne = (c: Comment) => {
-    const doIt = async (block: boolean) => {
-      if (!hand.shareId || !hand.shareToken) return;
-      try {
-        await removeComment(hand.shareId, hand.shareToken, c.id, block);
-        if (block) loadComments();
-        else setComments((x) => x.filter((y) => y.id !== c.id));
-      } catch {
-        Alert.alert(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
-      }
-    };
-    if (Platform.OS === 'web') doIt(false);
-    else
-      Alert.alert(t('Apagar comentário?'), t('Bloquear impede esta pessoa de voltar a comentar nesta mão.'), [
-        { text: t('Cancelar'), style: 'cancel' },
-        { text: t('Apagar'), style: 'destructive', onPress: () => doIt(false) },
-        { text: t('Apagar e bloquear'), style: 'destructive', onPress: () => doIt(true) },
-      ]);
+  // Apagar and Bloquear act in one tap: the comment shows "Desfazer" for a few seconds before it goes.
+  const commitRemove = async (c: Comment, block: boolean) => {
+    later.current.delete(c.id);
+    const sid = hand.shareId;
+    try {
+      if (sid && hand.shareToken) await removeComment(sid, hand.shareToken, c.id, block);
+      if (block) loadComments();
+      else setComments((x) => x.filter((y) => y.id !== c.id));
+    } catch {
+      Alert.alert(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
+    } finally {
+      setPending((p) => without(p, c.id));
+    }
+  };
+  const removeOne = (c: Comment, block: boolean) => {
+    tap();
+    setPending((p) => ({ ...p, [c.id]: block ? 'block' : 'remove' }));
+    later.current.set(c.id, { run: () => commitRemove(c, block), timer: setTimeout(() => commitRemove(c, block), UNDO_MS) });
+  };
+  const undoRemove = (c: Comment) => {
+    const p = later.current.get(c.id);
+    if (p) clearTimeout(p.timer);
+    later.current.delete(c.id);
+    setPending((p) => without(p, c.id));
   };
 
   const copyLink = async () => {
@@ -318,7 +351,12 @@ ${link}`;
           ),
         }}
       />
-      <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
+      <ScrollView
+        ref={scroller}
+        style={{ backgroundColor: C.bg }}
+        contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled">
         <View style={{ paddingHorizontal: 4 }}>
           <HandHeader hand={hand} inBB={settings.inBB} />
         </View>
@@ -332,6 +370,7 @@ ${link}`;
 
 
         {hand.shareId ? (
+          <View onLayout={(e) => onCommentsLayout(e.nativeEvent.layout.y)}>
           <Section title={t('Comentários')} action={t('Atualizar')} onAction={loadComments}>
             <VoteTally votes={votes} />
             <CommentsList
@@ -351,9 +390,13 @@ ${link}`;
               notes={hand.streetNotes}
               onNote={saveNote}
               onRemove={hand.shareToken ? removeOne : undefined}
+              pending={pending}
+              onUndo={undoRemove}
+              onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 350)}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>
+          </View>
         ) : (
           <>
             <Section title={t('As tuas notas')} hint={t('Uma nota por rua, só tu vês. Nunca sai do telemóvel.')}>
