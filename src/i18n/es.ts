@@ -3255,6 +3255,7 @@ const es: Record<string, string> = {
   'A {store} não conseguiu cobrar': '{store} no pudo cobrarte',
   'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Tu Pro sigue activo por ahora. Actualiza el pago en {store} para no perderlo.',
   'Atualizar pagamento': 'Actualizar pago',
+  'Termina a {date}': 'Termina el {date}',
 };
 
 export default es;

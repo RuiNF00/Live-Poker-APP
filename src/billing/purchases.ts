@@ -144,8 +144,6 @@ function trialDays(pkg: PurchasesPackage): number {
   return unit * intro.periodNumberOfUnits;
 }
 
-/** Google Play reports `subscription:base-plan`; a plan change names the subscription alone. */
-
 export async function getIsPro(): Promise<boolean | null> {
   if (!LIVE) return null;
   try {
@@ -168,13 +166,13 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 }
 
 /** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
-export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string } | null> {
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
   if (!LIVE) return null;
   try {
     const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
     if (!e || e.store === 'PROMOTIONAL') return null;
     const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
-    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier } : null;
+    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null } : null;
   } catch {
     return null;
   }

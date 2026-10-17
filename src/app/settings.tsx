@@ -10,13 +10,13 @@ import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LOCAL_PRO, restoreNotice, usePro } from '@/billing/pro';
-import { manageSubscription, redeemCode } from '@/billing/purchases';
+import { getSubscription, manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { CloudBackup } from '@/components/CloudBackup';
 import { Badge, Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
-import { LANG_KEY, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
+import { LANG_KEY, locale, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { saveTextFile } from '@/lib/files';
@@ -82,6 +82,12 @@ export default function SettingsScreen() {
   const shared = useSharedHands();
   const { settings, setSettings, hands, sessions, players } = store;
   const pro = usePro();
+  // A cancelled subscription still runs to the end of the paid period: say until when, so nobody asks for a refund thinking it stopped.
+  const [endsOn, setEndsOn] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pro.isPro) return setEndsOn(null);
+    void getSubscription().then((s) => setEndsOn(s && !s.willRenew && s.ends ? new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : null));
+  }, [pro.isPro]);
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
   const stamp = new Date().toISOString().slice(0, 10);
@@ -225,7 +231,7 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.billingIssue ? t('Pagamento por atualizar na loja') : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.billingIssue ? t('Pagamento por atualizar na loja') : endsOn ? t('Termina a {date}', { date: endsOn }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               // A failed renewal goes straight to the store's page, where the card is changed.
               onPress={() => (pro.billingIssue ? manageSubscription() : pro.isPro ? router.push('/cancel') : manageSubscription())}
             />

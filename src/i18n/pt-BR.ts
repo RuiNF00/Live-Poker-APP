@@ -1578,6 +1578,7 @@ const ptBR: Record<string, string> = {
   'Enviar o meu resultado para o swap': 'Enviar meu resultado para o swap',
   'A {store} não conseguiu cobrar': 'A {store} não conseguiu cobrar',
   'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Seu Pro continua por enquanto. Atualize o pagamento na {store} para não perder.',
+  'Termina a {date}': 'Termina em {date}',
 };
 
 export default ptBR;
