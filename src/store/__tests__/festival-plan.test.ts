@@ -340,3 +340,12 @@ test('São Paulo: official late reg per flight, past midnight included', () => {
   assert.equal(r.at, venueTime(sp, '2026-11-17T00:40'));
   assert.equal(r.title, 'Registo do #26 Main Event · Flight 1B fecha às 01:00');
 });
+
+test('Prague: official late reg on the same playing day only', () => {
+  const pr = PRAGUE_DEC_2026;
+  const byId = (id: string) => pr.events.find((e) => e.id === id)!;
+  assert.deepEqual([byId('1-1A').lateRegMin, byId('1-1B').lateRegMin], [450, 350]);
+  // Closes "before Day 2": left to the player.
+  assert.ok(pr.events.filter((e) => e.number === 27).every((e) => !e.lateRegMin));
+  assert.ok(pr.events.every((e) => !e.lateRegMin || e.lateRegMin <= 12 * 60));
+});
