@@ -48,7 +48,7 @@ const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1
 // Store policy (research/politicas-lojas-jogo.md): the app never bets, sells or
 // invests, in any language. Poker's own "Bet" action is the one allowed use.
 const BANNED: Record<string, RegExp> = {
-  en: /\b(gambl\w*|wager\w*|invest(ing|ment)?)\b/i,
+  en: /\b(gambl\w*|wager\w*|invest(ing|ment|ed|s)?)\b/i,
   'pt-BR': /\b(apost\w*|investi\w*|vender ação|venda de ação)\b/i,
   es: /\b(apuest\w*|apostar|invert\w*|inversión|vender acci[oó]n)\b/i,
 };
