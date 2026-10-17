@@ -45,6 +45,25 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
 }
 
 /**
+ * After a backup is merged in: the bankroll this phone made on its own (the
+ * fresh install's "Principal") goes away when nothing on the phone uses it,
+ * so restoring on a new phone doesn't leave two "Principal". One the player
+ * renamed or used stays.
+ */
+export function dropUnusedAuto(merged: Bankroll[], incoming: Bankroll[], local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }): Bankroll[] {
+  if (!incoming.length) return merged;
+  const fromBackup = new Set(incoming.map((b) => b.id));
+  const used = new Set<string>();
+  for (const x of local.sessions) {
+    const b = bankrollOf(x, local.bankrolls);
+    if (b) used.add(b.id);
+  }
+  for (const x of local.transfers) used.add(x.bankrollId);
+  const out = merged.filter((b) => fromBackup.has(b.id) || !b.id.startsWith('br_auto_') || (b.updatedAt ?? 0) > 0 || used.has(b.id));
+  return out.length ? out : merged;
+}
+
+/**
  * The ones made automatically for older data ("Principal") first, then by
  * creation. An import brings bankrolls created before the auto one was made
  * on this phone; they must not jump ahead of it.

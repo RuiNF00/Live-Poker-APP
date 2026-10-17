@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { betBox, boardBox, overlaps, potBox, seatBox, STAGE_RATIO, tableMap } from '../layout';
+import { betBox, boardBox, EDGE, overlaps, potBox, scaleFor, seatBox, STAGE_RATIO, tableMap } from '../layout';
 
 const WIDTHS = [300, 343, 366, 390, 430];
 
@@ -14,10 +14,11 @@ test('every table size from 2 to 10 seats fits a phone without anything covering
       assert.equal(bets.length, n);
       const seatBoxes = seats.map((p, i) => seatBox(p, w, i === 0));
       const betBoxes = bets.map((p) => betBox(p, w));
-      const middle = [boardBox(w), potBox(w)];
+      const middle = [boardBox(w, n), potBox(w)];
+      const edge = EDGE * scaleFor(w) - 0.01;
       const where = `w=${w} n=${n}`;
       seatBoxes.forEach((s, i) => {
-        assert.ok(s.top >= -2 && s.bottom <= h + 2 && s.left >= -6 && s.right <= w + 6, `${where}: seat ${i} leaves the table`);
+        assert.ok(s.top >= -2 && s.bottom <= h + 2 && s.left >= edge && s.right <= w - edge, `${where}: seat ${i} touches the screen edge`);
         seatBoxes.forEach((o, j) => j > i && assert.ok(!overlaps(s, o), `${where}: seats ${i} and ${j} touch`));
         middle.forEach((m) => assert.ok(!overlaps(s, m), `${where}: seat ${i} covers the board or pot`));
       });

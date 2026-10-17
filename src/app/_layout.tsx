@@ -19,6 +19,7 @@ import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
+import { SwapReminder } from '@/components/swaps/SwapReminder';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
@@ -74,6 +75,7 @@ export default function RootLayout() {
           <BackerLiveSync />
           <SessionLockScreen />
           <HomeWidgetSync />
+          <SwapReminder />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
@@ -90,6 +92,7 @@ export default function RootLayout() {
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="welcome" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
+            <Stack.Screen name="year" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="session-card/[id]" options={{ title: t('Partilhar sessão'), presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />

@@ -15,6 +15,7 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
+import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
 import { Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
@@ -209,6 +210,19 @@ function Live({ s }: { s: Session }) {
 
   const rebuy = () => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }));
 
+  // First live session: a three-step tour of what matters between hands.
+  const stackRef = useRef<ViewRef>(null);
+  const barRef = useRef<ViewRef>(null);
+  const handRef = useRef<ViewRef>(null);
+  const tour = useMemo<CoachStep[]>(
+    () => [
+      { target: stackRef, title: t('O teu stack'), body: t('Toca para o atualizar entre mãos. As bb e o gráfico acompanham sozinhos.') },
+      { target: barRef, title: t('Tudo ao alcance do polegar'), body: t('Pausa, rebuy e uma nota da sessão sem saíres deste ecrã.') },
+      { target: handRef, title: t('Regista uma mão'), body: t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') },
+    ],
+    [],
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
@@ -220,6 +234,7 @@ function Live({ s }: { s: Session }) {
         </Card>
 
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+          <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
           <Card onPress={() => setPad('stack')} style={{ flex: 1, gap: 4 }} accessibilityLabel={t('Atualizar stack')}>
             <Row>
               <T v="label" style={{ flex: 1 }}>
@@ -237,6 +252,7 @@ function Live({ s }: { s: Session }) {
               ) : null}
             </Row>
           </Card>
+          </View>
           <Card style={{ flex: 1, gap: 4 }}>
             <T v="label">{s.level ? t('Nível {n}', { n: s.level }) : 'Blinds'}</T>
             <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
@@ -387,11 +403,16 @@ function Live({ s }: { s: Session }) {
       </Screen>
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar}>
+        <View ref={barRef} collapsable={false} style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
-        <Button size="md" style={{ flex: 1.6 }} title={t('Nova mão')} icon="add" onPress={() => router.push('/hand/new')} />
+        </View>
+        <View ref={handRef} collapsable={false} style={{ flex: 1.6 }}>
+          <Button size="md" title={t('Nova mão')} icon="add" onPress={() => router.push('/hand/new')} />
+        </View>
       </View>
+      <CoachMarks id="live-session" steps={tour} />
       <NoteSheet
         visible={noteOpen}
         value={s.notes}

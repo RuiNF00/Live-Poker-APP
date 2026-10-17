@@ -8,7 +8,8 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
 import { currencyAfter, decimalComma, lang } from '../i18n';
 
-import { ENTITLEMENT, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
+import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
+import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
 const KEY = Platform.select({
   ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
@@ -75,7 +76,12 @@ function fallbackPlans(): StorePlan[] {
   return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), currency: 'USD', trialDays: PLANS[id].trialDays }));
 }
 
-export async function getPlans(): Promise<StorePlan[]> {
+/**
+ * Store plans, or null when the store couldn't be reached. A real build never
+ * shows made-up prices (App Review 2.1): the paywall offers a retry instead.
+ * The demo store (no key: Expo Go, web previews) keeps the fallback prices.
+ */
+export async function getPlans(): Promise<StorePlan[] | null> {
   if (!LIVE) return fallbackPlans();
   try {
     const offerings = await (await rc()).getOfferings();
@@ -93,9 +99,23 @@ export async function getPlans(): Promise<StorePlan[]> {
         if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
       }
     }
-    return plans.length ? plans : fallbackPlans();
+    return plans.length ? plans : __DEV__ ? fallbackPlans() : null;
   } catch {
-    return fallbackPlans();
+    return __DEV__ ? fallbackPlans() : null;
+  }
+}
+
+/**
+ * The paywall layout and copy for this player's offering. With RevenueCat
+ * Experiments running, `current` is the offering the player was put in.
+ */
+export async function getPaywallConfig(): Promise<PaywallConfig> {
+  if (!LIVE) return DEFAULT_PAYWALL;
+  try {
+    const cur = (await (await rc()).getOfferings()).current;
+    return cur ? parsePaywallConfig(cur.identifier, cur.metadata, lang === 'pt' ? 'pt' : 'en') : DEFAULT_PAYWALL;
+  } catch {
+    return DEFAULT_PAYWALL;
   }
 }
 
@@ -183,6 +203,20 @@ async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Prom
 }
 
 export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
+
+/** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
+export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+  if (!LIVE || !LIFETIME.enabled) return null;
+  try {
+    const P = await rc();
+    const cur = (await P.getOfferings()).current;
+    if (!cur || cur.metadata?.lifetime === false) return null;
+    const pkg = cur.availablePackages.find((p) => p.product.identifier === LIFETIME.product || p.packageType === 'LIFETIME');
+    return pkg ? { priceString: pkg.product.priceString, buy: () => attempt(() => P.purchasePackage(pkg)) } : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function buy(plan: StorePlan): Promise<BuyResult> {
   if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';

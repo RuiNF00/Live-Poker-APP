@@ -82,11 +82,13 @@ export function LiveView({
   };
   const time = (t: number) => new Date(t).toLocaleTimeString(intlTag(locale), { hour: '2-digit', minute: '2-digit' });
 
-  const ended = !!s.endedAt;
-  const stale = !ended && now - updatedAt > STALE_MS;
+  // A bagged day isn't the end: the stack waits for the next day, and so does the result.
+  const bagged = !!s.endedAt && s.bagged;
+  const ended = !!s.endedAt && !bagged;
+  const stale = !s.endedAt && now - updatedAt > STALE_MS;
   // The app sends the time played when it last saved; the page keeps the clock running.
-  const played = s.playedMs + (ended || s.paused || stale ? 0 : Math.max(0, now - s.updatedAt));
-  const state = ended ? 'ended' : stale ? 'stale' : s.paused ? 'paused' : 'live';
+  const played = s.playedMs + (s.endedAt || s.paused || stale ? 0 : Math.max(0, now - s.updatedAt));
+  const state = ended ? 'ended' : bagged ? 'bagged' : stale ? 'stale' : s.paused ? 'paused' : 'live';
   const first = s.stackLog[0]?.stack ?? s.stack;
   const delta = s.stack - first;
   const bb = s.bb ? Math.round((s.stack / s.bb) * 10) / 10 : null;
@@ -110,7 +112,7 @@ export function LiveView({
       </header>
 
       <section className="live-head">
-        <p className="live-eyebrow">{[mtt ? c.tournament : c.cash, s.venue].filter(Boolean).join(' · ')}</p>
+        <p className="live-eyebrow">{[mtt ? c.tournament : c.cash, s.day > 1 ? c.day(s.day) : '', s.venue].filter(Boolean).join(' · ')}</p>
         <h1>{s.name || (mtt ? c.tournament : c.cash)}</h1>
         <p className="live-sub">{[s.player, c.startedAt(time(s.startedAt))].filter(Boolean).join(' · ')}</p>
       </section>
@@ -138,7 +140,7 @@ export function LiveView({
         </section>
       ) : (
         <section className="live-card live-stack">
-          <p className="live-label">{c.stack}</p>
+          <p className="live-label">{bagged ? c.baggedDay(s.day) : c.stack}</p>
           <p className="live-big">{num(s.stack)}</p>
           <p className="live-stack-sub">
             {bb !== null ? <span>{num(bb)} BB</span> : null}
@@ -150,6 +152,7 @@ export function LiveView({
             ) : null}
           </p>
           {s.stackLog.length > 1 ? <Spark points={s.stackLog.map((p) => p.stack)} label={c.chart} /> : null}
+          {bagged ? <p className="live-note">{c.nextDay}</p> : null}
         </section>
       )}
 

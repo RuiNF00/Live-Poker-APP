@@ -9,7 +9,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, SwapError } from '@/lib/swap-api';
 
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
-import { mergeRemote, mergeSwaps, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { mergeRemote, mergeSwaps, newFromOther, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -78,9 +78,22 @@ export function saveSwap(s: Swap) {
   emit(i < 0 ? [s, ...state.swaps] : state.swaps.map((x, j) => (j === i ? s : x)));
 }
 
+type News = (swap: Swap, entries: SwapEntry[]) => void;
+const newsListeners = new Set<News>();
+
+/** Told when a sync brings in prizes or payments the other player added. */
+export function onSwapNews(l: News): () => void {
+  newsListeners.add(l);
+  return () => newsListeners.delete(l);
+}
+
 function applyRemote(id: string, remote: RemoteSwap) {
   const cur = getSwap(id);
-  if (cur) saveSwap(mergeRemote(cur, remote));
+  if (!cur) return;
+  const next = mergeRemote(cur, remote);
+  saveSwap(next);
+  const news = newFromOther(cur, next);
+  if (news.length) newsListeners.forEach((l) => l(next, news));
 }
 
 /**
