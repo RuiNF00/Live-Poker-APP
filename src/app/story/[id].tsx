@@ -148,16 +148,13 @@ export default function StoryScreen() {
     const isNew = !hand.shareId;
     setBusy(true);
     try {
-      let shareId: string;
-      try {
-        shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
-      } catch {
-        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
-        return;
-      }
-      if (isNew) pro.record('share');
-      const ref = await shareRef();
-      const link = shareLink(shareId, 'story', { quiz: false, ref });
+      // The link is made on the server while the frames are captured, not before.
+      const idP = ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes }).then(
+        (id) => id,
+        () => null,
+      );
+      const refP = shareRef();
+      refP.catch(() => {});
       // One frame per key moment, captured from the card itself.
       if (withVoice) setChip('slot');
       if (withFace) setFaceView('slot');
@@ -172,6 +169,14 @@ export default function StoryScreen() {
       }
       setChip('preview');
       setFaceView('preview');
+      const shareId = await idP;
+      if (!shareId) {
+        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        return;
+      }
+      if (isNew) pro.record('share');
+      const ref = await refP;
+      const link = shareLink(shareId, 'story', { quiz: false, ref });
       setProgress(withFace ? t('A juntar a tua cara…') : withVoice ? t('A juntar a tua voz…') : t('A montar o vídeo…'));
       const durations = reel.map((f) => f.sec);
       let file: string;
