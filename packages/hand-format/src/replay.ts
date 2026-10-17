@@ -285,6 +285,8 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
 
   for (const s of contenders) if (s.cards) s.showCards = true;
   const second = secondBoard(hand, board, runoutFrom);
+  // Cent blinds (0.25/0.50): chops split to the cent, not to the whole unit.
+  const centBlinds = [hand.blinds.sb, hand.blinds.bb, hand.blinds.ante].some((x) => !!x && !Number.isInteger(x));
   const evaluateOn = (b: Card[], manual: number[] | undefined, label: boolean) => {
     const values = new Map<number, HandValue | null>();
     const labels = new Map<number, string>();
@@ -307,7 +309,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     winners = hand.winners.map((w) => ({ ...w, handLabel: seatState(w.seat).handLabel }));
   } else if (second) {
     const two = evaluateOn(second, hand.winnerSeats2, false);
-    const halves = awardRuns(seats, [first.values, two.values], pot, hand.format === 'cash');
+    const halves = awardRuns(seats, [first.values, two.values], pot, centBlinds);
     const named = (list: { seat: number; amount: number }[], labels: Map<number, string>) =>
       list.map((w) => ({ ...w, handLabel: labels.get(w.seat) }));
     runs = [
@@ -318,7 +320,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     for (const run of halves) for (const w of run) total.set(w.seat, (total.get(w.seat) ?? 0) + w.amount);
     winners = [...total].map(([seat, amount]) => ({ seat, amount, handLabel: seatState(seat).handLabel }));
   } else {
-    winners = awardPots(seats, first.values, pot, hand.format === 'cash');
+    winners = awardPots(seats, first.values, pot, centBlinds);
   }
   for (const w of winners) {
     const s = seatState(w.seat);
@@ -339,7 +341,7 @@ export function secondBoard(hand: HandRecord, board: Card[], runoutFrom: number 
   return [...board.slice(0, runoutFrom), ...extra.slice(0, 5 - runoutFrom)];
 }
 
-/** `amount` split k ways, odd chips to the first: to the cent in cash (€1 → 0.50 + 0.50), whole chips in tournaments unless it has decimals. */
+/** `amount` split k ways, odd chips to the first: to the cent with cent blinds (€1 → 0.50 + 0.50), else by the whole unit unless it has decimals. */
 function splitChips(amount: number, k: number, cents = false): number[] {
   const unit = cents || !Number.isInteger(amount) ? 100 : 1;
   const total = Math.round(amount * unit);

@@ -56,9 +56,15 @@ export interface Step {
 }
 
 /**
- * A pot split k ways, odd chips to the first. Cash splits to the cent (a €1 chop at 0.25/0.50 is
- * 0.50 + 0.50, a €3.25 one 1.63 + 1.62); tournament chips split whole, unless the pot has decimals.
+ * A pot split k ways, odd chips to the first: to the cent in a game with cent blinds (a €1 chop
+ * at 0.25/0.50 is 0.50 + 0.50, a €3.25 one 1.63 + 1.62), by the whole unit otherwise.
  */
+/** A game played with cent chips (0.25/0.50): its chops split to the cent, not to the whole unit. */
+export function centGame(hand: Hand): boolean {
+  const g = hand.game;
+  return [g.sb, g.bb, g.ante].some((x) => !!x && !Number.isInteger(x));
+}
+
 export function splitPot(amount: number, k: number, cents = false): number[] {
   const unit = cents || !Number.isInteger(amount) ? 100 : 1;
   const total = Math.round(amount * unit);
@@ -556,7 +562,7 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
       const last = w.filter((i) => !pots.some((q) => q !== pot && q.amount > 0 && pots.indexOf(q) > pots.indexOf(pot) && q.eligible.includes(i)));
       return last.length ? last : w.length ? w : null;
     };
-    const cash = hand.game.kind === 'cash';
+    const cash = centGame(hand);
     const pay = (amount: number, winners: number[] | null) => {
       if (!winners) return;
       splitPot(amount, winners.length, cash).forEach((x, k) => (won[winners[k]] += x));
