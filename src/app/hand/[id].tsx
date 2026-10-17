@@ -16,10 +16,11 @@ import { ReviewCard } from '@/components/ReviewCard';
 import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
-import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
+import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
@@ -141,7 +142,11 @@ ${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       Alert.alert(t('Link copiado'));
-    } else await Share.share({ message: msg });
+    } else {
+      const res = await Share.share({ message: msg });
+      // Review moment A (design/pedido-avaliacao.md): the third hand shared by link, once it really went out.
+      if (res.action === Share.sharedAction && hands.filter((h) => h.shareId || h.id === hand.id).length >= 3) maybeAskForReview('share3');
+    }
   };
 
   // Standard hand history for TwoPlusTwo, Reddit or a WhatsApp group: positions, stacks in bb, every street.
@@ -194,6 +199,26 @@ ${link}`;
       { text: t('Guardar ficheiro .txt'), onPress: save },
       { text: t('Cancelar'), style: 'cancel' },
     ]);
+  };
+
+  const removeOne = (c: Comment) => {
+    const doIt = async (block: boolean) => {
+      if (!hand.shareId || !hand.shareToken) return;
+      try {
+        await removeComment(hand.shareId, hand.shareToken, c.id, block);
+        if (block) loadComments();
+        else setComments((x) => x.filter((y) => y.id !== c.id));
+      } catch {
+        Alert.alert(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
+      }
+    };
+    if (Platform.OS === 'web') doIt(false);
+    else
+      Alert.alert(t('Apagar comentário?'), t('Bloquear impede esta pessoa de voltar a comentar nesta mão.'), [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Apagar'), style: 'destructive', onPress: () => doIt(false) },
+        { text: t('Apagar e bloquear'), style: 'destructive', onPress: () => doIt(true) },
+      ]);
   };
 
   const unshare = () => {
@@ -278,6 +303,7 @@ ${link}`;
               onJumpStreet={jumpStreet}
               notes={hand.streetNotes}
               onNote={saveNote}
+              onRemove={hand.shareToken ? removeOne : undefined}
             />
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>

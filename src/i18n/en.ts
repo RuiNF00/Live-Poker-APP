@@ -2896,6 +2896,11 @@ const en: Record<string, string> = {
   'Gerir': 'Manage',
   'Partilhar imagem': 'Share image',
   'Partilhar noutra app (X, WhatsApp…)': 'Share to another app (X, WhatsApp…)',
+  'Apagar comentário de': 'Delete comment by',
+  'Apagar comentário?': 'Delete comment?',
+  'Bloquear impede esta pessoa de voltar a comentar nesta mão.': 'Blocking stops this person from commenting on this hand again.',
+  'Apagar e bloquear': 'Delete and block',
+  'Não deu para apagar o comentário agora. Tenta outra vez.': 'Couldn\'t delete the comment right now. Try again.',
   // Crash reports switch (Definições → Os teus dados).
   'Fazemos a primeira importação por ti. Só envias se aceitares.': 'We\'ll do your first import for you. Nothing is sent unless you agree.',
   'Obrigado. Respondemos para o teu email.': 'Thanks. We\'ll reply to your email.',

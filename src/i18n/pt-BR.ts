@@ -1296,6 +1296,11 @@ const ptBR: Record<string, string> = {
   'Gerir': 'Gerenciar',
   'Partilhar imagem': 'Compartilhar imagem',
   'Partilhar noutra app (X, WhatsApp…)': 'Compartilhar em outro app (X, WhatsApp…)',
+  'Apagar comentário de': 'Excluir comentário de',
+  'Apagar comentário?': 'Excluir comentário?',
+  'Bloquear impede esta pessoa de voltar a comentar nesta mão.': 'Bloquear impede essa pessoa de comentar de novo nesta mão.',
+  'Apagar e bloquear': 'Excluir e bloquear',
+  'Não deu para apagar o comentário agora. Tenta outra vez.': 'Não deu para excluir o comentário agora. Tente de novo.',
   'O que corre mal, o que falta ou o que mudavas': 'O que dá errado, o que falta ou o que você mudaria',
   'Estou à mesa: registar uma mão já': 'Estou na mesa: registrar uma mão agora',
   // Crash reports switch (Definições → Os teus dados).
