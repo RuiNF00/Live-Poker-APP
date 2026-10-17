@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 
 import type { BackupData } from '@/store/backup';
 import { parseBackup } from '@/store/backup';
+import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
 import { deriveKeys, sealAsync, unsealAsync } from './backup-crypto';
@@ -104,12 +105,20 @@ export function newCloud(): CloudState {
   return { id: randomB32(10), secret: randomB32(16) };
 }
 
+export interface UploadOpts {
+  /** A brand-new code, or the player confirmed they deleted things on purpose: no guard, nothing joined in. */
+  force?: boolean;
+  /** Another phone wrote the server copy: its items were joined into the upload; this brings them to this phone too. */
+  onRemote?: (remote: BackupData) => void;
+}
+
 /**
  * Replaces the server copy. Refuses ('would_shrink') when this phone is empty
  * or has less than half of the copy it would replace, unless force (a brand-new code, or the user
- * confirmed they deleted things on purpose).
+ * confirmed they deleted things on purpose). When another phone with the same
+ * code wrote the copy since this one did, its items are joined in first, so neither phone's work is lost.
  */
-export async function upload(c: CloudState, data: BackupData, opts: { force?: boolean } = {}): Promise<CloudState> {
+export async function upload(c: CloudState, data: BackupData, opts: UploadOpts = {}): Promise<CloudState> {
   try {
     return await put(c, data, opts);
   } catch (e) {
@@ -124,7 +133,19 @@ export async function upload(c: CloudState, data: BackupData, opts: { force?: bo
   }
 }
 
-async function put(c: CloudState, data: BackupData, opts: { force?: boolean }): Promise<CloudState> {
+async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<CloudState> {
+  let data = local;
+  if (!opts.force && c.lastAt) {
+    // Read and decrypted here, on the phone; the server never sees either copy.
+    const remote = await download(c).catch((e: Error) => {
+      if (e.message === 'not_found') return null;
+      throw e;
+    });
+    if (remote && writtenElsewhere(remote, c.sent)) {
+      data = mergeBackups(local, remote);
+      opts.onRemote?.(remote);
+    }
+  }
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
   const { auth, enc } = deriveKeys(c.secret);
@@ -144,7 +165,7 @@ async function put(c: CloudState, data: BackupData, opts: { force?: boolean }): 
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const { failedAt: _f, failure: _r, ...ok } = c;
-  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data) };
+  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt };
   // A restore with another code may have finished while this was uploading;
   // don't put the old code back.
   const now = await loadCloud();

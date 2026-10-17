@@ -52,18 +52,29 @@ function ask(title: string, body: string, yes: string, onYes: () => void, no = t
  * Brings the cloud copy in (newer copy of each item wins, nothing local is
  * deleted) and makes this phone keep it up to date from now on.
  */
-async function restoreFrom(c: CloudState, importData: (b: BackupData) => Parameters<typeof importSummary>[0]): Promise<CloudState> {
+async function restoreFrom(c: CloudState, importData: ImportData): Promise<CloudState> {
   const remote = await download(c);
   const n = importData(remote);
   // It was just downloaded, so the launch auto-backup has nothing new to send,
   // and no upload may send less than it holds (counts), even if the app is
   // closed before the restored hands reach the phone's storage. Whoever has
   // the code to restore has it saved somewhere.
-  const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(remote), saved: true };
+  const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(remote), sent: remote.exportedAt, saved: true };
   await saveCloud(next);
   note(t('Cópia recuperada'), importSummary(n));
   return next;
 }
+
+type ImportData = (b: BackupData) => Parameters<typeof importSummary>[0];
+
+/**
+ * For upload(): another phone with this code copied things this one doesn't
+ * have. They come here too, and the player is told (never joined in silence).
+ */
+const joinRemote = (importData: ImportData) => (remote: BackupData) => {
+  const n = importData(remote);
+  if (Object.values(n).some((v) => v > 0)) note(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
+};
 
 /** The share sheet with the code: Notes, Passwords, a password manager, a message to yourself. */
 function shareCode(c: CloudState) {
@@ -110,7 +121,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
     tap();
     setBusy(true);
     try {
-      setCloud(await upload(cloud, data(), { force }));
+      setCloud(await upload(cloud, data(), { force, onRemote: joinRemote(store.importData) }));
     } catch (e) {
       if ((e as Error)?.message !== 'would_shrink' || Platform.OS === 'web') note(t('Não deu para fazer a cópia'), errText(e));
       else
@@ -292,7 +303,7 @@ export function AutoCloudBackup() {
       const c = await loadCloud();
       const data = buildBackup(latest.current);
       // Never replaces a cloud copy with an empty or smaller phone (see cloud-guard).
-      if (c && autoBackup(c, countsOf(data), Date.now()) === 'upload') upload(c, data).catch(() => {});
+      if (c && autoBackup(c, countsOf(data), Date.now()) === 'upload') upload(c, data, { onRemote: joinRemote(latest.current.importData) }).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
     // On launch and on reconnect only (the store is read through the ref).
@@ -311,7 +322,7 @@ export function AutoCloudBackup() {
       id = setTimeout(async () => {
         const now = await loadCloud();
         const data = buildBackup(latest.current);
-        if (now && !uploadBlock(countsOf(data), now)) upload(now, data).catch(() => {});
+        if (now && !uploadBlock(countsOf(data), now)) upload(now, data, { onRemote: joinRemote(latest.current.importData) }).catch(() => {});
       }, ms);
     });
     return () => {
@@ -367,7 +378,7 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
     tap();
     setBusy(true);
     try {
-      await upload(c, buildBackup(store));
+      await upload(c, buildBackup(store), { onRemote: joinRemote(store.importData) });
     } catch (e) {
       // Fewer things here than in the cloud: the choice (replace or restore) is in Settings.
       if ((e as Error)?.message === 'would_shrink') router.push('/settings');

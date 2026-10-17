@@ -560,6 +560,7 @@ const es: Record<string, string> = {
   'Não encontrámos nenhuma cópia com esse código.': 'No encontramos ninguna copia con ese código.',
   'Este código não dá acesso a esta cópia.': 'Este código no da acceso a esta copia.',
   'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.': 'La copia superó el límite de la nube. La última que cupo sigue ahí; exporta a un archivo para guardarlo todo.',
+  'Juntámos o que o outro telemóvel copiou': 'Unimos lo que copió el otro teléfono',
   'A cópia passou o limite: exporta para guardar tudo': 'La copia superó el límite: exporta para guardarlo todo',
   'Calculadora de deal (ICM)': 'Calculadora de deal (ICM)',
   'Na tua mesa': 'En tu mesa',
