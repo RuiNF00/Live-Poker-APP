@@ -79,6 +79,77 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
   ];
 }
 
+/** Most frames a replay video takes, and the crossfade between them. */
+export const MAX_FRAMES = 24;
+const FADE = 0.25;
+
+/** Seconds per frame from the app; null unless there is one sane value per frame. */
+export function parseDurations(raw: unknown, frames: number): number[] | null {
+  if (!Array.isArray(raw) || raw.length !== frames || frames < 1) return null;
+  const out = raw.map((d) => (typeof d === 'number' && Number.isFinite(d) ? d : NaN));
+  if (out.some((d) => Number.isNaN(d) || d < 0.3 || d > 12)) return null;
+  if (out.reduce((a, d) => a + d, 0) > MAX_SECONDS + 0.5) return null;
+  return out;
+}
+
+/**
+ * Replay video: each JPEG frame held for its duration with a short crossfade
+ * into the next, over the voice note (waveform in `slot`) or silence.
+ */
+export function replayArgs(frames: string[], durations: number[], voice: string | null, out: string, slot: Slot | null): string[] {
+  const n = frames.length;
+  const total = Math.min(MAX_SECONDS, durations.reduce((a, d) => a + d, 0));
+  const inputs: string[] = [];
+  frames.forEach((f, i) => {
+    // Every frame but the last runs a fade longer, so the fades don't eat into the total.
+    const len = durations[i] + (i < n - 1 ? FADE : 0);
+    inputs.push('-protocol_whitelist', 'file', '-f', 'image2', '-pattern_type', 'none', '-c:v', 'mjpeg', '-loop', '1', '-framerate', '24', '-t', len.toFixed(2), '-i', f);
+  });
+  const parts = frames.map((_, i) => `[${i}:v]scale=${STORY_W}:${STORY_H},setsar=1,fps=24,format=yuv420p,settb=AVTB[f${i}]`);
+  let cur = 'f0';
+  let at = 0;
+  for (let i = 1; i < n; i++) {
+    at += durations[i - 1];
+    parts.push(`[${cur}][f${i}]xfade=transition=fade:duration=${FADE}:offset=${at.toFixed(2)}[x${i}]`);
+    cur = `x${i}`;
+  }
+  const T = total.toFixed(2);
+  if (voice) {
+    const voiceFormat = VOICE_DEMUXER[path.extname(voice).slice(1).toLowerCase()] ?? 'mov';
+    inputs.push('-protocol_whitelist', 'file', '-f', voiceFormat, '-i', voice);
+    if (slot) {
+      parts.push(
+        `[${n}:a]apad,atrim=0:${T},asplit[a][b]`,
+        `[b]aformat=channel_layouts=mono,dynaudnorm=f=75:p=0.95,volume=3,showwaves=s=${slot.w}x${slot.h}:mode=cline:rate=24:colors=0xFF6A3D:scale=sqrt[w]`,
+        `[${cur}][w]overlay=${slot.x}:${slot.y}:shortest=1,format=yuv420p[v]`,
+      );
+    } else parts.push(`[${n}:a]apad,atrim=0:${T}[a]`, `[${cur}]null[v]`);
+  } else {
+    // A silent track: some apps (WhatsApp status, older Android players) reject video-only files.
+    parts.push(`anullsrc=r=44100:cl=mono,atrim=0:${T}[a]`, `[${cur}]null[v]`);
+  }
+  return [
+    '-hide_banner',
+    '-loglevel', 'error',
+    '-y',
+    ...inputs,
+    '-filter_complex', parts.join(';'),
+    '-map', '[v]',
+    '-map', '[a]',
+    '-t', T,
+    '-c:v', 'libx264',
+    '-preset', 'veryfast',
+    '-crf', '24',
+    '-profile:v', 'high',
+    '-pix_fmt', 'yuv420p',
+    '-c:a', 'aac',
+    '-b:a', '96k',
+    '-ar', '44100',
+    '-movflags', '+faststart',
+    out,
+  ];
+}
+
 function ffmpegPath(): string {
   if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -114,6 +185,35 @@ export async function renderStoryVideo(input: { frame: Uint8Array; voice: Uint8A
     await writeFile(frame, input.frame);
     await writeFile(voice, input.voice);
     await run(ffmpegPath(), ffmpegArgs(frame, voice, out, input.slot), 50_000);
+    return await readFile(out);
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+export async function renderReplayVideo(input: {
+  frames: Uint8Array[];
+  durations: number[];
+  voice: Uint8Array | null;
+  voiceExt: string;
+  slot: Slot | null;
+}): Promise<Buffer> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'replay-'));
+  try {
+    const frames = await Promise.all(
+      input.frames.map(async (f, i) => {
+        const p = path.join(dir, `f${String(i).padStart(2, '0')}.jpg`);
+        await writeFile(p, f);
+        return p;
+      }),
+    );
+    let voice: string | null = null;
+    if (input.voice) {
+      voice = path.join(dir, 'voice.' + input.voiceExt);
+      await writeFile(voice, input.voice);
+    }
+    const out = path.join(dir, 'replay.mp4');
+    await run(ffmpegPath(), replayArgs(frames, input.durations, voice, out, voice ? input.slot : null), 55_000);
     return await readFile(out);
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});

@@ -10,14 +10,15 @@ import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { t } from '@/i18n';
 import { amount, blindsLabel } from '@/poker/format';
-import { STAGES, type Hand } from '@/poker/types';
+import { STAGES, type Hand, type Suit } from '@/poker/types';
+import { SUIT_SYMBOL } from '@/poker/cards';
 import { positions } from '@/poker/engine';
 import type { StoryMoment } from '@/story/moment';
 import { BRAND, C, F, R, ff, posColor } from '@/theme';
 
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { STAGE_RATIO } from './replayer/layout';
-import { viewAt } from './replayer/model';
+import { STREET_LABEL, viewAt } from './replayer/model';
 
 export const STORY_W = 360;
 export const STORY_H = 640;
@@ -65,6 +66,8 @@ export interface StoryCardProps {
   brand?: boolean;
   /** Voice story: 'preview' draws sample bars in the chip, 'slot' leaves them for the video render. */
   voice?: 'preview' | 'slot' | null;
+  /** Video frame: the replay at this step (see story/reel.ts), ending on the result. */
+  step?: number;
   onLayout?: (e: LayoutChangeEvent) => void;
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
@@ -97,17 +100,28 @@ function LinkGlyph({ size = 12, color = C.accent }: { size?: number; color?: str
   );
 }
 
-export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, onLayout, ref }: StoryCardProps) {
+export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, onLayout, ref }: StoryCardProps) {
   const g = hand.game;
-  const isQ = moment.mode === 'question';
-  const result = isQ ? null : moment.replay.result;
+  const reel = step !== undefined;
+  const isQ = !reel && moment.mode === 'question';
+  const atEnd = reel ? step >= moment.replay.steps.length - 1 : !isQ;
+  const result = atEnd ? moment.replay.result : null;
   // Same table as the in-app replayer, frozen at the story's moment.
-  const view = viewAt(hand, moment.replay, moment.stepIndex, { inBB, reveal: !isQ, atEnd: !isQ });
+  const view = viewAt(hand, moment.replay, reel ? step : moment.stepIndex, { inBB, reveal: !isQ && !reel, atEnd });
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   const title = g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
   const text = comment.trim();
   const long = text.length > 80;
+  // A new street reads better as the cards that came than as its name twice.
+  const shownStep = reel ? moment.replay.steps[step] : null;
+  const dealt =
+    shownStep?.kind === 'board'
+      ? hand.board
+          .slice(shownStep.state.boardCount <= 3 ? 0 : shownStep.state.boardCount - 1, shownStep.state.boardCount)
+          .map((c) => c[0] + SUIT_SYMBOL[c[1] as Suit])
+          .join('  ')
+      : null;
   const heroNet = result?.resolved ? result.net[hand.hero] : 0;
   const heroHand = result?.handNames[hand.hero] ?? null;
   const tableW = text ? 250 : 320;
@@ -137,7 +151,12 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
       {/* Below Instagram's profile bar */}
       <View style={{ position: 'absolute', top: 70, left: GUTTER, right: GUTTER, height: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {brand ? <Wordmark size={14} /> : <View />}
-        {voice ? null : isQ ? (
+        {voice ? null : reel ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: C.accentLine, borderRadius: R.pill, paddingHorizontal: 10, height: 22 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.accent }} />
+            <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.text }}>REPLAY</Text>
+          </View>
+        ) : isQ ? (
           <View style={{ backgroundColor: C.accent, borderRadius: R.pill, paddingHorizontal: 10, height: 22, justifyContent: 'center' }}>
             <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accentInk }}>{t('O QUE FAZIAS?')}</Text>
           </View>
@@ -256,6 +275,28 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
                 </Text>
               </View>
             ))}
+          </View>
+        ) : reel && !atEnd ? (
+          <View
+            style={{
+              height: 48,
+              borderRadius: R.md,
+              borderWidth: 1,
+              borderColor: C.borderStrong,
+              backgroundColor: C.surface2,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              paddingHorizontal: 14,
+            }}>
+            <View style={{ gap: 1, flexShrink: 1 }}>
+              <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.accent }}>{STREET_LABEL[view.street].toUpperCase()}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: ff(700), fontSize: 13, color: C.text }}>
+                {dealt ?? view.narration}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: F.mono, fontSize: 16, color: C.textDim }}>{view.potLabel}</Text>
           </View>
         ) : result ? (
           <View
