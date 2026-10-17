@@ -82,3 +82,6 @@ export interface HandRecord {
   playedAt?: string;
   location?: string;
 }
+
+/** Languages the labels come in. pt is pt-PT; pt-BR differs only in a few hand names. */
+export type Locale = 'pt' | 'pt-BR' | 'en' | 'es';

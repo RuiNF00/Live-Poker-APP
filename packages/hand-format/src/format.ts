@@ -1,5 +1,5 @@
 import type { ReplayStep } from './replay';
-import type { ActionType, Card, HandRecord, Street } from './types';
+import type { ActionType, Card, HandRecord, Locale, Street } from './types';
 
 export type AmountMode = 'chips' | 'bb';
 
@@ -7,10 +7,12 @@ export type AmountMode = 'chips' | 'bb';
  * Same rules as the app (src/poker/format.ts chips()): plain number under 10k in the page's
  * locale (pt-PT: 1380, 9 500), then 12.5k / 250k / 1.25M.
  */
-export function formatChips(n: number, locale: 'pt' | 'en' = 'pt'): string {
+const NUMBER_TAG: Record<Locale, string> = { pt: 'pt-PT', 'pt-BR': 'pt-BR', en: 'en-US', es: 'es-ES' };
+
+export function formatChips(n: number, locale: Locale = 'pt'): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10_000) return sign + Math.round(a).toLocaleString(locale === 'pt' ? 'pt-PT' : 'en-US').replace(/\s/g, ' ');
+  if (a < 10_000) return sign + Math.round(a).toLocaleString(NUMBER_TAG[locale] ?? 'en-US').replace(/\s/g, ' ');
   if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0) + 'k';
   return sign + fixed(a / 1_000_000, 2) + 'M';
 }
@@ -23,49 +25,42 @@ function trim(x: number): string {
   return (Math.round(x * 10) / 10).toString();
 }
 
-export function formatAmount(n: number, bb: number, mode: AmountMode = 'chips', locale: 'pt' | 'en' = 'pt'): string {
+export function formatAmount(n: number, bb: number, mode: AmountMode = 'chips', locale: Locale = 'pt'): string {
   if (mode === 'bb') return `${trim(n / bb)} BB`;
   return formatChips(n, locale);
 }
 
-const ACTION_LABEL: Record<'pt' | 'en', Record<ActionType, string>> = {
-  pt: {
-    post_sb: 'SB',
-    post_bb: 'BB',
-    post_ante: 'Ante',
-    post_straddle: 'Straddle',
-    fold: 'Fold',
-    check: 'Check',
-    call: 'Call',
-    bet: 'Bet',
-    raise: 'Raise',
-    allin: 'All-in',
-  },
-  en: {
-    post_sb: 'SB',
-    post_bb: 'BB',
-    post_ante: 'Ante',
-    post_straddle: 'Straddle',
-    fold: 'Fold',
-    check: 'Check',
-    call: 'Call',
-    bet: 'Bet',
-    raise: 'Raise',
-    allin: 'All-in',
-  },
+/** Poker's own words, the same in every language the app speaks. */
+const ACTION_LABEL: Record<ActionType, string> = {
+  post_sb: 'SB',
+  post_bb: 'BB',
+  post_ante: 'Ante',
+  post_straddle: 'Straddle',
+  fold: 'Fold',
+  check: 'Check',
+  call: 'Call',
+  bet: 'Bet',
+  raise: 'Raise',
+  allin: 'All-in',
 };
 
-export function actionLabel(type: ActionType, locale: 'pt' | 'en' = 'pt'): string {
-  return ACTION_LABEL[locale][type];
+/** The locale is kept for callers: the words are the same in every language. */
+export function actionLabel(type: ActionType, _locale?: Locale): string {
+  return ACTION_LABEL[type];
 }
 
-const STREET_LABEL: Record<'pt' | 'en', Record<Street, string>> = {
+const STREET_LABEL: Record<Locale, Record<Street, string>> = {
   pt: { preflop: 'Pré-flop', flop: 'Flop', turn: 'Turn', river: 'River' },
+  'pt-BR': { preflop: 'Pré-flop', flop: 'Flop', turn: 'Turn', river: 'River' },
   en: { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' },
+  es: { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' },
 };
 
-export function streetLabel(street: Street, locale: 'pt' | 'en' = 'pt'): string {
-  return STREET_LABEL[locale][street];
+const START: Record<Locale, string> = { pt: 'Início da mão', 'pt-BR': 'Início da mão', en: 'Hand starts', es: 'Inicio de la mano' };
+const WINS: Record<Locale, string> = { pt: 'ganha', 'pt-BR': 'ganha', en: 'wins', es: 'gana' };
+
+export function streetLabel(street: Street, locale: Locale = 'pt'): string {
+  return (STREET_LABEL[locale] ?? STREET_LABEL.en)[street];
 }
 
 const SUIT_SYMBOL: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
@@ -76,8 +71,8 @@ export function cardText(card: Card): string {
 }
 
 /** One line describing a step, e.g. "CO Raise 2,400" or "Flop K♠ 7♦ 2♣". */
-export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'chips', locale: 'pt' | 'en' = 'pt'): string {
-  if (step.kind === 'start') return locale === 'pt' ? 'Início da mão' : 'Hand starts';
+export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'chips', locale: Locale = 'pt'): string {
+  if (step.kind === 'start') return START[locale] ?? START.en;
   if (step.kind === 'street') {
     const newCards = step.street === 'flop' ? step.board.slice(0, 3) : step.board.slice(-1);
     return `${streetLabel(step.street, locale)} ${newCards.map(cardText).join(' ')}`;
@@ -95,7 +90,7 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
     winners
       .map((w) => {
         const s = step.seats.find((x) => x.seat === w.seat)!;
-        const verb = locale === 'pt' ? 'ganha' : 'wins';
+        const verb = WINS[locale] ?? WINS.en;
         return `${s.name} ${verb} ${formatAmount(w.amount, bb, mode, locale)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
       })
       .join(' · ');

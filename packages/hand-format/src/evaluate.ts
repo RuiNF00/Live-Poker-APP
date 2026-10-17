@@ -1,4 +1,4 @@
-import type { Card } from './types';
+import type { Card, Locale } from './types';
 
 export type HandCategory =
   | 'high_card'
@@ -107,7 +107,7 @@ export function bestHand(hole: Card[], board: Card[], game: 'NLHE' | 'PLO' = 'NL
   return best;
 }
 
-const CATEGORY_LABEL: Record<'pt' | 'en', Record<HandCategory, string>> = {
+const CATEGORY_LABEL: Record<Locale, Record<HandCategory, string>> = {
   pt: {
     high_card: 'Carta alta',
     pair: 'Par',
@@ -130,8 +130,30 @@ const CATEGORY_LABEL: Record<'pt' | 'en', Record<HandCategory, string>> = {
     quads: 'Four of a kind',
     straight_flush: 'Straight flush',
   },
+  'pt-BR': {
+    high_card: 'Carta alta',
+    pair: 'Par',
+    two_pair: 'Dois pares',
+    trips: 'Trinca',
+    straight: 'Sequência',
+    flush: 'Flush',
+    full_house: 'Full house',
+    quads: 'Quadra',
+    straight_flush: 'Straight flush',
+  },
+  es: {
+    high_card: 'Carta alta',
+    pair: 'Pareja',
+    two_pair: 'Doble pareja',
+    trips: 'Trío',
+    straight: 'Escalera',
+    flush: 'Color',
+    full_house: 'Full',
+    quads: 'Póker',
+    straight_flush: 'Escalera de color',
+  },
 };
 
-export function categoryLabel(category: HandCategory, locale: 'pt' | 'en' = 'pt'): string {
-  return CATEGORY_LABEL[locale][category];
+export function categoryLabel(category: HandCategory, locale: Locale = 'pt'): string {
+  return (CATEGORY_LABEL[locale] ?? CATEGORY_LABEL.en)[category];
 }

@@ -181,3 +181,18 @@ describe('run it twice in the action log', () => {
     expect(text).toMatch(/^Board 1: BTN ganha 1004 .* · Board 2: CO ganha 1003 /);
   });
 });
+
+describe('labels in four languages', () => {
+  it('pt-BR and es name the streets, the start and the hands their own way', async () => {
+    const { categoryLabel, streetLabel, formatChips } = await import('../src');
+    expect(categoryLabel('trips', 'pt')).toBe('Trio');
+    expect(categoryLabel('trips', 'pt-BR')).toBe('Trinca');
+    expect(categoryLabel('quads', 'pt-BR')).toBe('Quadra');
+    expect(categoryLabel('two_pair', 'es')).toBe('Doble pareja');
+    expect(streetLabel('preflop', 'es')).toBe('Preflop');
+    expect(streetLabel('preflop', 'pt-BR')).toBe('Pré-flop');
+    expect(formatChips(9500, 'pt-BR')).toBe('9.500');
+    const steps = buildReplay(fromAppHand(base({}, [{ p: 3, kind: 'fold' }])).hand, { locale: 'es' });
+    expect(steps.length).toBeGreaterThan(0);
+  });
+});
