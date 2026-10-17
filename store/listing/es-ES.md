@@ -13,13 +13,13 @@
 Nuevo: registra una mano en vivo en 11 toques entre niveles, repásala calle a calle y comparte un link que cualquiera abre. Gratis: 3 manos nuevas al día.
 
 **Palabras clave** (100 bytes, separadas por comas, sin espacios):
-poker,tracker,historial,sesiones,torneo,calendario,horarios,mtt,cash,staking,swap,holdem,live,notas
+poker,tracker,historial,sesiones,torneo,calendario,horarios,mtt,cash,staking,swap,fichas,live,notas
 
 **Descripción** (4000):
 
 La forma más rápida de guardar las manos que juegas en vivo.
 
-Consulta los horarios de los torneos de los festivales en vivo y registra lo que juegas.
+Consulta los horarios de los torneos de los festivales en vivo, registra lo que juegas y comparte tus fichas al final del día.
 
 En el póker en vivo no hay historial de manos. O lo anotas en un papel, o lo olvidas. Sweatbook está hecho para que registres una mano en pocos toques, en la mesa, sin perderte la siguiente acción.
 

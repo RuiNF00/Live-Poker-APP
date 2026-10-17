@@ -13,13 +13,13 @@
 Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e compartilhe um link que qualquer pessoa abre. Grátis: 3 mãos por dia.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
-histórico,replayer,bankroll,sessões,torneio,agenda,grade,horários,mtt,cash,staking,swap,notas
+histórico,replayer,bankroll,sessões,torneio,agenda,grade,horários,mtt,cash,staking,swap,fichas
 
 **Descrição** (4000):
 
 O jeito mais rápido de salvar as mãos que você joga ao vivo.
 
-Veja a agenda de torneios dos festivais ao vivo e registre o que você joga.
+Veja a agenda de torneios dos festivais ao vivo, registre o que você joga e compartilhe suas fichas no fim do dia.
 
 No poker ao vivo não existe histórico de mãos. Ou você anota no papel, ou esquece. O Sweatbook foi feito para você registrar uma mão em poucos toques, na mesa, sem perder a próxima ação.
 

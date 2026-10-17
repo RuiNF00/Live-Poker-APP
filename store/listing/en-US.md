@@ -14,13 +14,13 @@
 New: log a live hand in 11 taps between levels, replay it street by street and share a link anyone can open. Free: 3 new hands a day, unlimited sharing.
 
 **Keywords** (100 bytes, comma-separated, no spaces):
-history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,stats,icm,backer,tax,notes
+history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,stats,chip,count,tax,notes
 
 **Description** (4000):
 
 The fastest way to save the hands you play live.
 
-Check live festival tournament schedules and log what you play.
+Check live festival tournament schedules, log what you play and share your chip count at the end of the day.
 
 Live poker has no hand history. You either scribble on paper or you forget. {{APP_NAME}} lets you log a hand in a few taps, at the table, without missing the next one.
 

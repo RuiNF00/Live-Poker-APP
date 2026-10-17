@@ -14,13 +14,13 @@
 Novo: regista uma mão ao vivo em 11 toques entre níveis, revê-a rua a rua e partilha um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
-póquer,histórico,replayer,sessões,torneio,calendário,horários,mtt,cash,staking,swap,notas,icm
+póquer,histórico,replayer,sessões,torneio,calendário,horários,mtt,cash,staking,swap,stack,icm
 
 **Descrição** (4000):
 
 A forma mais rápida de guardar as mãos que jogas ao vivo.
 
-Vê os horários dos torneios dos festivais live e regista o que jogas.
+Vê os horários dos torneios dos festivais live, regista o que jogas e partilha o teu stack no fim do dia.
 
 No live não há histórico de mãos. Ou escreves num papel, ou esqueces. {{APP_NAME}} foi feito para registares uma mão em poucos toques, na mesa, sem perder a ação seguinte.
 
