@@ -3118,6 +3118,8 @@ const es: Record<string, string> = {
   'Já jogaste? Junta uma sessão passada': '¿Ya jugaste? Añade una sesión pasada',
   'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Empieza una sesión cuando te sientes. El beneficio, el €/hora y el ROI aparecen aquí.',
   'Nada neste bankroll': 'Nada en este bankroll',
+  'A atualizar…': 'Actualizando…',
+  'A ler {done} de {total} linhas…': 'Leyendo {done} de {total} filas…',
 };
 
 export default es;

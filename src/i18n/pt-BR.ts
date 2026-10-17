@@ -1467,6 +1467,8 @@ const ptBR: Record<string, string> = {
   'Já jogaste? Junta uma sessão passada': 'Já jogou? Adicione uma sessão passada',
   'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Comece uma sessão quando se sentar. O lucro, o €/hora e o ROI aparecem aqui.',
   'Nada neste bankroll': 'Nada neste bankroll',
+  'A atualizar…': 'Atualizando…',
+  'A ler {done} de {total} linhas…': 'Lendo {done} de {total} linhas…',
 };
 
 export default ptBR;

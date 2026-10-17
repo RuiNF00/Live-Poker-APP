@@ -194,3 +194,37 @@ test('game types, dates and durations as other trackers write them', () => {
   assert.equal(new Date(r.sessions[1].startedAt).getHours(), 20);
   assert.equal(parseDate('Oct. 17, 2026', 'dmy')?.t, new Date(2026, 9, 17).getTime());
 });
+
+test('parseCsv: quotes, doubled quotes, line breaks inside quotes and text after a closing quote', () => {
+  assert.deepEqual(parseCsv('a, "b, c" ,"d ""e"""\r\n"x\ny",z\n"unclosed, \nend', ','), [
+    ['a', 'b, c', 'd "e"'],
+    ['x\ny', 'z'],
+    ['unclosed, \nend'],
+  ]);
+  assert.deepEqual(parseCsv('"a"b,c "d"\n', ','), [['ab', 'c "d"']]);
+  assert.deepEqual(parseCsv('﻿x;y\n1;2', ';'), [['x', 'y'], ['1', '2']]);
+});
+
+const bigFile = (n: number) =>
+  ['Date,Location,Expense,Currency,Profit', ...Array.from({ length: n }, (_, i) => `2020-01-01,Casino ${i % 7},0,EUR,${(i % 50) - 20}`)].join('\n');
+
+test('a 5,000-session file is converted in steps with progress, and gives the same sessions', async () => {
+  const { toSessionsAsync } = await import('../convert');
+  const p = prepare(bigFile(5000));
+  const o = { ...opt, source: p.source };
+  const seen: number[] = [];
+  const r = await toSessionsAsync(p.table, p.mapping, o, { onProgress: (done, total) => seen.push(done / total), sliceMs: 0 });
+  assert.ok(r);
+  assert.deepEqual(r, toSessions(p.table, p.mapping, o));
+  assert.equal(r.sessions.length, 5000);
+  assert.ok(seen.length >= 10 && seen.every((x, i) => x > 0 && x < 1 && (i === 0 || x > seen[i - 1])));
+});
+
+test('leaving or changing a column midway gives nothing, so nothing is half imported', async () => {
+  const { toSessionsAsync } = await import('../convert');
+  const p = prepare(bigFile(2000));
+  let steps = 0;
+  const r = await toSessionsAsync(p.table, p.mapping, { ...opt, source: p.source }, { onProgress: () => steps++, cancelled: () => steps >= 3, sliceMs: 0 });
+  assert.equal(r, null);
+  assert.equal(steps, 3);
+});

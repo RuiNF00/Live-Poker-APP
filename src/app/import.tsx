@@ -4,7 +4,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,7 +14,7 @@ import { ImportSupport } from '@/components/ImportSupport';
 import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
-import { prepare, toSessions, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
+import { prepare, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
@@ -24,6 +24,7 @@ import { money } from '@/poker/format';
 import { importSummary, parseBackup } from '@/store/backup';
 import { profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
+import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 type Pick = Exclude<SourceId, 'generic'> | 'csv';
@@ -92,13 +93,21 @@ const FIELD_LABEL: Partial<Record<Field, string>> = {
 };
 const MAPPABLE = Object.keys(FIELD_LABEL) as Field[];
 
+/** A file that doesn't say cash or tournament starts from what this player mostly plays. */
+function mostlyPlays(sessions: Session[]): 'cash' | 'mtt' {
+  return sessions.filter((s) => s.kind === 'mtt').length * 2 > sessions.length ? 'mtt' : 'cash';
+}
+
+/** Lets the screen draw (a label, the progress bar) before a long step starts. */
+const paint = () => new Promise<void>((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
 /** A narrow screen or big text (200%): three tiles or two buttons side by side no longer fit. */
 function useTight() {
   const { width, fontScale } = useWindowDimensions();
   return width / Math.max(1, fontScale) < 320;
 }
 
-type Step = { at: 'pick' } | { at: 'review'; file: Prepared } | { at: 'done'; added: number; total: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
+type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
 
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -110,6 +119,10 @@ export default function ImportScreen() {
   // The file as picked, so a failed import can go to support as it was.
   const [picked, setPicked] = useState<{ text: string; name: string; uri: string } | null>(null);
   const [help, setHelp] = useState(false);
+  // Rows read so far, for a file with years of sessions. Only the bar redraws, not the whole screen.
+  const [progress] = useState(progressBar);
+  const alive = useRef(true);
+  useEffect(() => () => void (alive.current = false), []);
 
   const choose = async () => {
     setError(null);
@@ -118,6 +131,7 @@ export default function ImportScreen() {
       const got = await pickTextFileWithName();
       if (got === null) return;
       setPicked(got);
+      await paint();
       const { text } = got;
       if (/^\s*\{/.test(text)) {
         // A Sweatbook backup: hands, sessions and players in one go.
@@ -138,11 +152,18 @@ export default function ImportScreen() {
       const file = prepare(text);
       if (!file.table.rows.length) throw new Error('empty');
       if (file.source === 'generic' && source === 'pokeranalytics') file.source = 'pokeranalytics';
-      setStep({ at: 'review', file });
+      const first = await toSessionsAsync(
+        file.table,
+        file.mapping,
+        { currency: store.settings.currency, tableSize: store.settings.defaultTableSize, source: file.source, defaultKind: mostlyPlays(store.sessions) },
+        { onProgress: (done, total) => progress.set({ done, total }), cancelled: () => !alive.current },
+      );
+      if (first) setStep({ at: 'review', file, first });
     } catch {
       setError(t('Não conseguimos ler este ficheiro. Escolhe o CSV exportado pela outra app (ou um .json do Sweatbook).'));
     } finally {
       setBusy(false);
+      progress.set(null);
     }
   };
 
@@ -223,6 +244,7 @@ export default function ImportScreen() {
             ) : null}
           </ScrollView>
           <Dock bottom={insets.bottom}>
+            <ReadProgress bar={progress} />
             <Button title={busy ? t('A ler…') : t('Escolher ficheiro')} icon="document-attach" disabled={busy} onPress={choose} />
           </Dock>
         </View>
@@ -230,6 +252,7 @@ export default function ImportScreen() {
         <Review
           picked={picked}
           file={step.file}
+          initial={step.first}
           bottom={insets.bottom}
           onBack={() => setStep({ at: 'pick' })}
           onImport={(r, placement) => {
@@ -320,21 +343,37 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
   );
 }
 
-function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
+function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
   const tight = useTight();
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
   const [mapping, setMapping] = useState<Mapping>(file.mapping);
   const [order, setOrder] = useState<DateOrder | undefined>(undefined);
   // A file that doesn't say cash or tournament: start from what this player mostly plays.
-  const [defaultKind, setDefaultKind] = useState<'cash' | 'mtt'>(() => (local.filter((s) => s.kind === 'mtt').length * 2 > local.length ? 'mtt' : 'cash'));
+  const [defaultKind, setDefaultKind] = useState<'cash' | 'mtt'>(() => mostlyPlays(local));
   const [editing, setEditing] = useState<Field | null>(null);
   const [showAll, setShowAll] = useState(file.source === 'generic' || file.source === 'pokeranalytics');
 
-  const r = useMemo(
-    () => toSessions(file.table, mapping, { currency: settings.currency, tableSize: settings.defaultTableSize, source: file.source, order, defaultKind }),
-    [file, mapping, order, defaultKind, settings.currency, settings.defaultTableSize],
-  );
+  // The pick screen already converted the file once; a change here converts it again in
+  // steps, keeping the last result on screen and the import button waiting until it's done.
+  const opts = { currency: settings.currency, tableSize: settings.defaultTableSize, source: file.source, order, defaultKind };
+  const [conv, setConv] = useState({ r: initial, mapping, ...opts });
+  const [importing, setImporting] = useState(false);
+  const stale = conv.mapping !== mapping || conv.order !== order || conv.defaultKind !== defaultKind || conv.currency !== opts.currency || conv.tableSize !== opts.tableSize;
+  useEffect(() => {
+    if (!stale) return;
+    let gone = false;
+    const o = { currency: settings.currency, tableSize: settings.defaultTableSize, source: file.source, order, defaultKind };
+    toSessionsAsync(file.table, mapping, o, { cancelled: () => gone }).then((r) => {
+      if (r && !gone) setConv({ r, mapping, ...o });
+    });
+    return () => {
+      gone = true;
+    };
+  }, [stale, file, mapping, order, defaultKind, settings.currency, settings.defaultTableSize]);
+  // A small file is done before anyone could read "A atualizar…".
+  const pending = stale && file.table.rows.length > 250;
+  const r = conv.r;
   const have = useMemo(() => new Set([...local.map((s) => s.id), ...localTx.map((x) => x.id)]), [local, localTx]);
   const fresh = r.sessions.filter((s) => !have.has(s.id)).length;
   const freshMoves = r.moves.filter((m) => !have.has(m.id)).length;
@@ -514,9 +553,18 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
           <Button kind="secondary" title={t('Voltar')} onPress={onBack} style={{ paddingHorizontal: 18 }} />
           <Button
             style={tight ? undefined : { flex: 1 }}
-            title={fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
-            disabled={fresh + freshMoves === 0}
-            onPress={() => onImport(r, placed)}
+            title={importing ? t('A importar…') : pending ? t('A atualizar…') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
+            disabled={importing || stale || fresh + freshMoves === 0}
+            onPress={async () => {
+              // Thousands of sessions take a moment to add: say so first.
+              setImporting(true);
+              await paint();
+              try {
+                onImport(r, placed);
+              } finally {
+                setImporting(false);
+              }
+            }}
           />
         </View>
       </Dock>
@@ -593,6 +641,38 @@ function FailedRows({ file, picked, failed, read }: { file: Prepared; picked: { 
         file={{ fileName: picked?.name ?? `import-${file.source}.csv`, uri: picked?.uri, text: file.text, source: file.source, rows: file.table.rows.length, read, failed }}
       />
     </Section>
+  );
+}
+
+type Progress = { done: number; total: number };
+
+function progressBar() {
+  let now: Progress | null = null;
+  const listeners = new Set<() => void>();
+  return {
+    set(p: Progress | null) {
+      now = p;
+      listeners.forEach((l) => l());
+    },
+    get: () => now,
+    subscribe(l: () => void) {
+      listeners.add(l);
+      return () => void listeners.delete(l);
+    },
+  };
+}
+
+function ReadProgress({ bar }: { bar: ReturnType<typeof progressBar> }) {
+  const p = useSyncExternalStore(bar.subscribe, bar.get);
+  if (!p) return null;
+  const { done, total } = p;
+  return (
+    <View style={{ gap: 6, marginBottom: S.sm }} accessible accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: done }} accessibilityLabel={t('A ler {done} de {total} linhas…', { done, total })}>
+      <View style={{ height: 4, borderRadius: 2, backgroundColor: C.border, overflow: 'hidden' }}>
+        <View style={{ height: 4, width: `${Math.round((done / Math.max(total, 1)) * 100)}%`, backgroundColor: C.accent }} />
+      </View>
+      <T v="small">{t('A ler {done} de {total} linhas…', { done, total })}</T>
+    </View>
   );
 }
 
