@@ -3249,6 +3249,7 @@ const en: Record<string, string> = {
   '1 sessão · {h}h': '1 session · {h}h',
   'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Still watching (1 session): the verdict shows after 100 h of cash or 50 tournaments.',
   'Enviar o meu resultado para o swap': 'Send my result to the swap',
+  '{n} torneios, {c} cashes.': '{n} tournaments, {c} cashes.',
 };
 
 export default en;
