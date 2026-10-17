@@ -2720,6 +2720,9 @@ const es: Record<string, string> = {
   'Passo {n} de {total}': 'Paso {n} de {total}',
   'Esconder nomes': 'Ocultar nombres',
   'Mostrar nomes': 'Mostrar nombres',
+  'O teu {year} no póquer': 'Tu {year} en el póker',
+  '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h en {n} sesiones. El resumen de tu año está listo.',
+  '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h en {n} sesiones, {amount}. El resumen de tu año está listo.',
 };
 
 export default es;

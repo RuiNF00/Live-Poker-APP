@@ -2727,6 +2727,9 @@ const en: Record<string, string> = {
   'Passo {n} de {total}': 'Step {n} of {total}',
   'Esconder nomes': 'Hide names',
   'Mostrar nomes': 'Show names',
+  'O teu {year} no póquer': 'Your {year} in poker',
+  '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h in {n} sessions. Your year in review is ready.',
+  '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h in {n} sessions, {amount}. Your year in review is ready.',
 };
 
 export default en;

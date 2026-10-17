@@ -1185,6 +1185,9 @@ const ptBR: Record<string, string> = {
   'Ainda a recuperar': 'Ainda recuperando',
   'O ano na bankroll': 'O ano na bankroll',
   'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'As stakes onde você mais ganhou, seus meses, o maior pote e sua sequência estão no Pro.',
+  'O teu {year} no póquer': 'Seu {year} no poker',
+  '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h em {n} sessões. O resumo do seu ano está pronto.',
+  '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h em {n} sessões, {amount}. O resumo do seu ano está pronto.',
 };
 
 export default ptBR;
