@@ -96,6 +96,7 @@ const en: typeof pt = {
 };
 
 const ptBR: typeof pt = {
+  chartSummary: (from: string, to: string, max: string) => `Stack ao longo da sessão: de ${from} para ${to}, máximo ${max}.`,
   live: 'Ao vivo',
   paused: 'Em pausa',
   ended: 'Encerrada',
@@ -142,6 +143,7 @@ const ptBR: typeof pt = {
 };
 
 const es: typeof pt = {
+  chartSummary: (from: string, to: string, max: string) => `Stack a lo largo de la sesión: de ${from} a ${to}, máximo ${max}.`,
   live: 'En vivo',
   paused: 'En pausa',
   ended: 'Terminada',

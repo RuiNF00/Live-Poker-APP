@@ -1020,6 +1020,15 @@ const ptBR: Record<string, string> = {
   'Este telemóvel guardou o código da tua cópia. Recuperar as mãos, sessões e notas?': 'Este celular guardou o código do seu backup. Recuperar as mãos, sessões e notas?',
   'A tua mão foi vista {n} vezes': 'Sua mão foi vista {n} vezes',
   'A tua melhor sessão: {amount}': 'Sua melhor sessão: {amount}',
+  'Vê quantas horas faltam para o teu win rate ser fiável': 'Veja quantas horas faltam para o seu win rate ser confiável',
+  'Vê o teu win rate por jogo, stake, sala e dia': 'Veja seu win rate por jogo, stake, sala e dia',
+  'Com 3 sessões de cash terminadas em {currency} mostramos o teu win rate e a margem de erro.': 'Com 3 sessões de cash encerradas em {currency} mostramos seu win rate e a margem de erro.',
+  'Já tens horas suficientes: o teu win rate está a ±{m} BB/h.': 'Você já tem horas suficientes: seu win rate está em ±{m} BB/h.',
+  'Faltam cerca de {h} h, umas {n} sessões como as tuas.': 'Faltam cerca de {h} h, umas {n} sessões como as suas.',
+  'Para saberes o teu win rate com uma margem de ±{u} BB/h precisas de cerca de {need} h com a tua variância. Hoje tens {have} h e a margem é de ±{m} BB/h.': 'Para saber seu win rate com uma margem de ±{u} BB/h você precisa de cerca de {need} h com a sua variância. Hoje você tem {have} h e a margem é de ±{m} BB/h.',
+  '±5 BB/h chega para decidir se sobes de stake ou que jogos escolher. Quanto mais variância tens, mais horas são precisas.': '±5 BB/h basta para decidir se você sobe de stake ou que jogos escolher. Quanto mais variância você tem, mais horas são necessárias.',
+  'Sabe onde o teu win rate é real': 'Saiba onde seu win rate é real',
+  'Intervalo de 95%: com estes resultados, o teu win rate verdadeiro está quase de certeza aqui dentro. Estreita com mais horas.': 'Intervalo de 95%: com estes resultados, seu win rate verdadeiro quase certamente está aqui dentro. Fica mais estreito com mais horas.',
 };
 
 export default ptBR;
