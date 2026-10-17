@@ -290,7 +290,7 @@ function stampOf(ts: number): string {
 }
 
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
-  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'makeup_cut', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -318,6 +318,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         Math.round(profit(s) * 100) / 100,
         // Already inside profit when swaps count in results; listed so the number can be traced.
         s.swapNet ? Math.round(s.swapNet * 100) / 100 : '',
+        // Same: in profit, apart so the import keeps cash_out as it was entered.
+        (s.makeupCut ?? s.fileCut) ? Math.round((s.makeupCut ?? s.fileCut)! * 100) / 100 : '',
         s.finish,
         s.field,
         // Multi-day tournaments: the day it reached, and the stack while it waits in the bag.
