@@ -564,7 +564,13 @@ export default function NewHand() {
         game={hand.game}
         tableSize={n}
         recentNames={recentNames}
-        onChange={(game) => update(hand.sessionId ? { ...hand, game } : rescaleStacks(hand, game))}
+        onChange={(game) => {
+          // Straddles and bomb pots change who acts first: the action starts over.
+          const g = hand.game;
+          const reset = g.straddles !== game.straddles || g.straddleFrom !== game.straddleFrom || g.bombPot !== game.bombPot;
+          const next = reset ? { ...hand, actions: [], board: [] } : hand;
+          update(hand.sessionId ? { ...next, game } : rescaleStacks(next, game));
+        }}
         onTableSize={(k) => update(resizeTable(hand, k), false)}
         onClose={() => setCtxOpen(false)}
       />
