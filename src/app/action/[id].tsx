@@ -105,6 +105,13 @@ export default function ActionPackageScreen() {
   // Events the player can add: the ones in their festival plan (Day 2s have no buy-in).
   const candidates = f.events.filter((e) => !e.day2 && (plan.picked.includes(e.id) || o.events.includes(e.id)));
   const nameOf = (l: PackageLine) => backers.find((b) => b.id === l.backerId)?.name ?? t('Backer');
+  // Backers used most recently first, minus those already in this offer: the first one starts picked.
+  const offerNames = (() => {
+    const last = new Map<string, number>();
+    for (const x of sessions) for (const st of x.stakes ?? []) if (st.backerId) last.set(st.backerId, Math.max(last.get(st.backerId) ?? 0, x.startedAt));
+    const inOffer = new Set(o.lines.map((l) => nameOf(l).trim().toLowerCase()));
+    return [...backers].sort((a, b) => (last.get(b.id) ?? b.createdAt) - (last.get(a.id) ?? a.createdAt)).map((b) => b.name).filter((n) => !inOffer.has(n.trim().toLowerCase()));
+  })();
   // Once the first event is played (or goes by), where each backer stands on the festival.
   const settled = o.lines.map((l) => ({ l, st: lineSettlement(f, o, l, plan.sessions, sessions) }));
   const underway = settled.some(({ st }) => st.rows.some((r) => r.state !== 'upcoming'));
@@ -329,7 +336,7 @@ export default function ActionPackageScreen() {
               </Card>
             ))}
             {adding ? (
-              <AddLine cur={f.currency} names={backers.map((b) => b.name)} cost={(p) => lineCost(f, o, p)} onAdd={addLine} onCancel={() => setAdding(false)} />
+              <AddLine cur={f.currency} names={offerNames} cost={(p) => lineCost(f, o, p)} onAdd={addLine} onCancel={() => setAdding(false)} />
             ) : (
               <Button
                 kind={o.lines.length ? 'outline' : 'primary'}
@@ -418,7 +425,7 @@ export default function ActionPackageScreen() {
 }
 
 function AddLine({ cur, names, cost, onAdd, onCancel }: { cur: string; names: string[]; cost: (pct: number) => number; onAdd: (name: string, pct: number) => void; onCancel: () => void }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(names[0] ?? '');
   const [piece, setPiece] = useState(5);
   const ok = name.trim().length > 0 && piece > 0;
   return (
