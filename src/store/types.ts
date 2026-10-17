@@ -1,3 +1,4 @@
+import type { Statement } from '@/lib/backing-link';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
 export interface Session {
@@ -98,6 +99,8 @@ export interface Backer {
   id: string;
   name: string;
   note: string;
+  /** Random id that ties the statements sent to this backer together on their phone. */
+  shareKey?: string;
   /** Each time you sent them their statement, with the balance it showed (newest last). */
   reminders?: { at: number; balance: number }[];
   createdAt: number;
@@ -124,6 +127,15 @@ export interface StakePackage {
 }
 
 /** Money between you and a backer. amount > 0: you paid them; < 0: they paid you. */
+/** A player you back: the latest statement they sent you (see lib/backing-link). */
+export interface BackedPlayer {
+  /** The statement's id: one per player and backer. */
+  id: string;
+  statement: Statement;
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export interface BackerPayment {
   id: string;
   backerId: string;

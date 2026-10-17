@@ -4,8 +4,13 @@
 
 export function redirectSystemPath({ path }: { path: string; initial: boolean }): string {
   try {
-    const { pathname } = new URL(path, 'https://sweatbook.poker');
+    const { pathname, hash, searchParams } = new URL(path, 'https://sweatbook.poker');
     if (pathname === '/h/demo' || pathname === '/h/demo/') return '/hand/sample';
+    // A backer's statement (sweatbook.poker/b#data): the data is in the fragment.
+    if ((pathname === '/b' || pathname === '/b/') && hash.length > 1) {
+      const r = searchParams.get('r');
+      return `/backing/add?d=${encodeURIComponent(hash.slice(1))}${r ? `&r=${encodeURIComponent(r)}` : ''}`;
+    }
     return path;
   } catch {
     return path;

@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Alert, AppState } from 'react-native';
 
 import { t } from '@/i18n';
+import type { Statement } from '@/lib/backing-link';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { forgetHandShare } from '@/lib/share-queue';
@@ -17,7 +18,7 @@ import { mergeById, type BackupData } from './backup';
 import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
-import { DEFAULT_SETTINGS, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer } from './types';
+import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer } from './types';
 
 const KEYS = {
   settings: 'rl.settings.v1',
@@ -33,6 +34,7 @@ const SPECS = {
   backers: { index: 'rl.backers.v1', prefix: 'rl.backer.v1.' },
   packages: { index: 'rl.packages.v1', prefix: 'rl.package.v1.' },
   payments: { index: 'rl.payments.v1', prefix: 'rl.payment.v1.' },
+  backing: { index: 'rl.backing.v1', prefix: 'rl.backed.v1.' },
 } satisfies Record<string, CollectionSpec>;
 
 export function uid(prefix = ''): string {
@@ -50,6 +52,8 @@ interface StoreValue {
   backers: Backer[];
   packages: StakePackage[];
   payments: BackerPayment[];
+  /** Players you back, each with the last statement they sent you. */
+  backing: BackedPlayer[];
   settings: Settings;
   activeSession: Session | null;
   /** Where a new session goes: the last one picked, else the first in the player's currency. */
@@ -76,6 +80,9 @@ interface StoreValue {
   deletePackage: (id: string) => void;
   savePayment: (p: BackerPayment) => void;
   deletePayment: (id: string) => void;
+  /** Saves a statement a player sent you; an older one never replaces a newer one. */
+  saveBacked: (st: Statement) => 'new' | 'updated' | 'older';
+  deleteBacked: (id: string) => void;
   setSettings: (patch: Partial<Settings>) => void;
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
@@ -125,7 +132,8 @@ function loadAll() {
     loadCollection<Backer>(kv, SPECS.backers),
     loadCollection<StakePackage>(kv, SPECS.packages),
     loadCollection<BackerPayment>(kv, SPECS.payments),
-  ]).then(([hands, sessions, players, bankrolls, transfers, settings, draft, backers, packages, payments]) => ({
+    loadCollection<BackedPlayer>(kv, SPECS.backing),
+  ]).then(([hands, sessions, players, bankrolls, transfers, settings, draft, backers, packages, payments, backing]) => ({
     hands,
     sessions,
     players,
@@ -136,6 +144,7 @@ function loadAll() {
     backers,
     packages,
     payments,
+    backing,
     ms: Date.now() - t0,
   }));
 }
@@ -175,6 +184,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [backers, setBackers] = useState<Backer[]>([]);
   const [packages, setPackages] = useState<StakePackage[]>([]);
   const [payments, setPayments] = useState<BackerPayment[]>([]);
+  const [backing, setBacking] = useState<BackedPlayer[]>([]);
   // What screens see: each session with its makeup package cut (derived, never stored).
   const sessions = useMemo(() => withCuts(rawSessions, packages), [rawSessions, packages]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
@@ -202,6 +212,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     backers: ReturnType<typeof createWriter<Backer>>;
     packages: ReturnType<typeof createWriter<StakePackage>>;
     payments: ReturnType<typeof createWriter<BackerPayment>>;
+    backing: ReturnType<typeof createWriter<BackedPlayer>>;
   } | null>(null);
   const loaded = useRef(false);
 
@@ -221,6 +232,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         backers: createWriter(kv, SPECS.backers, d.backers.persisted, storageFailed),
         packages: createWriter(kv, SPECS.packages, d.packages.persisted, storageFailed),
         payments: createWriter(kv, SPECS.payments, d.payments.persisted, storageFailed),
+        backing: createWriter(kv, SPECS.backing, d.backing.persisted, storageFailed),
       };
       writers.current = w;
       // Anything not yet on disk in the current layout (a rebuilt index, a
@@ -231,6 +243,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (d.backers.persisted !== d.backers.items) w.backers.schedule(d.backers.items);
       if (d.packages.persisted !== d.packages.items) w.packages.schedule(d.packages.items);
       if (d.payments.persisted !== d.payments.items) w.payments.schedule(d.payments.items);
+      if (d.backing.persisted !== d.backing.items) w.backing.schedule(d.backing.items);
       if (d.transfers.persisted !== d.transfers.items) w.transfers.schedule(d.transfers.items);
       const st = { ...DEFAULT_SETTINGS, ...d.settings };
       // Older data has no bankrolls: one per currency is made on first launch.
@@ -244,6 +257,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setBackers(d.backers.items);
       setPackages(d.packages.items);
       setPayments(d.payments.items);
+      setBacking(d.backing.items);
       setSettingsState(st);
       draftRef.current = d.draft;
       setDraftKey(draftKeyOf(d.draft));
@@ -271,6 +285,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       w.backers.flush();
       w.packages.flush();
       w.payments.flush();
+      w.backing.flush();
     });
     return () => sub.remove();
   }, [flushDraft]);
@@ -299,6 +314,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loaded.current) writers.current?.payments.schedule(payments);
   }, [payments]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.backing.schedule(backing);
+  }, [backing]);
   useEffect(() => {
     if (loaded.current) persist(KEYS.settings, settings);
   }, [settings]);
@@ -392,6 +410,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const savePayment = useCallback((p: BackerPayment) => setPayments((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
   const deletePayment = useCallback((id: string) => setPayments((l) => l.filter((x) => x.id !== id)), []);
+  const backingRef = useRef(backing);
+  useEffect(() => {
+    backingRef.current = backing;
+  }, [backing]);
+  const saveBacked = useCallback((st: Statement) => {
+    const cur = backingRef.current.find((x) => x.id === st.id);
+    if (cur && cur.statement.at > st.at) return 'older' as const;
+    const now = Date.now();
+    setBacking((l) => upsert(l, { id: st.id, statement: st, createdAt: cur?.createdAt ?? now, updatedAt: now }));
+    return cur ? ('updated' as const) : ('new' as const);
+  }, []);
+  const deleteBacked = useCallback((id: string) => setBacking((l) => l.filter((x) => x.id !== id)), []);
   const setSettings = useCallback((patch: Partial<Settings>) => setSettingsState((s) => ({ ...s, ...patch })), []);
   const setDraft = useCallback(
     (h: Hand | null) => {
@@ -419,10 +449,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setBackers(bk.list);
       setPackages(mergeById(packages, b.packages ?? []).list);
       setPayments(mergeById(payments, b.payments ?? []).list);
+      setBacking(mergeById(backing, b.backing ?? []).list);
       setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added };
     },
-    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments],
+    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, backing],
   );
 
   const activeSession = useMemo(
@@ -450,6 +481,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       backers,
       packages,
       payments,
+      backing,
       settings,
       activeSession,
       defaultBankroll,
@@ -469,6 +501,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       deletePackage,
       savePayment,
       deletePayment,
+      saveBacked,
+      deleteBacked,
       setSettings,
       get draft() {
         return draftRef.current;
@@ -478,7 +512,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, setSettings, draftKey, setDraft, importData],
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, backing, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveBacked, deleteBacked, setSettings, draftKey, setDraft, importData],
   );
 
   // Nothing renders before the data is in, so no screen flashes its empty

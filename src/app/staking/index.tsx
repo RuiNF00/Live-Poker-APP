@@ -18,7 +18,7 @@ import type { Backer } from '@/store/types';
 import { C, S } from '@/theme';
 
 export default function StakingScreen() {
-  const { backers, saveBacker, settings, activeSession } = useStore();
+  const { backers, backing, saveBacker, settings, activeSession } = useStore();
   const { ledgers } = useStaking();
   const [edit, setEdit] = useState<Backer | null>(null);
   const cur = settings.currency;
@@ -92,6 +92,18 @@ export default function StakingScreen() {
             </Section>
           </>
         )}
+
+        <Section title={t('Quem eu banco')}>
+          <ListGroup>
+            <ListItem
+              icon="people-circle-outline"
+              iconColor={C.info}
+              title={backing.length ? (backing.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: backing.length })) : t('Também bancas outros jogadores?')}
+              subtitle={backing.length ? t('Ação em aberto, o que te devem e sessões em direto') : t('Guarda as contas que te enviam e segue-os num só sítio.')}
+              onPress={() => router.push('/backing')}
+            />
+          </ListGroup>
+        </Section>
 
         <Section title={t('Link em direto')}>
           <Card style={{ gap: S.md }}>
