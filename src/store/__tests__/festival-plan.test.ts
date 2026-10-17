@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LISBOA_NOV_2026, PRAGUE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
+import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
@@ -166,7 +166,7 @@ test('a tournament the player adds: in the schedule, planned, reminded, startabl
 });
 
 test('November schedules: official rows only, start order, unique ids, Day 2s free and without a structure', () => {
-  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026]) {
+  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026]) {
     assert.ok(FESTIVALS.includes(f), f.id);
     assert.equal(new Set(f.events.map((e) => e.id)).size, f.events.length, f.id);
     const starts = f.events.map((e) => e.start);
@@ -184,13 +184,12 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
   assert.deepEqual(sp.events.filter((e) => e.number === 26 && !e.day2).map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '1F', '1G', '1H', '1I', '1J']);
   assert.deepEqual(['buyIn', 'stack', 'levelMinutes'].map((k) => sp.events.find((e) => e.id === '26-1A')![k as 'buyIn']), [5000, 40000, 40]);
   assert.equal(venueTime(sp, '2026-11-16T12:00'), Date.UTC(2026, 10, 16, 15));
-  // #94 Day 1B has no published time: left out, said in the notes.
-  assert.ok(!sp.events.some((e) => e.id === '94-1B'));
+  assert.deepEqual(['start', 'levelMinutes'].map((k) => sp.events.find((e) => e.id === '94-1B')![k as 'start']), ['2026-11-27T20:00', 25]);
   // Torrelodones: the Low Cost flight has its own buy-in and structure.
   const lc = TORRELODONES_NOV_2026.events.find((e) => e.id === '6-1C')!;
   assert.deepEqual([lc.buyIn, lc.stack, lc.levelMinutes], [300, 25000, 20]);
-  // Lisbon: no #7 until its buy-in is out; the Turbo flight gets no structure.
-  assert.ok(!LISBOA_NOV_2026.events.some((e) => e.number === 7 && !e.unnumbered));
+  // Lisbon: #7 has its buy-in; the Turbo flight gets no structure.
+  assert.equal(LISBOA_NOV_2026.events.find((e) => e.id === '7')!.buyIn, 125);
   assert.equal(LISBOA_NOV_2026.events.find((e) => e.id === '2-1E')!.stack, undefined);
   // Prague: the €1,100 Main Event's flights each have their own level length; the €5,300 one has no published levels.
   const pr = PRAGUE_DEC_2026.events;
@@ -199,4 +198,8 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
   assert.equal(pr.find((e) => e.id === '55-1A')!.buyIn, 1650);
   // Satellite groups: one numbered event per published start.
   assert.deepEqual(pr.filter((e) => e.name === 'Satellite to #1 Main Event').map((e) => e.number), [2, 5, 7, 9, 11]);
+  // Punta del Este: Main Event flights 1A-1E, Day 2 on 8 Dec (UTC-3).
+  const pu = PUNTA_DEL_ESTE_DEC_2026.events.filter((e) => e.number === 8);
+  assert.deepEqual(pu.map((e) => e.flight), ['1A', '1B', '1C', '1D', '1E', '2']);
+  assert.deepEqual([pu[0].buyIn, pu[0].stack, pu[0].levelMinutes, pu[0].guarantee], [2750, 20000, 30, 750_000]);
 });

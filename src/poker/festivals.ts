@@ -3,7 +3,7 @@
 // include the fee, times are local to the venue. When a schedule changes,
 // update the rows and `source.checked` together.
 
-import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
+import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
 
 export interface FestivalEvent {
   /** Stable across app versions: plans and sessions point at it. */
@@ -564,6 +564,7 @@ export const FESTIVALS: Festival[] = [
   PERALADA_NOV_2026,
   ESPINHO_DEC_2026,
   PRAGUE_DEC_2026,
+  PUNTA_DEL_ESTE_DEC_2026,
 ];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */

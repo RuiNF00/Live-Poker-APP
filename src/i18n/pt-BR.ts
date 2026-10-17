@@ -1476,10 +1476,9 @@ const ptBR: Record<string, string> = {
   'Peralada, novembro 2026': 'Peralada, novembro de 2026',
   'Espinho, dezembro 2026': 'Espinho, dezembro de 2026',
   'Praga, dezembro 2026': 'Praga, dezembro de 2026',
-  'O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.': 'O Dia 1B do #94, em 28 de novembro, ainda não tem horário publicado.',
-  'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': 'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
+  'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
 };
 
 export default ptBR;
