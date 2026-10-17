@@ -10,6 +10,7 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { AddFestivalEvent } from '@/components/AddFestivalEvent';
 import { spanLabel } from '@/components/FestivalItem';
+import { SharePlan } from '@/components/SharePlan';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { useStartEvent } from '@/components/useStartEvent';
 import { usePro } from '@/billing/pro';
@@ -143,6 +144,7 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
 
         {f.events.length ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
         {f.events.length || f.dates ? <TripLink f={f} plan={plan} /> : null}
+        {tot.events ? <SharePlan f={f} plan={plan} /> : null}
 
         {f.events.length ? <ActionOffers f={f} picked={plan.picked} /> : null}
 

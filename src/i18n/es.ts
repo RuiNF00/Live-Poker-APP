@@ -3134,6 +3134,18 @@ const es: Record<string, string> = {
   'Praga': 'Praga',
   'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
+  'O MEU PLANO': 'MI PLAN',
+  '+1 torneio': '+1 torneo',
+  '+{n} torneios': '+{n} torneos',
+  'Vens também?': '¿Vienes también?',
+  'Imagem e texto': 'Imagen y texto',
+  'Dias, horas e torneios, para o grupo': 'Días, horas y torneos, para el grupo',
+  'Partilhar o meu plano': 'Compartir mi plan',
+  'Para quem vai contigo: dias, horas e torneios': 'Para quien va contigo: días, horas y torneos',
+  'Mostrar buy-ins': 'Mostrar buy-ins',
+  'Nunca o total nem a banca': 'Nunca el total ni tu banca',
+  'O meu plano: {name}': 'Mi plan: {name}',
+  'Feito com Sweatbook: {link}': 'Hecho con Sweatbook: {link}',
 };
 
 export default es;
