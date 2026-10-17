@@ -94,3 +94,13 @@ export function rescaleStacks(hand: Hand, game: GameInfo): Hand {
   const f = game.bb / hand.game.bb;
   return { ...hand, game, players: hand.players.map((p) => ({ ...p, stack: Math.max(game.bb, Math.round(p.stack * f)) })) };
 }
+
+/** Tournament blinds went up: the next level in MTT_LEVELS, with the ante kept at the same share of the big blind. Null past the last one. */
+export function nextLevel(game: GameInfo): GameInfo | null {
+  if (game.kind !== 'mtt') return null;
+  const at = MTT_LEVELS.find(([, bb]) => bb > game.bb);
+  if (!at) return null;
+  const [sb, bb] = at;
+  const ante = game.ante && game.bb ? Math.round((game.ante * bb) / game.bb) : 0;
+  return { ...game, sb, bb, ante, level: game.level ? game.level + 1 : undefined };
+}
