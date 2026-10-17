@@ -237,7 +237,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
       {/* Only once both confirmed: before that the page is about the deal, not the app. */}
       {confirmed && accounts ? (
-        <section className="live-cta" id="baixar">
+        <section className="live-cta sw-accounts" id="baixar">
           <Mark size={36} />
           <p>{c.confirmedCta}</p>
           <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
@@ -256,7 +256,7 @@ export type C = ReturnType<typeof swapCopy>;
 /** In place of the accounts when the creator doesn't have Pro: the results stay, the app does the maths. */
 export function AccountsInApp({ c, locale, stores }: { c: C; locale: Locale; stores: ReturnType<typeof storeLinks> }) {
   return (
-    <section className="live-cta" id="baixar">
+    <section className="live-cta sw-accounts" id="baixar">
       <Mark size={36} />
       <p>
         <b>{c.accountsInApp}</b>
@@ -270,7 +270,7 @@ export function AccountsInApp({ c, locale, stores }: { c: C; locale: Locale; sto
 
 export function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   return (
-    <header className="live-top">
+    <header className="live-top sw-top">
       <a href="/" className="live-brand" aria-label="Sweatbook">
         <Mark size={26} />
         <Wordmark className="live-word" />

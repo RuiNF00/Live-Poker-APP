@@ -217,7 +217,10 @@ export function groupLeaveJobs(list: Pick<SwapGroup, 'id' | 'token' | 'gone'>[])
 }
 
 const DAY = 86400000;
-const sameName = (a: string, b: string) => !!a.trim() && a.trim().toLowerCase() === b.trim().toLowerCase();
+// A session started from the festival plan is named per flight ("#12 $5k PLO · Flight A"); a swap
+// for the event covers every flight.
+const eventKey = (x: string) => x.trim().toLowerCase().replace(/\s*·\s*flight\s+\w+$/, '');
+const sameName = (a: string, b: string) => !!eventKey(a) && eventKey(a) === eventKey(b);
 
 /**
  * Per session id, what group swaps add (+) or take (−), with the same rules as pair swaps:

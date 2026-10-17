@@ -94,3 +94,17 @@ test('lastTimeAt: a name played before brings its buy-in, blinds and starting st
   assert.equal(lastTimeAt('NLH 1/2', { ...form, kind: 'cash' }, [cash]).stack, 300);
   assert.deepEqual(lastTimeAt('NLH 1/2', form, [cash]), { name: 'NLH 1/2' });
 });
+
+test('lastTimeAt: the level clock and the blind structure come along, the field and payouts do not', () => {
+  const structure = [{ sb: 100, bb: 200, ante: 200, minutes: 40 }];
+  const old = mk({ name: 'Deepstack', levelMinutes: 40, tourney: { structure, structureName: 'Deep 40', startStack: 40000, entries: 180, left: 12, payouts: [5000] } });
+  const form = mk({ id: 'n', name: '', endedAt: undefined });
+  const got = lastTimeAt('Deepstack', form, [old]);
+  assert.equal(got.levelMinutes, 40);
+  assert.deepEqual(got.tourney, { structure, structureName: 'Deep 40', startStack: 40000 });
+  // Cash keeps the level clock (if any) but never a tournament structure.
+  const cash = mk({ kind: 'cash', name: 'NLH 1/2', levelMinutes: 30, tourney: { structure } });
+  const c = lastTimeAt('NLH 1/2', { ...form, kind: 'cash' }, [cash]);
+  assert.equal(c.levelMinutes, 30);
+  assert.equal(c.tourney, undefined);
+});
