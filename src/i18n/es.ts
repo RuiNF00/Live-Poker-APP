@@ -3185,6 +3185,8 @@ const es: Record<string, string> = {
   'Ainda dá para entrar. Toca para começar a sessão.': 'Todavía puedes entrar. Toca para empezar la sesión.',
   'Avisamos-te {n} min antes de fechar.': 'Te avisamos {n} min antes del cierre.',
   'Hora oficial': 'Hora oficial',
+  'Punta Cana, janeiro 2027': 'Punta Cana, enero 2027',
+  'República Dominicana': 'República Dominicana',
 };
 
 export default es;

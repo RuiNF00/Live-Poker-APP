@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
+import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
 import { buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
@@ -173,7 +173,7 @@ test('a tournament the player adds: in the schedule, planned, reminded, startabl
 });
 
 test('November schedules: official rows only, start order, unique ids, Day 2s free and without a structure', () => {
-  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026]) {
+  for (const f of [SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026, LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_DEL_ESTE_DEC_2026, PUNTA_CANA_JAN_2027]) {
     assert.ok(FESTIVALS.includes(f), f.id);
     assert.equal(new Set(f.events.map((e) => e.id)).size, f.events.length, f.id);
     const starts = f.events.map((e) => e.start);
@@ -184,6 +184,11 @@ test('November schedules: official rows only, start order, unique ids, Day 2s fr
       if (e.levelMinutes) assert.ok(e.stack, `${f.id} ${e.id}`);
     }
   }
+  // Punta Cana: #1-#18; the Main's three flights each with its Day 2 the next day.
+  const pc = PUNTA_CANA_JAN_2027;
+  assert.deepEqual([...new Set(pc.events.map((e) => e.number))].sort((a, b) => a - b), Array.from({ length: 18 }, (_, i) => i + 1));
+  assert.deepEqual(pc.events.filter((e) => e.number === 11).map((e) => e.flight), ['1A', '2A', '1B', '2B', '1C', '2C']);
+  assert.deepEqual(festivalSpan(pc), { from: '2027-01-24', to: '2027-02-02' });
   // São Paulo: #1-#105, in the venue's time (UTC-3).
   const sp = SAO_PAULO_NOV_2026;
   assert.deepEqual([...new Set(sp.events.map((e) => e.number))].sort((a, b) => a - b), Array.from({ length: 105 }, (_, i) => i + 1));
