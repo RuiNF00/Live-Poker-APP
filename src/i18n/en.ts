@@ -545,6 +545,9 @@ const en: Record<string, string> = {
   'Recebes um código e as mãos, sessões e notas ficam guardadas. Se perderes o telemóvel, não perdes nada.': 'You get a code and your hands, sessions and notes are kept safe. Lose your phone, lose nothing.',
   'Staking ou despesas': 'Staking or expenses',
   'Limpar': 'Clear',
+  'Pára antes da tua decisão e esconde o resultado.': 'Stops before your decision and hides the result.',
+  'Com marca Sweatbook': 'Sweatbook branding',
+  'Tirar a marca é do Pro': 'Removing the branding is a Pro feature',
 };
 
 export default en;
