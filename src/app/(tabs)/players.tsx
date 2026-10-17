@@ -1,21 +1,20 @@
 // Player notes: who is who at the table, how they play, and the hands you have
 // recorded against them.
 
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, Modal, ScrollView, View } from 'react-native';
 
-import { inputStyle } from '@/components/entry/ContextSheet';
-import { Button, Chip, Empty, Row, T } from '@/components/ui';
+import { Avatar } from '@/components/Avatar';
+import { CardRow } from '@/components/PlayingCard';
+import { Button, Card, Chip, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
-import { C, R } from '@/theme';
+import { C, S } from '@/theme';
 
 function handsWith(hands: Hand[], p: PlayerNote) {
   const n = p.name.trim().toLowerCase();
@@ -23,7 +22,6 @@ function handsWith(hands: Hand[], p: PlayerNote) {
 }
 
 export default function PlayersScreen() {
-  const insets = useSafeAreaInsets();
   const { players, savePlayer, deletePlayer, hands } = useStore();
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<PlayerNote | null>(null);
@@ -37,52 +35,62 @@ export default function PlayersScreen() {
   const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
+    <Screen scroll={false}>
       <FlatList
         data={rows}
         keyExtractor={(p) => p.id}
-        contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingHorizontal: S.gutter, paddingTop: S.sm, gap: S.sm, paddingBottom: 40 }}
         ListHeaderComponent={
-          <View style={{ gap: 12, marginBottom: 4 }}>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <T v="title">{t('Jogadores')}</T>
-              <Button small title={t('+ Novo')} onPress={() => setEdit(blank())} />
-            </Row>
-            {players.length > 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.md, paddingHorizontal: 10, borderWidth: 1, borderColor: C.border }}>
-                <Ionicons name="search" size={16} color={C.muted} />
-                <TextInput value={q} onChangeText={setQ} placeholder={t('Nome, aspeto, tag…')} placeholderTextColor={C.muted} style={{ flex: 1, color: C.text, paddingVertical: 10, paddingHorizontal: 8, fontSize: 15 }} />
-              </View>
-            )}
+          <View style={{ gap: S.md, marginBottom: S.sm }}>
+            <ScreenHeader title={t('Jogadores')} right={<IconButton name="person-add-outline" label={t('Novo jogador')} onPress={() => setEdit(blank())} />} />
+            {players.length > 0 && <SearchField value={q} onChange={setQ} placeholder={t('Nome, aspeto, tag…')} />}
           </View>
         }
         ListEmptyComponent={
-          <Empty
-            title={t('Notas sobre os teus adversários')}
-            body={t('Guarda quem é quem (o do boné, o alemão da mesa 4), como joga e as mãos que tiveste contra ele. Na próxima vez que o vires, já sabes.')}
-            action={<Button title={t('Adicionar jogador')} onPress={() => setEdit(blank())} />}
-          />
+          players.length === 0 ? (
+            <Empty
+              icon="people-outline"
+              title={t('Conhece a tua mesa')}
+              body={t('Quem é quem, como joga e as mãos que tiveste contra ele. Na próxima vez que o vires, já sabes.')}
+              action={<Button title={t('Adicionar jogador')} icon="person-add-outline" onPress={() => setEdit(blank())} />}
+            />
+          ) : (
+            <Empty icon="search" title={t('Nada encontrado')} />
+          )
         }
         renderItem={({ item }) => {
           const n = handsWith(hands, item).length;
           return (
-            <Pressable onPress={() => setEdit(item)} style={{ backgroundColor: C.surface, borderRadius: R.lg, padding: 12, borderWidth: 1, borderColor: C.border, gap: 4 }}>
-              <Row style={{ justifyContent: 'space-between' }}>
-                <T v="h2">{item.name || t('Sem nome')}</T>
-                <T v="tiny">{n ? (n === 1 ? t('1 mão') : t('{n} mãos', { n })) : ''}</T>
+            <Card onPress={() => setEdit(item)} style={{ gap: S.sm, paddingVertical: S.md }}>
+              <Row gap={12}>
+                <Avatar name={item.name || '?'} size={40} />
+                <View style={{ flex: 1, gap: 1 }}>
+                  <T v="h2" numberOfLines={1}>
+                    {item.name || t('Sem nome')}
+                  </T>
+                  {item.look ? (
+                    <T v="small" numberOfLines={1}>
+                      {item.look}
+                    </T>
+                  ) : null}
+                </View>
+                {n ? <Pill icon="albums-outline" label={String(n)} /> : null}
               </Row>
-              {item.look ? <T v="small">{item.look}</T> : null}
               {item.tags.length ? (
-                <T v="tiny" color={C.accent}>
-                  {item.tags.map((x) => t(x)).join(' · ')}
-                </T>
+                <Row gap={6} style={{ flexWrap: 'wrap' }}>
+                  {item.tags.map((x) => (
+                    <Pill key={x} label={t(x)} color={tagColor(x)} />
+                  ))}
+                </Row>
               ) : null}
               {item.notes ? (
-                <T v="small" numberOfLines={2} style={{ color: C.text }}>
+                <T v="callout" numberOfLines={2} style={{ color: C.text }}>
                   {item.notes}
                 </T>
               ) : null}
-            </Pressable>
+            </Card>
           );
         }}
       />
@@ -103,59 +111,56 @@ export default function PlayersScreen() {
           />
         )}
       </Modal>
-    </View>
+    </Screen>
   );
+}
+
+/** Weak spots in green, danger in red, the rest neutral: what to exploit at a glance. */
+function tagColor(tag: string): string | undefined {
+  if (['Fish', 'Calling station', 'Tilt', 'Passivo'].includes(tag)) return C.good;
+  if (['Reg', 'Agressivo', 'Bluffer'].includes(tag)) return C.bad;
+  if (['Nit', 'Tight'].includes(tag)) return C.info;
+  return undefined;
 }
 
 function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
   const [x, setX] = useState(p);
   const toggle = (tg: string) => setX((v) => ({ ...v, tags: v.tags.includes(tg) ? v.tags.filter((k) => k !== tg) : [...v.tags, tg] }));
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, gap: 14, paddingTop: 24, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-      <Row style={{ justifyContent: 'space-between' }}>
-        <T v="h1">{p.name ? p.name : t('Novo jogador')}</T>
-        <Pressable onPress={onClose}>
-          <T v="body" color={C.textDim}>
-            {t('Fechar')}
-          </T>
-        </Pressable>
-      </Row>
-      <TextInput value={x.name} onChangeText={(name) => setX({ ...x, name })} placeholder={t('Nome ou alcunha')} placeholderTextColor={C.muted} style={inputStyle} />
-      <TextInput value={x.look} onChangeText={(look) => setX({ ...x, look })} placeholder={t('Como o reconheces (boné, óculos, mesa…)')} placeholderTextColor={C.muted} style={inputStyle} />
-      <Row style={{ flexWrap: 'wrap' }} gap={6}>
-        {PLAYER_TAGS.map((tg) => (
-          <Chip key={tg} label={t(tg)} active={x.tags.includes(tg)} onPress={() => toggle(tg)} />
-        ))}
-      </Row>
-      <TextInput
-        value={x.notes}
-        onChangeText={(notes) => setX({ ...x, notes })}
-        placeholder={t('Notas: tendências, tells, sizings…')}
-        placeholderTextColor={C.muted}
-        multiline
-        style={[inputStyle, { minHeight: 110, textAlignVertical: 'top' }]}
-      />
-      <Button title={t('Guardar')} disabled={!x.name.trim()} onPress={() => onSave(x)} />
-      {hands.length > 0 && (
-        <View style={{ gap: 6 }}>
-          <T v="h2">{t('Mãos contra {name}', { name: x.name })}</T>
-          {hands.map((h) => (
-            <Pressable
-              key={h.id}
-              onPress={() => {
-                onClose();
-                router.push({ pathname: '/hand/[id]', params: { id: h.id } });
-              }}
-              style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-              <T v="small" style={{ color: C.text }}>
-                {comboLabel(h.players[h.hero].cards)} · {h.game.name || t('Mão')}
-              </T>
-              <T v="tiny">{shortDate(h.createdAt)}</T>
-            </Pressable>
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+      <SheetHeader title={p.name ? p.name : t('Novo jogador')} onClose={onClose} closeLabel={t('Fechar')} />
+      <Card style={{ gap: S.lg }}>
+        <Field label={t('Nome ou alcunha')} value={x.name} onChangeText={(name) => setX({ ...x, name })} placeholder={t('Ex.: Boné azul')} autoFocus={!p.name} />
+        <Field label={t('Como o reconheces')} value={x.look} onChangeText={(look) => setX({ ...x, look })} placeholder={t('Boné, óculos, lugar 3…')} />
+      </Card>
+      <Section title={t('Perfil')}>
+        <Row style={{ flexWrap: 'wrap' }} gap={S.sm}>
+          {PLAYER_TAGS.map((tg) => (
+            <Chip key={tg} label={t(tg)} active={x.tags.includes(tg)} color={tagColor(tg)} onPress={() => toggle(tg)} />
           ))}
-        </View>
+        </Row>
+      </Section>
+      <Field label={t('Notas')} value={x.notes} onChangeText={(notes) => setX({ ...x, notes })} placeholder={t('Tendências, tells, sizings…')} multiline />
+      <Button title={t('Guardar')} icon="checkmark" disabled={!x.name.trim()} onPress={() => onSave(x)} />
+      {hands.length > 0 && (
+        <Section title={t('Mãos contra {name}', { name: x.name })}>
+          <ListGroup>
+            {hands.map((h) => (
+              <ListItem
+                key={h.id}
+                left={h.players[h.hero].cards?.length === 2 ? <CardRow cards={h.players[h.hero].cards!} size="xs" gap={2} /> : undefined}
+                title={comboLabel(h.players[h.hero].cards) + ' · ' + (h.game.name || t('Mão'))}
+                value={shortDate(h.createdAt)}
+                onPress={() => {
+                  onClose();
+                  router.push({ pathname: '/hand/[id]', params: { id: h.id } });
+                }}
+              />
+            ))}
+          </ListGroup>
+        </Section>
       )}
-      {p.name ? <Button title={t('Apagar jogador')} kind="danger" onPress={onDelete} /> : null}
+      {p.name ? <Button title={t('Apagar jogador')} kind="danger" size="md" icon="trash-outline" onPress={onDelete} /> : null}
     </ScrollView>
   );
 }
