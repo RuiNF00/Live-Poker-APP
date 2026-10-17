@@ -13,11 +13,13 @@ import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from '.
 import { IcmPanel } from './replayer/IcmPanel';
 import { useReduceMotion } from './replayer/motion';
 import { ReplayerTable } from './replayer/ReplayerTable';
+import { Scrubber } from './replayer/Scrubber';
+import { motionTimeline } from './replayer/timeline';
 import { tap } from './ui';
 
 const SPEEDS = [1, 1.5, 2, 0.5];
 const TIPS_KEY = 'sweatbook.replayer.tips.v1';
-const BASE_MS = 1100;
+const NAMES_KEY = 'sweatbook.replayer.hideNames.v1';
 
 /**
  * Hand replayer, built for a phone held upright. Visual and interaction base:
@@ -78,14 +80,19 @@ export function Replayer({
   const atEnd = !locked && k >= steps.length - 1;
 
   // Playback stops by itself at the last step it may show.
+  // One timeline for the replayer and the Story/reel export: how long each step holds, what moves.
+  const reduceMotion = useReduceMotion();
+  const motion = useMemo(() => motionTimeline(hand, r, { reduce: reduceMotion }), [hand, r, reduceMotion]);
+  // A step plays its animations only when reached going forward.
+  const [came, setCame] = useState({ k, from: k });
+  if (came.k !== k) setCame({ k, from: came.k });
+  const forward = came.k === k && came.from < k;
   const running = playing && k < last;
   useEffect(() => {
     if (!running) return;
-    // A new street gets a beat longer, like a dealer burning and turning.
-    const pause = steps[k + 1]?.kind === 'board' ? 1.4 : 1;
-    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), (BASE_MS * pause) / SPEEDS[speed]);
+    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), motion[k].ms / SPEEDS[speed]);
     return () => clearTimeout(id);
-  }, [running, k, last, steps, speed]);
+  }, [running, k, last, motion, speed]);
 
   // A card being dealt is felt as well as seen: one firm tap per new street.
   const prevK = useRef(k);
@@ -127,8 +134,27 @@ export function Replayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dealt]);
 
-  const view = useMemo(() => viewAt(hand, r, k, { inBB, reveal: reveal && !locked, atEnd }), [hand, r, k, inBB, reveal, locked, atEnd]);
-  const items = useMemo(() => timeline(hand, r, inBB), [hand, r, inBB]);
+  // Names off for a screenshot or a screen share: every player shows as their position, hero as "Hero".
+  const named = hand.players.some((p) => p.name);
+  const [hideNames, setHideNames] = useState(false);
+  useEffect(() => {
+    let live = true;
+    AsyncStorage.getItem(NAMES_KEY)
+      .then((v) => live && v === '1' && setHideNames(true))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const toggleNames = () => {
+    tap('select');
+    AsyncStorage.setItem(NAMES_KEY, hideNames ? '0' : '1').catch(() => {});
+    setHideNames(!hideNames);
+  };
+  const shown = useMemo(() => (hideNames && named ? { ...hand, players: hand.players.map((p) => ({ ...p, name: '' })) } : hand), [hand, hideNames, named]);
+
+  const view = useMemo(() => viewAt(shown, r, k, { inBB, reveal: reveal && !locked, atEnd }), [shown, r, k, inBB, reveal, locked, atEnd]);
+  const items = useMemo(() => timeline(shown, r, inBB), [shown, r, inBB]);
 
   const go = (to: number) => {
     doneTips();
@@ -150,7 +176,7 @@ export function Replayer({
 
   return (
     <View style={{ gap: 8 }}>
-      <ReplayerTable animate view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
+      <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
 
       {locked && k === last ? (
         <QuizPanel
@@ -210,6 +236,26 @@ export function Replayer({
         <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={() => setSpeed((s) => (s + 1) % SPEEDS.length)} />
         <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => setInBB((b) => !b)} />
         <Ctrl icon={reveal ? 'eye' : 'eye-off'} label={t('Mostrar cartas')} active={reveal} onPress={() => setReveal((x) => !x)} />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1 }}>
+          <Scrubber
+            k={k}
+            last={last}
+            items={items}
+            onSeek={(to) => {
+              doneTips();
+              setPlaying(false);
+              setI(to);
+            }}
+          />
+        </View>
+        {named ? (
+          <View style={{ width: 52, flexDirection: 'row' }}>
+            <Ctrl icon={hideNames ? 'person-outline' : 'person'} label={hideNames ? t('Mostrar nomes') : t('Esconder nomes')} active={hideNames} onPress={toggleNames} />
+          </View>
+        ) : null}
       </View>
 
       {tips && !locked ? <TipBubble onClose={doneTips} /> : null}

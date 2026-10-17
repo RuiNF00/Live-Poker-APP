@@ -2,7 +2,7 @@
 // seats placed by hand for every table size (layout.ts), ivory cards, chip stacks
 // and an action badge on each plate. Visual base: the stats-app replayer.
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
@@ -13,8 +13,8 @@ import { BRAND, C, F, ff, posColor } from '@/theme';
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
 import type { BadgeKind, RpSeat, RpView } from './model';
-import type { Street } from '@/poker/types';
 import { FlyingChips, RiseIn, useReduceMotion, type Flight } from './motion';
+import { progressAt, type MotionAnim, type MotionStep } from './timeline';
 import { RpCard } from './RpCard';
 
 
@@ -28,7 +28,6 @@ export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
 };
 
 
-const STREET_NO: Record<Street, number> = { preflop: 0, flop: 1, turn: 2, river: 3 };
 
 /** Same marks as the tags beside the two boards. */
 const RUN_MARK = { 1: '①', 2: '②' } as const;
@@ -75,10 +74,16 @@ export function ReplayerTable({
   onTapLeft,
   onTapRight,
   animate = false,
+  motion,
+  at,
 }: {
   view: RpView;
   /** Live motion between steps (the in-app replayer). Off for still renders such as Story frames. */
   animate?: boolean;
+  /** The step's entry from `motionTimeline`, passed only when it was reached going forward. */
+  motion?: MotionStep;
+  /** A still frame `at` ms into the step's animations (deterministic capture). Also read from `view.motion`. */
+  at?: number;
   heroIndex: number;
   button: number;
   onTapLeft?: () => void;
@@ -103,34 +108,34 @@ export function ReplayerTable({
     return { x: (c.x / w) * 100, y: map.seats[vis(i)].y };
   };
 
-  // Motion between steps: bets gather into the pot when a street is dealt, the pot slides to the winner.
-  const reduce = useReduceMotion() || !animate;
+  // Motion between steps, from the shared timeline: bets gather into the pot when a street is
+  // dealt, the pot slides to the winner. A still frame draws the same flights at one moment.
+  const still = at != null ? { anims: motion?.anims ?? view.motion?.anims ?? [], at } : (view.motion ?? null);
+  const reduce = useReduceMotion() || !animate || !!still;
   const [flights, setFlights] = useState<Flight[]>([]);
-  const prev = useRef<RpView | null>(null);
   const land = useCallback((id: string) => setFlights((fs) => fs.filter((f) => f.id !== id)), []);
-  useEffect(() => {
-    const before = prev.current;
-    prev.current = view;
-    if (!before || reduce || !w) return;
+  const flightsFor = (anims: MotionAnim[], tag: string): Flight[] => {
     const potAt = { x: w / 2, y: (POT_Y / 100) * h };
-    const next: Flight[] = [];
-    const tag = Date.now().toString(36);
-    // The action that closes a street sweeps every bet into the middle (only going forward).
-    if (view.pot > before.pot && STREET_NO[view.street] >= STREET_NO[before.street] && !view.seats.some((s) => s.won)) {
-      for (const s of before.seats)
-        if (s.bet > 0 && view.seats[s.i].bet === 0) next.push({ id: `${tag}g${s.i}`, amount: s.bet, from: { x: (map.bets[vis(s.i)].x / 100) * w, y: (map.bets[vis(s.i)].y / 100) * h }, to: potAt });
+    const out: Flight[] = [];
+    for (const a of anims) {
+      if (a.kind === 'potGather')
+        for (const b of a.bets) out.push({ id: `${tag}g${b.seat}`, amount: b.amount, from: { x: (map.bets[vis(b.seat)].x / 100) * w, y: (map.bets[vis(b.seat)].y / 100) * h }, to: potAt, delay: a.start, dur: a.dur });
+      if (a.kind === 'chipsToWinner') {
+        const p = seatPt(a.seat);
+        out.push({ id: `${tag}w${a.seat}`, amount: a.amount, from: potAt, to: { x: (p.x / 100) * w, y: (p.y / 100) * h }, delay: a.start, dur: a.dur });
+      }
     }
-    const winners = view.seats.filter((s) => s.won);
-    if (winners.length && !before.seats.some((s) => s.won) && view.pot > 0) {
-      winners.forEach((s, j) => {
-        const p = seatPt(s.i);
-        next.push({ id: `${tag}w${s.i}`, amount: view.pot / winners.length, from: potAt, to: { x: (p.x / 100) * w, y: (p.y / 100) * h }, delay: j * 90 });
-      });
-    }
+    return out;
+  };
+  useEffect(() => {
+    if (!motion || reduce || !w) return;
+    const next = flightsFor(motion.anims, `${motion.k}.${Date.now().toString(36)}`);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (next.length) setFlights((fs) => [...fs, ...next]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, [motion]);
+  const stillFlights = still && w ? flightsFor(still.anims, 's') : [];
+  const riseAt = (c: number) => (still?.anims ?? motion?.anims)?.find((x) => x.kind === 'boardRise' && x.card === c);
 
   return (
     <View onLayout={onLayout} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO }}>
@@ -163,7 +168,7 @@ export function ReplayerTable({
           <View style={{ position: 'absolute', left: 0, right: 0, top: (BOARD_Y / 100) * h - boardH / 2, flexDirection: 'row', justifyContent: 'center', gap: SIZE.boardGap * k * boardScale(n) }}>
             {[0, 1, 2, 3, 4].map((c) =>
               view.board[c] ? (
-                <RiseIn key={view.board[c]} reduce={reduce} delay={c < 3 ? c * 80 : 0}>
+                <RiseIn key={view.board[c]} reduce={reduce} delay={riseAt(c)?.start ?? 0} p={still ? (riseAt(c) ? progressAt(riseAt(c)!, still.at) : 1) : undefined}>
                   <RpCard card={view.board[c]} w={boardW} h={boardH} />
                 </RiseIn>
               ) : (
@@ -233,6 +238,9 @@ export function ReplayerTable({
 
           {flights.map((f) => (
             <FlyingChips key={f.id} f={f} size={12 * k} onDone={land} />
+          ))}
+          {stillFlights.map((f) => (
+            <FlyingChips key={f.id} f={f} size={12 * k} p={progressAt({ start: f.delay ?? 0, dur: f.dur ?? 1 }, still!.at)} />
           ))}
 
           {/* seats */}

@@ -2709,6 +2709,11 @@ const es: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Tus reglas piden {need} ({n} buy-ins para {stake}): el saldo no pasa de eso.',
   'Podes levantar até {amount} e manter as regras ›': 'Puedes retirar hasta {amount} y mantener tus reglas ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  // Replayer: scrubber and hidden names
+  'Posição na mão': 'Posición en la mano',
+  'Passo {n} de {total}': 'Paso {n} de {total}',
+  'Esconder nomes': 'Ocultar nombres',
+  'Mostrar nomes': 'Mostrar nombres',
 };
 
 export default es;

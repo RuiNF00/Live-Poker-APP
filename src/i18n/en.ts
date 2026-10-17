@@ -2717,6 +2717,10 @@ const en: Record<string, string> = {
   'As tuas regras pedem {need} ({n} buy-ins para {stake}): o saldo não passa disso.': 'Your rules ask for {need} ({n} buy-ins for {stake}): the balance isn\'t above that.',
   'Podes levantar até {amount} e manter as regras ›': 'You can withdraw up to {amount} and keep your rules ›',
   '{amount} ≈ {home}': '{amount} ≈ {home}',
+  'Posição na mão': 'Position in the hand',
+  'Passo {n} de {total}': 'Step {n} of {total}',
+  'Esconder nomes': 'Hide names',
+  'Mostrar nomes': 'Show names',
 };
 
 export default en;
