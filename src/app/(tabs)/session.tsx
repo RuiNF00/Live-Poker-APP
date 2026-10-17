@@ -85,13 +85,15 @@ export default function SessionScreen() {
 }
 
 function Live({ s }: { s: Session }) {
-  useKeepAwake();
+  // A browser may refuse the wake lock; ending the session must not throw because of it.
+  useKeepAwake(undefined, { suppressDeactivateWarnings: true });
   const now = useTick(1000);
   const { saveSession, hands } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout'>(null);
   const [ending, setEnding] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
+  const [moods, setMoods] = useState<string[]>([]);
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
   // Memoised: this screen re-renders every second (clock) and hands can be thousands.
@@ -222,6 +224,14 @@ function Live({ s }: { s: Session }) {
                 {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                 {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
               </Row>
+              <View style={{ gap: S.sm }}>
+                <T v="label">{t('Como correu')}</T>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+                  {SESSION_TAGS.map((tg) => (
+                    <Chip key={tg} label={t(tg)} active={moods.includes(tg)} onPress={() => setMoods((m) => (m.includes(tg) ? m.filter((x) => x !== tg) : [...m, tg]))} />
+                  ))}
+                </View>
+              </View>
               <StakeFields s={s} onChange={save} />
               {(() => {
                 const end = { ...s, cashOut: finish.cashOut };
@@ -260,9 +270,10 @@ function Live({ s }: { s: Session }) {
                       finish: finish.place || undefined,
                       field: finish.field || undefined,
                       endedAt: now,
+                    tags: moods.length ? moods : undefined,
                       breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
                     });
-                    router.push('/bankroll');
+                    router.push({ pathname: '/summary/[id]', params: { id: s.id } });
                   }}
                 />
               </Row>
@@ -303,6 +314,9 @@ function Live({ s }: { s: Session }) {
     </View>
   );
 }
+
+/** One tap each when ending: how you played and what the table was like. */
+const SESSION_TAGS = ['Focado', 'Cansado', 'Tilt', 'Mesa fácil', 'Mesa difícil', 'Bem jogado', 'Azar'];
 
 /** Square icon-and-label button for the bar at the bottom of a live session. */
 function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; active?: boolean }) {

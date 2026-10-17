@@ -81,6 +81,7 @@ export default function RootLayout() {
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
+            <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
             <Stack.Screen name="odds" options={{ title: t('Calculadora de odds') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />

@@ -47,6 +47,8 @@ export interface Session {
   /** Names at the table by seat (0 = seat 1). */
   roster: string[];
   notes: string;
+  /** How it went, tapped when ending: focus, tilt, table. */
+  tags?: string[];
   /** Where it was played. Missing = live (the app's home turf). */
   format?: GameFormat;
   /** Bankroll it counts towards. Missing (older data): the first bankroll in its currency. */
