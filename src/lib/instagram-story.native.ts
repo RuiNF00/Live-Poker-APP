@@ -10,7 +10,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import type React from 'react';
 import { Linking, Platform, type View } from 'react-native';
-import Share, { Social } from 'react-native-share';
+import type RNShare from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
 
 import { t } from '@/i18n';
@@ -18,6 +18,21 @@ import { API, uploadHand } from '@/lib/share-api';
 import { appUserId } from '@/billing/purchases';
 import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
+
+// react-native-share is not in Expo Go, and importing it there throws. Load it
+// on first use; without it, stories go out through the system share sheet.
+let shareMod: typeof RNShare | null | undefined;
+function nativeShare(): typeof RNShare | null {
+  if (shareMod === undefined) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      shareMod = (require('react-native-share') as { default: typeof RNShare }).default;
+    } catch {
+      shareMod = null;
+    }
+  }
+  return shareMod;
+}
 
 /** Meta (Facebook) app id. Required by Instagram for direct story sharing since 2023. */
 const META_APP_ID = process.env.EXPO_PUBLIC_META_APP_ID as string | undefined;
@@ -38,7 +53,7 @@ export async function captureStory(ref: React.RefObject<React.ComponentRef<typeo
 
 async function instagramInstalled(): Promise<boolean> {
   try {
-    if (Platform.OS === 'android') return (await Share.isPackageInstalled('com.instagram.android')).isInstalled;
+    if (Platform.OS === 'android') return !!(await nativeShare()?.isPackageInstalled('com.instagram.android'))?.isInstalled;
     return await Linking.canOpenURL('instagram-stories://share');
   } catch {
     return false;
@@ -74,10 +89,11 @@ export async function renderVoiceStory(frame: string, voice: string, slot: { x: 
  */
 export async function shareStory(file: string, link: string, kind: 'image' | 'video' = 'image'): Promise<StoryTarget> {
   await Clipboard.setStringAsync(link).catch(() => {});
-  if (META_APP_ID && (await instagramInstalled())) {
+  const Share = nativeShare();
+  if (Share && META_APP_ID && (await instagramInstalled())) {
     try {
       await Share.shareSingle({
-        social: Social.InstagramStories,
+        social: Share.Social.INSTAGRAM_STORIES,
         appId: META_APP_ID,
         ...(kind === 'video' ? { backgroundVideo: file } : { backgroundImage: file }),
         linkUrl: link,
