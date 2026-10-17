@@ -45,6 +45,15 @@ export function matches(h: Hand, f: HandFilter): boolean {
   return true;
 }
 
+/**
+ * What the hands search looks in: tournament or game, venue, notes, title, players, and hero's
+ * cards both as a class ("aks") and as dealt ("ahkh").
+ */
+export function handSearchText(h: Hand): string {
+  const cards = h.players[h.hero]?.cards;
+  return [h.game.name, h.game.venue, h.notes, h.title, comboLabel(cards), cards?.join(''), ...h.players.map((p) => p.name)].join(' ').toLowerCase();
+}
+
 /** How many filters are on (sorting not counted). */
 export function activeFilters(f: HandFilter): number {
   return (f.pos.length ? 1 : 0) + (f.stack ? 1 : 0) + (f.game ? 1 : 0) + (f.combos.length ? 1 : 0);

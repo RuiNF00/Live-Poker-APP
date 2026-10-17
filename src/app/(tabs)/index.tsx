@@ -18,7 +18,7 @@ import { fileInFolder, needsReview } from '@/poker/review';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStat } from '@/components/StreakStat';
 import { filterPills, HandFilterSheet } from '@/components/HandFilters';
-import { activeFilters, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
+import { activeFilters, handSearchText, matches, NO_FILTER, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
 import { useSharedHands } from '@/lib/friend-hands';
@@ -233,7 +233,7 @@ export default function HandsScreen() {
               ) : !activeSession && idleDays >= 7 ? (
                 <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
               ) : null}
-              {searching ? <SearchField value={q} onChange={setQ} placeholder={t('Torneio, jogador, AKs…')} /> : null}
+              {searching ? <SearchField autoFocus value={q} onChange={setQ} placeholder={t('Torneio, jogador, AKs…')} /> : null}
               {usedTags.length > 0 || folders.length > 0 || toReview > 0 ? (
                 <ChipRow>
                   <Chip label={t('Todas')} active={!tag} onPress={() => setTag(null)} />
@@ -523,7 +523,7 @@ const searchCache = new WeakMap<Hand, string>();
 function searchText(h: Hand): string {
   let s = searchCache.get(h);
   if (s === undefined) {
-    s = [h.game.name, h.notes, h.title, comboLabel(h.players[h.hero].cards), ...h.players.map((p) => p.name)].join(' ').toLowerCase();
+    s = handSearchText(h);
     searchCache.set(h, s);
   }
   return s;

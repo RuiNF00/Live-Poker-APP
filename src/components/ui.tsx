@@ -917,7 +917,6 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
   );
 }
 
-/** Whole-number field: chips, money, places. */
 /** iOS number pads have no return key: one "OK" bar above them, mounted once in the root layout. */
 export const KEYBOARD_DONE_ID = 'sweatbook-keyboard-done';
 export function KeyboardDoneBar() {
@@ -931,7 +930,8 @@ export function KeyboardDoneBar() {
   );
 }
 
-export function NumField({ label, value, onChange, suffix }: { label: string; value: number; onChange: (n: number) => void; suffix?: string }) {
+/** Whole-number field: chips, money, places. */
+export function NumField({ label, value, onChange, suffix, autoFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean }) {
   return (
     <Field
       label={label}
@@ -940,13 +940,14 @@ export function NumField({ label, value, onChange, suffix }: { label: string; va
       onChangeText={(x) => onChange(parseInt(x.replace(/\D/g, ''), 10) || 0)}
       keyboardType="number-pad"
       inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_DONE_ID : undefined}
+      autoFocus={autoFocus}
       placeholder={suffix ? `0 ${suffix}` : '0'}
       inputStyle={{ fontFamily: F.mono, fontVariant: ['tabular-nums'] }}
     />
   );
 }
 
-export function SearchField({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle> }) {
+export function SearchField({ value, onChange, placeholder, style, autoFocus }: { value: string; onChange: (v: string) => void; placeholder: string; style?: StyleProp<ViewStyle>; autoFocus?: boolean }) {
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.md, paddingHorizontal: 12, borderWidth: 1, borderColor: C.fieldBorder, minHeight: 44, gap: 8 }, style]}>
       <Ionicons name="search" size={17} color={C.muted} />
@@ -954,6 +955,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         maxFontSizeMultiplier={CONTROL_SCALE}
         placeholderTextColor={C.muted}
         selectionColor={C.accent}
