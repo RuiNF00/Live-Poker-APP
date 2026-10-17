@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { isOffensive } from '@/lib/moderation';
 import { brand } from '@/config/brand';
@@ -40,6 +41,8 @@ export async function POST(req: Request) {
     revealAll: body.revealAll === true,
     quiz,
     allowComments: body.allowComments !== false,
+    // The app's random install id, hashed like a comment's author: readers can block every hand it sends.
+    senderKey: typeof body.authorId === 'string' && /^[\w-]{8,64}$/.test(body.authorId) ? createHash('sha256').update(`comment-author:${body.authorId}`).digest('hex') : null,
   });
   return NextResponse.json({ id, token: editToken, url: `${brand.siteUrl}/h/${id}` }, { status: 201, headers: cors });
 }

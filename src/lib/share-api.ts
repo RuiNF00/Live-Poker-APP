@@ -17,6 +17,8 @@ export interface Comment {
   createdAt: number;
   /** Street the comment is about; null or missing = the whole hand. */
   street?: Street | null;
+  /** Opaque id of who wrote it, on this hand only: "Bloquear" hides their comments on this phone. */
+  by?: string;
 }
 
 export function shareUrl(id: string) {
@@ -51,17 +53,19 @@ export async function uploadHand(hand: Hand, opts?: ShareOptions): Promise<{ id:
   const res = await fetch(`${API}/api/hands`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ hand: publicHand(hand, opts) }),
+    // The install's random id, so a friend can block every hand from this phone (the server keeps only a hash).
+    body: JSON.stringify({ hand: publicHand(hand, opts), authorId: await authorId() }),
   });
   if (!res.ok) throw new Error('upload ' + res.status);
   return res.json();
 }
 
-export async function fetchHand(id: string): Promise<Hand> {
+/** A shared hand and `from`, the opaque id of the phone that shared it (for "Bloquear quem enviou"). */
+export async function fetchHand(id: string): Promise<{ hand: Hand; from?: string }> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error('fetch ' + res.status);
   const j = await res.json();
-  return (j.hand ?? j) as Hand;
+  return { hand: (j.hand ?? j) as Hand, from: typeof j.from === 'string' ? j.from : undefined };
 }
 
 /** How many times the shared page was opened. */

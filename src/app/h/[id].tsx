@@ -8,11 +8,11 @@ import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
-import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
+import { Button, confirmAction, Empty, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
-import { forgetFriendHand, hideFriendHand, markCommentsSeen, rememberFriendHand, useSharedHands } from '@/lib/friend-hands';
+import { blockCommenter, blockSender, forgetFriendHand, hideFriendHand, markCommentsSeen, rememberFriendHand, useBlocked, useSharedHands } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import { comboLabel } from '@/poker/cards';
@@ -30,6 +30,8 @@ export default function SharedHand() {
     if (id) track('link_opened', { share_id: id, ...(r ? { ref: String(r).slice(0, 20) } : {}), ...(utm_source ? { utm_source: String(utm_source) } : {}), ...(utm_medium ? { utm_medium: String(utm_medium) } : {}) });
   }, [id, r, utm_source, utm_medium]);
   const [hand, setHand] = useState<Hand | null>(null);
+  const [from, setFrom] = useState<string | undefined>();
+  const blocked = useBlocked();
   const [err, setErr] = useState(false);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
@@ -40,7 +42,12 @@ export default function SharedHand() {
 
   useEffect(() => {
     if (!id) return;
-    fetchHand(id).then(setHand).catch(() => setErr(true));
+    fetchHand(id)
+      .then((r) => {
+        setHand(r.hand);
+        setFrom(r.from);
+      })
+      .catch(() => setErr(true));
     fetchComments(id).then(setComments).catch(() => setComments([]));
   }, [id]);
   // A friend's hand goes on "Mãos partilhadas", to come back to the conversation; yours is there already.
@@ -49,8 +56,13 @@ export default function SharedHand() {
     if (!id || !hand || mine) return;
     const cards = hand.players[hand.hero]?.cards;
     // The ante in brackets reads like a typo in a one-line title: blinds only.
-    rememberFriendHand(id, [comboLabel(cards), blindsLabel({ game: { ...hand.game, ante: 0 } })].filter(Boolean).join(' · '), cards);
-  }, [id, hand, mine]);
+    rememberFriendHand(id, [comboLabel(cards), blindsLabel({ game: { ...hand.game, ante: 0 } })].filter(Boolean).join(' · '), cards, from);
+  }, [id, hand, mine, from]);
+  const visible = (comments ?? []).filter((c) => !blocked.commenter(c.by));
+  const block = (c: Comment) =>
+    confirmAction(t('Bloquear {name}?', { name: c.name }), t('Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.'), t('Bloquear'), () => blockCommenter(c.by!), true);
+  const blockFrom = () =>
+    confirmAction(t('Bloquear quem enviou?'), t('As mãos desta pessoa saem da tua lista e não voltam a entrar. Ela não é avisada.'), t('Bloquear'), () => blockSender(from!, id!), true);
   useEffect(() => {
     if (id && comments) markCommentsSeen(id, comments.length);
   }, [id, comments]);
@@ -92,7 +104,7 @@ export default function SharedHand() {
             </Link>
           </View>
           <T v="h2">{t('Comentários')}</T>
-          <CommentsList shareId={id!} comments={comments ?? []} onPosted={(c) => setComments((x) => [...(x ?? []), c])} />
+          <CommentsList shareId={id!} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block} />
           <Pressable
             disabled={reported}
             hitSlop={8}
@@ -107,6 +119,11 @@ export default function SharedHand() {
           {listed && !reported ? (
             <Pressable hitSlop={8} style={{ alignSelf: 'center' }} accessibilityRole="button" onPress={() => forgetFriendHand(id!)}>
               <T v="tiny">{t('Tirar das mãos partilhadas')}</T>
+            </Pressable>
+          ) : null}
+          {!mine && from && !blocked.sender(from) ? (
+            <Pressable hitSlop={8} style={{ alignSelf: 'center' }} accessibilityRole="button" onPress={blockFrom}>
+              <T v="tiny">{t('Bloquear quem enviou')}</T>
             </Pressable>
           ) : null}
         </>

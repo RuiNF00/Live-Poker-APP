@@ -16,6 +16,8 @@ export interface SharedHand {
   allowComments: boolean;
   viewCount: number;
   createdAt: string;
+  /** Opaque id of the app install that shared it (the same for all its hands), for "block who sent this". */
+  from?: string;
 }
 
 /** Same shape the app's share-api expects (name, text, createdAt in ms). */
@@ -27,6 +29,8 @@ export interface HandComment {
   /** Street of `stepIndex`, filled in by the comments API so the app can group without replaying. */
   street?: Street | null;
   createdAt: number;
+  /** Opaque id of the commenter on this hand only, for "block" on the reader's phone. */
+  by?: string;
 }
 
 export type VoteChoice = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';

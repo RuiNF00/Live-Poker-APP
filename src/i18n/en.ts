@@ -2987,6 +2987,12 @@ const en: Record<string, string> = {
   'Repor': 'Reset',
   'Aplicar': 'Apply',
   // Mãos partilhadas (friends' hands and new comments).
+  'Bloquear': 'Block',
+  'Bloquear {name}?': 'Block {name}?',
+  'Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.': "You stop seeing this person's comments on this hand. They aren't told.",
+  'Bloquear quem enviou?': 'Block the sender?',
+  'As mãos desta pessoa saem da tua lista e não voltam a entrar. Ela não é avisada.': "This person's hands leave your list and won't come back. They aren't told.",
+  'Bloquear quem enviou': 'Block the sender',
   '1 comentário novo': '1 new comment',
   '{n} comentários novos': '{n} new comments',
   'Nas mãos partilhadas': 'On shared hands',

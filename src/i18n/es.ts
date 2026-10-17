@@ -2982,6 +2982,12 @@ const es: Record<string, string> = {
   'Repor': 'Restablecer',
   'Aplicar': 'Aplicar',
   // Mãos partilhadas (friends' hands and new comments).
+  'Bloquear': 'Bloquear',
+  'Bloquear {name}?': '¿Bloquear a {name}?',
+  'Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.': 'Dejas de ver los comentarios de esta persona en esta mano. No se le avisa.',
+  'Bloquear quem enviou?': '¿Bloquear a quien la envió?',
+  'As mãos desta pessoa saem da tua lista e não voltam a entrar. Ela não é avisada.': 'Las manos de esta persona salen de tu lista y no vuelven a entrar. No se le avisa.',
+  'Bloquear quem enviou': 'Bloquear a quien la envió',
   '1 comentário novo': '1 comentario nuevo',
   '{n} comentários novos': '{n} comentarios nuevos',
   'Nas mãos partilhadas': 'En las manos compartidas',

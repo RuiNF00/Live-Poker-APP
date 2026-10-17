@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { opaqueId } from './abuse';
 import { serviceClient } from './supabase';
 import { DEMO_SHARE } from './demo';
 import type { HandComment, QuizSpot, SharedHand, VoteChoice } from './types';
@@ -15,6 +16,8 @@ export interface CreateShareInput {
   revealAll?: boolean;
   quiz?: QuizSpot | null;
   allowComments?: boolean;
+  /** Hash of the sharer's app id (same as their comment author key); never returned, only as `from`. */
+  senderKey?: string | null;
 }
 
 export interface NewComment {
@@ -99,6 +102,7 @@ interface ShareRow {
   allow_comments: boolean;
   view_count: number;
   created_at: string;
+  sender_key?: string | null;
 }
 
 interface CommentRow {
@@ -107,15 +111,19 @@ interface CommentRow {
   body: string;
   step_index: number | null;
   created_at: string;
+  author_key?: string | null;
 }
 
-const toComment = (r: CommentRow): HandComment => ({
+const toComment = (r: CommentRow, handId: string): HandComment => ({
   id: r.id,
   name: r.author_name,
   text: r.body,
   stepIndex: r.step_index,
   createdAt: new Date(r.created_at).getTime(),
+  ...(r.author_key ? { by: opaqueId(`comment:${handId}`, r.author_key) } : {}),
 });
+
+const fromOf = (senderKey: string | null | undefined) => (senderKey ? { from: opaqueId('sender', senderKey) } : {});
 
 class SupabaseStore implements ShareStore {
   constructor(private db: SupabaseClient) {}
@@ -127,6 +135,7 @@ class SupabaseStore implements ShareStore {
       p_reveal_all: input.revealAll ?? false,
       p_quiz: input.quiz ?? null,
       p_allow_comments: input.allowComments ?? true,
+      p_sender_key: input.senderKey ?? null,
     });
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
@@ -148,6 +157,7 @@ class SupabaseStore implements ShareStore {
       allowComments: data.allow_comments,
       viewCount: data.view_count,
       createdAt: data.created_at,
+      ...fromOf(data.sender_key),
     };
   }
 
@@ -170,7 +180,7 @@ class SupabaseStore implements ShareStore {
   async listComments(id: string) {
     const { data, error } = await this.db.rpc('list_hand_comments', { p_hand_id: id });
     if (error) throw error;
-    return ((data ?? []) as CommentRow[]).map(toComment);
+    return ((data ?? []) as CommentRow[]).map((r) => toComment(r, id));
   }
 
   async addComment(id: string, c: NewComment) {
@@ -183,7 +193,7 @@ class SupabaseStore implements ShareStore {
     });
     if (error) throw error;
     const row = (Array.isArray(data) ? data[0] : data) as CommentRow | null;
-    return row ? toComment(row) : null;
+    return row ? toComment({ ...row, author_key: c.authorKey }, id) : null;
   }
 
   async reportComment(commentId: string, reporterId: string) {
@@ -244,7 +254,7 @@ class SupabaseStore implements ShareStore {
 // ---------- Local JSON file (development and demos without Supabase) ----------
 
 interface LocalData {
-  shares: Record<string, SharedHand & { editTokenHash: string }>;
+  shares: Record<string, SharedHand & { editTokenHash: string; senderKey?: string | null }>;
   comments: Record<string, HandComment[]>;
   votes: Record<string, Record<string, VoteChoice>>;
   reports?: Record<string, string[]>;
@@ -312,6 +322,7 @@ class LocalStore implements ShareStore {
         viewCount: 0,
         createdAt: new Date().toISOString(),
         editTokenHash: sha256(editToken),
+        senderKey: input.senderKey ?? null,
       };
     });
     return { id, editToken };
@@ -320,8 +331,8 @@ class LocalStore implements ShareStore {
   async getShare(id: string) {
     const s = (await this.read()).shares[id];
     if (!s) return null;
-    const { editTokenHash: _, ...share } = s;
-    return share;
+    const { editTokenHash: _, senderKey, ...share } = s;
+    return { ...share, ...fromOf(senderKey) };
   }
 
   async deleteShare(id: string, editToken: string) {
@@ -348,7 +359,7 @@ class LocalStore implements ShareStore {
     const d = await this.read();
     return (d.comments[id] ?? [])
       .filter((c) => (d.reports?.[c.id]?.length ?? 0) < 3 && !d.removed?.includes(c.id))
-      .map(({ authorKey: _k, ...c }: HandComment & { authorKey?: string | null }) => c);
+      .map(({ authorKey, ...c }: HandComment & { authorKey?: string | null }) => ({ ...c, ...(authorKey ? { by: opaqueId(`comment:${id}`, authorKey) } : {}) }));
   }
 
   async removeComment(commentId: string, editToken: string, block: boolean) {
@@ -388,7 +399,8 @@ class LocalStore implements ShareStore {
       if (c.authorKey && d.blocks?.[id]?.includes(c.authorKey)) throw new Error('blocked');
       const comment = { id: randomUUID(), ...c, createdAt: Date.now() };
       (d.comments[id] ??= []).push(comment);
-      return comment;
+      const { authorKey, ...out } = comment;
+      return { ...out, ...(authorKey ? { by: opaqueId(`comment:${id}`, authorKey) } : {}) };
     });
   }
 

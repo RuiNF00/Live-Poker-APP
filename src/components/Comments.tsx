@@ -30,6 +30,7 @@ export function CommentsList({
   notes,
   onNote,
   onRemove,
+  onBlock,
 }: {
   shareId: string;
   comments: Comment[];
@@ -45,6 +46,8 @@ export function CommentsList({
   onNote?: (s: Street, text: string) => void;
   /** Given on the owner's own hand: each comment offers "Apagar" instead of "Denunciar". */
   onRemove?: (c: Comment) => void;
+  /** On someone else's hand: "Bloquear" next to "Denunciar" hides that person's comments on this phone. */
+  onBlock?: (c: Comment) => void;
 }) {
   const [name, setName] = useState(defaultName);
   const [text, setText] = useState('');
@@ -138,17 +141,31 @@ export function CommentsList({
                       </T>
                     </Pressable>
                   ) : (
-                  <Pressable
-                    disabled={reported.has(c.id)}
-                    hitSlop={10}
-                    accessibilityRole="button"
-                    accessibilityLabel={reported.has(c.id) ? t('Comentário denunciado') : `${t('Denunciar comentário de')} ${c.name}`}
-                    onPress={() => report(c.id)}
-                    style={{ alignSelf: 'flex-end', minHeight: 24, justifyContent: 'center' }}>
-                    <T v="tiny" color={C.muted}>
-                      {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
-                    </T>
-                  </Pressable>
+                  <Row gap={16} style={{ alignSelf: 'flex-end' }}>
+                    {onBlock && c.by ? (
+                      <Pressable
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('Bloquear')} ${c.name}`}
+                        onPress={() => onBlock(c)}
+                        style={{ minHeight: 24, justifyContent: 'center' }}>
+                        <T v="tiny" color={C.muted}>
+                          {t('Bloquear')}
+                        </T>
+                      </Pressable>
+                    ) : null}
+                    <Pressable
+                      disabled={reported.has(c.id)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={reported.has(c.id) ? t('Comentário denunciado') : `${t('Denunciar comentário de')} ${c.name}`}
+                      onPress={() => report(c.id)}
+                      style={{ minHeight: 24, justifyContent: 'center' }}>
+                      <T v="tiny" color={C.muted}>
+                        {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
+                      </T>
+                    </Pressable>
+                  </Row>
                   )}
                 </View>
               </Row>
