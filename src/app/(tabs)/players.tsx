@@ -17,6 +17,7 @@ import { handCounts, opponentStats, SMALL_SAMPLE } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
 import { C, S } from '@/theme';
+import { useSheetAnimation } from '@/lib/motion';
 
 function handsWith(hands: Hand[], p: PlayerNote) {
   const n = p.name.trim().toLowerCase();
@@ -24,6 +25,7 @@ function handsWith(hands: Hand[], p: PlayerNote) {
 }
 
 export default function PlayersScreen() {
+  const sheetAnim = useSheetAnimation();
   const { players, savePlayer, deletePlayer, hands } = useStore();
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<PlayerNote | null>(null);
@@ -109,7 +111,7 @@ export default function PlayersScreen() {
           );
         }}
       />
-      <Modal visible={!!edit} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEdit(null)}>
+      <Modal visible={!!edit} animationType={sheetAnim} presentationStyle="pageSheet" onRequestClose={() => setEdit(null)}>
         {edit && (
           <PlayerEditor
             p={edit}

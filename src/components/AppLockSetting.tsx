@@ -11,8 +11,10 @@ import { C, S } from '@/theme';
 
 import { lockChanged, PinPad } from './AppLock';
 import { Button, ToggleItem } from './ui';
+import { useSheetAnimation } from '@/lib/motion';
 
 export function AppLockSetting() {
+  const sheetAnim = useSheetAnimation();
   const [on, setOn] = useState<boolean | null>(null);
   const [settingPin, setSettingPin] = useState(false);
 
@@ -52,7 +54,7 @@ export function AppLockSetting() {
         value={on}
         onChange={change}
       />
-      <Modal visible={settingPin} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSettingPin(false)}>
+      <Modal visible={settingPin} animationType={sheetAnim} presentationStyle="pageSheet" onRequestClose={() => setSettingPin(false)}>
         <NewPin
           onCancel={() => setSettingPin(false)}
           onDone={async (pin) => {

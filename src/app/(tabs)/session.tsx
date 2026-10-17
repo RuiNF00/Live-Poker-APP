@@ -30,6 +30,7 @@ import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
+import { useSheetAnimation } from '@/lib/motion';
 
 /**
  * Re-renders every `ms` while this tab is on screen and returns the time of
@@ -481,6 +482,7 @@ function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentPr
 
 /** A free note on the session: table dynamics, how you felt, anything to remember. */
 function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; value: string; onClose: () => void; onSave: (v: string) => void }) {
+  const sheetAnim = useSheetAnimation();
   const [text, setText] = useState(value);
   const [shownFor, setShownFor] = useState(visible);
   // Start from the saved note each time the sheet opens.
@@ -489,7 +491,7 @@ function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; valu
     if (visible) setText(value);
   }
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={t('Nota da sessão')} onClose={onClose} />
