@@ -1,7 +1,7 @@
 // Send hands to a coach: a private link (sweatbook.poker/c/<token>) the coach opens in the browser,
 // without an account. Comes from a folder ("Rever com coach") or from hands picked in the list.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';

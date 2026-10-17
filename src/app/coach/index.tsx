@@ -1,6 +1,6 @@
 // Links sent to a coach: which are open, which hands got comments, and the off switch.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';

@@ -5,6 +5,7 @@
 import { t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { bbs, chips, timeOf } from '@/poker/format';
+import { levelOf } from '@/poker/tourney';
 import { isPaused, playedMs } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -39,13 +40,20 @@ export interface LiveProps {
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
-export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 'level'>, dir: 1 | -1) {
+export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 'level' | 'tourney'>, dir: 1 | -1) {
+  const level = (s.level ?? 1) + dir > 0 ? (s.level ?? 1) + dir : 1;
+  // A tournament with its structure entered: the next row of it, with that level's length.
+  const st = s.kind === 'mtt' ? s.tourney?.structure : undefined;
+  if (st?.length) {
+    const n = Math.min(level, st.length);
+    const l = levelOf(st, n);
+    return { sb: l.sb, bb: l.bb, ante: l.ante, level: n, levelMinutes: l.minutes };
+  }
   const levels = s.kind === 'mtt' ? MTT_LEVELS : CASH_LEVELS;
   const i = levels.findIndex(([sb, bb]) => sb === s.sb && bb === s.bb);
   const j = Math.max(0, Math.min(levels.length - 1, (i < 0 ? 0 : i) + dir));
   const [sb, bb] = levels[j];
   const ante = s.anteType === 'bb' ? bb : s.anteType === 'all' ? Math.round(bb / 8) : 0;
-  const level = (s.level ?? 1) + dir > 0 ? (s.level ?? 1) + dir : 1;
   return { sb, bb, ante, level };
 }
 
@@ -68,7 +76,9 @@ export function nextLevelAt(s: Session, now = Date.now()): number | undefined {
 export function withLevelClock(prev: Session | undefined, next: Session, now = Date.now()): Session {
   if (!next.levelMinutes || next.endedAt) return next;
   const changed = !prev || prev.level !== next.level || prev.bb !== next.bb || prev.sb !== next.sb;
-  if (changed || !next.levelStartedAt) return { ...next, levelStartedAt: now };
+  // A start set with the change (synced to the floor's clock) is kept.
+  const synced = !!prev && !!next.levelStartedAt && next.levelStartedAt !== prev.levelStartedAt;
+  if ((changed && !synced) || !next.levelStartedAt) return { ...next, levelStartedAt: now };
   return next;
 }
 
