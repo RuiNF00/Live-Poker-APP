@@ -90,6 +90,15 @@ export interface RpView {
 
 export const STREET_LABEL: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
+const RANK_WORD: Record<string, string> = { A: 'Ás', K: 'Rei', Q: 'Dama', J: 'Valete', T: '10' };
+const SUIT_WORD: Record<string, string> = { h: 'copas', d: 'ouros', c: 'paus', s: 'espadas' };
+
+/** A card as a screen reader says it: "Ás de copas", "7 de paus". */
+export function spokenCard(c: CardCode): string {
+  const r = RANK_WORD[c[0]];
+  return t('{rank} de {suit}', { rank: r ? t(r) : c[0], suit: t(SUIT_WORD[c[1]] ?? c[1]) });
+}
+
 function badgeLabel(kind: BadgeKind, amt: string): string {
   switch (kind) {
     case 'fold':

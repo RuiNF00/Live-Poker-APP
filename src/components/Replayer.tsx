@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { legal, raiseName, replay } from '@/poker/engine';
@@ -9,7 +9,7 @@ import { pct } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
-import { timeline, viewAt, type TimelineItem } from './replayer/model';
+import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
 import { IcmPanel } from './replayer/IcmPanel';
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { tap } from './ui';
@@ -116,6 +116,15 @@ export function Replayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [street]);
   const note = streetNotes?.[street]?.trim();
+  // Screen readers hear each street as it's dealt: "Flop: Ás de copas, 7 de paus, 2 de ouros".
+  const dealt = steps[k]?.kind === 'board' ? k : -1;
+  useEffect(() => {
+    if (dealt < 0) return;
+    const board = hand.board.slice(0, steps[dealt].state.boardCount);
+    const fresh = street === 'flop' ? board.slice(0, 3) : board.slice(-1);
+    AccessibilityInfo.announceForAccessibility(`${STREET_LABEL[street]}: ${fresh.map(spokenCard).join(', ')}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealt]);
 
   const view = useMemo(() => viewAt(hand, r, k, { inBB, reveal: reveal && !locked, atEnd }), [hand, r, k, inBB, reveal, locked, atEnd]);
   const items = useMemo(() => timeline(hand, r, inBB), [hand, r, inBB]);
@@ -148,6 +157,7 @@ export function Replayer({
           onPick={(c) => {
             tap('medium');
             setAnswered(c);
+            AccessibilityInfo.announceForAccessibility(`${t('Tu escolheste')} ${c}. ${t('Vê o que aconteceu.')}`);
             onVote?.(c);
             setPlaying(true);
           }}
@@ -228,7 +238,7 @@ function TipBubble({ onClose }: { onClose: () => void }) {
       <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>
         {t('Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.')}
       </Text>
-      <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar')} onPress={onClose} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
         <Text style={{ color: C.accent, fontFamily: ff(700), fontSize: 13 }}>{t('Percebi')}</Text>
       </Pressable>
     </View>
@@ -414,6 +424,7 @@ function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'
         {opts.map((o) => (
           <Pressable
             key={o}
+            accessibilityRole="button"
             onPress={() => onPick(o)}
             style={({ pressed }) => ({
               flex: 1,

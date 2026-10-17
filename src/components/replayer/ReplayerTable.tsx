@@ -3,7 +3,7 @@
 // and an action badge on each plate. Visual base: the stats-app replayer.
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { t } from '@/i18n';
@@ -34,7 +34,7 @@ const STREET_NO: Record<Street, number> = { preflop: 0, flop: 1, turn: 2, river:
 const RUN_MARK = { 1: '①', 2: '②' } as const;
 
 /** Run it twice: both boards stacked, smaller, each tagged with its number. */
-function RunBoards({ boards, k, top }: { boards: string[][]; k: number; top: number }) {
+function RunBoards({ boards, k, top, reduce }: { boards: string[][]; k: number; top: number; reduce: boolean }) {
   const cw = SIZE.boardCardW * 0.76 * k;
   const ch = SIZE.boardCardH * 0.76 * k;
   const gap = 3 * k;
@@ -58,23 +58,14 @@ function RunBoards({ boards, k, top }: { boards: string[][]; k: number; top: num
             <Text style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>{j + 1}</Text>
           </View>
           {b.map((c, i) => (
-            <Appear key={`${i}-${c}`}>
+            <RiseIn key={`${i}-${c}`} reduce={reduce}>
               <RpCard card={c} w={cw} h={ch} />
-            </Appear>
+            </RiseIn>
           ))}
         </View>
       ))}
     </View>
   );
-}
-
-/** Fades a card or chip in when it first appears. */
-function Appear({ children, style }: { children: React.ReactNode; style?: object }) {
-  const [o] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    Animated.timing(o, { toValue: 1, duration: 220, useNativeDriver: true }).start();
-  }, [o]);
-  return <Animated.View style={[style, { opacity: o, transform: [{ translateY: o.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>{children}</Animated.View>;
 }
 
 export function ReplayerTable({
@@ -164,7 +155,7 @@ export function ReplayerTable({
           </Text>
           {/* board */}
           {view.board2 ? (
-            <RunBoards boards={[view.board, view.board2]} k={k} top={(BOARD_Y / 100) * h} />
+            <RunBoards boards={[view.board, view.board2]} k={k} top={(BOARD_Y / 100) * h} reduce={reduce} />
           ) : (
           <View style={{ position: 'absolute', left: 0, right: 0, top: (BOARD_Y / 100) * h - boardH / 2, flexDirection: 'row', justifyContent: 'center', gap: SIZE.boardGap * k * boardScale(n) }}>
             {[0, 1, 2, 3, 4].map((c) =>
@@ -377,6 +368,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y:
 
       {s.equity != null ? (
         <View
+          accessibilityLabel={`Equity ${pct(s.equity)}${s.equity >= bestEquity ? `, ${t('a melhor')}` : ''}`}
           style={{
             position: 'absolute',
             ...(s.hero ? { right: pw + 4, top: ch * cardShow(s.hero) + ph / 2 - 8 * k } : { top: ch * cardShow(s.hero) + ph - 7 * k }),
@@ -388,6 +380,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity }: { seat: RpSeat; x: number; y:
             zIndex: 3,
           }}>
           <Text allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
+            {s.equity >= bestEquity ? '★ ' : ''}
             {pct(s.equity)}
           </Text>
         </View>

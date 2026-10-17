@@ -2259,6 +2259,16 @@ const en: Record<string, string> = {
   'Mão anterior': 'Previous hand',
   'Mão seguinte': 'Next hand',
   'Mão {n} de {total} da sessão': 'Hand {n} of {total} in the session',
+  'a melhor': 'the best',
+  '{rank} de {suit}': '{rank} of {suit}',
+  'Ás': 'Ace',
+  'Rei': 'King',
+  'Dama': 'Queen',
+  'Valete': 'Jack',
+  'copas': 'hearts',
+  'ouros': 'diamonds',
+  'paus': 'clubs',
+  'espadas': 'spades',
 };
 
 export default en;
