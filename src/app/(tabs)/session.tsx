@@ -237,9 +237,13 @@ function Live({ s }: { s: Session }) {
     () => [
       { target: stackRef, title: t('O teu stack'), body: t('Toca para o atualizar entre mãos. As bb e o gráfico acompanham sozinhos.') },
       { target: barRef, title: t('Tudo ao alcance do polegar'), body: t('Pausa, rebuy e uma nota da sessão sem saíres deste ecrã.') },
-      { target: handRef, title: t('Regista uma mão'), body: t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') },
+      {
+        target: handRef,
+        title: t('Regista uma mão'),
+        body: mtt ? t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') : t('Já vem com o jogo, as blinds e o teu stack. Se fores chamado, fica guardada a meio.'),
+      },
     ],
-    [],
+    [mtt],
   );
 
   return (

@@ -166,6 +166,7 @@ export default function SettingsScreen() {
         <Section title={t('Privacidade')}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
+            <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
             {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>
