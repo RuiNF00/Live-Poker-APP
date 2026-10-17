@@ -129,6 +129,19 @@ export function lineRecords(name: string, backers: Backer[], title: string, o: A
   return { backer, isNew: !known, pkg, line };
 }
 
+/**
+ * What this backer usually takes: the % and markup of their newest deal, a festival piece
+ * (its staking package) or a piece sold on its own, so a repeat backer is one tap.
+ */
+export function usualTerms(backerId: string, packages: StakePackage[], sessions: Session[]): { pct: number; markup: number } | null {
+  let best: { at: number; pct: number; markup: number } | null = null;
+  for (const p of packages) if (p.backerId === backerId && p.kind === 'action' && p.share > 0 && (!best || p.createdAt > best.at)) best = { at: p.createdAt, pct: p.share, markup: p.markup || 1 };
+  for (const s of sessions)
+    for (const x of s.stakes ?? [])
+      if (x.backerId === backerId && !x.packageId && x.share > 0 && (!best || s.startedAt > best.at)) best = { at: s.startedAt, pct: x.share, markup: x.markup || 1 };
+  return best && { pct: best.pct, markup: best.markup };
+}
+
 /** The backers' stakes for a session started from this event. Pieces not marked paid count against the backer. */
 export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: string): Stake[] {
   const out: Stake[] = [];

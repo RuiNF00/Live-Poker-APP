@@ -1636,7 +1636,6 @@ const en: Record<string, string> = {
   'Mudar os torneios ou o markup pede a cada backer que confirme outra vez.': 'Changing the tournaments or markup asks each backer to confirm again.',
   'Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.': 'Payments happen outside the app; here you only log them. Each link is private and shows only that backer\'s piece.',
   '% de cada torneio': '% of each tournament',
-  'Custo da parte: {cost}': 'The piece costs {cost}',
   'Registar': 'Log',
   'Mais': 'More',
   'Menos': 'Less',
@@ -3191,6 +3190,7 @@ const en: Record<string, string> = {
   'Hora oficial': 'Official time',
   'Punta Cana, janeiro 2027': 'Punta Cana, January 2027',
   'República Dominicana': 'Dominican Republic',
+  'Custo da parte: {cost} · markup {markup}': 'The piece costs {cost} · markup {markup}',
 };
 
 export default en;

@@ -1523,6 +1523,7 @@ const ptBR: Record<string, string> = {
   'Hora oficial': 'Horário oficial',
   'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
   'República Dominicana': 'República Dominicana',
+  'Custo da parte: {cost} · markup {markup}': 'Custo da parte: {cost} · markup {markup}',
 };
 
 export default ptBR;
