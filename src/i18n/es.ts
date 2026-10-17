@@ -2888,6 +2888,7 @@ const es: Record<string, string> = {
   'Novo na versão {v}': 'Novedad en la versión {v}',
   'Ver tudo': 'Ver todo',
   'Estou à mesa: registar uma mão já': 'Estoy en la mesa: registrar una mano ya',
+  // Crash reports switch (Definições → Os teus dados).
 };
 
 export default es;

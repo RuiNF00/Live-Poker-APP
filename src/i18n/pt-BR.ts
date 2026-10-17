@@ -1297,6 +1297,7 @@ const ptBR: Record<string, string> = {
   'Partilhar noutra app (X, WhatsApp…)': 'Compartilhar em outro app (X, WhatsApp…)',
   'O que corre mal, o que falta ou o que mudavas': 'O que dá errado, o que falta ou o que você mudaria',
   'Estou à mesa: registar uma mão já': 'Estou na mesa: registrar uma mão agora',
+  // Crash reports switch (Definições → Os teus dados).
 };
 
 export default ptBR;

@@ -2894,6 +2894,7 @@ const en: Record<string, string> = {
   'Gerir': 'Manage',
   'Partilhar imagem': 'Share image',
   'Partilhar noutra app (X, WhatsApp…)': 'Share to another app (X, WhatsApp…)',
+  // Crash reports switch (Definições → Os teus dados).
 };
 
 export default en;
