@@ -65,3 +65,11 @@ export function dropDoc(file: string) {
     if (f.exists) f.delete();
   } catch {}
 }
+
+/** "Delete all my data": every receipt and tax form on this phone. */
+export function dropAllDocs(): void {
+  try {
+    const d = dir();
+    if (d.exists) d.delete();
+  } catch {}
+}

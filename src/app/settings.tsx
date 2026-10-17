@@ -21,6 +21,7 @@ import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
+import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
 import { DataRecovery } from '@/components/DataRecovery';
 
@@ -102,9 +103,12 @@ export default function SettingsScreen() {
 
   const eraseAll = () => {
     tap();
+    // Swaps still owing money: the other player keeps their own read-only copy, but say so first.
+    const open = unsettledSwaps(store.swaps, store.swapGroups);
+    const swapsLine = open ? ' ' + (open === 1 ? t('Tens 1 swap por acertar. A outra pessoa fica com a cópia dela.') : t('Tens {n} swaps por acertar. A outra pessoa fica com a cópia dela.', { n: open })) : '';
     confirmAction(
       t('Apagar todos os teus dados?'),
-      t('Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.'),
+      t('Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.') + swapsLine,
       t('Apagar tudo'),
       async () => {
         setBusy(true);

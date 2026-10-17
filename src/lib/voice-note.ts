@@ -9,3 +9,6 @@ export function voiceNoteExists(uri: string): boolean {
 }
 
 export function dropVoiceNote(_uri: string | undefined) {}
+
+/** Web: nothing kept beyond the visit. */
+export function dropAllVoiceNotes(): void {}

@@ -62,7 +62,7 @@ export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499
 export const PRO_ONLY = {
   /** Backers, makeup and settling up (staking screens). */
   staking: true,
-  /** Swap settlement (swaps screens). */
+  /** Swap settlement: who owes whom, the group's minimum transfers and the history breakdowns. Creating, sharing and recording results stay free. */
   swaps: true,
   /** The yearly report with tax per country (PDF export). */
   taxReport: true,
