@@ -13,11 +13,11 @@ import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from '.
 import { IcmPanel } from './replayer/IcmPanel';
 import { useReduceMotion } from './replayer/motion';
 import { ReplayerTable } from './replayer/ReplayerTable';
+import { motionTimeline } from './replayer/timeline';
 import { tap } from './ui';
 
 const SPEEDS = [1, 1.5, 2, 0.5];
 const TIPS_KEY = 'sweatbook.replayer.tips.v1';
-const BASE_MS = 1100;
 
 /**
  * Hand replayer, built for a phone held upright. Visual and interaction base:
@@ -78,14 +78,19 @@ export function Replayer({
   const atEnd = !locked && k >= steps.length - 1;
 
   // Playback stops by itself at the last step it may show.
+  // One timeline for the replayer and the Story/reel export: how long each step holds, what moves.
+  const reduceMotion = useReduceMotion();
+  const motion = useMemo(() => motionTimeline(hand, r, { reduce: reduceMotion }), [hand, r, reduceMotion]);
+  // A step plays its animations only when reached going forward.
+  const [came, setCame] = useState({ k, from: k });
+  if (came.k !== k) setCame({ k, from: came.k });
+  const forward = came.k === k && came.from < k;
   const running = playing && k < last;
   useEffect(() => {
     if (!running) return;
-    // A new street gets a beat longer, like a dealer burning and turning.
-    const pause = steps[k + 1]?.kind === 'board' ? 1.4 : 1;
-    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), (BASE_MS * pause) / SPEEDS[speed]);
+    const id = setTimeout(() => setI((x) => Math.min(x + 1, last)), motion[k].ms / SPEEDS[speed]);
     return () => clearTimeout(id);
-  }, [running, k, last, steps, speed]);
+  }, [running, k, last, motion, speed]);
 
   // A card being dealt is felt as well as seen: one firm tap per new street.
   const prevK = useRef(k);
@@ -150,7 +155,7 @@ export function Replayer({
 
   return (
     <View style={{ gap: 8 }}>
-      <ReplayerTable animate view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
+      <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
 
       {locked && k === last ? (
         <QuizPanel
