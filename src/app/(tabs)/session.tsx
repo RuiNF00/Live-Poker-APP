@@ -135,6 +135,10 @@ export default function SessionScreen() {
             </ListGroup>
           </Section>
         ) : null}
+        {/* Paper ticket from registration: the phone reads it and fills the tournament in. */}
+        <ListGroup>
+          <ListItem icon="receipt-outline" iconColor={C.accent} title={t('Fotografa o recibo do buy-in')} subtitle={t('Torneio, buy-in, mesa e lugar preenchidos por ti')} onPress={() => router.push('/receipt')} chevron />
+        </ListGroup>
         <SessionForm
           initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
           bankrolls={bankrolls}

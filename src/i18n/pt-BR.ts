@@ -1042,6 +1042,17 @@ const ptBR: Record<string, string> = {
   '{v} no póquer': '{v} no poker',
   'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.': 'Resultados registrados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.',
   '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estavam salvos à parte voltaram a abrir e estão de volta no app.',
+  'Fotografa o recibo do buy-in': 'Fotografe o recibo do buy-in',
+  'Torneio, buy-in, mesa e lugar preenchidos por ti': 'Torneio, buy-in, mesa e lugar preenchidos para você',
+  'Esta versão da app não lê recibos': 'Esta versão do app não lê recibos',
+  'Preenche o resto aqui. A foto fica guardada na sessão.': 'Preencha o resto aqui. A foto fica salva na sessão.',
+  'Guardar torneio': 'Salvar torneio',
+  'Lido no telemóvel': 'Lido no celular',
+  'A tua última sala': 'Sua última sala',
+  'O recibo foi lido no telemóvel e fica só na sessão. Não vai para a nuvem.': 'O recibo foi lido no celular e fica só na sessão. Não vai para a nuvem.',
+  'Lemos o torneio, o buy-in e a fee, a data, a mesa e o lugar. Confirmas num toque.': 'Lemos o torneio, o buy-in e a fee, a data, a mesa e o lugar. Você confirma com um toque.',
+  'Lido no teu telemóvel': 'Lido no seu celular',
+  'A ler o recibo…': 'Lendo o recibo…',
 };
 
 export default ptBR;
