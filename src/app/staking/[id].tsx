@@ -15,6 +15,7 @@ import { t } from '@/i18n';
 import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
+import { maybeAskForReview } from '@/lib/review';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
 import { closePackage, type BackerLedgerRow } from '@/store/staking';
@@ -75,7 +76,8 @@ function BackerScreen() {
         const now = Date.now();
         savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now });
         tap('medium');
-        // Store-review moment C (design/pedido-avaliacao.md): maybeAskForReview('settled') here once src/lib/review.ts lands.
+        // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
+        void maybeAskForReview('settled');
       },
       t('Marcar como pago'),
     );
@@ -322,6 +324,8 @@ function BackerScreen() {
         onSave={(p) => {
           savePayment(p);
           setPaying(false);
+          // A payment that squares the balance is moment C too.
+          if (Math.abs(l.balance - p.amount) < 0.5) void maybeAskForReview('settled');
         }}
       />
     </>
