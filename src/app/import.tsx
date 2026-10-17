@@ -19,6 +19,7 @@ import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
 import { pickTextFileWithName } from '@/lib/files';
+import { useSheetAnimation } from '@/lib/motion';
 import { money } from '@/poker/format';
 import { importSummary, parseBackup } from '@/store/backup';
 import { profit } from '@/store/session-math';
@@ -519,8 +520,9 @@ function Review({ file, picked, bottom, onBack, onImport }: { file: Prepared; pi
 
 function ColumnSheet({ field, headers, sample, current, onClose, onPick }: { field: Field | null; headers: string[]; sample: (col: number) => string; current?: number; onClose: () => void; onPick: (col: number | undefined) => void }) {
   const insets = useSafeAreaInsets();
+  const animation = useSheetAnimation();
   return (
-    <Modal visible={!!field} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={!!field} transparent animationType={animation} onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
       <View style={{ maxHeight: '75%', backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, paddingTop: S.lg + 4, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + S.md, gap: S.md }}>
         <SheetHeader title={field ? FIELD_LABEL[field]! : ''} onClose={onClose} closeLabel={t('Fechar')} />
