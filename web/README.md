@@ -29,6 +29,9 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `POST /api/referrals/claim` `{ installId, code, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
 | `POST /api/referrals/activate` `{ installId, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
 | `POST /api/referrals/status` `{ installId, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |
+| `PUT /api/backup/<id>` header `x-backup-key: <secret>`, corpo gzip ou JSON (até ~4,4 MB) | `204`; `403` se o id já existe com outro segredo |
+| `GET /api/backup/<id>` (mesmo header) | o corpo guardado + `x-updated-at`; `404` se o código está errado ou não há cópia |
+| `DELETE /api/backup/<id>` (mesmo header) | `204`. Cópias sem alterações há 18 meses são apagadas |
 | `POST /api/hands/<id>/report` `{ reporterId (uuid), reason? }` | `{ reported }` (5 denúncias tiram a mão do ar) |
 | `POST /api/hands/<id>/comments/<commentId>/report` `{ reporterId }` | `{ reported }` (3 denúncias escondem o comentário) |
 
