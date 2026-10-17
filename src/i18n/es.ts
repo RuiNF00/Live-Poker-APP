@@ -585,7 +585,7 @@ const es: Record<string, string> = {
   'Stacks': 'Stacks',
   'Prémios ({currency})': 'Premios ({currency})',
   'Jogador {n}': 'Jugador {n}',
-  '{n}º lugar': '{n}º lugar',
+  '{n}º lugar': '{n}.º puesto',
   'Jogador': 'Jugador',
   'Chip chop': 'Chip chop',
   'ICM protege os stacks curtos; chip chop favorece o chip leader. Um deal justo costuma ficar entre os dois.': 'El ICM protege a los stacks cortos; el chip chop favorece al chip leader. Un deal justo suele quedar entre los dos.',
