@@ -759,3 +759,12 @@ test('round 5 · multiway showdown: two taps per hand shown, no tap on the seat'
   assert.equal(e.taps - before, 4);
   assert.equal(e.save().result!.resolved, true);
 });
+
+test('facing the only other player all-in: no raise sizes, just Call or Fold', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.act('fold');
+  e.size('All-in');
+  assert.equal(e.s.toAct, e.hand.hero);
+  assert.deepEqual(sizePresets(e.hand, e.s), []);
+});
