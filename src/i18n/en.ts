@@ -646,6 +646,8 @@ const en: Record<string, string> = {
   'vs top': 'vs top',
   'O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.': "The link will be ready once there's signal. Then just tap Share again.",
   'Link à espera de rede': 'Link waiting for signal',
+  'Link quase pronto': 'Link almost ready',
+  'Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.': "We're creating the link right now. Tap Share again in a moment.",
   'Percebi': 'Got it',
   'Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.': 'Tap the right of the table to step forward and the left to step back. Tap an action below to jump to it.',
   'Próxima street': 'Next street',
