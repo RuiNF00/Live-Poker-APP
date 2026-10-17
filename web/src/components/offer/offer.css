@@ -1,0 +1,279 @@
+/* Festival action package (/o/<id>): built on the live page (live.css) and the backer
+   statement (backing.css) styles. Phone first, 16px gutters from .live. */
+.of .of-muted {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.of .of-small {
+  font-size: 13px;
+}
+
+.of .of-center {
+  text-align: center;
+}
+
+.of-hero {
+  gap: 10px;
+}
+
+.of-big {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: clamp(40px, 12vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.of-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.of-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.of-per {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(238, 242, 239, 0.08);
+}
+
+.of-per-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.of-per-value {
+  flex-shrink: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.of-events {
+  padding-bottom: 8px;
+}
+
+.of-event {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(238, 242, 239, 0.06);
+}
+
+.of-event-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.of-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.18);
+  overflow: hidden;
+}
+
+.of-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.of-free {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.of-free.of-out {
+  color: #f5b83d;
+  font-weight: 700;
+}
+
+.of-form {
+  gap: 14px;
+}
+
+.of-form h2,
+.of-state h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.of-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.of-field span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.of-field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(238, 242, 239, 0.12);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* no zoom on iOS */
+  outline: none;
+}
+
+.of-field input:focus {
+  border-color: var(--accent);
+}
+
+.of-field input::placeholder {
+  color: rgba(140, 154, 148, 0.7);
+}
+
+.of-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.of-pick > .of-muted {
+  padding-bottom: 6px;
+}
+
+.of-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(238, 242, 239, 0.06);
+}
+
+.of-pick-row .bk-name {
+  font-size: 15px;
+}
+
+.of-stepper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.of-stepper.on {
+  background: rgba(255, 106, 61, 0.14);
+}
+
+.of-stepper button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.of-stepper button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.of-stepper output {
+  min-width: 52px;
+  text-align: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.of-stepper.on output {
+  color: var(--accent);
+}
+
+.of-pay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(238, 242, 239, 0.08);
+}
+
+.of-pay-value {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 22px;
+  text-align: center;
+}
+
+.of-submit {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+}
+
+.of-submit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.of-error {
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+}
+
+.of-sent {
+  gap: 8px;
+  border-color: rgba(74, 222, 128, 0.35);
+  background: linear-gradient(160deg, rgba(74, 222, 128, 0.14), var(--surface) 65%);
+}
+
+.of-sent-title {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.of-link {
+  align-self: flex-start;
+  padding: 8px 0 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.of-state {
+  gap: 8px;
+  text-align: center;
+  align-items: center;
+}
