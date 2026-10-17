@@ -30,6 +30,7 @@ import { track, watchResume } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
 import { HomeWidgetSync } from '@/lib/home-widget';
 import { useReduceMotion } from '@/lib/motion';
+import { startCrashReports } from '@/lib/crash-report';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { startCoachSync } from '@/lib/coach-api';
@@ -52,6 +53,7 @@ const theme = {
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 installFetchTimeout();
+startCrashReports();
 startSync();
 startCoachSync();
 

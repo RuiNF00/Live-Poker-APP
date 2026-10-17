@@ -2867,6 +2867,9 @@ const es: Record<string, string> = {
   'Denunciado. Obrigado.': 'Denunciado. Gracias.',
   'Denunciar comentário de': 'Denunciar comentario de',
   'Comentário denunciado': 'Comentario denunciado',
+  // Crash reports switch (Definições → Os teus dados).
+  'Enviar relatórios de erros': 'Enviar informes de errores',
+  'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Solo lo que falló y la versión, para corregirlo rápido. Sin nombres, manos ni importes.',
 };
 
 export default es;

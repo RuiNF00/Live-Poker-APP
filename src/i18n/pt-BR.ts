@@ -1286,6 +1286,8 @@ const ptBR: Record<string, string> = {
   'Aviso antes de cobrar': 'Aviso antes da cobrança',
   'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante o teste grátis, avisamos você antes de cobrar.',
   'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
+  // Crash reports switch (Definições → Os teus dados).
+  'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
 };
 
 export default ptBR;
