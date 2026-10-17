@@ -162,6 +162,7 @@ const en: Record<string, string> = {
   'Guardar já': 'Save now',
   'Sem mãos com ação pré-flop contra este jogador.': 'No hands with preflop action against this player yet.',
   'amostra pequena, é só uma pista': 'small sample, just a hint',
+  'Estatísticas': 'Stats',
   'Voz': 'Voice',
   'Gravar nota de voz e guardar': 'Record a voice note and save',
   'Diz as ações e os valores. Completas a mão depois da sessão.': 'Say the actions and the amounts. Finish the hand after the session.',
