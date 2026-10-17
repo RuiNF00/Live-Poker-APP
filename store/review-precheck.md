@@ -29,3 +29,9 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 - Brand names left in-app only as input placeholders (`ContextSheet`, `SessionForm`, `staking/sheets`) and in the sample hand title (`src/poker/sample.ts`, "Estoril Poker Series"). Guideline 2.3.7 covers metadata, so these don't block, but the sample hand is visible to reviewers; a generic title ("Main Event €550") removes any doubt.
 - Retention offer ids in `src/billing/plans.ts` match store/privacy-forms.md (`sweatbook_retention_40` / `sweatbook-retention-40`, −40% for 3 months, monthly plan, cancel flow only).
 - Home widget (SweatbookHome) reads local data only: no privacy-form change. Listing now mentions it.
+
+## Gambling-policy pass (Pesquisa thread, /mnt/project-files/research/politicas-lojas-jogo.md)
+- Age rating answers unchanged (Apple: simulated gambling None, gambling No, contests None, UGC Yes, override 18+; Play: IARC non-game, no gambling, 18+). Never request Play's "Real-money gambling apps" declaration.
+- Description now says "records and accounts only, no money moves through the app, 18+"; staking line reworded (no "sell/buy" offer language). Review notes carry the record-keeping paragraph.
+- **Block before submitting:** at 8eb59e3 the festival planner still opens organizer sites (`src/poker/festivals.ts` source urls: wsop.com and worldpokertour.com, both brands that run real-money gaming). Remove the outbound links or replace them with plain text before the build that goes to review. Also grep the build for "Vender ação" / "Sell action" (the Staking thread is renaming it).
+- Keywords stay clear of casino, bet, aposta, slots, "win money".
