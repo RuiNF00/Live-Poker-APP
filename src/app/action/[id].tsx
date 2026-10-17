@@ -142,7 +142,7 @@ export default function ActionPackageScreen() {
       t('Prémios da tua parte: {amount}', { amount: money(st.prizes, cur) }),
       st.cost ? (st.paid ? t('Custo da parte: {amount} (pago)', { amount: money(st.cost, cur) }) : t('Custo da parte: {amount} (por pagar)', { amount: money(st.cost, cur) })) : '',
       st.refund ? t('Torneios que não joguei: devolvo-te {amount}', { amount: money(st.refund, cur) }) : '',
-      Math.abs(st.net) < 0.5
+      Math.abs(st.net) < 0.01
         ? t('Estamos acertados.')
         : st.net > 0
           ? t('Devo-te {amount}.', { amount: money(st.net, cur) })

@@ -54,13 +54,13 @@ export function useStaking() {
 
 /** A total that may be split across currencies: "1 200€" or "300€ + 14 508$". */
 export function splitMoney(totals: StakingTotals, side: 'owe' | 'owed'): string {
-  if (totals.split) return totals.split.filter((x) => x[side] >= 0.5).map((x) => money(x[side], x.currency)).join(' + ');
+  if (totals.split) return totals.split.filter((x) => x[side] >= 0.01).map((x) => money(x[side], x.currency)).join(' + ');
   return (totals.approx ? '≈ ' : '') + money(totals[side], totals.currency);
 }
 
 /** "Deves 120€" / "Deve-te 80€" / "Acertado", with its colour. */
 export function balanceLabel(balance: number, currency: string): { text: string; color: string } {
-  if (Math.abs(balance) < 0.5) return { text: t('Acertado'), color: C.muted };
+  if (Math.abs(balance) < 0.01) return { text: t('Acertado'), color: C.muted };
   return balance > 0
     ? { text: t('Deves {amount}', { amount: money(balance, currency) }), color: C.warn }
     : { text: t('Deve-te {amount}', { amount: money(-balance, currency) }), color: C.good };

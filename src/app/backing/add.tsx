@@ -66,7 +66,7 @@ export default function AddBacking() {
                 {backedLabel(st.bal, st.cur).text}
               </T>
               <T v="small" style={{ textAlign: 'center' }}>
-                {[st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), st.mk >= 0.5 ? t('makeup {amount}', { amount: money(st.mk, st.cur) }) : '']
+                {[st.rows.length === 1 ? t('1 sessão') : t('{n} sessões', { n: st.rows.length }), st.mk >= 0.01 ? t('makeup {amount}', { amount: money(st.mk, st.cur) }) : '']
                   .filter(Boolean)
                   .join(' · ')}
               </T>

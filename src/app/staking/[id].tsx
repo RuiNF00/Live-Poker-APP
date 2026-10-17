@@ -81,7 +81,7 @@ function BackerScreen() {
     setPiece(null);
   };
 
-  const square = Math.abs(l.balance) < 0.5;
+  const square = Math.abs(l.balance) < 0.01;
   // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
   const markPaid = () =>
     confirm(
@@ -116,7 +116,7 @@ function BackerScreen() {
       '',
       t('Resultado: {amount}', { amount: money(l.result, cur) }),
       l.makeup ? t('Makeup: {amount}', { amount: money(l.makeup, cur) }) : '',
-      Math.abs(l.balance) < 0.5
+      Math.abs(l.balance) < 0.01
         ? t('Estamos acertados.')
         : l.balance > 0
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
@@ -269,7 +269,7 @@ function BackerScreen() {
                     p.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: p.sessions }),
                     t('buy-ins {amount}', { amount: money(p.cost, cur) }),
                     t('prémios {amount}', { amount: money(p.prizes, cur) }),
-                    p.makeup >= 0.5 ? t('makeup {amount}', { amount: money(p.makeup, cur) }) : '',
+                    p.makeup >= 0.01 ? t('makeup {amount}', { amount: money(p.makeup, cur) }) : '',
                   ]
                     .filter(Boolean)
                     .join(' · ')}
@@ -376,7 +376,7 @@ function BackerScreen() {
               ? t('Deves {amount} a {name}.', { amount: money(l.balance, cur), name: backer.name })
               : t('{name} deve-te {amount}.', { amount: money(-l.balance, cur), name: backer.name })
         }
-        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
+        makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.01 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {
           if (carry) {
@@ -413,7 +413,7 @@ function BackerScreen() {
           savePayment(p);
           setPaying(false);
           // A payment that squares the balance is moment C too.
-          if (Math.abs(l.balance - p.amount) < 0.5) void maybeAskForReview('settled');
+          if (Math.abs(l.balance - p.amount) < 0.01) void maybeAskForReview('settled');
         }}
       />
     </>

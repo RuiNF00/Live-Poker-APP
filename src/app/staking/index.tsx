@@ -28,7 +28,7 @@ function StakingScreen() {
   const all = [...ledgers.values()];
   // Makeup stays in each deal's currency: "makeup 2 000€ + 5 000$".
   const makeupBy = new Map<string, number>();
-  for (const l of all) if (l.makeup >= 0.5) makeupBy.set(l.currency, (makeupBy.get(l.currency) ?? 0) + l.makeup);
+  for (const l of all) if (l.makeup >= 0.01) makeupBy.set(l.currency, (makeupBy.get(l.currency) ?? 0) + l.makeup);
   const makeup = [...makeupBy].map(([c, v]) => money(v, c)).join(' + ');
   const live = new Set(all.flatMap((l) => l.rows.filter((r) => !r.session.endedAt).map((r) => r.session.id))).size;
   const sorted = [...backers].sort((a, b) => Math.abs(ledgers.get(b.id)?.balance ?? 0) - Math.abs(ledgers.get(a.id)?.balance ?? 0) || a.name.localeCompare(b.name));
@@ -55,7 +55,7 @@ function StakingScreen() {
                   const l = ledgers.get(b.id);
                   const cur = l?.currency ?? totals.currency;
                   const bal = { ...balanceLabel(l?.balance ?? 0, cur), owe: (l?.balance ?? 0) > 0 };
-                  const square = Math.abs(l?.balance ?? 0) < 0.5;
+                  const square = Math.abs(l?.balance ?? 0) < 0.01;
                   const n = l?.rows.length ?? 0;
                   return (
                     <ListItem
@@ -153,7 +153,7 @@ function parts(l: BackerLedger, cur: string): string {
   const list = [
     l.owed ? t('o backer recebe {amount}', { amount: money(l.owed, cur) }) : '',
     l.unpaid ? t('ação por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
-    Math.abs(l.paid) >= 0.5 ? (l.paid > 0 ? t('pagaste {amount}', { amount: money(l.paid, cur) }) : t('recebeste {amount}', { amount: money(-l.paid, cur) })) : '',
+    Math.abs(l.paid) >= 0.01 ? (l.paid > 0 ? t('pagaste {amount}', { amount: money(l.paid, cur) }) : t('recebeste {amount}', { amount: money(-l.paid, cur) })) : '',
   ].filter(Boolean);
   return list.length > 1 ? list.join(' · ') : '';
 }
@@ -163,8 +163,8 @@ function BalanceHeadline({ totals, makeup, live }: { totals: StakingTotals; make
   const { owe, owed, oweTo, owedBy, currency, split } = totals;
   const net = owe - owed;
   // Currencies with no rate between them can't be netted: say each side instead.
-  const square = split ? !split.length : Math.abs(net) < 0.5;
-  const oweSide = split ? split.some((x) => x.owe >= 0.5) : net > 0;
+  const square = split ? !split.length : Math.abs(net) < 0.01;
+  const oweSide = split ? split.some((x) => x.owe >= 0.01) : net > 0;
   const color = square ? C.textDim : oweSide ? C.warn : C.good;
   const verdict = square ? t('Estás acertado com os backers') : oweSide ? t('No total, deves aos backers') : t('No total, os backers devem-te');
   const big = split ? splitMoney(totals, oweSide ? 'owe' : 'owed') : (totals.approx ? '≈ ' : '') + money(Math.abs(net), currency);

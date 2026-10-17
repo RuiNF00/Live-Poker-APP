@@ -38,7 +38,7 @@ function Step({ label, detail, amount, currency, total, color, sign = true }: { 
 /** "Como chegámos a este saldo": the balance with a backer, line by line. */
 export function SettlementCard({ l, name, currency }: { l: BackerLedger; name: string; currency: string }) {
   const done = l.rows.filter((r) => r.session.endedAt).length;
-  const balColor = Math.abs(l.balance) < 0.5 ? C.textDim : l.balance > 0 ? C.warn : C.good;
+  const balColor = Math.abs(l.balance) < 0.01 ? C.textDim : l.balance > 0 ? C.warn : C.good;
   return (
     <Card style={{ paddingVertical: S.sm }}>
       <Step
@@ -60,8 +60,8 @@ export function SettlementCard({ l, name, currency }: { l: BackerLedger; name: s
         <Step label={l.paid > 0 ? t('Já lhe pagaste') : t('Já te pagou')} amount={-l.paid} currency={currency} />
       ) : null}
       <Step
-        label={Math.abs(l.balance) < 0.5 ? t('Acertado') : l.balance > 0 ? t('Deves a {name}', { name }) : t('{name} deve-te', { name })}
-        amount={Math.abs(l.balance) < 0.5 ? 0 : Math.abs(l.balance)}
+        label={Math.abs(l.balance) < 0.01 ? t('Acertado') : l.balance > 0 ? t('Deves a {name}', { name }) : t('{name} deve-te', { name })}
+        amount={Math.abs(l.balance) < 0.01 ? 0 : Math.abs(l.balance)}
         currency={currency}
         total
         color={balColor}
