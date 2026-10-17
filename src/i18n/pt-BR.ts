@@ -1116,8 +1116,6 @@ const ptBR: Record<string, string> = {
   'Toca para veres o resumo do mês.': 'Toque para ver o resumo do mês.',
   'Torneios com prémio: {cashes} de {n}': 'Torneios com prêmio: {cashes} de {n}',
   'Cancela quando quiseres na {store}.': 'Cancele quando quiser na {store}.',
-  'O que o Pro guardou da tua sessão': 'O que o Pro guardou da sua sessão',
-  'Vê em que sala e stake ganhas mais. Grátis até {date}.': 'Veja em qual sala e stake você ganha mais. Grátis até {date}.',
   'Depois, {price} por ano. Para não pagar, cancela na Google Play antes dessa data.': 'Depois, {price} por ano. Para não pagar, cancele no Google Play antes dessa data.',
   'Confere e importa': 'Confira e importe',
   'Importámos 1 sessão': 'Importamos 1 sessão',
