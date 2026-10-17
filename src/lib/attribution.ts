@@ -5,7 +5,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { FESTIVALS, venueTime, type Festival } from '@/poker/festivals';
+import { festivalSpan, venueTime, type Festival } from '@/poker/festivals';
+import { allFestivals } from '@/store/my-festivals';
 
 export type Source = 'utm_campaign' | 'invite' | 'swap' | 'backer_page' | 'shared_hand';
 
@@ -46,11 +47,13 @@ export function setLiveSession(open: boolean) {
   live = open;
 }
 
-/** True from the day before a shipped festival's first event to the day after its last. */
-export function festivalOn(now: number, festivals: Festival[] = FESTIVALS): boolean {
+/** True from the day before a festival's first day to the day after its last: shipped ones, the player's own, and ones with only their dates out. */
+export function festivalOn(now: number, festivals: Festival[] = allFestivals()): boolean {
   return festivals.some((f) => {
-    const ts = f.events.map((e) => venueTime(f, e.start));
-    return ts.length > 0 && now >= Math.min(...ts) - DAY && now <= Math.max(...ts) + DAY;
+    const span = festivalSpan(f);
+    if (!span) return false;
+    const ts = f.events.length ? f.events.map((e) => venueTime(f, e.start)) : [venueTime(f, `${span.from}T00:00`), venueTime(f, `${span.to}T23:59`)];
+    return now >= Math.min(...ts) - DAY && now <= Math.max(...ts) + DAY;
   });
 }
 

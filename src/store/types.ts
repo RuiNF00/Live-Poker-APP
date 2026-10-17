@@ -276,6 +276,7 @@ export interface BackerPayment {
 export const PLAYER_TAGS = [
   'Fish',
   'Reg',
+  'LAG',
   'Agressivo',
   'Passivo',
   'Tight',

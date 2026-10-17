@@ -26,13 +26,42 @@ const TOTAL = 1326;
 
 /** The strongest hands making up about `pct` percent of all 1326 combos. */
 export function topRange(pct: number): CardCode[][] {
+  return rangeOf(topClasses(pct));
+}
+
+/** The hand classes of `topRange(pct)`, strongest first. */
+export function topClasses(pct: number): string[] {
   const want = (Math.max(0, Math.min(100, pct)) / 100) * TOTAL;
-  const out: CardCode[][] = [];
+  const out: string[] = [];
+  let n = 0;
   for (const cls of HAND_ORDER) {
-    if (out.length >= want) break;
-    out.push(...combosOf(cls));
+    if (n >= want) break;
+    out.push(cls);
+    n += combosOf(cls).length;
   }
   return out;
+}
+
+/** Every combo of the given hand classes. */
+export function rangeOf(classes: Iterable<string>): CardCode[][] {
+  const out: CardCode[][] = [];
+  for (const cls of classes) out.push(...combosOf(cls));
+  return out;
+}
+
+/** Share of all 1326 combos the classes cover, in percent (one decimal). */
+export function rangePct(classes: Iterable<string>): number {
+  let n = 0;
+  for (const cls of classes) n += combosOf(cls).length;
+  return Math.round((n / TOTAL) * 1000) / 10;
+}
+
+export const GRID_RANKS = 'AKQJT98765432';
+
+/** The class in row `i`, column `j` of the 13×13 grid: pairs on the diagonal, suited above it, offsuit below. */
+export function gridClass(i: number, j: number): string {
+  const [a, b] = [GRID_RANKS[i], GRID_RANKS[j]];
+  return i === j ? a + b : i < j ? a + b + 's' : b + a + 'o';
 }
 
 const SI: Record<string, number> = { s: 0, h: 1, d: 2, c: 3 };

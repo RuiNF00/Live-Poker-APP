@@ -62,12 +62,19 @@ export async function removeGroupEntry(id: string, token: string, entryId: strin
   return j.group;
 }
 
-/** The creator deletes it for everyone; anyone else leaves it. A missing group counts as done. */
 /** The creator's RevenueCat id changed (a reinstall or a restore): the new one replaces it. */
 export async function setGroupOwnerRc(id: string, token: string, rcUserId: string): Promise<void> {
   await call(`/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: JSON.stringify({ rcUserId }) });
 }
 
+/** The creator takes out a player with nothing in the accounts: their seat is open again. */
+export async function releaseSeat(id: string, token: string, seat: number): Promise<RemoteGroup> {
+  const j = await call(`/${encodeURIComponent(id)}/seats/${seat}`, { method: 'DELETE', token });
+  if (!j.group) throw new SwapError('bad_response', 500);
+  return j.group;
+}
+
+/** The creator deletes it for everyone; anyone else leaves it. A missing group counts as done. */
 export async function leaveGroup(id: string, token: string): Promise<void> {
   try {
     await call(`/${encodeURIComponent(id)}`, { method: 'DELETE', token });

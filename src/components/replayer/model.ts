@@ -5,7 +5,7 @@ import { positions, totalPot, type HandResult, type Replay, type Step } from '@/
 import { equity } from '@/poker/equity';
 import { evaluate } from '@/poker/evaluator';
 import { amount, decimal } from '@/poker/format';
-import { equityVsRange, rangePctForRaises, topRange } from '@/poker/ranges';
+import { equityVsRange, rangeOf, rangePct, rangePctForRaises, topClasses } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
 import { motionTimeline, type MotionAnim } from './timeline';
@@ -86,7 +86,7 @@ export interface RpView {
   /** Pot / effective stack summary line. */
   info: string;
   /** Heads-up with villain's cards unknown: hero's equity against a range read from villain's preflop raises. */
-  rangeEq: { equity: number; pct: number } | null;
+  rangeEq: { equity: number; pct: number; custom: boolean; hero: CardCode[]; board: CardCode[] } | null;
   end: boolean;
   /** A still frame `at` ms into this step's animations (Story/reel capture). */
   motion?: { anims: MotionAnim[]; at: number };
@@ -138,17 +138,17 @@ function cachedEquity(holes: CardCode[][], board: CardCode[]) {
 }
 
 const rangeCache = new Map<string, number | null>();
-function cachedRangeEquity(hero: CardCode[], board: CardCode[], pct: number) {
-  const key = `${hero.join('')}/${board.join('')}/${pct}`;
+export function cachedRangeEquity(hero: CardCode[], board: CardCode[], classes: string[]) {
+  const key = `${hero.join('')}/${board.join('')}/${classes.join(',')}`;
   if (!rangeCache.has(key)) {
     if (rangeCache.size > 200) rangeCache.clear();
-    rangeCache.set(key, equityVsRange(hero, topRange(pct), board));
+    rangeCache.set(key, equityVsRange(hero, rangeOf(classes), board));
   }
   return rangeCache.get(key)!;
 }
 
 /** The view at step `k` of the replay. `reveal` shows every known hand. */
-export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; reveal: boolean; atEnd: boolean; at?: number }): RpView {
+export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; reveal: boolean; atEnd: boolean; at?: number; range?: string[] | null }): RpView {
   const step: Step = r.steps[k];
   const st = step.state;
   const pos = positions(hand.players.length, hand.button);
@@ -230,9 +230,10 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
       raises++;
       if (a.p === villains[0].i) level = raises;
     }
-    const pct = rangePctForRaises(level);
-    const e = cachedRangeEquity(heroSeat.cards, board, pct);
-    if (e != null) rangeEq = { equity: e, pct };
+    // The player's own villain range, when they drew one, replaces the guess.
+    const classes = opts.range ?? topClasses(rangePctForRaises(level));
+    const e = cachedRangeEquity(heroSeat.cards, board, classes);
+    if (e != null) rangeEq = { equity: e, pct: opts.range ? rangePct(classes) : rangePctForRaises(level), custom: !!opts.range, hero: heroSeat.cards, board };
   }
 
   const pot = result ? result.pots.reduce((a, b) => a + b.amount, 0) : st.pot;

@@ -7,8 +7,9 @@ import { useMemo, useSyncExternalStore } from 'react';
 
 import { appUserId } from '@/billing/purchases';
 import { SwapError, newCid } from '@/lib/swap-api';
-import { addGroupEntry, fetchGroup, leaveGroup, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
+import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
 
+import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
 
@@ -28,7 +29,9 @@ function emit(next: SwapGroup[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<SwapGroup>(kv, SPEC).then((d) => {
+  booting ??= loadCollection<SwapGroup>(kv, SPEC).then(async (d) => {
+    // Records that no longer parse are kept aside (backup and support file), not dropped.
+    await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swap-groups] write failed', e));
     const ids = new Set(state.groups.map((g) => g.id));
     emit([...state.groups, ...d.items.filter((g) => !ids.has(g.id))]);
@@ -78,6 +81,11 @@ export function onGroupNews(l: News): () => void {
 function applyRemote(id: string, remote: RemoteGroup) {
   const cur = getGroup(id);
   if (!cur) return;
+  // My token no longer has a seat: the creator freed it. Keep the copy as the record.
+  if (remote.you === null) {
+    saveGroup({ ...cur, gone: true, removed: true, entries: cur.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
+    return;
+  }
   const next = mergeRemoteGroup(cur, remote);
   saveGroup(next);
   const news = newFromOthers(cur, next);
@@ -146,6 +154,18 @@ export async function removeGroupEntryHere(id: string, entry: GroupEntry): Promi
     return true;
   } catch {
     return false;
+  }
+}
+
+/** The creator frees another player's seat (nothing of theirs in the accounts yet). */
+export async function releaseSeatHere(id: string, seat: number): Promise<'done' | 'in_use' | 'offline'> {
+  const g = getGroup(id);
+  if (!g || g.seat !== 0) return 'in_use';
+  try {
+    applyRemote(id, await releaseSeat(id, g.token, seat));
+    return 'done';
+  } catch (e) {
+    return e instanceof SwapError && e.status === 409 ? 'in_use' : 'offline';
   }
 }
 

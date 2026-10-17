@@ -130,7 +130,7 @@ export async function deleteLive(live: { id: string; token: string }): Promise<v
 
 /** Reads a live page the way a backer's browser does. Null when the link is gone. */
 export async function fetchLive(id: string): Promise<{ snapshot: LiveSnapshot; updatedAt: number } | null> {
-  const res = await fetch(`${API}/api/live/${encodeURIComponent(id)}`, { headers: { 'cache-control': 'no-store' } });
+  const res = await fetch(`${API}/api/live/${encodeURIComponent(id)}`, { cache: 'no-store' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('live ' + res.status);
   const j = (await res.json()) as { snapshot: LiveSnapshot; updatedAt: string };

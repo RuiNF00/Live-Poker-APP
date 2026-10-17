@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
-import { limited, reporterId } from '@/lib/abuse';
+import { firstTime, limited, reporterId } from '@/lib/abuse';
 import { notifyModeration } from '@/lib/notify';
 import { brand } from '@/config/brand';
 import { cors } from '@/lib/cors';
@@ -19,6 +19,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   if (!UUID.test(commentId)) return NextResponse.json({ error: 'invalid_report' }, { status: 422, headers: cors });
   const result = await getStore().reportComment(commentId, reporterId(req));
+  if (result === 'ok') {
+    after(async () => {
+      if (await firstTime('report-comment', commentId)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/h/${id}`);
+    });
+  }
   if (result === 'hidden') after(() => notifyModeration(`Comentário escondido por denúncias em ${brand.siteUrl}/h/${id}.`));
   return NextResponse.json({ reported: result !== 'missing' }, { status: result === 'missing' ? 404 : 200, headers: cors });
 }

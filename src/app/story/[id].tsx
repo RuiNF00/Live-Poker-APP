@@ -1,21 +1,24 @@
+import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
-import { canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, shareStory, shareVideo } from '@/lib/instagram-story';
+import { canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, sharePost, shareStory, shareVideo } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
 import { motionTimeline } from '@/components/replayer/timeline';
+import { handShareText } from '@/share/share-text';
 import { reelFrames } from '@/story/reel';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -34,6 +37,7 @@ export default function StoryScreen() {
   const video = mode === 'video';
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const pro = usePro();
   const [brand, setBrand] = useState(true);
   const [voice, setVoice] = useState<string | null>(null);
@@ -123,7 +127,7 @@ export default function StoryScreen() {
         Alert.alert(t('Não deu para criar o vídeo'), t('Verifica a internet e tenta outra vez daqui a pouco.'));
         return;
       }
-      await shareVideo(file, link);
+      await shareVideo(file, `${handShareText(hand.game.name, 'video')}\n${link}`);
       track('story_shared', { target: 'video', voice: withVoice, share_id: shareId, ref, question: false, frames: frames.length });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos criar o vídeo. Tenta outra vez.'));
@@ -184,8 +188,53 @@ export default function StoryScreen() {
     }
   };
 
+  // X: the card as a picture, the hand's replay link in the post text (a still; the video goes through "Criar vídeo da mão").
+  // The hand's public link, made once (it counts as the free plan's daily share).
+  const linkFor = async (channel: 'x' | 'link'): Promise<{ link: string; shareId: string; ref: string } | null> => {
+    const isNew = !hand.shareId;
+    if (isNew && !pro.canShare()) {
+      pro.paywall('shares');
+      return null;
+    }
+    let shareId: string;
+    try {
+      shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+    } catch {
+      Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+      return null;
+    }
+    if (isNew) pro.record('share');
+    const ref = await shareRef();
+    return { link: shareLink(shareId, channel, { quiz: mode === 'question', ref }), shareId, ref };
+  };
+  const postText = (link: string) => `${comment.trim() || handShareText(hand.game.name, mode === 'question' ? 'challenge' : 'link')}\n${link}`;
+
+  // X or any other app: the card as a picture, the replay link in the text.
+  const postTo = async (to: 'x' | 'any') => {
+    tap('medium');
+    setBusy(true);
+    try {
+      const l = await linkFor(to === 'x' ? 'x' : 'link');
+      if (!l) return;
+      await sharePost([await captureStory(card)], postText(l.link), to);
+      track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    const l = await linkFor('link');
+    if (!l) return;
+    await Clipboard.setStringAsync(postText(l.link)).catch(() => {});
+    Alert.alert(t('Link copiado'));
+  };
+
   return (
     <>
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
@@ -258,10 +307,10 @@ export default function StoryScreen() {
             <Button title={progress ?? (busy ? t('A preparar…') : t('Criar vídeo da mão'))} icon="film-outline" disabled={busy} onPress={postVideo} />
           ) : canShareStory ? (
             <Button
-              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : t('Partilhar no Instagram')}
-              icon="logo-instagram"
+              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : withVoice ? t('Partilhar no Instagram') : t('Partilhar')}
+              icon={withVoice ? 'logo-instagram' : 'share-outline'}
               disabled={busy}
-              onPress={post}
+              onPress={withVoice ? post : () => setSheet(true)}
             />
           ) : (
             <T v="small" style={{ textAlign: 'center' }}>

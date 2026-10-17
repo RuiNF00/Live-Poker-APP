@@ -35,7 +35,7 @@ function SwapsScreen() {
   const tot = swapsTotal(swaps);
   // Groups add to the same per-currency totals: what the group owes me, or what I owe it.
   for (const g of groups) {
-    if (g.archived || !groupReady(g)) continue;
+    if (g.archived || g.gone || !groupReady(g)) continue;
     tot.open++;
     const b = groupLedger(g).balance;
     const cur = tot.byCurrency.get(g.terms.currency) ?? { owedToMe: 0, iOwe: 0, net: 0 };
@@ -90,7 +90,7 @@ function SwapsScreen() {
                   <View key={cur} style={{ gap: 2, marginTop: i ? S.sm : 0 }}>
                     <T v="label">{v.net > 0 ? t('No total, devem-te') : t('No total, deves')}</T>
                     <T v="monoXL" color={v.net > 0 ? C.good : C.warn} numberOfLines={1} adjustsFontSizeToFit>
-                      {signed(v.net, cur)}
+                      {money(Math.abs(v.net), cur)}
                     </T>
                     {v.owedToMe >= 0.5 && v.iOwe >= 0.5 ? (
                       <T v="small">{t('devem-te {a} · deves {b}', { a: money(v.owedToMe, cur), b: money(v.iOwe, cur) })}</T>
@@ -100,7 +100,7 @@ function SwapsScreen() {
               ) : (
                 <>
                   <T v="label">{t('Swaps')}</T>
-                  <T v="h1">{locked && tot.open ? (tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open })) : tot.open ? t('Tudo acertado') : t('À espera de confirmação')}</T>
+                  <T v="h1">{locked && tot.open ? (tot.open === 1 ? t('1 swap ativo') : t('{n} swaps ativos', { n: tot.open })) : tot.open ? t('Tudo acertado') : tot.pending ? t('À espera de confirmação') : t('Swaps')}</T>
                 </>
               )}
               <T v="small">

@@ -126,7 +126,7 @@ export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx
   return {
     id,
     name: f.name,
-    venue: `${f.venue}, ${f.city.split(',')[0]}`,
+    venue: [f.venue, f.city.split(',')[0]].filter(Boolean).join(', '),
     currency: f.currency,
     from: startOfDay(localDay(days[0]) - DAY),
     to: endOfDay(localDay(days[days.length - 1]) + DAY),

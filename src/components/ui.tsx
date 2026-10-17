@@ -452,6 +452,9 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor, 
 // ─── Numbers ─────────────────────────────────────────────────────────────────
 
 /** A labelled number tile. `tone` colours the value. */
+// Web ignores adjustsFontSizeToFit: there a long value (pt-BR amounts, dates) wraps instead of being cut.
+const STAT_LINES = Platform.OS === 'web' ? 2 : 1;
+
 export function Stat({
   label,
   value,
@@ -480,7 +483,7 @@ export function Stat({
         </T>
         {locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
       </Row>
-      <T v={big ? 'monoL' : 'mono'} color={locked ? C.muted : col} numberOfLines={1} adjustsFontSizeToFit style={big ? null : { fontSize: 18, lineHeight: 24 }}>
+      <T v={big ? 'monoL' : 'mono'} color={locked ? C.muted : col} numberOfLines={STAT_LINES} adjustsFontSizeToFit style={big ? null : { fontSize: 18, lineHeight: 24 }}>
         {value}
       </T>
       {sub ? (

@@ -120,6 +120,8 @@ export default function RootLayout() {
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
             <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
+            <Stack.Screen name="festivals" options={{ title: t('Festivais') }} />
+            <Stack.Screen name="festival-new" options={{ title: t('Adicionar o meu festival'), presentation: 'modal' }} />
             <Stack.Screen name="tournament" options={{ title: t('Modo torneio') }} />
             <Stack.Screen name="tournament-stats" options={{ title: t('Torneios') }} />
             <Stack.Screen name="tournament-card" options={{ title: t('Currículo de torneios'), presentation: 'modal' }} />
@@ -129,6 +131,7 @@ export default function RootLayout() {
             <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
             <Stack.Screen name="coach/new" options={{ title: t('Enviar ao coach'), presentation: 'modal' }} />
             <Stack.Screen name="pack/index" options={{ title: t('Links de várias mãos') }} />
+            <Stack.Screen name="shared-hands" options={{ title: t('Mãos partilhadas') }} />
             <Stack.Screen name="pack/new" options={{ title: t('Partilhar num só link'), presentation: 'modal' }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
             <Stack.Screen name="export" options={{ title: t('Exportar') }} />

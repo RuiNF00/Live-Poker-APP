@@ -13,6 +13,7 @@ import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, 
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { askExactAlarms, exactAlarmsAllowed } from '@/lib/lock-screen/reminder';
+import { kindOn } from '@/lib/notify-policy';
 import { useSheetAnimation } from '@/lib/motion';
 import { canReadStructure, photoStructure } from '@/lib/structure-photo';
 import { bbs, chips, decimal, money, timeOf } from '@/poker/format';
@@ -484,6 +485,7 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
 
 /** Android only, when exact alarms are refused: the level reminders may come a few minutes late, so offer the setting. */
 function ExactAlarms() {
+  const { settings } = useStore();
   const [allowed, setAllowed] = useState(true);
   useFocusEffect(
     useCallback(() => {
@@ -494,7 +496,8 @@ function ExactAlarms() {
       };
     }, []),
   );
-  if (allowed || Platform.OS !== 'android') return null;
+  // No point asking when "Níveis e intervalos" is off in Settings.
+  if (allowed || Platform.OS !== 'android' || !kindOn(settings, 'levels')) return null;
   return (
     <Card tone="inset" style={{ gap: S.sm }}>
       <Row>
