@@ -37,7 +37,7 @@ function seatLayout(seats: SeatState[], tableSize: number) {
 export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Props) {
   const layout = seatLayout(step.seats, tableSize);
   const winners = new Map((step.winners ?? []).map((w) => [w.seat, w]));
-  const fmt = (n: number) => formatAmount(n, bb, mode);
+  const fmt = (n: number) => formatAmount(n, bb, mode, locale);
   const board = step.board;
 
   return (

@@ -5,6 +5,7 @@ import {
   buildReplay,
   describeStep,
   evaluate5,
+  formatChips,
   impliedPosts,
   positionsFor,
   validateHand,
@@ -69,10 +70,11 @@ describe('replay of sample tournament hand', () => {
   });
 
   it('describes steps', () => {
-    expect(describeStep(steps[5], 2000)).toBe('Reg alemão Raise 4,500');
+    expect(describeStep(steps[5], 2000)).toBe('Reg alemão Raise 4500');
+    expect(describeStep(steps[5], 2000, 'chips', 'en')).toBe('Reg alemão Raise 4,500');
     expect(describeStep(steps[12], 2000)).toBe('Flop Q♦ 7♥ 3♥');
     expect(describeStep(steps[5], 2000, 'bb')).toBe('Reg alemão Raise 2.3 BB');
-    expect(describeStep(last, 2000)).toBe('Hero ganha 243.5k (Cor)');
+    expect(describeStep(last, 2000)).toBe('Hero ganha 244k (Cor)');
   });
 });
 
@@ -155,5 +157,22 @@ describe('validateHand', () => {
     bad.board!.flop = ['Ah', '7h', '3h'];
     expect(validateHand(bad)).toContain('duplicate card Ah');
     expect(validateHand('x')).toEqual(['not an object']);
+  });
+});
+
+describe('formatting and positions match the app', () => {
+  it('formats chips like the app', () => {
+    expect(formatChips(1380)).toBe('1380');
+    expect(formatChips(9500)).toBe('9500');
+    expect(formatChips(1380, 'en')).toBe('1,380');
+    expect(formatChips(103_500)).toBe('104k');
+    expect(formatChips(12_500)).toBe('12.5k');
+    expect(formatChips(1_250_000)).toBe('1.25M');
+  });
+  it('labels 9-max like the app', () => {
+    const hand = structuredClone(SAMPLE_TOURNAMENT_HAND);
+    hand.players = Array.from({ length: 9 }, (_, i) => ({ seat: i + 1, stack: 1000, isHero: i === 0 }));
+    hand.buttonSeat = 1;
+    expect([...positionsFor(hand).values()]).toEqual(['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO']);
   });
 });
