@@ -80,6 +80,7 @@ export default function NewCoachLink() {
     } else await Share.share({ message: msg }).catch(() => {});
     // The moment it makes sense to ask: we tell the player when the coach answers.
     await askNotify({
+      where: 'coach',
       title: t('Avisamos-te quando o coach comentar'),
       preview: { title: t('Comentários do coach'), body: send.length === 1 ? t('O teu coach comentou 1 mão') : t('O teu coach comentou {n} mãos', { n: send.length }) },
     }).catch(() => false);

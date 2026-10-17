@@ -388,6 +388,7 @@ function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; 
     let live = true;
     const timer = setTimeout(async () => {
       const ok = await ask({
+        where: 'trial',
         title: t('Avisamos-te antes de cobrar'),
         preview: { title: t('O teste grátis acaba a {date}', { date: new Date(Date.now() + trial * 86_400_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }) }), body: t('Vês as mãos que registaste e o dia em que o teste acaba.') },
       });

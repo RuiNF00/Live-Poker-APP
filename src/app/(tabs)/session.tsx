@@ -29,6 +29,7 @@ import { festivalName, useFestivalPlan } from '@/store/festival-plan';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
+import { track } from '@/lib/events';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -116,6 +117,7 @@ export default function SessionScreen() {
   const begin = (s: Session) => {
     tap('success');
     saveSession(s);
+    track('session_started', { kind: s.kind });
     // The next session goes to the same bankroll.
     if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
   };
@@ -285,7 +287,7 @@ function Live({ s }: { s: Session }) {
     const i = LEVEL_LENGTHS.indexOf((s.levelMinutes ?? 0) as (typeof LEVEL_LENGTHS)[number]);
     const levelMinutes = i + 1 < LEVEL_LENGTHS.length ? LEVEL_LENGTHS[i + 1] : undefined;
     if (levelMinutes && !s.levelMinutes) {
-      void askNotify({ title: t('Avisamos-te quando o nível sobe'), preview: levelUpMessage(s) });
+      void askNotify({ where: 'session', title: t('Avisamos-te quando o nível sobe'), preview: levelUpMessage(s) });
     }
     save({ levelMinutes, levelStartedAt: undefined });
   };
@@ -481,6 +483,9 @@ function Live({ s }: { s: Session }) {
                     tags: moods.length ? moods : undefined,
                       breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
                     });
+                    // No money in events: kind, hands saved in it and a duration bucket.
+                    const h = playedMs(s, now) / 3_600_000;
+                    track('session_closed', { kind: s.kind, hands: hands.filter((x) => x.sessionId === s.id).length, minutes_bucket: h < 1 ? '<1h' : h < 3 ? '1-3h' : h < 6 ? '3-6h' : '6h+' });
                     router.push({ pathname: '/summary/[id]', params: { id: s.id } });
                   }}
                 />
