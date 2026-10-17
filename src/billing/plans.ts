@@ -39,8 +39,10 @@ export const FREE = {
    * brand in front of friends who don't have the app yet.
    */
   sharesPerDay: null as number | null,
-  /** Bankroll period filters other than "Sempre". */
+  /** Bankroll date and stake filters ("Sempre" and every stake stay free). */
   bankrollFilters: false,
+  /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
+  bankrolls: 1 as number | null,
 };
 
 export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'generic';
@@ -57,7 +59,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   stats: {
     title: t('Conhece o teu bankroll'),
-    body: t('Filtros, salas, jogos e CSV.'),
+    body: t('Várias bankrolls, filtros, salas, jogos e CSV.'),
   },
   story: {
     title: t('Stories com a tua voz'),
@@ -77,7 +79,7 @@ export type FeatureKey = 'hands' | 'story' | 'stats';
 
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
   { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Sem limite diário') },
-  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros, salas, CSV') },
+  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls, filtros, CSV') },
   { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
 ];
 

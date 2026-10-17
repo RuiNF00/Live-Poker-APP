@@ -46,6 +46,30 @@ export function profit(s: Session): number {
   return (s.cashOut || 0) - owedToBackers(s) - ownCost(s);
 }
 
+/**
+ * Money in different currencies never adds up: every total below is for one
+ * currency. Lists that mix them are split here first.
+ */
+export function byCurrency<T extends { currency: string }>(list: T[]): { currency: string; items: T[] }[] {
+  const m = new Map<string, T[]>();
+  for (const x of list) {
+    const k = x.currency || '';
+    const l = m.get(k);
+    if (l) l.push(x);
+    else m.set(k, [x]);
+  }
+  return [...m.entries()].map(([currency, items]) => ({ currency, items })).sort((a, b) => b.items.length - a.items.length);
+}
+
+/** The currency most of the list is in (`fallback` when empty). */
+export function mainCurrency(list: { currency: string }[], fallback = '€'): string {
+  return byCurrency(list)[0]?.currency ?? fallback;
+}
+
+function inCurrency(list: Session[], currency: string | undefined): Session[] {
+  return currency === undefined ? list : list.filter((s) => s.currency === currency);
+}
+
 export interface Breakdown {
   key: string;
   sessions: number;
@@ -54,10 +78,10 @@ export interface Breakdown {
   hourly: number;
 }
 
-/** Results grouped by venue or game, best first. */
-export function breakdown(list: Session[], by: 'venue' | 'name'): Breakdown[] {
+/** Results grouped by venue or game, best first, in one currency. */
+export function breakdown(list: Session[], by: 'venue' | 'name', currency = mainCurrency(list)): Breakdown[] {
   const m = new Map<string, Breakdown>();
-  for (const s of list) {
+  for (const s of inCurrency(list, currency)) {
     if (!s.endedAt) continue;
     const key = (s[by] || '').trim();
     if (!key) continue;
@@ -71,6 +95,10 @@ export function breakdown(list: Session[], by: 'venue' | 'name'): Breakdown[] {
 }
 
 export interface Totals {
+  /** What every amount below is in. */
+  currency: string;
+  /** Finished sessions in other currencies, left out of these totals. */
+  otherCurrencies: string[];
   sessions: number;
   profit: number;
   invested: number;
@@ -82,8 +110,11 @@ export interface Totals {
   worst: number;
 }
 
-export function totals(list: Session[]): Totals {
-  const done = list.filter((s) => s.endedAt);
+/** Totals of the finished sessions in `currency` (default: the one most of them use). */
+export function totals(list: Session[], currency?: string): Totals {
+  const ended = list.filter((s) => s.endedAt);
+  const cur = currency ?? mainCurrency(ended, mainCurrency(list));
+  const done = inCurrency(ended, cur);
   const p = done.reduce((a, s) => a + profit(s), 0);
   const inv = done.reduce((a, s) => a + Math.max(0, ownCost(s)), 0);
   const hours = done.reduce((a, s) => a + playedMs(s), 0) / 3600000;
@@ -92,6 +123,8 @@ export function totals(list: Session[]): Totals {
   const mttProfit = mtts.reduce((a, s) => a + profit(s), 0);
   const profits = done.map(profit);
   return {
+    currency: cur,
+    otherCurrencies: byCurrency(ended).map((g) => g.currency).filter((c) => c !== cur),
     sessions: done.length,
     profit: p,
     invested: inv,
@@ -104,9 +137,10 @@ export function totals(list: Session[]): Totals {
   };
 }
 
-/** Cumulative profit points, oldest first. */
-export function curve(list: Session[]): { t: number; v: number }[] {
-  const done = list.filter((s) => s.endedAt).sort((a, b) => a.endedAt! - b.endedAt!);
+/** Cumulative profit points in one currency, oldest first. */
+export function curve(list: Session[], currency?: string): { t: number; v: number }[] {
+  const ended = list.filter((s) => s.endedAt);
+  const done = inCurrency(ended, currency ?? mainCurrency(ended)).sort((a, b) => a.endedAt! - b.endedAt!);
   let acc = 0;
   return [{ t: done[0]?.startedAt ?? Date.now(), v: 0 }, ...done.map((s) => ({ t: s.endedAt!, v: (acc += profit(s)) }))];
 }

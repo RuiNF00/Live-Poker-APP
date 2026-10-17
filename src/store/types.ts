@@ -40,6 +40,34 @@ export interface Session {
   /** Names at the table by seat (0 = seat 1). */
   roster: string[];
   notes: string;
+  /** Where it was played. Missing = live (the app's home turf). */
+  format?: GameFormat;
+  /** Bankroll it counts towards. Missing (older data): the first bankroll in its currency. */
+  bankrollId?: string;
+  updatedAt?: number;
+}
+
+export type GameFormat = 'live' | 'online';
+
+/** A pot of money in one currency: sessions plus deposits and withdrawals. */
+export interface Bankroll {
+  id: string;
+  name: string;
+  /** Never changes after creation: sessions and transfers are in this currency. */
+  currency: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
+/** Money moved into or out of a bankroll (not poker results). */
+export interface Transfer {
+  id: string;
+  bankrollId: string;
+  kind: 'deposit' | 'withdrawal';
+  /** Always positive; `kind` gives the direction. */
+  amount: number;
+  at: number;
+  note: string;
   updatedAt?: number;
 }
 
@@ -78,6 +106,8 @@ export interface Settings {
   shareNames: boolean;
   /** Shared hands: include your notes. */
   shareNotes: boolean;
+  /** Bankroll new sessions go to. */
+  bankrollId?: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
