@@ -20,3 +20,7 @@ Todos os nomes foram pesquisados entre aspas na web (17 out 2026) e nenhum devol
 | 10 | Chipnote | Uma ficha, uma nota, uma mão. | Fredoka + Nunito | #E3F1FF / #FF6B6B |
 
 Descartados por já existirem com o mesmo nome (ou muito parecido): Railbird, Sweat, Muck, Kicker, Ante, Tells, Shove, Stackd, Straddle, Hijack, Riverlog, TableMate, Railmate, Railnote, Showline, Showbird, Stackbird, Flopbird, Flopnote, Feltpad, Riverkin, Handloop.
+
+## Nome escolhido: Sweatbook
+
+`sweatbook-direcoes.html` tem quatro direções de design (Noite, Caderno, Calor, Grupo), cada uma com logótipo, ícone, cores, letra, três ecrãs (registar mão, replayer, sessão ao vivo) e o cartão de partilha. A cor e a letra finais entram na app depois da escolha.

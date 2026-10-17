@@ -1,0 +1,381 @@
+<title>Sweatbook Design</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Figtree:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&family=Young+Serif&display=swap">
+<style>
+/* Layout: neutral page chrome with one full-width band per design direction; each band holds a brand sheet, then a row of three phone screens and a share card. */
+:root{
+  --pg:#F3F4F6; --pg-fg:#14161A; --pg-mut:#5E6570; --pg-line:#DDE0E5; --pg-panel:#FFFFFF; --pg-pick:#1F6FEB;
+  --f-ui:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg:#101215;--pg-fg:#ECEEF1;--pg-mut:#9BA2AD;--pg-line:#272B32;--pg-panel:#181B20;--pg-pick:#5B9BFF;color-scheme:dark}}
+:root[data-theme="dark"]{--pg:#101215;--pg-fg:#ECEEF1;--pg-mut:#9BA2AD;--pg-line:#272B32;--pg-panel:#181B20;--pg-pick:#5B9BFF;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--pg);color:var(--pg-fg);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{padding-block:40px 20px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--pg-mut);font-weight:600}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.06;margin:6px 0 12px;text-wrap:balance;font-weight:800;letter-spacing:-.02em}
+.lede{max-width:66ch;color:var(--pg-mut);margin:0}
+.rec{margin-top:18px;padding:14px 16px;border:1px solid var(--pg-line);border-left:3px solid var(--pg-pick);background:var(--pg-panel);border-radius:6px;max-width:74ch}
+.jump{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-block:20px 36px}
+@media (max-width:760px){.jump{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.jump a{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--pg-line);border-radius:12px;background:var(--pg-panel);color:var(--pg-fg);text-decoration:none;min-width:0}
+.jump a:hover,.jump a:focus-visible{border-color:var(--pg-pick);outline:none}
+.jump .ico{width:44px;height:44px;flex:none}
+.jump b{display:block;font-size:15px}
+.jump small{color:var(--pg-mut);font-size:12px;display:block;line-height:1.3}
+
+/* ---------- Direction band ---------- */
+.dir{background:var(--bg);color:var(--ink);font-family:var(--fb)}
+.dir .inner{padding-block:56px 64px;display:flex;flex-direction:column;gap:40px}
+.d-head{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:900px){.d-head{grid-template-columns:minmax(0,1fr);gap:28px}}
+.d-tag{font-family:var(--f-ui);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.lock{display:flex;align-items:center;gap:14px;margin:12px 0 4px;flex-wrap:wrap}
+.lock .mk{width:58px;height:58px;flex:none}
+.wm{font-family:var(--fd);font-weight:var(--dw);font-size:clamp(42px,7vw,72px);line-height:1;letter-spacing:var(--dtr);font-style:var(--dst,normal);font-stretch:var(--dws,100%);text-transform:var(--dtt,none)}
+.wm em{font-style:inherit;color:var(--acc)}
+.d-name{font-family:var(--fd);font-weight:var(--dw);font-size:clamp(20px,2.6vw,26px);margin:14px 0 8px;letter-spacing:var(--dtr);font-style:var(--dst,normal);font-stretch:var(--dws,100%);text-transform:var(--dtt,none);color:var(--acc)}
+.d-why{max-width:58ch;margin:0;color:var(--ink);opacity:.9}
+.d-bul{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:6px;max-width:58ch;font-size:14px}
+.d-bul li{display:flex;gap:10px}
+.d-bul li::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--acc);margin-top:8px;flex:none}
+
+.sheet{display:grid;gap:18px;padding:20px;border-radius:calc(var(--r) + 6px);background:var(--sf);border:1px solid var(--line)}
+.sheet h3{margin:0;font-family:var(--f-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.icons{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.icons .ico{box-shadow:0 8px 22px rgba(0,0,0,.28)}
+.ico{border-radius:22.5%;overflow:hidden;display:block}
+.ico svg{display:block;width:100%;height:100%}
+.sw{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.sw div{min-width:0}
+.sw i{display:block;height:44px;border-radius:calc(var(--r) - 2px);border:1px solid var(--line)}
+.sw b{display:block;font-size:12px;margin-top:5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--mut)}
+.type{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.type div{min-width:0}
+.type .big{font-family:var(--fd);font-weight:var(--dw);font-size:34px;line-height:1;letter-spacing:var(--dtr);font-style:var(--dst,normal);font-stretch:var(--dws,100%)}
+.type .sm{font-family:var(--fb);font-size:24px;line-height:1}
+.type small{display:block;color:var(--mut);font-size:12px;margin-top:6px}
+
+/* screens row */
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.15fr);gap:22px;align-items:start}
+@media (max-width:1100px){.row{grid-template-columns:repeat(3,minmax(0,1fr))}.row .sharecol{grid-column:1/-1}}
+@media (max-width:760px){.row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding-bottom:12px;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}.row>*{flex:0 0 min(270px,80vw);scroll-snap-align:center}.row .sharecol{flex-basis:min(320px,86vw)}}
+.cap{font-family:var(--f-ui);font-size:12px;color:var(--mut);margin-top:10px;text-align:center}
+.cap b{color:var(--ink);font-weight:600}
+
+/* ---------- Phone ---------- */
+.ph{width:100%;max-width:280px;margin:0 auto;border-radius:40px;padding:9px;background:#08090A;box-shadow:0 24px 50px rgba(0,0,0,.35),inset 0 0 0 1.5px #2a2c30}
+.scr{position:relative;border-radius:32px;overflow:hidden;background:var(--sbg);color:var(--ink);font-family:var(--fb);font-size:12px;aspect-ratio:9/19.5;display:flex;flex-direction:column}
+.sbar{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 6px;font-family:var(--f-ui);font-weight:700;font-size:11.5px;font-variant-numeric:tabular-nums}
+.sbar .isl{width:72px;height:20px;border-radius:12px;background:#000}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px}
+.nav .t{font-family:var(--fd);font-weight:var(--dw);font-size:19px;letter-spacing:var(--dtr);font-style:var(--dst,normal);font-stretch:var(--dws,100%);text-transform:var(--dtt,none)}
+.nav .x{width:28px;height:28px;border-radius:50%;background:var(--sf);display:grid;place-items:center;font-size:13px;color:var(--mut)}
+.body{flex:1;display:flex;flex-direction:column;gap:9px;padding:0 12px 12px;min-height:0}
+.ctx{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:var(--r);background:var(--sf)}
+.ctx b{display:block;font-size:11.5px;font-weight:700}
+.ctx span{color:var(--mut);font-size:10px}
+.ctx .r{text-align:right;font-variant-numeric:tabular-nums}
+.lbl{font-family:var(--f-ui);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);font-weight:700;display:flex;justify-content:space-between}
+.lbl em{font-style:normal;color:var(--acc);letter-spacing:.04em}
+.pos{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.pos span{text-align:center;padding:6px 0;border-radius:calc(var(--r) - 4px);background:var(--sf);font-weight:700;font-size:10px;font-family:var(--fm)}
+.pos span.on{background:var(--acc);color:var(--onacc)}
+.slots{display:flex;gap:6px;align-items:center}
+.picker{display:grid;grid-template-columns:repeat(13,1fr);gap:2px}
+.picker span{text-align:center;padding:5px 0;border-radius:4px;background:var(--sf);font-family:var(--fm);font-weight:700;font-size:9.5px}
+.picker span.on{background:var(--ink);color:var(--sbg)}
+.suits{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.suits span{text-align:center;padding:5px 0;border-radius:calc(var(--r) - 4px);background:var(--sf);font-size:14px;line-height:1.1}
+.seq{display:flex;flex-direction:column;gap:4px}
+.seq div{display:flex;justify-content:space-between;align-items:center;padding:6px 9px;border-radius:calc(var(--r) - 3px);background:var(--sf);font-size:10.5px;font-variant-numeric:tabular-nums}
+.seq div b{font-weight:700}
+.seq div.me{background:color-mix(in srgb,var(--acc) 18%,var(--sf));box-shadow:inset 3px 0 0 var(--acc)}
+.seq div.next{background:transparent;border:1px dashed color-mix(in srgb,var(--ink) 30%,transparent);color:var(--mut)}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.quick span{text-align:center;padding:8px 0;border-radius:calc(var(--r) - 3px);background:var(--sf);font-weight:700;font-size:10.5px}
+.quick span.hot{background:var(--acc2);color:var(--onacc2)}
+.cta{margin-top:auto;padding:12px;border-radius:var(--rb);background:var(--acc);color:var(--onacc);font-weight:800;text-align:center;font-size:13px;font-family:var(--fb);display:flex;justify-content:center;gap:8px;align-items:center}
+.cta small{font-weight:600;opacity:.75;font-size:10.5px}
+
+/* playing cards */
+.pc{width:var(--cw,24px);height:calc(var(--cw,24px)*1.38);border-radius:calc(var(--cw,24px)*.16);background:#fff;color:#14161a;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Hanken Grotesk",system-ui,sans-serif;font-weight:800;font-size:calc(var(--cw,24px)*.5);line-height:.95;box-shadow:0 1px 2px rgba(0,0,0,.35);flex:none}
+.pc i{font-style:normal;font-size:.9em}
+.pc.h{color:#D7263D}.pc.d{color:#1C6ED6}.pc.c{color:#16894A}
+.pc.e{background:transparent;border:1.5px dashed color-mix(in srgb,var(--ink) 35%,transparent);box-shadow:none}
+.pc.big{--cw:38px}
+
+/* table */
+.tbl{position:relative;margin:16px 18px 20px;aspect-ratio:1/1.25;border-radius:46% / 38%;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--felt) 85%,#fff) 0%,var(--felt) 60%);border:6px solid var(--rail);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#fff 12%,transparent)}
+.st{position:absolute;transform:translate(-50%,-50%);text-align:center;font-size:8.5px;line-height:1.15;font-variant-numeric:tabular-nums;z-index:2}
+.st .p{background:var(--sf2);color:var(--ink);padding:3px 6px;border-radius:7px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.st .p b{display:block;font-size:9px}
+.st.me .p{background:var(--acc);color:var(--onacc)}
+.st.f{opacity:.5}
+.st .bet{position:absolute;left:50%;transform:translateX(-50%);font-size:8.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.4);padding:1px 6px;border-radius:99px;white-space:nowrap}
+.brd{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);display:flex;gap:3px;--cw:22px}
+.pot{position:absolute;left:50%;top:31%;transform:translate(-50%,-50%);font-size:9.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.38);padding:2px 8px;border-radius:99px;font-variant-numeric:tabular-nums;font-family:var(--fm)}
+.hcards{position:absolute;left:50%;top:76%;transform:translate(-50%,-50%);display:flex;gap:2px;--cw:22px}
+.vcards{position:absolute;left:50%;top:15%;transform:translate(-50%,-50%);display:flex;gap:2px;--cw:18px}
+.tick{padding:8px 10px;border-radius:var(--r);background:var(--sf);display:flex;justify-content:space-between;align-items:center;font-size:10.5px}
+.tick b{font-weight:800}
+.scrub{position:relative;height:40px}
+.scrub .bar{position:absolute;left:0;right:0;top:12px;height:4px;border-radius:4px;background:var(--sf2)}
+.scrub .fill{position:absolute;left:0;top:12px;height:4px;width:52%;border-radius:4px;background:var(--acc)}
+.scrub .knob{position:absolute;left:52%;top:6px;width:16px;height:16px;border-radius:50%;background:var(--acc);transform:translateX(-50%);box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 25%,transparent)}
+.scrub .mk{position:absolute;top:26px;font-size:8px;color:var(--mut);transform:translateX(-50%);font-family:var(--f-ui);font-weight:600}
+.ctrl{display:flex;justify-content:center;align-items:center;gap:18px;font-size:14px}
+.ctrl .pl{width:42px;height:42px;border-radius:50%;background:var(--ink);color:var(--sbg);display:grid;place-items:center;font-size:14px}
+.cmt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);background:var(--sf);font-size:10.5px}
+.cmt .av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff;flex:none}
+.cmt .av:nth-child(2){margin-left:-12px}
+
+/* session */
+.timer{text-align:center;padding:8px 0 2px}
+.timer .live{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;font-family:var(--f-ui)}
+.timer .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--acc)}
+.timer .clk{font-family:var(--fm);font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.timer small{color:var(--mut);font-size:10.5px}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.kpi div{padding:8px;border-radius:var(--r);background:var(--sf)}
+.kpi span{display:block;color:var(--mut);font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-family:var(--f-ui);font-weight:700}
+.kpi b{font-family:var(--fm);font-size:14px;font-variant-numeric:tabular-nums}
+.chart{padding:8px 8px 4px;border-radius:var(--r);background:var(--sf)}
+.chart svg{display:block;width:100%;height:auto}
+.hl{display:flex;flex-direction:column;gap:4px}
+.hl div{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:calc(var(--r) - 3px);background:var(--sf);font-size:10.5px}
+.hl div .cs{display:flex;gap:1px;--cw:15px}
+.hl div .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hl div b{font-family:var(--fm);font-variant-numeric:tabular-nums}
+.pos-n{color:var(--good)}.neg-n{color:var(--bad)}
+.fab{position:absolute;right:14px;bottom:16px;height:46px;padding:0 16px;border-radius:var(--rb);background:var(--acc);color:var(--onacc);display:flex;align-items:center;gap:6px;font-weight:800;font-size:12.5px;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.fab::before{content:"+";font-size:20px;line-height:1;font-weight:500}
+
+/* share card */
+.shot{min-width:0}
+.sharecol{display:flex;flex-direction:column;gap:12px;min-width:0}
+.og{aspect-ratio:1.91/1;border-radius:14px;overflow:hidden;background:var(--ogbg,var(--bg));color:var(--ink);position:relative;padding:5.5%;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 14px 34px rgba(0,0,0,.3);border:1px solid var(--line);container-type:inline-size}
+.og .top{display:flex;justify-content:space-between;align-items:center}
+.og .brand{display:flex;align-items:center;gap:2.2cqw;font-family:var(--fd);font-weight:var(--dw);font-size:5cqw;letter-spacing:var(--dtr);font-style:var(--dst,normal);font-stretch:var(--dws,100%);text-transform:var(--dtt,none)}
+.og .brand svg{width:6.5cqw;height:6.5cqw}
+.og .q{font-family:var(--f-ui);font-size:3.2cqw;font-weight:700;padding:1.2cqw 2.6cqw;border-radius:99px;background:var(--acc);color:var(--onacc)}
+.og .mid{display:flex;align-items:center;gap:4cqw}
+.og .mid .cs{display:flex;gap:1cqw;--cw:9.5cqw}
+.og .mid .bd{display:flex;gap:.8cqw;--cw:7.2cqw}
+.og h4{margin:0;font-family:var(--fd);font-weight:var(--dw);font-size:6.4cqw;line-height:1.05;letter-spacing:var(--dtr);font-style:var(--dst,normal);font-stretch:var(--dws,100%);text-transform:var(--dtt,none)}
+.og p{margin:.8cqw 0 0;font-size:3.3cqw;color:var(--mut)}
+.chat{background:var(--pg-panel);color:var(--pg-fg);border-radius:18px;padding:12px;font-family:var(--f-ui);font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.chat .who{font-size:11px;color:var(--pg-mut);margin-bottom:6px}
+.chat .bub{background:#2B7CF6;color:#fff;border-radius:16px 16px 4px 16px;padding:7px 11px;margin-left:auto;width:fit-content;max-width:85%}
+.chat .rep{background:var(--pg-line);border-radius:16px 16px 16px 4px;padding:7px 11px;width:fit-content;max-width:85%;margin-top:6px}
+.chat .lk{margin-top:6px;color:var(--pg-mut);font-size:11px}
+
+/* ---------- Direction-specific treatments ---------- */
+.dir-caderno .scr{background-image:repeating-linear-gradient(to bottom,transparent 0 21px,color-mix(in srgb,var(--ink) 7%,transparent) 21px 22px)}
+.dir-caderno .ctx,.dir-caderno .seq div,.dir-caderno .kpi div,.dir-caderno .chart,.dir-caderno .tick,.dir-caderno .cmt,.dir-caderno .hl div{border:1px solid var(--line)}
+.dir-caderno .seq div.me{box-shadow:none;background:linear-gradient(to top,var(--hl) 0 45%,transparent 45%)}
+.dir-caderno .pos span.on{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--acc2);border-radius:50%}
+.dir-calor .cta,.dir-calor .fab,.dir-calor .og .q{background:linear-gradient(100deg,var(--acc),var(--acc2));color:#fff}
+.dir-calor .pos span.on{background:linear-gradient(100deg,var(--acc),var(--acc2));color:#fff}
+.dir-calor .nav .t,.dir-calor .og h4{font-style:italic}
+.dir-calor .og{--ogbg:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--acc2) 55%,var(--bg)) 0%,var(--bg) 55%)}
+.dir-grupo .seq div,.dir-grupo .quick span,.dir-grupo .pos span{border-radius:99px}
+.dir-grupo .ctx,.dir-grupo .kpi div,.dir-grupo .chart,.dir-grupo .tick,.dir-grupo .cmt{box-shadow:0 1px 0 var(--line),0 4px 14px rgba(20,24,60,.06)}
+.dir-grupo .og{--ogbg:var(--sf)}
+
+footer{padding-block:40px 56px;color:var(--pg-mut);font-size:14px}
+footer b{color:var(--pg-fg)}
+a:focus-visible{outline:2px solid var(--pg-pick);outline-offset:2px}
+</style>
+
+<header class="top wrap">
+  <div class="eyebrow">Sweatbook · direções de design</div>
+  <h1>Quatro caras para o Sweatbook</h1>
+  <p class="lede">Cada direção tem logótipo, ícone, cores e letra, e três ecrãs reais da app: registar uma mão com o mínimo de toques, o replayer com comentários dos amigos e a sessão ao vivo. Ao lado está o cartão que aparece no WhatsApp quando partilhas uma mão.</p>
+  <div class="rec"><b>A minha escolha: Noite.</b> No casino a luz é baixa e um ecrã claro chama a atenção da mesa toda; um tema escuro é discreto e gasta menos bateria em sessões de 10 horas. O laranja do suor dá-lhe personalidade sem parecer mais uma app verde de póquer.</div>
+</header>
+
+<nav class="wrap jump" id="jump" aria-label="Direções"></nav>
+<main id="dirs"></main>
+
+<footer class="wrap">
+  <p><b>Para escolher</b>, responde no fio com o nome da direção (Noite, Caderno, Calor ou Grupo). Também dá para misturar, por exemplo "o logótipo do Grupo com as cores da Noite". Depois de escolheres, passo as cores, letras e ícones à app.</p>
+  <p>Os ecrãs são protótipos com dados de exemplo (Estoril Main Event, nível 14). A disposição dos ecrãs é a mesma nas quatro direções para poderes comparar só o estilo.</p>
+</footer>
+
+<script>
+/* Teardrop: circle r=18 at (32,38), tip tangent at 45°. */
+const DROP="M32 12.5 L44.73 25.27 A18 18 0 1 1 19.27 25.27 Z";
+const D=[
+ {id:"noite",cls:"dir-noite",name:"Noite",sub:"Escuro, premium, discreto na mesa",
+  why:"Pensado para usar dentro do casino: fundo escuro quase verde de pano, laranja quente do suor como única cor forte e números em letra monoespaçada, como numa app de bolsa.",
+  bul:["Discreto na mesa e poupa bateria em ecrãs OLED","Números alinhados e fáceis de ler de relance","O laranja só aparece onde há ação: a tua posição, o botão principal, o teu lucro"],
+  disp:"'Hanken Grotesk',system-ui,sans-serif",body:"'Hanken Grotesk',system-ui,sans-serif",mono:"'JetBrains Mono',ui-monospace,monospace",dw:800,dtr:"-0.035em",
+  fontsLbl:["Hanken Grotesk ExtraBold","JetBrains Mono"],
+  c:{bg:"#0C1311",sbg:"#0A100E",sf:"#16201D",sf2:"#22302B",ink:"#EEF2EF",mut:"#8C9A94",line:"#24302C",acc:"#FF6A3D",onacc:"#1A0A04",acc2:"#F4F1EA",onacc2:"#0C1311",felt:"#1C4A3C",rail:"#0F1B17",good:"#4ADE80",bad:"#FF8A7A"},
+  r:"12px",rb:"14px",
+  sw:[["#0C1311","Noite"],["#16201D","Pano"],["#FF6A3D","Suor"],["#EEF2EF","Giz"],["#4ADE80","Lucro"]],
+  mark:c=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}" fill="${c.acc}"/><path d="M24 36 H40 M24 42 H40 M24 48 H34" stroke="${c.bg}" stroke-width="3.2" stroke-linecap="round"/></svg>`,
+  icon:c=>`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="${c.bg}"/><g transform="translate(18 14) scale(1.0)"><path d="${DROP}" fill="${c.acc}" transform="scale(1)"/><path d="M24 36 H40 M24 42 H40 M24 48 H34" stroke="${c.bg}" stroke-width="3.2" stroke-linecap="round"/></g></svg>`,
+  word:`Sweat<em>book</em>`},
+ {id:"caderno",cls:"dir-caderno",name:"Caderno",sub:"Claro, papel e caneta",
+  why:"O \"book\" levado à letra: o teu caderno de mãos. Papel branco com linhas muito leves, tinta azul, marcador amarelo nas tuas ações e caneta vermelha para as notas. Serifa calorosa no título.",
+  bul:["Parece um caderno de notas, familiar para qualquer jogador","O marcador amarelo mostra logo onde agiste","Ótimo em fotos e partilhas: lê-se bem em fundo claro"],
+  disp:"'Young Serif',Georgia,serif",body:"'Figtree',system-ui,sans-serif",mono:"'Figtree',system-ui,sans-serif",dw:400,dtr:"-0.01em",
+  fontsLbl:["Young Serif","Figtree"],
+  c:{bg:"#F6F7F9",sbg:"#FFFFFF",sf:"#FFFFFF",sf2:"#FFFFFF",ink:"#1A2350",mut:"#69708A",line:"#DCE0EA",acc:"#2433A6",onacc:"#FFFFFF",acc2:"#E5383B",onacc2:"#FFFFFF",felt:"#2E7D5B",rail:"#1A2350",good:"#1F8A55",bad:"#E5383B",hl:"#FFE45C"},
+  r:"10px",rb:"10px",
+  sw:[["#FFFFFF","Papel"],["#1A2350","Tinta"],["#2433A6","Caneta"],["#FFE45C","Marcador"],["#E5383B","Correção"]],
+  mark:c=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 22 C25 16 15 15 7 17 V51 C15 49 25 50 32 56 Z" fill="${c.acc}"/><path d="M32 22 C39 16 49 15 57 17 V51 C49 49 39 50 32 56 Z" fill="${c.acc}" opacity=".78"/><path d="M32 4 C32 4 25 12 25 16.5 a7 7 0 0 0 14 0 C39 12 32 4 32 4Z" fill="${c.acc2}"/></svg>`,
+  icon:c=>`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#FFFFFF"/><rect y="62" width="100" height="1.4" fill="${c.line}"/><rect y="74" width="100" height="1.4" fill="${c.line}"/><g transform="translate(18 16)"><path d="M32 22 C25 16 15 15 7 17 V51 C15 49 25 50 32 56 Z" fill="${c.acc}"/><path d="M32 22 C39 16 49 15 57 17 V51 C49 49 39 50 32 56 Z" fill="${c.acc}" opacity=".78"/><path d="M32 4 C32 4 25 12 25 16.5 a7 7 0 0 0 14 0 C39 12 32 4 32 4Z" fill="${c.acc2}"/></g></svg>`,
+  word:`Sweatbook`},
+ {id:"calor",cls:"dir-calor",name:"Calor",sub:"Desportivo, intenso, com energia",
+  why:"O póquer ao vivo como desporto: letra larga e inclinada, gradiente de laranja para magenta como o calor de uma mão grande, e um logótipo em gota com linhas de velocidade. Inspirado em apps de corrida e treino.",
+  bul:["Cartões de partilha que saltam à vista no WhatsApp e no Instagram","Sensação de rapidez, a mensagem certa para registar mãos em segundos","Marca forte para merchandising e redes sociais"],
+  disp:"'Archivo',system-ui,sans-serif",body:"'Archivo',system-ui,sans-serif",mono:"'Archivo',system-ui,sans-serif",dw:900,dtr:"-0.02em",dst:"italic",dws:"118%",dtt:"uppercase",
+  fontsLbl:["Archivo Expanded Black Italic","Archivo"],
+  c:{bg:"#170D0B",sbg:"#140B09",sf:"#26171300",sf2:"#3A2520",ink:"#FFF3EE",mut:"#B59A92",line:"#3A2520",acc:"#FF5A1F",onacc:"#FFFFFF",acc2:"#E8175D",onacc2:"#FFFFFF",felt:"#5A1E2A",rail:"#0D0706",good:"#7BE495",bad:"#FF7A8A"},
+  r:"8px",rb:"8px",
+  sw:[["#170D0B","Carvão"],["#FF5A1F","Laranja"],["#E8175D","Magenta"],["#FFF3EE","Pele"],["#5A1E2A","Pano"]],
+  mark:c=>`<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c.acc}"/><stop offset="1" stop-color="${c.acc2}"/></linearGradient></defs><g transform="skewX(-12) translate(8 0)"><path d="${DROP}" fill="url(#gc)"/></g><rect x="2" y="30" width="12" height="4" rx="2" fill="${c.acc}"/><rect x="5" y="38" width="9" height="4" rx="2" fill="${c.acc2}"/><rect x="2" y="46" width="12" height="4" rx="2" fill="${c.acc}"/></svg>`,
+  icon:c=>`<svg viewBox="0 0 100 100"><defs><linearGradient id="gi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c.acc}"/><stop offset="1" stop-color="${c.acc2}"/></linearGradient></defs><rect width="100" height="100" fill="url(#gi)"/><g transform="translate(20 14) skewX(-12) translate(8 0)"><path d="${DROP}" fill="#fff"/></g><text x="51" y="74" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="900" font-style="italic" font-size="20" fill="${c.acc2}">S</text></svg>`,
+  word:`Sweatbook`},
+ {id:"grupo",cls:"dir-grupo",name:"Grupo",sub:"Social, leve, feito para partilhar",
+  why:"Pensado à volta dos amigos: a gota é também um balão de conversa. Fundo claro e arejado, azul elétrico, cantos muito redondos e letra geométrica. Parece mais uma app social do que uma ferramenta.",
+  bul:["O logótipo diz \"conversa\", que é o motor de aquisição","Atrai jogadores mais novos e casuais","Comentários e reações dos amigos em destaque no replayer"],
+  disp:"'Unbounded',system-ui,sans-serif",body:"'Plus Jakarta Sans',system-ui,sans-serif",mono:"'Plus Jakarta Sans',system-ui,sans-serif",dw:700,dtr:"-0.03em",
+  fontsLbl:["Unbounded Bold","Plus Jakarta Sans"],
+  c:{bg:"#EEF1FF",sbg:"#F7F8FD",sf:"#FFFFFF",sf2:"#FFFFFF",ink:"#11142B",mut:"#6A6F8E",line:"#DCE1F5",acc:"#3A4DFF",onacc:"#FFFFFF",acc2:"#FF6B57",onacc2:"#FFFFFF",felt:"#3A4DFF",rail:"#1D2580",good:"#12A36B",bad:"#E5484D"},
+  r:"16px",rb:"99px",
+  sw:[["#EEF1FF","Névoa"],["#3A4DFF","Elétrico"],["#FF6B57","Coral"],["#11142B","Tinta"],["#FFFFFF","Branco"]],
+  mark:c=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}" fill="${c.acc}"/><path d="M17 50 L10 60 L24 54 Z" fill="${c.acc}"/><circle cx="25" cy="39" r="2.8" fill="#fff"/><circle cx="32" cy="39" r="2.8" fill="#fff"/><circle cx="39" cy="39" r="2.8" fill="#fff"/><circle cx="48" cy="18" r="6" fill="${c.acc2}"/></svg>`,
+  icon:c=>`<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="${c.acc}"/><g transform="translate(18 13)"><path d="${DROP}" fill="#fff"/><path d="M17 50 L10 60 L24 54 Z" fill="#fff"/><circle cx="25" cy="39" r="2.8" fill="${c.acc}"/><circle cx="32" cy="39" r="2.8" fill="${c.acc}"/><circle cx="39" cy="39" r="2.8" fill="${c.acc}"/><circle cx="48" cy="18" r="6" fill="${c.acc2}"/></g></svg>`,
+  word:`Sweatbook`}
+];
+/* Calor surfaces: make the transparent surface opaque */
+D[2].c.sf="#261713";
+
+const pc=(r,s,x="")=>{const k={"♥":"h","♦":"d","♣":"c","♠":""}[s];return `<span class="pc ${k} ${x}">${r}<i>${s}</i></span>`};
+const E='<span class="pc e"></span>';
+const vars=d=>{const c=d.c;return `--bg:${c.bg};--sbg:${c.sbg};--sf:${c.sf};--sf2:${c.sf2};--ink:${c.ink};--mut:${c.mut};--line:${c.line};--acc:${c.acc};--onacc:${c.onacc};--acc2:${c.acc2};--onacc2:${c.onacc2};--felt:${c.felt};--rail:${c.rail};--good:${c.good};--bad:${c.bad};--hl:${c.hl||c.acc};--fd:${d.disp};--fb:${d.body};--fm:${d.mono};--dw:${d.dw};--dtr:${d.dtr};--dst:${d.dst||"normal"};--dws:${d.dws||"100%"};--dtt:${d.dtt||"none"};--r:${d.r};--rb:${d.rb}`};
+const icon=(d,s)=>`<span class="ico" style="width:${s}px;height:${s}px">${d.icon(d.c)}</span>`;
+const sbar=`<div class="sbar"><span>23:41</span><span class="isl"></span><span>5G ▮▮▮</span></div>`;
+
+function sEntry(d){
+ return `<div class="shot"><div class="ph"><div class="scr">${sbar}
+  <div class="nav"><span class="t">Nova mão</span><span class="x">✕</span></div>
+  <div class="body">
+   <div class="ctx"><div><b>Estoril Main Event</b><span>Dia 1B · Mesa 12</span></div><div class="r"><b>Nível 14</b><span>1.5k/3k (3k)</span></div></div>
+   <div class="lbl"><span>A tua posição</span><em>memorizada</em></div>
+   <div class="pos"><span>UTG</span><span>HJ</span><span>CO</span><span class="on">BTN</span><span>SB</span><span>BB</span></div>
+   <div class="lbl"><span>As tuas cartas</span><em>2 toques</em></div>
+   <div class="slots">${pc("A","♠","big")}${pc("K","♥","big")}<span style="flex:1"></span>${["♠","♥","♦","♣"].map(s=>`<span class="pc ${({"♥":"h","♦":"d","♣":"c","♠":""})[s]}" style="--cw:20px;opacity:.9">${s}</span>`).join("")}</div>
+   <div class="picker">${"AKQJT98765432".split("").map(r=>`<span class="${r=="A"||r=="K"?"on":""}">${r}</span>`).join("")}</div>
+   <div class="lbl"><span>Pré-flop</span><em>toca para corrigir</em></div>
+   <div class="seq">
+    <div><span>UTG, HJ, CO</span><b>fold</b></div>
+    <div class="me"><span><b>Tu</b> · BTN</span><b>raise 7.5k</b></div>
+    <div><span>Miguel · BB</span><b>call</b></div>
+    <div class="next"><span>Flop</span><span>escolhe 3 cartas</span></div>
+   </div>
+   <div class="cta">Ir para o flop <small>· 6 toques até aqui</small></div>
+  </div></div></div>
+  <div class="cap"><b>Registar mão.</b> Posição e torneio vêm da última mão.</div></div>`;
+}
+function sReplay(d){
+ const seat=(x,y,n,s,cl="",bet="",by=0)=>`<div class="st ${cl}" style="left:${x}%;top:${y}%">${bet?`<span class="bet" style="top:${by}px">${bet}</span>`:""}<div class="p"><b>${n}</b>${s}</div></div>`;
+ return `<div class="shot"><div class="ph"><div class="scr">${sbar}
+  <div class="nav"><span class="t">Replay</span><span class="x">⤴</span></div>
+  <div class="body">
+   <div class="tbl">
+    ${seat(50,-1,"Miguel","BB · 41.5k","","8k",26)}
+    ${seat(96,22,"Sofia","HJ · 88k","f")}
+    ${seat(96,64,"João","CO · 73k","f")}
+    ${seat(50,101,"Tu","BTN · 54.5k","me")}
+    ${seat(4,64,"André","SB · 27k","f")}
+    ${seat(4,22,"Paulo","UTG · 41k","f")}
+    <div class="vcards"><span class="pc" style="background:var(--acc2);color:var(--onacc2)">?</span><span class="pc" style="background:var(--acc2);color:var(--onacc2)">?</span></div>
+    <div class="pot">POTE 21k</div>
+    <div class="brd">${pc("Q","♥")}${pc("J","♠")}${pc("4","♦")}${E}${E}</div>
+    <div class="hcards">${pc("A","♠")}${pc("K","♥")}</div>
+   </div>
+   <div class="tick"><span>Flop · <b>Miguel aposta 8k</b></span><span style="color:var(--mut)">5 / 9</span></div>
+   <div class="scrub"><div class="bar"></div><div class="fill"></div><div class="knob"></div>
+    <span class="mk" style="left:4%">Pré</span><span class="mk" style="left:42%">Flop</span><span class="mk" style="left:70%">Turn</span><span class="mk" style="left:94%">River</span></div>
+   <div class="ctrl"><span>⏮</span><span class="pl">❚❚</span><span>⏭</span></div>
+   <div class="cmt"><span class="av" style="background:#E8674A">JM</span><span class="av" style="background:#4C7BF4">TS</span><span><b>Tiago:</b> raise no flop, ele tem muitos draws</span></div>
+  </div></div></div>
+  <div class="cap"><b>Replayer.</b> Os comentários dos amigos aparecem na rua certa.</div></div>`;
+}
+function sSession(d){
+ const c=d.c;
+ const pts=[0,4,2,9,7,14,12,18,15,22,27,24,31];
+ const W=220,H=64,max=32;
+ const xy=pts.map((v,i)=>[i*W/(pts.length-1),H-4-v/max*(H-10)]);
+ const line=xy.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+ const area=line+` L${W} ${H} L0 ${H} Z`;
+ const last=xy[xy.length-1];
+ return `<div class="shot"><div class="ph"><div class="scr">${sbar}
+  <div class="nav"><span class="t">Sessão</span><span class="x">⋯</span></div>
+  <div class="body">
+   <div class="timer"><span class="live">Ao vivo</span><div class="clk">3:12:47</div><small>Estoril Main Event · entrada 250 €</small></div>
+   <div class="kpi"><div><span>Stack</span><b>54.5k</b></div><div><span>Inicial</span><b>30k</b></div><div><span>Mãos</span><b>12</b></div></div>
+   <div class="chart"><div class="lbl"><span>Stack</span><em class="pos-n">+82%</em></div>
+    <svg viewBox="0 0 ${W} ${H}" aria-label="Stack ao longo da sessão, de 30k para 54.5k">
+     <line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="${c.line}" stroke-dasharray="3 4"/>
+     <path d="${area}" fill="${c.acc}" opacity=".16"/>
+     <path d="${line}" fill="none" stroke="${c.acc}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+     <circle cx="${last[0]-2}" cy="${last[1]}" r="3.6" fill="${c.acc}" stroke="${c.sf}" stroke-width="2"/>
+    </svg></div>
+   <div class="lbl"><span>Últimas mãos</span><em>ver todas</em></div>
+   <div class="hl">
+    <div><span class="cs">${pc("A","♠")}${pc("K","♥")}</span><span class="t">BTN vs BB · flop</span><b class="pos-n">+21k</b></div>
+    <div><span class="cs">${pc("9","♣")}${pc("9","♦")}</span><span class="t">CO · 3bet pot</span><b class="neg-n">−9k</b></div>
+    <div><span class="cs">${pc("Q","♠")}${pc("J","♠")}</span><span class="t">HJ · roubo</span><b class="pos-n">+4.5k</b></div>
+   </div>
+  </div>
+  <div class="fab">Registar mão</div>
+  </div></div>
+  <div class="cap"><b>Sessão ao vivo.</b> Tempo, stack e mãos num só ecrã.</div></div>`;
+}
+function sShare(d){
+ return `<div class="sharecol">
+  <div class="og" aria-label="Cartão de partilha">
+   <div class="top"><span class="brand">${d.mark(d.c)}Sweatbook</span><span class="q">O que farias?</span></div>
+   <div class="mid"><span class="cs">${pc("A","♠")}${pc("K","♥")}</span><span class="bd">${pc("Q","♥")}${pc("J","♠")}${pc("4","♦")}</span></div>
+   <div><h4>AK no BTN contra 3bet</h4><p>Estoril Main Event · Nível 14 · 18 bb efetivos</p></div>
+  </div>
+  <div class="chat"><div class="who">Grupo "Póquer de quinta"</div>
+   <div class="bub">Fiz bem em dar raise aqui? 🤔</div>
+   <div class="rep"><b>Tiago:</b> mostra o turn 👀</div>
+   <div class="lk">sweatbook.app/m/7Kq2 · abre o replay sem instalar a app</div></div>
+  <div class="cap"><b>Partilha.</b> O link abre o replay no browser e convida a instalar.</div>
+ </div>`;
+}
+
+document.getElementById("jump").innerHTML=D.map(d=>`<a href="#${d.id}">${icon(d,44)}<span><b>${d.name}</b><small>${d.sub}</small></span></a>`).join("");
+document.getElementById("dirs").innerHTML=D.map((d,i)=>`
+<section class="dir ${d.cls}" id="${d.id}" style="${vars(d)}">
+ <div class="wrap inner">
+  <div class="d-head">
+   <div>
+    <div class="d-tag">Direção ${i+1} de 4 · ${d.name}</div>
+    <div class="lock"><span class="mk">${d.mark(d.c)}</span><span class="wm">${d.word}</span></div>
+    <div class="d-name">${d.sub}</div>
+    <p class="d-why">${d.why}</p>
+    <ul class="d-bul">${d.bul.map(b=>`<li>${b}</li>`).join("")}</ul>
+   </div>
+   <div class="sheet">
+    <div><h3>Ícone da app</h3><div class="icons" style="margin-top:10px">${icon(d,92)}${icon(d,60)}${icon(d,40)}</div></div>
+    <div><h3>Cores</h3><div class="sw" style="margin-top:10px">${d.sw.map(([h,n])=>`<div><i style="background:${h}"></i><b>${n}</b><code>${h}</code></div>`).join("")}</div></div>
+    <div><h3>Letra</h3><div class="type" style="margin-top:10px"><div><div class="big">Aa 3bet</div><small>${d.fontsLbl[0]} · títulos</small></div><div><div class="sm">Aa 54.5k</div><small>${d.fontsLbl[1]} · texto e números</small></div></div></div>
+   </div>
+  </div>
+  <div class="row">${sEntry(d)}${sReplay(d)}${sSession(d)}${sShare(d)}</div>
+ </div>
+</section>`).join("");
+</script>
