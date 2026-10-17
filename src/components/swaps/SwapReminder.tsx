@@ -190,7 +190,7 @@ export function SwapReminder() {
           <>
             {shown.auto ? (
               <T v="small" color={C.textDim}>
-                {prize > 0 ? t('Enviado sozinho: cobraste {amount}.', { amount: money(prize, s.currency) }) : t('Enviado sozinho: não cobraste.')}{' '}
+                {prize > 0 ? t('Enviado automaticamente: cobraste {amount}.', { amount: money(prize, s.currency) }) : t('Enviado automaticamente: não cobraste.')}{' '}
                 {t('Para desligar, abre o swap.')}
               </T>
             ) : null}

@@ -9,6 +9,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { appUserId } from '@/billing/purchases';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOwnerRc, SwapError } from '@/lib/swap-api';
 
+import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { mergeRemote, mergeSwaps, newFromOther, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
@@ -28,7 +29,9 @@ function emit(next: Swap[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<Swap>(kv, SPEC).then((d) => {
+  booting ??= loadCollection<Swap>(kv, SPEC).then(async (d) => {
+    // Records that no longer parse are kept aside (backup and support file), not dropped.
+    await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swaps] write failed', e));
     // Anything saved before loading finished goes on top of what was on disk.
     const ids = new Set(state.swaps.map((s) => s.id));

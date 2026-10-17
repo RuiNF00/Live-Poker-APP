@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
-import { limited, reporterId } from '@/lib/abuse';
+import { firstTime, limited, reporterId } from '@/lib/abuse';
 import { notifyModeration } from '@/lib/notify';
 import { brand } from '@/config/brand';
 import { cors } from '@/lib/cors';
@@ -21,6 +21,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = (await req.json().catch(() => null)) as { reason?: unknown } | null;
   const reason = typeof body?.reason === 'string' ? body.reason.slice(0, 200) : null;
   const result = await getStore().reportHand(id, reporterId(req), reason);
+  if (result === 'ok') {
+    after(async () => {
+      if (await firstTime('report-hand', id)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/h/${id}`);
+    });
+  }
   if (result === 'hidden') {
     after(() => notifyModeration(`Mão ${brand.siteUrl}/h/${id} escondida por denúncias. Rever e, se estiver bem, repor com select restore_shared_hand('${id}');`));
   }

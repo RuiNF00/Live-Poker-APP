@@ -45,7 +45,7 @@ export async function renderReplayVideo(
   throw new Error('Hand videos need the iOS or Android app');
 }
 
-export async function shareVideo(_file: string, _link: string): Promise<void> {
+export async function shareVideo(_file: string, _text: string): Promise<void> {
   throw new Error('Hand videos need the iOS or Android app');
 }
 
@@ -63,4 +63,8 @@ export async function captureSlide(_ref: React.RefObject<React.ComponentRef<type
 
 export async function shareCarousel(_files: string[], _caption: string): Promise<StoryTarget> {
   throw new Error('Carousels need the iOS or Android app');
+}
+
+export async function sharePost(_files: string[], _text: string, _to: 'x' | 'any' = 'any'): Promise<void> {
+  throw new Error('Posting images needs the iOS or Android app');
 }

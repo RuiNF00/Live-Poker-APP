@@ -37,6 +37,10 @@ export interface Festival {
   events: FestivalEvent[];
   /** Official dates, 'YYYY-MM-DD', for a festival whose event schedule isn't out yet (no events). */
   dates?: { from: string; to: string };
+  /** 'YYYY-MM' it usually runs in, for a festival with no dates out yet: only orders the list, never shown as dates. */
+  month?: string;
+  /** Added by the player ("Adicionar o meu festival"): their own name, no source, kept on the phone. */
+  own?: boolean;
 }
 
 const ev = (number: number, name: string, game: FestivalEvent['game'], buyIn: number, guarantee: number, start: string, flight?: string): FestivalEvent => {
@@ -195,7 +199,7 @@ export const BAHIA_JAN_2027: Festival = {
   utcOffset: -180,
   // https://bsop.com.br/proximas-etapas/
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
-  notes: ['Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.'],
+  notes: [],
   events: [],
   dates: { from: '2027-01-22', to: '2027-01-30' },
 };
@@ -214,10 +218,184 @@ export const BARCELONA_MAR_2027: Festival = {
   utcOffset: 60,
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.'],
+  month: '2027-03',
   events: [],
 };
 
-export const FESTIVALS: Festival[] = [BAHAMAS_DEC_2026, LAS_VEGAS_DEC_2026, BAHIA_JAN_2027, BARCELONA_MAR_2027];
+/**
+ * A long series in Los Angeles, 15 January – 7 March 2027, Main Event 26 February – 3 March.
+ * Dates announced by the organiser in September 2026 (press coverage, read
+ * 2026-10-17 by the research thread). Generic name, no event brand or casino.
+ */
+export const LOS_ANGELES_JAN_2027: Festival = {
+  id: 'los-angeles-jan-2027',
+  name: 'Los Angeles, jan a mar 2027',
+  venue: 'Los Angeles',
+  city: 'EUA',
+  currency: '$',
+  utcOffset: -480,
+  // https://www.bonus.com/news/wpt-la-poker-classic-returns-2027/ (organiser announcement, September 2026)
+  source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
+  notes: ['Evento principal de 26 de fevereiro a 3 de março.'],
+  events: [],
+  dates: { from: '2027-01-15', to: '2027-03-07' },
+};
+
+/**
+ * Ireland's Easter festival, 18–28 March 2027, Main Event 21–26 March. Dates as
+ * announced with the organiser's qualifier programme (read 2026-10-17).
+ * Generic name, no brand.
+ */
+export const DUBLIN_MAR_2027: Festival = {
+  id: 'dublin-mar-2027',
+  name: 'Dublin, março 2027',
+  venue: 'Dublin',
+  city: 'Irlanda',
+  currency: '€',
+  utcOffset: 0,
+  // https://www.pokerlistings.com/news/redstar-poker-restarts-half-a-year-of-irish-open-satellites
+  source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
+  notes: ['Evento principal de 21 a 26 de março.'],
+  events: [],
+  dates: { from: '2027-03-18', to: '2027-03-28' },
+};
+
+/**
+ * Australia's big series, 8–24 April 2027 (the venue's announcement, August
+ * 2026; read 2026-10-17). Moved from January. Generic name, no brand or venue.
+ */
+export const MELBOURNE_APR_2027: Festival = {
+  id: 'melbourne-apr-2027',
+  name: 'Melbourne, abril 2027',
+  venue: 'Melbourne',
+  city: 'Austrália',
+  currency: 'A$',
+  utcOffset: 600,
+  // https://asgam.com/2026/08/24/crown-melbourne-announces-april-dates-for-2027-aussie-millions/
+  source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
+  notes: [],
+  events: [],
+  dates: { from: '2027-04-08', to: '2027-04-24' },
+};
+
+/**
+ * Paris in February. 2027 dates not published (2026: 18 Feb – 1 Mar).
+ */
+export const PARIS_FEB_2027: Festival = {
+  id: 'paris-feb-2027',
+  name: 'Paris, fevereiro 2027',
+  venue: 'Paris',
+  city: 'França',
+  currency: '€',
+  utcOffset: 60,
+  // https://www.pokernews.com/news/2025/08/pokerstars-confirms-european-poker-tour-paris-returns-49393.htm
+  source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.'],
+  month: '2027-02',
+  events: [],
+};
+
+/**
+ * Prague in spring. 2027 dates not published (2026: 31 Mar – 12 Apr).
+ */
+export const PRAGUE_APR_2027: Festival = {
+  id: 'praga-apr-2027',
+  name: 'Praga, abril 2027',
+  venue: 'Praga',
+  city: 'Chéquia',
+  currency: '€',
+  utcOffset: 120,
+  // https://www.pokernews.com/news/2025/12/2026-wsop-europe-schedule-released-new-home-new-dates-50239.htm
+  source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.'],
+  month: '2027-04',
+  events: [],
+};
+
+/**
+ * Brazil, Rio Quente stop. 2027 dates not published (2026: 30 Apr – 5 May).
+ */
+export const GOIAS_MAY_2027: Festival = {
+  id: 'goias-may-2027',
+  name: 'Goiás, maio 2027',
+  venue: 'Rio Quente',
+  city: 'Brasil',
+  currency: 'R$',
+  utcOffset: -180,
+  // https://pokerfuse.com/live-poker/bsop/
+  source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e o início de maio.'],
+  month: '2027-05',
+  events: [],
+};
+
+/**
+ * Monte Carlo in spring. 2027 dates not published (2026: 30 Apr – 10 May).
+ */
+export const MONACO_MAY_2027: Festival = {
+  id: 'monaco-may-2027',
+  name: 'Mónaco, maio 2027',
+  venue: 'Monte Carlo',
+  city: 'Mónaco',
+  currency: '€',
+  utcOffset: 120,
+  // https://www.pokernews.com/news/2026/04/2026-ept-monte-carlo-series-preview-51053.htm
+  source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e meados de maio.'],
+  month: '2027-05',
+  events: [],
+};
+
+/**
+ * Estoril in May. 2027 dates not published (2026: 12–17 May).
+ */
+export const ESTORIL_MAY_2027: Festival = {
+  id: 'estoril-may-2027',
+  name: 'Estoril, maio 2027',
+  venue: 'Estoril',
+  city: 'Portugal',
+  currency: '€',
+  utcOffset: 60,
+  // https://www.pokernews.com/news/2026/04/estoril-poker-fest-2026-500-main-event-full-schedule-51135.htm
+  source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em meados de maio.'],
+  month: '2027-05',
+  events: [],
+};
+
+/**
+ * The summer series in Las Vegas. 2027 dates not published; every year it runs
+ * from the last week of May to mid-July, Main Event in July.
+ */
+export const LAS_VEGAS_SUMMER_2027: Festival = {
+  id: 'las-vegas-summer-2027',
+  name: 'Las Vegas, verão 2027',
+  venue: 'Las Vegas',
+  city: 'EUA',
+  currency: '$',
+  utcOffset: -420,
+  // https://pokerfuse.com/live-poker/wsop/wsop-2027/
+  source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
+  notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.'],
+  month: '2027-06',
+  events: [],
+};
+
+export const FESTIVALS: Festival[] = [
+  BAHAMAS_DEC_2026,
+  LAS_VEGAS_DEC_2026,
+  LOS_ANGELES_JAN_2027,
+  BAHIA_JAN_2027,
+  PARIS_FEB_2027,
+  BARCELONA_MAR_2027,
+  DUBLIN_MAR_2027,
+  MELBOURNE_APR_2027,
+  PRAGUE_APR_2027,
+  GOIAS_MAY_2027,
+  MONACO_MAY_2027,
+  ESTORIL_MAY_2027,
+  LAS_VEGAS_SUMMER_2027,
+];
 
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */
 export function venueTime(f: Pick<Festival, 'utcOffset'>, local: string): number {
@@ -230,6 +408,20 @@ export function venueTime(f: Pick<Festival, 'utcOffset'>, local: string): number
 /** "Event #12 · Flight A" style label. */
 export function eventTitle(e: FestivalEvent): string {
   return e.unnumbered ? e.name : `#${e.number} ${e.name}`;
+}
+
+/** First and last day, 'YYYY-MM-DD': from the schedule, else the official dates; null when neither is out. */
+export function festivalSpan(f: Festival): { from: string; to: string } | null {
+  if (f.events.length) {
+    const days = f.events.map(eventDay).sort();
+    return { from: days[0], to: days[days.length - 1] };
+  }
+  return f.dates ?? null;
+}
+
+/** Sorts festivals by when they start; a month-only one sits mid-month. */
+export function festivalSortKey(f: Festival): string {
+  return festivalSpan(f)?.from ?? (f.month ? `${f.month}-15` : '9999');
 }
 
 /** Local day key 'YYYY-MM-DD', for grouping. */

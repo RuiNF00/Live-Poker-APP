@@ -6,11 +6,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Platform, Pressable, Share, View } from 'react-native';
 
 import { GroupEntryRow, GroupEntrySheet, GroupHero, GroupSettle, seatLabel, type GroupDraft } from '@/components/swaps/group-parts';
 import { useLocked } from '@/components/ProGate';
-import { AccountsLocked, pctLabel } from '@/components/swaps/parts';
+import { AccountsLocked, pctLabel, useSettledReview } from '@/components/swaps/parts';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -18,15 +18,20 @@ import { claimInvite, shareRef } from '@/lib/referrals';
 import { SwapError } from '@/lib/swap-api';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
 import { shortDate, timeOf } from '@/poker/format';
-import { groupFromRemote, groupReady, groupWaitingOn, type GroupEntry, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
-import { addGroupPrize, leaveGroupEverywhere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
+import { groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
+import { addGroupPrize, leaveGroupEverywhere, releaseSeatHere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
 import { C, S } from '@/theme';
 
 const POLL_MS = 30000;
 const HEX = /^[a-f0-9]{32,128}$/;
 
 export default function GroupSwapScreen() {
-  const { id, k, i, r } = useLocalSearchParams<{ id: string; k?: string; i?: string; r?: string }>();
+  const params = useLocalSearchParams<{ id: string; k?: string; i?: string; r?: string; '#'?: string }>();
+  const { id, r } = params;
+  // +native-intent moves #i= and #k= into the query; a link opened inside the app keeps them in '#'.
+  const frag = new URLSearchParams(typeof params['#'] === 'string' ? params['#'] : '');
+  const k = params.k ?? frag.get('k') ?? undefined;
+  const i = params.i ?? frag.get('i') ?? undefined;
   const { groups, ready } = useGroups();
   const own = groups.find((g) => g.id === id);
   const [remote, setRemote] = useState<RemoteGroup | null | undefined>(undefined);
@@ -154,6 +159,7 @@ function OwnGroup({ g }: { g: SwapGroup }) {
   const someoneLeft = g.seats.some((s) => s.name === '-');
   const missing = g.seats.filter((s) => !s.confirmedAt);
   const pending = g.entries.some((e) => e.pending);
+  useSettledReview(!pending && g.entries.some((e) => e.kind === 'payment') && !minTransfers(groupNet(g)).length);
 
   const sync = useCallback(() => syncGroup(g.id).then((ok) => setOffline(!ok)), [g.id]);
   useEffect(() => {
@@ -195,6 +201,18 @@ function OwnGroup({ g }: { g: SwapGroup }) {
   const results = g.entries.filter((e) => e.kind === 'result').sort((a, b) => b.at - a.at);
   const payments = g.entries.filter((e) => e.kind === 'payment').sort((a, b) => b.at - a.at);
   const creator = g.seat === 0;
+  // The creator can take out a player who joined but has nothing in the accounts yet.
+  const releasable = (s: GroupSeat) => creator && !g.gone && !someoneLeft && s.seat !== 0 && !!s.confirmedAt && !g.entries.some((e) => e.seat === s.seat || e.to === s.seat);
+
+  function onSeat(s: GroupSeat) {
+    if (!releasable(s)) return;
+    const name = seatLabel(g, s.seat);
+    confirmAction(t('Tirar {name} do grupo?', { name }), t('O lugar fica livre e o link de {name} deixa de funcionar. Quem tiver o link do grupo pode entrar nesse lugar.', { name }), t('Tirar'), async () => {
+      const res = await releaseSeatHere(g.id, s.seat);
+      if (res === 'in_use') Alert.alert(t('Já tem registos'), t('Só podes tirar um jogador antes de ele registar prémios ou pagamentos.'));
+      else if (res === 'offline') Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+    });
+  }
 
   return (
     <>
@@ -202,7 +220,9 @@ function OwnGroup({ g }: { g: SwapGroup }) {
       <Screen contentStyle={{ paddingTop: S.lg }}>
         <Head g={g} />
 
-        {g.gone ? (
+        {g.gone && g.removed ? (
+          <Banner tone="warn" icon="person-remove-outline" title={t('Já não estás neste grupo')} body={t('Quem criou o grupo libertou o teu lugar. Esta cópia fica no teu telemóvel como registo.')} />
+        ) : g.gone ? (
           <Banner tone="warn" icon="trash-outline" title={t('Apagado do servidor')} body={t('Quem criou o grupo apagou o link. Esta cópia fica no teu telemóvel como registo.')} />
         ) : offline || pending ? (
           <Banner tone="info" icon="cloud-offline-outline" title={t('Sem rede')} body={t('O que registares fica guardado e é enviado quando houver sinal.')} />
@@ -259,16 +279,22 @@ function OwnGroup({ g }: { g: SwapGroup }) {
 
         {ready && !locked ? <GroupSettle g={g} /> : null}
 
-        <Section title={t('Jogadores')}>
+        <Section title={t('Jogadores')} hint={g.seats.some(releasable) ? t('Mantém premido um jogador sem registos para o tirar do grupo.') : undefined}>
           <ListGroup>
             {g.seats.map((s) => (
-              <Row key={s.seat} gap={S.md} style={{ paddingVertical: S.md, paddingHorizontal: S.lg, alignItems: 'center' }}>
-                <Ionicons name={s.confirmedAt ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={s.confirmedAt ? C.good : C.muted} />
-                <T v="body" style={{ flex: 1 }}>
-                  {seatLabel(g, s.seat)}
-                </T>
-                <T v="small">{s.confirmedAt ? `${shortDate(s.confirmedAt)}, ${timeOf(s.confirmedAt)}` : t('Por entrar')}</T>
-              </Row>
+              <Pressable
+                key={s.seat}
+                onLongPress={releasable(s) ? () => onSeat(s) : undefined}
+                accessibilityRole={releasable(s) ? 'button' : undefined}
+                accessibilityHint={releasable(s) ? t('Mantém premido para tirar do grupo') : undefined}>
+                <Row gap={S.md} style={{ paddingVertical: S.md, paddingHorizontal: S.lg, alignItems: 'center', minHeight: 44 }}>
+                  <Ionicons name={s.confirmedAt ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={s.confirmedAt ? C.good : C.muted} />
+                  <T v="body" style={{ flex: 1 }}>
+                    {seatLabel(g, s.seat)}
+                  </T>
+                  <T v="small">{s.confirmedAt ? `${shortDate(s.confirmedAt)}, ${timeOf(s.confirmedAt)}` : t('Por entrar')}</T>
+                </Row>
+              </Pressable>
             ))}
           </ListGroup>
         </Section>

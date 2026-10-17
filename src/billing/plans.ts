@@ -77,6 +77,8 @@ export const PRO_ONLY = {
   winrateDetail: true,
   monthCompare: true,
   moveUpPlan: true,
+  /** Drawing villain's range on the 13×13 grid in the replayer. Equity against the range read from the preflop raises stays free. */
+  villainRange: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -165,6 +167,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('A variância com os teus números'),
     body: t('O teu win rate e desvio padrão, já preenchidos, em vez de exemplos.'),
   },
+  villainRange: {
+    title: t('Desenha a range do vilão'),
+    body: t('Escolhe as mãos dele na grelha e vê a tua equity contra elas.'),
+  },
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
@@ -223,6 +229,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'moveUpPlan', icon: 'layers', title: t('Subir de stake'), body: t('Risco de ruína e plano') },
   { key: 'mttStats', icon: 'trophy', title: t('Torneios a fundo'), body: t('ROI e ITM por buy-in e festival') },
   { key: 'varianceMine', icon: 'pulse', title: t('A tua variância'), body: t('Com os teus números') },
+  { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
@@ -248,6 +255,7 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   moveUpPlan: 'moveUpPlan',
   mttStats: 'mttStats',
   varianceMine: 'varianceMine',
+  villainRange: 'villainRange',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */

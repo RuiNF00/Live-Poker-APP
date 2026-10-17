@@ -27,11 +27,12 @@ export function MindBefore({ value, onChange }: { value?: MindCheck; onChange: (
       <Head title={t('Como chegas?')} />
       <View style={{ gap: S.xs }}>
         <T v="label">{t('Dormiste')}</T>
-        <ChipRow style={{ marginHorizontal: -S.lg }}>
+        {/* Six short options: they share the width (and wrap at large text) instead of scrolling. */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.xs }}>
           {SLEEP.map((h) => (
-            <Chip key={h} label={sleepLabel(h)} active={m.sleep === h} onPress={() => set({ sleep: m.sleep === h ? undefined : h })} style={{ minWidth: 52 }} />
+            <Chip key={h} label={sleepLabel(h)} active={m.sleep === h} onPress={() => set({ sleep: m.sleep === h ? undefined : h })} style={{ flexGrow: 1, minWidth: 48, paddingHorizontal: S.sm }} />
           ))}
-        </ChipRow>
+        </View>
       </View>
       <ScaleRow label={t('Energia')} low={t('Vazio')} high={t('Cheio')} value={m.energy} onChange={(energy) => set({ energy })} />
       <ScaleRow label={t('Foco')} low={t('Disperso')} high={t('Afiado')} value={m.focus} onChange={(focus) => set({ focus })} />

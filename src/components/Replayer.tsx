@@ -3,16 +3,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { usePro } from '@/billing/pro';
+import { useLocked } from '@/components/ProGate';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { legal, raiseName, replay } from '@/poker/engine';
 import { pct } from '@/poker/format';
+import { topClasses } from '@/poker/ranges';
 import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
 import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
 import { IcmPanel } from './replayer/IcmPanel';
 import { useReduceMotion } from './replayer/motion';
+import { RangeSheet } from './replayer/RangeSheet';
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { Scrubber } from './replayer/Scrubber';
 import { motionTimeline } from './replayer/timeline';
@@ -165,7 +169,18 @@ export function Replayer({
   };
   const shown = useMemo(() => (hideNames && named ? { ...hand, players: hand.players.map((p) => ({ ...p, name: '' })) } : hand), [hand, hideNames, named]);
 
-  const view = useMemo(() => viewAt(shown, r, k, { inBB, reveal: reveal && !locked, atEnd }), [shown, r, k, inBB, reveal, locked, atEnd]);
+  // The villain range the player drew (Pro); null = the one read from villain's preflop raises.
+  const [range, setRange] = useState<string[] | null>(null);
+  const [rangeSheet, setRangeSheet] = useState<string[] | null>(null);
+  const rangeLocked = useLocked('villainRange');
+  const { paywall } = usePro();
+  const view = useMemo(() => viewAt(shown, r, k, { inBB, reveal: reveal && !locked, atEnd, range }), [shown, r, k, inBB, reveal, locked, atEnd, range]);
+  const editRange = () => {
+    if (!view.rangeEq) return;
+    tap('select');
+    if (rangeLocked) return paywall('villainRange');
+    setRangeSheet(range ?? topClasses(view.rangeEq.pct));
+  };
   const items = useMemo(() => timeline(shown, r, inBB), [shown, r, inBB]);
 
   const go = (to: number) => {
@@ -202,8 +217,21 @@ export function Replayer({
           }}
         />
       ) : (
-        <InfoBar view={view} />
+        <InfoBar view={view} onRange={editRange} />
       )}
+      {view.rangeEq ? (
+        <RangeSheet
+          visible={!!rangeSheet}
+          initial={rangeSheet ?? []}
+          hero={view.rangeEq.hero}
+          board={view.rangeEq.board}
+          onClose={() => setRangeSheet(null)}
+          onApply={(c) => {
+            setRange(c);
+            setRangeSheet(null);
+          }}
+        />
+      ) : null}
       {note ? (
         <View accessibilityLabel={`${t('Nota privada')}: ${note}`} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
           <Ionicons name="lock-closed" size={13} color={C.textDim} style={{ marginTop: 2 }} />
@@ -305,7 +333,7 @@ function TipBubble({ onClose }: { onClose: () => void }) {
 }
 
 /** "Hero facing" bar when hero has a decision (pot odds, MDF), otherwise pot and stacks. */
-function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
+function InfoBar({ view, onRange }: { view: ReturnType<typeof viewAt>; onRange: () => void }) {
   const f = view.facing;
   return (
     <View
@@ -334,7 +362,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
           <Stat label={t('Aposta')} value={pct(f.betPct)} color={C.text} />
           <Stat label="V:B" value={ratio(f.vb)} color={C.warn} />
-          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} /> : null}
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
@@ -364,7 +392,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
-          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} /> : null}
         </>
       ) : (
         <>
@@ -374,19 +402,23 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
-          {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
+          {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} /> : null}
         </>
       )}
     </View>
   );
 }
 
-/** Hero's equity against the range villain's preflop action suggests, e.g. "Equity 54% vs top 20%". */
-function RangeEq({ eq }: { eq: { equity: number; pct: number } }) {
+/** Hero's equity against villain's range, e.g. "Equity 54% vs top 20%". Tapping it opens the range to edit. */
+function RangeEq({ eq, onPress }: { eq: NonNullable<ReturnType<typeof viewAt>['rangeEq']>; onPress: () => void }) {
+  const vs = eq.custom ? `${t('vs a tua range')} ${pct(eq.pct / 100, 1)}` : `${t('vs top')} ${eq.pct}%`;
   return (
-    <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
-      Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{pct(eq.equity)}</Text> {t('vs top')} {eq.pct}%
-    </Text>
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Equity ${pct(eq.equity)} ${vs}. ${t('Editar a range do vilão')}`} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+      <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
+        Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{pct(eq.equity)}</Text> <Text style={{ textDecorationLine: 'underline', textDecorationStyle: 'dotted' }}>{vs}</Text>
+      </Text>
+      <Ionicons name="grid-outline" size={11} color={C.accent} />
+    </Pressable>
   );
 }
 
