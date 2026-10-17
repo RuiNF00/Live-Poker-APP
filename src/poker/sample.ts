@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 import type { Hand } from './types';
 
 /** A complete example hand, for the empty state and store screenshots. */
@@ -12,11 +14,11 @@ export function sampleHand(id: string): Hand {
     players: [
       { name: 'Hero', stack: 64000, cards: ['Ah', 'Qh'] },
       { name: '', stack: 51000 },
-      { name: 'Boné azul', stack: 120000, cards: ['Kc', 'Kd'] },
+      { name: t('Boné azul'), stack: 120000, cards: ['Kc', 'Kd'] },
       { name: '', stack: 38000 },
       { name: '', stack: 72000 },
       { name: '', stack: 45000 },
-      { name: 'Reg alemão', stack: 88000 },
+      { name: t('Reg alemão'), stack: 88000 },
       { name: '', stack: 30000 },
       { name: '', stack: 96000 },
     ],
@@ -38,6 +40,6 @@ export function sampleHand(id: string): Hand {
     ],
     board: ['Qd', '8h', '3h', '2s', 'Jh'],
     tags: ['Bolha', 'Pote grande', 'Dúvida'],
-    notes: 'Bolha a 58 com 54 pagos. O boné azul só tinha 3-betado uma vez em 3 horas. Fold era melhor?',
+    notes: t('Bolha a 58 com 54 pagos. O boné azul só tinha 3-betado uma vez em 3 horas. Fold era melhor?'),
   };
 }

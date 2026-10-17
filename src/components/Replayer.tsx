@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { legal, positions, raiseName, replay, totalPot, type Step } from '@/poker/engine';
 import { amount } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
@@ -11,7 +12,7 @@ import { BRAND, C, R, ff } from '@/theme';
 import { Table } from './Table';
 import { Chip, Row, T, tap } from './ui';
 
-const STREET_PT: Record<Street, string> = { preflop: 'Pré-flop', flop: 'Flop', turn: 'Turn', river: 'River' };
+const STREET_PT: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
 export function Replayer({
   hand,
@@ -121,7 +122,7 @@ export function Replayer({
       )}
       {answered ? (
         <T v="small" style={{ textAlign: 'center' }}>
-          Tu escolheste <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>{answered}</T>. Vê o que aconteceu ↓
+          {t('Tu escolheste')} <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>{answered}</T>. {t('Vê o que aconteceu ↓')}
         </T>
       ) : null}
 
@@ -214,7 +215,7 @@ function QuizPanel({ state, onPick }: { state: Step['state']; onPick: (c: string
   return (
     <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.4)' }}>
       <T v="h2" style={{ textAlign: 'center' }}>
-        O que fazes aqui?
+        {t('O que fazes aqui?')}
       </T>
       <Row gap={8}>
         {opts.map((o) => (

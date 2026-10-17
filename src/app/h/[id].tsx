@@ -9,6 +9,7 @@ import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, Wordmark } from '@/components/ui';
+import { t } from '@/i18n';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 import { BRAND, C, R } from '@/theme';
@@ -36,9 +37,9 @@ export default function SharedHand() {
         <T v="tiny">{BRAND.tagline}</T>
       </Row>
       {err ? (
-        <Empty title="Esta mão já não existe" body="O link pode estar errado ou a mão foi apagada." />
+        <Empty title={t('Esta mão já não existe')} body={t('O link pode estar errado ou a mão foi apagada.')} />
       ) : !hand ? (
-        <T v="small">A carregar a mão…</T>
+        <T v="small">{t('A carregar a mão…')}</T>
       ) : (
         <>
           <HandHeader hand={hand} quiz={q === '1'} />
@@ -53,15 +54,15 @@ export default function SharedHand() {
             }
           />
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
-            <T v="h2">Regista as tuas mãos live em segundos</T>
+            <T v="h2">{t('Regista as tuas mãos live em segundos')}</T>
             <T v="small">
-              {BRAND.name} grava mãos em poucos toques, faz o replay e partilha com os teus amigos. Sessões, bankroll e notas de jogadores incluídos.
+              {t('{brand} grava mãos em poucos toques, faz o replay e partilha com os teus amigos. Sessões, bankroll e notas de jogadores incluídos.', { brand: BRAND.name })}
             </T>
             <Link href="/" asChild>
-              <Button title="Experimentar grátis" />
+              <Button title={t('Experimentar grátis')} />
             </Link>
           </View>
-          <T v="h2">Comentários</T>
+          <T v="h2">{t('Comentários')}</T>
           <CommentsList shareId={id!} comments={comments} onPosted={(c) => setComments((x) => [...x, c])} />
           <Pressable
             disabled={reported}
@@ -71,7 +72,7 @@ export default function SharedHand() {
               setReported(true);
               reportHand(id!, anonId()).catch(() => {});
             }}>
-            <T v="tiny">{reported ? 'Obrigado, vamos rever esta mão.' : 'Denunciar esta mão'}</T>
+            <T v="tiny">{reported ? t('Obrigado, vamos rever esta mão.') : t('Denunciar esta mão')}</T>
           </Pressable>
         </>
       )}

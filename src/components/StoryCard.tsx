@@ -8,6 +8,7 @@ import React from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { t } from '@/i18n';
 import { amount, blindsLabel } from '@/poker/format';
 import { STAGES, type Hand, type Street } from '@/poker/types';
 import { seatViews } from '@/poker/view';
@@ -19,7 +20,7 @@ import { Table } from './Table';
 export const STORY_W = 360;
 export const STORY_H = 640;
 
-const STREET_PT: Record<Street, string> = { preflop: 'Pré-flop', flop: 'Flop', turn: 'Turn', river: 'River' };
+const STREET_PT: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
 /** Where the voice chip sits, in story points. The waveform slot inside it is
  * left empty on the captured frame and drawn by the server while the voice plays. */
@@ -81,7 +82,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
     });
   }
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
-  const meta = [g.name || (g.kind === 'mtt' ? 'Torneio' : 'Cash'), blindsLabel(hand), stage].filter(Boolean).join('  ·  ');
+  const meta = [g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash'), blindsLabel(hand), stage].filter(Boolean).join('  ·  ');
   const text = comment.trim();
   const long = text.length > 90;
   const heroNet = result ? result.net[hand.hero] : 0;
@@ -104,7 +105,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
           ) : (
             <View style={{ backgroundColor: isQ ? C.accent : C.surface3, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }}>
               <Text style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1, color: isQ ? C.accentInk : C.text }}>
-                {isQ ? 'O QUE FAZIAS?' : 'MÃO JOGADA'}
+                {isQ ? t('O QUE FAZIAS?') : t('MÃO JOGADA')}
               </Text>
             </View>
           )}
@@ -168,7 +169,7 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
           button={hand.button}
           board={hand.board.slice(0, st.boardCount)}
           pot={moment.pot}
-          narration={isQ ? STREET_PT[moment.street] + (moment.toCall ? ' · para pagar ' + moment.toCall : '') : undefined}
+          narration={isQ ? STREET_PT[moment.street] + (moment.toCall ? ' · ' + t('para pagar {amount}', { amount: moment.toCall }) : '') : undefined}
         />
       </View>
 
@@ -192,12 +193,12 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
               {heroNet > 0 ? '+' : heroNet < 0 ? '−' : ''}
               {amount(Math.abs(heroNet), hand, inBB)}
             </Text>
-            <Text style={{ fontFamily: F.medium, fontSize: 11, color: C.muted }}>{heroNet > 0 ? 'Hero leva o pote' : 'Resultado do Hero'}</Text>
+            <Text style={{ fontFamily: F.medium, fontSize: 11, color: C.muted }}>{heroNet > 0 ? t('Hero leva o pote') : t('Resultado do Hero')}</Text>
           </View>
         ) : null}
         <Text style={{ textAlign: 'center', fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
-          {isQ ? 'Vota e vê o que aconteceu ' : 'Replay completo '}
-          <Text style={{ color: C.accent }}>{brand ? 'em ' + linkHost : 'no link'}</Text>
+          {isQ ? t('Vota e vê o que aconteceu') : t('Replay completo')}{' '}
+          <Text style={{ color: C.accent }}>{brand ? t('em {host}', { host: linkHost }) : t('no link')}</Text>
         </Text>
       </View>
     </View>

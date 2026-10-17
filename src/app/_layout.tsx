@@ -15,6 +15,7 @@ import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
+import { t } from '@/i18n';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 
@@ -55,7 +56,7 @@ export default function RootLayout() {
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="hand/new" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-            <Stack.Screen name="hand/[id]" options={{ title: 'Mão' }} />
+            <Stack.Screen name="hand/[id]" options={{ title: t('Mão') }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />

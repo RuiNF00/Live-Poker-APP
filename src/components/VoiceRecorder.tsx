@@ -15,6 +15,7 @@ import {
 import React, { useEffect, useRef } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { C, F, R } from '@/theme';
 
 import { Row, T, tap } from './ui';
@@ -57,7 +58,7 @@ export function VoiceRecorder({
     if (locked) return onLocked();
     const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Microfone desligado', 'Ativa o microfone para o Sweatbook nas definições do telemóvel.');
+      Alert.alert(t('Microfone desligado'), t('Ativa o microfone para o Sweatbook nas definições do telemóvel.'));
       return;
     }
     tap('medium');
@@ -88,13 +89,13 @@ export function VoiceRecorder({
         <Row style={{ justifyContent: 'space-between' }}>
           <Row gap={10}>
             <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.allin }} />
-            <T v="h2">A gravar</T>
+            <T v="h2">{t('A gravar')}</T>
             <T v="mono" color={C.textDim}>
               {secs(rec.durationMillis)} / 0:{MAX_VOICE_S}
             </T>
           </Row>
           <View style={{ backgroundColor: C.accent, borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <T style={{ fontFamily: F.bold, color: C.accentInk }}>Parar</T>
+            <T style={{ fontFamily: F.bold, color: C.accentInk }}>{t('Parar')}</T>
           </View>
         </Row>
       </Pressable>
@@ -108,7 +109,7 @@ export function VoiceRecorder({
           <Pressable onPress={toggle} hitSlop={8}>
             <Row gap={10}>
               <Ionicons name={playing.playing ? 'pause-circle' : 'play-circle'} size={30} color={C.accent} />
-              <T v="h2">A tua voz</T>
+              <T v="h2">{t('A tua voz')}</T>
               <T v="mono" color={C.textDim}>
                 {secs((playing.duration || 0) * 1000)}
               </T>
@@ -137,8 +138,8 @@ export function VoiceRecorder({
       <Row gap={10}>
         <Ionicons name="mic" size={22} color={C.accent} />
         <View style={{ flex: 1 }}>
-          <T v="h2">Explica a mão com a tua voz</T>
-          <T v="tiny">Até {MAX_VOICE_S} segundos. A história sai em vídeo.</T>
+          <T v="h2">{t('Explica a mão com a tua voz')}</T>
+          <T v="tiny">{t('Até {n} segundos. A história sai em vídeo.', { n: MAX_VOICE_S })}</T>
         </View>
         {locked ? (
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>

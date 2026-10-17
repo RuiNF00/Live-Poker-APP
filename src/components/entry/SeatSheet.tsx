@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { bbs, chips } from '@/poker/format';
 import type { Player } from '@/poker/types';
 import type { PlayerNote } from '@/store/types';
@@ -52,14 +53,14 @@ export function SeatSheet({
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, padding: 16, paddingBottom: 36, gap: 14 }}>
         <T v="h1">{title}</T>
         <View style={{ gap: 6 }}>
-          <T v="label">Nome</T>
+          <T v="label">{t('Nome')}</T>
           <TextInput
             value={name}
-            onChangeText={(t) => {
-              setName(t);
+            onChangeText={(v) => {
+              setName(v);
               setPlayerId(undefined);
             }}
-            placeholder={isHero ? 'O teu nome' : 'Ex.: Boné vermelho'}
+            placeholder={isHero ? t('O teu nome') : t('Ex.: Boné vermelho')}
             placeholderTextColor={C.muted}
             style={inputStyle}
           />
@@ -80,13 +81,13 @@ export function SeatSheet({
           )}
         </View>
         <View style={{ gap: 6 }}>
-          <T v="label">Stack no início da mão</T>
+          <T v="label">{t('Stack no início da mão')}</T>
           <Pressable onPress={() => setPad(true)} style={[inputStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}>
             <T v="h2">{chips(stack)}</T>
             <T v="small">{bbs(stack, bb)}</T>
           </Pressable>
           <Row style={{ flexWrap: 'wrap' }} gap={6}>
-            {!isHero && <Chip label="Igual ao meu" onPress={() => setStack(heroStack)} />}
+            {!isHero && <Chip label={t('Igual ao meu')} onPress={() => setStack(heroStack)} />}
             {quick.map((v) => (
               <Chip key={v} label={bbs(v, bb)} active={stack === v} onPress={() => setStack(v)} />
             ))}
@@ -94,9 +95,9 @@ export function SeatSheet({
         </View>
         <Row gap={10}>
           {isHero ? (
-            <Button title="Aplicar a todos" kind="secondary" style={{ flex: 1 }} onPress={() => onSave({ ...player, name, stack, playerId }, true)} />
+            <Button title={t('Aplicar a todos')} kind="secondary" style={{ flex: 1 }} onPress={() => onSave({ ...player, name, stack, playerId }, true)} />
           ) : null}
-          <Button title="Guardar" style={{ flex: 1 }} onPress={() => onSave({ ...player, name, stack, playerId })} />
+          <Button title={t('Guardar')} style={{ flex: 1 }} onPress={() => onSave({ ...player, name, stack, playerId })} />
         </Row>
       </View>
       <AmountPad

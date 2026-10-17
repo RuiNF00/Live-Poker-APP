@@ -14,6 +14,7 @@ import { NumField } from '@/components/entry/ContextSheet';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { Button, Chip, Panel, Row, T, tap } from '@/components/ui';
+import { t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { bbs, chips, duration, money, shortDate } from '@/poker/format';
 import { STAGES } from '@/poker/types';
@@ -32,7 +33,7 @@ function useTick(ms = 1000) {
 
 function confirm(title: string, body: string, ok: () => void) {
   if (Platform.OS === 'web') ok();
-  else Alert.alert(title, body, [{ text: 'Cancelar', style: 'cancel' }, { text: 'Sim', onPress: ok }]);
+  else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: t('Sim'), onPress: ok }]);
 }
 
 export default function SessionScreen() {
@@ -43,18 +44,18 @@ export default function SessionScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, padding: 14, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-      <T v="title">Sessão</T>
+      <T v="title">{t('Sessão')}</T>
       {activeSession ? (
         <Live s={activeSession} />
       ) : (
         <Panel style={{ gap: 12 }}>
-          <T v="h2">Começar sessão</T>
-          <T v="small">O relógio conta o tempo à mesa, o stack fica guardado e cada mão que registares já vem com torneio, blinds e stack preenchidos.</T>
+          <T v="h2">{t('Começar sessão')}</T>
+          <T v="small">{t('O relógio conta o tempo à mesa, o stack fica guardado e cada mão que registares já vem com torneio, blinds e stack preenchidos.')}</T>
           <SessionForm
             initial={blankSession(sessions[0]?.kind ?? 'mtt', settings.currency)}
             recentNames={recentNames}
             recentVenues={recentVenues}
-            submitLabel="Começar agora"
+            submitLabel={t('Começar agora')}
             onSubmit={(s) => {
               tap('medium');
               saveSession(s);
@@ -96,14 +97,14 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ gap: 12 }}>
       <Panel style={{ gap: 6, alignItems: 'center', paddingVertical: 22 }}>
-        <T v="label">{(mtt ? 'Torneio' : 'Cash') + (s.venue ? ' · ' + s.venue : '')}</T>
+        <T v="label">{(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')}</T>
         <T v="h1" numberOfLines={1}>
-          {s.name || 'Sessão'}
+          {s.name || t('Sessão')}
         </T>
         <T style={{ fontSize: 44, fontWeight: '800', fontFamily: ff(800), color: paused ? C.warn : C.text, fontVariant: ['tabular-nums'] }}>{clock(playedMs(s))}</T>
         <Row gap={8}>
-          <Button small kind="secondary" title={paused ? 'Retomar' : 'Pausa'} onPress={togglePause} icon={<Ionicons name={paused ? 'play' : 'pause'} size={14} color={C.text} />} />
-          <Button small kind="secondary" title={`${nHands} mãos`} onPress={() => router.push('/')} />
+          <Button small kind="secondary" title={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} icon={<Ionicons name={paused ? 'play' : 'pause'} size={14} color={C.text} />} />
+          <Button small kind="secondary" title={nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands })} onPress={() => router.push('/')} />
         </Row>
       </Panel>
 
@@ -112,31 +113,31 @@ function Live({ s }: { s: Session }) {
           <Panel style={{ gap: 2 }}>
             <T v="label">Stack</T>
             <T v="h1">{chips(s.stack)}</T>
-            <T v="small">{bbs(s.stack, s.bb)} · toca para atualizar</T>
+            <T v="small">{bbs(s.stack, s.bb)} · {t('toca para atualizar')}</T>
           </Panel>
         </Pressable>
         <Panel style={{ flex: 1, gap: 2 }}>
-          <T v="label">Blinds{s.level ? ` · nível ${s.level}` : ''}</T>
+          <T v="label">Blinds{s.level ? ' · ' + t('nível {n}', { n: s.level }) : ''}</T>
           <T v="h1">
             {chips(s.sb)}/{chips(s.bb)}
           </T>
           <Row gap={6}>
             <Chip label="−" onPress={() => bumpLevel(-1)} />
-            <Chip label="Subir nível" onPress={() => bumpLevel(1)} />
+            <Chip label={t('Subir nível')} onPress={() => bumpLevel(1)} />
           </Row>
         </Panel>
       </Row>
 
       {s.stackLog.length > 1 && (
         <Panel style={{ gap: 6 }}>
-          <T v="label">Stack ao longo da sessão</T>
+          <T v="label">{t('Stack ao longo da sessão')}</T>
           <LineChart values={s.stackLog.map((x) => x.stack)} height={110} zeroLine={false} />
         </Panel>
       )}
 
       {mtt && (
         <Panel style={{ gap: 8 }}>
-          <T v="label">Fase</T>
+          <T v="label">{t('Fase')}</T>
           <Row style={{ flexWrap: 'wrap' }} gap={6}>
             {STAGES.map((st) => (
               <Chip key={st.id} label={st.label} active={s.stage === st.id} onPress={() => save({ stage: st.id })} />
@@ -147,35 +148,35 @@ function Live({ s }: { s: Session }) {
 
       <Panel style={{ gap: 8 }}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <T v="label">Investido</T>
+          <T v="label">{t('Investido')}</T>
           <T v="mono">{money(cost(s), s.currency)}</T>
         </Row>
         <Row gap={8}>
-          <Button small kind="secondary" style={{ flex: 1 }} title={mtt ? '+ Re-entry' : '+ Rebuy'} onPress={() => confirm('Mais uma entrada?', `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }))} />
+          <Button small kind="secondary" style={{ flex: 1 }} title={mtt ? '+ Re-entry' : '+ Rebuy'} onPress={() => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }))} />
           {mtt ? <Button small kind="secondary" style={{ flex: 1 }} title="+ Add-on" onPress={() => confirm('Add-on?', `${money(s.buyIn, s.currency)}`, () => save({ addOn: (s.addOn || 0) + s.buyIn }))} /> : null}
         </Row>
       </Panel>
 
       {!ending ? (
-        <Button title="Terminar sessão" kind="danger" onPress={() => setEnding(true)} />
+        <Button title={t('Terminar sessão')} kind="danger" onPress={() => setEnding(true)} />
       ) : (
         <Panel style={{ gap: 10 }}>
-          <T v="h2">Terminar sessão</T>
+          <T v="h2">{t('Terminar sessão')}</T>
           <Row gap={10}>
-            <NumField label={mtt ? `Prémio (${s.currency})` : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
-            {mtt ? <NumField label="Lugar" value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
-            {mtt ? <NumField label="Inscritos" value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
+            <NumField label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
+            {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
+            {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
           </Row>
           <Row style={{ justifyContent: 'space-between' }}>
-            <T v="small">Resultado</T>
+            <T v="small">{t('Resultado')}</T>
             <T v="mono" color={finish.cashOut - cost(s) >= 0 ? C.good : C.bad}>
               {money(finish.cashOut - cost(s), s.currency)}
             </T>
           </Row>
           <Row gap={8}>
-            <Button kind="ghost" title="Voltar" style={{ flex: 1 }} onPress={() => setEnding(false)} />
+            <Button kind="ghost" title={t('Voltar')} style={{ flex: 1 }} onPress={() => setEnding(false)} />
             <Button
-              title="Guardar"
+              title={t('Guardar')}
               style={{ flex: 1 }}
               onPress={() => {
                 tap('medium');
@@ -197,7 +198,7 @@ function Live({ s }: { s: Session }) {
 
       <AmountPad
         visible={pad === 'stack'}
-        title="Stack atual"
+        title={t('Stack atual')}
         bb={s.bb}
         onClose={() => setPad(null)}
         onDone={(v) => {
@@ -206,16 +207,16 @@ function Live({ s }: { s: Session }) {
         }}
       />
       <T v="tiny" style={{ textAlign: 'center' }}>
-        Começou {shortDate(s.startedAt)} · {duration(Date.now() - s.startedAt)} no total · lucro atual {money(profit(s), s.currency)}
+        {t('Começou {date} · {total} no total · lucro atual {profit}', { date: shortDate(s.startedAt), total: duration(Date.now() - s.startedAt), profit: money(profit(s), s.currency) })}
       </T>
     </View>
   );
 }
 
 function clock(ms: number) {
-  const t = Math.floor(ms / 1000);
-  const h = Math.floor(t / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  const sec = t % 60;
+  const secs = Math.floor(ms / 1000);
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const sec = secs % 60;
   return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }

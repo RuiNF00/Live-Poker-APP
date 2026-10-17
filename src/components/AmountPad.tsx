@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { chips } from '@/poker/format';
 import { C, R, ff } from '@/theme';
 
@@ -50,7 +51,7 @@ export function AmountPad({
         <Row style={{ justifyContent: 'space-between' }}>
           <T v="h2">{title}</T>
           <Row>
-            <Chip label="Fichas" active={!inBB} onPress={() => setInBB(false)} />
+            <Chip label={t('Fichas')} active={!inBB} onPress={() => setInBB(false)} />
             <Chip label="BB" active={inBB} onPress={() => setInBB(true)} />
           </Row>
         </Row>
@@ -60,8 +61,8 @@ export function AmountPad({
             <Text style={{ color: C.muted, fontSize: 18 }}>{inBB ? ' bb' : ''}</Text>
           </Text>
           <T v="small">
-            = {chips(capped)} fichas{max !== undefined && value >= max ? ' (all-in)' : ''}
-            {tooLow ? ` · mínimo ${chips(min!)}` : ''}
+            = {chips(capped)} {t('fichas')}{max !== undefined && value >= max ? ' (all-in)' : ''}
+            {tooLow ? ' · ' + t('mínimo {amount}', { amount: chips(min!) }) : ''}
           </T>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -81,7 +82,7 @@ export function AmountPad({
           ))}
         </View>
         <Button
-          title="Confirmar"
+          title={t('Confirmar')}
           disabled={value <= 0}
           onPress={() => {
             onDone(capped);

@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 // Core data model. A hand is stored as its inputs (table, blinds, actions,
 // cards); every derived value (pots, stacks, winners) comes from engine.ts so
 // the entry screen, the replayer, the web viewer and exports never disagree.
@@ -76,14 +78,15 @@ export interface Hand {
 }
 
 export const STAGES: { id: StageId; label: string }[] = [
-  { id: 'early', label: 'Início' },
-  { id: 'mid', label: 'Meio' },
-  { id: 'bubble', label: 'Bolha' },
+  { id: 'early', label: t('Início') },
+  { id: 'mid', label: t('Meio') },
+  { id: 'bubble', label: t('Bolha') },
   { id: 'itm', label: 'ITM' },
-  { id: 'ft', label: 'Mesa final' },
+  { id: 'ft', label: t('Mesa final') },
   { id: 'hu', label: 'Heads-up' },
 ];
 
+/** Stored on hands in Portuguese; translate with t() only when shown. */
 export const DEFAULT_TAGS = [
   'Bluff',
   'Hero call',

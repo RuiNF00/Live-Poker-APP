@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 
+import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { autoTags, positions, replay } from '@/poker/engine';
 import { blindsLabel, shortDate, timeOf } from '@/poker/format';
@@ -15,16 +16,16 @@ export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
   const g = hand.game;
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const hero = hand.players[hand.hero];
-  const auto = React.useMemo(() => (quiz ? [] : autoTags(hand, replay(hand))).filter((t) => !hand.tags.includes(t)), [hand, quiz]);
+  const auto = React.useMemo(() => (quiz ? [] : autoTags(hand, replay(hand))).filter((tg) => !hand.tags.includes(tg)), [hand, quiz]);
   return (
     <View style={{ gap: 8 }}>
       <Row style={{ justifyContent: 'space-between' }}>
         <View style={{ flex: 1, gap: 2 }}>
           <T v="h1" numberOfLines={1}>
-            {hand.title || g.name || (g.kind === 'mtt' ? 'Torneio' : 'Cash')}
+            {hand.title || g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash')}
           </T>
           <T v="small">
-            {[blindsLabel(hand), g.level ? `Nível ${g.level}` : '', stage, g.playersLeft ? `${g.playersLeft} restantes` : '', `${hand.players.length} jog.`]
+            {[blindsLabel(hand), g.level ? t('Nível {n}', { n: g.level }) : '', stage, g.playersLeft ? t('{n} restantes', { n: g.playersLeft }) : '', t('{n} jog.', { n: hand.players.length })]
               .filter(Boolean)
               .join(' · ')}
           </T>
@@ -38,16 +39,16 @@ export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
       </Row>
       {hand.tags.length + auto.length > 0 && (
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
-          {hand.tags.map((t) => (
-            <View key={t} style={{ backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
+          {hand.tags.map((tg) => (
+            <View key={tg} style={{ backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
               <T v="tiny" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>
-                {t}
+                {t(tg)}
               </T>
             </View>
           ))}
-          {auto.map((t) => (
-            <View key={t} style={{ borderColor: C.border, borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 2 }}>
-              <T v="tiny">{t}</T>
+          {auto.map((tg) => (
+            <View key={tg} style={{ borderColor: C.border, borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 2 }}>
+              <T v="tiny">{t(tg)}</T>
             </View>
           ))}
         </Row>

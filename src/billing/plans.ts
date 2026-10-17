@@ -3,6 +3,8 @@
 // Real prices shown on the paywall come from the store (RevenueCat); the
 // numbers below are only the fallback when the store can't be reached.
 
+import { t } from '../i18n';
+
 export const ENTITLEMENT = 'pro';
 
 /** Store product ids. Create these exactly in App Store Connect and Google Play. */
@@ -17,6 +19,7 @@ export interface PlanInfo {
   id: PlanId;
   /** USD price, used when the store prices haven't loaded. */
   price: number;
+  /** Portuguese key; show it with t(). */
   period: 'mês' | 'ano';
   /** Free trial days (store intro offer). 0 = none. */
   trialDays: number;
@@ -45,32 +48,32 @@ export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'generic';
 /** Headline per trigger: the paywall talks about what the player just tried to do. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
-    title: 'Já guardaste as tuas 3 mãos de hoje',
-    body: 'Esta mão fica guardada como rascunho. Com Pro guardas todas as mãos da sessão, sem limite.',
+    title: t('Já guardaste as tuas 3 mãos de hoje'),
+    body: t('Esta mão fica guardada como rascunho. Com Pro guardas todas as mãos da sessão, sem limite.'),
   },
   shares: {
-    title: 'Já partilhaste a mão de hoje',
-    body: 'Com Pro partilhas todas as mãos que quiseres com os teus amigos.',
+    title: t('Já partilhaste a mão de hoje'),
+    body: t('Com Pro partilhas todas as mãos que quiseres com os teus amigos.'),
   },
   stats: {
-    title: 'Vê o teu bankroll a fundo',
-    body: 'Filtra por 30 dias, 90 dias ou ano e percebe onde estás a ganhar.',
+    title: t('Vê o teu bankroll a fundo'),
+    body: t('Filtra por 30 dias, 90 dias ou ano e percebe onde estás a ganhar.'),
   },
   story: {
-    title: 'Stories com a tua voz',
-    body: 'Explica a mão com a tua voz e partilha no Instagram em vídeo, sem a marca Sweatbook.',
+    title: t('Stories com a tua voz'),
+    body: t('Explica a mão com a tua voz e partilha no Instagram em vídeo, sem a marca Sweatbook.'),
   },
   generic: {
     title: 'Sweatbook Pro',
-    body: 'Tudo o que precisas para estudar as mãos que jogas ao vivo.',
+    body: t('Tudo o que precisas para estudar as mãos que jogas ao vivo.'),
   },
 };
 
 export const PRO_FEATURES: { icon: string; title: string; body: string }[] = [
-  { icon: 'infinite', title: 'Mãos ilimitadas', body: 'Guarda todas as mãos da sessão, não só 3 por dia.' },
-  { icon: 'logo-instagram', title: 'Stories com a tua voz', body: 'Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.' },
-  { icon: 'stats-chart', title: 'Bankroll completo', body: 'Filtros por período, ROI, ITM e por hora.' },
-  { icon: 'people', title: 'Partilha sem limites', body: 'Os teus amigos comentam e votam no browser, sem app.' },
+  { icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Guarda todas as mãos da sessão, não só 3 por dia.') },
+  { icon: 'logo-instagram', title: t('Stories com a tua voz'), body: t('Vídeo vertical para o Instagram com a tua explicação, sem a marca Sweatbook.') },
+  { icon: 'stats-chart', title: t('Bankroll completo'), body: t('Filtros por período, ROI, ITM e por hora.') },
+  { icon: 'people', title: t('Partilha sem limites'), body: t('Os teus amigos comentam e votam no browser, sem app.') },
 ];
 
 export function perMonth(annualPrice: number): number {
