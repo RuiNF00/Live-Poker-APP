@@ -8,3 +8,4 @@ dropdb --if-exists "$DB" && createdb "$DB"
 psql -q -d "$DB" -f tests/stub_supabase.sql
 for f in migrations/*.sql; do psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"; done
 psql -q -d "$DB" -f tests/sharing_test.sql
+psql -q -d "$DB" -f tests/referrals_test.sql

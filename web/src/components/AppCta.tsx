@@ -7,7 +7,8 @@ import { Mark, Wordmark } from './Brand';
 import { track } from '@/lib/track';
 import { storeLinks } from '@/lib/storeLinks';
 import { StoreButtons } from './landing/StoreButtons';
-import { landingCopy } from './landing/copy';
+import { landingCopy, REWARD_DAYS_PUBLIC } from './landing/copy';
+import { writeLocal } from '@/lib/local';
 import '@/app/landing.css';
 
 type Platform = 'ios' | 'android' | 'other';
@@ -20,12 +21,15 @@ function detectPlatform(): Platform {
 }
 
 /** The acquisition hook: every viewer of a shared hand is a potential user. */
-export function AppCta({ locale, shareId }: { locale: Locale; shareId: string }) {
+export function AppCta({ locale, shareId, invite }: { locale: Locale; shareId: string; invite: string | null }) {
   const d = t(locale);
   const [platform, setPlatform] = useState<Platform>('other');
   useEffect(() => setPlatform(detectPlatform()), []);
 
-  const { ios, android } = storeLinks({ utm_source: 'share', utm_medium: 'hand', utm_campaign: shareId });
+  const { ios, android } = storeLinks({ utm_source: 'share', utm_medium: 'hand', utm_campaign: shareId }, invite);
+  useEffect(() => {
+    if (invite) writeLocal('invite', invite);
+  }, [invite]);
   const primary = platform === 'ios' ? ios : platform === 'android' ? android : ios || android;
 
   return (
@@ -36,11 +40,12 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
         </div>
         <h2 className="cta-title">{d.ctaTitle}</h2>
         <p className="cta-body">{d.ctaBody}</p>
+        {invite && <p className="cta-invite">🎁 {d.ctaInvite(REWARD_DAYS_PUBLIC)}</p>}
         <div className="cta-badges">
           <StoreButtons c={landingCopy(locale)} stores={{ ios, android }} from="share" fallback="/" shareId={shareId} />
         </div>
         {platform !== 'other' && (
-          <a className="cta-open" href={`${brand.appScheme}://h/${shareId}`}>
+          <a className="cta-open" href={`${brand.appScheme}://h/${shareId}${invite ? `?r=${invite}` : ''}`}>
             {d.openInApp}
           </a>
         )}

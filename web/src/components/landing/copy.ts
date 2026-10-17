@@ -8,6 +8,9 @@ export const PRICES = {
   freeHandsPerDay: 3,
 };
 
+/** Mirrors REWARD_DAYS in lib/referrals.ts (server-only). */
+export const REWARD_DAYS_PUBLIC = 7;
+
 const money = (n: number, locale: Locale) =>
   locale === 'pt' ? `${n.toFixed(2).replace('.', ',')} US$` : `$${n.toFixed(2)}`;
 

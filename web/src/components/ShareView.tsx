@@ -32,6 +32,8 @@ interface Props {
   viewCount: number;
   locale: Locale;
   shareUrl: string;
+  /** Sharer's referral code, when the link carries one. */
+  invite?: string | null;
 }
 
 const PLAY_MS = 1100;
@@ -259,7 +261,7 @@ export function ShareView(props: Props) {
 
       <ReportHand shareId={props.shareId} locale={locale} />
 
-      <AppCta locale={locale} shareId={props.shareId} />
+      <AppCta locale={locale} shareId={props.shareId} invite={props.invite ?? null} />
     </main>
   );
 }

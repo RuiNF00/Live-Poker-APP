@@ -31,9 +31,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function SharePage({ params, searchParams }: Params & { searchParams: Promise<{ q?: string }> }) {
+export default async function SharePage({ params, searchParams }: Params & { searchParams: Promise<{ q?: string; r?: string }> }) {
   const { id } = await params;
-  const { q } = await searchParams;
+  const { q, r } = await searchParams;
+  // Invite code of the player who shared (the app appends ?r=<code> to its share links).
+  const invite = typeof r === 'string' && /^[A-HJ-NP-Z2-9]{6,10}$/i.test(r) ? r.toUpperCase() : null;
   const share = await loadShare(id);
   if (!share) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
@@ -51,6 +53,7 @@ export default async function SharePage({ params, searchParams }: Params & { sea
   const comments = share.allowComments ? await store.listComments(id) : [];
   return (
     <ShareView
+      invite={invite}
       shareId={id}
       hand={resolved.hand}
       title={share.title}
