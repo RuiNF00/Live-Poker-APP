@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
 import { SharedHandsCard } from '@/components/SharedHandsCard';
+import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettleReminder';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
@@ -79,6 +80,7 @@ export default function HandsScreen() {
   const [filtering, setFiltering] = useState(false);
   const coach = useCoach();
   const shared = useSharedHands();
+  const settle = useSwapSettleCard();
   const unread = useMemo(() => unreadByHand(coach), [coach]);
   const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
   const [searching, setSearching] = useState(false);
@@ -214,6 +216,8 @@ export default function HandsScreen() {
                 <ChargeNotice end={chargeEnd} />
               ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+              ) : !activeSession && settle ? (
+                <SwapSettleCard {...settle} />
               ) : !activeSession && shared.newTotal > 0 ? (
                 <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
               ) : news.item ? (

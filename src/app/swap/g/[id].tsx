@@ -27,7 +27,7 @@ const POLL_MS = 30000;
 const HEX = /^[a-f0-9]{32,128}$/;
 
 export default function GroupSwapScreen() {
-  const params = useLocalSearchParams<{ id: string; k?: string; i?: string; r?: string; '#'?: string }>();
+  const params = useLocalSearchParams<{ id: string; k?: string; i?: string; r?: string; pay?: string; '#'?: string }>();
   const { id, r } = params;
   // +native-intent moves #i= and #k= into the query; a link opened inside the app keeps them in '#'.
   const frag = new URLSearchParams(typeof params['#'] === 'string' ? params['#'] : '');
@@ -60,7 +60,7 @@ export default function GroupSwapScreen() {
     };
   }, [ready, own, id, k]);
 
-  if (own) return <OwnGroup g={own} />;
+  if (own) return <OwnGroup g={own} pay={params.pay === '1'} />;
   return (
     <>
       <Stack.Screen options={{ title: t('Swap de grupo'), headerBackTitle: t('Voltar') }} />
@@ -151,10 +151,18 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
   );
 }
 
-function OwnGroup({ g }: { g: SwapGroup }) {
+function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
   // Who owes whom: with my Pro, or for everyone when the creator has Pro.
   const locked = useLocked('swaps') && !g.accounts;
+  // From the "falta acertar" reminder: straight to the payment, the first one I owe already in.
+  // (A moment after the screen lands: a sheet opened mid-push is lost on iOS.)
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
+  const canPay = groupReady(g) && !g.gone && !g.removed;
+  useEffect(() => {
+    if (!pay || !canPay) return;
+    const id = setTimeout(() => setSheet('payment'), 450);
+    return () => clearTimeout(id);
+  }, [pay, canPay]);
   const [offline, setOffline] = useState(false);
   const ready = groupReady(g);
   const someoneLeft = g.seats.some((s) => s.name === '-');

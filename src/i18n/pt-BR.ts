@@ -1479,6 +1479,10 @@ const ptBR: Record<string, string> = {
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
   'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
+  'O swap de {place} está fechado: falta acertar': 'O swap de {place} está fechado: falta acertar as contas',
+  'E mais {n} por acertar': 'E mais {n} para acertar',
+  'Toca para registar o pagamento': 'Toque para registrar o pagamento',
+  'Toca para veres as contas': 'Toque para ver as contas',
 };
 
 export default ptBR;

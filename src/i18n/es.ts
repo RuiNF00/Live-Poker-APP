@@ -3134,6 +3134,10 @@ const es: Record<string, string> = {
   'Praga': 'Praga',
   'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
+  'O swap de {place} está fechado: falta acertar': 'El swap de {place} está cerrado: falta saldar cuentas',
+  'E mais {n} por acertar': 'Y {n} más por saldar',
+  'Toca para registar o pagamento': 'Toca para registrar el pago',
+  'Toca para veres as contas': 'Toca para ver las cuentas',
 };
 
 export default es;

@@ -25,7 +25,7 @@ import { C, S } from '@/theme';
 const POLL_MS = 30000;
 
 export default function SwapScreen() {
-  const { id, k, r } = useLocalSearchParams<{ id: string; k?: string; r?: string }>();
+  const { id, k, r, pay } = useLocalSearchParams<{ id: string; k?: string; r?: string; pay?: string }>();
   const { swaps, ready } = useSwaps();
   const own = swaps.find((s) => s.id === id);
   const [remote, setRemote] = useState<RemoteSwap | null | undefined>(undefined);
@@ -54,7 +54,7 @@ export default function SwapScreen() {
     };
   }, [ready, own, id, k]);
 
-  if (own) return <OwnSwap s={own} />;
+  if (own) return <OwnSwap s={own} pay={pay === '1'} />;
   return (
     <>
       <Stack.Screen options={{ title: 'Swap', headerBackTitle: t('Voltar') }} />
@@ -139,10 +139,18 @@ function Head({ terms, names }: { terms: Swap['terms']; names: Record<'a' | 'b',
   );
 }
 
-function OwnSwap({ s }: { s: Swap }) {
+function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   // Who owes whom: with my Pro, or for everyone when the creator has Pro.
   const locked = useLocked('swaps') && !s.accounts;
+  // From the "falta acertar" reminder: straight to the payment, the amount owed already in.
+  // (A moment after the screen lands: a sheet opened mid-push is lost on iOS.)
   const [sheet, setSheet] = useState<'result' | 'payment' | null>(null);
+  const canPay = !!s.confirmedAt && !s.gone && !s.left;
+  useEffect(() => {
+    if (!pay || !canPay) return;
+    const id = setTimeout(() => setSheet('payment'), 450);
+    return () => clearTimeout(id);
+  }, [pay, canPay]);
   const [offline, setOffline] = useState(false);
   const names = swapNames(s);
   const them = names[other(s.side)];
