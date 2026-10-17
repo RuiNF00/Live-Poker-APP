@@ -184,8 +184,9 @@ export function Replayer({
   const editRange = () => {
     if (!view.rangeEq) return;
     tap('select');
-    if (rangeLocked) return paywall('villainRange');
-    setRangeSheet(range ?? topClasses(view.rangeEq.pct));
+    const open = () => setRangeSheet(range ?? topClasses(view.rangeEq!.pct));
+    if (rangeLocked) return paywall('villainRange', open);
+    open();
   };
   const items = useMemo(() => timeline(shown, r, inBB), [shown, r, inBB]);
 
