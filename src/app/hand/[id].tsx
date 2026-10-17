@@ -6,6 +6,7 @@ import { Alert, Platform, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CommentsList } from '@/components/Comments';
+import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { isComplete } from '@/poker/engine';
 import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
@@ -13,6 +14,7 @@ import { Replayer } from '@/components/Replayer';
 import { Banner, Button, Card, Empty, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
@@ -117,6 +119,7 @@ ${link}`;
     const doIt = () => {
       // The public link goes with the hand.
       if (hand.shareId && hand.shareToken) deleteShare(hand.shareId, hand.shareToken).catch(() => {});
+      dropVoiceNote(hand.voiceNote);
       deleteHand(hand.id);
       router.back();
     };
@@ -147,6 +150,7 @@ ${link}`;
           <HandHeader hand={hand} />
         </View>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
+        {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} initialInBB={settings.inBB} />
 
         <Section title={t('Partilhar')}>

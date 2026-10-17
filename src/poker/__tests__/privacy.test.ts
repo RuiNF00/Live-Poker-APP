@@ -6,7 +6,7 @@ import { publicHand } from '../privacy';
 import type { Hand } from '../types';
 
 const hand = {
-  v: 1, id: 'h', createdAt: 0, updatedAt: 0, sessionId: 's', shareToken: 'secret', shareId: 'x',
+  v: 1, id: 'h', createdAt: 0, updatedAt: 0, sessionId: 's', shareToken: 'secret', shareId: 'x', voiceNote: 'file:///voice/h.m4a',
   game: { kind: 'cash', name: '1/2', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€' },
   players: [{ name: 'Rui', stack: 200 }, { name: 'Zé do boné', stack: 300, playerId: 'p_1' }],
   button: 0, hero: 0, actions: [], board: [], tags: [], notes: 'Fold?',
@@ -17,7 +17,7 @@ test('opponents are anonymous by default, ids and tokens never leave', () => {
   assert.equal(p.players[0].name, 'Rui');
   assert.equal(p.players[1].name, '');
   assert.equal('playerId' in p.players[1], false);
-  for (const k of ['sessionId', 'shareToken', 'shareId']) assert.equal(k in p, false);
+  for (const k of ['sessionId', 'shareToken', 'shareId', 'voiceNote']) assert.equal(k in p, false);
   assert.equal(p.notes, 'Fold?');
 });
 

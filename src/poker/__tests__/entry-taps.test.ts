@@ -115,7 +115,36 @@ class Entry {
     this.taps++;
     return replay(this.hand);
   }
+  /** "Voz" then "Parar e guardar": the hand is kept as it is, with the note. */
+  saveWithVoice(file: string) {
+    this.taps += 2;
+    this.hand = { ...this.hand, voiceNote: file };
+    return replay(this.hand);
+  }
 }
+
+test('the typical hand (open, call, c-bet, fold) stays within the goal of 12 taps', () => {
+  for (const [caller, taps] of [['BTN', 11], ['BB', 12]] as const) {
+    const e = new Entry('CO', ['Ah', 'Kd']);
+    e.size('2.2x');
+    e.only(caller);
+    e.board('Kc', '8d', '3s');
+    if (caller === 'BB') e.act('check');
+    e.size('33%');
+    e.act('fold');
+    const r = e.save();
+    assert.equal(e.taps, taps, caller);
+    assert.equal(r.final.foldWin, true);
+  }
+});
+
+test('guardar rápido: position, cards and a voice note save the hand in 5 taps', () => {
+  const e = new Entry('HJ', ['9s', '9h']);
+  const r = e.saveWithVoice('file:///voice/t.m4a');
+  assert.equal(e.taps, 5);
+  assert.equal(e.hand.voiceNote, 'file:///voice/t.m4a');
+  assert.equal(r.final.toAct, 0, 'reopens at hero, ready to complete');
+});
 
 test('single-raised pot: hero opens CO, BTN calls, c-bet called, gives up on the turn — 15 taps', () => {
   const e = new Entry('CO', ['As', 'Qd']);
