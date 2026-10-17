@@ -30,7 +30,8 @@ export interface Festival {
   currency: string;
   /** Venue offset from UTC on the festival dates, in minutes (Nassau in December: EST, -300). */
   utcOffset: number;
-  source: { url: string; label: string; checked: string };
+  /** No link in the app: organisers' sites also run real-money gaming (App Review). The URL stays in a comment by the data. */
+  source: { label: string; checked: string };
   /** What the organiser hasn't published, shown under the schedule. */
   notes: string[];
   events: FestivalEvent[];
@@ -56,7 +57,8 @@ export const BAHAMAS_DEC_2026: Festival = {
   city: 'Nassau, Bahamas',
   currency: '$',
   utcOffset: -300,
-  source: { url: 'https://www.wsop.com/tournaments/2026-wsop-paradise/', label: 'site oficial do organizador', checked: '2026-10-17' },
+  // https://www.wsop.com/tournaments/2026-wsop-paradise/
+  source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [
     'Horas locais de Nassau (hora de Nova Iorque).',
     'O organizador ainda não publicou o fecho do late reg nem as regras de re-entry: confirma no balcão do torneio.',
@@ -115,7 +117,8 @@ export const LAS_VEGAS_DEC_2026: Festival = {
   city: 'Las Vegas, EUA',
   currency: '$',
   utcOffset: -480,
-  source: { url: 'https://www.worldpokertour.com/event/main-tour-wpt-world-championship-at-wynn-las-vegas-season-2026/schedule', label: 'site oficial do organizador', checked: '2026-10-17' },
+  // https://www.worldpokertour.com/event/main-tour-wpt-world-championship-at-wynn-las-vegas-season-2026/schedule
+  source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [
     'Horas locais de Las Vegas.',
     'O organizador não publicou o fecho do late reg (no World Championship as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.',
