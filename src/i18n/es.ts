@@ -3080,6 +3080,9 @@ const es: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} hasta ahora: {amount} en {h} h',
   'Começar: {name}': 'Empezar: {name}',
   'Às {time}': 'A las {time}',
+  '−1 órbita': '−1 vuelta',
+  'Mais detalhes': 'Más detalles',
+  'Menos detalhes': 'Menos detalles',
 };
 
 export default es;

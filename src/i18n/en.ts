@@ -3086,6 +3086,9 @@ const en: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} so far: {amount} in {h} h',
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
+  '−1 órbita': '−1 orbit',
+  'Mais detalhes': 'More details',
+  'Menos detalhes': 'Fewer details',
 };
 
 export default en;
