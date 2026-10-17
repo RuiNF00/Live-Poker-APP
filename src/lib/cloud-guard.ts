@@ -33,6 +33,15 @@ export function uploadBlock(data: Counts, c: CloudState, force = false): 'would_
   return null;
 }
 
+/**
+ * The "Cópia parada" warning: uploads are blocked and the cloud really holds a
+ * copy this phone wrote or restored. A first backup of an empty phone is just
+ * waiting for something to copy.
+ */
+export function cloudAhead(data: Counts, c: CloudState): boolean {
+  return !!c.lastAt && !!uploadBlock(data, c);
+}
+
 /** What the launch auto-backup does: nothing, or upload. It never forces. */
 export function autoBackup(c: CloudState | null, data: Counts, now: number): 'skip' | 'upload' {
   if (!c || (c.lastAt && now - c.lastAt < AUTO_EVERY_MS)) return 'skip';
