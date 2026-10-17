@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { limited } from '@/lib/abuse';
-import { coachStore, OWNER_RE, parseComment, TOKEN_RE } from '@/lib/coach';
+import { coachStore, MAX_COMMENT_BYTES, OWNER_RE, parseComment, TOKEN_RE, tooBig } from '@/lib/coach';
 import { coachCors } from '../../cors';
 
 type Ctx = { params: Promise<{ token: string }> };
@@ -27,6 +27,7 @@ export async function GET(req: Request, { params }: Ctx) {
 export async function POST(req: Request, { params }: Ctx) {
   const { token } = await params;
   if (!TOKEN_RE.test(token)) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: coachCors });
+  if (tooBig(req, MAX_COMMENT_BYTES)) return NextResponse.json({ error: 'too_big' }, { status: 413, headers: coachCors });
   if (await limited(req, 'coach-comment', 120, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: coachCors });
   const c = parseComment(await req.json().catch(() => null));
   if (!c) return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: coachCors });
