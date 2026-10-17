@@ -6,6 +6,7 @@ import { Modal, ScrollView, View } from 'react-native';
 
 import { locale, t } from '@/i18n';
 import { endOfDay, presetRange, startOfDay, type DateRange, type RangePreset, type StakeOption } from '@/store/bankroll-math';
+import { CURRENCIES } from '@/store/currencies';
 import { parseDay } from '@/store/session-math';
 import { uid } from '@/store/store';
 import type { Bankroll, Transfer } from '@/store/types';
@@ -13,7 +14,7 @@ import { C, S } from '@/theme';
 
 import { Button, Chip, ChipRow, Field, NumField, Row, Section, Segmented, SheetHeader, T } from './ui';
 
-export const CURRENCIES = ['€', '$', '£', 'R$', 'CHF', 'HK$', 'A$'];
+export { CURRENCIES };
 
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
   return (

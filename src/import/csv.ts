@@ -6,6 +6,8 @@
 export interface Table {
   headers: string[];
   rows: string[][];
+  /** Line in the file of each row (1 = first line), so a row that can't be read can be pointed at. */
+  lines?: number[];
 }
 
 /** Splits CSV text into rows of cells. Quotes may hold separators, quotes ("") and line breaks. */
@@ -102,7 +104,10 @@ export function norm(s: string): string {
  * names rather than data; `known` scores rows by how many cells it recognises.
  */
 export function readTable(text: string, known: (h: string) => boolean): Table {
-  const all = parseCsv(text).filter((r) => r.some((c) => c !== ''));
+  const parsed = parseCsv(text);
+  // Record number in the file; quoted line breaks inside a cell are rare enough to ignore.
+  const lineOf: number[] = [];
+  const all = parsed.filter((r, i) => r.some((c) => c !== '') && lineOf.push(i + 1) > 0);
   let at = -1;
   let fallback = -1;
   let bestHits = 0;
@@ -117,8 +122,14 @@ export function readTable(text: string, known: (h: string) => boolean): Table {
     if (fallback < 0 && filled.every((c) => !/^[-+]?[\d.,:/ ]+$/.test(c))) fallback = i;
   }
   if (at < 0) at = fallback;
-  if (at < 0) return { headers: [], rows: [] };
+  if (at < 0) return { headers: [], rows: [], lines: [] };
   const headers = all[at].map((h, i) => h || `#${i + 1}`);
-  const rows = all.slice(at + 1).filter((r) => r.filter((c) => c !== '').length >= 2);
-  return { headers, rows };
+  const rows: string[][] = [];
+  const lines: number[] = [];
+  for (let i = at + 1; i < all.length; i++)
+    if (all[i].filter((c) => c !== '').length >= 2) {
+      rows.push(all[i]);
+      lines.push(lineOf[i]);
+    }
+  return { headers, rows, lines };
 }

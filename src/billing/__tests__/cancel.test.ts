@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CANCEL_REASONS, logged } from '../cancel';
+import { CANCEL_REASONS, cancelReasons, logged } from '../cancel';
 import type { Session } from '@/store/types';
 
 const s = (startedAt: number, buyIn: number, cashOut: number) =>
@@ -20,4 +20,11 @@ test('counts, net result and the earliest date', () => {
 test('one reason each, no "Outro"', () => {
   assert.equal(CANCEL_REASONS.length, 5);
   assert.ok(!CANCEL_REASONS.some((r) => /outro/i.test(r.label)));
+});
+
+test('"Não quero uma subscrição" only with a one-time Pro to offer', () => {
+  assert.deepEqual(cancelReasons(false), CANCEL_REASONS);
+  const on = cancelReasons(true);
+  assert.equal(on.length, 6);
+  assert.equal(on[2].key, 'noSubscription');
 });

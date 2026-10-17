@@ -11,6 +11,7 @@ import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, money, timeOf } from '@/poker/format';
+import { fileInFolder, needsReview } from '@/poker/review';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStat } from '@/components/StreakStat';
 import { unreadByHand } from '@/lib/coach-core';
@@ -60,13 +61,14 @@ export default function HandsScreen() {
   const [tag, setTag] = useState<string | null>(null);
   const coach = useCoach();
   const unread = useMemo(() => unreadByHand(coach), [coach]);
+  const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
   const [searching, setSearching] = useState(false);
 
   const sections = useMemo(() => {
     const qq = q.trim().toLowerCase();
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)));
+      .filter((h) => (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) && (!qq || searchText(h).includes(qq)));
     const out: { title: string; data: Hand[] }[] = [];
     let cur = -1;
     for (const h of rows) {
@@ -78,7 +80,7 @@ export default function HandsScreen() {
       out[out.length - 1].data.push(h);
     }
     return out;
-  }, [hands, q, tag]);
+  }, [hands, q, tag, sentToCoach]);
 
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
   const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
@@ -108,6 +110,7 @@ export default function HandsScreen() {
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
   const folders = useMemo(() => [...new Set(hands.flatMap((h) => h.folders ?? []))].sort((a, b) => a.localeCompare(b)), [hands]);
+  const toReview = useMemo(() => hands.filter((h) => needsReview(h, sentToCoach)).length, [hands, sentToCoach]);
   const [filing, setFiling] = useState(false);
   // Discarding a draft is one tap, so keep it for a few seconds behind an undo.
   const [discarded, setDiscarded] = useState<Hand | null>(null);
@@ -189,9 +192,12 @@ export default function HandsScreen() {
                 <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
               ) : null}
               {searching ? <SearchField value={q} onChange={setQ} placeholder={t('Torneio, jogador, AKs…')} /> : null}
-              {usedTags.length > 0 || folders.length > 0 ? (
+              {usedTags.length > 0 || folders.length > 0 || toReview > 0 ? (
                 <ChipRow>
                   <Chip label={t('Todas')} active={!tag} onPress={() => setTag(null)} />
+                  {toReview > 0 || tag === TO_REVIEW ? (
+                    <Chip icon="school-outline" label={t('Por rever ({n})', { n: toReview })} active={tag === TO_REVIEW} onPress={() => setTag(tag === TO_REVIEW ? null : TO_REVIEW)} />
+                  ) : null}
                   {folders.map((f) => (
                     <Chip key={FOLDER + f} icon="folder-outline" label={f} active={tag === FOLDER + f} onPress={() => setTag(tag === FOLDER + f ? null : FOLDER + f)} />
                   ))}
@@ -205,7 +211,7 @@ export default function HandsScreen() {
                   <T v="small" style={{ flex: 1 }}>
                     {shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}
                   </T>
-                  {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : tag.startsWith(FOLDER) ? tag.slice(FOLDER.length) : t(tag)} onClear={() => setTag(null)} /> : null}
+                  {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : tag === TO_REVIEW ? t('Por rever') : tag.startsWith(FOLDER) ? tag.slice(FOLDER.length) : t(tag)} onClear={() => setTag(null)} /> : null}
                   {tag?.startsWith(FOLDER) && shown > 0 ? (
                     <Button
                       kind="secondary"
@@ -553,12 +559,13 @@ const rowSt = StyleSheet.create({
 });
 
 const INCOMPLETE = '__incomplete';
+const TO_REVIEW = '__review';
 
 /** A filter that is on, with an x to take it off. */
 /** "Guardar em pasta": private study folders, toggled on every picked hand. */
 function FolderSheet({ visible, onClose, folders, list, save }: { visible: boolean; onClose: () => void; folders: string[]; list: Hand[]; save: (h: Hand) => void }) {
   const [name, setName] = useState('');
-  const toggle = (f: string, on: boolean) => list.forEach((h) => save({ ...h, folders: on ? [...new Set([...(h.folders ?? []), f])] : (h.folders ?? []).filter((x) => x !== f) }));
+  const toggle = (f: string, on: boolean) => list.forEach((h) => save(fileInFolder(h, f, on)));
   const create = () => {
     const f = name.trim();
     if (!f) return;

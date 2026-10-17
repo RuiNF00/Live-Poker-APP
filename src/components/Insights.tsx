@@ -9,7 +9,7 @@ import { StyleSheet, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
-import { insights, MIN_SESSIONS, type Insight } from '@/store/insights-math';
+import { insights, MIND_IDS, MIN_SESSIONS, type Insight, type MindId } from '@/store/insights-math';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
@@ -18,11 +18,22 @@ import { Button, Card, Row, Section, T } from './ui';
 /** About how many sessions it takes before the first card can appear. */
 const FIRST_AT = 4 * MIN_SESSIONS;
 
-export function Insights({ list, cur, hidden, result }: { list: Session[]; cur: string; hidden: boolean; result?: (s: Session) => number }) {
+export function Insights({ list, cur, hidden, result, mind }: { list: Session[]; cur: string; hidden: boolean; result?: (s: Session) => number; /** The mental game journal's cards (its own screen); without it, every other card. */ mind?: boolean }) {
   const { isPro, paywall } = usePro();
   const fmt = useMemo(() => (n: number) => (hidden ? '•••' : money(n, cur)), [hidden, cur]);
-  const all = useMemo(() => insights(list, (n) => fmt(Math.round(n)), { result }), [list, fmt, result]);
+  const all = useMemo(() => insights(list, (n) => fmt(Math.round(n)), { result }).filter((x) => !!mind === MIND_IDS.includes(x.id as MindId)), [list, fmt, result, mind]);
   const done = list.filter((s) => s.endedAt).length;
+
+  if (!all.length && mind) {
+    return (
+      <Section title={t('O que o diário já diz')}>
+        <Card tone="inset" style={{ gap: S.xs }}>
+          <T v="small">{t('Mostramos como o sono, a energia, o foco e o tilt mexem no teu resultado quando houver pelo menos {n} sessões de cada lado.', { n: MIN_SESSIONS })}</T>
+          <T v="tiny">{t('Ex.: 5 sessões depois de dormir menos de 6 h e 5 depois de dormir mais.')}</T>
+        </Card>
+      </Section>
+    );
+  }
 
   if (!all.length) {
     return (
@@ -37,7 +48,7 @@ export function Insights({ list, cur, hidden, result }: { list: Session[]; cur: 
 
   if (!isPro) {
     return (
-      <Section title={t('Onde ganhas e onde perdes')}>
+      <Section title={mind ? t('O que o diário já diz') : t('Onde ganhas e onde perdes')}>
         <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
           <InsightCard x={all[0]} fmt={fmt} />
           <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
@@ -52,7 +63,7 @@ export function Insights({ list, cur, hidden, result }: { list: Session[]; cur: 
   }
 
   return (
-    <Section title={t('Onde ganhas e onde perdes')} hint={t('Só mostramos uma diferença com pelo menos {n} sessões de cada lado.', { n: MIN_SESSIONS })}>
+    <Section title={mind ? t('O que o diário já diz') : t('Onde ganhas e onde perdes')} hint={t('Só mostramos uma diferença com pelo menos {n} sessões de cada lado.', { n: MIN_SESSIONS })}>
       <View style={{ gap: S.sm }}>
         {all.map((x) => (
           <InsightCard key={x.id} x={x} fmt={fmt} />
@@ -84,7 +95,7 @@ function InsightCard({ x, fmt }: { x: Insight; fmt: (n: number) => string }) {
         ))}
       </View>
       <T v="tiny">
-        {x.id === 'tilt' ? x.detail + ' ' : ''}
+        {x.id === 'tilt' || x.id === 'tiltNext' ? x.detail + ' ' : ''}
         {t('Com base em {n} sessões e {h} h.', { n: x.sample.sessions, h: Math.round(x.sample.hours).toLocaleString(locale) })}
       </T>
     </Card>
