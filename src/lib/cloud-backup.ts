@@ -45,8 +45,8 @@ export function newCloud(): CloudState {
 }
 
 /**
- * Replaces the server copy. Refuses ('would_shrink') when this phone has less
- * than the copy it would replace, unless force (a brand-new code, or the user
+ * Replaces the server copy. Refuses ('would_shrink') when this phone is empty
+ * or has less than half of the copy it would replace, unless force (a brand-new code, or the user
  * confirmed they deleted things on purpose).
  */
 export async function upload(c: CloudState, data: BackupData, opts: { force?: boolean } = {}): Promise<CloudState> {

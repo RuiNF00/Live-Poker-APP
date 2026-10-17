@@ -1,10 +1,27 @@
 import type { Metadata, Viewport } from 'next';
 import { brand } from '@/config/brand';
-import { Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 
-const body = Hanken_Grotesk({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-body' });
-const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500', '700'], variable: '--font-mono' });
+// Bundled (OFL, see src/fonts) so the build never depends on fetching Google Fonts.
+const body = localFont({
+  src: [
+    { path: '../fonts/HankenGrotesk_400Regular.ttf', weight: '400' },
+    { path: '../fonts/HankenGrotesk_500Medium.ttf', weight: '500' },
+    { path: '../fonts/HankenGrotesk_600SemiBold.ttf', weight: '600' },
+    { path: '../fonts/HankenGrotesk_700Bold.ttf', weight: '700' },
+    { path: '../fonts/HankenGrotesk_800ExtraBold.ttf', weight: '800' },
+  ],
+  variable: '--font-body',
+});
+const mono = localFont({
+  src: [
+    { path: '../fonts/JetBrainsMono_400Regular.ttf', weight: '400' },
+    { path: '../fonts/JetBrainsMono_500Medium.ttf', weight: '500' },
+    { path: '../fonts/JetBrainsMono_700Bold.ttf', weight: '700' },
+  ],
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(brand.siteUrl),

@@ -130,6 +130,11 @@
               "scheme": "https",
               "host": "sweatbook.poker",
               "pathPrefix": "/r/"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/live/"
             }
           ],
           "category": [

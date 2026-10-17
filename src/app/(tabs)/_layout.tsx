@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Tabs } from 'expo-router/js-tabs';
+import { BottomTabBar, Tabs } from 'expo-router/js-tabs';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SessionMiniBar } from '@/components/SessionMiniBar';
 import { tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { C, ff } from '@/theme';
@@ -52,6 +53,12 @@ export default function TabsLayout() {
   const bottom = Math.max(insets.bottom, 10);
   return (
     <Tabs
+      tabBar={(props) => (
+        <>
+          <SessionMiniBar hidden={props.state.routes[props.state.index]?.name === 'session'} />
+          <BottomTabBar {...props} />
+        </>
+      )}
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: C.bg },
@@ -66,6 +73,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: C.text,
         tabBarInactiveTintColor: C.muted,
         tabBarLabelStyle: { fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2 },
+        // The bar has a fixed height; iOS shows the big label on long-press instead.
+        tabBarAllowFontScaling: false,
       }}>
       <Tabs.Screen name="index" options={{ title: t('Mãos'), tabBarIcon: icon('albums', 'albums-outline') }} />
       <Tabs.Screen name="session" options={{ title: t('Sessão'), tabBarIcon: icon('timer', 'timer-outline') }} />
