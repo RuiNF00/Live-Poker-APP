@@ -208,6 +208,13 @@ export function deleteOffer(id: string) {
   AsyncStorage.setItem(KEY, JSON.stringify(offers)).catch(() => {});
 }
 
+/** "Delete all my data": forget every package (the links are deleted through the outbox first). */
+export function clearOffers() {
+  offers = {};
+  emit();
+  AsyncStorage.removeItem(KEY).catch(() => {});
+}
+
 export function useOffers(): ActionOffer[] {
   return useSyncExternalStore(subscribe, () => list, () => list);
 }

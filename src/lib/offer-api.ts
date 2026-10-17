@@ -5,6 +5,8 @@
 import type { AgreementPayload } from '@/store/action-offer';
 import { BRAND } from '@/theme';
 
+import { outcomeOf, queue, registerSender } from './sync';
+
 // Same server as share-api.ts (not imported from there: it pulls in native modules).
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
@@ -41,12 +43,23 @@ export async function updateAgreement(remote: { id: string; token: string }, off
   });
 }
 
-export async function deleteAgreement(remote: { id: string; token: string }): Promise<void> {
-  await call(`/api/offers/${encodeURIComponent(remote.id)}`, { method: 'DELETE', headers: { 'x-edit-token': remote.token } }).catch(() => {});
-}
-
 /** When the backer confirmed (ISO), or null. */
 export async function fetchConfirmation(remote: { id: string }): Promise<string | null> {
   const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { headers: { 'cache-control': 'no-cache' } })).json()) as { confirmedAt?: unknown };
   return typeof j.confirmedAt === 'string' ? j.confirmedAt : null;
 }
+
+/** Removes the link now or when the signal is back (deleting a package, erasing all data). */
+export function queueAgreementDelete(remote: { id: string; token: string }) {
+  queue('offer-delete', remote, remote.id);
+}
+
+registerSender('offer-delete', async (p) => {
+  const r = p as { id: string; token: string };
+  try {
+    const res = await fetch(`${API}/api/offers/${encodeURIComponent(r.id)}`, { method: 'DELETE', headers: { 'x-edit-token': r.token } });
+    return outcomeOf(res.status);
+  } catch {
+    return 'retry';
+  }
+});

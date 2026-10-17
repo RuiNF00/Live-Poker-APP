@@ -14,7 +14,7 @@ import { markupLabel } from '@/components/staking/sheets';
 import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { deleteAgreement, fetchConfirmation, OfferFailure, publishAgreement, updateAgreement } from '@/lib/offer-api';
+import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
 import { eventTitle, FESTIVALS, venueTime } from '@/poker/festivals';
 import { money, shortDate } from '@/poker/format';
 import {
@@ -133,7 +133,7 @@ export default function ActionPackageScreen() {
   const removeLine = (l: PackageLine) => {
     const go = () => {
       const before = offerPackageIds(getOffers());
-      if (l.remote) void deleteAgreement(l.remote);
+      if (l.remote) queueAgreementDelete(l.remote);
       updateOffer(o.id, (x) => ({ ...x, lines: x.lines.filter((y) => y.id !== l.id) }));
       applyToSessions(before);
       deletePackage(l.packageId);
