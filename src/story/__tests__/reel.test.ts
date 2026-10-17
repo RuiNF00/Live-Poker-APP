@@ -4,7 +4,8 @@ import { test } from 'node:test';
 
 import { replay } from '../../poker/engine';
 import { sampleHand } from '../../poker/sample';
-import { REEL_MAX_S, REEL_MIN_S, reelDurations, reelSteps } from '../reel';
+import { motionTimeline } from '../../components/replayer/timeline';
+import { REEL_MAX_FRAMES, REEL_MAX_S, REEL_MIN_S, reelFrames, reelSteps } from '../reel';
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
@@ -38,14 +39,38 @@ test('long hands are thinned to the frame cap without losing streets or the end'
 test('the video lasts 15 to 30 s, covers the voice, and ends on a long hold', () => {
   const hand = sampleHand('s');
   const r = replay(hand);
-  const steps = reelSteps(hand, r);
-  const plain = reelDurations(r, steps);
-  assert.equal(plain.length, steps.length);
-  assert.ok(sum(plain) >= REEL_MIN_S - 0.05 && sum(plain) <= REEL_MAX_S + 0.05);
-  assert.ok(plain.at(-1)! >= 3);
-  assert.ok(plain.every((d) => d > 0.3));
+  const motion = motionTimeline(hand, r);
+  const secs = (f: { sec: number }[]) => sum(f.map((x) => x.sec));
+  const plain = reelFrames(hand, r, motion);
+  assert.ok(plain.length <= REEL_MAX_FRAMES);
+  assert.ok(secs(plain) >= REEL_MIN_S - 0.05 && secs(plain) <= REEL_MAX_S + 0.05);
+  assert.ok(plain.at(-1)!.sec >= 3);
+  assert.equal(plain.at(-1)!.at, undefined);
+  assert.ok(plain.every((f) => f.sec > 0));
 
-  const voiced = reelDurations(r, steps, 24);
-  assert.ok(sum(voiced) >= 24.4);
-  assert.ok(sum(reelDurations(r, steps, 90)) <= REEL_MAX_S + 0.05);
+  assert.ok(secs(reelFrames(hand, r, motion, 24)) >= 24.4);
+  assert.ok(secs(reelFrames(hand, r, motion, 90)) <= REEL_MAX_S + 0.05);
+});
+
+test("frames follow the replayer's timeline: same proportions, plus mid-animation frames", () => {
+  const hand = sampleHand('s');
+  const r = replay(hand);
+  const motion = motionTimeline(hand, r);
+  const frames = reelFrames(hand, r, motion);
+  const steps = reelSteps(hand, r);
+  // Every kept step is there, in order, at rest at least once.
+  assert.deepEqual([...new Set(frames.map((f) => f.k))], steps);
+  // The pot going to the winner gets a frame mid-flight, before the final still.
+  const end = frames.filter((f) => f.k === r.steps.length - 1);
+  assert.equal(end.length, 2);
+  assert.ok(end[0].at! > 0 && end[1].at === undefined);
+  // A street (held 1.4 beats in the app) stays up longer than an action that stands only for itself.
+  const held = (k: number) => frames.filter((f) => f.k === k).reduce((a, f) => a + f.sec, 0);
+  const board = steps.find((k) => r.steps[k].kind === 'board')!;
+  const lone = steps.find((k, i) => r.steps[k].kind === 'action' && steps[i + 1] === k + 1 && r.steps[k + 1].kind === 'action')!;
+  assert.ok(held(board) > held(lone));
+  // Under Reduce Motion there are no mid-animation frames, and the timing is the same shape.
+  const still = reelFrames(hand, r, motionTimeline(hand, r, { reduce: true }));
+  assert.ok(still.every((f) => f.at === undefined));
+  assert.equal(still.length, steps.length);
 });

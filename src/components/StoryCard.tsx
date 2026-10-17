@@ -68,6 +68,8 @@ export interface StoryCardProps {
   voice?: 'preview' | 'slot' | null;
   /** Video frame: the replay at this step (see story/reel.ts), ending on the result. */
   step?: number;
+  /** Video frame mid-animation: ms into the step's motion (see replayer/timeline.ts). */
+  at?: number;
   onLayout?: (e: LayoutChangeEvent) => void;
   ref?: React.Ref<React.ComponentRef<typeof View>>;
 }
@@ -100,14 +102,14 @@ function LinkGlyph({ size = 12, color = C.accent }: { size?: number; color?: str
   );
 }
 
-export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, onLayout, ref }: StoryCardProps) {
+export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = null, step, at, onLayout, ref }: StoryCardProps) {
   const g = hand.game;
   const reel = step !== undefined;
   const isQ = !reel && moment.mode === 'question';
   const atEnd = reel ? step >= moment.replay.steps.length - 1 : !isQ;
   const result = atEnd ? moment.replay.result : null;
   // Same table as the in-app replayer, frozen at the story's moment.
-  const view = viewAt(hand, moment.replay, reel ? step : moment.stepIndex, { inBB, reveal: !isQ && !reel, atEnd });
+  const view = viewAt(hand, moment.replay, reel ? step : moment.stepIndex, { inBB, reveal: !isQ && !reel, atEnd, at: reel ? at : undefined });
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   const title = g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
