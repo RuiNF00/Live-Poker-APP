@@ -1241,6 +1241,7 @@ const ptBR: Record<string, string> = {
   "Enviado sozinho: cobraste {amount}.": "Enviado automaticamente: você ganhou {amount} de prêmio.",
   "Enviado sozinho: não cobraste.": "Enviado automaticamente: você não ganhou prêmio.",
   "Para desligar, abre o swap.": "Para desligar, abra o swap.",
+  "Há novidades no swap. Toca para veres as contas.": "Tem novidades no swap. Toque para ver as contas.",
   'Cash: {h} h': 'Cash: {h} h',
   'horas de cash': 'horas de cash',
   'BB/h cash': 'BB/h cash',
