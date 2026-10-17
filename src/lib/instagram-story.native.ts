@@ -11,6 +11,7 @@ import * as Sharing from 'expo-sharing';
 import type React from 'react';
 import { Linking, Platform, type View } from 'react-native';
 import type RNShare from 'react-native-share';
+import type { Social } from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
 
 import { t } from '@/i18n';
@@ -93,7 +94,7 @@ export async function shareStory(file: string, link: string, kind: 'image' | 'vi
   if (Share && META_APP_ID && (await instagramInstalled())) {
     try {
       await Share.shareSingle({
-        social: Share.Social.INSTAGRAM_STORIES,
+        social: Share.Social.INSTAGRAM_STORIES as Social,
         appId: META_APP_ID,
         ...(kind === 'video' ? { backgroundVideo: file } : { backgroundImage: file }),
         linkUrl: link,
