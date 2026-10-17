@@ -43,3 +43,17 @@ describe('help center', () => {
     expect(helpLocale('de')).toBeNull();
   });
 });
+
+describe('store pages', () => {
+  it('sends the localised support and deletion addresses to the right language', async () => {
+    const { default: config } = await import('../next.config');
+    const redirects = await config.redirects!();
+    const to = Object.fromEntries(redirects.map((r) => [r.source, r.destination]));
+    expect(to['/suporte']).toBe('/support?lang=pt');
+    expect(to['/pt-br/suporte']).toBe('/support?lang=pt-BR');
+    expect(to['/es/soporte']).toBe('/support?lang=es');
+    expect(to['/pt-br/apagar-conta']).toBe('/apagar-conta?lang=pt-BR');
+    expect(to['/es/eliminar-cuenta']).toBe('/apagar-conta?lang=es');
+    expect(redirects.every((r) => !r.permanent)).toBe(true);
+  });
+});

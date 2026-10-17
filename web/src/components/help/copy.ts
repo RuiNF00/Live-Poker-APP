@@ -21,6 +21,7 @@ export function helpLocale(tag: string | null | undefined): HelpLocale | null {
 
 export const helpCopy = {
   pt: {
+    deleteData: 'Apagar dados',
     help: 'Ajuda',
     title: 'Como podemos ajudar?',
     lede: 'Respostas curtas sobre a Sweatbook. Não encontras? Escreve-nos.',
@@ -36,6 +37,7 @@ export const helpCopy = {
     footer: '18+ · A Sweatbook é uma app de registo: não tem jogo a dinheiro e nenhum dinheiro passa por ela.',
   },
   en: {
+    deleteData: 'Delete data',
     help: 'Help',
     title: 'How can we help?',
     lede: "Short answers about Sweatbook. Can't find it? Write to us.",
@@ -51,6 +53,7 @@ export const helpCopy = {
     footer: '18+ · Sweatbook is a record-keeping app: it has no real-money games and no money moves through it.',
   },
   es: {
+    deleteData: 'Eliminar datos',
     help: 'Ayuda',
     title: '¿Cómo podemos ayudarte?',
     lede: 'Respuestas cortas sobre Sweatbook. ¿No lo encuentras? Escríbenos.',
@@ -66,6 +69,7 @@ export const helpCopy = {
     footer: '18+ · Sweatbook es una app de registro: no tiene juego con dinero y ningún dinero pasa por ella.',
   },
   br: {
+    deleteData: 'Excluir dados',
     help: 'Ajuda',
     title: 'Como podemos ajudar?',
     lede: 'Respostas curtas sobre o Sweatbook. Não encontrou? Fale com a gente.',

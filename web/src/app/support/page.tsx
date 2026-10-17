@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { ArticleList } from '@/components/help/ArticleList';
+import { BlockView } from '@/components/help/ArticleView';
 import { HELP_BASE, HELP_INDEXED, helpLocale, LANG_NAME, LANG_TAG } from '@/components/help/copy';
 import { HelpShell, sameIn } from '@/components/help/HelpShell';
 import { SupportForm } from '@/components/help/SupportForm';
-import { articles, SUPPORT_EMAIL, type HelpLocale } from '@/lib/help/articles';
+import { articles, SUPPORT_EMAIL, textOf, type HelpLocale } from '@/lib/help/articles';
 
 // sweatbook.poker/support: the app's Settings → Sugestões e suporte opens it with
 // ?topic=suggestion|bug&app=<version>&os=<os>&lang=pt|pt-BR|es|en. Email only: nothing is stored here.
@@ -39,6 +40,9 @@ const COPY = {
     gambling: 'Jogo responsável',
     gamblingBody: 'Se o jogo te está a causar problemas, pede ajuda:',
     allHelp: 'Ver toda a ajuda',
+    faq: 'Perguntas frequentes',
+    money: { q: 'A Sweatbook movimenta dinheiro?', a: 'Não. A Sweatbook é uma app de registo e contas: guardas mãos, sessões, staking e swaps, mas nenhum dinheiro passa pela Sweatbook. Os pagamentos entre jogadores fazem-se fora da app. Só para maiores de 18 anos.' },
+    cancelInStore: 'Também podes cancelar diretamente na loja. iPhone: app Definições → o teu nome → Subscrições. Android: Play Store → foto de perfil → Pagamentos e subscrições → Subscrições.',
   },
   en: {
     meta: 'Support',
@@ -63,6 +67,9 @@ const COPY = {
     gambling: 'Responsible gaming',
     gamblingBody: 'If gambling is causing you problems, get help:',
     allHelp: 'See all help',
+    faq: 'Frequently asked questions',
+    money: { q: 'Does money go through Sweatbook?', a: 'No. Sweatbook is a records and accounts app: you log hands, sessions, staking and swaps, but no money moves through Sweatbook. Payments between players happen outside the app. 18+ only.' },
+    cancelInStore: 'You can also cancel straight from the store. iPhone: Settings app → your name → Subscriptions. Android: Play Store → profile picture → Payments & subscriptions → Subscriptions.',
   },
   es: {
     meta: 'Soporte',
@@ -87,6 +94,9 @@ const COPY = {
     gambling: 'Juego responsable',
     gamblingBody: 'Si el juego te está causando problemas, pide ayuda:',
     allHelp: 'Ver toda la ayuda',
+    faq: 'Preguntas frecuentes',
+    money: { q: '¿Sweatbook mueve dinero?', a: 'No. Sweatbook es una app de registro y cuentas: guardas manos, sesiones, staking y swaps, pero ningún dinero pasa por Sweatbook. Los pagos entre jugadores se hacen fuera de la app. Solo para mayores de 18 años.' },
+    cancelInStore: 'También puedes cancelar directamente en la tienda. iPhone: app Ajustes → tu nombre → Suscripciones. Android: Play Store → foto de perfil → Pagos y suscripciones → Suscripciones.',
   },
   br: {
     meta: 'Suporte',
@@ -111,6 +121,9 @@ const COPY = {
     gambling: 'Jogo responsável',
     gamblingBody: 'Se o jogo está causando problemas para você, peça ajuda:',
     allHelp: 'Ver toda a ajuda',
+    faq: 'Perguntas frequentes',
+    money: { q: 'O Sweatbook movimenta dinheiro?', a: 'Não. O Sweatbook é um app de registro e contas: você guarda mãos, sessões, staking e swaps, mas nenhum dinheiro passa pelo Sweatbook. Os pagamentos entre jogadores são feitos fora do app. Só para maiores de 18 anos.' },
+    cancelInStore: 'Você também pode cancelar direto na loja. iPhone: app Ajustes → seu nome → Assinaturas. Android: Play Store → foto do perfil → Pagamentos e assinaturas → Assinaturas.',
   },
 };
 
@@ -120,6 +133,9 @@ const SUGGESTED: Record<Topic, string[]> = {
   suggestion: ['free-plan', 'export', 'import'],
   question: ['getting-started', 'backup', 'restore-purchases', 'cancel'],
 };
+
+/** The questions both stores expect a support page to answer, from the help articles. */
+const FAQ = ['import', 'backup', 'share-a-hand', 'cancel', 'restore-purchases', 'erase-all'];
 
 async function localeFor(search: Search): Promise<HelpLocale> {
   const fromApp = helpLocale(one(search.lang));
@@ -166,6 +182,28 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
         <p className="hc-more">
           <Link href={HELP_BASE[locale]}>{c.allHelp}</Link>
         </p>
+      </section>
+
+      <section className="hc-cat hc-faq">
+        <h2>{c.faq}</h2>
+        {articles()
+          .filter((a) => FAQ.includes(a.id))
+          .map((a) => {
+            const x = textOf(a, locale);
+            return (
+              <details key={a.id}>
+                <summary>{x.title}</summary>
+                {x.body.map((b, i) => (
+                  <BlockView key={i} b={b} />
+                ))}
+                {a.id === 'cancel' ? <p>{c.cancelInStore}</p> : null}
+              </details>
+            );
+          })}
+        <details>
+          <summary>{c.money.q}</summary>
+          <p>{c.money.a}</p>
+        </details>
       </section>
 
       <section className="hc-cat">

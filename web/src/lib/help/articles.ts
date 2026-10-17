@@ -1,11 +1,10 @@
 // Help center articles (/ajuda in Portuguese, /help in English). Menu labels match the app's
 // own strings (src/i18n): PT as written in the app, EN as in src/i18n/en.ts.
-import type { Locale } from '@/lib/i18n';
 import { BR } from './articles-br';
 import { ES } from './articles-es';
 
 /** Help pages also come in Spanish and Brazilian Portuguese (the app adds both next). */
-export type HelpLocale = Locale | 'es' | 'br';
+export type HelpLocale = 'pt' | 'en' | 'es' | 'br';
 export const HELP_LOCALES: HelpLocale[] = ['pt', 'br', 'es', 'en'];
 
 export type Block = string | { steps: string[] } | { list: string[] } | { note: string };

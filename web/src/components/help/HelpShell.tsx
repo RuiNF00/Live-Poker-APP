@@ -42,7 +42,7 @@ export function HelpShell({ locale, hrefs, children }: { locale: HelpLocale; hre
         </nav>
         <p>{c.footer}</p>
         <p>
-          <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/delete-account">Delete data</a>
+          <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <Link href={`/apagar-conta?lang=${LANG_TAG[locale]}`}>{c.deleteData}</Link>
         </p>
       </footer>
     </div>

@@ -5,7 +5,7 @@ import { HELP_BASE, helpCopy } from './copy';
 import { ContactCard } from './HelpIndex';
 import { HelpShell, sameIn } from './HelpShell';
 
-function BlockView({ b }: { b: Block }) {
+export function BlockView({ b }: { b: Block }) {
   if (typeof b === 'string') return <p>{b}</p>;
   if ('steps' in b)
     return (
