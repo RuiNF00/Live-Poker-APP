@@ -3223,6 +3223,10 @@ const en: Record<string, string> = {
   'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Only dates published by organisers. Yours missing? Add it.',
   'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Agree a percentage with another player. The app works out who owes whom.',
   'Partilha uma mão e os comentários aparecem aqui.': 'Share a hand and the comments show up here.',
+  'AK, QQ+, BTN, torneio…': 'AK, QQ+, BTN, tournament…',
+  // Hands list: result chips (HandFilters RESULTS).
+  'Ganhei': 'Won',
+  'Perdi': 'Lost',
 };
 
 export default en;
