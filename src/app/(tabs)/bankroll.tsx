@@ -94,7 +94,7 @@ export default function BankrollScreen() {
             <T v="label" style={{ flex: 1 }} numberOfLines={1}>
               {t('Saldo · {name}', { name: scopeName })}
             </T>
-            {single ? <IconButton name="ellipsis-horizontal" size={30} label={t('Gerir bankroll')} onPress={() => setSheet({ type: 'bankroll', b: single })} /> : null}
+            {single ? <IconButton name="ellipsis-horizontal" size={36} label={t('Gerir bankroll')} onPress={() => setSheet({ type: 'bankroll', b: single })} /> : null}
           </Row>
           <T v="monoXL" color={bal.balance < 0 ? C.bad : C.text} numberOfLines={1} adjustsFontSizeToFit>
             {money(bal.balance, cur)}
