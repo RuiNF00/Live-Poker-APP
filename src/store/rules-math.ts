@@ -73,7 +73,7 @@ export function aboveRules(sessions: Session[], balance: number, r: BankrollRule
  * A tournament has no money result until it ends, so it is what it cost.
  */
 export function liveResult(s: Session): number {
-  return s.kind === 'cash' ? s.stack - cost(s) - (s.expenses || 0) : -ownCost(s);
+  return s.kind === 'cash' ? s.stack - cost(s) - (s.expenses || 0) - (s.tips || 0) : -ownCost(s);
 }
 
 function startOfDay(ts: number): number {
