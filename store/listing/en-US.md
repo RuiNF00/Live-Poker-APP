@@ -46,7 +46,7 @@ BUILT FOR LIVE PLAYERS
 • Available in English and Portuguese
 
 SWEATBOOK PRO
-Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, the 30- and 90-day bankroll filters and voice-over Instagram Stories without the watermark. Monthly or yearly subscription, with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
+Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, the 30-day, 90-day and 1-year bankroll filters and voice-over Instagram Stories without the watermark. Monthly or yearly subscription; the yearly plan starts with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
 
 {{APP_NAME}} is a logging and study tool. It does not offer real-money gaming or betting of any kind.
 
@@ -65,6 +65,6 @@ Terms of Use: https://{{WEB_DOMAIN}}/terms
 **Short description** (80):
 Log live poker hands in seconds, replay them and share them with friends.
 
-**Full description** (4000): same text as the App Store description above.
+**Full description** (4000): same text as the App Store description above, with "your Apple account" changed to "your Google Play account".
 
 **Category**: Sports. **Tags**: Sports, Tools.
