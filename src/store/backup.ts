@@ -32,7 +32,12 @@ export interface BackupData {
   /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
   swaps?: Swap[];
   settings?: Partial<Settings>;
+  /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
+  quarantine?: [string, string][];
 }
+
+/** Same prefix as boot.ts (kept here so backups don't import the store's loader). */
+const QUARANTINE = 'rl.quarantine.v1.';
 
 export function buildBackup(
   d: {
@@ -48,6 +53,7 @@ export function buildBackup(
     backing?: BackedPlayer[];
     swaps?: Swap[];
     settings: Settings;
+    quarantine?: [string, string][];
   },
   now = Date.now(),
 ): BackupData {
@@ -67,6 +73,7 @@ export function buildBackup(
     backing: d.backing ?? [],
     swaps: d.swaps ?? [],
     settings: d.settings,
+    ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
 }
 
@@ -124,6 +131,10 @@ export function parseBackup(text: string): BackupData {
     trips,
     swaps,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
+    // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
+    quarantine: Array.isArray(j.quarantine)
+      ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
+      : [],
   };
 }
 

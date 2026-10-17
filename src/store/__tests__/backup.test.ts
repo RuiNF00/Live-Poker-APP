@@ -96,3 +96,11 @@ test('a restore on an empty phone brings the preferences back; a phone in use ke
   assert.equal(junk.currency, DEFAULT_SETTINGS.currency);
   assert.equal(junk.defaultTableSize, DEFAULT_SETTINGS.defaultTableSize);
 });
+
+test('backup carries quarantined values, and a restore can only write quarantine keys', () => {
+  const q: [string, string][] = [['rl.quarantine.v1.1.rl.hand.v2.h1', '{"id":"h1"']];
+  const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, quarantine: q });
+  const back = parseBackup(JSON.stringify({ ...b, quarantine: [...q, ['rl.settings.v1', '{}'], ['rl.quarantine.v1.2.x', 5], 'x'] }));
+  assert.deepEqual(back.quarantine, q);
+  assert.equal(buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS }).quarantine, undefined);
+});
