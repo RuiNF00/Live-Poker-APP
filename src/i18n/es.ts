@@ -2918,6 +2918,15 @@ const es: Record<string, string> = {
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tiene las fechas, salas y resultados que contiene. Nada de lo que ya tienes en Sweatbook va con él. Lo envías tú, desde tu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Acepto enviar este archivo a soporte',
   'Abrir o email': 'Abrir el email',
+  'Desenha a range do vilão': 'Dibuja el rango del villano',
+  'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Elige sus manos en la cuadrícula y mira tu equity contra ellas.',
+  'vs a tua range': 'vs tu rango',
+  'Editar a range do vilão': 'Editar el rango del villano',
+  'Range do vilão': 'Rango del villano',
+  'Sem mãos na range': 'Sin manos en el rango',
+  'A TUA EQUITY': 'TU EQUITY',
+  'Repor': 'Restablecer',
+  'Aplicar': 'Aplicar',
 };
 
 export default es;

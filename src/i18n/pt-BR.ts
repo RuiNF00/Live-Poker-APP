@@ -1318,6 +1318,9 @@ const ptBR: Record<string, string> = {
   'Só vai este ficheiro': 'Só vai este arquivo',
   'Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.': 'Tem as datas, salas e resultados que estão nele. Nada do que você já tem no Sweatbook vai junto. Você envia, pelo seu app de email.',
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
+  'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Escolha as mãos dele na grade e veja sua equity contra elas.',
+  'vs a tua range': 'vs sua range',
+  'A TUA EQUITY': 'SUA EQUITY',
 };
 
 export default ptBR;

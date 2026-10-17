@@ -19,6 +19,13 @@ test('heads-up against hidden cards: equity against the range villain raised wit
   assert.ok(v.rangeEq, 'shows equity vs range');
   assert.ok(v.rangeEq!.equity > 0 && v.rangeEq!.equity < 1);
   assert.ok([4, 8, 20, 40].includes(v.rangeEq!.pct));
+  assert.equal(v.rangeEq!.custom, false);
+
+  // A range the player drew replaces the guess: aces only crush hero's equity.
+  const aces = viewAt(hand, r, k, { ...opts, range: ['AA'] });
+  assert.equal(aces.rangeEq!.custom, true);
+  assert.equal(aces.rangeEq!.pct, 0.5);
+  assert.ok(aces.rangeEq!.equity < v.rangeEq!.equity);
 });
 
 test('no range equity while three or more are in the hand', () => {

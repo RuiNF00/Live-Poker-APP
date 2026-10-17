@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { combosOf, equityVsRange, HAND_ORDER, rangePctForRaises, topRange } from '../ranges';
+import { combosOf, equityVsRange, gridClass, HAND_ORDER, rangeOf, rangePct, rangePctForRaises, topClasses, topRange } from '../ranges';
 
 const near = (a: number | null, b: number, eps: number) => assert.ok(a !== null && Math.abs(a - b) < eps, `${a} vs ${b}`);
 
@@ -69,4 +69,20 @@ test('fast enough for a phone', () => {
   equityVsRange(['Ac', 'Kd'], topRange(20), ['Qh', '7c', '2s', '9d']);
   equityVsRange(['Ac', 'Kd'], topRange(20), []);
   assert.ok(Date.now() - t < 1500, `${Date.now() - t}ms`);
+});
+
+test('the 13×13 grid holds each of the 169 hand classes once', () => {
+  const cells = new Set<string>();
+  for (let i = 0; i < 13; i++) for (let j = 0; j < 13; j++) cells.add(gridClass(i, j));
+  assert.equal(cells.size, 169);
+  assert.deepEqual([...cells].sort(), [...HAND_ORDER].sort());
+  assert.equal(gridClass(0, 1), 'AKs');
+  assert.equal(gridClass(1, 0), 'AKo');
+});
+
+test('top classes match topRange, and their share is about the asked percent', () => {
+  assert.equal(rangeOf(topClasses(20)).length, topRange(20).length);
+  assert.ok(Math.abs(rangePct(topClasses(20)) - 20) < 1.5);
+  assert.equal(rangePct(['AA', 'AKs']), 0.8);
+  assert.equal(rangePct([]), 0);
 });
