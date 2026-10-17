@@ -3213,6 +3213,10 @@ const es: Record<string, string> = {
   '{day} de cada semana, pronto a começar com um toque': 'Cada {day}, listo para empezar con un toque',
   'Começa às': 'Empieza a las',
   'Custo da parte: {cost} · markup {markup}': 'Costo de la parte: {cost} · markup {markup}',
+  'O lucro e o €/hora aparecem aqui.': 'Aquí aparecen la ganancia y los €/hora.',
+  'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Solo fechas publicadas por los organizadores. ¿Falta el tuyo? Añádelo.',
+  'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Acuerda un porcentaje con otro jugador. La app dice quién le debe a quién.',
+  'Partilha uma mão e os comentários aparecem aqui.': 'Comparte una mano y los comentarios aparecen aquí.',
 };
 
 export default es;
