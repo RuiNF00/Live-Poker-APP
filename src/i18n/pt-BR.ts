@@ -1288,6 +1288,7 @@ const ptBR: Record<string, string> = {
   'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
   // Crash reports switch (Definições → Os teus dados).
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Só o que deu erro e a versão, para corrigirmos rápido. Sem nomes, mãos nem valores.',
+  'O que corre mal, o que falta ou o que mudavas': 'O que dá errado, o que falta ou o que você mudaria',
 };
 
 export default ptBR;

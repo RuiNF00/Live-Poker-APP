@@ -688,6 +688,12 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Enviar feedback': 'Send feedback',
+  'O que corre mal, o que falta ou o que mudavas': 'What goes wrong, what\'s missing or what you\'d change',
+  'Avaliar a Sweatbook': 'Rate Sweatbook',
+  'Na {store}': 'On the {store}',
+  'Novo na versão {v}': 'New in version {v}',
+  'Ver tudo': 'See all',
   'Avisamos-te quando o coach comentar': 'We\'ll tell you when your coach comments',
   'Quando o nível sobe e o intervalo acaba': 'When the level goes up and the break ends',
   '30 min antes e quando o late reg fecha': '30 min before, and when late reg closes',

@@ -2870,6 +2870,12 @@ const es: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'Enviar relatórios de erros': 'Enviar informes de errores',
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Solo lo que falló y la versión, para corregirlo rápido. Sin nombres, manos ni importes.',
+  'Enviar feedback': 'Enviar comentarios',
+  'O que corre mal, o que falta ou o que mudavas': 'Qué falla, qué falta o qué cambiarías',
+  'Avaliar a Sweatbook': 'Valorar Sweatbook',
+  'Na {store}': 'En {store}',
+  'Novo na versão {v}': 'Novedad en la versión {v}',
+  'Ver tudo': 'Ver todo',
 };
 
 export default es;
