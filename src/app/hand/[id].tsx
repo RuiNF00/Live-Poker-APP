@@ -151,7 +151,7 @@ export default function HandScreen() {
     const channel = to ?? (quiz ? 'challenge' : 'link');
     const link = shareLink(shareId, channel, { quiz, ref });
     track('link_shared', { channel, share_id: shareId, ref });
-    const head = handShareText(hand.game.name, quiz ? 'challenge' : 'link');
+    const head = handShareText(hand.game.name, quiz ? 'challenge' : 'comment');
     const msg = `${head}
 ${link}`;
     if (to === 'x') {

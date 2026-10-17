@@ -36,7 +36,6 @@ const ptBR: Record<string, string> = {
   'A tua posição': 'Sua posição',
   'As tuas cartas': 'Suas cartas',
   'Fold de todos até ti': 'Fold de todos até você',
-  'alguém entrou? Toca no lugar dele na mesa': 'alguém entrou? Toque no lugar dele na mesa',
   'Toca num lugar da mesa para saltar até ele': 'Toque em um lugar da mesa para pular até ele',
   'Guardar já': 'Salvar agora',
   'Gravar nota de voz e guardar': 'Gravar nota de voz e salvar',
@@ -48,7 +47,6 @@ const ptBR: Record<string, string> = {
   'escolhe 1 carta': 'escolha 1 carta',
   'escolhe {n} cartas': 'escolha {n} cartas',
   'Guardar sem board': 'Salvar sem board',
-  'Que cartas mostraram? (opcional — sem cartas escolhes tu o vencedor)': 'Que cartas mostraram? (opcional — sem cartas, você escolhe o vencedor)',
   'O que tiraste desta mão (tu ou o coach)': 'O que você tirou desta mão (você ou o coach)',
   'Quem ganhou a 1.ª vez?': 'Quem ganhou a 1ª vez?',
   'Quem ganhou a 2.ª vez?': 'Quem ganhou a 2ª vez?',
@@ -1411,6 +1409,8 @@ const ptBR: Record<string, string> = {
   "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
   'Toca duas vezes para avançar.': 'Toque duas vezes para avançar.',
   'tu': 'você',
+  "{game}: diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "{game}: me diga o que você faria, street a street. Comente na própria mão 👀",
+  "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Me diga o que você faria, street a street. Comente na própria mão 👀",
 };
 
 export default ptBR;
