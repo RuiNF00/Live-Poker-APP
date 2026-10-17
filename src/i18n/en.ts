@@ -3094,7 +3094,6 @@ const en: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} so far: {amount} in {h} h',
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
-  'Ainda falta o torneio de $800 com seis flights de 30 de novembro a 2 de dezembro (Dia 2 a 3 de dezembro): o organizador não publicou a hora de cada flight.': 'Still missing: the $800 event with six flights from 30 November to 2 December (Day 2 on 3 December). The organiser has not published the time of each flight.',
   'Apagar torneio': 'Delete tournament',
   'Adicionar torneio': 'Add tournament',
   'Ex.: Main Event': 'E.g. Main Event',
