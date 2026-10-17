@@ -849,20 +849,20 @@ const ARTICLES: Article[] = [
     pt: {
       slug: 'convidar-amigos',
       title: 'Convidar amigos',
-      summary: 'Os dois ganham 7 dias de Pro.',
+      summary: 'Os dois recebem 50% no primeiro mês do Pro.',
       body: [
         'Definições → Ferramentas → Convidar amigos → Partilhar convite.',
-        'Quando o amigo instala e guarda a primeira mão nos 7 dias seguintes, os dois ganham 7 dias de Pro. Tu ganhas até 10 amigos por ano.',
+        'Quando o amigo instala e guarda a primeira mão nos 7 dias seguintes, os dois recebem 50% no primeiro mês do Pro, para usar nas 72 horas seguintes. No iPhone o desconto é um código da App Store que a app abre por ti. Conta para até 10 amigos por ano.',
         'O amigo recebeu um código em vez de um link? Em Definições, toca em Tenho um código de convite e depois em Usar (só nos primeiros 7 dias depois de instalar).',
       ],
     },
     en: {
       slug: 'invite-friends',
       title: 'Invite friends',
-      summary: 'You both get 7 days of Pro.',
+      summary: 'You both get 50% off your first month of Pro.',
       body: [
         'Settings → Tools → Invite friends → Share invite.',
-        'When your friend installs and saves a first hand within 7 days, you both get 7 days of Pro. You can earn it for up to 10 friends a year.',
+        'When your friend installs and saves a first hand within 7 days, you both get 50% off your first month of Pro, to use within the next 72 hours. On iPhone the discount is an App Store code the app opens for you. It counts for up to 10 friends a year.',
         'Got a code instead of a link? In Settings, tap I have an invite code, then Use (only in the first 7 days after installing).',
       ],
     },

@@ -4,12 +4,13 @@ import type { Locale } from '@/lib/i18n';
 export const PRICES = {
   monthly: 29.99,
   annual: 199.99,
-  trialDays: 7,
+  // The annual's free trial (Rui, 17 Oct), read from the store in the app.
+  trialDays: 3,
   freeHandsPerDay: 3,
 };
 
-/** Mirrors REWARD_DAYS in lib/referrals.ts (server-only). */
-export const REWARD_DAYS_PUBLIC = 7;
+/** Invite reward: this much off the first month of Pro for each player (supabase 20261017370000). */
+export const INVITE_DISCOUNT_PUBLIC = 50;
 
 const money = (n: number, locale: Locale) => {
   const comma = n.toFixed(2).replace('.', ',');
@@ -108,11 +109,11 @@ export function landingCopy(locale: Locale) {
     invite: {
       eyebrow: 'Convite',
       title: 'Um amigo convidou-te para o Sweatbook',
-      body: `Instala a app e guarda a tua primeira mão. Recebem os dois ${REWARD_DAYS_PUBLIC} dias de Pro.`,
+      body: `Instala a app e guarda a tua primeira mão. Recebem os dois ${INVITE_DISCOUNT_PUBLIC}% no primeiro mês do Pro.`,
       code: 'O teu código de convite',
       copy: 'Copiar',
       copied: 'Copiado',
-      days: 'dias de Pro\npara cada um',
+      days: 'no 1.º mês do Pro\npara cada um',
       steps: ['Instala o Sweatbook', 'Abre a app e toca em «Colar»: o convite já vai copiado', 'Guarda a tua primeira mão'],
       stepAndroid: 'Abre a app: o convite entra sozinho',
       stepOther: 'Abre outra vez este link no telemóvel, ou escreve o código',
@@ -211,11 +212,11 @@ export function landingCopy(locale: Locale) {
       invite: {
         eyebrow: 'Invite',
         title: 'A friend invited you to Sweatbook',
-        body: `Install the app and save your first hand. You both get ${REWARD_DAYS_PUBLIC} days of Pro.`,
+        body: `Install the app and save your first hand. You both get ${INVITE_DISCOUNT_PUBLIC}% off your first month of Pro.`,
         code: 'Your invite code',
         copy: 'Copy',
         copied: 'Copied',
-        days: 'days of Pro\nfor each of you',
+        days: 'off the 1st month of Pro\nfor each of you',
         steps: ['Install Sweatbook', 'Open the app and tap “Paste”: the invite is already copied', 'Save your first hand'],
         stepAndroid: 'Open the app: the invite comes in by itself',
         stepOther: 'Open this link again on your phone, or type the code',
@@ -315,11 +316,11 @@ export function landingCopy(locale: Locale) {
       invite: {
         eyebrow: 'Convite',
         title: 'Um amigo convidou você para o Sweatbook',
-        body: `Instale o app e salve sua primeira mão. Vocês dois recebem ${REWARD_DAYS_PUBLIC} dias de Pro.`,
+        body: `Instale o app e salve sua primeira mão. Vocês dois recebem ${INVITE_DISCOUNT_PUBLIC}% no primeiro mês do Pro.`,
         code: 'Seu código de convite',
         copy: 'Copiar',
         copied: 'Copiado',
-        days: 'dias de Pro\npara cada um',
+        days: 'no 1º mês do Pro\npara cada um',
         steps: ['Instale o Sweatbook', 'Abra o app e toque em “Colar”: o convite já vai copiado', 'Salve sua primeira mão'],
         stepAndroid: 'Abra o app: o convite entra sozinho',
         stepOther: 'Abra este link de novo no celular, ou digite o código',
@@ -419,11 +420,11 @@ export function landingCopy(locale: Locale) {
       invite: {
         eyebrow: 'Invitación',
         title: 'Un amigo te invitó a Sweatbook',
-        body: `Instala la app y guarda tu primera mano. Los dos reciben ${REWARD_DAYS_PUBLIC} días de Pro.`,
+        body: `Instala la app y guarda tu primera mano. Los dos reciben un ${INVITE_DISCOUNT_PUBLIC}% en el primer mes de Pro.`,
         code: 'Tu código de invitación',
         copy: 'Copiar',
         copied: 'Copiado',
-        days: 'días de Pro\npara cada uno',
+        days: 'en el 1.er mes de Pro\npara cada uno',
         steps: ['Instala Sweatbook', 'Abre la app y toca «Pegar»: la invitación ya va copiada', 'Guarda tu primera mano'],
         stepAndroid: 'Abre la app: la invitación entra sola',
         stepOther: 'Vuelve a abrir este link en tu teléfono, o escribe el código',

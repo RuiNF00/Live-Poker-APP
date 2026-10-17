@@ -1,5 +1,6 @@
 // Invites: a friend who arrives through your link and saves a first hand gets
-// you both 7 days of Pro (granted server-side through RevenueCat). The code is
+// you both 50% off the first month of Pro for 72 hours (booked server-side; the
+// stores apply it, see INVITE in billing/plans). The code is
 // this install's referral code (the `r=` on shared links).
 // Every call fails quietly: invites are a bonus, never in the way.
 
@@ -16,7 +17,7 @@ import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
-const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', shared: 'rl.ref.shared.v1', seenDays: 'rl.ref.days.v1', checked: 'rl.ref.checked.v1' };
+const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', shared: 'rl.ref.shared.v1', checked: 'rl.ref.checked.v1', offer: 'rl.ref.offer.v1' };
 const WINDOW = 7 * 86400000;
 
 export type ClaimSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
@@ -27,7 +28,7 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T |
   const res = await fetch(`${API}/api/referrals/${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ installId: await installId(), rcUserId: await appUserId(), ...body }),
+    body: JSON.stringify({ installId: await installId(), rcUserId: await appUserId(), platform: Platform.OS, ...body }),
   });
   if (res.status === 503) return null;
   if (!res.ok) throw new Error(String(res.status));
@@ -157,8 +158,24 @@ export interface InviteStatus {
   url: string;
   invited: number;
   activated: number;
+  /** Pro days from invites before the discount (17 Oct). */
   daysEarned: number;
   proUntil: string | null;
+  discounts: number;
+  offer: InviteOffer | null;
+}
+
+/** The invite discount usable now: until when, and the App Store code on iPhone. */
+export interface InviteOffer {
+  until: string;
+  iosCode: string | null;
+}
+
+const openOffer = (o: InviteOffer | null | undefined, now = Date.now()) => (o && Date.parse(o.until) > now ? o : null);
+
+/** The last invite discount the server reported, while it can still be used (for the paywall, offline too). */
+export async function savedInviteOffer(): Promise<InviteOffer | null> {
+  return openOffer(await getJSON<InviteOffer>(K.offer));
 }
 
 /** null when invites are switched off on the server. */
@@ -167,6 +184,7 @@ export async function inviteStatus(): Promise<InviteStatus | null> {
     await ensureRegistered();
     const s = await post<InviteStatus>('status', { myCode: await refCode() });
     if (s?.code && s.code !== (await refCode())) await setRefCode(s.code);
+    if (s?.offer) await AsyncStorage.setItem(K.offer, JSON.stringify(s.offer)).catch(() => {});
     return s;
   } catch {
     return null;
@@ -185,23 +203,24 @@ export async function shareRef(): Promise<string> {
 export async function markShared(): Promise<void> {
   if (await getJSON<boolean>(K.shared)) return;
   // Days counted from here: a friend's first hand after this share is news.
-  await AsyncStorage.multiSet([[K.shared, 'true'], [K.seenDays, '0']]).catch(() => {});
+  await AsyncStorage.setItem(K.shared, 'true').catch(() => {});
 }
 
 /**
- * The inviter's side: Pro days earned since the app last looked, so they hear about it on the
- * next open instead of finding it in Definições. Only for installs that have shared a link, at
- * most every 6 hours, and never while offline.
+ * An invite discount the app hasn't announced yet: the friend's right after their first hand,
+ * the inviter's on the next open. Checked at most every 6 hours (unless `force`), never offline.
  */
-export async function newInviteDays(now = Date.now()): Promise<number> {
-  if (!isOnline() || !(await getJSON<boolean>(K.shared))) return 0;
-  if (now - ((await getJSON<number>(K.checked)) ?? 0) < 6 * 3600000) return 0;
-  await AsyncStorage.setItem(K.checked, JSON.stringify(now)).catch(() => {});
-  const s = await inviteStatus();
-  if (!s) return 0;
-  const seen = await getJSON<number>(K.seenDays);
-  if (seen !== s.daysEarned) await AsyncStorage.setItem(K.seenDays, JSON.stringify(s.daysEarned)).catch(() => {});
-  return seen === null ? 0 : Math.max(0, s.daysEarned - seen);
+export async function newInviteOffer(o: { force?: boolean; now?: number } = {}): Promise<InviteOffer | null> {
+  const now = o.now ?? Date.now();
+  if (!isOnline()) return null;
+  if (!o.force) {
+    if (!(await getJSON<boolean>(K.shared))) return null;
+    if (now - ((await getJSON<number>(K.checked)) ?? 0) < 6 * 3600000) return null;
+    await AsyncStorage.setItem(K.checked, JSON.stringify(now)).catch(() => {});
+  }
+  const before = await getJSON<InviteOffer>(K.offer);
+  const offer = openOffer((await inviteStatus())?.offer, now);
+  return offer && offer.until !== before?.until ? offer : null;
 }
 
 // "Delete all my data": the server forgets this install's code, RevenueCat id and invites.
