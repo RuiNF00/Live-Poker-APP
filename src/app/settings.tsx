@@ -35,7 +35,7 @@ export default function SettingsScreen() {
   const exportAll = async () => {
     tap();
     try {
-      await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup({ hands, sessions, players, settings })), 'application/json');
+      await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup(store)), 'application/json');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }
@@ -44,7 +44,7 @@ export default function SettingsScreen() {
     tap();
     if (!pro.isPro) return pro.paywall('stats');
     try {
-      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(sessions), 'text/csv');
+      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(sessions, store.bankrolls, store.transfers), 'text/csv');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }
