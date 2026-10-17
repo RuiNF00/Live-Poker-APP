@@ -107,3 +107,12 @@ test('the report says when results include swaps', () => {
   const html = reportHtml(buildReport({ sessions: [sess('b', { swapNet: 120 })], transfers: [], bankrolls: [], range: year }));
   assert.ok(html.includes('inclui swaps'));
 });
+
+test('home currency leads; tournaments count entries, not sessions', () => {
+  const dollars = [sess('x', { currency: '$', bankrollId: 'trip' }), sess('y', { currency: '$', bankrollId: 'trip' }), sess('z', {})];
+  assert.equal(buildReport({ sessions: dollars, transfers: [], bankrolls: brs, range: year }).currencies[0].currency, '$');
+  assert.deepEqual(buildReport({ sessions: dollars, transfers: [], bankrolls: brs, range: year, home: '€' }).currencies.map((c) => c.currency), ['€', '$']);
+  const two = buildReport({ sessions: [sess('m', { kind: 'mtt', entries: 2, cashOut: 0 }), sess('c', {})], transfers: [], bankrolls: brs, range: year });
+  assert.equal(two.currencies[0].mtt.entries, 2);
+  assert.match(reportHtml(two), /Torneios: 2 entradas/);
+});

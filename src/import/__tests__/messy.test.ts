@@ -98,3 +98,15 @@ test('tips and hands get their own fields, and the result still lands on the fil
   assert.equal(s.expenses, undefined);
   assert.equal(profit(s), 200);
 });
+
+test('an amount written in words is listed as left out, not read as 0; n/a and - are just empty', () => {
+  const r = run(['Data;Local;Buy-in;Cash-out', '03/02/2025;Estoril;cem;300', '04/02/2025;Estoril;200;n/a', '05/02/2025;Estoril;200;-'].join('\n'));
+  assert.deepEqual(r.failed, [{ line: 2, reason: 'badMoney', value: 'cem' }]);
+  assert.equal(r.sessions.length, 2);
+});
+
+test('blinds written only in the game column are read for cash, not for tournaments', () => {
+  const r = run(['Date,Type,Game,Buy-in,Cash-out', '2025-02-03,cash,NLH 1/2,200,300', '2025-02-04,tournament,Dia 1/2,100,0'].join('\n'));
+  assert.deepEqual([r.sessions[0].sb, r.sessions[0].bb], [1, 2]);
+  assert.equal(r.sessions[1].bb, 0);
+});
