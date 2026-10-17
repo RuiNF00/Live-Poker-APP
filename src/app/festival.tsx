@@ -340,7 +340,7 @@ function EventRow({
             {eventTitle(e)}
           </T>
           <T v="small">
-            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? `${chips(e.stack)} · ${e.levelMinutes} min` : null].filter(Boolean).join(' · ')}
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? chips(e.stack) : null, e.stack && e.levelMinutes ? `${e.levelMinutes} min` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>

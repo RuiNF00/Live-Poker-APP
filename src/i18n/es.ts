@@ -3105,7 +3105,7 @@ const es: Record<string, string> = {
   'O Dia 1B do #94, a 28 de novembro, ainda não tem hora publicada.': 'El Día 1B del #94, el 28 de noviembre, aún no tiene hora publicada.',
   'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': 'Falta el #7 (PKO Turbo, 27 de noviembre a las 22:00): el organizador aún no ha publicado el buy-in.',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: 550 €, stack inicial de 40.000, niveles de 45 minutos. El organizador aún no ha publicado los días y las horas de los flights.',
-  'Evento principal de 7 a 13 de dezembro (€5.300). Evento principal de buy-in médio de 2 a 7 de dezembro (€1.650).': 'Evento principal del 7 al 13 de diciembre (5.300 €). Evento principal de buy-in medio del 2 al 7 de diciembre (1.650 €).',
+  'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'El organizador publica el stack inicial de cada torneo, pero no la duración de los niveles, salvo en algunos.',
   'Lisboa': 'Lisboa',
   'Praga': 'Praga',
 };
