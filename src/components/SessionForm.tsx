@@ -9,13 +9,14 @@ import type { GameKind } from '@/poker/types';
 import { lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
+import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
 import { countryOfVenue } from '@/tax/countries';
 import { S } from '@/theme';
 
 import { MindAfter, MindBefore } from './MindCheckIn';
 import { StakeFields } from './StakeFields';
 import { TaxFields } from './TaxFields';
-import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T } from './ui';
+import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
@@ -74,6 +75,7 @@ export function SessionForm({
   bankrolls = [],
   submitRef,
   today = [],
+  weekly,
 }: {
   initial: Session;
   /** Festival tournaments starting today: a chip fills the form with that event (buy-in, stack, levels). */
@@ -85,6 +87,8 @@ export function SessionForm({
   recentVenues: string[];
   onSubmit: (s: Session) => void;
   submitLabel: string;
+  /** The player's weekly tournaments: "Repetir todas as semanas" on a live tournament, saved when it starts. */
+  weekly?: { list: WeeklyTournament[]; onSave: (s: Session, time: string) => void; onStop: (id: string) => void };
   /** The caller draws the submit button (a bar pinned above the tab bar) and calls this; the form then leaves it out. */
   submitRef?: React.RefObject<(() => void) | null>;
 }) {
@@ -103,6 +107,9 @@ export function SessionForm({
   const [timeText, setTimeText] = useState(initTime);
   const startMin = parseClock(timeText);
   const [mindOpen, setMindOpen] = useState(!!initial.mind);
+  const [repeat, setRepeat] = useState(false);
+  const [repeatTime, setRepeatTime] = useState(() => roundedClock());
+  const repeatMin = parseClock(repeatTime);
   const set = (p: Partial<Session>) => setS((x) => ({ ...x, ...p }));
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
@@ -123,7 +130,12 @@ export function SessionForm({
         start = end - mins * 60000;
       }
       onSubmit({ ...s, startedAt: start, endedAt: start + mins * 60000, breaks: [], stackLog: [] });
-    } else onSubmit({ ...s, startedAt: Date.now(), stackLog: [{ t: Date.now(), stack: s.stack, level: s.level }] });
+    } else {
+      if (weekly && repeat && repeatMin !== null && s.kind === 'mtt' && s.name.trim() && !weeklyMatch(weekly.list, s)) {
+        weekly.onSave(s, `${String(Math.floor(repeatMin / 60)).padStart(2, '0')}:${String(repeatMin % 60).padStart(2, '0')}`);
+      }
+      onSubmit({ ...s, startedAt: Date.now(), stackLog: [{ t: Date.now(), stack: s.stack, level: s.level }] });
+    }
   };
   useEffect(() => {
     if (submitRef) submitRef.current = submit;
@@ -210,6 +222,7 @@ export function SessionForm({
           {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
         </Row>
       </Card>
+      {mtt && !past && weekly ? <Repeat weekly={weekly} s={s} on={repeat} setOn={setRepeat} time={repeatTime} setTime={setRepeatTime} /> : null}
       {(!past || !mtt) && (
         <Section title={past ? 'Stakes' : 'Blinds'}>
           <ChipRow>
@@ -328,4 +341,27 @@ function shortDay(ts: number): string {
 
 function fullDay(ts: number): string {
   return new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/** "Repetir todas as semanas": on, the tournament is in today's chips every week on this day; off on one already saved stops it. */
+function Repeat({ weekly, s, on, setOn, time, setTime }: { weekly: NonNullable<Parameters<typeof SessionForm>[0]['weekly']>; s: Session; on: boolean; setOn: (v: boolean) => void; time: string; setTime: (v: string) => void }) {
+  const match = weeklyMatch(weekly.list, s);
+  const day = new Date().toLocaleDateString(locale, { weekday: 'long' });
+  const Day = day.charAt(0).toUpperCase() + day.slice(1);
+  return (
+    <Card padded={false}>
+      <ToggleItem
+        icon="repeat"
+        title={t('Repetir todas as semanas')}
+        subtitle={match ? t('{day} às {time}, pronto a começar com um toque', { day: Day, time: match.time }) : t('{day} de cada semana, pronto a começar com um toque', { day: Day })}
+        value={!!match || on}
+        onChange={(v) => (match && !v ? weekly.onStop(match.id) : setOn(v))}
+      />
+      {on && !match ? (
+        <View style={{ paddingHorizontal: S.md, paddingBottom: S.md }}>
+          <Field label={t('Começa às')} value={time} onChangeText={(v) => setTime(v.slice(0, 5))} placeholder="21:00" keyboardType="numbers-and-punctuation" hint={parseClock(time) === null ? t('Escreve como 20:30') : undefined} />
+        </View>
+      ) : null}
+    </Card>
+  );
 }

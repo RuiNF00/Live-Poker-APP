@@ -1531,6 +1531,10 @@ const ptBR: Record<string, string> = {
   'Dia {n} a {date}: lembrar-me': 'Dia {n} em {date}: me lembre',
   'Avisamos-te {n} min antes.': 'A gente avisa {n} min antes.',
   'Avisamos-te antes do Dia {n}': 'A gente avisa antes do Dia {n}',
+  'Repetir todas as semanas': 'Repetir toda semana',
+  '{day} às {time}, pronto a começar com um toque': '{day} às {time}, pronto para começar com um toque',
+  '{day} de cada semana, pronto a começar com um toque': '{day} de toda semana, pronto para começar com um toque',
+  'Começa às': 'Começa às',
 };
 
 export default ptBR;

@@ -38,7 +38,8 @@ import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-pla
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
-import { useStore } from '@/store/store';
+import { uid, useStore } from '@/store/store';
+import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { useSheetAnimation } from '@/lib/motion';
@@ -131,6 +132,7 @@ export default function SessionScreen() {
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
   const festivals = useFestivals();
+  const weekly = useWeekly();
   const [today] = useState(() => dayKey(Date.now()));
   const coming = useMemo(() => festivals.filter((f) => notOver(f, today)), [festivals, today]);
   // The tab is for starting a session: one festival row only when it's on or a week away (design/simplificar.md).
@@ -240,11 +242,32 @@ export default function SessionScreen() {
           bankrolls={bankrolls}
           recentNames={recentNames}
           recentVenues={recentVenues}
-          today={todays.map(({ f, e }) => {
-            const { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
-            const bankroll = bankrolls.find((b) => b.currency === f.currency);
-            return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
-          })}
+          today={[
+            // The player's own weekly tournaments first: the casino they play every week.
+            ...weeklyToday(weekly).map((w) => {
+              const bankroll = bankrolls.find((b) => b.currency === w.currency);
+              return {
+                key: 'w' + w.id,
+                label: `${w.time} ${w.name}`,
+                fill: {
+                  name: w.name,
+                  venue: w.venue,
+                  currency: w.currency,
+                  buyIn: w.buyIn,
+                  ...(w.stack ? { stack: w.stack, tourney: { startStack: w.stack } } : {}),
+                  levelMinutes: w.levelMinutes,
+                  levelStartedAt: weeklyLevelStart(w),
+                  ...(bankroll ? { bankrollId: bankroll.id } : {}),
+                },
+              };
+            }),
+            ...todays.map(({ f, e }) => {
+              const { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney } = sessionFromEvent(f, e, settings.defaultTableSize, undefined);
+              const bankroll = bankrolls.find((b) => b.currency === f.currency);
+              return { key: f.id + e.id, label: `${e.start.slice(11)} ${name}`, fill: { name, venue, currency, buyIn, stack, levelMinutes, levelStartedAt, tourney, ...(bankroll ? { bankrollId: bankroll.id } : {}) } };
+            }),
+          ]}
+          weekly={{ list: weekly, onSave: (x, time) => saveWeekly(weeklyFrom(uid('wk_'), x, time)), onStop: deleteWeekly }}
           submitLabel={t('Começar agora')}
           submitRef={startRef}
           onSubmit={(s) => (settings.mindAsk === false || askedToday ? begin(s) : setArriving(s))}
