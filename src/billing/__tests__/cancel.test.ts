@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CANCEL_REASONS, cancelReasons, logged } from '../cancel';
+import { CANCEL_REASONS, cancelReasons, logged, scrubNote } from '../cancel';
 import type { Session } from '@/store/types';
 
 const s = (startedAt: number, buyIn: number, cashOut: number) =>
@@ -27,4 +27,13 @@ test('"Não quero uma subscrição" only with a one-time Pro to offer', () => {
   const on = cancelReasons(true);
   assert.equal(on.length, 6);
   assert.equal(on[2].key, 'noSubscription');
+});
+
+test('scrubNote drops emails, phone numbers and links', () => {
+  assert.equal(scrubNote('caro demais, fala comigo rui@exemplo.pt ou +351 912 345 678'), 'caro demais, fala comigo … ou …');
+  assert.equal(scrubNote('vejam www.exemplo.com'), 'vejam …');
+});
+
+test('scrubNote keeps stakes and short numbers', () => {
+  assert.equal(scrubNote('só jogo 1/2 e 2/5, não preciso'), 'só jogo 1/2 e 2/5, não preciso');
 });

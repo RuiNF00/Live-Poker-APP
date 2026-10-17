@@ -42,3 +42,13 @@ export function logged(
   const since = Math.min(...hands.map((h) => h.createdAt), ...sessions.map((s) => s.startedAt));
   return { sessions: sessions.length, hands: hands.length, profit: tot.profit, currency: tot.currency, since };
 }
+
+/** The cancel note goes to our events table: drop emails, phone numbers and links, keep the reason. */
+export function scrubNote(note: string): string {
+  return note
+    .replace(/\S+@\S+/g, '…')
+    .replace(/https?:\/\/\S+|www\.\S+/gi, '…')
+    .replace(/\+?\d[\d\s().-]{6,}\d/g, '…')
+    .trim()
+    .slice(0, 120);
+}
