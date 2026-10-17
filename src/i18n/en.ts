@@ -3097,6 +3097,7 @@ const en: Record<string, string> = {
   '−1 órbita': '−1 orbit',
   'Mais detalhes': 'More details',
   'Menos detalhes': 'Fewer details',
+  'Enviar a {name} ({n}%)': 'Send to {name} ({n}%)',
 };
 
 export default en;

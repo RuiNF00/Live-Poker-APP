@@ -1440,6 +1440,7 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
+  'Enviar a {name} ({n}%)': 'Enviar para {name} ({n}%)',
 };
 
 export default ptBR;
