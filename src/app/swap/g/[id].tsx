@@ -18,7 +18,7 @@ import { claimInvite, shareRef } from '@/lib/referrals';
 import { SwapError } from '@/lib/swap-api';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
 import { shortDate, timeOf } from '@/poker/format';
-import { groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
+import { GROUP_MIN, groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
 import { addGroupPrize, leaveGroupEverywhere, releaseSeatHere, removeGroupEntryHere, saveGroup, syncGroup, useGroups } from '@/store/swap-groups-store';
 import { C, S } from '@/theme';
 
@@ -129,7 +129,7 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
             </ChipRow>
           </Section>
           <Button
-            title={busy ? t('A entrar…') : pick === null ? t('Escolhe o teu nome') : t('Entrar como {name}', { name: remote.seats[pick]?.name ?? '' })}
+            title={busy ? t('A entrar…') : pick === null ? t('Escolhe o teu nome') : t('Entrar como {name}', { name: remote.seats.find((s) => s.seat === pick)?.name ?? '' })}
             icon="checkmark-circle-outline"
             disabled={pick === null || busy}
             onPress={join}
@@ -201,13 +201,18 @@ function OwnGroup({ g }: { g: SwapGroup }) {
   const results = g.entries.filter((e) => e.kind === 'result').sort((a, b) => b.at - a.at);
   const payments = g.entries.filter((e) => e.kind === 'payment').sort((a, b) => b.at - a.at);
   const creator = g.seat === 0;
-  // The creator can take out a player who joined but has nothing in the accounts yet.
-  const releasable = (s: GroupSeat) => creator && !g.gone && !someoneLeft && s.seat !== 0 && !!s.confirmedAt && !g.entries.some((e) => e.seat === s.seat || e.to === s.seat);
+  // The creator can take out a player who joined but has nothing in the accounts yet (the seat
+  // opens again), or drop one who never joined (the group carries on without them, from 3 up).
+  const releasable = (s: GroupSeat) =>
+    creator && !g.gone && !someoneLeft && s.seat !== 0 && (s.confirmedAt ? !g.entries.some((e) => e.seat === s.seat || e.to === s.seat) : g.seats.length > GROUP_MIN);
 
   function onSeat(s: GroupSeat) {
     if (!releasable(s)) return;
     const name = seatLabel(g, s.seat);
-    confirmAction(t('Tirar {name} do grupo?', { name }), t('O lugar fica livre e o link de {name} deixa de funcionar. Quem tiver o link do grupo pode entrar nesse lugar.', { name }), t('Tirar'), async () => {
+    const body = s.confirmedAt
+      ? t('O lugar fica livre e o link de {name} deixa de funcionar. Quem tiver o link do grupo pode entrar nesse lugar.', { name })
+      : t('O grupo fica com {n} jogadores e as contas começam quando estiverem todos. A percentagem de cada um não muda.', { n: g.seats.length - 1 });
+    confirmAction(t('Tirar {name} do grupo?', { name }), body, t('Tirar'), async () => {
       const res = await releaseSeatHere(g.id, s.seat);
       if (res === 'in_use') Alert.alert(t('Já tem registos'), t('Só podes tirar um jogador antes de ele registar prémios ou pagamentos.'));
       else if (res === 'offline') Alert.alert(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));

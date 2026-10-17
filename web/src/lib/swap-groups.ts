@@ -25,6 +25,8 @@ export interface GroupStore {
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   /** Seat 0 frees another seat with nothing in the accounts: open again, its token dead. */
   release(id: string, token: string, seat: number): Promise<boolean>;
+  /** Seat 0 drops a seat nobody took (from 4 players up); the others keep their seat numbers. */
+  removeSeat(id: string, token: string, seat: number): Promise<boolean>;
   /** Seat 0 deletes it for everyone; any other seat leaves (name "-", token dead). */
   leave(id: string, token: string): Promise<boolean>;
   /** The creator's RevenueCat id (seat 0 only; replaces the last one). Never in a read of the group. */
@@ -89,6 +91,12 @@ class SupabaseGroups implements GroupStore {
     return !!data;
   }
 
+  async removeSeat(id: string, token: string, seat: number) {
+    const { data, error } = await this.db.rpc('remove_swap_group_seat', { p_id: id, p_token: token, p_seat: seat });
+    if (error) throw error;
+    return !!data;
+  }
+
   async leave(id: string, token: string) {
     const { data, error } = await this.db.rpc('leave_swap_group', { p_id: id, p_token: token });
     if (error) throw error;
@@ -113,7 +121,8 @@ class SupabaseGroups implements GroupStore {
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-type LocalRow = GroupRecord & { inviteHash: string; hashes: (string | null)[]; ownerRc?: string };
+// `dropped`: seats removed before anyone took them (kept in the arrays so indexes stay seat numbers).
+type LocalRow = GroupRecord & { inviteHash: string; hashes: (string | null)[]; ownerRc?: string; dropped?: number[] };
 
 class LocalGroups implements GroupStore {
   private file = path.join(process.cwd(), '.data', 'swap-groups.json');
@@ -163,8 +172,8 @@ class LocalGroups implements GroupStore {
   async get(id: string) {
     const r = (await this.read())[id];
     if (!r) return null;
-    const { inviteHash: _i, hashes: _h, ownerRc: _o, ...rec } = r;
-    return rec;
+    const { inviteHash: _i, hashes: _h, ownerRc: _o, dropped, ...rec } = r;
+    return { ...rec, seats: rec.seats.filter((s) => !dropped?.includes(s.seat)) };
   }
 
   async seat(id: string, token: string) {
@@ -176,7 +185,7 @@ class LocalGroups implements GroupStore {
       const r = d[id];
       if (!r || !invite || r.inviteHash !== sha256(invite)) return null;
       const s = r.seats[seat];
-      if (!s || s.confirmedAt) return null;
+      if (!s || s.confirmedAt || r.dropped?.includes(seat)) return null;
       const token = randomBytes(32).toString('hex');
       const now = new Date().toISOString();
       r.hashes[seat] = sha256(token);
@@ -190,8 +199,8 @@ class LocalGroups implements GroupStore {
     return this.mutate((d) => {
       const r = d[id];
       const seat = this.seatOf(r, token);
-      if (!r || seat === null || r.seats.some((s) => !s.confirmedAt)) return false;
-      if (e.kind === 'payment' && (e.to === seat || !r.seats[e.to ?? -1])) return false;
+      if (!r || seat === null || r.seats.some((s) => !s.confirmedAt && !r.dropped?.includes(s.seat))) return false;
+      if (e.kind === 'payment' && (e.to === seat || !r.seats[e.to ?? -1] || r.dropped?.includes(e.to ?? -1))) return false;
       if (r.entries.some((x) => x.seat === seat && x.cid === e.cid)) return true;
       r.entries.push({ ...e, id: randomBytes(6).toString('hex'), seat, at: Date.now() });
       r.updatedAt = new Date().toISOString();
@@ -218,6 +227,17 @@ class LocalGroups implements GroupStore {
       if (r.entries.some((e) => e.seat === seat || e.to === seat)) return false;
       r.seats[seat] = { ...r.seats[seat], confirmedAt: null };
       r.hashes[seat] = null;
+      r.updatedAt = new Date().toISOString();
+      return true;
+    });
+  }
+
+  async removeSeat(id: string, token: string, seat: number) {
+    return this.mutate((d) => {
+      const r = d[id];
+      if (this.seatOf(r, token) !== 0 || seat < 1 || !r.seats[seat] || r.seats[seat].confirmedAt || r.dropped?.includes(seat)) return false;
+      if (r.seats.length - (r.dropped?.length ?? 0) <= 3) return false;
+      r.dropped = [...(r.dropped ?? []), seat];
       r.updatedAt = new Date().toISOString();
       return true;
     });

@@ -1243,6 +1243,7 @@ const ptBR: Record<string, string> = {
   "Enviado automaticamente: cobraste {amount}.": "Enviado automaticamente: você ganhou {amount} de prêmio.",
   "Enviado automaticamente: não cobraste.": "Enviado automaticamente: você não ganhou prêmio.",
   "Para desligar, abre o swap.": "Para desligar, abra o swap.",
+  "O grupo fica com {n} jogadores e as contas começam quando estiverem todos. A percentagem de cada um não muda.": "O grupo fica com {n} jogadores e as contas começam quando todos estiverem dentro. A porcentagem de cada um não muda.",
   "Jogador que saiu": "Jogador que saiu",
   "O outro jogador dá": "O outro jogador dá",
   "Se cobrares {prize}, pagas {mine} ao outro jogador.": "Se você ganhar {prize} de prêmio, paga {mine} ao outro jogador.",
