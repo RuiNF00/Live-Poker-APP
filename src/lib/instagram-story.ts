@@ -23,6 +23,10 @@ export async function captureStory(_ref: React.RefObject<React.ComponentRef<type
 
 export type StoryTarget = 'instagram' | 'sheet';
 
-export async function shareStory(_file: string, _link: string): Promise<StoryTarget> {
+export async function renderVoiceStory(_frame: string, _voice: string, _slot: { x: number; y: number; w: number; h: number }): Promise<string> {
+  throw new Error('Voice stories need the iOS or Android app');
+}
+
+export async function shareStory(_file: string, _link: string, _kind: 'image' | 'video' = 'image'): Promise<StoryTarget> {
   throw new Error('Story sharing needs the iOS or Android app');
 }

@@ -4,7 +4,7 @@
 import type { Hand } from '@/poker/types';
 import { BRAND } from '@/theme';
 
-const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
+export const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
 export interface Comment {
   id: string;

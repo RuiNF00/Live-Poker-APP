@@ -26,6 +26,7 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
 | `POST /api/hands/<id>/report` `{ reporterId (uuid), reason? }` | `{ reported }` (5 denúncias tiram a mão do ar) |
 | `POST /api/hands/<id>/comments/<commentId>/report` `{ reporterId }` | `{ reported }` (3 denúncias escondem o comentário) |
+| `POST /api/story-video` multipart `frame` (PNG 1080×1920), `voice` (m4a, até 30 s), `slot` (JSON `{x,y,w,h}` em px) | `200 video/mp4`: a história com a voz e uma onda animada no `slot` (ffmpeg via `ffmpeg-static`) |
 
 Links de desafio: `/h/<id>?q=1` pára na última ação do herói e pergunta "O que fazias aqui?". Até a pessoa votar, a página esconde notas, tags, ações seguintes e comentários. `quiz: { action: n }` no upload fixa outro ponto.
 

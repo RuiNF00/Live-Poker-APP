@@ -11,9 +11,15 @@
     "ios": {
       "bundleIdentifier": "com.ruinf.sweatbook",
       "supportsTablet": false,
-      "associatedDomains": ["applinks:sweatbook.poker"],
-      "config": { "usesNonExemptEncryption": false },
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false },
+      "associatedDomains": [
+        "applinks:sweatbook.poker"
+      ],
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyTrackingDomains": [],
@@ -22,7 +28,9 @@
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherUserContent",
             "NSPrivacyCollectedDataTypeLinked": false,
             "NSPrivacyCollectedDataTypeTracking": false,
-            "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
           }
         ]
       }
@@ -45,8 +53,17 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "data": [{ "scheme": "https", "host": "sweatbook.poker", "pathPrefix": "/h/" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/h/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "predictiveBackGestureEnabled": false
@@ -69,7 +86,21 @@
           "imageWidth": 160
         }
       ],
-      ["expo-build-properties", { "android": { "targetSdkVersion": 36, "compileSdkVersion": 36 } }],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 36,
+            "compileSdkVersion": 36
+          }
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "O Sweatbook usa o microfone para gravares a tua explicação da mão nas histórias."
+        }
+      ],
       [
         "react-native-share",
         {

@@ -57,8 +57,8 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     body: 'Filtra por 30 dias, 90 dias ou ano e percebe onde estás a ganhar.',
   },
   story: {
-    title: 'Stories sem marca de água',
-    body: 'Partilha as tuas mãos no Instagram com o teu estilo, sem a marca Sweatbook.',
+    title: 'Stories com a tua voz',
+    body: 'Explica a mão por cima do replay e partilha no Instagram sem marca de água.',
   },
   generic: {
     title: 'Sweatbook Pro',
@@ -68,7 +68,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
 
 export const PRO_FEATURES: { icon: string; title: string; body: string }[] = [
   { icon: 'infinite', title: 'Mãos ilimitadas', body: 'Guarda todas as mãos da sessão, não só 3 por dia.' },
-  { icon: 'logo-instagram', title: 'Stories sem marca de água', body: 'Mãos em formato vertical para o Instagram, sem a marca Sweatbook.' },
+  { icon: 'logo-instagram', title: 'Stories com a tua voz', body: 'Replay vertical para o Instagram, com a tua explicação e sem marca de água.' },
   { icon: 'stats-chart', title: 'Bankroll completo', body: 'Filtros por período, ROI, ITM e por hora.' },
   { icon: 'people', title: 'Partilha sem limites', body: 'Os teus amigos comentam e votam no browser, sem app.' },
 ];
