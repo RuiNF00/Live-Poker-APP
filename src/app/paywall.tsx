@@ -328,7 +328,9 @@ function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; 
         ? t('Grava a tua voz. Sem marca de água.')
         : reason === 'stats'
           ? t('Filtros, salas e jogos abertos.')
-          : t('Mãos sem limite, a partir de agora.');
+          : reason === 'solver'
+            ? t('Seleciona as mãos e exporta para o solver.')
+            : t('Mãos sem limite, a partir de agora.');
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: S.md, padding: S.xxl }}>
       <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
