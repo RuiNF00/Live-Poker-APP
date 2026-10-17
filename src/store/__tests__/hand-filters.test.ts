@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { sampleHand } from '../../poker/sample';
 import type { Hand } from '../../poker/types';
-import { activeFilters, gridCombo, heroPosition, matches, NO_FILTER, sortByResult } from '../hand-filters';
+import { activeFilters, gridCombo, handSearchText, heroPosition, matches, NO_FILTER, sortByResult } from '../hand-filters';
 
 function hand(id: string, over: Partial<Hand> = {}, heroCards?: Hand['players'][number]['cards'], stack?: number): Hand {
   const h = sampleHand(id);
@@ -41,4 +41,13 @@ test('sort by bb won or lost; hands without a result last', () => {
   const net: Record<string, number | undefined> = { a: 10 * a.game.bb, b: -40 * b.game.bb, c: undefined };
   assert.deepEqual(sortByResult([a, b, c], 'won', (h) => net[h.id]).map((h) => h.id), ['a', 'b', 'c']);
   assert.deepEqual(sortByResult([a, b, c], 'lost', (h) => net[h.id]).map((h) => h.id), ['b', 'a', 'c']);
+});
+
+test('search finds a hand by venue and by hero cards as a class or as dealt', () => {
+  const h = hand('s', { game: { ...sampleHand('x').game, kind: 'cash', name: 'NLH 2/5', venue: 'Casino Estoril' } }, ['Ah', 'Kh']);
+  const s = handSearchText(h);
+  assert.ok(s.includes('estoril'));
+  assert.ok(s.includes('aks'));
+  assert.ok(s.includes('ahkh'));
+  assert.ok(!s.includes('undefined'));
 });

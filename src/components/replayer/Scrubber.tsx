@@ -13,14 +13,19 @@ import type { TimelineItem } from './model';
  */
 export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; items: TimelineItem[]; onSeek: (k: number) => void }) {
   const [w, setW] = useState(0);
-  const at = useRef({ w: 0, last, k, onSeek });
+  const ticks = items.filter((it) => it.kind !== 'action' && it.k > 0 && it.k <= last).map((it) => it.k);
+  const at = useRef({ w: 0, last, k, onSeek, ticks });
   useEffect(() => {
-    at.current = { w, last, k, onSeek };
+    at.current = { w, last, k, onSeek, ticks };
   });
-  const seekX = (x: number) => {
+  // A tap next to a street lands exactly on it, so a street is one tap; a drag stays free.
+  const seekX = (x: number, snap = false) => {
     const c = at.current;
     if (!c.w || c.last <= 0) return;
-    const to = Math.round(Math.max(0, Math.min(1, (x - PAD) / (c.w - PAD * 2))) * c.last);
+    const span = c.w - PAD * 2;
+    const gap = (s: number) => Math.abs(PAD + (s / c.last) * span - x);
+    const near = snap ? c.ticks.filter((s) => gap(s) <= SNAP).sort((a, b) => gap(a) - gap(b))[0] : undefined;
+    const to = near ?? Math.round(Math.max(0, Math.min(1, (x - PAD) / span)) * c.last);
     if (to !== c.k) {
       tap('select');
       c.k = to;
@@ -32,7 +37,7 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > Math.abs(g.dy),
       onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: (e) => seekX(e.nativeEvent.locationX),
+      onPanResponderGrant: (e) => seekX(e.nativeEvent.locationX, true),
       onPanResponderMove: (e) => seekX(e.nativeEvent.locationX),
     }),
   );
@@ -146,5 +151,7 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
 }
 
 const PAD = 10;
+/** How close to a street tick a tap must land to jump onto it, in px. */
+const SNAP = 16;
 /** Room one tick label needs, in px ("River" or "Turn" at 9 pt). */
 const LABEL_GAP = 26;
