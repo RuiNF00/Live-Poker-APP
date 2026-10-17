@@ -138,7 +138,7 @@ const es: typeof pt = {
   metaTitle: 'Cuentas de staking · Sweatbook',
   metaDescription: 'Tu parte, lo que te deben y las sesiones en vivo.',
   next: (event: string, when: string) => `Próximo: ${event} · ${when}`,
-  received: 'Recibido',
+  received: 'Recibí',
   paid: 'Ya pagué',
   receivedMsg: (amount: string, date: string) => `Recibí los ${amount} de las cuentas del ${date}. ¡Gracias!`,
   paidMsg: (amount: string, date: string) => `Ya te pagué los ${amount} de las cuentas del ${date}.`,
