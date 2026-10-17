@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { levelAfter, nextLevelAt, withLevelClock } from '../../lib/lock-screen/live-state';
 import type { Session } from '../../store/types';
-import { averageStack, num, parsePayouts, parseStructure, payState, stackDepth, syncTo, templateStructure } from '../tourney';
+import { averageStack, nextBreak, num, parsePayouts, parseStructure, payState, stackDepth, syncTo, templateStructure } from '../tourney';
 
 const MIN = 60_000;
 
@@ -22,7 +22,7 @@ test('structure typed or pasted: blinds, ante and length in the usual shapes', (
   assert.deepEqual(s, [
     { sb: 100, bb: 200, ante: 200, minutes: 40 },
     // A missing length repeats the one before; 300 is the ante, not a length past 120.
-    { sb: 200, bb: 300, ante: 300, minutes: 40 },
+    { sb: 200, bb: 300, ante: 300, minutes: 40, breakAfter: 15 },
     { sb: 200, bb: 400, ante: 400, minutes: 40 },
     { sb: 1000, bb: 2000, ante: 2000, minutes: 60 },
     { sb: 1500, bb: 3000, ante: 3000, minutes: 60 },
@@ -93,4 +93,25 @@ test('level up follows the entered structure, with its length', () => {
   assert.equal(levelAfter({ ...s, level: 3 }, 1).level, 3);
   // Without a structure, the old ladder.
   assert.equal(levelAfter(mk({ level: 1 }), 1).bb, 300);
+});
+
+test('breaks: pasted in their own line, in the templates, and the next one timed from the level clock', () => {
+  const s = parseStructure(['100/200/200 30', '200/400/400 30', 'Intervalo (20\')', '300/600/600 30', 'Dinner break', '400/800/800 30', 'BREAK - 10 min'].join('\n'));
+  assert.deepEqual(
+    s.map((l) => l.breakAfter),
+    [undefined, 20, 15, 10],
+  );
+  // A break line before any level has nothing to follow.
+  assert.equal(parseStructure('Break 15\n100/200 30')[0].breakAfter, undefined);
+  // Templates: about every two hours of play.
+  const std = templateStructure(30);
+  assert.deepEqual(std.slice(0, 8).map((l) => !!l.breakAfter), [false, false, false, true, false, false, false, true]);
+  assert.equal(templateStructure(60)[1].breakAfter, 15);
+  const M = 60_000;
+  // On level 1 ending at 0: levels 2 (30 min) then the break.
+  assert.deepEqual(nextBreak(s, 1, 0), { afterLevel: 2, at: 30 * M, minutes: 20 });
+  // On level 2: the break comes when it ends.
+  assert.deepEqual(nextBreak(s, 2, 5 * M), { afterLevel: 2, at: 5 * M, minutes: 20 });
+  assert.equal(nextBreak(templateStructure(30).map(({ breakAfter: _, ...l }) => l), 1, 0), null);
+  assert.equal(nextBreak(undefined, 1, 0), null);
 });

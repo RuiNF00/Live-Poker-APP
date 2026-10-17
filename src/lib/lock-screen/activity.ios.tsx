@@ -81,6 +81,7 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
             ) : null}
           </VStack>
         </HStack>
+        {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
         {newHand}
       </VStack>
     ),
@@ -107,7 +108,12 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
         <Text modifiers={[font({ size: 18, weight: 'bold', design: 'monospaced' }), foregroundStyle(text)]}>{p.stack}</Text>
       </VStack>
     ),
-    expandedBottom: newHand,
+    expandedBottom: (
+      <VStack spacing={8}>
+        {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
+        {newHand}
+      </VStack>
+    ),
   };
 });
 

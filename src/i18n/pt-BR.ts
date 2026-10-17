@@ -1074,6 +1074,16 @@ const ptBR: Record<string, string> = {
   'Passar ou apostar': 'Check ou bet',
   'Guardar mão': 'Salvar mão',
   'Contexto da mão: {context}. Toca para mudar': 'Contexto da mão: {context}. Toque para mudar',
+  // Tournament breaks
+  'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos numa linha própria: Break 15': 'Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40. Os intervalos em uma linha separada: Break 15',
+  'Nível acabou · intervalo de {n} min': 'Fim do nível · intervalo de {n} min',
+  'Intervalo de {n} min a seguir': 'Depois, intervalo de {n} min',
+  'Retoma quando o torneio recomeçar.': 'Retome quando o torneio recomeçar.',
+  'Põe a sessão em pausa no intervalo para o relógio do nível acertar com o do torneio.': 'Pause a sessão no intervalo para o relógio do nível bater com o do torneio.',
+  'Põe a sessão em pausa. Depois do intervalo, nível {n}: blinds {blinds}.': 'Pause a sessão. Depois do intervalo, nível {n}: blinds {blinds}.',
+  'O intervalo está a acabar': 'O intervalo está acabando',
+  'Recomeça daqui a 2 min com o nível {n}: blinds {blinds}. Retoma a sessão.': 'Recomeça em 2 min com o nível {n}: blinds {blinds}. Retome a sessão.',
+  'Recomeça daqui a 2 min. Retoma a sessão.': 'Recomeça em 2 min. Retome a sessão.',
 };
 
 export default ptBR;
