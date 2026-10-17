@@ -30,7 +30,7 @@ Frame 1 is the one most people see in search results; it must show the speed of 
 
 ## How they are produced
 
-1. Seed a demo account with ~20 realistic hands (a realistic live tournament, no real event brands or player names).
+1. Seed the simulator with ~20 realistic hands (a realistic live tournament, no real event brands or player names).
 2. Run the app in the iOS Simulator (iPhone 16 Pro Max, 6.9") and an Android emulator (Pixel, 1080 × 2400), capture with `xcrun simctl io booted screenshot` / `adb exec-out screencap -p`.
 3. Compose captions and frames with a script (HTML template + Playwright screenshot at exact pixel size) so changing the brand re-renders every image. This will live in `store/screenshots/` once the app UI exists.
 4. Status bar: 9:41, full battery, full signal (`xcrun simctl status_bar booted override ...`).
