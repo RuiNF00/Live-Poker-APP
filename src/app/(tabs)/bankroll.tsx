@@ -6,6 +6,7 @@ import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { BankrollForm, blankTransfer, effectiveRange, FilterForm, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { StakingEntry } from '@/components/staking/StakingEntry';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
@@ -139,6 +140,8 @@ export default function BankrollScreen() {
             {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
           </ChipRow>
         </View>
+
+        <StakingEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (
@@ -434,6 +437,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
             {s.entries} × {money(s.buyIn, s.currency)}
             {s.addOn ? ` + add-on ${money(s.addOn, s.currency)}` : ''} → {money(s.cashOut, s.currency)}
             {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: money(owedToBackers(s), s.currency) }) : ''}
+            {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: money(s.makeupCut, s.currency) }) : ''}
             {s.expenses ? '\n' + t('Despesas {amount}', { amount: money(s.expenses, s.currency) }) : ''}
           </T>
           <Row gap={S.sm}>

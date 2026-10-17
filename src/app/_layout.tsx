@@ -17,6 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
 import { AutoCloudBackup } from '@/components/CloudBackup';
+import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -57,6 +58,7 @@ export default function RootLayout() {
           <HideSplash />
           <StatusBar style="light" />
           <AutoCloudBackup />
+          <BackerLiveSync />
           <SessionLockScreen />
           <Stack
             screenOptions={{
