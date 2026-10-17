@@ -1,5 +1,6 @@
 import type { Statement } from '@/lib/backing-link';
 import type { Tourney } from '@/poker/tourney';
+import type { SizeMemory } from '@/poker/entry';
 import type { AnteType, GameKind, StageId } from '@/poker/types';
 
 export interface Session {
@@ -298,6 +299,8 @@ export interface Settings {
   includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
+  /** Hand entry: the last bet/raise size per spot, per game kind, offered as a one-tap chip. */
+  sizes?: { cash?: SizeMemory; mtt?: SizeMemory };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
