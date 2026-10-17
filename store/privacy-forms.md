@@ -22,6 +22,7 @@ Data not linked to you:
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
+| User Content → Photos or Videos (iPhone only: front-camera clip for the hand video, #234, sent to our server only to put the face in a circle on the MP4, then deleted; never stored, no facial recognition) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward) | Analytics, App Functionality |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 | Diagnostics → Crash Data (Sentry, EU region, #166: crash stack, app/update version, device model and OS; no IP, user id, device name or device id, scrubbed in the app and by server rules; automatic sessions off, so no Performance Data; only in builds with a DSN and while the Settings switch is on) | App Functionality |
@@ -37,7 +38,7 @@ PostHog EU (#106, optional): our server forwards usage events (install id, event
 
 Exchange rates (Bankroll home-currency PR): the app fetches ECB daily rates from api.frankfurter.app (no key, no user data, cached on device). Nothing about the user is sent, so it adds no row to either form; the third-party request is disclosed in the privacy policy. If the app ever proxies this through our server or adds an identifier, revisit.
 
-App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device. Receipt and tax-form photos and files never leave the phone: they are files in the app's documents folder (`src/lib/docs.native.ts`), and the cloud backup serialises only the session data with the file names (`src/lib/cloud-backup.ts`, checked at 24efbeb). So Photos or Videos is not declared on either form, matching the privacy manifest: no new rows. Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
+App lock (Face ID / passcode, #81) and tax details with receipt photos (#85) stay on the device. Receipt and tax-form photos and files never leave the phone: they are files in the app's documents folder (`src/lib/docs.native.ts`), and the cloud backup serialises only the session data with the file names (`src/lib/cloud-backup.ts`, checked at 24efbeb). So receipt photos add no rows. (Photos or Videos is declared on Apple only for the face clip in hand videos, #234, iOS only; Play stays without it.) Swaps (#90) store both nicknames, prizes and payments: covered by Other User Content and Name.
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -110,9 +111,9 @@ Processed ephemerally: No, except audio (Yes).
 - On Android 14+ `SCHEDULE_EXACT_ALARM` is **denied by default** for new installs (Android docs, "Schedule exact alarms are denied by default"). The app must check `canScheduleExactAlarms()`, ask only when the player turns on level alerts (open `ACTION_REQUEST_SCHEDULE_EXACT_ALARM` with a one-line reason), and fall back to `setWindow`/inexact notifications if the player says no. Without that check, `setExact*` throws.
 - Data safety and the privacy policy don't change: the alarm is local and nothing leaves the phone.
 
-## Pending: face clip in the hand video (checkpoint 3, not in the build yet)
+## Face clip in the hand video (#234, Security OK 17:10)
 
-Apply only when the "Gravar com a cara" patch (`instagram-story/cara/video-com-cara.patch`) merges; until then the forms must not declare it.
+Applied with #234. Apple row is in the table above; the policy row is in all 4 languages.
 - Apple: add **User Content → Photos or Videos** (front-camera clip for the hand video, sent to our server only to place the face on the MP4, then deleted; never stored) → App Functionality, not linked, no tracking. Audio Data already covers the clip's sound (App Functionality).
 - Play: **no change** while the face clip is iOS only (`canRecordFace` requires Platform.OS === 'ios'; Security 16:53). If it comes to Android: Photos and videos → Videos, optional, App functionality, processed ephemerally: Yes.
 - Manifest (main): `NSPrivacyCollectedDataTypePhotosorVideos`, linked false, tracking false, AppFunctionality.
