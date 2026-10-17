@@ -14,7 +14,7 @@ import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet } from '@/components/ShareSheet';
-import { Banner, Button, Card, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
+import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { maybeAskForReview } from '@/lib/review';
@@ -267,12 +267,8 @@ ${link}`;
         Alert.alert(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
       }
     };
-    if (Platform.OS === 'web') doIt();
-    else
-      Alert.alert(t('Apagar partilha?'), t('O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.'), [
-        { text: t('Cancelar'), style: 'cancel' },
-        { text: t('Apagar'), style: 'destructive', onPress: doIt },
-      ]);
+    // Asks on the web too: one tap would end the link and every comment.
+    confirmAction(t('Apagar partilha?'), t('O link deixa de funcionar e os comentários são apagados. A mão fica no teu caderno.'), t('Apagar'), doIt);
   };
 
   const remove = () => {

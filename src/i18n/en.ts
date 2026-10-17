@@ -2987,6 +2987,7 @@ const en: Record<string, string> = {
   'Repor': 'Reset',
   'Aplicar': 'Apply',
   // Mãos partilhadas (friends' hands and new comments).
+  'Não foi possível enviar o comentário.': "Couldn't send the comment.",
   'O que queres saber? (opcional)': 'What do you want to know? (optional)',
   'Ex.: call ou fold no river?': 'E.g. call or fold on the river?',
   'Bloquear': 'Block',

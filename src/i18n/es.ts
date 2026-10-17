@@ -2982,6 +2982,7 @@ const es: Record<string, string> = {
   'Repor': 'Restablecer',
   'Aplicar': 'Aplicar',
   // Mãos partilhadas (friends' hands and new comments).
+  'Não foi possível enviar o comentário.': 'No se pudo enviar el comentario.',
   'O que queres saber? (opcional)': '¿Qué quieres saber? (opcional)',
   'Ex.: call ou fold no river?': 'Ej.: ¿call o fold en el river?',
   'Bloquear': 'Bloquear',

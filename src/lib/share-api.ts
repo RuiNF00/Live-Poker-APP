@@ -109,6 +109,7 @@ export async function postComment(id: string, c: { name: string; text: string; s
     body: JSON.stringify({ ...c, authorId: await authorId() }),
   });
   if (res.status === 422) throw new Error('offensive');
+  if (res.status === 403) throw new Error('blocked');
   if (!res.ok) throw new Error('comment ' + res.status);
   const j = await res.json();
   return (j.comment ?? j) as Comment;

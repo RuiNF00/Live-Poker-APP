@@ -81,7 +81,9 @@ export function CommentsList({
       setText('');
       if (name.trim()) AsyncStorage.setItem(NAME_KEY, name.trim().slice(0, 40)).catch(() => {});
     } catch (e) {
-      setErr(e instanceof Error && e.message === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : t('Não deu para enviar. Tenta outra vez.'));
+      const m = e instanceof Error ? e.message : '';
+      // Blocked by the hand's owner: said plainly, without inviting retries (and without saying why).
+      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
