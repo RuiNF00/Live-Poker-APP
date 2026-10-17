@@ -110,7 +110,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
               <div className="bk-main">
                 <p className="bk-name">{r.n || (r.k === 'mtt' ? 'MTT' : 'Cash')}</p>
                 <p className="bk-sub">
-                  {[date(r.d), `${r.sh}%`, r.mu !== 1 ? fmt.format(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}
+                  {[date(r.d), `${fmt.format(r.sh)}%`, r.mu !== 1 ? fmt.format(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}
                   {!r.e ? <span className="bk-pill bk-live">{c.running}</span> : null}
                   {r.u ? <span className="bk-pill bk-warn">{c.unpaid}</span> : null}
                 </p>

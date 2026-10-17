@@ -9,7 +9,7 @@ import { Avatar } from '@/components/Avatar';
 import { backedLabel, liveIds, useBackingTotals, useLiveSnapshots } from '@/components/staking/use-backing';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { chips, money } from '@/poker/format';
+import { chips, money, num } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -68,7 +68,7 @@ export default function BackingScreen() {
                         key={st.id + i}
                         left={<Avatar name={st.pl || '?'} />}
                         title={st.pl || t('Jogador')}
-                        subtitle={[r.n || (r.k === 'mtt' ? t('Torneio') : 'Cash'), `${r.sh}%`, snap?.level ? t('Nível {n}', { n: snap.level }) : ''].filter(Boolean).join(' · ')}
+                        subtitle={[r.n || (r.k === 'mtt' ? t('Torneio') : 'Cash'), `${num(r.sh)}%`, snap?.level ? t('Nível {n}', { n: snap.level }) : ''].filter(Boolean).join(' · ')}
                         right={
                           snap ? (
                             <View style={{ alignItems: 'flex-end', gap: 2 }}>

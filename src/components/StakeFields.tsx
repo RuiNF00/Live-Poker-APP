@@ -7,7 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { t } from '@/i18n';
-import { money } from '@/poker/format';
+import { money, num } from '@/poker/format';
 import { stakesOf, stakingSummary } from '@/store/session-math';
 import { lastStakeTerms, stakeCost } from '@/store/staking';
 import { useStore } from '@/store/store';
@@ -46,7 +46,7 @@ export function StakeFields({ s, onChange, expenses = true }: { s: Session; onCh
                   key={i}
                   left={<Avatar name={b?.name ?? '?'} size={32} />}
                   title={b?.name ?? t('Sem nome')}
-                  subtitle={[`${x.share}%`, p ? p.name : markupLabel(x.markup), x.unpaid ? t('por pagar') : ''].filter(Boolean).join(' · ')}
+                  subtitle={[`${num(x.share)}%`, p ? p.name : markupLabel(x.markup), x.unpaid ? t('por pagar') : ''].filter(Boolean).join(' · ')}
                   value={money(stakeCost(s, x), s.currency)}
                   chevron={false}
                   right={<IconButton name="close" size={30} label={t('Tirar')} onPress={() => setStakes(stakes.filter((_, k) => k !== i))} />}
