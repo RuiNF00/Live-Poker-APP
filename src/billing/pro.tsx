@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { AppState } from 'react-native';
 
 import { rememberTrial, syncNudges } from './nudges-sync';
+import { ONBOARDING_KEY } from './onboarding';
 import { shouldOfferWelcome } from './offers';
 import { canUse, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { FREE, type PaywallReason, type PlanId } from './plans';
@@ -135,6 +136,32 @@ export function usePro(): ProValue {
   const v = useContext(Ctx);
   if (!v) throw new Error('usePro outside ProProvider');
   return v;
+}
+
+/**
+ * First run: a brand-new install (nothing logged, never onboarded) opens the
+ * welcome flow once, over the hands list.
+ */
+export function useOnboarding() {
+  const { ready, hands, sessions } = useStore();
+  const fresh = ready && hands.length === 0 && sessions.length === 0;
+  useFocusEffect(
+    useCallback(() => {
+      if (!fresh) return;
+      let live = true;
+      AsyncStorage.getItem(ONBOARDING_KEY)
+        .then((seen) => {
+          if (!live || seen) return;
+          // It ends on the paywall, so the after-first-hand offer would be a second one: skip it.
+          AsyncStorage.multiSet([[ONBOARDING_KEY, '{}'], [KEYS.welcome, '1']]).catch(() => {});
+          router.push('/welcome');
+        })
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, [fresh]),
+  );
 }
 
 /**

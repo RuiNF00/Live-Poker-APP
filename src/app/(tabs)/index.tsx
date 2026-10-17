@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePro, useWelcomeOffer } from '@/billing/pro';
+import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Amount, Badge, Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -51,6 +51,7 @@ export default function HandsScreen() {
   const { hands, sessions, activeSession, settings, draft, setDraft, saveHand, deleteHand } = useStore();
   const { handsLeft, trialDays, paywall } = usePro();
   useWelcomeOffer(hands.length);
+  useOnboarding();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
