@@ -69,6 +69,13 @@ export function rawMoney(n: number, currency = '€'): string {
   return lang === 'pt' ? `${sign}${s}${gap}${sym}` : `${sign}${sym}${gap}${s}`;
 }
 
+/** "162k€" / "$162k": a short amount for a tile, with the currency where money() puts it in this language. */
+export function compactMoney(n: number, currency = '€'): string {
+  if (masked) return MASK;
+  const sign = n < 0 && Math.round(Math.abs(n)) > 0 ? '−' : '';
+  return sign + rawMoney(1, currency).replace('1', chips(Math.abs(n)));
+}
+
 export const ACTION_LABEL: Record<ActionKind, string> = {
   fold: 'Fold',
   check: 'Check',

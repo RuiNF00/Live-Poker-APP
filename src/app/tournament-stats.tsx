@@ -11,7 +11,7 @@ import { ScrollView, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { Button, Card, Chip, ChipRow, Divider, Empty, ListGroup, ListItem, Row, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { chips, money, shortDate } from '@/poker/format';
+import { compactMoney, money, shortDate } from '@/poker/format';
 import { byCurrency } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { BANDS, bandOf, biggestScores, finishedTourneys, gameOf, groupBy, MIN_GROUP, MIN_SAMPLE, summarize, tripOf, type Group, type StatsView } from '@/store/tourney-stats';
@@ -20,8 +20,8 @@ import { C, S } from '@/theme';
 const pct = (n: number | null, digits = 0) => (n === null ? '—' : `${n.toLocaleString(locale, { maximumFractionDigits: digits })}%`);
 const signedPct = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString(locale) + '%';
 const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : '') + money(Math.round(n), cur);
-/** "+23,1k$" in a tile: a full amount doesn't fit a third of the screen. */
-const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(Math.round(n), cur)) : (sign && n > 0 ? '+' : n < 0 ? '−' : '') + chips(Math.abs(n)) + cur);
+/** "+23.1k€" / "+$23.1k" in a tile: a full amount doesn't fit a third of the screen. */
+const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(Math.round(n), cur)) : (sign && n > 0 ? '+' : '') + compactMoney(n, cur));
 
 export default function TournamentStatsScreen() {
   const { sessions, trips, settings } = useStore();
