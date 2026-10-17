@@ -150,6 +150,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/with-async-storage-size",
       [
         "expo-splash-screen",
         {

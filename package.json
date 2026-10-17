@@ -65,7 +65,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "tsx --test src/**/__tests__/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bench": "tsx scripts/bench-storage.ts"
   },
   "private": true
 }

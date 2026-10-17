@@ -7,17 +7,20 @@ import {
 } from '@expo-google-fonts/hanken-grotesk';
 import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
 import { AutoCloudBackup } from '@/components/CloudBackup';
+import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { installFetchTimeout } from '@/lib/net';
 import { bootReferrals } from '@/lib/referrals';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
@@ -28,6 +31,7 @@ const theme = {
 };
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+installFetchTimeout();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -43,15 +47,13 @@ export default function RootLayout() {
     track('app_open');
     bootReferrals().catch(() => {});
   }, []);
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded, error]);
   if (!loaded && !error) return null;
   return (
     <SafeAreaProvider>
       <ThemeProvider value={theme}>
         <StoreProvider>
           <ProProvider>
+          <HideSplash />
           <StatusBar style="light" />
           <AutoCloudBackup />
           <Stack
@@ -78,5 +80,33 @@ export default function RootLayout() {
         </StoreProvider>
       </ThemeProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** Mounted once fonts and local data are both in: the first frame is the real one. */
+function HideSplash() {
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+  return null;
+}
+
+/**
+ * A screen that crashes while rendering shows this instead of closing the
+ * app. Hands are already on disk; "Tentar de novo" re-renders.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    console.error('[app] render error', error);
+    SplashScreen.hideAsync().catch(() => {});
+  }, [error]);
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center' }}>
+      <Empty
+        title={t('Algo correu mal neste ecrã')}
+        body={t('As tuas mãos estão guardadas no telemóvel. Tenta de novo; se voltar a acontecer, fecha e abre a app.')}
+        action={<Button title={t('Tentar de novo')} onPress={retry} style={{ alignSelf: 'stretch', marginTop: 8 }} />}
+      />
+    </View>
   );
 }

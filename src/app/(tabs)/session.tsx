@@ -80,7 +80,8 @@ function Live({ s }: { s: Session }) {
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
-  const nHands = hands.filter((h) => h.sessionId === s.id).length;
+  // Memoised: this screen re-renders every second (clock) and hands can be thousands.
+  const nHands = useMemo(() => hands.filter((h) => h.sessionId === s.id).length, [hands, s.id]);
   const save = (p: Partial<Session>) => saveSession({ ...s, ...p });
   const first = s.stackLog[0]?.stack ?? s.stack;
   const delta = s.stack - first;

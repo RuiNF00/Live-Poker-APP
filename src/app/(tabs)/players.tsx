@@ -12,6 +12,7 @@ import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
 import type { Hand } from '@/poker/types';
+import { handCounts } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
 import { C, S } from '@/theme';
@@ -31,6 +32,8 @@ export default function PlayersScreen() {
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .filter((p) => !qq || [p.name, p.look, p.notes, ...p.tags].join(' ').toLowerCase().includes(qq));
   }, [players, q]);
+
+  const counts = useMemo(() => handCounts(hands, players), [hands, players]);
 
   const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
 
@@ -61,7 +64,7 @@ export default function PlayersScreen() {
           )
         }
         renderItem={({ item }) => {
-          const n = handsWith(hands, item).length;
+          const n = counts.get(item.id) ?? 0;
           return (
             <Card onPress={() => setEdit(item)} style={{ gap: S.sm, paddingVertical: S.md }}>
               <Row gap={12}>
