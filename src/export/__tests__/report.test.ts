@@ -68,3 +68,10 @@ test('hands CSV has hero spot, cards and result', () => {
   if (net !== undefined) assert.ok(row.includes(',' + String(Math.round(net * 100) / 100) + ','));
   assert.equal(handsCsv([h], list, { from: at(5, 1) }).trim().split('\n').length, 1, 'outside the range: header only');
 });
+
+test('the PDF page uses singular counts and two-digit days', () => {
+  const html = reportHtml(buildReport({ sessions: list, transfers: tx, bankrolls: brs, range: year }), { now: at(9, 17) });
+  assert.match(html, /Cash: 2 sessões, .*Torneios: 1 entrada, .*, 1 prémio,/);
+  assert.match(html, /03\/02\/2026/);
+  assert.doesNotMatch(html, /[^\d]3\/02\/2026/);
+});

@@ -1045,7 +1045,9 @@ const en: Record<string, string> = {
   'Deve-te {amount}': 'Owes you {amount}',
   // Export and reports
   '12 meses': '12 months',
-  'Cash: {n} sessões, {h} h, {p}. Torneios: {m} entradas, {b} em buy-ins, {c} prémios, {q}.': 'Cash: {n} sessions, {h} h, {p}. Tournaments: {m} entries, {b} in buy-ins, {c} cashes, {q}.',
+  'Cash: {n}, {h} h, {p}. Torneios: {m}, {b} em buy-ins, {c}, {q}.': 'Cash: {n}, {h} h, {p}. Tournaments: {m}, {b} in buy-ins, {c}, {q}.',
+  '1 prémio': '1 cash',
+  '{n} prémios': '{n} cashes',
   'Com depósitos e levantamentos, para Excel ou Google Sheets': 'With deposits and withdrawals, for Excel or Google Sheets',
   'Cópia completa (.json)': 'Full backup (.json)',
   'Data': 'Date',
