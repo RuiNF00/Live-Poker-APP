@@ -4,10 +4,12 @@ import { Modal, Pressable, View } from 'react-native';
 import { t } from '@/i18n';
 import { bbs, chips } from '@/poker/format';
 import type { Player } from '@/poker/types';
+import type { OpponentStats } from '@/store/queries';
 import type { PlayerNote } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 import { AmountPad } from '../AmountPad';
+import { OpponentStatsRow } from '../OpponentStats';
 import { Button, Chip, ChipRow, Field, inputStyle, Row, SheetHeader, T } from '../ui';
 
 export function SeatSheet({
@@ -18,6 +20,7 @@ export function SeatSheet({
   heroStack,
   bb,
   known,
+  stats,
   onSave,
   onClose,
 }: {
@@ -28,6 +31,8 @@ export function SeatSheet({
   heroStack: number;
   bb: number;
   known: PlayerNote[];
+  /** Reads per known player, shown once the seat is someone you know. */
+  stats?: Map<string, OpponentStats>;
   onSave: (p: Player, applyStackToAll?: boolean) => void;
   onClose: () => void;
 }) {
@@ -45,6 +50,7 @@ export function SeatSheet({
   if (!player) return null;
   const q = name.trim().toLowerCase();
   const sugg = known.filter((k) => !q || k.name.toLowerCase().includes(q)).slice(0, 8);
+  const knownId = playerId ?? known.find((k) => q && k.name.trim().toLowerCase() === q)?.id;
   const quick = [20, 40, 60, 100].map((x) => x * bb);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -76,6 +82,7 @@ export function SeatSheet({
               ))}
             </ChipRow>
           )}
+          {!isHero && knownId && stats ? <OpponentStatsRow stats={stats.get(knownId)} /> : null}
         </View>
         <View style={{ gap: S.sm }}>
           <T v="label">{t('Stack no início da mão')}</T>
