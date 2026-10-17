@@ -2311,6 +2311,20 @@ const en: Record<string, string> = {
   'Vê se o teu downswing é normal para os teus resultados.': 'See whether your downswing is normal for your results.',
   'Objetivo de bankroll atingido': 'Bankroll target reached',
   'Com esta sessão passas os {target}. Boa altura para decidir se paras ou se sobes de stake.': 'This session takes you past {target}. A good moment to decide whether to stop or move up.',
+  "Anos": "Years",
+  "Confere e importa": "Check and import",
+  "Em {year}": "In {year}",
+  "Escolhe a app": "Pick the app",
+  "Exporta o ficheiro": "Export the file",
+  "Importámos 1 sessão": "We imported 1 session",
+  "Importámos {n} sessões": "We imported {n} sessions",
+  "Já mudaste de app": "You switched apps",
+  "Mudar de app em 1 minuto": "Switch apps in 1 minute",
+  "O ano em que mais jogaste": "The year you played most",
+  "O teu melhor ano": "Your best year",
+  "Ver o meu {year}": "See my {year}",
+  "Vê o teu ano em cartões para partilhar: horas, melhor sessão, stakes e o maior pote.": "See your year in cards to share: hours, best session, stakes and the biggest pot.",
+  "Já uso outra app: mudar em 1 minuto": "I use another app: switch in 1 minute",
 };
 
 export default en;

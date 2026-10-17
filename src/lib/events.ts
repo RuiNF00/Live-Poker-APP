@@ -26,6 +26,7 @@ export type FunnelEvent =
   | 'invite_claimed'
   | 'cancel_flow'
   | 'onboarding_step'
+  | 'import_done'
   | 'paywall_closed'
   | 'trial_start'
   | 'lifetime_offer_shown'

@@ -10,11 +10,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
-import { Amount, Banner, Button, Card, Chip, ChipRow, Empty, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
+import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
 import { prepare, toSessions, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
+import { importRecap, type ImportRecap } from '@/import/recap';
+import { track } from '@/lib/events';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { money } from '@/poker/format';
 import { importSummary, parseBackup } from '@/store/backup';
@@ -88,7 +90,7 @@ const FIELD_LABEL: Partial<Record<Field, string>> = {
 };
 const MAPPABLE = Object.keys(FIELD_LABEL) as Field[];
 
-type Step = { at: 'pick' } | { at: 'review'; file: Prepared } | { at: 'done'; added: number; total: number; moves?: number; summary?: string };
+type Step = { at: 'pick' } | { at: 'review'; file: Prepared } | { at: 'done'; added: number; total: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
 
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -106,8 +108,13 @@ export default function ImportScreen() {
       if (text === null) return;
       if (/^\s*\{/.test(text)) {
         // A Sweatbook backup: hands, sessions and players in one go.
-        const n = store.importData(parseBackup(text));
-        setStep({ at: 'done', added: n.sessions + n.hands + n.players, total: n.sessions, summary: importSummary(n) });
+        const backup = parseBackup(text);
+        const had = new Set(store.sessions.map((s) => s.id));
+        const n = store.importData(backup);
+        const fresh = backup.sessions.filter((s) => !had.has(s.id));
+        const recap = importRecap(fresh, [...store.sessions, ...fresh]);
+        track('import_done', { source: 'sweatbook', sessions: n.sessions, hours: Math.round(recap.hours) });
+        setStep({ at: 'done', added: n.sessions + n.hands + n.players, total: n.sessions, summary: importSummary(n), recap, source: 'sweatbook' });
         return;
       }
       const file = prepare(text);
@@ -128,9 +135,24 @@ export default function ImportScreen() {
         <View style={{ flex: 1, backgroundColor: C.bg }}>
           <ScrollView contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 140 }}>
             <View style={{ gap: S.sm }}>
+              <T v="label" color={C.accent}>
+                {t('Mudar de app em 1 minuto')}
+              </T>
               <T v="h1">{t('Traz o teu histórico')}</T>
               <T v="callout">{t('As sessões que tens noutra app entram no teu bankroll. Junta-se ao que já tens, não apaga nada.')}</T>
             </View>
+            <Row gap={S.sm}>
+              {[t('Escolhe a app'), t('Exporta o ficheiro'), t('Confere e importa')].map((x, i) => (
+                <View key={x} style={{ flex: 1, gap: 6, padding: S.sm + 2, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+                  <T v="monoS" color={C.accent}>
+                    {i + 1}
+                  </T>
+                  <T v="small" style={{ color: C.text }} numberOfLines={2}>
+                    {x}
+                  </T>
+                </View>
+              ))}
+            </Row>
             <Section title={t('De onde vem')}>
               <ListGroup>
                 {SOURCES.map((s) => (
@@ -177,38 +199,87 @@ export default function ImportScreen() {
           onImport={(r, placement) => {
             const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls });
             const before = new Set(store.transfers.map((x) => x.id));
+            const had = new Set(store.sessions.map((s) => s.id));
             const n = store.importData({ app: 'sweatbook', v: 1, exportedAt: Date.now(), hands: [], sessions: p.sessions, players: [], bankrolls: p.bankrolls, transfers: p.transfers });
             const moves = p.transfers.filter((x) => !before.has(x.id)).length;
-            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, moves });
+            const fresh = p.sessions.filter((s) => !had.has(s.id));
+            const recap = importRecap(fresh, [...store.sessions, ...fresh]);
+            track('import_done', { source: step.file.source, sessions: n.sessions, hours: Math.round(recap.hours) });
+            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, moves, recap, source: step.file.source });
           }}
         />
       ) : (
-        <View style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center', padding: S.gutter, paddingBottom: insets.bottom + S.xl }}>
-          <Empty
-            icon="checkmark-circle"
-            title={step.added === 1 ? t('1 sessão importada') : t('{n} sessões importadas', { n: step.added })}
-            body={
-              step.summary ??
-              (step.moves
-                ? step.moves === 1
-                  ? t('E 1 depósito ou levantamento no saldo da bankroll.')
-                  : t('E {n} depósitos e levantamentos no saldo da bankroll.', { n: step.moves })
-                : step.total > step.added
-                ? step.total - step.added === 1
-                  ? t('1 já estava no Sweatbook e ficou como estava.')
-                  : t('{n} já estavam no Sweatbook e ficaram como estavam.', { n: step.total - step.added })
-                : t('Já contam no bankroll, no lucro por hora e nos resultados por sala.'))
-            }
-            action={
-              <View style={{ gap: S.sm }}>
-                <Button title={t('Ver bankroll')} onPress={() => router.replace('/(tabs)/bankroll')} />
-                <Button kind="ghost" title={t('Importar outro ficheiro')} onPress={() => setStep({ at: 'pick' })} />
-              </View>
-            }
-          />
-        </View>
+        <Done step={step} bottom={insets.bottom} onAgain={() => setStep({ at: 'pick' })} />
       )}
     </>
+  );
+}
+
+/** After the import: what came in, the best year, and a way straight into that year's review. */
+function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; bottom: number; onAgain: () => void }) {
+  const r = step.recap;
+  const sub =
+    step.summary ??
+    (step.moves
+      ? step.moves === 1
+        ? t('E 1 depósito ou levantamento no saldo da bankroll.')
+        : t('E {n} depósitos e levantamentos no saldo da bankroll.', { n: step.moves })
+      : step.total > step.added
+        ? step.total - step.added === 1
+          ? t('1 já estava no Sweatbook e ficou como estava.')
+          : t('{n} já estavam no Sweatbook e ficaram como estavam.', { n: step.total - step.added })
+        : null);
+  const span = r.from === null ? null : r.from === r.to ? t('Em {year}', { year: r.from }) : t('De {from} a {to}', { from: r.from, to: r.to! });
+  const best = r.best;
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.xxl, gap: S.xl, paddingBottom: 220 }}>
+        <View style={{ gap: S.sm }}>
+          <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.goodSoft, alignItems: 'center', justifyContent: 'center', marginBottom: S.xs }}>
+            <Ionicons name="checkmark" size={30} color={C.good} />
+          </View>
+          <T v="label">{t('Já mudaste de app')}</T>
+          <T v="title">{r.sessions === 1 ? t('Importámos 1 sessão') : t('Importámos {n} sessões', { n: r.sessions })}</T>
+          {span || sub ? <T v="callout">{[span, sub].filter(Boolean).join('. ')}</T> : null}
+        </View>
+
+        {r.sessions ? (
+          <StatGrid cols={3}>
+            <Stat label={t('Horas')} value={String(Math.round(r.hours))} />
+            <Stat label={t('Salas')} value={String(r.venues)} />
+            <Stat label={t('Anos')} value={String(r.from === null ? 0 : r.to! - r.from + 1)} />
+          </StatGrid>
+        ) : null}
+
+        {best ? (
+          <Card tone="accent" style={{ gap: S.xs }}>
+            <T v="label" color={C.accent}>
+              {best.byHours ? t('O ano em que mais jogaste') : t('O teu melhor ano')}
+            </T>
+            <Row gap={S.md} style={{ alignItems: 'baseline' }}>
+              <T v="display">{String(best.year)}</T>
+              {best.byHours ? (
+                <T v="callout">{t('{n} sessões', { n: best.sessions })}</T>
+              ) : (
+                <T v="h1" color={C.good}>
+                  {'+' + money(Math.round(best.profit), r.currency)}
+                </T>
+              )}
+            </Row>
+            <T v="small">{t('Vê o teu ano em cartões para partilhar: horas, melhor sessão, stakes e o maior pote.')}</T>
+          </Card>
+        ) : null}
+      </ScrollView>
+      <Dock bottom={bottom}>
+        <View style={{ gap: S.sm }}>
+          {best ? (
+            <Button title={t('Ver o meu {year}', { year: best.year })} icon="sparkles" onPress={() => router.replace({ pathname: '/year', params: { y: String(best.year) } })} />
+          ) : null}
+          <Button kind={best ? 'secondary' : 'primary'} title={t('Ver bankroll')} onPress={() => router.replace('/(tabs)/bankroll')} />
+          <Button kind="ghost" size="sm" title={t('Importar outro ficheiro')} onPress={onAgain} />
+        </View>
+      </Dock>
+    </View>
   );
 }
 
