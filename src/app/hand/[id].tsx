@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, ScrollView, Share, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
@@ -27,7 +27,7 @@ import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
-import type { Street } from '@/poker/types';
+import type { Hand, Street } from '@/poker/types';
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -251,6 +251,7 @@ ${link}`;
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} initialInBB={settings.inBB} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
 
@@ -350,5 +351,48 @@ function VoteTally({ votes }: { votes: Record<string, number> }) {
         );
       })}
     </Card>
+  );
+}
+
+/** Previous and next hand of the same session or tournament, to review a day in order. */
+function HandNav({ hand, hands }: { hand: Hand; hands: Hand[] }) {
+  const list = useMemo(
+    () => (hand.sessionId ? hands.filter((h) => h.sessionId === hand.sessionId).sort((a, b) => a.createdAt - b.createdAt) : []),
+    [hand.sessionId, hands],
+  );
+  if (list.length < 2) return null;
+  const at = list.findIndex((h) => h.id === hand.id);
+  const open = (h?: Hand) => {
+    if (!h) return;
+    tap('select');
+    router.replace({ pathname: '/hand/[id]', params: { id: h.id } });
+  };
+  const btn = (dir: -1 | 1) => {
+    const target = list[at + dir];
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={dir < 0 ? t('Mão anterior') : t('Mão seguinte')}
+        accessibilityState={{ disabled: !target }}
+        disabled={!target}
+        onPress={() => open(target)}
+        hitSlop={6}
+        style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: S.sm, opacity: !target ? 0.35 : pressed ? 0.7 : 1 })}>
+        {dir < 0 ? <Ionicons name="chevron-back" size={18} color={C.text} /> : null}
+        <T v="small" color={C.text}>
+          {dir < 0 ? t('Anterior') : t('Seguinte')}
+        </T>
+        {dir > 0 ? <Ionicons name="chevron-forward" size={18} color={C.text} /> : null}
+      </Pressable>
+    );
+  };
+  return (
+    <Row style={{ justifyContent: 'space-between', borderRadius: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }}>
+      {btn(-1)}
+      <T v="small" color={C.textDim}>
+        {t('Mão {n} de {total} da sessão', { n: at + 1, total: list.length })}
+      </T>
+      {btn(1)}
+    </Row>
   );
 }

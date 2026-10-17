@@ -2256,6 +2256,9 @@ const en: Record<string, string> = {
   'Não deu para ligar à {store}': "Couldn't reach the {store}",
   'Não deu para ligar à {store}. Tenta outra vez.': "Couldn't reach the {store}. Please try again.",
   'Mãos jogadas': 'Hands played',
+  'Mão anterior': 'Previous hand',
+  'Mão seguinte': 'Next hand',
+  'Mão {n} de {total} da sessão': 'Hand {n} of {total} in the session',
 };
 
 export default en;
