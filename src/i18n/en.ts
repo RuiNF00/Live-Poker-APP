@@ -2333,6 +2333,7 @@ const en: Record<string, string> = {
   'O festival acabou': 'The festival is over',
   'Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.': 'Get a story of your days, events and best hand. No amounts unless you want to show them.',
   'Criar story do festival': 'Create festival story',
+  'Dias de jogo': 'Days played',
 };
 
 export default en;

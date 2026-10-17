@@ -141,7 +141,7 @@ export function moneyLabel(r: FestivalRecap): string {
 /** The four small numbers under the result, most telling first. */
 export function recapStats(r: FestivalRecap): RecapStat[] {
   const all: (RecapStat | null)[] = [
-    { key: 'days', label: t('Dias'), value: String(r.days) },
+    { key: 'days', label: t('Dias de jogo'), value: String(r.days) },
     r.events ? { key: 'events', label: r.events === 1 ? t('Evento') : t('Eventos'), value: String(r.events) } : null,
     r.events ? { key: 'cashes', label: t('Prémios'), value: `${r.cashes}/${r.events}`, tone: r.cashes ? 'good' : undefined } : null,
     r.best ? { key: 'place', label: t('Melhor lugar'), value: r.best.field ? `${r.best.finish}º/${r.best.field}` : `${r.best.finish}º` } : null,
