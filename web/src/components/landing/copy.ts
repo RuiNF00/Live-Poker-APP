@@ -97,7 +97,7 @@ export function landingCopy(locale: Locale) {
       ['Os meus amigos precisam da app?', 'Não. O link abre em qualquer browser: veem o replay, votam e comentam.'],
       ['Posso cancelar quando quiser?', 'Sim, nas definições da App Store ou do Google Play. Ficas com Pro até ao fim do período pago.'],
       ['Se deixar de pagar, perco as mãos?', `Não. Todas as mãos guardadas continuam tuas. Voltas às ${PRICES.freeHandsPerDay} mãos novas por dia.`],
-      ['É uma app de jogo a dinheiro?', 'Não. O Sweatbook serve para registar e estudar as mãos que jogas ao vivo. Não há apostas dentro da app.'],
+      ['É uma app de jogo a dinheiro?', 'Não. O Sweatbook serve para registar e estudar as mãos que jogas ao vivo. Nenhum dinheiro passa pela app.'],
     ],
     finalTitle: 'Na próxima mão que jogares, guarda-a.',
     privacy: 'Privacidade',

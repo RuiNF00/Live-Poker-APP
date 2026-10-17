@@ -81,7 +81,7 @@ export interface RpView {
   facing: RpFacing | null;
   /** Hero just bet or raised: what a bluff needs, the size, and the price the next player gets. */
   heroBet: RpHeroBet | null;
-  /** Hero to act with no bet to face: "Abrir ou foldar", "Pote com limps", "Passar ou apostar". */
+  /** Hero to act with no bet to face: "Abrir ou foldar", "Pote com limps", "Check ou bet". */
   decision: string | null;
   /** Pot / effective stack summary line. */
   info: string;
@@ -342,7 +342,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   // Hero to act with no bet to face: say what the decision is instead of a price.
   let decision: string | null = null;
   if (!result && !facing && st.toAct === hand.hero) {
-    if (st.street !== 'preflop') decision = t('Passar ou apostar');
+    if (st.street !== 'preflop') decision = t('Check ou bet');
     else {
       let limps = 0;
       for (let j = 1; j <= k; j++) if (r.steps[j].state.street === 'preflop' && r.steps[j].state.last?.kind === 'call') limps++;

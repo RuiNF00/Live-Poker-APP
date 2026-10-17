@@ -383,7 +383,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
       ) : view.heroBet ? (
         <>
           <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
-            {t('HERO APOSTA')}
+            {t('HERO FAZ BET')}
             <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> {pct(view.heroBet.pct)} {t('do pote')}</Text>
           </Text>
           <Stat label="Bluff BE" value={pct(view.heroBet.bluffBE, 1)} color={C.accent} />
