@@ -32,7 +32,7 @@ test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquet
     contexts: { device: { name: 'iPhone do Rui', id: 'dev-123', model: 'iPhone15,2' } },
     transaction: '/swap/AbCdEfGh12345678',
     tags: { channel: 'production', install_id: 'abc', amount: '500' },
-    extra: { note: 'Ele 3-beta muito leve com A5s, liga-me 912345678' },
+    extra: { note: 'Ele 3-beta', said: 'Ele 3-beta muito leve com A5s, liga-me 912345678' },
     exception: { values: [{ type: 'TypeError', value: 'cannot read rui@x.pt', stacktrace: { frames: [{ filename: 'app:///index.bundle', lineno: 12 }] } }] },
     breadcrumbs: [{ category: 'console', message: 'log' }, { category: 'fetch', data: { method: 'GET', url: 'https://x.pt/api?token=1', status_code: 200, body: 'segredo' } }],
   });
@@ -43,7 +43,7 @@ test('o relatório não leva utilizador, nome do telemóvel, cookies nem etiquet
   assert.deepEqual(e.contexts, { device: { model: 'iPhone15,2' } });
   assert.equal(e.transaction, '/swap/:id');
   assert.deepEqual(e.tags, { channel: 'production' });
-  assert.equal((e.extra as { note: string }).note, 'Ele 3-beta muito leve com A5s, liga-me [number]');
+  assert.deepEqual(e.extra, { said: 'Ele 3-beta muito leve com A5s, liga-me [number]' });
   assert.equal(e.exception.values[0].value, 'cannot read [email]');
   assert.equal(e.exception.values[0].stacktrace.frames[0].lineno, 12);
   assert.deepEqual(e.breadcrumbs, [{ category: 'fetch', data: { method: 'GET', url: 'https://x.pt/api', status_code: 200 } }]);
@@ -71,4 +71,19 @@ test('as variáveis locais das linhas da pilha não saem; ficheiro e linha ficam
   }) as { exception: { values: { stacktrace: { frames: Record<string, unknown>[] } }[] }; contexts: { react: { componentStack: string } } };
   assert.deepEqual(e.exception.values[0].stacktrace.frames[0], { filename: 'app.js', lineno: 3, function: 'save' });
   assert.equal(e.contexts.react.componentStack, 'at Hand ([email])');
+});
+
+test('chaves com nomes, notas e tokens saem inteiras de extra e contexts; o sistema fica', () => {
+  const e = scrubEvent({
+    extra: { name: 'Rui', note: 'jogou mal', edit_token: 'x1', player_name: 'Gil', level: 8, nested: { nickname: 'R' } },
+    contexts: { session: { name: 'Main Event', notes: 'cansado' }, os: { name: 'iOS', version: '18.1' }, app: { app_name: 'Sweatbook' } },
+    logentry: { message: 'saved for rui@exemplo.pt', params: ['AhKd'] },
+    threads: { values: [{ id: 1, stacktrace: { frames: [{ filename: 'a.js', lineno: 1, vars: { hand: 'AhKd' } }] } }] },
+  }) as Record<string, any>;
+  assert.deepEqual(e.extra, { level: 8, nested: {} });
+  assert.deepEqual(e.contexts.session, {});
+  assert.deepEqual(e.contexts.os, { name: 'iOS', version: '18.1' });
+  assert.deepEqual(e.contexts.app, { app_name: 'Sweatbook' });
+  assert.deepEqual(e.logentry, { message: 'saved for [email]', params: ['[cards]'] });
+  assert.deepEqual(e.threads.values[0].stacktrace.frames[0], { filename: 'a.js', lineno: 1 });
 });

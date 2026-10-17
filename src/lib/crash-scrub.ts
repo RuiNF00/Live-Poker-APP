@@ -38,12 +38,17 @@ export function stripUrl(u: string): string {
   return (m[1] ?? '') + path.join('/');
 }
 
-function deep(x: unknown, depth = 0): unknown {
+// Keys whose values are a person's words or a secret, however short ("Rui", a 20-character note): dropped, not filtered.
+const SECRET_KEY = /^(name|names|note|notes|nickname|token|code|edit|.*token|.*_name)$/i;
+// The SDK's own descriptions of the phone and the app (os.name "iOS", app.app_name): kept, values still filtered.
+const SDK_CONTEXTS = ['os', 'app', 'runtime', 'culture'];
+
+function deep(x: unknown, depth = 0, dropKeys = true): unknown {
   if (typeof x === 'string') return scrubString(x);
   if (depth > 8 || x == null || typeof x !== 'object') return x;
-  if (Array.isArray(x)) return x.map((v) => deep(v, depth + 1));
+  if (Array.isArray(x)) return x.map((v) => deep(v, depth + 1, dropKeys));
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(x)) out[k] = deep(v, depth + 1);
+  for (const [k, v] of Object.entries(x)) if (!dropKeys || !SECRET_KEY.test(k)) out[k] = deep(v, depth + 1, dropKeys);
   return out;
 }
 
@@ -76,7 +81,7 @@ export function scrubEvent<E extends object>(event: E): E {
       c.device = d;
     }
     // Any other context (React's component stack, app, os) goes through the same string filter.
-    for (const k of Object.keys(c)) if (k !== 'device') c[k] = deep(c[k]);
+    for (const k of Object.keys(c)) if (k !== 'device') c[k] = deep(c[k], 0, !SDK_CONTEXTS.includes(k));
     e.contexts = c;
   }
   if (e.tags && typeof e.tags === 'object') {
@@ -84,9 +89,14 @@ export function scrubEvent<E extends object>(event: E): E {
   }
   if (e.message != null) e.message = deep(e.message);
   if (e.extra != null) e.extra = deep(e.extra);
+  if (e.logentry != null) e.logentry = deep(e.logentry);
   if (e.exception && typeof e.exception === 'object') {
     const ex = e.exception as { values?: Obj[] };
     e.exception = { ...ex, values: ex.values?.map((v) => ({ ...v, value: typeof v.value === 'string' ? scrubString(v.value) : v.value, stacktrace: noVars(v.stacktrace) })) };
+  }
+  if (e.threads && typeof e.threads === 'object') {
+    const th = e.threads as { values?: Obj[] };
+    e.threads = { ...th, values: th.values?.map((v) => ({ ...v, stacktrace: noVars(v.stacktrace) })) };
   }
   if (Array.isArray(e.breadcrumbs)) e.breadcrumbs = (e.breadcrumbs as Obj[]).map((x) => scrubBreadcrumb(x)).filter(Boolean);
   return e as unknown as E;
