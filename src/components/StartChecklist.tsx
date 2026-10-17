@@ -11,6 +11,7 @@ import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
 const HIDDEN = 'rl.start.hidden.v1';
+const FORTNIGHT = 14 * 86_400_000;
 
 /**
  * First-week checklist on the hands list (Mural pattern): four things that
@@ -20,6 +21,7 @@ const HIDDEN = 'rl.start.hidden.v1';
 export function StartChecklist() {
   const { hands, sessions, transfers } = useStore();
   const [hidden, setHidden] = useState(true);
+  const [now] = useState(() => Date.now());
   useEffect(() => {
     AsyncStorage.getItem(HIDDEN)
       .then((v) => setHidden(v === '1'))
@@ -27,7 +29,9 @@ export function StartChecklist() {
   }, []);
   const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length });
   const count = START_STEPS.filter((s) => done[s.key]).length;
-  if (hidden || hands.length === 0 || count === START_STEPS.length) return null;
+  // First week means it: players whose first hand is older than two weeks don't need it.
+  const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;
+  if (hidden || hands.length === 0 || count === START_STEPS.length || now - first > FORTNIGHT) return null;
 
   const go = (k: StartStep) => {
     tap();
