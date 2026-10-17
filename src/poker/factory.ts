@@ -1,6 +1,6 @@
 import type { Session } from '@/store/types';
 
-import { replay } from './engine';
+import { isComplete, replay } from './engine';
 import type { GameInfo, Hand, Player } from './types';
 
 export const MTT_LEVELS: [number, number][] = [
@@ -45,8 +45,13 @@ export function sameTable(last: Hand | null | undefined, session?: Session | nul
   return !last.sessionId && Date.now() - last.createdAt < SAME_TABLE_MS;
 }
 
-/** Everyone's stack once the hand is over (or as it stands, if it wasn't finished). */
+/**
+ * Everyone's stack once the hand is over. A hand saved before its end ("Guardar
+ * já") has no end yet: everyone keeps the stack they started it with, so no
+ * chips from its pot go missing.
+ */
 export function endStacks(hand: Hand): number[] {
+  if (!isComplete(hand)) return hand.players.map((p) => p.stack);
   const r = replay(hand);
   const s = r.final;
   return hand.players.map((_, i) => s.stacks[i] + (r.result ? r.result.won[i] : s.bets[i]));
@@ -87,9 +92,7 @@ export function newHand(opts: {
     game = { ...last.game, straddles: undefined, straddleFrom: undefined, bombPot: undefined };
     n = last.players.length;
     // Carry hero's stack over from where the last hand ended.
-    const r = replay(last);
-    const s = r.final;
-    const end = s.stacks[last.hero] + (r.result ? r.result.won[last.hero] : s.bets[last.hero]);
+    const end = endStacks(last)[last.hero];
     stack = end > 0 ? end : last.players[last.hero].stack;
   } else {
     game = defaultGame('mtt', opts.currency);

@@ -23,6 +23,7 @@ export function AmountPad({
   quick,
   onClose,
   onDone,
+  onAllIn,
 }: {
   visible: boolean;
   title: string;
@@ -38,6 +39,8 @@ export function AmountPad({
   quick?: { label: string; value: number }[];
   onClose: () => void;
   onDone: (chips: number) => void;
+  /** "All-in": what was typed is everything this player had (the stack follows), whatever the minimum. */
+  onAllIn?: (chips: number) => void;
 }) {
   const sheetAnim = useSheetAnimation();
   const [txt, setTxt] = useState('');
@@ -133,14 +136,29 @@ export function AmountPad({
             </Pressable>
           ))}
         </View>
-        <Button
-          title={t('Confirmar')}
-          disabled={value <= 0 || tooLow}
-          onPress={() => {
-            onDone(capped);
-            setTxt('');
-          }}
-        />
+        <Row gap={10}>
+          {onAllIn ? (
+            <Button
+              title="All-in"
+              kind="secondary"
+              style={{ flex: 1 }}
+              disabled={value <= 0}
+              onPress={() => {
+                onAllIn(value);
+                setTxt('');
+              }}
+            />
+          ) : null}
+          <Button
+            title={t('Confirmar')}
+            style={{ flex: 1 }}
+            disabled={value <= 0 || tooLow}
+            onPress={() => {
+              onDone(capped);
+              setTxt('');
+            }}
+          />
+        </Row>
       </View>
     </Modal>
   );

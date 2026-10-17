@@ -207,7 +207,7 @@ export function autoFold(hand: Hand, s: TableState): HandAction[] {
 export function rewindTo(hand: Hand, from: number, seat: number): HandAction[] | null {
   for (let k = from; k < hand.actions.length; k++) {
     const a = hand.actions[k];
-    if (a.kind !== 'fold') return null;
+    if (a.kind !== 'fold' && a.kind !== 'check') return null;
     if (a.p === seat) return hand.actions.slice(0, k);
   }
   return null;
@@ -252,8 +252,53 @@ export function checkAround(hand: Hand, s: TableState): HandAction[] {
  * "Check até ao fim": once chosen, each street checks around by itself as soon
  * as its board card is in, so only the cards are left to pick.
  */
+export function checkDownNow(hand: Hand, s: TableState): HandAction[] {
+  const around = checkAround(hand, s);
+  if (around.length || s.toAct === null) return around;
+  // The others already checked (to the raiser): hero's own check is the street.
+  return legal(s)?.canCheck ? [{ p: s.toAct, kind: 'check' }] : [];
+}
+
 export function checkDownNext(hand: Hand): HandAction[] {
   const s = replay(hand).final;
   if (s.toAct === null || s.needsBoard) return [];
   return checkAround(hand, s);
+}
+
+/**
+ * "All-in" on the keypad: the player to act is all-in for `to` (what they have
+ * in front of them on this street), so their starting stack becomes whatever
+ * makes that everything they had. No trip to the seat sheet first. Less than
+ * the bet is a call for less; more is a bet or a raise.
+ */
+export function allInFor(hand: Hand, s: TableState, to: number): Hand | null {
+  const p = s.toAct;
+  if (p === null) return null;
+  const add = to - s.bets[p];
+  if (add <= 0) return null;
+  const stack = hand.players[p].stack - s.stacks[p] + add;
+  const players = hand.players.map((x, i) => (i === p ? { ...x, stack } : x));
+  const a: HandAction = to <= s.currentBet ? { p, kind: 'call' } : { p, kind: s.currentBet === 0 ? 'bet' : 'raise', to };
+  return { ...hand, players, actions: [...hand.actions, a] };
+}
+
+/**
+ * After the flop, the seats before hero check to hero when hero was the last
+ * to bet or raise: they "check to the raiser", the line most live hands take.
+ * Hero's c-bet or barrel is then the next tap; a seat that bet instead is one
+ * tap on its chip ("Alguém fez bet?") or its seat, like "Alguém entrou?".
+ */
+export function checkToRaiser(hand: Hand, s: TableState): HandAction[] {
+  if (s.street === 'preflop' || s.toAct === null || s.toAct === hand.hero || s.folded[hand.hero] || s.allIn[hand.hero] || s.acted[hand.hero] || s.currentBet > 0) return [];
+  const aggr = [...hand.actions].reverse().find((a) => a.kind === 'bet' || a.kind === 'raise');
+  if (!aggr || aggr.p !== hand.hero) return [];
+  const acts = skipTo(hand, s, hand.hero);
+  const end = replay({ ...hand, actions: [...hand.actions, ...acts] }).final;
+  return end.street === s.street && end.toAct === hand.hero ? acts : [];
+}
+
+/** What the app enters by itself: folds to hero preflop, checks to hero after the flop. */
+export function autoActions(hand: Hand, s: TableState): HandAction[] {
+  const folds = autoFold(hand, s);
+  return folds.length ? folds : checkToRaiser(hand, s);
 }
