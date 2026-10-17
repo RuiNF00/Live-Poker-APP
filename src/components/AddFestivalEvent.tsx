@@ -98,7 +98,7 @@ export function AddFestivalEvent({ f }: { f: Festival }) {
         ))}
       </ChipRow>
       <Row gap={S.sm} style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <NumField label={`Buy-in (${f.currency})`} value={buyIn} onChange={setBuyIn} />
+        <NumField money label={`Buy-in (${f.currency})`} value={buyIn} onChange={setBuyIn} />
         <NumField label={t('Stack inicial')} value={stack} onChange={setStack} />
       </Row>
       <View style={{ gap: 6 }}>

@@ -55,7 +55,7 @@ export default function ChopScreen() {
             {st.map((_, i) => (
               <Row key={i} gap={S.sm} style={{ alignItems: 'flex-end' }}>
                 <NumField label={name(i)} value={stacks[i]} onChange={(v) => setAt(stacks, setStacks, i, v)} />
-                <NumField label={t('{n}º lugar', { n: i + 1 })} value={pays[i]} onChange={(v) => setAt(pays, setPays, i, v)} />
+                <NumField money label={t('{n}º lugar', { n: i + 1 })} value={pays[i]} onChange={(v) => setAt(pays, setPays, i, v)} />
               </Row>
             ))}
           </Card>
