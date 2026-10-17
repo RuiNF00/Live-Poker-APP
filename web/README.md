@@ -25,10 +25,12 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
 | `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
 | `POST /api/events` `{ event, installId (uuid), platform: ios\|android\|web, props? }` | `204`. Eventos do funil: `app_open`, `hand_saved`, `limit_hit`, `paywall_shown`, `purchase`, `share_created`, `story_shared` (app) e `share_viewed`, `store_click`, `landing_view` (site). Sem dados pessoais. Contagens diárias no Supabase: `select * from app_event_daily limit 100;` |
-| `POST /api/referrals/code` `{ installId, code?, rcUserId? }` | `{ code, url }` (convite `https://sweatbook.poker/r/<code>`; o mesmo código sempre; `code` regista o código da app, 10 hex) |
-| `POST /api/referrals/claim` `{ installId, code, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
-| `POST /api/referrals/activate` `{ installId, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
-| `POST /api/referrals/status` `{ installId, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |
+| `POST /api/referrals/code` `{ installId, myCode? \| code?, rcUserId? }` | `{ code, url }` (convite `https://sweatbook.poker/r/<code>`; o mesmo código sempre; `code` regista o código da app, 10 hex) |
+| `POST /api/referrals/claim` `{ installId, code, myCode?, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
+| `POST /api/referrals/activate` `{ installId, myCode?, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
+| `POST /api/referrals/status` `{ installId, myCode?, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |
+
+Todas as rotas de convites aceitam `myCode` (o código local da app, 10 hex). A primeira que registar a instalação usa esse código. Se a instalação já tinha um código do servidor, o `myCode` fica como alias: os dois funcionam e a resposta passa a devolver o da app.
 | `PUT /api/backup/<id>` header `x-backup-key: <secret>`, corpo gzip ou JSON (até ~4,4 MB) | `204`; `403` se o id já existe com outro segredo |
 | `GET /api/backup/<id>` (mesmo header) | o corpo guardado + `x-updated-at`; `404` se o código está errado ou não há cópia |
 | `DELETE /api/backup/<id>` (mesmo header) | `204`. Cópias sem alterações há 18 meses são apagadas |

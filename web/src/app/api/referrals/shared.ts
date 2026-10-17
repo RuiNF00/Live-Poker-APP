@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { brand } from '@/config/brand';
 import { cors } from '@/lib/cors';
 import { clientIp, rateLimited } from '@/lib/ratelimit';
-import { referrals } from '@/lib/referrals';
+import { newCode, normalizeCode, referrals } from '@/lib/referrals';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -12,6 +12,8 @@ export const inviteUrl = (code: string) => `${brand.siteUrl}/r/${code}`;
 export interface ReferralBody {
   installId: string;
   rcUserId: string | null;
+  /** The app's own code (`myCode`), validated, so the first code registered is always the app's. */
+  myCode: string | null;
   raw: Record<string, unknown>;
 }
 
@@ -25,5 +27,9 @@ export async function readBody(req: Request, bucket: string) {
   if (typeof installId !== 'string' || !UUID.test(installId)) return { error: json({ error: 'invalid_install' }, 422) };
   const rc = raw?.rcUserId;
   const rcUserId = typeof rc === 'string' && rc.length > 0 && rc.length <= 100 ? rc : null;
-  return { b, body: { installId, rcUserId, raw: raw! } as ReferralBody };
+  const myCode = typeof raw!.myCode === 'string' ? normalizeCode(raw!.myCode) : null;
+  return { b, body: { installId, rcUserId, myCode, raw: raw! } as ReferralBody };
 }
+
+/** Code to register for an install that has none yet: the app's own when it sent one. */
+export const codeToRegister = (body: ReferralBody, fallback: string | null = null) => body.myCode ?? fallback ?? newCode();
