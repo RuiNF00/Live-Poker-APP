@@ -1,6 +1,7 @@
 // Invite link opened in the app (sweatbook.poker/r/<code> or sweatbook://r/<code>):
 // claim it, then send the friend straight to their first hand.
 
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -9,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { claimInvite, type ClaimResult } from '@/lib/referrals';
-import { C } from '@/theme';
+import { C, S } from '@/theme';
 
 const COPY: Partial<Record<ClaimResult, string>> = {
   ok: 'Convite ativado. Guarda a tua primeira mão e ganham os dois 7 dias de Pro.',
@@ -28,16 +29,17 @@ export default function InviteLanding() {
   }, [code]);
   const msg = res ? COPY[res] : null;
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, paddingTop: insets.top + 40, gap: 18, alignItems: 'center' }}>
-      <Wordmark />
-      <T v="h1" style={{ textAlign: 'center' }}>
-        {t('Vens por convite')}
-      </T>
-      <T v="body" style={{ textAlign: 'center', color: C.textDim }}>
-        {msg ? t(msg) : res ? t('Não deu para ativar o convite agora. Podes escrever o código nas Definições.') : t('A ativar o convite…')}
-      </T>
-      <Button title={t('Registar a minha primeira mão')} style={{ alignSelf: 'stretch' }} onPress={() => router.replace('/hand/new')} />
-      <Button kind="ghost" title={t('Ver uma mão de exemplo')} onPress={() => router.replace('/hand/sample')} />
+    <View style={{ flex: 1, backgroundColor: C.bg, padding: S.xl, paddingTop: insets.top + 48, paddingBottom: insets.bottom + S.xl, gap: S.lg }}>
+      <Wordmark size={26} />
+      <View style={{ flex: 1, justifyContent: 'center', gap: S.md }}>
+        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="gift" size={30} color={C.accent} />
+        </View>
+        <T v="title">{t('Vens por convite')}</T>
+        <T v="callout">{msg ? t(msg) : res ? t('Não deu para ativar o convite agora. Podes escrever o código nas Definições.') : t('A ativar o convite…')}</T>
+      </View>
+      <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
+      <Button kind="ghost" size="md" title={t('Ver uma mão de exemplo')} onPress={() => router.replace('/hand/sample')} />
     </View>
   );
 }

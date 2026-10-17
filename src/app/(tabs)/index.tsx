@@ -23,13 +23,24 @@ function dayKey(ts: number) {
   return d.getTime();
 }
 
+// toLocaleDateString is slow on Hermes; a long history has hundreds of days.
+const dayTitles = new Map<number, string>();
 function dayTitle(day: number) {
   const today = dayKey(Date.now());
   if (day === today) return t('Hoje');
   if (day === today - DAY) return t('Ontem');
-  const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
-  return new Date(day).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) });
+  let s = dayTitles.get(day);
+  if (s === undefined) {
+    const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
+    s = new Date(day).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) });
+    dayTitles.set(day, s);
+  }
+  return s;
 }
+
+// Defined once: an inline component here is a new type on every render, so
+// React unmounted and remounted every separator each time the list rendered.
+const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
   const { hands, activeSession, settings, draft, setDraft } = useStore();
@@ -71,7 +82,7 @@ export default function HandsScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingHorizontal: S.gutter, paddingBottom: 40 }}
-        ItemSeparatorComponent={() => <View style={{ height: S.sm }} />}
+        ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <SafeTop>
             <View style={{ gap: S.md, marginBottom: S.sm }}>
@@ -219,12 +230,23 @@ function searchText(h: Hand): string {
   return s;
 }
 
+// Replaying a hand is the costly part of a row. Keep the result per hand
+// version, so rows scrolling back into view don't replay again.
+const rowCache = new WeakMap<Hand, { net: number | undefined; done: boolean }>();
+function rowSummary(hand: Hand) {
+  let v = rowCache.get(hand);
+  if (!v) {
+    const r = replay(hand);
+    v = { net: r.result?.resolved ? r.result.net[hand.hero] : undefined, done: isComplete(hand, r) };
+    rowCache.set(hand, v);
+  }
+  return v;
+}
+
 const HandRow = React.memo(function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
-  const r = useMemo(() => replay(hand), [hand]);
+  const { net, done } = rowSummary(hand);
   const pos = positions(hand.players.length, hand.button);
-  const net = r.result?.resolved ? r.result.net[hand.hero] : undefined;
   const hero = hand.players[hand.hero];
-  const done = isComplete(hand, r);
   return (
     <Pressable
       accessibilityRole="button"

@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { bbs, chips } from '@/poker/format';
 import type { Player } from '@/poker/types';
 import type { PlayerNote } from '@/store/types';
-import { C, R } from '@/theme';
+import { C, R, S } from '@/theme';
 
 import { AmountPad } from '../AmountPad';
-import { Button, Chip, Row, T } from '../ui';
-import { inputStyle } from './ContextSheet';
+import { Button, Chip, ChipRow, Field, inputStyle, Row, SheetHeader, T } from '../ui';
 
 export function SeatSheet({
   visible,
@@ -49,23 +48,21 @@ export function SeatSheet({
   const quick = [20, 40, 60, 100].map((x) => x * bb);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={onClose} />
-      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, padding: 16, paddingBottom: 36, gap: 14 }}>
-        <T v="h1">{title}</T>
-        <View style={{ gap: 6 }}>
-          <T v="label">{t('Nome')}</T>
-          <TextInput
+      <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
+      <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, padding: S.gutter, paddingTop: S.lg, paddingBottom: 36, gap: S.lg }}>
+        <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
+        <View style={{ gap: S.sm }}>
+          <Field
+            label={t('Nome')}
             value={name}
             onChangeText={(v) => {
               setName(v);
               setPlayerId(undefined);
             }}
             placeholder={isHero ? t('O teu nome') : t('Ex.: Boné vermelho')}
-            placeholderTextColor={C.muted}
-            style={inputStyle}
           />
           {!isHero && sugg.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} keyboardShouldPersistTaps="handled">
+            <ChipRow>
               {sugg.map((k) => (
                 <Chip
                   key={k.id}
@@ -77,21 +74,21 @@ export function SeatSheet({
                   }}
                 />
               ))}
-            </ScrollView>
+            </ChipRow>
           )}
         </View>
-        <View style={{ gap: 6 }}>
+        <View style={{ gap: S.sm }}>
           <T v="label">{t('Stack no início da mão')}</T>
-          <Pressable onPress={() => setPad(true)} style={[inputStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}>
-            <T v="h2">{chips(stack)}</T>
-            <T v="small">{bbs(stack, bb)}</T>
+          <Pressable onPress={() => setPad(true)} style={[inputStyle, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+            <T v="monoL">{chips(stack)}</T>
+            <T v="monoS">{bbs(stack, bb)}</T>
           </Pressable>
-          <Row style={{ flexWrap: 'wrap' }} gap={6}>
+          <ChipRow>
             {!isHero && <Chip label={t('Igual ao meu')} onPress={() => setStack(heroStack)} />}
             {quick.map((v) => (
               <Chip key={v} label={bbs(v, bb)} active={stack === v} onPress={() => setStack(v)} />
             ))}
-          </Row>
+          </ChipRow>
         </View>
         <Row gap={10}>
           {isHero ? (

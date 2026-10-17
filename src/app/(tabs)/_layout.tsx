@@ -59,7 +59,7 @@ export default function TabsLayout() {
           backgroundColor: C.bgDeep,
           borderTopColor: C.border,
           borderTopWidth: StyleSheet.hairlineWidth,
-          height: 58 + bottom,
+          height: 62 + bottom,
           paddingTop: 7,
           paddingBottom: bottom,
         },
