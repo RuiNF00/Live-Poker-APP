@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildBackup } from '../backup';
+import { buildBackup, mergeById } from '../backup';
 import { mergeBackups, writtenElsewhere } from '../backup-merge';
 import { DEFAULT_SETTINGS, type PlayerNote } from '../types';
 
@@ -22,8 +22,8 @@ test('two phones: the upload keeps both phones’ items, the newer copy of each,
 test('only a copy another phone wrote is joined in', () => {
   assert.equal(writtenElsewhere({ exportedAt: 100 }, 100), false);
   assert.equal(writtenElsewhere({ exportedAt: 120 }, 100), true);
-  // Copies made before this check existed: joined once, which loses nothing.
-  assert.equal(writtenElsewhere({ exportedAt: 100 }, undefined), true);
+  // Copies made before this check existed are this phone's own: deleted things don't come back.
+  assert.equal(writtenElsewhere({ exportedAt: 100 }, undefined), false);
 });
 
 test('two phones: weekly tournaments from both are kept, this phone’s copy of the same one stays', () => {
@@ -31,4 +31,15 @@ test('two phones: weekly tournaments from both are kept, this phone’s copy of 
   const a = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w('w1', 60)] }, 100);
   const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w('w1', 80), w('w2', 30)] }, 90);
   assert.deepEqual(mergeBackups(a, b).weekly?.map((x) => [x.id, x.buyIn]), [['w1', 60], ['w2', 30]]);
+});
+
+test('a restore merges into the list as it is when applied: a hand saved during the download stays', () => {
+  const h = (id: string, updatedAt = 1) => ({ id, updatedAt });
+  // What importData does for each list: an updater, not the list it saw when it started.
+  const into = <T extends { id: string; updatedAt?: number }>(incoming: T[]) => (cur: T[]) => mergeById(cur, incoming).list;
+  let state = [h('local')];
+  const update = into([h('remote'), h('local', 0)]);
+  state = [...state, h('saved-meanwhile')];
+  state = update(state);
+  assert.deepEqual(state.map((x) => x.id).sort(), ['local', 'remote', 'saved-meanwhile']);
 });

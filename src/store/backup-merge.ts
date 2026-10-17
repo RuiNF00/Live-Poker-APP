@@ -30,7 +30,11 @@ export function mergeBackups(local: BackupData, remote: BackupData): BackupData 
   return out;
 }
 
-/** The server copy was written by another phone (or restored elsewhere) since this one last wrote or read it. */
+/**
+ * The server copy was written by another phone (or restored elsewhere) since this one last wrote or read it.
+ * A phone that last copied before `sent` existed can't tell: the copy is taken as its own, so its first
+ * upload after updating doesn't bring back what was deleted here since.
+ */
 export function writtenElsewhere(remote: Pick<BackupData, 'exportedAt'>, sent: number | undefined): boolean {
-  return remote.exportedAt !== sent;
+  return sent !== undefined && remote.exportedAt !== sent;
 }
