@@ -67,6 +67,21 @@ export function formatMoney(n: number, currency: string, l: Locale, signed = fal
  * order of preference wins (pt-BR, other Portuguese, Spanish, English); anything else gets English.
  */
 export function pickLocale(acceptLanguage: string | null | undefined): Locale {
+  // No header at all (link-preview bots): the site's own language, as before.
+  const m = matchLocale(acceptLanguage);
+  return m ?? (m === null ? 'en' : 'pt');
+}
+
+/**
+ * A shared page's language: the reader's phone when it asks for one of ours; otherwise the
+ * sharer's (?lang=), so a reader whose phone is in French sees the player's language, not English.
+ */
+export function pageLocale(lang: unknown, acceptLanguage: string | null | undefined): Locale {
+  return matchLocale(acceptLanguage) ?? previewLocale(lang, acceptLanguage);
+}
+
+/** The visitor's first supported language; null when they list only others, undefined when they list none. */
+function matchLocale(acceptLanguage: string | null | undefined): Locale | null | undefined {
   const prefs = (acceptLanguage || '')
     .split(',')
     .map((part, i) => {
@@ -83,8 +98,7 @@ export function pickLocale(acceptLanguage: string | null | undefined): Locale {
     if (tag === 'es' || tag.startsWith('es-')) return 'es';
     if (tag === 'en' || tag.startsWith('en-')) return 'en';
   }
-  // No header at all (link-preview bots): the site's own language, as before.
-  return prefs.length ? 'en' : 'pt';
+  return prefs.length ? null : undefined;
 }
 
 const pt = {

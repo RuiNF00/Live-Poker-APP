@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { brand } from '@/config/brand';
-import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
+import { ogLocale, pageLocale, previewLocale } from '@/lib/i18n';
 import { limited } from '@/lib/abuse';
 import { liveStore, loadLive as loadLiveById } from '@/lib/live';
 import { normalizeCode } from '@/lib/refcode';
@@ -40,11 +40,11 @@ export async function generateMetadata({ params, searchParams }: Params & Search
 
 export default async function LivePage({ params, searchParams }: Params & SearchParams) {
   const { id } = await params;
-  const { r } = await searchParams;
+  const { r, lang } = await searchParams;
   const rec = await loadLive(id);
   if (!rec) notFound();
   const h = await headers();
-  const locale = pickLocale(h.get('accept-language'));
+  const locale = pageLocale(lang, h.get('accept-language'));
   // One view per visitor (IP) per link per day, so reloads don't inflate the count.
   const req = new Request(`${brand.siteUrl}/live/${id}`, { headers: h });
   after(async () => {
