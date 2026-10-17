@@ -1,6 +1,6 @@
 # Store forms: ready answers
 
-Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, no sign-in, no third-party analytics/ads/crash SDKs**, all hand data local on the device. Only a hand the user chooses to share (public link) and anonymous comments/votes on it reach our backend (Supabase). Subscriptions via Apple/Google in-app purchase through RevenueCat (products sweatbook_pro_monthly 29.99 USD, sweatbook_pro_annual 199.99 USD, 1-week free intro offer on the annual plan only, group "Sweatbook Pro"). The app sends first-party usage events (event name, random per-install ID, platform; no personal data) to `https://{{WEB_DOMAIN}}/api/events`. If any of this changes (crash reporter, analytics, RevenueCat, accounts), update this file and the privacy policy together.
+Based on v1 as built (confirmed by the app thread, 2026-10-17): **no accounts, no sign-in, no third-party analytics/ads/crash SDKs**, all hand data local on the device unless the user turns on the optional cloud backup (recovery code, no account; deleted after 18 months without updates). Only a hand the user chooses to share (public link) and anonymous comments/votes on it reach our backend (Supabase). Subscriptions via Apple/Google in-app purchase through RevenueCat (products sweatbook_pro_monthly 29.99 USD, sweatbook_pro_annual 199.99 USD, 1-week free intro offer on the annual plan only, group "Sweatbook Pro"). The app sends first-party usage events (event name, random per-install ID, platform; no personal data) to `https://{{WEB_DOMAIN}}/api/events`. If any of this changes (crash reporter, analytics, RevenueCat, accounts), update this file and the privacy policy together.
 
 ## Apple: App Privacy ("nutrition label")
 
@@ -10,7 +10,7 @@ Data not linked to you:
 
 | Category → type | Purpose |
 |---|---|
-| User Content → Other User Content (shared hands, comments) | App Functionality |
+| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes) | App Functionality |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
@@ -46,7 +46,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 
 | Data type | Collected | Optional | Purpose |
 |---|---|---|---|
-| App activity → Other user-generated content (shared hands, comments) | Yes | Yes (only when the user shares or comments) | App functionality |
+| App activity → Other user-generated content (shared hands, comments, optional cloud backup) | Yes | Yes (only when the user shares, comments or turns on backup) | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
