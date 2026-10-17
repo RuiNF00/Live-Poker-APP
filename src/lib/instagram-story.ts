@@ -10,6 +10,7 @@ import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 export const canShareStory = false;
+export const canMakeVideo = false;
 
 export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: ShareOptions): Promise<string> {
   if (hand.shareId) return hand.shareId;
