@@ -36,6 +36,8 @@ export interface ShareStore {
   vote(id: string, voterId: string, choice: VoteChoice): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
   logEvent(e: AppEvent): Promise<void>;
+  /** Deletes usage events older than 12 months (privacy policy retention). */
+  purgeOldEvents(): Promise<void>;
 }
 
 export const APP_EVENTS = [
@@ -191,6 +193,10 @@ class SupabaseStore implements ShareStore {
     });
     if (error) throw error;
   }
+
+  async purgeOldEvents() {
+    await this.db.rpc('purge_old_app_events');
+  }
 }
 
 // ---------- Local JSON file (development and demos without Supabase) ----------
@@ -337,6 +343,14 @@ class LocalStore implements ShareStore {
   async logEvent(e: AppEvent) {
     await this.mutate((d) => {
       d.events = [...(d.events ?? []), { ...e, createdAt: new Date().toISOString() }].slice(-2000);
+    });
+  }
+
+  async purgeOldEvents() {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - 12);
+    await this.mutate((d) => {
+      d.events = (d.events ?? []).filter((e) => new Date(e.createdAt) >= cutoff);
     });
   }
 }
