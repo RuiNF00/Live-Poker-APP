@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Alert, AppState } from 'react-native';
 
 import { t } from '@/i18n';
+import { eraseLocal, eraseRemote } from '@/lib/erase-all';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { forgetHandShare } from '@/lib/share-queue';
@@ -16,6 +17,7 @@ import type { Hand } from '@/poker/types';
 
 import { mergeById, type BackupData } from './backup';
 import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
+import { clearPlans } from './festival-plan';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
 import { DEFAULT_SETTINGS, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer } from './types';
@@ -81,6 +83,8 @@ interface StoreValue {
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
+  /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
+  eraseAll: () => Promise<void>;
   importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number };
 }
 
@@ -428,6 +432,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments],
   );
 
+  const eraseAll = useCallback(async () => {
+    await eraseRemote({ hands, sessions: rawSessions });
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = null;
+    draftRef.current = null;
+    // Empty lists written (and awaited) before the rest of the keys go, so no late write brings anything back.
+    const w = writers.current;
+    if (w) {
+      w.hands.schedule([]);
+      w.sessions.schedule([]);
+      w.players.schedule([]);
+      w.bankrolls.schedule([]);
+      w.transfers.schedule([]);
+      w.backers.schedule([]);
+      w.packages.schedule([]);
+      w.payments.schedule([]);
+      await Promise.all(Object.values(w).map((x) => x.flush()));
+    }
+    await eraseLocal();
+    clearPlans();
+    setHands([]);
+    setSessions([]);
+    setPlayers([]);
+    setBankrolls(ensureBankrolls([], [], DEFAULT_SETTINGS.currency));
+    setTransfers([]);
+    setBackers([]);
+    setPackages([]);
+    setPayments([]);
+    setSettingsState(DEFAULT_SETTINGS);
+    setDraftKey(draftKeyOf(null));
+  }, [hands, rawSessions]);
+
   const activeSession = useMemo(
     () => sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0] ?? null,
     [sessions],
@@ -477,11 +513,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return draftRef.current;
       },
       setDraft,
+      eraseAll,
       importData,
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, setSettings, draftKey, setDraft, importData],
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, setSettings, draftKey, setDraft, eraseAll, importData],
   );
 
   // Nothing renders before the data is in, so no screen flashes its empty

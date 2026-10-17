@@ -1300,6 +1300,17 @@ const en: Record<string, string> = {
   'Tenta outra vez daqui a {s} s': 'Try again in {s} s',
   'Usar o código do telemóvel': "Use the phone's passcode",
   '{n} de {m} dígitos': '{n} of {m} digits',
+  'Apagar todos os teus dados?': 'Delete all your data?',
+  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.':
+    "Hands, sessions, player notes, bankroll, staking and settings are removed from this phone. Your cloud copy, shared hands, backer pages and public profile are deleted too (with no signal, as soon as it's back). This can't be undone. Your Pro subscription stays: cancel it in the App Store or Google Play.",
+  'Apagar tudo': 'Delete everything',
+  'Dados apagados': 'Data deleted',
+  'A app está como nova.': 'The app is as good as new.',
+  'Os teus dados': 'Your data',
+  'Antes de apagar, podes guardar tudo com «Exportar tudo».': 'Before deleting, you can keep a copy with “Export everything”.',
+  'A apagar…': 'Deleting…',
+  'Apagar todos os meus dados': 'Delete all my data',
+  'Neste telemóvel, na nuvem e nos links públicos': 'On this phone, in the cloud and in public links',
 };
 
 export default en;
