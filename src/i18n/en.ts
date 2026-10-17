@@ -3063,6 +3063,8 @@ const en: Record<string, string> = {
   'Par, {rank}': 'Pair, {rank}',
   '{a} e {b}, mesmo naipe': '{a} and {b}, suited',
   '{a} e {b}, naipes diferentes': '{a} and {b}, offsuit',
+  "{game}: diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "{game}: tell me what you'd do, street by street. Comment right on the hand 👀",
+  "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Tell me what you'd do, street by street. Comment right on the hand 👀",
 };
 
 export default en;

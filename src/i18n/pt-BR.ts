@@ -1411,6 +1411,8 @@ const ptBR: Record<string, string> = {
   "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
   'Toca duas vezes para avançar.': 'Toque duas vezes para avançar.',
   'tu': 'você',
+  "{game}: diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "{game}: me diga o que você faria, street a street. Comente na própria mão 👀",
+  "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Me diga o que você faria, street a street. Comente na própria mão 👀",
 };
 
 export default ptBR;

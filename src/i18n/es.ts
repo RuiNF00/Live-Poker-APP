@@ -3058,6 +3058,8 @@ const es: Record<string, string> = {
   'Par, {rank}': 'Pareja, {rank}',
   '{a} e {b}, mesmo naipe': '{a} y {b}, del mismo palo',
   '{a} e {b}, naipes diferentes': '{a} y {b}, de palos distintos',
+  "{game}: diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "{game}: dime qué harías, calle a calle. Comenta en la misma mano 👀",
+  "Diz-me o que fazias, rua a rua. Comenta na própria mão 👀": "Dime qué harías, calle a calle. Comenta en la misma mano 👀",
 };
 
 export default es;

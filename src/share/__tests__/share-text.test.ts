@@ -11,4 +11,7 @@ test('hand share text: game, colon, question; never a contest', () => {
   assert.ok(quiz.startsWith('NLH 2/5: o que fazes aqui?'));
   assert.ok(!/desafio|—/.test(quiz));
   assert.ok(handShareText(undefined, 'video').includes('no link'));
+  // H: the hand screen invites comments street by street.
+  assert.equal(handShareText('NLH 2/5', 'comment'), 'NLH 2/5: diz-me o que fazias, rua a rua. Comenta na própria mão 👀');
+  assert.ok(handShareText('', 'comment').startsWith('Diz-me'));
 });
