@@ -1,0 +1,28 @@
+// Web build: Instagram's story editor is only reachable from the phone apps,
+// so the story screen shows a preview and asks to open the app instead.
+// The real implementation is instagram-story.native.ts (same exports).
+
+import type React from 'react';
+import type { View } from 'react-native';
+
+import { shareUrl, uploadHand } from '@/lib/share-api';
+import type { Hand } from '@/poker/types';
+
+export const canShareStory = false;
+
+export async function ensureShareLink(hand: Hand, save: (h: Hand) => void): Promise<string> {
+  if (hand.shareId) return shareUrl(hand.shareId);
+  const { id, token } = await uploadHand(hand);
+  save({ ...hand, shareId: id, shareToken: token });
+  return shareUrl(id);
+}
+
+export async function captureStory(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  throw new Error('Story capture needs the iOS or Android app');
+}
+
+export type StoryTarget = 'instagram' | 'sheet';
+
+export async function shareStory(_file: string, _link: string): Promise<StoryTarget> {
+  throw new Error('Story sharing needs the iOS or Android app');
+}

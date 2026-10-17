@@ -58,6 +58,7 @@ export default function RootLayout() {
             <Stack.Screen name="hand/[id]" options={{ title: 'Mão' }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
           </Stack>
           </ProProvider>
         </StoreProvider>

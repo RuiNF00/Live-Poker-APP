@@ -69,7 +69,19 @@
           "imageWidth": 160
         }
       ],
-      ["expo-build-properties", { "android": { "targetSdkVersion": 36, "compileSdkVersion": 36 } }]
+      ["expo-build-properties", { "android": { "targetSdkVersion": 36, "compileSdkVersion": 36 } }],
+      [
+        "react-native-share",
+        {
+          "ios": [
+            "instagram-stories",
+            "instagram"
+          ],
+          "android": [
+            "com.instagram.android"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
