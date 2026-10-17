@@ -599,7 +599,8 @@ export default function NewHand() {
                         <CardRow cards={b} />
                       </Row>
                     ))}
-                  {r.result && !r.result.resolved && (
+                  {/* Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
+                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== 2)) && (
                     <View style={{ gap: 6 }}>
                       {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
                         <View key={key} style={{ gap: 6 }}>
