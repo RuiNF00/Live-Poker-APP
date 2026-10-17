@@ -17,7 +17,8 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { markupLabel } from '@/components/staking/sheets';
 import { balanceLabel } from '@/components/staking/use-staking';
 import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
 import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
@@ -237,7 +238,7 @@ export default function ActionPackageScreen() {
         pct: pct(l.pct),
         n: events.length,
         markup: markupLabel(o.markup),
-        url: remote.url,
+        url: withLang(remote.url, variant),
       });
       if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
       else await Share.share({ message: msg });
