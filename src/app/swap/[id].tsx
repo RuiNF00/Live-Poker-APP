@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Platform, Share, View } from 'react-native';
 
 import { useLocked } from '@/components/ProGate';
-import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, pctLabel, Seal, SwapBadge, TermsCard, useSettledReview, type EntryDraft } from '@/components/swaps/parts';
+import { AccountsLocked, BalanceHero, EntryRow, EntrySheet, PAIR, pctLabel, Seal, SwapBadge, TermsCard, useSettledReview, type EntryDraft } from '@/components/swaps/parts';
 import { Banner, Button, Card, confirmAction, Empty, Field, ListGroup, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
@@ -113,7 +113,7 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
           <Section title={t('O teu nome')}>
             <Field value={name} onChangeText={setName} maxLength={40} autoCapitalize="words" />
           </Section>
-          <Button title={busy ? t('A confirmar o swap…') : t('Confirmo o swap')} icon="checkmark-circle-outline" disabled={!name.trim() || busy} onPress={confirm} />
+          <Button lines={2} title={busy ? t('A confirmar o swap…') : t('Confirmo o swap')} icon="checkmark-circle-outline" disabled={!name.trim() || busy} onPress={confirm} />
           <T v="tiny" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
             {t('Ao confirmar, os termos e a hora ficam fixados. Nenhum dos dois os pode mudar depois.')}
           </T>
@@ -217,16 +217,16 @@ function OwnSwap({ s }: { s: Swap }) {
                 <T v="small">{t('Nada conta até lá. Quando confirmar, os termos e a hora ficam fixados e recebes aqui o código do acordo.')}</T>
               </View>
             </Row>
-            <Button size="md" title={t('Enviar o link outra vez')} icon="share-outline" onPress={share} />
+            <Button lines={2} size="md" title={t('Enviar o link outra vez')} icon="share-outline" onPress={share} />
           </Card>
         ) : null}
 
         {s.confirmedAt ? locked ? <AccountsLocked /> : <BalanceHero l={l} name={them} currency={cur} /> : null}
 
         {s.confirmedAt && !s.gone && !s.left ? (
-          <Row gap={S.sm}>
-            <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
-            <Button title={!locked && l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />
+          <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+            <Button lines={2} title={t('Cobrei')} icon="trophy-outline" style={PAIR} onPress={() => setSheet('result')} />
+            <Button lines={2} title={!locked && l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={PAIR} onPress={() => setSheet('payment')} />
           </Row>
         ) : null}
 
@@ -289,9 +289,9 @@ function OwnSwap({ s }: { s: Swap }) {
         ) : null}
 
         <View style={{ gap: S.sm, marginTop: S.md }}>
-          {s.confirmedAt && !s.gone && !locked ? <Button title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
+          {s.confirmedAt && !s.gone && !locked ? <Button lines={2} title={t('Partilhar as contas')} kind="ghost" size="md" icon="share-outline" onPress={share} /> : null}
           {s.confirmedAt ? (
-            <Button
+            <Button lines={2}
               title={s.archived ? t('Tirar do arquivo') : t('Arquivar')}
               kind="ghost"
               size="md"
@@ -302,7 +302,7 @@ function OwnSwap({ s }: { s: Swap }) {
               }}
             />
           ) : null}
-          <Button
+          <Button lines={2}
             title={s.confirmedAt && !s.gone ? t('Apagar para os dois') : t('Apagar')}
             kind="danger"
             size="md"

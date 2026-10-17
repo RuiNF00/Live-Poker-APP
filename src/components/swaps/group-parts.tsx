@@ -55,16 +55,17 @@ export function GroupSettle({ g }: { g: SwapGroup }) {
       {list.map((x) => {
         const mine = x.from === g.seat || x.to === g.seat;
         return (
-          <Row key={`${x.from}-${x.to}`} gap={S.sm} style={{ alignItems: 'center', paddingVertical: 4 }}>
+          // At large text the amount drops under the names instead of being cut.
+          <Row key={`${x.from}-${x.to}`} gap={S.sm} style={{ alignItems: 'center', paddingVertical: 4, flexWrap: 'wrap' }}>
             <Ionicons name="arrow-forward-circle-outline" size={18} color={mine ? C.accent : C.muted} />
-            <T v="body" style={{ flex: 1 }} color={mine ? C.text : C.textDim}>
+            <T v="body" style={{ flexGrow: 1, flexShrink: 1, flexBasis: 120 }} color={mine ? C.text : C.textDim}>
               {x.to === g.seat
                 ? t('{from} paga-te', { from: seatLabel(g, x.from) })
                 : x.from === g.seat
                   ? t('Pagas a {to}', { to: seatLabel(g, x.to) })
                   : t('{from} paga a {to}', { from: seatLabel(g, x.from), to: seatLabel(g, x.to) })}
             </T>
-            <T v="mono" color={mine ? (x.to === g.seat ? C.good : C.warn) : C.textDim}>
+            <T v="mono" color={mine ? (x.to === g.seat ? C.good : C.warn) : C.textDim} style={{ flexShrink: 0, marginLeft: 'auto' }}>
               {mine ? signed(x.to === g.seat ? x.amount : -x.amount, g.terms.currency) : money(x.amount, g.terms.currency)}
             </T>
           </Row>
@@ -91,16 +92,16 @@ export function GroupEntryRow({ g, e, onLongPress, hideOwed }: { g: SwapGroup; e
     <PressRow onLongPress={onLongPress} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md, paddingHorizontal: S.lg }}>
       <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: mine ? C.accent : C.good }} />
       <View style={{ flex: 1, gap: 2 }}>
-        <T v="h3" numberOfLines={1}>
+        <T v="h3" numberOfLines={2}>
           {title}
         </T>
-        <T v="small" numberOfLines={1}>
+        <T v="small" numberOfLines={2}>
           {sub}
           {e.pending ? ` · ${t('por enviar')}` : ''}
         </T>
       </View>
       {hideOwed && e.kind === 'result' ? null : (
-      <View style={{ alignItems: 'flex-end', gap: 1 }}>
+      <View style={{ alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
         {e.kind === 'result' && value ? (
           <T v="tiny" color={mine ? C.warn : C.good}>
             {mine ? t('dás') : t('a tua parte')}
@@ -227,7 +228,7 @@ function GroupEntryForm({ g, kind: k0, onSave }: { g: SwapGroup; kind: 'result' 
             : t('Regista o que pagaste; o que te pagam regista quem pagou.')}
         </T>
       </Card>
-      <Button
+      <Button lines={2}
         title={t('Guardar')}
         disabled={!ok}
         onPress={() =>

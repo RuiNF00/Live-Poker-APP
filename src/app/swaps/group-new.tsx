@@ -213,7 +213,7 @@ function NewGroupSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button
+          <Button lines={2}
             title={busy ? t('A criar…') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : t('Criar e enviar link')}
             icon="paper-plane-outline"
             disabled={!ok}

@@ -130,6 +130,9 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
 }
 
 /** A prize or a payment, with what it means in money for each side. */
+/** Two buttons side by side on a phone, one under the other when large text leaves no room for both labels. */
+export const PAIR = { flexGrow: 1, flexBasis: 140 } as const;
+
 export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: SwapEntry; onLongPress?: () => void; hideOwed?: boolean }) {
   const names = swapNames(swap);
   const mine = e.side === swap.side;
@@ -147,16 +150,16 @@ export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: Sw
     <PressRow onLongPress={onLongPress} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md, paddingHorizontal: S.lg }}>
       <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: mine ? C.accent : C.good }} />
       <View style={{ flex: 1, gap: 2 }}>
-        <T v="h3" numberOfLines={1}>
+        <T v="h3" numberOfLines={2}>
           {title}
         </T>
-        <T v="small" numberOfLines={1}>
+        <T v="small" numberOfLines={2}>
           {sub}
           {e.pending ? ` · ${t('por enviar')}` : ''}
         </T>
       </View>
       {hideOwed && e.kind === 'result' ? null : (
-      <View style={{ alignItems: 'flex-end', gap: 1 }}>
+      <View style={{ alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
         {e.kind === 'result' ? (
           <T v="tiny" color={mine ? C.warn : C.good}>
             {mine ? t('deves') : t('deve-te')}
@@ -274,7 +277,7 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
               : t('Regista o que pagaste a {name}; o que ele te paga regista ele.', { name: them })}
         </T>
       </Card>
-      <Button
+      <Button lines={2}
         title={t('Guardar')}
         disabled={!ok}
         onPress={() => onSave({ kind, amount: Math.round(value * 100) / 100, event: kind === 'result' ? event.trim() : '', finish: kind === 'result' && finish ? Number(finish) : null, sessionId: kind === 'result' ? sessionId : undefined })}

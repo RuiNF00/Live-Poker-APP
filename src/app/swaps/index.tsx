@@ -7,7 +7,7 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { AccountsLocked, pctLabel, signed } from '@/components/swaps/parts';
+import { AccountsLocked, PAIR, pctLabel, signed } from '@/components/swaps/parts';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -77,8 +77,8 @@ function SwapsScreen() {
             body={t('Combina uma percentagem com outro jogador para um evento ou para a série toda. Ele confirma por link, os termos e a hora ficam fixados, e quando alguém cobra a app diz quem deve a quem.')}
             action={
               <View style={{ gap: S.sm, alignSelf: 'stretch' }}>
-                <Button title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
-                <Button title={t('Swap de grupo')} kind="secondary" icon="people-outline" onPress={newGroup} />
+                <Button lines={2} title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
+                <Button lines={2} title={t('Swap de grupo')} kind="secondary" icon="people-outline" onPress={newGroup} />
               </View>
             }
           />
@@ -111,9 +111,9 @@ function SwapsScreen() {
             </Card>
             {locked && tot.open ? <AccountsLocked /> : null}
 
-            <Row gap={S.sm}>
-              <Button title={t('Novo swap')} icon="add" style={{ flex: 1 }} onPress={() => router.push('/swaps/new')} />
-              <Button title={t('Grupo')} kind="secondary" icon="people-outline" style={{ flex: 1 }} onPress={newGroup} />
+            <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+              <Button lines={2} title={t('Novo swap')} icon="add" style={PAIR} onPress={() => router.push('/swaps/new')} />
+              <Button lines={2} title={t('Grupo')} kind="secondary" icon="people-outline" style={PAIR} onPress={newGroup} />
             </Row>
             {tot.open || activeGroups.length ? (
               <ListGroup>
@@ -189,13 +189,14 @@ function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
   ) : locked ? (
     <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (
-    <View style={{ alignItems: 'flex-end', gap: 1 }}>
+    // Capped, so a long amount at large text can't squeeze the name to nothing.
+    <View style={{ alignItems: 'flex-end', gap: 1, maxWidth: '45%' }}>
       {square ? null : (
         <T v="tiny" color={l.balance > 0 ? C.good : C.warn}>
           {l.balance > 0 ? t('deve-te') : t('deves')}
         </T>
       )}
-      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }}>
+      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit>
         {square ? t('Acertado') : signed(l.balance, cur)}
       </T>
     </View>
@@ -230,13 +231,14 @@ function GroupRow({ g, locked }: { g: SwapGroup; locked: boolean }) {
   ) : locked ? (
     <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (
-    <View style={{ alignItems: 'flex-end', gap: 1 }}>
+    // Capped, so a long amount at large text can't squeeze the name to nothing.
+    <View style={{ alignItems: 'flex-end', gap: 1, maxWidth: '45%' }}>
       {square ? null : (
         <T v="tiny" color={l.balance > 0 ? C.good : C.warn}>
           {l.balance > 0 ? t('devem-te') : t('deves')}
         </T>
       )}
-      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }}>
+      <T v="mono" color={square ? C.textDim : l.balance > 0 ? C.good : C.warn} style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit>
         {square ? t('Acertado') : signed(l.balance, cur)}
       </T>
     </View>
