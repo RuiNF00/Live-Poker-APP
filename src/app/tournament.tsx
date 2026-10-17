@@ -12,7 +12,9 @@ import { AmountPad } from '@/components/AmountPad';
 import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { askExactAlarms, exactAlarmsAllowed } from '@/lib/lock-screen/reminder';
 import { useSheetAnimation } from '@/lib/motion';
+import { canReadStructure, photoStructure } from '@/lib/structure-photo';
 import { bbs, chips, decimal, money, timeOf } from '@/poker/format';
 import { averageStack, levelOf, parsePayouts, parseStructure, payState, stackDepth, syncTo, syncedLevelStart, TEMPLATES, templateStructure, type Level, type Tourney } from '@/poker/tourney';
 import { useStore } from '@/store/store';
@@ -115,6 +117,7 @@ function Tournament({ s }: { s: Session }) {
       <Stack.Screen options={{ title: t('Modo torneio') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
         <LevelCard s={s} st={st} onLevel={goLevel} onSync={syncMinutes} onPause={togglePause} />
+        {s.levelMinutes ? <ExactAlarms /> : null}
 
         <Section title={t('O teu stack')}>
           <Card onPress={() => setPad('stack')} accessibilityLabel={t('Atualizar stack')} style={{ gap: S.md }}>
@@ -260,6 +263,7 @@ function Tournament({ s }: { s: Session }) {
         placeholder={'100/200/200 40\n200/300/300 40\nBreak 15\n200/400/400 40'}
         initial={st && !tour.structureName ? structureText(st) : ''}
         parse={(x) => parseStructure(x, s.levelMinutes || 30).length}
+        photo={Platform.OS === 'web' ? undefined : () => photoStructure('camera')}
         onClose={() => setSheet(null)}
         onSave={(x) => {
           setSheet(null);
@@ -432,7 +436,7 @@ function PayCard({ pay, payouts, left, currency }: { pay: ReturnType<typeof payS
   );
 }
 
-function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose, onSave }: { visible: boolean; title: string; hint: string; placeholder: string; initial: string; parse: (text: string) => number; onClose: () => void; onSave: (text: string) => void }) {
+function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose, onSave, photo }: { visible: boolean; title: string; hint: string; placeholder: string; initial: string; parse: (text: string) => number; onClose: () => void; onSave: (text: string) => void; photo?: () => Promise<string | null> }) {
   const [text, setText] = useState(initial);
   const [shownFor, setShownFor] = useState(visible);
   if (visible !== shownFor) {
@@ -441,16 +445,66 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
   }
   const n = useMemo(() => parse(text), [parse, text]);
   const animation = useSheetAnimation();
+  const [reading, setReading] = useState(false);
+  const [unread, setUnread] = useState(false);
+  const snap = async () => {
+    if (!photo) return;
+    setReading(true);
+    setUnread(false);
+    try {
+      // null: cancelled. '': a photo with no levels in it.
+      const got = await photo();
+      if (got) setText(got);
+      else if (got === '') setUnread(true);
+    } finally {
+      setReading(false);
+    }
+  };
   return (
     <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={title} onClose={onClose} />
           <T v="small">{hint}</T>
+          {photo ? (
+            canReadStructure ? (
+              <Button kind="secondary" size="sm" icon="camera-outline" title={reading ? t('A ler a folha…') : t('Fotografar a folha da estrutura')} disabled={reading} onPress={snap} style={{ alignSelf: 'flex-start' }} />
+            ) : (
+              <T v="tiny">{t('Fotografar a folha da estrutura: disponível na versão da loja')}</T>
+            )
+          ) : null}
+          {unread ? <T v="tiny" color={C.warn}>{t('Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.')}</T> : null}
           <Field value={text} onChangeText={setText} placeholder={placeholder} multiline autoFocus autoCorrect={false} inputStyle={{ minHeight: 160, maxHeight: 280, textAlignVertical: 'top', paddingTop: 12 }} />
           <Button title={n ? t('Usar {n} linhas', { n }) : t('Nada reconhecido ainda')} icon="checkmark" disabled={!n} onPress={() => onSave(text)} />
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+/** Android only, when exact alarms are refused: the level reminders may come a few minutes late, so offer the setting. */
+function ExactAlarms() {
+  const [allowed, setAllowed] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      let live = true;
+      void exactAlarmsAllowed().then((ok) => live && setAllowed(ok));
+      return () => {
+        live = false;
+      };
+    }, []),
+  );
+  if (allowed || Platform.OS !== 'android') return null;
+  return (
+    <Card tone="inset" style={{ gap: S.sm }}>
+      <Row>
+        <Ionicons name="alarm-outline" size={16} color={C.warn} />
+        <T v="h3" style={{ flex: 1 }}>
+          {t('Os avisos de nível podem chegar atrasados')}
+        </T>
+      </Row>
+      <T v="small">{t('Com o telemóvel parado, o Android pode atrasar os avisos alguns minutos. Com alarmes exatos chegam à hora; o relógio aqui está sempre certo.')}</T>
+      <Button size="sm" kind="secondary" icon="alarm-outline" title={t('Permitir alarmes exatos')} onPress={() => void askExactAlarms().then(setAllowed)} />
+    </Card>
   );
 }

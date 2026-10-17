@@ -78,7 +78,8 @@ class Entry {
     this.push([{ p: s.toAct!, kind: legal(s)!.canBet ? 'bet' : 'raise', to }]);
   }
   size(label: string) {
-    const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.label === label);
+    // Labels follow the locale (2,5x in Portuguese); the tests name them with a dot.
+    const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.label.replace(',', '.') === label);
     assert.ok(p, `no preset ${label}`);
     this.bet(p.to);
   }
@@ -408,7 +409,7 @@ test('remembered size: a player who opens 2.2x pays the keypad once, then it is 
   const next = new Entry('CO', ['Ah', 'Kd']);
   next.memory = first.memory;
   const presets = sizePresets(next.hand, next.s, next.memory);
-  assert.deepEqual(presets.map((p) => p.label), ['2.2x', '2.5x', '3x', 'All-in'], '2.2x takes the place of 2x');
+  assert.deepEqual(presets.map((p) => p.label.replace(',', '.')), ['2.2x', '2.5x', '3x', 'All-in'], '2.2x takes the place of 2x');
   assert.equal(presets.find((p) => p.last)?.to, 440);
   next.size('2.2x');
   next.only(null);
@@ -441,6 +442,7 @@ test('size memory: spots are kept apart, all-in is never remembered, cash opens 
   const h = { ...h0, actions: autoFold(h0, replay(h0).final) };
   const s = replay(h).final;
   assert.deepEqual(sizeToRemember(h, s, 440), { spot: 'open', mult: 2.2 });
+  assert.deepEqual(sizePresets(h, s).map((p) => p.label), ['2x', '2,5x', '3x', 'All-in'], 'decimal comma, as the bb line below it');
   assert.equal(sizeToRemember(h, s, 20000), null);
   assert.equal(sizeToRemember(h0, replay(h0).final, 440), null, "UTG's open is not hero's size");
   const c = mk('CO', ['Ah', 'Kd'], 9, 'cash');

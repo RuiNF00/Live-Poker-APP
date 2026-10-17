@@ -27,7 +27,8 @@ export interface PlanInfo {
 
 export const PLANS: Record<PlanId, PlanInfo> = {
   monthly: { id: 'monthly', price: 29.99, period: 'mês', trialDays: 0 },
-  annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 7 },
+  // Demo store only: real builds read the trial from the store product (3 days, Rui 17 Oct).
+  annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 3 },
 };
 
 /**
@@ -96,7 +97,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -127,6 +128,14 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   downswingRead: {
     title: t('Azar ou sinal?'),
     body: t('Vê se o teu downswing é normal para os teus resultados.'),
+  },
+  sessionStart: {
+    title: t('Começa o teu Pro com esta sessão'),
+    body: t('Os dias grátis contam a partir de hoje, à mesa.'),
+  },
+  sessionEnd: {
+    title: t('Cada sessão, toda revista'),
+    body: t('Mãos sem limite, e em que sala e stake ganhas mais.'),
   },
   handsLive: {
     title: t('A sessão continua'),
@@ -199,11 +208,15 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'swaps', icon: 'swap-horizontal', title: t('Swaps'), body: t('Quem deve a quem') },
   { key: 'taxReport', icon: 'document-text', title: t('Relatório do ano'), body: t('Por país, com imposto') },
   { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },
+  { key: 'insights', icon: 'bulb', title: t('Onde ganhas e onde perdes'), body: t('Salas, stakes, sono e tilt') },
+  { key: 'downswingRead', icon: 'pulse', title: t('Azar ou sinal?'), body: t('O teu downswing é normal?') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   hands: 'hands',
   handsLive: 'hands',
+  sessionStart: 'hands',
+  sessionEnd: 'hands',
   welcome: 'hands',
   views: 'hands',
   stats: 'stats',
@@ -215,6 +228,8 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   swaps: 'swaps',
   taxReport: 'taxReport',
   homeTotal: 'homeTotal',
+  insights: 'insights',
+  downswingRead: 'downswingRead',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */
@@ -240,6 +255,7 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
     { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
     { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
+    { label: 'Onde ganhas e onde perdes', free: !PRO_ONLY.insights, pro: true },
   ];
 }
 

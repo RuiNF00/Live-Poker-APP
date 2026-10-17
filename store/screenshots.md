@@ -15,7 +15,7 @@ Apple scales the 6.9" set down for smaller iPhones, so one set is enough.
 
 ## The ten frames
 
-Each frame: real app screen inside a device frame, short caption on top, the brand's background colour. Captions in PT-PT and EN (one set per locale). Google Play keeps 1..8.
+Each frame: real app screen inside a device frame, short caption on top, the brand's background colour. Captions in PT-PT, EN, PT-BR and ES (one set per locale; pt-BR and es captions come from `/mnt/project-files/i18n/legendas-capturas.json` and are rendered with the app in that language). Google Play keeps 1..8.
 
 | # | Screen | Caption EN | Legenda PT |
 |---|---|---|---|
@@ -41,7 +41,7 @@ npx expo export -p web && npx serve -s dist -l 4173 &   # in the app root
 cd store/screenshots && npm i playwright && node render.mjs http://localhost:4173 out
 ```
 
-`frames.json` holds the route and caption (PT and EN) of each frame, `seed.mjs` the demo hands, sessions and players. Output: `out/{ios,android}/{pt,en}/1..10.png` (10 frames, listed above). Apple takes up to 10; Google Play takes up to 8, so `final/android/` keeps only 1..8. The final set is committed in `store/screenshots/final/` (and mirrored in `/mnt/project-files/launch/screenshots/`): iPhone 6.9" 1320×2868 (Apple scales it to the smaller iPhones; no iPad set because `supportsTablet` is false), Play phone 1080×1920, Play feature graphic 1024×500, PT and EN. Upload order = file number.
+`frames.json` holds the route and caption (PT and EN) of each frame, `seed.mjs` the demo hands, sessions and players. Output: `out/{ios,android}/{pt,en,pt-BR,es}/1..10.png` (10 frames, listed above). Apple takes up to 10; Google Play takes up to 8, so `final/android/` keeps only 1..8. The final set is committed in `store/screenshots/final/` (and mirrored in `/mnt/project-files/launch/screenshots/`): iPhone 6.9" 1320×2868 (Apple scales it to the smaller iPhones; no iPad set because `supportsTablet` is false), Play phone 1080×1920, Play feature graphic 1024×500, PT and EN. Upload order = file number.
 
 A frame can list `hide` strings: web-only hints ("Open the app on your phone to post to Instagram") that the phone never shows are hidden before the shot.
 

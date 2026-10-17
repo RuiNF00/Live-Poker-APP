@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
@@ -5,6 +6,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { Button, Row, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
+import { softAskAllowed } from '@/lib/notify-policy';
 import { C, R, S } from '@/theme';
 
 export interface SoftAsk {
@@ -14,10 +16,13 @@ export interface SoftAsk {
   preview: { title: string; body: string };
 }
 
+const SOFT_NO_KEY = 'rl.notify.soft-no.v1';
+
 /**
  * The system prompt can be answered once. Before it, show the notification the
  * player will actually get and let them say "not now" without burning it.
  * Already allowed: resolves true at once. Already refused, or web: false, no sheet.
+ * "Agora não" holds every ask, wherever it comes from, for 30 days.
  */
 export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<boolean>] {
   const [ask, setAsk] = useState<SoftAsk | null>(null);
@@ -30,6 +35,8 @@ export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<
       const cur = await n.getPermissionsAsync();
       if (cur.granted) return true;
       if (!cur.canAskAgain) return false;
+      const lastNo = Number(await AsyncStorage.getItem(SOFT_NO_KEY)) || null;
+      if (!softAskAllowed(lastNo)) return false;
     } catch {
       return false;
     }
@@ -41,6 +48,7 @@ export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<
 
   const finish = async (yes: boolean) => {
     setAsk(null);
+    if (!yes) AsyncStorage.setItem(SOFT_NO_KEY, String(Date.now())).catch(() => {});
     const ok = yes ? await askNotificationPermission() : false;
     done.current?.(ok);
     done.current = null;
@@ -75,7 +83,7 @@ export function SoftAskSheet({ ask, onAnswer }: { ask: SoftAsk | null; onAnswer:
             <View style={{ gap: S.sm }}>
               <T v="h1">{ask.title}</T>
               <T v="body" style={{ color: C.textDim }}>
-                {t('Só avisos que pediste. Nada de publicidade. Podes desligar nas definições do telemóvel.')}
+                {t('Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.')}
               </T>
             </View>
             <View style={{ gap: S.sm }}>

@@ -15,6 +15,10 @@ export async function pickDoc(_source: DocSource, id: string): Promise<{ file: s
   return { file: id, name: a.name };
 }
 
+export function docUri(file: string): string {
+  return urls.get(file) ?? '';
+}
+
 export function docExists(file: string): boolean {
   return urls.has(file);
 }

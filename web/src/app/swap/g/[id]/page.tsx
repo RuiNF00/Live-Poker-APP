@@ -18,13 +18,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const rec = await loadGroup(id);
   const c = swapCopy(pickLocale((await headers()).get('accept-language')));
-  if (!rec) return { title: c.notFound, robots: { index: false } };
+  if (!rec) return { title: c.notFound, robots: { index: false }, referrer: 'no-referrer' };
   const title = c.groupMetaTitle(rec.terms.title, rec.seats.length);
   // No names or amounts in the preview: the chat it lands in is the whole group, maybe more.
   return {
     title,
     description: c.groupMetaDescription,
     robots: { index: false },
+    referrer: 'no-referrer',
     openGraph: { title, description: c.groupMetaDescription, type: 'website', url: `${brand.siteUrl}/swap/g/${id}`, siteName: brand.name },
   };
 }

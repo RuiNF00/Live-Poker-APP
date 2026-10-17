@@ -156,7 +156,7 @@ function LiveBody({ s, updatedAt, now, insetBottom }: { s: LiveSnapshot; updated
         <Stat label={s.level ? t('Nível {n}', { n: s.level }) : 'Blinds'} value={`${chips(s.sb)}/${chips(s.bb)}`} sub={s.ante ? `ante ${chips(s.ante)}` : undefined} />
         <Stat label={t('Tempo de jogo')} value={duration(played)} />
         <Stat label={t('Entradas')} value={`${s.entries} × ${m(s.buyIn)}`} sub={s.addOn ? `+ add-on ${m(s.addOn)}` : undefined} />
-        <Stat label={t('Investido')} value={m(s.invested)} />
+        <Stat label={t('Buy-ins')} value={m(s.invested)} />
         {mtt && stage ? <Stat label={t('Fase')} value={stage} /> : null}
         {s.hands ? <Stat label={t('Mãos registadas')} value={String(s.hands)} /> : null}
       </StatGrid>

@@ -76,8 +76,18 @@ export interface Swap {
   syncedAt?: number;
   /** This phone only: which of my sessions each of my prizes came from (entry cid → session id). */
   links?: Record<string, string>;
+  /** This phone only: send my result when a tournament of this swap ends, without asking. */
+  autoShare?: boolean;
   createdAt: number;
   updatedAt: number;
+}
+
+/** One event, my result in and theirs not yet: the side the swap waits on (null when nobody). */
+export function waitingOn(s: Swap): SwapSide | null {
+  if (s.terms.scope !== 'event' || !s.confirmedAt || s.left || s.gone) return null;
+  const has = (side: SwapSide) => s.entries.some((e) => e.side === side && e.kind === 'result');
+  const them = other(s.side);
+  return has(s.side) && !has(them) ? them : null;
 }
 
 /** Server ids (short_id(), as web/src/lib/swaps.ts validId) and side tokens (64 hex). Checked

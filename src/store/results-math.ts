@@ -244,17 +244,6 @@ export function downswings(list: Session[], currency: string): { underwater: num
   return { underwater, biggest: biggest ? { ...(biggest as Downswing) } : null, current };
 }
 
-/** Seeded PRNG (mulberry32), so a simulation reads the same every time it is drawn. */
-function rng(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let x = Math.imul(a ^ (a >>> 15), 1 | a);
-    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
-    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /** Fewest finished sessions before the downswing read says anything. */
 export const DOWNSWING_MIN = 20;
 
@@ -278,20 +267,26 @@ export interface DownswingOdds {
 export function downswingOdds(results: number[], runs = 1000, seed = 7): DownswingOdds | null {
   const n = results.length;
   if (n < DOWNSWING_MIN) return null;
-  const rand = rng(seed);
-  const maxes: number[] = [];
+  // The hot loop (runs × sessions, 1.5 million steps for a heavy player): a typed
+  // array and a seeded mulberry32 inlined, so it reads the same every time it is drawn.
+  const res = Float64Array.from(results);
+  const maxes = new Float64Array(runs);
+  let a = seed >>> 0;
   for (let r = 0; r < runs; r++) {
     let v = 0;
     let peak = 0;
     let max = 0;
     for (let i = 0; i < n; i++) {
-      v += results[Math.floor(rand() * n)];
+      a = (a + 0x6d2b79f5) >>> 0;
+      let x = Math.imul(a ^ (a >>> 15), 1 | a);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      v += res[Math.floor((((x ^ (x >>> 14)) >>> 0) / 4294967296) * n)];
       if (v > peak) peak = v;
       else if (peak - v > max) max = peak - v;
     }
-    maxes.push(max);
+    maxes[r] = max;
   }
-  maxes.sort((a, b) => a - b);
+  maxes.sort();
   const at = (q: number) => maxes[Math.min(runs - 1, Math.floor(q * runs))];
   return {
     sessions: n,

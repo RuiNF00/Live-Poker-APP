@@ -25,7 +25,8 @@ const nextConfig: NextConfig = {
     '/og/invite': ['./assets/fonts/*.ttf'],
     '/opengraph-image': ['./assets/fonts/*.ttf'],
   },
-  // Coaching links carry their secret in the URL: never indexed, cached or sent on as a referrer.
+  // Private links (coaching, swaps, action-package agreements) carry their secret in the URL:
+  // never indexed, cached or sent on as a referrer.
   async headers() {
     const secret = [
       { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
@@ -35,6 +36,11 @@ const nextConfig: NextConfig = {
     return [
       { source: '/c/:token*', headers: secret },
       { source: '/api/coach/:path*', headers: secret },
+      { source: '/swap/:path*', headers: secret },
+      { source: '/api/swaps/:path*', headers: secret },
+      { source: '/api/swap-groups/:path*', headers: secret },
+      { source: '/o/:path*', headers: secret },
+      { source: '/api/offers/:path*', headers: secret },
     ];
   },
   // Localised entry points for the store pages: Apple's Support URL and Google's data deletion URL.
