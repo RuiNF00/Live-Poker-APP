@@ -1504,6 +1504,10 @@ const ptBR: Record<string, string> = {
   'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
   'Check até ao fim': 'Check até o fim',
+  'O swap de {place} está fechado: falta acertar': 'O swap de {place} está fechado: falta acertar as contas',
+  'E mais {n} por acertar': 'E mais {n} para acertar',
+  'Toca para registar o pagamento': 'Toque para registrar o pagamento',
+  'Toca para veres as contas': 'Toque para ver as contas',
 };
 
 export default ptBR;
