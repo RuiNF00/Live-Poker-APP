@@ -1480,6 +1480,7 @@ const ptBR: Record<string, string> = {
   'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.': 'Falta o #7 (PKO Turbo, 27 de novembro às 22:00): o organizador ainda não publicou o buy-in.',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
+  'Check até ao fim': 'Check até o fim',
 };
 
 export default ptBR;
