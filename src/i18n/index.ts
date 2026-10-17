@@ -6,7 +6,16 @@ import en from './en';
 
 export type Lang = 'pt' | 'en';
 
+/** Web only: the language picked in Settings. Phones use the system's per-app language. */
+export const LANG_KEY = 'rl.lang.v1';
+
 function detect(): Lang {
+  try {
+    const picked = typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_KEY) : null;
+    if (picked === 'pt' || picked === 'en') return picked;
+  } catch {
+    // Storage blocked: fall through to the device language.
+  }
   try {
     // Required lazily so plain Node (the tests) falls back to Portuguese.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
