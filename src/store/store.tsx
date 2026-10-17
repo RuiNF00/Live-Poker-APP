@@ -17,7 +17,7 @@ import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
-import { bankrollOf, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
+import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
@@ -444,7 +444,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
       importSwaps(b.swaps ?? []).catch(() => {});
-      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added };
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing],
   );

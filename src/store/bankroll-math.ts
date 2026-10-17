@@ -53,14 +53,34 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
 export function dropUnusedAuto(merged: Bankroll[], incoming: Bankroll[], local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }): Bankroll[] {
   if (!incoming.length) return merged;
   const fromBackup = new Set(incoming.map((b) => b.id));
+  const unused = unusedAuto(local);
+  const out = merged.filter((b) => fromBackup.has(b.id) || !unused(b));
+  return out.length ? out : merged;
+}
+
+/** This phone's own "Principal", made on its own and never renamed or used. */
+function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }) {
   const used = new Set<string>();
   for (const x of local.sessions) {
     const b = bankrollOf(x, local.bankrolls);
     if (b) used.add(b.id);
   }
   for (const x of local.transfers) used.add(x.bankrollId);
-  const out = merged.filter((b) => fromBackup.has(b.id) || !b.id.startsWith('br_auto_') || (b.updatedAt ?? 0) > 0 || used.has(b.id));
-  return out.length ? out : merged;
+  return (b: Bankroll) => b.id.startsWith('br_auto_') && !((b.updatedAt ?? 0) > 0) && !used.has(b.id);
+}
+
+/**
+ * How many of a backup's bankrolls the player gets back: new ids, plus the
+ * one sharing an id with this phone's own empty "Principal" (same currency,
+ * same stable id), which the backup's takes over.
+ */
+export function bankrollsBack(incoming: Bankroll[], local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }): number {
+  const unused = unusedAuto(local);
+  const mine = new Map(local.bankrolls.map((b) => [b.id, b]));
+  return incoming.filter((b) => {
+    const cur = mine.get(b.id);
+    return !cur || unused(cur);
+  }).length;
 }
 
 /**

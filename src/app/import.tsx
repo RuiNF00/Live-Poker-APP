@@ -517,6 +517,7 @@ const FAIL_TEXT: Record<FailReason, string> = {
   noDate: t('Sem data'),
   badDate: t('Data que não se lê'),
   noMoney: t('Sem resultado, buy-in nem prémio'),
+  badMoney: t('Valor que não é um número'),
   badMove: t('Depósito ou levantamento sem valor'),
 };
 
@@ -595,5 +596,5 @@ function Note({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['nam
 }
 
 function fullDate(ts: number): string {
-  return new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(ts).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
