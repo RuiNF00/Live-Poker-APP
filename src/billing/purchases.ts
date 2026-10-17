@@ -9,7 +9,7 @@ import Purchases, { INTRO_ELIGIBILITY_STATUS, type CustomerInfo, type PurchasesP
 import { lang } from '../i18n';
 
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
-import { ENTITLEMENT, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
+import { ENTITLEMENT, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
 const KEY = Platform.select({
   ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
@@ -178,6 +178,18 @@ async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Prom
 }
 
 export type BuyResult = 'ok' | 'cancelled' | 'unavailable' | 'error';
+
+/** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
+export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+  if (!LIVE || !LIFETIME.enabled) return null;
+  try {
+    const pkgs = (await Purchases.getOfferings()).current?.availablePackages ?? [];
+    const pkg = pkgs.find((p) => p.product.identifier === LIFETIME.product || p.packageType === 'LIFETIME');
+    return pkg ? { priceString: pkg.product.priceString, buy: () => attempt(() => Purchases.purchasePackage(pkg)) } : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function buy(plan: StorePlan): Promise<BuyResult> {
   if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';

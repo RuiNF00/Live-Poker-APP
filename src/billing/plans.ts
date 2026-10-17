@@ -43,6 +43,15 @@ export const RETENTION = {
   pauseMonths: 3,
 };
 
+/**
+ * One-time Pro, offered only in the cancel flow to players who don't want a
+ * subscription. Off until Rui decides. Create `product` in both stores as a
+ * non-consumable granting the `pro` entitlement, in RevenueCat's offering as
+ * the Lifetime package. The price shown always comes from the store; `usd`
+ * is what to set there.
+ */
+export const LIFETIME = { enabled: false, product: 'sweatbook_lifetime', usd: 499 };
+
 /** Free plan. `null` means no limit. */
 export const FREE = {
   /** New hands saved per calendar day. The 4th waits as a draft, never lost. */

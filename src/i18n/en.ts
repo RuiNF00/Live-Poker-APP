@@ -1577,6 +1577,15 @@ const en: Record<string, string> = {
   'Várias mãos de uma vez para o solver': 'Many hands at once to the solver',
   'Regista um torneio': 'Log a tournament',
   'Escolhe os torneios do próximo festival': 'Pick your events at the next festival',
+  'Pro para sempre': 'Pro for good',
+  'Agora cancela a subscrição na {store}, para não pagares mais.': 'Now cancel the subscription in the {store} so you stop paying.',
+  'Abrir a {store}': 'Open the {store}',
+  'Compras restauradas': 'Purchases restored',
+  'O teu Pro está ativo nesta conta da loja.': 'Your Pro is active on this store account.',
+  'Pro para sempre: {price}': 'Pro for good: {price}',
+  'Pagas uma vez. Depois cancelas a subscrição na {store}.': 'Pay once. Then cancel the subscription in the {store}.',
+  'Comprar uma vez': 'Buy once',
+  'Não quero uma subscrição': "I don't want a subscription",
 };
 
 export default en;
