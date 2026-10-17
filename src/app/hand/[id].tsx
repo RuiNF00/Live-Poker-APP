@@ -12,7 +12,8 @@ import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { refCode, track } from '@/lib/events';
+import { track } from '@/lib/events';
+import { shareRef } from '@/lib/referrals';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
@@ -73,7 +74,7 @@ export default function HandScreen() {
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share');
-    const ref = await refCode();
+    const ref = await shareRef();
     const link = shareLink(shareId, quiz ? 'challenge' : 'link', { quiz, ref });
     track('link_shared', { channel: quiz ? 'challenge' : 'link', share_id: shareId, ref });
     const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
@@ -87,7 +88,7 @@ ${link}`;
 
   const copyText = async () => {
     tap();
-    const link = hand.shareId ? shareLink(hand.shareId, 'text', { ref: await refCode() }) : undefined;
+    const link = hand.shareId ? shareLink(hand.shareId, 'text', { ref: await shareRef() }) : undefined;
     await Clipboard.setStringAsync(handText(hand, { inBB: settings.inBB, link }));
     Alert.alert(t('Texto copiado'), t('Cola no WhatsApp, Discord ou onde quiseres.'));
   };

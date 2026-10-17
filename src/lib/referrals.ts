@@ -66,7 +66,7 @@ export async function canEnterCode(): Promise<boolean> {
  * Register our code before anything else can make the server assign one. If the
  * server already holds a different code for this install, links switch to it.
  */
-async function ensureRegistered(): Promise<void> {
+export async function ensureRegistered(): Promise<void> {
   if (await getJSON<boolean>(K.registered)) return;
   try {
     const r = await post<{ code: string }>('code', { code: await refCode() });
@@ -142,4 +142,10 @@ export async function inviteStatus(): Promise<InviteStatus | null> {
   } catch {
     return null;
   }
+}
+
+/** The code to put in a link we're about to share: registered first, so claims on it count. */
+export async function shareRef(): Promise<string> {
+  await ensureRegistered();
+  return refCode();
 }

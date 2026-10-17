@@ -9,7 +9,8 @@ import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard
 import { Button, Chip, Empty, Row, T, tap } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
-import { refCode, track } from '@/lib/events';
+import { track } from '@/lib/events';
+import { shareRef } from '@/lib/referrals';
 import { canShareStory, captureStory, ensureShareId, renderVoiceStory, shareStory } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
 import { sampleHand } from '@/poker/sample';
@@ -75,7 +76,7 @@ export default function StoryScreen() {
       }
       if (isNew) pro.record('share');
       // Question stories open the challenge view: vote first, result after.
-      const ref = await refCode();
+      const ref = await shareRef();
       const link = shareLink(shareId, 'story', { quiz: mode === 'question', ref });
       let target;
       if (withVoice && voice) {
