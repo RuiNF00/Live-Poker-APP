@@ -104,3 +104,9 @@ test('backup carries quarantined values, and a restore can only write quarantine
   assert.deepEqual(back.quarantine, q);
   assert.equal(buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS }).quarantine, undefined);
 });
+
+test('the restore summary lists swaps when the backup brought any', () => {
+  assert.match(importSummary({ hands: 0, sessions: 1, players: 0, swaps: 2 }), /2 swaps/);
+  assert.match(importSummary({ hands: 0, sessions: 1, players: 0, swaps: 1 }), /1 swap\b/);
+  assert.doesNotMatch(importSummary({ hands: 0, sessions: 1, players: 0 }), /swap/);
+});

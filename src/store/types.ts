@@ -305,6 +305,8 @@ export interface Settings {
   haptics?: boolean;
   /** Hand entry: the last bet/raise size per spot, per game kind, offered as a one-tap chip. */
   sizes?: { cash?: SizeMemory; mtt?: SizeMemory };
+  /** Local notification on the 1st with last month's recap. Missing = on (it only goes out once notifications are allowed). */
+  monthRecap?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -1,3 +1,5 @@
+import { localeFormat, moneyIn, type LocaleFormat, type MoneyVariant } from '@livepoker/hand-format';
+
 export type Locale = 'pt' | 'pt-BR' | 'en' | 'es';
 
 export const LOCALES: readonly Locale[] = ['pt', 'pt-BR', 'en', 'es'];
@@ -13,16 +15,26 @@ export function intlTag(l: Locale): string {
 }
 
 /**
- * Tag for numbers. pt-PT groups thousands with a space, so the site has always used de-DE for
- * the 1.234,56 look; pt-BR and es already group with dots.
+ * Tag for numbers, the same the app uses (CLDR): pt-PT and es-ES group only from five digits
+ * (2500, 12 345 / 12.345), pt-BR always (2.500), English with commas.
  */
 export function numberTag(l: Locale): string {
-  return l === 'pt' ? 'de-DE' : l === 'pt-BR' ? 'pt-BR' : l === 'es' ? 'es' : 'en-GB';
+  return l === 'pt' ? 'pt-PT' : l === 'pt-BR' ? 'pt-BR' : l === 'es' ? 'es-ES' : 'en-GB';
 }
 
-/** Money as the site writes it: symbol first in English and Brazilian Portuguese, after the number in pt-PT and Spanish. */
-export function withCurrency(amount: string, currency: string, l: Locale, sign = ''): string {
-  return l === 'en' || l === 'pt-BR' ? `${sign}${currency}${amount}` : `${sign}${amount}${currency}`;
+const MONEY_VARIANT: Record<Locale, MoneyVariant> = { pt: 'pt-PT', 'pt-BR': 'pt-BR', en: 'en', es: 'es' };
+const moneyFormats = new Map<Locale, LocaleFormat>();
+
+/**
+ * Money exactly as the app writes it (same rules, packages/hand-format/src/money.ts): "2500€" and
+ * "12,50€" in pt-PT, "R$ 2.500" in pt-BR, "2500 €" in Spain, "$2,500" in English. `signed` adds a
+ * "+" to gains; losses always carry "−".
+ */
+export function formatMoney(n: number, currency: string, l: Locale, signed = false): string {
+  let f = moneyFormats.get(l);
+  if (!f) moneyFormats.set(l, (f = localeFormat(MONEY_VARIANT[l])));
+  const s = moneyIn(f, n, currency);
+  return signed && n > 0 && s !== moneyIn(f, 0, currency) ? `+${s}` : s;
 }
 
 /**

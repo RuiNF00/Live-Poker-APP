@@ -12,7 +12,7 @@ import { AmountPad } from '@/components/AmountPad';
 import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
-import { bbs, chips, money } from '@/poker/format';
+import { bbs, chips, decimal, money } from '@/poker/format';
 import { averageStack, levelOf, parsePayouts, parseStructure, payState, stackDepth, syncTo, syncedLevelStart, TEMPLATES, templateStructure, type Level, type Tourney } from '@/poker/tourney';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -117,8 +117,8 @@ function Tournament({ s }: { s: Session }) {
               {chips(s.stack)}
             </T>
             <StatGrid cols={3}>
-              <Stat label="BB" value={depth.bb.toFixed(depth.bb < 10 ? 1 : 0)} tone={depth.bb < 10 ? 'bad' : depth.bb < 20 ? 'warn' : undefined} />
-              <Stat label="M" value={depth.m.toFixed(depth.m < 10 ? 1 : 0)} tone={depth.m < 6 ? 'bad' : depth.m < 12 ? 'warn' : undefined} />
+              <Stat label="BB" value={decimal(depth.bb, depth.bb < 10 ? 1 : 0)} tone={depth.bb < 10 ? 'bad' : depth.bb < 20 ? 'warn' : undefined} />
+              <Stat label="M" value={decimal(depth.m, depth.m < 10 ? 1 : 0)} tone={depth.m < 6 ? 'bad' : depth.m < 12 ? 'warn' : undefined} />
               <Stat label={t('vs média')} value={avg ? Math.round((s.stack / avg) * 100) + '%' : '—'} tone={avg ? (s.stack >= avg ? 'good' : 'bad') : undefined} />
             </StatGrid>
           </Card>
