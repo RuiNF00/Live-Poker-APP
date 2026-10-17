@@ -412,6 +412,7 @@ const es: Record<string, string> = {
   'O que te falta?': '¿Qué te falta?',
   'Enviar': 'Enviar',
   'Ficar com o Pro': 'Quedarme con Pro',
+  'Pro local (build de teste)': 'Pro local (build de prueba)',
   'Cancelar na {store}': 'Cancelar en {store}',
   'Continuar a cancelar na {store}': 'Seguir cancelando en {store}',
   'Avisamos-te antes de cobrar.': 'Te avisamos antes de cobrar.',

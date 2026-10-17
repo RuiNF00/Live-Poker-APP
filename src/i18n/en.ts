@@ -440,6 +440,7 @@ const en: Record<string, string> = {
   'O que te falta?': 'What are you missing?',
   'Enviar': 'Send',
   'Ficar com o Pro': 'Keep Pro',
+  'Pro local (build de teste)': 'Local Pro (test build)',
   'Cancelar na {store}': 'Cancel in the {store}',
   'Continuar a cancelar na {store}': 'Continue cancelling in the {store}',
   'Avisamos-te antes de cobrar.': "We'll remind you before you're charged.",

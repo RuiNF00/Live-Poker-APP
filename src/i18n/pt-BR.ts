@@ -3,6 +3,7 @@
 // Brazil are here: anything else shows the pt-PT text as is.
 
 const ptBR: Record<string, string> = {
+  'Pro local (build de teste)': 'Pro local (build de teste)',
   'O teu caderno de póquer live': 'Seu caderno de poker ao vivo',
   'Guardar': 'Salvar',
   'Apagar': 'Excluir',
