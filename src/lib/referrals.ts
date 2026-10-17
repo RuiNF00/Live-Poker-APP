@@ -10,13 +10,16 @@ import { appUserId } from '@/billing/purchases';
 import { BRAND } from '@/theme';
 
 import { installId, refCode, setRefCode, track } from './events';
+import { isOnline } from './online';
+import { queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', claim: 'rl.claim.v1' };
 const WINDOW = 7 * 86400000;
 
 export type ClaimSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
-export type ClaimResult = 'ok' | 'already' | 'unknown_code' | 'self' | 'too_late' | 'error' | 'disabled';
+/** queued: no signal now; the claim is kept on the phone and sent when there is. */
+export type ClaimResult = 'ok' | 'already' | 'unknown_code' | 'self' | 'too_late' | 'error' | 'disabled' | 'queued';
 interface ClaimState {
   code: string;
   result: ClaimResult;
@@ -68,7 +71,7 @@ export async function canEnterCode(): Promise<boolean> {
  * server already holds a different code for this install, links switch to it.
  */
 export async function ensureRegistered(): Promise<void> {
-  if (await getJSON<boolean>(K.registered)) return;
+  if (!isOnline() || (await getJSON<boolean>(K.registered))) return;
   try {
     const r = await post<{ code: string }>('code', { code: await refCode() });
     if (!r) return;
@@ -100,17 +103,43 @@ export async function claimInvite(raw: string, source: ClaimSource, shareId?: st
   const prev = await claimState();
   if (prev && (prev.result === 'ok' || prev.result === 'already')) return 'already';
   if (code === (await refCode())) return 'self';
+  const job: ClaimJob = { code, source, shareId };
+  const { result, retry } = await sendClaim(job);
+  if (retry) {
+    // Couldn't reach the server (a card room with no signal): keep it and send it later.
+    queue('invite-claim', job, 'claim');
+    return 'queued';
+  }
+  return result;
+}
+
+interface ClaimJob {
+  code: string;
+  source: ClaimSource;
+  shareId?: string;
+}
+
+/** retry: no signal or the server is down for now (worth sending again later). */
+async function sendClaim({ code, source, shareId }: ClaimJob): Promise<{ result: ClaimResult; retry: boolean }> {
   let result: ClaimResult;
   try {
     const r = await post<{ result: ClaimResult }>('claim', { code, source, ...(shareId ? { shareId } : {}) });
     result = r ? r.result : 'disabled';
-  } catch {
-    result = 'error';
+  } catch (e) {
+    const status = Number((e as Error).message);
+    return { result: 'error', retry: !status || status === 429 || status >= 500 };
   }
   if (result === 'ok' || result === 'already') await AsyncStorage.setItem(K.claim, JSON.stringify({ code, result })).catch(() => {});
   track('invite_claimed', { source, result });
-  return result;
+  return { result, retry: false };
 }
+
+registerSender('invite-claim', async (p) => {
+  const job = p as ClaimJob;
+  const prev = await claimState();
+  if (prev && (prev.result === 'ok' || prev.result === 'already')) return 'drop';
+  return (await sendClaim(job)).retry ? 'retry' : 'done';
+});
 
 /** After a hand is saved: if we came through an invite, turn the reward on. True when it was just granted. */
 export async function activateInvite(): Promise<boolean> {
@@ -151,6 +180,7 @@ export async function inviteStatus(): Promise<InviteStatus | null> {
 
 /** The code to put in a link we're about to share: registered first, so claims on it count. */
 export async function shareRef(): Promise<string> {
-  await ensureRegistered();
+  // Never hold up a share on a slow network: registration is retried next time.
+  await Promise.race([ensureRegistered(), new Promise((r) => setTimeout(r, 2500))]);
   return refCode();
 }

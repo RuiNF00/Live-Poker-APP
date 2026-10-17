@@ -139,6 +139,7 @@ export default function SettingsScreen() {
 }
 
 const CLAIM_COPY: Partial<Record<ClaimResult, string>> = {
+  queued: 'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.',
   ok: 'Convite ativado. Guarda uma mão e ganham os dois 7 dias de Pro.',
   already: 'Já tens um convite ativo.',
   self: 'Esse é o teu próprio código.',

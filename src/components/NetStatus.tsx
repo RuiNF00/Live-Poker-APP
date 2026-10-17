@@ -1,0 +1,35 @@
+// A quiet pill at the top while there's no signal. Everything keeps working
+// (it's all on the phone); it only says that sharing, backups and invites
+// will go out by themselves later.
+
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { t } from '@/i18n';
+import { useOnline, usePending } from '@/lib/sync';
+import { C } from '@/theme';
+
+import { T } from './ui';
+
+export function NetStatus() {
+  const online = useOnline();
+  const pending = usePending();
+  const insets = useSafeAreaInsets();
+  if (online) return null;
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={t('Tudo guardado no telemóvel. Envia quando houver sinal.')}
+      style={{ position: 'absolute', top: insets.top + 2, left: 0, right: 0, alignItems: 'center', zIndex: 50 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: 0.95 }}>
+        <Ionicons name="cloud-offline-outline" size={12} color={C.textDim} />
+        <T v="tiny" color={C.textDim}>
+          {pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')}
+        </T>
+      </View>
+    </View>
+  );
+}

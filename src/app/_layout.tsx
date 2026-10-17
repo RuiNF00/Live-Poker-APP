@@ -17,12 +17,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
 import { AutoCloudBackup } from '@/components/CloudBackup';
+import { NetStatus } from '@/components/NetStatus';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
 import { installFetchTimeout } from '@/lib/net';
+import { startSync } from '@/lib/sync';
 import { bootReferrals } from '@/lib/referrals';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
@@ -34,6 +36,7 @@ const theme = {
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 installFetchTimeout();
+startSync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -86,6 +89,7 @@ export default function RootLayout() {
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
+          <NetStatus />
           </ProProvider>
         </StoreProvider>
       </ThemeProvider>

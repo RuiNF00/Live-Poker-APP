@@ -11,6 +11,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive } from '@/lib/live-link';
 import { shareRef } from '@/lib/referrals';
+import { useOnline } from '@/lib/sync';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -117,11 +118,14 @@ export function BackerLiveSync() {
   const sent = useRef(new Map<string, string>());
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const [retry, setRetry] = useState(0);
+  // Back online: send what's pending now instead of at the next minute.
+  const online = useOnline();
   const latest = useRef(sessions);
   latest.current = sessions;
 
   useEffect(() => {
     const now = Date.now();
+    if (!online) return;
     for (const s of sessions) {
       if (!s.live || (s.endedAt && now - s.endedAt > AFTER_END_MS)) continue;
       const snap = liveSnapshot(s, settings.nickname, hands.filter((h) => h.sessionId === s.id).length);
@@ -146,7 +150,7 @@ export function BackerLiveSync() {
         }, 2000),
       );
     }
-  }, [sessions, hands, settings.nickname, saveSession, retry]);
+  }, [sessions, hands, settings.nickname, saveSession, retry, online]);
 
   useEffect(() => {
     const all = timers.current;

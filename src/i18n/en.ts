@@ -1077,6 +1077,10 @@ const en: Record<string, string> = {
   'Horas locais de Nassau (hora de Nova Iorque).': 'Local Nassau times (same as New York).',
   'A WSOP ainda não publicou o fecho do late reg nem as regras de re-entry: confirma na app WSOP LIVE.': "WSOP hasn't published late reg close times or re-entry rules yet: check the WSOP LIVE app.",
   'Flights 2A e 2BC do Super Main Event tratados como Dia 2 (sem novo buy-in).': 'Super Main Event flights 2A and 2BC are treated as Day 2 (no new buy-in).',
+  'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'No signal right now: the invite is saved and turns on by itself when you’re back online.',
+  'Sem rede': 'Offline',
+  'Sem rede · {n} por enviar': 'Offline · {n} to send',
+  'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
 };
 
 export default en;
