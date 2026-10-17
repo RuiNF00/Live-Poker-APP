@@ -37,7 +37,8 @@ export type FunnelEvent =
   | 'session_closed'
   | 'notify_permission'
   | 'replay_opened'
-  | 'review_prompt';
+  | 'review_prompt'
+  | 'invite_rewarded';
 
 // The install id also lives in the keychain, which survives deleting the app on iOS: a
 // reinstall is the same install, so it can't claim the friend's 7 Pro days again.

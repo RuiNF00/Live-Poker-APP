@@ -14,7 +14,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,6 +23,7 @@ import { usePro } from '@/billing/pro';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
+import { TapCountProvider } from '@/components/TapCount';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
 import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
@@ -30,6 +31,7 @@ import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { entrySeconds } from '@/lib/friction';
 import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
@@ -60,6 +62,10 @@ export default function NewHand() {
   const store = useStore();
   const pro = usePro();
   const { activeSession, settings, hands } = store;
+  // Friction metric on hand_saved: touches and time from opening this screen to Guardar (lib/friction.ts).
+  const [openedAt] = useState(() => Date.now());
+  const touches = useRef(0);
+  const countTouch = useCallback(() => void (touches.current += 1), []);
 
   // Only an existing hand is an edit (free of the daily limit); a link with a made-up id is a new hand.
   const [isEdit] = useState(() => !!params.edit && store.hands.some((h) => h.id === params.edit));
@@ -297,7 +303,7 @@ export default function NewHand() {
     if (!settings.onboarded) store.setSettings({ onboarded: true });
     if (!isEdit) {
       store.setDraft(null);
-      pro.record('hand');
+      pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0 });
     }
     // Finishing a half-saved hand: the detail screen offers the next one.
     router.replace({ pathname: '/hand/[id]', params: justFinished ? { id: final.id, f: '1' } : { id: final.id } });
@@ -390,7 +396,14 @@ export default function NewHand() {
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
+    <TapCountProvider value={countTouch}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: C.bg }}
+      onStartShouldSetResponderCapture={() => {
+        countTouch();
+        return false;
+      }}>
       {/* header: one compact row, so the felt gets the screen */}
       <View style={{ paddingTop: insets.top + 4, paddingHorizontal: S.gutter, paddingBottom: 4, flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
         <IconButton name="close" label={t('Fechar')} onPress={() => (busy ? router.back() : discard())} />
@@ -830,6 +843,7 @@ export default function NewHand() {
         />
       )}
     </KeyboardAvoidingView>
+    </TapCountProvider>
   );
 }
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { TapCounted } from '@/components/TapCount';
 import { useSheetAnimation } from '@/lib/motion';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
@@ -36,6 +37,7 @@ export function ContextSheet({
   const sheetPad = useSheetPad(40);
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={onClose}>
+      <TapCounted style={{ flex: 1 }}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} />
       <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, maxHeight: '88%', borderTopWidth: 1, borderColor: C.border }}>
         <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, gap: S.lg, paddingBottom: sheetPad }} keyboardShouldPersistTaps="handled">
@@ -137,6 +139,7 @@ export function ContextSheet({
           <Button title={t('Feito')} onPress={onClose} />
         </ScrollView>
       </View>
+      </TapCounted>
     </Modal>
   );
 }

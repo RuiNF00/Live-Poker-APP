@@ -39,7 +39,7 @@ interface ProValue {
   /** Free trial days this player can still start on the annual plan (0 = none). */
   trialDays: number;
   canSaveHand: () => boolean;
-  record: (kind: UsageKind) => void;
+  record: (kind: UsageKind, props?: Record<string, string | number | boolean>) => void;
   /** Opens the paywall. `then` runs after a purchase or restore there, so the tapped action happens without tapping again. */
   paywall: (reason?: PaywallReason, then?: () => void) => void;
   /** The paywall takes the pending `then` (once) when Pro arrives, or drops it when closed. */
@@ -94,12 +94,13 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     return off;
   }, [setPro]);
 
-  const record = useCallback((kind: UsageKind) => {
-    track(kind === 'hand' ? 'hand_saved' : 'share_created');
+  const record = useCallback((kind: UsageKind, props?: Record<string, string | number | boolean>) => {
+    track(kind === 'hand' ? 'hand_saved' : 'share_created', props);
     // Came through an invite? The first saved hand turns on both players' Pro days.
     if (kind === 'hand')
       activateInvite().then((granted) => {
         if (!granted) return;
+        track('invite_rewarded', { side: 'friend', days: 7 });
         store.getIsPro().then((v) => v !== null && setPro(v));
         // Said the moment it happens, in the same words as the invite: days of Pro, nothing to win.
         notice(t('7 dias de Pro para os dois'), t('Guardaste a primeira mão: tu e quem te convidou têm Pro até {date}.', { date: shortDate(Date.now() + 7 * 86_400_000) }));
@@ -167,6 +168,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const inviteNews = useCallback(() => {
     newInviteDays().then((days) => {
       if (!days) return;
+      track('invite_rewarded', { side: 'inviter', days });
       store.getIsPro().then((v) => v !== null && setPro(v));
       notice(t('Um amigo guardou a primeira mão'), t('Têm os dois {n} dias de Pro.', { n: days }));
     });
