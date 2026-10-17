@@ -10,6 +10,15 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 >
 > O que testar: regista mãos à mesa (ou de memória), revê-as no replayer e partilha uma por link. Abre uma mão que um amigo te mande: fica em Mãos partilhadas, com os comentários rua a rua. Quando jogares, começa uma sessão e vê o stack e o nível no ecrã bloqueado.
 >
+> Novo nesta versão:
+> • Ao registar uma mão: "Check até ao fim" e "Mais limps?" poupam toques.
+> • Bankroll → "Sessão passada": junta uma sessão já jogada em 3 toques.
+> • Festivais: filtra os eventos (Satélites, Turbo, NLH, PLO…), marca os que vais jogar e escolhe a hora do late reg para receberes o aviso.
+> • Partilhar: Instagram, WhatsApp, X e copiar link na mesma folha, em mãos, sessões e festivais.
+> • Swaps: quando todos os resultados entram, aparece "falta acertar".
+> • Definições → "Exportar sessões em CSV", grátis.
+> • Partilha uma mão e pede a um amigo que comente: recebes um aviso (nunca entre as 23h e as 12h, sem valores).
+>
 > Como reportar: faz uma captura de ecrã dentro da app e o TestFlight pergunta se a queres enviar. Diz o que fizeste, o que esperavas e o que aconteceu. Se a app fechar sozinha, aceita enviar o relatório.
 >
 > Nenhum dinheiro passa pela Sweatbook: são só registos. As compras no TestFlight são de teste e não pagas nada.
@@ -19,6 +28,15 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 > Valeu por testar o Sweatbook!
 >
 > O que testar: registre mãos na mesa (ou de memória), reveja no replayer e compartilhe uma por link. Abra uma mão que um amigo mandar: ela fica em Mãos compartilhadas, com os comentários street a street. Quando jogar, comece uma sessão e veja o stack e o nível na tela bloqueada.
+>
+> Novo nesta versão:
+> • Ao registrar uma mão: "Check até o fim" e "Mais limps?" economizam toques.
+> • Bankroll → "Sessão passada": adicione uma sessão já jogada em 3 toques.
+> • Festivais: filtre os eventos (Satélites, Turbo, NLH, PLO…), marque os que vai jogar e escolha o horário do late reg para receber o aviso.
+> • Compartilhar: Instagram, WhatsApp, X e copiar link na mesma tela, em mãos, sessões e festivais.
+> • Swaps: quando todos os resultados entram, aparece "falta acertar as contas".
+> • Configurações → "Exportar sessões em CSV", grátis.
+> • Compartilhe uma mão e peça para um amigo comentar: você recebe um aviso (nunca entre 23h e 12h, sem valores).
 >
 > Como reportar: tire um print dentro do app e o TestFlight pergunta se você quer enviar. Conte o que fez, o que esperava e o que aconteceu. Se o app fechar sozinho, aceite enviar o relatório.
 >
@@ -30,6 +48,15 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 >
 > Qué probar: registra manos en la mesa (o de memoria), repásalas en el replayer y comparte una con un link. Abre una mano que te mande un amigo: queda en Manos compartidas, con los comentarios calle a calle. Cuando juegues, empieza una sesión y mira el stack y el nivel en la pantalla bloqueada.
 >
+> Nuevo en esta versión:
+> • Al registrar una mano: "Check hasta el final" y "¿Más limps?" ahorran toques.
+> • Bankroll → "Sesión pasada": añade una sesión ya jugada en 3 toques.
+> • Festivales: filtra los eventos (Satélites, Turbo, NLH, PLO…), marca los que vas a jugar y elige la hora del late reg para recibir el aviso.
+> • Compartir: Instagram, WhatsApp, X y copiar link en la misma hoja, en manos, sesiones y festivales.
+> • Swaps: cuando entran todos los resultados, aparece "falta saldar cuentas".
+> • Ajustes → "Exportar sesiones en CSV", gratis.
+> • Comparte una mano y pide a un amigo que comente: recibes un aviso (nunca entre las 23 h y las 12 h, sin importes).
+>
 > Cómo reportar: haz una captura de pantalla dentro de la app y TestFlight te pregunta si quieres enviarla. Cuenta qué hiciste, qué esperabas y qué pasó. Si la app se cierra sola, acepta enviar el informe.
 >
 > Ningún dinero pasa por Sweatbook: solo son registros. Las compras en TestFlight son de prueba y no pagas nada.
@@ -39,6 +66,15 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 > Thanks for testing Sweatbook!
 >
 > What to test: log hands at the table (or from memory), replay them and share one as a link. Open a hand a friend sends you: it stays in Shared hands, with street-by-street comments. When you play, start a session and check the stack and level on the Lock Screen.
+>
+> New in this build:
+> • When logging a hand: "Check it down" and "More limps?" save taps.
+> • Bankroll → "Past session": add a session you already played in 3 taps.
+> • Festivals: filter events (Satellites, Turbo, NLH, PLO…), mark the ones you'll play and pick the late reg time to get the reminder.
+> • Share: Instagram, WhatsApp, X and copy link on one sheet, for hands, sessions and festivals.
+> • Swaps: once every result is in, "time to settle up" shows.
+> • Settings → "Export sessions as CSV", free.
+> • Share a hand and ask a friend to comment: you get a notice (never between 11 pm and noon, no amounts).
 >
 > How to report: take a screenshot inside the app and TestFlight will ask if you want to send it. Say what you did, what you expected and what happened. If the app crashes, accept sending the report.
 >

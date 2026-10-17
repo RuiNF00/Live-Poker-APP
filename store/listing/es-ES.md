@@ -37,7 +37,7 @@ REPÁSALA EN EL REPLAYER
 
 COMPARTE Y PIDE OPINIÓN
 • Envía la mano con un link: quien la recibe ve el replayer en el navegador, sin instalar nada
-• Comentarios calle a calle y votos de tus amigos; las manos que te envían quedan en Manos compartidas
+• Comentarios calle a calle y votos de tus amigos, con aviso cuando alguien comenta; las manos que te envían quedan en Manos compartidas
 • Publica la mano en tus historias de Instagram
 
 CONTROL DE BANKROLL PARA QUIEN JUEGA EN VIVO

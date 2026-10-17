@@ -38,7 +38,7 @@ REVIEW WITH THE REPLAYER
 
 SHARE AND GET FEEDBACK
 • Send a hand as a link: your friend opens the replayer in a browser, no install needed
-• Street-by-street comments and votes from friends; hands they send you stay in Shared hands
+• Street-by-street comments and votes from friends, with a notice when someone comments; hands they send you stay in Shared hands
 • Post the hand to your Instagram Stories
 
 BUILT FOR LIVE PLAYERS
