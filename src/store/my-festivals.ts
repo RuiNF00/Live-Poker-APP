@@ -54,6 +54,7 @@ let mine: Festival[] = [];
 const byStart = (l: Festival[]) => [...l].sort((a, b) => festivalSortKey(a).localeCompare(festivalSortKey(b)));
 let all: Festival[] = byStart(FESTIVALS);
 let loaded = false;
+let ready = false;
 const listeners = new Set<() => void>();
 
 function set(next: Festival[]) {
@@ -67,11 +68,14 @@ function load() {
   loaded = true;
   AsyncStorage.getItem(KEY)
     .then((raw) => {
-      if (!raw) return;
-      const saved = (JSON.parse(raw) as Festival[]).filter((f) => f && f.own && f.dates);
+      const saved = raw ? (JSON.parse(raw) as Festival[]).filter((f) => f && f.own && f.dates) : [];
+      ready = true;
       set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]);
     })
-    .catch(() => {});
+    .catch(() => {
+      ready = true;
+      set(mine);
+    });
 }
 
 function subscribe(l: () => void) {
@@ -117,4 +121,9 @@ export function clearOwnFestivals() {
 
 export function useFestivals(): Festival[] {
   return useSyncExternalStore(subscribe, allFestivals, allFestivals);
+}
+
+/** False until the player's own festivals are read from the phone: an id not found yet may still be one of them. */
+export function useFestivalsReady(): boolean {
+  return useSyncExternalStore(subscribe, () => ready, () => ready);
 }

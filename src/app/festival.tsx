@@ -24,7 +24,7 @@ import { balanceOf } from '@/store/bankroll-math';
 import { getOffers, stakesFor } from '@/store/action-offer';
 import { bankrollShare, eventAction, planTotals, REMIND_BEFORE_MIN, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan } from '@/store/festival-plan';
 import { dayOf, reenterFlight, resumeDay } from '@/store/multi-day';
-import { useFestivals } from '@/store/my-festivals';
+import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -41,7 +41,13 @@ function dayLabel(day: string) {
 export default function FestivalScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const festivals = useFestivals();
-  const f = festivals.find((x) => x.id === id) ?? festivals[0];
+  const ready = useFestivalsReady();
+  // An own festival's id before the list is read: wait, so nothing (a trip) attaches to another festival.
+  const f = festivals.find((x) => x.id === id) ?? (ready || !id ? festivals[0] : undefined);
+  return f ? <FestivalView key={f.id} f={f} /> : null;
+}
+
+function FestivalView({ f }: { f: Festival }) {
   const plan = useFestivalPlan(f.id);
   const { sessions, transfers, bankrolls, defaultBankroll, activeSession, saveSession, settings } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
