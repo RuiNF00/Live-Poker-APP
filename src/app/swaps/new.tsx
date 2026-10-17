@@ -176,7 +176,7 @@ export default function NewSwap() {
               ))}
             </ChipRow>
           ) : null}
-          <Field value={title} onChangeText={setTitle} placeholder={scope === 'series' ? t('Ex.: WSOP Paradise 2026') : t('Ex.: $10k Main Event')} maxLength={80} />
+          <Field value={title} onChangeText={setTitle} placeholder={scope === 'series' ? t('Ex.: Bahamas, dezembro') : t('Ex.: $10k Main Event')} maxLength={80} />
           <Field value={venue} onChangeText={setVenue} placeholder={t('Sala (opcional)')} maxLength={80} />
         </Section>
 

@@ -135,6 +135,11 @@
               "scheme": "https",
               "host": "sweatbook.poker",
               "pathPrefix": "/live/"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/b"
             }
           ],
           "category": [
@@ -192,6 +197,13 @@
         }
       ],
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Sweatbook usa o Face ID para desbloquear a app, se ligares o bloqueio nas Definições."
+        }
+      ],
+      "expo-secure-store",
+      [
         "expo-notifications",
         {
           "color": "#FF6A3D"
@@ -201,7 +213,26 @@
         "expo-widgets",
         {
           "enableAndroid": true,
-          "widgets": []
+          "widgets": [
+            {
+              "name": "SweatbookHome",
+              "displayName": "Sweatbook",
+              "description": "Sessão a decorrer ou o resultado da semana.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ]
+              },
+              "android": {
+                "minWidth": 110,
+                "minHeight": 110,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
+            }
+          ]
         }
       ]
     ],

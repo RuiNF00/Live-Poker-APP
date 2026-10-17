@@ -75,6 +75,16 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
       await save();
     },
 
+    /** Forgets a job that hasn't gone out yet. True when there was one. */
+    async cancel(kind: string, key: string): Promise<boolean> {
+      const list = await load();
+      const i = list.findIndex((j) => j.kind === kind && j.key === key);
+      if (i < 0) return false;
+      list.splice(i, 1);
+      await save();
+      return true;
+    },
+
     /** Sends every job that is due, one at a time. Stops at the first network failure. */
     drain(force = false): Promise<void> {
       draining ??= (async () => {

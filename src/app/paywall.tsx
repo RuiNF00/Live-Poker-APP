@@ -6,11 +6,10 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, useWindowDim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, formatPrice, FREE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
-import { notificationsAllowed } from '@/billing/nudges-sync';
 import { usePro } from '@/billing/pro';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { askNotificationPermission } from '@/lib/lock-screen/reminder';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
@@ -124,9 +123,18 @@ export default function Paywall() {
           <Button
             title={trial ? t('Começar {days} dias grátis', { days: trial }) : t('Subscrever Pro')}
             sub={trial ? t('Depois {after}', { after }) : after}
+            iconRight="chevron-forward"
             disabled={!chosen || !!busy}
             onPress={onBuy}
           />
+        )}
+        {compact ? null : (
+          <Row gap={6} style={{ justifyContent: 'center' }}>
+            <Ionicons name="shield-checkmark" size={14} color={C.good} />
+            <T v="small" color={C.text}>
+              {t('Sem compromisso. Cancela quando quiseres.')}
+            </T>
+          </Row>
         )}
         <T v="tiny" style={{ textAlign: 'center' }}>
           {t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
@@ -301,22 +309,26 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
 
 function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; welcomed: boolean; trial: number; onDone: () => void }) {
   const { refreshNudges } = usePro();
-  // null: still checking or nothing to ask; false: not yet allowed; true: on.
-  const [reminder, setReminder] = useState<boolean | null>(null);
+  const [sheet, ask] = useNotifySoftAsk();
+  const [reminder, setReminder] = useState(false);
+  // Right after a trial starts: ask for the day-5 reminder the timeline promised.
   useEffect(() => {
     if (trial < 3) return;
     let live = true;
-    notificationsAllowed().then((ok) => live && setReminder(ok === null ? null : ok));
+    const timer = setTimeout(async () => {
+      const ok = await ask({
+        title: t('Avisamos-te antes de cobrar'),
+        preview: { title: t('Dia 5 do teu Pro'), body: t('Vês as mãos que registaste e o dia em que o teste acaba.') },
+      });
+      if (!live || !ok) return;
+      setReminder(true);
+      refreshNudges();
+    }, 600);
     return () => {
       live = false;
+      clearTimeout(timer);
     };
-  }, [trial]);
-  const allow = async () => {
-    tap();
-    const ok = await askNotificationPermission();
-    setReminder(ok ? true : null);
-    if (ok) refreshNudges();
-  };
+  }, [trial, ask, refreshNudges]);
   const line = !welcomed
     ? null
     : reason === 'hands'
@@ -325,7 +337,9 @@ function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; 
         ? t('Grava a tua voz. Sem marca de água.')
         : reason === 'stats'
           ? t('Filtros, salas e jogos abertos.')
-          : t('Mãos sem limite, a partir de agora.');
+          : reason === 'solver'
+            ? t('Seleciona as mãos e exporta para o solver.')
+            : t('Mãos sem limite, a partir de agora.');
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: S.md, padding: S.xxl }}>
       <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
@@ -339,31 +353,9 @@ function Unlocked({ reason, welcomed, trial, onDone }: { reason: PaywallReason; 
           {line}
         </T>
       ) : null}
-      {reminder !== null ? <ReminderPreview on={reminder} days={trial - 2} /> : null}
-      {reminder === false ? (
-        <>
-          <Button title={t('Ativar lembrete')} icon="notifications" onPress={allow} style={{ alignSelf: 'stretch' }} />
-          <Button kind="ghost" title={t('Agora não')} onPress={onDone} style={{ alignSelf: 'stretch' }} />
-        </>
-      ) : (
-        <Button title={reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
-      )}
-    </View>
-  );
-}
-
-/** What the day-5 reminder will look like, shown before the system asks for permission. */
-function ReminderPreview({ on, days }: { on: boolean; days: number }) {
-  return (
-    <View style={{ alignSelf: 'stretch', marginTop: S.md, padding: S.md, gap: 4, borderRadius: R.lg, backgroundColor: C.surface, borderWidth: 1, borderColor: on ? C.accentLine : C.border }}>
-      <Row gap={S.sm}>
-        <Ionicons name={on ? 'checkmark-circle' : 'notifications'} size={16} color={C.accent} />
-        <T v="label" color={C.textDim} style={{ flex: 1 }}>
-          {on ? t('Lembrete ativo') : t('Sweatbook · dia {n}', { n: days })}
-        </T>
-      </Row>
-      <T v="h3">{t('Avisamos-te antes de cobrar')}</T>
-      <T v="small">{t('Vês as mãos que registaste e o dia em que o teste acaba.')}</T>
+      {reminder ? <Pill icon="notifications" label={t('Lembrete ativo')} /> : null}
+      <Button title={reason === 'hands' && welcomed ? t('Voltar à mão') : t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
+      {sheet}
     </View>
   );
 }

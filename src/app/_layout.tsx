@@ -16,6 +16,7 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
+import { AppLock } from '@/components/AppLock';
 import { AutoCloudBackup } from '@/components/CloudBackup';
 import { NetStatus } from '@/components/NetStatus';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
@@ -23,6 +24,7 @@ import { Button, Empty } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
+import { HomeWidgetSync } from '@/lib/home-widget';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { bootReferrals } from '@/lib/referrals';
@@ -65,6 +67,7 @@ export default function RootLayout() {
           <AutoCloudBackup />
           <BackerLiveSync />
           <SessionLockScreen />
+          <HomeWidgetSync />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
@@ -79,6 +82,7 @@ export default function RootLayout() {
             <Stack.Screen name="hand/[id]" options={{ title: t('Mão') }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="welcome" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="session-card/[id]" options={{ title: t('Partilhar sessão'), presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
@@ -94,6 +98,7 @@ export default function RootLayout() {
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
           <NetStatus />
+          <AppLock />
           </ProProvider>
         </StoreProvider>
       </ThemeProvider>

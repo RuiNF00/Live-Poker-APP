@@ -10,6 +10,7 @@ import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, range
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
+import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -150,42 +151,46 @@ function BankrollTab() {
           </Row>
         </Card>
 
-        <View style={{ gap: S.sm }}>
-          <Segmented
-            options={[
-              { key: 'all', label: t('Tudo') },
-              { key: 'mtt', label: t('Torneios') },
-              { key: 'cash', label: 'Cash' },
-            ]}
-            value={game}
-            onChange={setGame}
-          />
-          <Segmented
-            size="sm"
-            options={[
-              { key: 'all', label: t('Live e online') },
-              { key: 'live', label: 'Live' },
-              { key: 'online', label: 'Online' },
-            ]}
-            value={format}
-            onChange={setFormat}
-          />
-          <ChipRow>
-            {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
-            <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
-            {PRESETS.map((o) => (
-              <Chip
-                key={o.key}
-                label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
-                icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
-                active={preset === o.key}
-                onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
-              />
-            ))}
-          </ChipRow>
-        </View>
+        {/* Filters only once there is something to filter. */}
+        {scoped.some((x) => x.endedAt) || nFilters ? (
+          <View style={{ gap: S.sm }}>
+            <Segmented
+              options={[
+                { key: 'all', label: t('Tudo') },
+                { key: 'mtt', label: t('Torneios') },
+                { key: 'cash', label: 'Cash' },
+              ]}
+              value={game}
+              onChange={setGame}
+            />
+            <Segmented
+              size="sm"
+              options={[
+                { key: 'all', label: t('Live e online') },
+                { key: 'live', label: 'Live' },
+                { key: 'online', label: 'Online' },
+              ]}
+              value={format}
+              onChange={setFormat}
+            />
+            <ChipRow>
+              {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
+              <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
+              {PRESETS.map((o) => (
+                <Chip
+                  key={o.key}
+                  label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
+                  icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
+                  active={preset === o.key}
+                  onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
+                />
+              ))}
+            </ChipRow>
+          </View>
+        ) : null}
 
         <StakingEntry />
+        <TripsEntry />
         <SwapsEntry />
 
         {tot.sessions === 0 ? (

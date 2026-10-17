@@ -30,6 +30,19 @@ export const PLANS: Record<PlanId, PlanInfo> = {
   annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 7 },
 };
 
+/**
+ * Offers in the cancel flow. Only ever offered there, never after onboarding.
+ * The price the player sees always comes from the store offer itself; `pct`
+ * and `months` are what to create in the stores. Until an offer with this id
+ * exists there, the app hides it.
+ */
+export const RETENTION = {
+  /** "Não cabe no meu bankroll": App Store promotional offer / Google Play offer on the monthly plan. */
+  discount: { pct: 40, months: 3, ios: 'sweatbook_retention_40', android: 'sweatbook-retention-40' },
+  /** Google Play lets subscribers pause; the App Store doesn't. */
+  pauseMonths: 3,
+};
+
 /** Free plan. `null` means no limit. */
 export const FREE = {
   /** New hands saved per calendar day. The 4th waits as a draft, never lost. */
@@ -43,9 +56,11 @@ export const FREE = {
   bankrollFilters: false,
   /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
   bankrolls: 1 as number | null,
+  /** Trips (festivals) with expenses. The first is free so a player sees it work on a real trip. */
+  trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'generic';
+export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -65,9 +80,17 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Stories com a tua voz'),
     body: t('Vídeo com voz, sem marca de água.'),
   },
+  solver: {
+    title: t('Leva as mãos todas para o solver'),
+    body: t('Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.'),
+  },
   welcome: {
     title: t('Primeira mão feita'),
     body: t('Com Pro, guardas todas as mãos da sessão.'),
+  },
+  plan: {
+    title: t('Começa o teu plano'),
+    body: t('Tudo o que escolheste. Sem limites.'),
   },
   generic: {
     title: 'Sweatbook Pro',

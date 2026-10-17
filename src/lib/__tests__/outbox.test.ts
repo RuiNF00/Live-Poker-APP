@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { isOnline, observeFetch, onReconnect, reportNetwork } from '../online';
+import { isOnline, observeFetch, onReconnect, probeWhileOffline, reportNetwork } from '../online';
 import { MAX_AGE_MS, backoff, createOutbox, type Outcome } from '../outbox';
 
 function mem() {
@@ -93,4 +93,39 @@ test('online state follows what requests do, and reconnect fires once', async ()
   assert.equal(back, 1);
   off();
   reportNetwork(true);
+});
+
+test('the offline probe works against a cross-origin API without CORS (web)', async () => {
+  const real = globalThis.fetch;
+  const modes: (string | undefined)[] = [];
+  // Like a browser: a cross-origin request needs CORS unless it is no-cors (opaque answer).
+  globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+    modes.push(init?.mode);
+    if (init?.mode !== 'no-cors') throw new TypeError('Failed to fetch');
+    return new Response(null, { status: 200 });
+  }) as unknown as typeof fetch;
+  try {
+    reportNetwork(false);
+    probeWhileOffline('https://api.other-origin.test');
+    await new Promise((r) => setTimeout(r, 0));
+    assert.deepEqual(modes, ['no-cors']);
+    assert.equal(isOnline(), true);
+  } finally {
+    globalThis.fetch = real;
+    reportNetwork(true);
+  }
+});
+
+test('a job about something deleted can be forgotten before it goes out', async () => {
+  const kv = mem();
+  const sent: unknown[] = [];
+  const box = createOutbox(kv, { 'share-upload': async (p) => (sent.push(p), 'done') });
+  await box.enqueue('share-upload', { hand: 'a' }, 'a');
+  await box.enqueue('share-upload', { hand: 'b' }, 'b');
+  assert.equal(await box.cancel('share-upload', 'a'), true);
+  assert.equal(await box.cancel('share-upload', 'a'), false);
+  await box.drain();
+  assert.deepEqual(sent, [{ hand: 'b' }]);
+  // Gone from storage too, so a restart doesn't bring it back.
+  assert.equal(await createOutbox(kv, {}).size(), 0);
 });

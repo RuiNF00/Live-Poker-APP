@@ -3,12 +3,12 @@
 // With no API key (Expo Go, web, a dev checkout) it falls back to a local
 // demo store so the paywall can still be built and tested end to end.
 
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import Purchases, { INTRO_ELIGIBILITY_STATUS, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases';
 
 import { lang } from '../i18n';
 
-import { ENTITLEMENT, PLANS, PRODUCTS, type PlanId } from './plans';
+import { ENTITLEMENT, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
 const KEY = Platform.select({
   ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
@@ -105,6 +105,60 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
     return { start: e.latestPurchaseDateMillis, end: e.expirationDateMillis, willRenew: e.willRenew };
   } catch {
     return undefined;
+  }
+}
+
+/** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean } | null> {
+  if (!LIVE) return null;
+  try {
+    const e = (await Purchases.getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    if (!e || e.store === 'PROMOTIONAL') return null;
+    const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
+    return plan ? { plan, willRenew: e.willRenew } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Opens the store's own subscription page, where cancelling happens. */
+export async function manageSubscription(): Promise<void> {
+  const fallback = Platform.OS === 'android' ? 'https://play.google.com/store/account/subscriptions' : 'https://apps.apple.com/account/subscriptions';
+  try {
+    if (LIVE && Platform.OS === 'ios') return await Purchases.showManageSubscriptions();
+    const url = LIVE ? (await Purchases.getCustomerInfo()).managementURL : null;
+    await Linking.openURL(url ?? fallback);
+  } catch {
+    await Linking.openURL(fallback).catch(() => {});
+  }
+}
+
+/** The cancel-flow discount on the monthly plan, when it exists in the store. */
+export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+  const pkg = plans.find((p) => p.id === 'monthly')?.pkg;
+  if (!LIVE || !pkg) return null;
+  try {
+    if (Platform.OS === 'ios') {
+      const d = pkg.product.discounts?.find((x) => x.identifier === RETENTION.discount.ios);
+      if (!RETENTION.discount.ios || !d) return null;
+      const offer = await Purchases.getPromotionalOffer(pkg.product, d);
+      if (!offer) return null;
+      return { priceString: d.priceString, buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
+    }
+    const opt = pkg.product.subscriptionOptions?.find((o) => o.tags.includes(RETENTION.discount.android) || o.id.endsWith(`:${RETENTION.discount.android}`));
+    const first = opt?.pricingPhases[0];
+    if (!RETENTION.discount.android || !opt || !first) return null;
+    return { priceString: first.price.formatted, buy: () => attempt(() => Purchases.purchaseSubscriptionOption(opt)) };
+  } catch {
+    return null;
+  }
+}
+
+async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
+  try {
+    return hasPro((await run()).customerInfo) ? 'ok' : 'error';
+  } catch (e) {
+    return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'error';
   }
 }
 

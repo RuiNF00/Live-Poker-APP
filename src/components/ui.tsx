@@ -27,6 +27,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/i18n';
+import { MASK, moneyMasked } from '@/poker/format';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -97,10 +98,12 @@ export const ts = StyleSheet.create<Record<TV, TextStyle>>({
 
 /** A signed money or chip amount, green when up and red when down. */
 export function Amount({ value, text, v = 'mono', style, neutral }: { value: number; text: string; v?: TV; style?: StyleProp<TextStyle>; neutral?: boolean }) {
-  const col = neutral || value === 0 ? C.textDim : value > 0 ? C.good : C.bad;
+  // Privacy mode: not even the colour says whether it was a win.
+  const hidden = moneyMasked();
+  const col = hidden || neutral || value === 0 ? C.textDim : value > 0 ? C.good : C.bad;
   return (
     <T v={v} color={col} style={style}>
-      {value > 0 && !text.startsWith('+') ? '+' + text : text}
+      {hidden ? MASK : value > 0 && !text.startsWith('+') ? '+' + text : text}
     </T>
   );
 }
@@ -387,30 +390,41 @@ function softOf(hex: string) {
 
 /** A setting with an on/off switch, used inside a ListGroup. */
 export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor }: { title: string; subtitle?: string; value: boolean; onChange: (v: boolean) => void; icon?: IconName; iconColor?: string }) {
+  const flip = (v: boolean) => {
+    tap('select');
+    onChange(v);
+  };
+  // The whole row flips it, like iOS Settings; VoiceOver reads one switch, not a row plus a switch.
   return (
-    <ListItem
-      icon={icon}
-      iconColor={iconColor}
-      title={title}
-      subtitle={subtitle}
-      numberOfLines={2}
-      chevron={false}
-      right={
-        <Switch
-          accessibilityLabel={title}
-          value={value}
-          onValueChange={(v) => {
-            tap('select');
-            onChange(v);
-          }}
-          trackColor={{ true: C.accent, false: C.surface3 }}
-          thumbColor="#FFFFFF"
-          ios_backgroundColor={C.surface3}
-          // react-native-web only: its default "on" thumb is teal.
-          {...({ activeThumbColor: '#FFFFFF' } as object)}
-        />
-      }
-    />
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={title}
+      accessibilityHint={subtitle}
+      accessibilityState={{ checked: value }}
+      onPress={() => flip(!value)}
+      style={({ pressed }) => (pressed ? { backgroundColor: C.surface2 } : null)}>
+      <ListItem
+        icon={icon}
+        iconColor={iconColor}
+        title={title}
+        subtitle={subtitle}
+        numberOfLines={2}
+        chevron={false}
+        right={
+          <Switch
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            value={value}
+            onValueChange={flip}
+            trackColor={{ true: C.accent, false: C.surface3 }}
+            thumbColor="#FFFFFF"
+            ios_backgroundColor={C.surface3}
+            // react-native-web only: its default "on" thumb is teal.
+            {...({ activeThumbColor: '#FFFFFF' } as object)}
+          />
+        }
+      />
+    </Pressable>
   );
 }
 

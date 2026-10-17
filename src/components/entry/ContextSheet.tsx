@@ -86,9 +86,24 @@ export function ContextSheet({
             <ChipRow>
               <Chip label="BB ante" active={game.anteType === 'bb'} onPress={() => set({ anteType: 'bb', ante: game.ante || game.bb })} />
               <Chip label={t('Ante de todos')} active={game.anteType === 'all'} onPress={() => set({ anteType: 'all', ante: game.ante && game.anteType !== 'bb' ? game.ante : Math.round(game.bb / 8) })} />
+              <Chip label={t('Ante no botão')} active={game.anteType === 'btn'} onPress={() => set({ anteType: 'btn', ante: game.ante || game.bb })} />
               <Chip label={t('Sem ante')} active={game.anteType === 'none'} onPress={() => set({ anteType: 'none', ante: 0 })} />
             </ChipRow>
           </View>
+
+          {game.kind === 'cash' && (
+            <View style={{ gap: S.sm }}>
+              <T v="label">{t('Esta mão')}</T>
+              <ChipRow>
+                <Chip label={t('Normal')} active={!game.straddles && !game.bombPot} onPress={() => set({ straddles: undefined, straddleFrom: undefined, bombPot: undefined })} />
+                <Chip label="Straddle" active={game.straddles === 1 && game.straddleFrom !== 'btn'} onPress={() => set({ straddles: 1, straddleFrom: 'utg', bombPot: undefined })} />
+                <Chip label={t('Re-straddle')} active={(game.straddles ?? 0) >= 2} onPress={() => set({ straddles: 2, straddleFrom: 'utg', bombPot: undefined })} />
+                <Chip label={t('Straddle no botão')} active={game.straddleFrom === 'btn' && !!game.straddles} onPress={() => set({ straddles: 1, straddleFrom: 'btn', bombPot: undefined })} />
+                <Chip label="Bomb pot" active={!!game.bombPot} onPress={() => set({ bombPot: game.bombPot || game.bb * 2, straddles: undefined, straddleFrom: undefined })} />
+              </ChipRow>
+              {game.bombPot ? <NumField label={t('Bomb pot, cada um')} value={game.bombPot} onChange={(b) => set({ bombPot: b || undefined })} /> : null}
+            </View>
+          )}
 
           <View style={{ gap: S.sm }}>
             <T v="label">{t('Jogadores na mesa')}</T>

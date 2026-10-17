@@ -5,6 +5,7 @@ import { brand } from '@/config/brand';
 import { MARK_LINES, MARK_PATH } from '@/components/Brand';
 import { SUIT_PATHS } from '@/components/PlayingCard';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
+import type { ProfilePayload } from '@/lib/profile-data';
 
 // Link previews (WhatsApp, Instagram, iMessage) for the site, invites and backer live pages,
 // in the app's "Noite" design. Shared hands have their own in lib/og.tsx.
@@ -294,5 +295,57 @@ export function liveOgImage(s: LiveSnapshot | null) {
       </div>
     </Frame>,
     60,
+  );
+}
+
+/** A public profile (/u/<handle>): who it is and what they share. Amounts never appear here. */
+export function profileOgImage(rec: { handle: string; payload: ProfilePayload } | null) {
+  if (!rec) return siteOgImage();
+  const p = rec.payload;
+  const name = (p.name || `@${rec.handle}`).slice(0, 32);
+  const hours = Math.round(p.sessions.reduce((n, s) => n + s.hours, 0));
+  const best = p.sessions.filter((s) => s.finish).sort((a, b) => a.finish! - b.finish!)[0];
+  const tiles: [string, string][] = [
+    ['Sessões', num(p.sessions.length)],
+    ['Mãos', num(p.hands.length)],
+    ['Horas', num(hours)],
+  ];
+  return render(
+    <Frame>
+      <div style={{ display: 'flex', flexDirection: 'column', width: 760, justifyContent: 'space-between' }}>
+        <Logo />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Eyebrow label="Perfil de jogador" />
+          <div style={{ display: 'flex', fontSize: 76, fontWeight: 800, letterSpacing: -2.5, lineHeight: 1.04, marginTop: 14 }}>{name}</div>
+          <div style={{ display: 'flex', fontSize: 34, fontWeight: 500, color: K.accent }}>@{rec.handle}</div>
+          {best ? (
+            <div style={{ display: 'flex', fontSize: 28, fontWeight: 500, color: K.dim }}>
+              {`Melhor: ${best.finish}º${best.field ? ` de ${num(best.field)}` : ''}${best.name ? ` · ${best.name}` : ''}`.slice(0, 60)}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {tiles.map(([k, v]) => (
+            <div
+              key={k}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '16px 26px',
+                borderRadius: 20,
+                background: K.surface,
+                border: `2px solid ${K.border}`,
+                minWidth: 170,
+              }}
+            >
+              <span style={{ fontSize: 48, fontWeight: 800, letterSpacing: -1.5 }}>{v}</span>
+              <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1.5, color: K.muted, textTransform: 'uppercase' }}>{k}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <Hand />
+    </Frame>,
+    3600,
   );
 }

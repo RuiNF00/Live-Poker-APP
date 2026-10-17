@@ -32,7 +32,7 @@ export interface Player {
 }
 
 export type GameKind = 'mtt' | 'cash';
-export type AnteType = 'none' | 'bb' | 'all';
+export type AnteType = 'none' | 'bb' | 'all' | 'btn';
 
 export type StageId = 'early' | 'mid' | 'bubble' | 'itm' | 'ft' | 'hu';
 
@@ -49,6 +49,11 @@ export interface GameInfo {
   currency: string;
   buyIn?: number;
   playersLeft?: number;
+  /** Live straddles posted before the cards, each double the last: from UTG (then UTG+1…) or one on the button. */
+  straddles?: number;
+  straddleFrom?: 'utg' | 'btn';
+  /** Bomb pot: everyone puts this in, no preflop betting, the hand starts on the flop. */
+  bombPot?: number;
   venue?: string;
 }
 

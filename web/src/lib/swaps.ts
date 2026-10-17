@@ -9,7 +9,7 @@ import type { PublicSwap, Side, SwapEntry, SwapRecord, SwapTerms } from './swap-
 
 export * from './swap-terms';
 
-// Swaps between players (/swap/<id>). Supabase in production (migration 20261017130000), a JSON
+// Swaps between players (/swap/<id>). Supabase in production (migration 20261017160000), a JSON
 // file without it. The database functions enforce the rules: terms never change, the other
 // player confirms once, and each side only adds or removes its own entries.
 

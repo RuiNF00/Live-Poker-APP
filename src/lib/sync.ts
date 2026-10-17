@@ -47,6 +47,11 @@ export function queue(kind: string, payload: unknown, key?: string) {
     .catch(() => {});
 }
 
+/** Forget a job that hasn't been sent yet (say, the thing it was about was deleted). */
+export function unqueue(kind: string, key: string): Promise<boolean> {
+  return outbox.cancel(kind, key).catch(() => false);
+}
+
 let started = false;
 /** Once, at startup (after installFetchTimeout). */
 export function startSync() {
