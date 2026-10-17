@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
-import { deleteShare, uploadHand } from './share-api';
+import { onEraseAll } from './erase-hooks';
+import { deleteMyComments, deleteShare, forgetAuthorId, storedAuthorId, uploadHand } from './share-api';
 import { takeSlot, type Slot } from './share-slot';
 import { outcomeOf, queue, registerSender, unqueue } from './sync';
 
@@ -114,6 +115,24 @@ registerSender('share-delete', async (p) => {
     return 'done';
   } catch (e) {
     const m = /^delete (\d+)$/.exec((e as Error)?.message ?? '');
+    return m ? outcomeOf(Number(m[1])) : 'retry';
+  }
+});
+
+// "Delete all my data": the comments written on other players' hands go too, now or when the signal
+// is back. Queued with the id before eraseLocal forgets it: after that nothing proves they were ours.
+onEraseAll(async () => {
+  const authorId = await storedAuthorId();
+  forgetAuthorId();
+  if (authorId) queue('comment-erase', { authorId }, authorId);
+});
+
+registerSender('comment-erase', async (p) => {
+  try {
+    await deleteMyComments((p as { authorId: string }).authorId);
+    return 'done';
+  } catch (e) {
+    const m = /^erase-comments (\d+)$/.exec((e as Error)?.message ?? '');
     return m ? outcomeOf(Number(m[1])) : 'retry';
   }
 });

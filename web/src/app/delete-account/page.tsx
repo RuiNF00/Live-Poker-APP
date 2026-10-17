@@ -13,7 +13,7 @@ import { articles, SUPPORT_EMAIL, textOf, type HelpLocale } from '@/lib/help/art
 // "Apagar todos os meus dados" in the app and, for someone without the app, deletes the cloud
 // backup with its recovery code (in the browser, like the app) or builds a request email.
 // Language: ?lang=pt|pt-BR|es|en, else the browser's. /apagar-conta, /pt-br/apagar-conta and
-// /es/eliminar-cuenta redirect here (next.config.ts). Replaces public/delete-account.html.
+// /es/eliminar-cuenta redirect here (next.config.ts). (The old public/delete-account.html redirects here too.)
 type Search = Record<string, string | string[] | undefined>;
 
 const one = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '');

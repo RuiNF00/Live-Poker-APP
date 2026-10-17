@@ -110,6 +110,26 @@ function authorId(): Promise<string> {
   return author;
 }
 
+/** The commenter id this phone has used, if any ("Delete all my data" deletes its comments with it). */
+export async function storedAuthorId(): Promise<string | null> {
+  return AsyncStorage.getItem(AUTHOR_KEY).catch(() => null);
+}
+
+/** After erasing: the next comment gets a new id (the stored one goes with the other rl.* keys). */
+export function forgetAuthorId() {
+  author = null;
+}
+
+/** Deletes every comment this phone wrote, on every hand. The id goes in the body, never the URL. */
+export async function deleteMyComments(authorId: string): Promise<void> {
+  const res = await fetch(`${API}/api/hands/my-comments`, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ authorId }),
+  });
+  if (!res.ok) throw new Error('erase-comments ' + res.status);
+}
+
 /** `ownerToken`: the hand's own player replying, so the server doesn't send them a notice about it. */
 export async function postComment(id: string, c: { name: string; text: string; street?: Street }, ownerToken?: string): Promise<Comment> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/comments`, {

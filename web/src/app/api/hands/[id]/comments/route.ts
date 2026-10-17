@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
 import { after, NextResponse } from 'next/server';
+import { AUTHOR_ID_RE, commentAuthorKey } from '@/lib/comment-author';
 import { notifyOwner } from '@/lib/comment-push';
 import { getStore } from '@/lib/store';
 import { limited } from '@/lib/abuse';
@@ -40,8 +40,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const step = body?.stepIndex;
   let stepIndex = Number.isInteger(step) && (step as number) >= 0 && (step as number) <= 500 ? (step as number) : null;
   const street = STREETS.includes(body?.street as Street) ? (body!.street as Street) : null;
-  const authorId = typeof body?.authorId === 'string' && /^[\w-]{8,64}$/.test(body.authorId) ? body.authorId : null;
-  const authorKey = authorId ? createHash('sha256').update(`comment-author:${authorId}`).digest('hex') : null;
+  const authorId = typeof body?.authorId === 'string' && AUTHOR_ID_RE.test(body.authorId) ? body.authorId : null;
+  const authorKey = authorId ? commentAuthorKey(authorId) : null;
   if (!name || name.length > 40 || !text || text.length > 1000) {
     return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: cors });
   }
