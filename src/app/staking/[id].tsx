@@ -20,7 +20,8 @@ import { notice } from '@/lib/notice';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { closePackage, ledgerYears, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { currentTrip } from '@/store/trip-math';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
 import { withPro } from '@/components/ProGate';
@@ -32,7 +33,7 @@ function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')
 
 function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sessions, backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
+  const { sessions, backers, packages, payments, trips, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
   const { pk, ledgers, fx } = useStaking();
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
@@ -57,6 +58,8 @@ function BackerScreen() {
   const bal = balanceLabel(l.balance, cur);
   const mine = packages.filter((p) => p.backerId === backer.id).sort((a, b) => Number(!!a.closedAt) - Number(!!b.closedAt) || b.createdAt - a.createdAt);
   const pays = payments.filter((p) => p.backerId === backer.id).sort((a, b) => b.at - a.at);
+  // A package started during a trip is usually for that festival.
+  const trip = currentTrip(trips);
   const pkgName = (pid?: string) => packages.find((p) => p.id === pid)?.name;
 
   // "O ano com {backer}": every package of the year, in the deal's currency.
@@ -182,9 +185,9 @@ function BackerScreen() {
           <Stat label="Makeup" value={money(l.makeup, cur)} tone={l.makeup ? 'warn' : undefined} />
         </StatGrid>
 
-        <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id))}>
+        <Section title={t('Pacotes')} action={t('+ Novo pacote')} onAction={() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages)))}>
           {mine.length === 0 ? (
-            <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id))}>
+            <Card tone="inset" onPress={() => setPkg(blankPackage(backer.id, packageDefaults(backer.id, packages)))}>
               <T v="small">{t('Um pacote junta vários torneios com o mesmo acordo: a mesma % e markup, ou um acordo com makeup. Ao registar ação vendida numa sessão, escolhes o pacote.')}</T>
             </Card>
           ) : (
@@ -348,6 +351,7 @@ function BackerScreen() {
       />
       <PackageSheet
         pkg={pkg}
+        suggestName={trip ? trip.name || trip.venue : undefined}
         makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.5 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {
