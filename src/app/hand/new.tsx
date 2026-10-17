@@ -435,7 +435,7 @@ export default function NewHand() {
         )}
 
         {(phase === 'action' || phase === 'board') && (
-          <Button title="Guardar já (sem acabar a mão)" kind="ghost" small onPress={save} />
+          <Button title="Guardar rápido · completas depois" kind="ghost" small onPress={save} />
         )}
         {phase === 'hero' && heroCards.length === 2 && !draft.posChosen ? (
           <T v="small" style={{ textAlign: 'center' }}>

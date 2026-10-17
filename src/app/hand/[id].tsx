@@ -6,13 +6,14 @@ import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-nativ
 
 import { usePro } from '@/billing/pro';
 import { CommentsList } from '@/components/Comments';
+import { isComplete } from '@/poker/engine';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
 import { deleteShare, fetchComments, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
-import { C } from '@/theme';
+import { C, R } from '@/theme';
 
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -125,6 +126,16 @@ ${link}`;
       />
       <ScrollView contentContainerStyle={{ padding: 12, gap: 14, paddingBottom: 48 }}>
         <HandHeader hand={hand} />
+        {!isComplete(hand) && (
+          <Pressable
+            onPress={() => router.push({ pathname: '/hand/new', params: { edit: hand.id } })}
+            style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderColor: 'rgba(245,184,61,0.45)', borderWidth: 1, borderRadius: R.md, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="create-outline" size={18} color={C.warn} />
+            <T v="small" style={{ flex: 1, color: C.text }}>
+              Mão por completar. Toca para continuar onde ficaste.
+            </T>
+          </Pressable>
+        )}
         <Replayer hand={hand} initialInBB={settings.inBB} />
         <Button
           title="Story no Instagram"

@@ -8,7 +8,7 @@ import { usePro } from '@/billing/pro';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Chip, Empty, Row, T, Wordmark } from '@/components/ui';
 import { comboLabel } from '@/poker/cards';
-import { positions, replay } from '@/poker/engine';
+import { positions, replay, isComplete } from '@/poker/engine';
 import { amount, blindsLabel, duration, shortDate, timeOf } from '@/poker/format';
 import { sampleHand } from '@/poker/sample';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
@@ -41,7 +41,7 @@ export default function HandsScreen() {
           <View style={{ gap: 12, marginBottom: 4 }}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Wordmark />
-              <T v="small">{hands.length} mãos</T>
+              <T v="small">{hands.length} {hands.length === 1 ? "mão" : "mãos"}</T>
             </Row>
             {handsLeft !== null && hands.length > 0 ? (
               <Pressable
@@ -154,6 +154,11 @@ function HandRow({ hand, inBB }: { hand: Hand; inBB: boolean }) {
         <T v="small" numberOfLines={1}>
           {(hand.game.name || (hand.game.kind === 'mtt' ? 'Torneio' : 'Cash')) + ' · ' + blindsLabel(hand)}
         </T>
+        {!isComplete(hand, r) ? (
+          <T v="tiny" color={C.warn}>
+            Por completar
+          </T>
+        ) : null}
         {hand.tags.length ? (
           <T v="tiny" color={C.accent} numberOfLines={1}>
             {hand.tags.join(' · ')}

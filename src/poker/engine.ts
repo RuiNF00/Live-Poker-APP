@@ -539,3 +539,9 @@ export function usedCards(hand: Hand, except: string[] = []): Set<string> {
 export function totalPot(s: TableState): number {
   return s.pot + s.bets.reduce((a, b) => a + b, 0);
 }
+
+/** False while the hand still waits for an action, a board card or hero's cards. */
+export function isComplete(hand: Hand, r: Replay = replay(hand)): boolean {
+  const s = r.final;
+  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && s.toAct === null;
+}
