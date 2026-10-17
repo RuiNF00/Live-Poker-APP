@@ -3,7 +3,7 @@
 // antes, every action with Stars' wording, board, showdown and summary.
 // Opponents are named by position, so table reads never leave the phone.
 
-import { positions, replay, straddleSeats, totalPot, type HandResult, type Replay } from './engine';
+import { positions, replay, splitPot, straddleSeats, totalPot, type HandResult, type Replay } from './engine';
 import type { Hand, Street } from './types';
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Flop', flop: 'Flop', turn: 'Turn', river: 'River' };
@@ -48,15 +48,10 @@ export function runWinnings(res: HandResult): number[][] {
   const runs = [new Array(res.won.length).fill(0), new Array(res.won.length).fill(0)];
   const pay = (row: number[], amount: number, winners: number[] | null | undefined) => {
     if (!winners?.length) return;
-    const share = Math.floor(amount / winners.length);
-    let odd = amount - share * winners.length;
-    for (const w of winners) {
-      row[w] += share + (odd > 0 ? 1 : 0);
-      if (odd > 0) odd--;
-    }
+    splitPot(amount, winners.length).forEach((x, k) => (row[winners[k]] += x));
   };
   for (const p of res.pots) {
-    const first = Math.ceil(p.amount / 2);
+    const [first] = splitPot(p.amount, 2);
     pay(runs[0], first, p.winners);
     pay(runs[1], p.amount - first, p.winners2);
   }
@@ -159,17 +154,27 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const fin = r.final;
   const shows = (i: number) => !fin.folded[i] && hand.players[i].cards?.length === 2;
   const runs = res ? runWinnings(res) : [];
+  // More than one pot (an all-in for less): named the way Stars does, so trackers split them right.
+  const sides = !!res && res.pots.length > 1 && res.pots.every((p) => p.winners?.length);
+  const potName = (j: number) => (j === 0 ? 'Main pot' : res!.pots.length === 2 ? 'Side pot' : `Side pot-${j}`);
   runs.forEach((won, k) => {
     if (!fin.foldWin) {
       out.push(twice ? `*** ${k ? 'SECOND' : 'FIRST'} SHOW DOWN ***` : '*** SHOW DOWN ***');
       for (let i = 0; i < n; i++) if (!fin.folded[i]) out.push(shows(i) ? `${name(i)}: shows [${hand.players[i].cards!.join(' ')}]` : `${name(i)}: mucks hand`);
     }
-    won.forEach((w, i) => w > 0 && out.push(`${name(i)} collected ${fmt(w)} from pot`));
+    if (!twice && sides) {
+      // Side pots, Stars' way: the last side pot first, the main pot last.
+      for (let j = res!.pots.length - 1; j >= 0; j--) {
+        const p = res!.pots[j];
+        splitPot(p.amount, p.winners!.length).forEach((x, w) => out.push(`${name(p.winners![w])} collected ${fmt(x)} from ${potName(j).toLowerCase()}`));
+      }
+    } else won.forEach((w, i) => w > 0 && out.push(`${name(i)} collected ${fmt(w)} from pot`));
   });
 
   const pot = res ? res.pots.reduce((x, p) => x + p.amount, 0) : totalPot(fin);
   out.push('*** SUMMARY ***');
-  out.push(`Total pot ${fmt(pot)} | Rake ${fmt(0)}`);
+  const split = sides && !twice ? ' ' + res!.pots.map((p, j) => `${potName(j)} ${fmt(p.amount)}.`).join(' ') : '';
+  out.push(`Total pot ${fmt(pot)}${split} | Rake ${fmt(0)}`);
   if (twice) out.push('Hand was run twice', `FIRST Board [${r.boards[0].join(' ')}]`, `SECOND Board [${r.boards[1].join(' ')}]`);
   else if (fin.boardCount) out.push(`Board [${hand.board.slice(0, fin.boardCount).join(' ')}]`);
   for (let i = 0; i < n; i++) {

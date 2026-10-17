@@ -148,6 +148,29 @@ describe('edge cases', () => {
     const end = buildReplay(h).at(-1)!;
     expect(end.winners!.map((w) => w.amount)).toEqual([2, 2]);
   });
+
+  it('splits a chopped pot with cents to the cent', () => {
+    const h = base({
+      blinds: { sb: 0.25, bb: 0.5 },
+      players: [
+        { seat: 1, stack: 50, cards: ['Ac', '2d'] },
+        { seat: 2, stack: 50, cards: ['Ad', '3c'] },
+      ],
+      board: { flop: ['Ks', 'Kh', 'Qs'], turn: 'Qh', river: 'Js' },
+      actions: { preflop: [{ seat: 1, type: 'raise', amount: 1.25 }, { seat: 2, type: 'call' }], flop: [], turn: [], river: [] },
+    });
+    expect(buildReplay(h).at(-1)!.winners!.map((w) => w.amount)).toEqual([1.25, 1.25]);
+    const three = base({
+      blinds: { sb: 0.25, bb: 0.5 },
+      players: [
+        { seat: 1, stack: 50, cards: ['Ac', '2d'] },
+        { seat: 2, stack: 50, cards: ['Ad', '3c'] },
+      ],
+      board: { flop: ['Ks', 'Kh', 'Qs'], turn: 'Qh', river: 'Js' },
+      actions: { preflop: [{ seat: 1, type: 'raise', amount: 1.25 }, { seat: 2, type: 'raise', amount: 1.625 }, { seat: 1, type: 'call' }], flop: [], turn: [], river: [] },
+    });
+    expect(buildReplay(three).at(-1)!.winners!.map((w) => w.amount)).toEqual([1.63, 1.62]);
+  });
 });
 
 describe('validateHand', () => {
