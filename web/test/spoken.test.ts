@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildReplay, type HandRecord } from '@livepoker/hand-format';
-import { spokenSeat, spokenStep } from '../src/lib/spoken';
+import { spokenBoard, spokenSeat, spokenStep } from '../src/lib/spoken';
+import { buildReplay as pageReplay } from '../src/lib/hand-i18n';
 
 const hand: HandRecord = {
   version: 1,
@@ -51,5 +52,20 @@ describe('spoken table for screen readers', () => {
     const st = find((s) => s.kind === 'street');
     const villain = st.seats.find((s) => s.seat === 1)!;
     expect(spokenSeat(villain, (n) => `${n / 1000}k`, 'pt')).toMatch(/^Vilão no BTN, 95k, /);
+  });
+});
+
+describe('run it twice and hand names on the page', () => {
+  it('each board is read with its number', () => {
+    expect(spokenBoard(['Ks', '4h', '8d'], 'pt', 2)).toBe('Mesa 2: Rei de espadas, Quatro de copas, Oito de ouros');
+    expect(spokenBoard(['Ks'], 'en', 1)).toBe('Board 1: King of spades');
+    expect(spokenBoard(['Ks'], 'es')).toBe('Mesa: Rey de picas');
+  });
+
+  it('hands are named precisely in the page language', () => {
+    for (const [locale, want] of [['pt', 'Par de Reis'], ['pt-BR', 'Par de Reis'], ['es', 'Pareja de Reyes'], ['en', 'Pair of Kings']] as const) {
+      const steps = pageReplay(hand, { revealAll: true, locale });
+      expect(steps.at(-1)!.seats.find((s) => s.name === 'Hero')!.handLabel).toBe(want);
+    }
   });
 });
