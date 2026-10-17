@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
 import { BackupHealthBanner, useBackupWarning } from '@/components/CloudBackup';
+import { SharedHandsCard } from '@/components/SharedHandsCard';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Amount, Badge, Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Pill, Row, ScreenHeader, SearchField, SheetHeader, T, tap, Wordmark } from '@/components/ui';
@@ -213,13 +214,8 @@ export default function HandsScreen() {
                 <ChargeNotice end={chargeEnd} />
               ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
-              ) : shared.newTotal > 0 ? (
-                <Banner
-                  icon="chatbubbles-outline"
-                  title={shared.newTotal === 1 ? t('1 comentário novo nas mãos partilhadas') : t('{n} comentários novos nas mãos partilhadas', { n: shared.newTotal })}
-                  action={t('Ver')}
-                  onPress={() => router.push('/shared-hands')}
-                />
+              ) : !activeSession && shared.newTotal > 0 ? (
+                <SharedHandsCard n={shared.newTotal} />
               ) : news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : checklist ? (

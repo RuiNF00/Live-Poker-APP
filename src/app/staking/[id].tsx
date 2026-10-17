@@ -10,7 +10,7 @@ import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useStaking } from '@/components/staking/use-staking';
-import { Amount, Button, Card, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
+import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { buildStatement, statementUrl } from '@/lib/backing-link';
 import { track } from '@/lib/events';
@@ -18,7 +18,8 @@ import { shareRef } from '@/lib/referrals';
 import { maybeAskForReview } from '@/lib/review';
 import { money, shortDate } from '@/poker/format';
 import { uid, useStore } from '@/store/store';
-import { closePackage, type BackerLedgerRow } from '@/store/staking';
+import { rate } from '@/store/fx-math';
+import { closePackage, ledgerYears, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import type { Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
 import { withPro } from '@/components/ProGate';
@@ -31,11 +32,12 @@ function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')
 function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sessions, backers, packages, payments, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
-  const { pk, ledgers } = useStaking();
+  const { pk, ledgers, fx } = useStaking();
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
   const [paying, setPaying] = useState(false);
   const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
+  const [year, setYear] = useState<number | null>(null);
   const backer = backers.find((b) => b.id === id);
   const l = backer ? ledgers.get(backer.id) : undefined;
   // Totals are in the deal's currency; each session row in its own.
@@ -55,6 +57,10 @@ function BackerScreen() {
   const mine = packages.filter((p) => p.backerId === backer.id).sort((a, b) => Number(!!a.closedAt) - Number(!!b.closedAt) || b.createdAt - a.createdAt);
   const pays = payments.filter((p) => p.backerId === backer.id).sort((a, b) => b.at - a.at);
   const pkgName = (pid?: string) => packages.find((p) => p.id === pid)?.name;
+
+  // "O ano com {backer}": every package of the year, in the deal's currency.
+  const years = ledgerYears(l);
+  const yr = years.length ? yearStatement(l, year && years.includes(year) ? year : years[0], packages, pk, (s) => (s.currency && s.currency !== cur ? (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1) : 1)) : null;
 
   const togglePaid = (r: BackerLedgerRow) => {
     const s: Session = r.session;
@@ -82,9 +88,15 @@ function BackerScreen() {
       t('Marcar como pago'),
     );
 
-  const shareSummary = async () => {
+  const shareSummary = async (withYear = false) => {
     tap('medium');
-    const lines = [
+    const lines = withYear && yr ? [
+      t('{year} com {name}', { year: yr.year, name: backer.name }),
+      ...yr.rows.map((p) => `${p.name || t('Fora de pacote')} · ${t('buy-ins {cost} · recebeste {back}', { cost: money(p.cost, cur), back: money(p.prizes, cur) })} → ${money(p.net, cur)}`),
+      '',
+      t('Resultado do ano: {amount}', { amount: money(yr.net, cur) }),
+      yr.makeup ? t('Makeup: {amount}', { amount: money(yr.makeup, cur) }) : '',
+    ].filter((x) => x !== '') : [
       t('Staking com {name}', { name: backer.name }),
       ...l.rows
         .filter((r) => r.session.endedAt)
@@ -103,7 +115,7 @@ function BackerScreen() {
     // It carries only this backer's own pieces (see lib/backing-link).
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
-    const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments);
+    const st = buildStatement({ ...backer, shareKey: key }, settings.nickname || '', cur, sessions, packages, payments, undefined, withYear && yr ? yr : undefined);
     const msg = [...lines, '', t('As contas e as sessões em direto: {url}', { url: statementUrl(st, ref) })].join('\n');
     if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
     else {
@@ -112,7 +124,7 @@ function BackerScreen() {
     }
     // Keep a record of when they were sent the statement and what it said.
     saveBacker({ ...backer, shareKey: key, reminders: [...(backer.reminders ?? []), { at: Date.now(), balance: l.balance }].slice(-20) });
-    track('link_shared', { channel: 'backer_statement' });
+    track('link_shared', { channel: withYear ? 'backer_year' : 'backer_statement' });
   };
 
   type Hist = { kind: 'pay'; at: number; p: (typeof pays)[number] } | { kind: 'sent'; at: number; balance: number };
@@ -143,14 +155,14 @@ function BackerScreen() {
           ) : null}
           {square ? (
             <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
-              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={shareSummary} />
+              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
               <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={() => setPaying(true)} />
             </Row>
           ) : (
             // Stacked: "Marcar como pago" (and "Marcar como pagado" in es) doesn't fit half the width of an iPhone.
             <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
               <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={markPaid} />
-              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={shareSummary} />
+              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
             </View>
           )}
           {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={() => setPaying(true)} />}
@@ -206,6 +218,44 @@ function BackerScreen() {
             </ListGroup>
           )}
         </Section>
+
+        {yr ? (
+          <Section title={t('O ano com {name}', { name: backer.name })}>
+            {years.length > 1 ? (
+              <ChipRow>
+                {years.map((y) => (
+                  <Chip key={y} label={String(y)} active={y === yr.year} onPress={() => setYear(y)} />
+                ))}
+              </ChipRow>
+            ) : null}
+            <ListGroup>
+              {yr.rows.map((p) => (
+                <ListItem
+                  key={p.id ?? 'none'}
+                  icon={p.id ? 'layers-outline' : 'ellipse-outline'}
+                  iconColor={p.id ? C.accent : C.muted}
+                  title={p.name || t('Fora de pacote')}
+                  subtitle={[
+                    p.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: p.sessions }),
+                    t('buy-ins {amount}', { amount: money(p.cost, cur) }),
+                    t('prémios {amount}', { amount: money(p.prizes, cur) }),
+                    p.makeup >= 0.5 ? t('makeup {amount}', { amount: money(p.makeup, cur) }) : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  right={<Amount value={p.net} text={money(p.net, cur)} style={{ fontSize: 14 }} />}
+                  chevron={false}
+                />
+              ))}
+            </ListGroup>
+            <StatGrid cols={3}>
+              <Stat label={t('Buy-ins')} value={money(yr.cost, cur)} />
+              <Stat label={t('Prémios')} value={money(yr.prizes, cur)} />
+              <Stat label={t('Resultado')} value={money(yr.net, cur)} tone={yr.net > 0 ? 'good' : yr.net < 0 ? 'bad' : undefined} />
+            </StatGrid>
+            <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar o resumo de {year}', { year: yr.year })} onPress={() => void shareSummary(true)} />
+          </Section>
+        ) : null}
 
         <Section title={t('Sessões')} hint={t('Toca numa sessão para ver as contas passo a passo.')}>
           {l.rows.length === 0 ? (

@@ -6,12 +6,13 @@
 // the amounts stay between the two of them. Only this backer's own pieces go out:
 // no notes, no hands, no other backers' names or amounts.
 
-import { backerLedger, packageStates } from '@/store/staking';
+import { backerLedger, packageStates, type YearStatement } from '@/store/staking';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
 import { BRAND } from '@/theme';
 
 /** Most sessions a statement carries (newest first): keeps the link short enough for any chat app. */
 export const MAX_ROWS = 30;
+export const MAX_YEAR_ROWS = 24;
 
 export interface StatementRow {
   /** Session start. */
@@ -36,6 +37,12 @@ export interface StatementRow {
   l?: string;
 }
 
+/** "O ano com {backer}": one row per package (n '' = outside a package), in the statement's currency. */
+export interface StatementYear {
+  y: number;
+  pk: { n: string; s: number; c: number; o: number; mk: number; net: number }[];
+}
+
 export interface Statement {
   v: 1;
   /** Stable per player and backer, so a newer statement replaces the older one. */
@@ -54,6 +61,8 @@ export interface Statement {
   inv: number;
   res: number;
   rows: StatementRow[];
+  /** Sent with "Enviar o resumo do ano". */
+  yr?: StatementYear;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -67,11 +76,12 @@ export function buildStatement(
   packages: StakePackage[],
   payments: BackerPayment[],
   now = Date.now(),
+  year?: YearStatement,
 ): Statement {
   const pk = packageStates(sessions, packages);
   const l = backerLedger(backer.id, sessions, packages, payments, pk);
   const pkgName = new Map(packages.map((p) => [p.id, p.name]));
-  return {
+  const st: Statement = {
     v: 1,
     id: backer.shareKey,
     pl: player.slice(0, 40),
@@ -92,6 +102,12 @@ export function buildStatement(
       return row;
     }),
   };
+  if (year)
+    st.yr = {
+      y: year.year,
+      pk: year.rows.slice(0, MAX_YEAR_ROWS).map((p) => ({ n: p.name.slice(0, 40), s: p.sessions, c: r2(p.cost), o: r2(p.prizes), mk: r2(p.makeup), net: r2(p.net) })),
+    };
+  return st;
 }
 
 // ─── Encoding: JSON → UTF-8 → base64url, without relying on btoa or TextEncoder ───
@@ -186,7 +202,7 @@ export function checkStatement(json: unknown): Statement | null {
       if (typeof x.l === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(x.l)) row.l = x.l;
       rows.push(row);
     }
-    return {
+    const st: Statement = {
       v: 1,
       id: o.id,
       pl: str(o.pl, 40),
@@ -199,6 +215,16 @@ export function checkStatement(json: unknown): Statement | null {
       res: num(o.res, -MAX, MAX) ?? 0,
       rows,
     };
+    const yr = o.yr as Record<string, unknown> | undefined;
+    const y = yr && typeof yr === 'object' ? num(yr.y, 2000, 2200) : null;
+    if (yr && y !== null && Array.isArray(yr.pk))
+      st.yr = {
+        y,
+        pk: (yr.pk.slice(0, MAX_YEAR_ROWS) as Record<string, unknown>[])
+          .filter((x) => x && typeof x === 'object')
+          .map((x) => ({ n: str(x.n, 40), s: num(x.s, 0, 1e5) ?? 0, c: num(x.c, -MAX, MAX) ?? 0, o: num(x.o, -MAX, MAX) ?? 0, mk: num(x.mk, 0, MAX) ?? 0, net: num(x.net, -MAX, MAX) ?? 0 })),
+      };
+    return st;
   } catch {
     return null;
   }

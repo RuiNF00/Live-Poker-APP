@@ -28,7 +28,7 @@ import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
-import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
+import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -112,6 +112,9 @@ export default function SessionScreen() {
   const festivals = useFestivals();
   const [today] = useState(() => dayKey(Date.now()));
   const coming = useMemo(() => festivals.filter((f) => notOver(f, today)), [festivals, today]);
+  // The tab is for starting a session: one festival row only when it's on or a week away (design/simplificar.md).
+  const near = coming.find((f) => soon(f, today));
+  const next = coming.find((f) => f !== near);
 
   const startRef = useRef<(() => void) | null>(null);
   const [bar, onBarLayout] = useBarHeight();
@@ -130,10 +133,15 @@ export default function SessionScreen() {
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: bar + S.lg }}>
         <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
         <ListGroup>
-          {coming.slice(0, 3).map((f) => (
-            <FestivalItem key={f.id} f={f} />
-          ))}
-          <ListItem icon="albums-outline" iconColor={C.textDim} title={t('Todos os festivais')} subtitle={t('Os do calendário e os que adicionares')} chevron onPress={() => router.push('/festivals')} />
+          {near ? <FestivalItem f={near} /> : null}
+          <ListItem
+            icon="calendar-outline"
+            iconColor={near ? C.textDim : C.accent}
+            title={t('Festivais')}
+            subtitle={next ? t('Próximo: {name}', { name: t(next.name) }) : t('Os do calendário e os que adicionares')}
+            chevron
+            onPress={() => router.push('/festivals')}
+          />
         </ListGroup>
         {bagged.length ? (
           <Section title={t('Por continuar')}>
@@ -519,8 +527,9 @@ function Live({ s }: { s: Session }) {
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
         </View>
-        <View ref={handRef} collapsable={false} style={{ flex: 1.6 }}>
-          <Button size="md" title={t('Nova mão')} icon="add" onPress={() => router.push('/hand/new')} />
+        <View ref={handRef} collapsable={false} style={{ flex: 2 }}>
+          {/* "Nueva mano" / "Nova mão" at 200%: two lines rather than "Nueva m…". */}
+          <Button size="md" title={t('Nova mão')} icon="add" lines={2} style={{ paddingHorizontal: 12, gap: 6 }} onPress={() => router.push('/hand/new')} />
         </View>
       </View>
       <CoachMarks id="live-session" steps={tour} />
@@ -552,7 +561,7 @@ function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentPr
       }}
       style={({ pressed }) => [styles.thumb, { opacity: pressed ? 0.7 : 1, borderColor: active ? C.warn : C.border }]}>
       <Ionicons name={icon} size={20} color={active ? C.warn : C.text} />
-      <T v="tiny" numberOfLines={1} maxFontSizeMultiplier={1.2} color={active ? C.warn : C.textDim}>
+      <T v="tiny" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.2} color={active ? C.warn : C.textDim}>
         {label}
       </T>
     </Pressable>

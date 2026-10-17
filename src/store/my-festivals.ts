@@ -94,6 +94,15 @@ export function notOver(f: Festival, today: string): boolean {
   return span ? span.to >= today : !f.month || f.month >= today.slice(0, 7);
 }
 
+/** On now, or starting within `days` of `today`: only festivals with dates (a month-only one is never "soon"). */
+export function soon(f: Festival, today: string, days = 7): boolean {
+  const span = festivalSpan(f);
+  if (!span || span.to < today) return false;
+  const d = new Date(today + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return span.from <= dayKey(d.getTime());
+}
+
 /** Shipped festivals and the player's own, by when they start. */
 export function allFestivals(): Festival[] {
   load();

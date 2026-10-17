@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { festivalOn } from '../../lib/attribution';
 import { BAHAMAS_DEC_2026, BARCELONA_MAR_2027, FESTIVALS, festivalSortKey, festivalSpan, LOS_ANGELES_JAN_2027 } from '../../poker/festivals';
 import { EMPTY_PLAN } from '../festival-plan';
-import { allFestivals, dayKey, deleteOwnFestival, festivalById, notOver, ownFestival, ownFestivalOk, saveOwnFestival } from '../my-festivals';
+import { allFestivals, dayKey, deleteOwnFestival, festivalById, notOver, ownFestival, ownFestivalOk, saveOwnFestival, soon } from '../my-festivals';
 import { tripFromFestival } from '../trip-math';
 
 const DAY = 86_400_000;
@@ -75,4 +75,13 @@ test('a trip from an own festival takes its dates and name', () => {
   assert.equal(trip.venue, 'St. Julian’s');
   assert.equal(dayKey(trip.from + DAY), '2026-11-05');
   assert.equal(dayKey(trip.to - DAY), '2026-11-12');
+});
+
+test('soon: on now or within a week; never for a month-only festival', () => {
+  const f = ownFestival('fx_6', input);
+  assert.equal(soon(f, '2026-10-29'), true, '7 days before');
+  assert.equal(soon(f, '2026-10-28'), false, '8 days before');
+  assert.equal(soon(f, '2026-11-10'), true, 'on now');
+  assert.equal(soon(f, '2026-11-13'), false, 'over');
+  assert.equal(soon(BARCELONA_MAR_2027, '2027-03-10'), false);
 });

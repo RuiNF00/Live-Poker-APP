@@ -5,6 +5,7 @@
 // (a flight paid at home), converted at the rate the player typed: the app
 // works offline, so it never looks rates up.
 
+import { t } from '@/i18n';
 import { eventDay, type Festival } from '@/poker/festivals';
 
 import { endOfDay, inRange, startOfDay, type DateRange } from './bankroll-math';
@@ -125,7 +126,8 @@ export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx
   const days = fromEvents.length ? fromEvents : f.dates ? [f.dates.from, f.dates.to] : [new Date(now).toISOString().slice(0, 10)];
   return {
     id,
-    name: f.name,
+    // A shipped festival's generic name in the player's language when the trip is made; an own one as typed.
+    name: f.own ? f.name : t(f.name),
     venue: [f.venue, f.city.split(',')[0]].filter(Boolean).join(', '),
     currency: f.currency,
     from: startOfDay(localDay(days[0]) - DAY),

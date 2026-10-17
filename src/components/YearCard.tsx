@@ -25,16 +25,21 @@ const oneDecimal = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
 const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n), cur);
 const toneOf = (n: number) => (n > 0 ? C.good : n < 0 ? C.bad : undefined);
 
-export function stakeName(x: StakeRow, cur: string, hideMoney: boolean): string {
+/** With money hidden two tournament stakes would both read "Torneios": `other` tells them apart by buy-in. */
+export function stakeName(x: StakeRow, cur: string, hideMoney: boolean, other?: StakeRow | null): string {
   if (x.kind === 'cash') return `${chips(x.sb)}/${chips(x.bb)}`;
-  return hideMoney ? t('Torneios') : `MTT ${rawMoney(x.buyIn, cur)}`;
+  if (!hideMoney) return `MTT ${rawMoney(x.buyIn, cur)}`;
+  if (other?.kind === 'mtt' && other.buyIn !== x.buyIn) return x.buyIn > other.buyIn ? t('Torneios mais caros') : t('Torneios mais baratos');
+  return t('Torneios');
 }
+
+const sign = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '');
 
 /** The rate of a stake: money per hour, or with money hidden bb/h (cash) and ROI (tournaments). */
 export function stakeRate(x: StakeRow, cur: string, hideMoney: boolean): string | null {
   if (!hideMoney) return signed(x.hourly, cur) + '/h';
-  if (x.bbPerHour !== null) return (x.bbPerHour > 0 ? '+' : '') + oneDecimal.format(x.bbPerHour) + ' bb/h';
-  if (x.roi !== null) return (x.roi > 0 ? '+' : '') + pct(x.roi) + ' ROI';
+  if (x.bbPerHour !== null) return sign(x.bbPerHour) + oneDecimal.format(Math.abs(x.bbPerHour)) + ' bb/h';
+  if (x.roi !== null) return sign(x.roi) + pct(Math.abs(x.roi)) + ' ROI';
   return null;
 }
 
@@ -195,14 +200,14 @@ function BestBody({ r, fg, dim, line, hideMoney }: BodyProps) {
   );
 }
 
-function StakeLine({ label, x, r, fg, dim, hideMoney }: { label: string; x: StakeRow } & BodyProps) {
+function StakeLine({ label, x, other, r, fg, dim, hideMoney }: { label: string; x: StakeRow; other?: StakeRow | null } & BodyProps) {
   const rate = stakeRate(x, r.currency, hideMoney);
   const v = hideMoney ? (x.bbPerHour ?? x.roi ?? 0) : x.hourly;
   return (
     <View style={{ gap: 4 }}>
       <Kicker dim={dim}>{label}</Kicker>
       <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: F.mono, fontSize: 44, lineHeight: 50, color: fg, letterSpacing: -1 }}>
-        {stakeName(x, r.currency, hideMoney)}
+        {stakeName(x, r.currency, hideMoney, other)}
       </Text>
       {rate ? <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 24, lineHeight: 30, color: toneOf(v) ?? fg }}>{rate}</Text> : null}
       <Caption dim={dim}>{t('{n} sessões · {h}h', { n: x.sessions, h: Math.round(x.hours) })}</Caption>
@@ -214,9 +219,9 @@ function StakesBody(p: BodyProps) {
   const { r, fg, dim, line, hideMoney } = p;
   return (
     <View style={{ gap: 18 }}>
-      {r.bestStake ? <StakeLine {...p} label={r.worstStake ? t('Onde ganhaste mais') : t('A tua stake')} x={r.bestStake} /> : null}
+      {r.bestStake ? <StakeLine {...p} label={r.worstStake ? t('Onde ganhaste mais') : t('A tua stake')} x={r.bestStake} other={r.worstStake} /> : null}
       {r.worstStake ? <View style={{ height: 1, backgroundColor: line }} /> : null}
-      {r.worstStake ? <StakeLine {...p} label={r.worstStake.hourly < 0 ? t('Onde custou mais') : t('Onde ganhaste menos')} x={r.worstStake} /> : null}
+      {r.worstStake ? <StakeLine {...p} label={r.worstStake.hourly < 0 ? t('Onde custou mais') : t('Onde ganhaste menos')} x={r.worstStake} other={r.bestStake} /> : null}
       {!hideMoney && r.hourly !== null ? (
         <View style={{ marginTop: 14, gap: 2 }}>
           <Kicker dim={dim}>{t('Por hora no ano')}</Kicker>

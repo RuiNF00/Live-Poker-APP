@@ -1,6 +1,6 @@
 # Eventos nas lojas: um por festival do planeador
 
-> Adotado pelo fio das lojas a 17 out (origem `marketing/eventos-lojas.md`). Os ids batem com `src/poker/festivals.ts` e a rota `src/app/festival.tsx` lê `?id=` (verificado em faee2c9). Imagens sem texto, 1920×1080 e 1080×1920, uma cor de céu por festival a partir das das Bahamas: `store/featuring/event-images/<id>-{cartao-1920x1080,detalhe-1080x1920}.jpg` (cópia em `launch/eventos-lojas-imagens/`). Submissão: eu, com a chave do passo 15, depois de a versão 1.0 estar aprovada e com o "sim" do Rui (passo 36 cobre a nomeação; estes eventos vão no mesmo "sim"). A Play só mostra "Conteúdo promocional" a apps elegíveis; sem ele, o texto vai para as notas da versão.
+# Eventos nas lojas: um por festival do planeador
 
 Rascunho de 2026-10-17. Nada foi submetido. Quem submete é o fio das lojas; o fio do pt-BR e espanhol faz a revisão nativa. Substitui, para as 4 línguas, a tabela das Bahamas em launch/festival-bahamas/lojas/evento-lojas.md (EN e PT ficaram iguais) e o rascunho do evento em marketing/lancamento-brasil.md.
 
@@ -34,18 +34,18 @@ Viagem do Rui e lançamento a sério. Já tinha EN e PT em launch/festival-baham
 | --- | --- | --- | --- | --- | --- |
 | Nome | 30 | Bahamas: Log Every Hand (23) | Bahamas: regista cada mão (25) | Bahamas: registre cada mão (26) | Bahamas: registra cada mano (27) |
 | Descrição curta | 50 | Festival schedule, your plan and every hand. (44) | Calendário, o teu plano e cada mão registada. (45) | Programa, o seu plano e cada mão registrada. (44) | Calendario, tu plan y cada mano registrada. (43) |
-| Descrição longa | 120 | Plan your December festival events against your bankroll, get late-reg reminders and log each hand in 11 taps. (110) | Planeia os torneios de dezembro com a tua banca, recebe lembretes de inscrição e regista cada mão em 11 toques. (111) | Planeje os torneios de dezembro com a sua banca, receba lembretes de late reg e registre cada mão em 11 toques. (111) | Planifica los torneos de diciembre con tu bankroll, recibe avisos de late reg y registra cada mano en 11 toques. (112) |
+| Descrição longa | 120 | Plan your December festival events against your bankroll, get late-reg reminders and log a typical hand in 11 taps. (115) | Planeia os torneios de dezembro com a tua banca, recebe lembretes de inscrição e regista uma mão típica em 11 toques. (117) | Planeje os torneios de dezembro com a sua banca, receba lembretes de late reg e registre uma mão típica em 11 toques. (117) | Planifica los torneos de diciembre con tu bankroll, recibe avisos de late reg y registra una mano típica en 11 toques. (112) |
 
 ### Google Play: conteúdo promocional
 
 - Datas: 1 a 17 dez 2026. Submeter até 10 nov 2026.
 
-| Língua | Tagline (80) | Descrição (500) |
+| Língua | Tagline (7) | Descrição (500) |
 | --- | --- | --- |
-| EN | Plan the festival. Log every hand. (34) | Heading to the December festival in the Bahamas? Pick the events you plan to play, see the total against your bankroll and get a reminder before each start and before late registration closes. Log every hand in 11 taps and replay it later. 18+. (244) |
-| PT-PT | Planeia o festival. Regista cada mão. (37) | Vais ao festival de dezembro nas Bahamas? Escolhe os torneios que queres jogar, vê o total comparado com a tua banca e recebe um lembrete antes de cada início e antes de fechar a inscrição tardia. Regista cada mão em 11 toques e revê-a depois. 18+. (248) |
-| pt-BR | Planeje o festival. Registre cada mão. (38) | Vai ao festival de dezembro nas Bahamas? Escolha os torneios que quer jogar, veja o total comparado com a sua banca e receba um lembrete antes de cada início e antes de fechar o late reg. Registre cada mão em 11 toques e reveja depois. 18+. (240) |
-| es | Planifica el festival. Registra cada mano. (42) | ¿Vas al festival de diciembre en Bahamas? Elige los torneos que quieres jugar, mira el total frente a tu bankroll y recibe un aviso antes de cada inicio y antes de que cierre el late reg. Registra cada mano en 11 toques y repásala después. 18+. (244) |
+| EN | Plan the festival. Log every hand. (34) | Heading to the December festival in the Bahamas? Pick the events you plan to play, see the total against your bankroll and get a reminder before each start and before late registration closes. Log a typical hand in 11 taps and replay it later. 18+. (244) |
+| PT-PT | Planeia o festival. Regista cada mão. (37) | Vais ao festival de dezembro nas Bahamas? Escolhe os torneios que queres jogar, vê o total comparado com a tua banca e recebe um lembrete antes de cada início e antes de fechar a inscrição tardia. Regista uma mão típica em 11 toques e revê-a depois. 18+. (248) |
+| pt-BR | Planeje o festival. Registre cada mão. (38) | Vai ao festival de dezembro nas Bahamas? Escolha os torneios que quer jogar, veja o total comparado com a sua banca e receba um lembrete antes de cada início e antes de fechar o late reg. Registre uma mão típica em 11 toques e reveja depois. 18+. (240) |
+| es | Planifica el festival. Registra cada mano. (42) | ¿Vas al festival de diciembre en Bahamas? Elige los torneos que quieres jugar, mira el total frente a tu bankroll y recibe un aviso antes de cada inicio y antes de que cierre el late reg. Registra una mano típica en 11 toques y repásala después. 18+. (244) |
 
 ## 2. Las Vegas, dezembro (`las-vegas-dez-2026`)
 
@@ -70,12 +70,12 @@ O festival de Las Vegas é o teste de Apple Ads (marketing/apple-ads-bahamas.md,
 
 - Datas: 27 nov a 21 dez 2026. Submeter até 10 nov 2026.
 
-| Língua | Tagline (80) | Descrição (500) |
+| Língua | Tagline (7) | Descrição (500) |
 | --- | --- | --- |
-| EN | Your Las Vegas December, planned. (33) | Playing the December festival in Las Vegas? The schedule is already in the app: pick your events, see the total against your bankroll and get a reminder before each start and before late registration closes. Log every hand in 11 taps between levels and share the big ones as a link. 18+. (287) |
-| PT-PT | O teu dezembro em Las Vegas, planeado. (38) | Vais jogar o festival de dezembro em Las Vegas? O calendário já está na app: escolhe os torneios, vê o total comparado com a tua banca e recebe um lembrete antes de cada início e antes de fechar a inscrição tardia. Regista cada mão em 11 toques entre níveis e partilha as grandes num link. 18+. (294) |
-| pt-BR | Seu dezembro em Las Vegas, tudo planejado. (42) | Vai jogar o festival de dezembro em Las Vegas? O programa já está no app: escolha os torneios, veja o total comparado com a sua banca e receba um lembrete antes de cada início e antes de fechar o late reg. Registre cada mão em 11 toques entre os níveis e compartilhe as grandes em um link. 18+. (294) |
-| es | Tu diciembre en Las Vegas, todo planificado. (44) | ¿Juegas el festival de diciembre en Las Vegas? El calendario ya está en la app: elige tus torneos, mira el total frente a tu bankroll y recibe un aviso antes de cada inicio y antes de que cierre el late reg. Registra cada mano en 11 toques entre niveles y comparte las grandes con un link. 18+. (294) |
+| EN | Your Las Vegas December, planned. (33) | Playing the December festival in Las Vegas? The schedule is already in the app: pick your events, see the total against your bankroll and get a reminder before each start and before late registration closes. Log a typical hand in 11 taps between levels and share the big ones as a link. 18+. (287) |
+| PT-PT | O teu dezembro em Las Vegas, planeado. (38) | Vais jogar o festival de dezembro em Las Vegas? O calendário já está na app: escolhe os torneios, vê o total comparado com a tua banca e recebe um lembrete antes de cada início e antes de fechar a inscrição tardia. Regista uma mão típica em 11 toques entre níveis e partilha as grandes num link. 18+. (294) |
+| pt-BR | Seu dezembro em Las Vegas, tudo planejado. (42) | Vai jogar o festival de dezembro em Las Vegas? O programa já está no app: escolha os torneios, veja o total comparado com a sua banca e receba um lembrete antes de cada início e antes de fechar o late reg. Registre uma mão típica em 11 toques entre os níveis e compartilhe as grandes em um link. 18+. (294) |
+| es | Tu diciembre en Las Vegas, todo planificado. (44) | ¿Juegas el festival de diciembre en Las Vegas? El calendario ya está en la app: elige tus torneos, mira el total frente a tu bankroll y recibe un aviso antes de cada inicio y antes de que cierre el late reg. Registra una mano típica en 11 toques entre niveles y comparte las grandes con un link. 18+. (294) |
 
 ## 3. Bahia, janeiro (`bahia-jan-2027`)
 
@@ -94,19 +94,19 @@ Lançamento pt-BR (marketing/lancamento-brasil.md). Substitui o rascunho "Verão
 | --- | --- | --- | --- | --- | --- |
 | Nome | 30 | Brazil Summer: Log Every Hand (29) | Verão na Bahia: cada mão (24) | Verão na Bahia: cada mão (24) | Verano en Bahía: cada mano (26) |
 | Descrição curta | 50 | Brazil's summer series: plan it, log every hand. (48) | A série de verão no Brasil, mão a mão. (38) | Planeje o festival e salve cada mão. (36) | La serie de verano en Brasil, mano a mano. (42) |
-| Descrição longa | 120 | Pick your events at Brazil's summer series in Bahia, see the total against your bankroll and log each hand in 11 taps. (118) | Escolhe os torneios da série de verão na Bahia, compara com a tua banca e regista cada mão em 11 toques entre níveis. (117) | Escolha os torneios do festival de verão, compare com a sua banca e registre cada mão em 11 toques entre os níveis. (115) | Elige tus torneos de la serie de verano en Bahía, compáralos con tu bankroll y registra cada mano en 11 toques. (111) |
-| Longa, sem torneios | 120 | Brazil's summer series in Bahia, 22 to 30 January: log each hand in 11 taps, replay it and share it as a link. (110) | Série de verão na Bahia, de 22 a 30 de janeiro: regista cada mão em 11 toques, revê-a e partilha-a num link. (108) | Festival de verão na Bahia, de 22 a 30 de janeiro: registre cada mão em 11 toques, reveja e compartilhe em um link. (115) | Serie de verano en Bahía, del 22 al 30 de enero: registra cada mano en 11 toques, repásala y compártela con un link. (116) |
+| Descrição longa | 120 | Pick your events at Brazil's summer series in Bahia, check them against your bankroll, log a typical hand in 11 taps. (117) | Escolhe os torneios da série de verão na Bahia, compara com a tua banca e regista uma mão típica em 11 toques. (110) | Escolha os torneios do festival de verão, compare com a sua banca e registre uma mão típica em 11 toques. (105) | Elige tus torneos de la serie de verano en Bahía, compáralos con tu bankroll y registra una mano típica en 11 toques. (111) |
+| Longa, sem torneios | 120 | Brazil's summer series in Bahia, 22 to 30 January: log a typical hand in 11 taps, replay it and share it as a link. (115) | Série de verão na Bahia, de 22 a 30 de janeiro: regista uma mão típica em 11 toques, revê-a e partilha-a num link. (114) | Festival de verão na Bahia, de 22 a 30 de janeiro: registre uma mão típica em 11 toques e compartilhe em um link. (113) | Serie de verano en Bahía, del 22 al 30 de enero: registra una mano típica en 11 toques, repásala y compártela con un link. (116) |
 
 ### Google Play: conteúdo promocional
 
 - Datas: 22 a 30 jan 2027. Submeter até 15 jan 2027.
 
-| Língua | Tagline (80) | Descrição (500) |
+| Língua | Tagline (7) | Descrição (500) |
 | --- | --- | --- |
-| EN | Summer in Bahia. Every hand logged. (35) | Going to Brazil's summer series in Bahia? Pick the events you plan to play and see the total against your bankroll. Log every hand in 11 taps between levels, or leave a 10-second voice note and finish it later, then share the big ones as a link anyone can open. 18+. (266) |
-| PT-PT | Verão na Bahia. Cada mão registada. (35) | Vais à série de verão na Bahia? Escolhe os torneios que queres jogar e vê o total comparado com a tua banca. Regista cada mão em 11 toques entre níveis, ou deixa uma nota de voz de 10 segundos e acaba depois, e partilha as grandes num link que qualquer pessoa abre. 18+. (270) |
-| pt-BR | Verão na Bahia. Cada mão registrada. (36) | Vai ao festival de verão na Bahia? Escolha os torneios que quer jogar e veja o total comparado com a sua banca. Registre cada mão em 11 toques entre os níveis, ou deixe uma nota de voz de 10 segundos e termine depois, e compartilhe as grandes em um link que qualquer pessoa abre. 18+. (284) |
-| es | Verano en Bahía. Cada mano registrada. (38) | ¿Vas a la serie de verano en Bahía? Elige los torneos que quieres jugar y mira el total frente a tu bankroll. Registra cada mano en 11 toques entre niveles, o deja una nota de voz de 10 segundos y termínala después, y comparte las grandes con un link que cualquiera abre. 18+. (276) |
+| EN | Summer in Bahia. Every hand logged. (35) | Going to Brazil's summer series in Bahia? Pick the events you plan to play and see the total against your bankroll. Log a typical hand in 11 taps between levels, or leave a 10-second voice note and finish it later, then share the big ones as a link anyone can open. 18+. (266) |
+| PT-PT | Verão na Bahia. Cada mão registada. (35) | Vais à série de verão na Bahia? Escolhe os torneios que queres jogar e vê o total comparado com a tua banca. Regista uma mão típica em 11 toques entre níveis, ou deixa uma nota de voz de 10 segundos e acaba depois, e partilha as grandes num link que qualquer pessoa abre. 18+. (270) |
+| pt-BR | Verão na Bahia. Cada mão registrada. (36) | Vai ao festival de verão na Bahia? Escolha os torneios que quer jogar e veja o total comparado com a sua banca. Registre uma mão típica em 11 toques entre os níveis, ou deixe uma nota de voz de 10 segundos e termine depois, e compartilhe as grandes em um link que qualquer pessoa abre. 18+. (284) |
+| es | Verano en Bahía. Cada mano registrada. (38) | ¿Vas a la serie de verano en Bahía? Elige los torneos que quieres jugar y mira el total frente a tu bankroll. Registra una mano típica en 11 toques entre niveles, o deja una nota de voz de 10 segundos y termínala después, y comparte las grandes con un link que cualquiera abre. 18+. (276) |
 
 ## 4. Barcelona, março (datas a confirmar) (`barcelona-mar-2027`)
 
@@ -131,12 +131,12 @@ Lançamento em espanhol (marketing/lancamento-espanhol.md). Sem datas, não se s
 
 - Datas: as mesmas do evento Apple. Submeter até 7 dias antes do início.
 
-| Língua | Tagline (80) | Descrição (500) |
+| Língua | Tagline (7) | Descrição (500) |
 | --- | --- | --- |
-| EN | Barcelona in March, planned. (28) | Playing the national series stop in Barcelona? Pick your events, see the total against your bankroll and get a reminder before each start and before late registration closes. Log every hand in 11 taps between levels and share the big ones as a link anyone can open. 18+. (270) |
-| PT-PT | Barcelona em março, planeado. (29) | Vais jogar a etapa de Barcelona? Escolhe os torneios, vê o total comparado com a tua banca e recebe um lembrete antes de cada início e antes de fechar a inscrição tardia. Regista cada mão em 11 toques entre níveis e partilha as grandes num link que qualquer pessoa abre. 18+. (275) |
-| pt-BR | Barcelona em março, tudo planejado. (35) | Vai jogar a etapa de Barcelona? Escolha os torneios, veja o total comparado com a sua banca e receba um lembrete antes de cada início e antes de fechar o late reg. Registre cada mão em 11 toques entre os níveis e compartilhe as grandes em um link que qualquer pessoa abre. 18+. (277) |
-| es | Barcelona en marzo, todo planificado. (37) | ¿Juegas la etapa de Barcelona? Elige tus torneos, mira el total frente a tu bankroll y recibe un aviso antes de cada inicio y antes de que cierre el late reg. Registra cada mano en 11 toques entre niveles y comparte las grandes con un link que cualquiera abre. 18+. (265) |
+| EN | Barcelona in March, planned. (28) | Playing the national series stop in Barcelona? Pick your events, see the total against your bankroll and get a reminder before each start and before late registration closes. Log a typical hand in 11 taps between levels and share the big ones as a link anyone can open. 18+. (270) |
+| PT-PT | Barcelona em março, planeado. (29) | Vais jogar a etapa de Barcelona? Escolhe os torneios, vê o total comparado com a tua banca e recebe um lembrete antes de cada início e antes de fechar a inscrição tardia. Regista uma mão típica em 11 toques entre níveis e partilha as grandes num link que qualquer pessoa abre. 18+. (275) |
+| pt-BR | Barcelona em março, tudo planejado. (35) | Vai jogar a etapa de Barcelona? Escolha os torneios, veja o total comparado com a sua banca e receba um lembrete antes de cada início e antes de fechar o late reg. Registre uma mão típica em 11 toques entre os níveis e compartilhe as grandes em um link que qualquer pessoa abre. 18+. (277) |
+| es | Barcelona en marzo, todo planificado. (37) | ¿Juegas la etapa de Barcelona? Elige tus torneos, mira el total frente a tu bankroll y recibe un aviso antes de cada inicio y antes de que cierre el late reg. Registra una mano típica en 11 toques entre niveles y comparte las grandes con un link que cualquiera abre. 18+. (265) |
 
 ## Calendário para o fio das lojas
 

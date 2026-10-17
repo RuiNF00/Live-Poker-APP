@@ -64,10 +64,10 @@ async function set(next: Partial<State>) {
 }
 
 /** A friend's hand opened in the app: it goes on the list (your own links never do). */
-export async function rememberFriendHand(id: string, title: string) {
+export async function rememberFriendHand(id: string, title: string, cards?: string[]) {
   await load();
   if (state.hidden.includes(id)) return;
-  await set({ hands: remember(state.hands, { id, title }, Date.now()) });
+  await set({ hands: remember(state.hands, { id, title, cards }, Date.now()) });
 }
 
 /** Reported: off the list for good on this phone. */

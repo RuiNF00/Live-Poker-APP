@@ -216,6 +216,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },
   { key: 'insights', icon: 'bulb', title: t('Onde ganhas e onde perdes'), body: t('Salas, stakes, sono e tilt') },
   { key: 'downswingRead', icon: 'pulse', title: t('Azar ou sinal?'), body: t('O teu downswing é normal?') },
+  { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
@@ -236,6 +237,7 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   homeTotal: 'homeTotal',
   insights: 'insights',
   downswingRead: 'downswingRead',
+  villainRange: 'villainRange',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */

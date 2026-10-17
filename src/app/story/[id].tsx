@@ -12,7 +12,7 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
-import { canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, sharePost, shareStory, shareVideo } from '@/lib/instagram-story';
+import { canMakeVideo, canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, sharePost, shareStory, shareVideo } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
@@ -303,8 +303,11 @@ export default function StoryScreen() {
           </ListGroup>
         </ScrollView>
         <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
-          {canShareStory && video ? (
+          {video && canMakeVideo ? (
             <Button title={progress ?? (busy ? t('A preparar…') : t('Criar vídeo da mão'))} icon="film-outline" disabled={busy} onPress={postVideo} />
+          ) : video ? (
+            // Expo Go and the web can't make the video: say so, nothing to tap.
+            <Button title={t('Criar vídeo da mão')} sub={t('Disponível na versão da loja')} icon="film-outline" disabled onPress={() => {}} />
           ) : canShareStory ? (
             <Button
               title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : withVoice ? t('Partilhar no Instagram') : t('Partilhar')}

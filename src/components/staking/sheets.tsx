@@ -127,7 +127,7 @@ function PackageForm({ pkg, makeup, onSave, onDelete }: { pkg: StakePackage; mak
           <T v="small">
             {x.kind === 'makeup'
               ? t('O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.')
-              : t('O backer compra a mesma percentagem de cada torneio do pacote, ao markup combinado. Cada torneio acerta-se sozinho.')}
+              : t('O backer fica com a mesma percentagem de cada torneio do pacote, ao markup combinado. Cada torneio acerta-se sozinho.')}
           </T>
         </Card>
       </Section>

@@ -100,16 +100,22 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
 }
 
 /** "1k/2k", plus the ante, button ante or bomb pot: "1/2 · ante BTN 2", "1/2 · bomb pot 5". */
-export function stakesText(blinds: HandRecord['blinds'], fmt: (n: number) => string = formatChips, sep = ' · '): string {
+export function stakesText(blinds: HandRecord['blinds'], fmt: (n: number) => string = formatChips, sep = ' · ', straddle = 0): string {
   const extra = blinds.bombPot ? `bomb pot ${fmt(blinds.bombPot)}` : blinds.btnAnte ? `ante BTN ${fmt(blinds.btnAnte)}` : blinds.ante ? `ante ${fmt(blinds.ante)}` : '';
-  return `${fmt(blinds.sb)}/${fmt(blinds.bb)}${extra ? sep + extra : ''}`;
+  return `${fmt(blinds.sb)}/${fmt(blinds.bb)}${straddle > 0 ? `/${fmt(straddle)}` : ''}${extra ? sep + extra : ''}`;
+}
+
+/** The biggest straddle posted preflop (0 when none), so stakes read "1/2/4" like in the app. */
+export function straddleOf(hand: HandRecord): number {
+  return Math.max(0, ...(hand.actions.preflop ?? []).filter((a) => a.type === 'post_straddle').map((a) => a.amount ?? 0));
 }
 
 /** Short title for previews: "A♠K♦ vs Q♥Q♣ · 1k/2k". */
 export function handTitle(hand: HandRecord): string {
   const hero = hand.players.find((p) => p.isHero);
   const heroCards = hero?.cards?.length ? hero.cards.map(cardText).join('') : '';
-  const stakes = `${formatChips(hand.blinds.sb)}/${formatChips(hand.blinds.bb)}${hand.blinds.ante ? ` (${formatChips(hand.blinds.ante)})` : ''}`;
+  const st = straddleOf(hand);
+  const stakes = `${formatChips(hand.blinds.sb)}/${formatChips(hand.blinds.bb)}${st ? `/${formatChips(st)}` : ''}${hand.blinds.ante ? ` (${formatChips(hand.blinds.ante)})` : ''}`;
   return [heroCards, stakes].filter(Boolean).join(' · ');
 }
 

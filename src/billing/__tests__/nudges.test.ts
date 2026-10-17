@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, NUDGE_KIND, planNudges, recapAt, type NudgeInput } from '../nudges';
+import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, NUDGE_IDS, NUDGE_KIND, planNudges, type NudgeInput } from '../nudges';
 
 const DAY = 86_400_000;
 // A 3-day trial started at a live session on Saturday evening.
@@ -21,14 +21,9 @@ const base: NudgeInput = {
 };
 const byId = (p: NudgeInput) => Object.fromEntries(planNudges(p).map((n) => [n.id, n]));
 
-test('the day after the first session of the trial: what Pro kept from it', () => {
-  const r = byId(base)['trial-recap'];
-  assert.equal(r.at, new Date(2026, 9, 18, 13).getTime());
-  assert.match(r.body, /^2 mãos, sem limite\. Grátis até /);
-  // No session finished yet: nothing to recap.
-  assert.equal(byId({ ...base, sessions: [{ id: 's1', startedAt: start }] })['trial-recap'], undefined);
-  // Ends late at night: midday the next day.
-  assert.equal(recapAt(new Date(2026, 9, 17, 23).getTime()), new Date(2026, 9, 18, 13).getTime());
+test('no notification sells Pro: only the charge notice during a trial; old recap ids still cancelled', () => {
+  assert.deepEqual(planNudges(base).map((n) => n.id).filter((id) => id !== 'comeback'), ['trial-end']);
+  assert.ok(NUDGE_IDS.includes('trial-recap'));
 });
 
 test('Google Play charge notice says to cancel before that date', () => {
@@ -37,7 +32,7 @@ test('Google Play charge notice says to cancel before that date', () => {
 
 test('charge notice more than 24 h before the end, in waking hours', () => {
   const end = byId(base)['trial-end'];
-  assert.ok(end.at < trial.end - DAY && Math.abs(end.at - byId(base)['trial-recap'].at) >= 6 * 3_600_000);
+  assert.ok(end.at < trial.end - DAY);
   const h = new Date(end.at).getHours();
   assert.ok(h >= 9 && h < 22);
   assert.match(end.body, /199,99 US\$ por ano.*App Store/);
@@ -48,13 +43,12 @@ test('charge notice more than 24 h before the end, in waking hours', () => {
 
 test('no charge notice once the trial was cancelled, none outside a trial', () => {
   assert.equal(byId({ ...base, trial: { ...trial, willRenew: false } })['trial-end'], undefined);
-  assert.equal(byId({ ...base, isPro: false })['trial-recap'], undefined);
+  assert.equal(byId({ ...base, isPro: false })['trial-end'], undefined);
   assert.equal(byId({ ...base, trial: null })['trial-end'], undefined);
 });
 
 test('past trial moments are not rescheduled', () => {
   const late = byId({ ...base, now: start + 2 * DAY });
-  assert.equal(late['trial-recap'], undefined);
   assert.equal(late['trial-end'], undefined);
 });
 
@@ -89,5 +83,5 @@ test('in-app charge notice: same window as the notification, only without notifi
 });
 
 test('only the notice before a charge is billing (always on); the rest are switchable tips', () => {
-  assert.deepEqual(NUDGE_KIND, { 'trial-recap': 'tips', 'trial-end': 'billing', comeback: 'tips' });
+  assert.deepEqual(NUDGE_KIND, { 'trial-end': 'billing', comeback: 'tips' });
 });

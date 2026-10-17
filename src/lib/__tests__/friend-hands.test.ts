@@ -30,3 +30,9 @@ test('new comments are the count less what was seen', () => {
   // A comment hidden by the owner lowers the count: never negative.
   assert.deepEqual(unseen({ aaaa1: 1 }, { aaaa1: 3 }), {});
 });
+
+test('keeps the hole cards only when they are two real cards', () => {
+  assert.deepEqual(remember([], { id: 'abcd1', title: 'AK', cards: ['As', 'Kd'] }, 1)[0].cards, ['As', 'Kd']);
+  assert.equal(remember([], { id: 'abcd1', title: 'AK', cards: ['As', 'Xx'] }, 1)[0].cards, undefined);
+  assert.equal(parseFriendHands([{ id: 'abcd1', title: '', openedAt: 1, cards: ['As'] }])[0].cards, undefined);
+});
