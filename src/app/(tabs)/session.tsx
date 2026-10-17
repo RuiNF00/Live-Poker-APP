@@ -4,14 +4,15 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
 import { useAfterFirstFrame } from '@/components/Deferred';
+import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, firstSession, SessionForm } from '@/components/SessionForm';
@@ -42,29 +43,12 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { useSheetAnimation } from '@/lib/motion';
 
-/**
- * Re-renders every `ms` while this tab is on screen and returns the time of
- * the tick. Tabs stay mounted, so an always-on interval kept redrawing the
- * whole session screen every second behind hand entry and the hands list.
- */
-function useTick(ms = 1000) {
-  const [now, setNow] = useState(() => Date.now());
-  useFocusEffect(
-    useCallback(() => {
-      setNow(Date.now());
-      const id = setInterval(() => setNow(Date.now()), ms);
-      return () => clearInterval(id);
-    }, [ms]),
-  );
-  return now;
-}
-
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
 // table reads, money) behind it.
 
 function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
-  const now = useTick(1000);
+  const now = useNow(1000);
   return (
     <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
       {clock(playedMs(s, now))}
@@ -73,7 +57,7 @@ function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
 }
 
 function LevelAlarm({ s, onDue }: { s: Session; onDue: () => void }) {
-  const now = useTick(1000);
+  const now = useNow(1000);
   const nextAt = nextLevelAt(s, now);
   const levelDue = !!nextAt && nextAt <= now;
   // A tournament's level goes up by itself when the clock runs out (see levelsDue); cash just shows it.
@@ -93,7 +77,7 @@ function LevelAlarm({ s, onDue }: { s: Session; onDue: () => void }) {
 
 function SinceStart({ s }: { s: Session }) {
   // Hours and minutes: a 30 s tick is enough.
-  const now = useTick(30000);
+  const now = useNow(30000);
   return (
     <T v="tiny" style={{ textAlign: 'center' }}>
       {t('{date} · {total} desde o início · resultado atual {profit}', { date: shortDate(s.startedAt), total: duration(now - s.startedAt), profit: money(s.kind === 'cash' ? liveResult(s) : profit(s), s.currency) })}

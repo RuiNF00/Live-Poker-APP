@@ -30,6 +30,7 @@ import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
@@ -67,8 +68,10 @@ export default function NewHand() {
     if (editing) return { hand: editing, posChosen: true };
     if (store.draft) return { hand: store.draft, posChosen: !!store.draft.actions.length || store.draft.button !== 0 || !!store.draft.players[0].cards };
     const last = hands[0] ?? null;
+    // A tournament's clock may have moved on since the session screen last saved: the hand gets today's level and blinds.
+    const live = activeSession && { ...activeSession, ...levelsDue(activeSession) };
     // Same table as the last hand: seats, stacks and the moved button are already right.
-    return { hand: newHand({ id: uid('h_'), session: activeSession, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, activeSession) };
+    return { hand: newHand({ id: uid('h_'), session: live, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, live) };
   });
   const [history, setHistory] = useState<Draft[]>([]);
   const [ctxOpen, setCtxOpen] = useState(false);

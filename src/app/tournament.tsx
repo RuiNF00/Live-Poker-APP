@@ -9,6 +9,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
+import { useNow } from '@/components/useNow';
 import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap, useSheetPad } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { breakOf, levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
@@ -24,18 +25,6 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 
 const TEMPLATE_NAME: Record<string, string> = { turbo: 'Turbo', standard: 'Normal', deep: 'Deep', highroller: 'High roller' };
-
-function useTick(ms = 1000) {
-  const [now, setNow] = useState(() => Date.now());
-  useFocusEffect(
-    useCallback(() => {
-      setNow(Date.now());
-      const id = setInterval(() => setNow(Date.now()), ms);
-      return () => clearInterval(id);
-    }, [ms]),
-  );
-  return now;
-}
 
 const mmss = (ms: number) => {
   const sec = Math.max(0, Math.round(ms / 1000));
@@ -311,7 +300,7 @@ function Cell({ label, value, onPress, big }: { label: string; value?: string; o
 }
 
 function LevelCard({ s, st, onLevel, onSync, onPause }: { s: Session; st?: Level[]; onLevel: (dir: 1 | -1) => void; onSync: (m: number) => void; onPause: () => void }) {
-  const now = useTick(1000);
+  const now = useNow(1000);
   const level = s.level ?? 1;
   const nextAt = nextLevelAt(s, now);
   const left = nextAt ? nextAt - now : 0;
