@@ -3027,6 +3027,8 @@ const en: Record<string, string> = {
   'Ao comentar aceitas os': 'By commenting you accept the',
   'Próximo: {name}': 'Next: {name}',
   'Voos, hotel e resultado líquido': 'Flights, hotel and net result',
+  'Torneios mais caros': 'Pricier tournaments',
+  'Torneios mais baratos': 'Cheaper tournaments',
 };
 
 export default en;

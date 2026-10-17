@@ -69,8 +69,8 @@ export function ImportSupport({ file, visible, onClose }: { file: SupportFile; v
               {t('Vemos o ficheiro e, se for preciso, fazemos a importação por ti. Respondemos por email em até 2 dias úteis.')}
             </T>
             <ListGroup>
-              <ListItem icon="document-attach-outline" iconColor={C.accent} title={name} subtitle={t('O ficheiro que escolheste, tal como está · {kb} KB', { kb })} chevron={false} />
-              <ListItem icon="information-circle-outline" iconColor={C.accent} title={t('Uma nota sobre o que falhou')} subtitle={t('Versão da app, tipo de telemóvel e as linhas que ficaram de fora')} chevron={false} />
+              <ListItem icon="document-attach-outline" iconColor={C.accent} title={name} numberOfLines={3} subtitle={t('O ficheiro que escolheste, tal como está · {kb} KB', { kb })} chevron={false} />
+              <ListItem icon="information-circle-outline" iconColor={C.accent} title={t('Uma nota sobre o que falhou')} numberOfLines={3} subtitle={t('Versão da app, tipo de telemóvel e as linhas que ficaram de fora')} chevron={false} />
             </ListGroup>
             <Card tone="inset" style={{ gap: S.xs }}>
               <Row gap={S.sm}>
@@ -82,7 +82,7 @@ export function ImportSupport({ file, visible, onClose }: { file: SupportFile; v
               <T v="small">{t('Tem as datas, salas e resultados que estão nele. Nada do que já tens no Sweatbook vai junto. Envias tu, da tua app de email.')}</T>
             </Card>
             <ListGroup>
-              <ToggleItem title={t('Aceito enviar este ficheiro ao suporte')} subtitle={SUPPORT_EMAIL} value={ok} onChange={setOk} />
+              <ToggleItem lines={6} title={t('Aceito enviar este ficheiro ao suporte')} subtitle={SUPPORT_EMAIL} value={ok} onChange={setOk} />
             </ListGroup>
             <Button icon="mail-outline" title={busy ? t('A preparar…') : t('Abrir o email')} disabled={!ok || busy} onPress={send} />
           </>
