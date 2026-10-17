@@ -55,6 +55,7 @@ export function ReplayerTable({
 
   const onLayout = (e: LayoutChangeEvent) => setW(Math.round(e.nativeEvent.layout.width));
 
+  const bestEquity = Math.max(-1, ...view.seats.map((s) => s.equity ?? -1));
   const boardW = SIZE.boardCardW * k;
   const boardH = SIZE.boardCardH * k;
 
@@ -155,7 +156,7 @@ export function ReplayerTable({
 
           {/* seats */}
           {view.seats.map((s) => (
-            <Seat key={'s' + s.i} seat={s} x={(map.seats[vis(s.i)].x / 100) * w} y={(map.seats[vis(s.i)].y / 100) * h} k={k} />
+            <Seat key={'s' + s.i} seat={s} x={(map.seats[vis(s.i)].x / 100) * w} y={(map.seats[vis(s.i)].y / 100) * h} k={k} bestEquity={bestEquity} />
           ))}
         </Pressable>
       )}
@@ -200,7 +201,7 @@ function Pill({ text, k, strong }: { text: string; k: number; strong?: boolean }
   );
 }
 
-function Seat({ seat: s, x, y, k }: { seat: RpSeat; x: number; y: number; k: number }) {
+function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: number; k: number; bestEquity: number }) {
   const pw = SIZE.plateW * k;
   const ph = SIZE.plateH * k;
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
@@ -282,7 +283,24 @@ function Seat({ seat: s, x, y, k }: { seat: RpSeat; x: number; y: number; k: num
           </Text>
         </View>
       ) : null}
+
+      {s.equity != null ? (
+        <View
+          style={{
+            position: 'absolute',
+            ...(s.hero ? { right: pw + 4, top: ch * 0.7 + ph / 2 - 8 * k } : { top: ch * 0.7 + ph - 7 * k }),
+            backgroundColor: s.equity >= bestEquity ? C.good : 'rgba(14,12,10,0.92)',
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: s.equity >= bestEquity ? C.good : 'rgba(245,237,216,0.25)',
+            paddingHorizontal: 4 * k,
+            zIndex: 3,
+          }}>
+          <Text allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
+            {Math.round(s.equity * 100)}%
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
-
