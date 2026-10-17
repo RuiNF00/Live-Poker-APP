@@ -58,7 +58,7 @@ export const FREE = {
   bankrolls: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'welcome' | 'generic';
+export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -77,6 +77,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   story: {
     title: t('Stories com a tua voz'),
     body: t('Vídeo com voz, sem marca de água.'),
+  },
+  solver: {
+    title: t('Leva as mãos todas para o solver'),
+    body: t('Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.'),
   },
   welcome: {
     title: t('Primeira mão feita'),
