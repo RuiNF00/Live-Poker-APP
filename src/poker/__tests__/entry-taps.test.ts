@@ -152,7 +152,7 @@ test('the typical hand (open, call, c-bet, fold) stays within the goal of 12 tap
   }
 });
 
-test('guardar rápido: position, cards and a voice note save the hand in 5 taps', () => {
+test('guardar rápido: position and cards, then «Guardar já» is 4 taps (5 with a voice note)', () => {
   const e = new Entry('HJ', ['9s', '9h']);
   const r = e.saveWithVoice('file:///voice/t.m4a');
   assert.equal(e.taps, 5);
@@ -454,4 +454,21 @@ test('size memory: spots are kept apart, all-in is never remembered, cash opens 
   const ps = sizePresets(p, replay(p).final, { open: 2.2, bet: 0.75 });
   assert.deepEqual(ps.map((x) => x.label), ['⅓', '½', '¾', 'Pote', 'All-in']);
   assert.equal(ps.filter((x) => x.last).length, 1);
+});
+
+test('the store copy hand: open, call, checked down to the river, winner picked, saved — 15 taps', () => {
+  // Marketing and the store say this number; change them together with it.
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  e.checkAround();
+  assert.equal(e.s.toAct, null, 'showdown');
+  e.taps++; // "Quem ganhou?": one chip (or two taps for the villain's cards)
+  e.save();
+  assert.equal(e.taps, 15);
 });

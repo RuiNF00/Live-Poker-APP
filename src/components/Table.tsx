@@ -49,6 +49,9 @@ function seatXY(k: number, n: number, rx = 41, ry = 40) {
 
 // Bets sit between the seat and the middle: just clear of the seat box (its
 // cards and plate), and kept clear of the board strip.
+// The felt is a fixed diagram: seat, pot and bet text grow with Larger Text only
+// this far, or seats overlap the pot. VoiceOver reads every seat in full (seatLabel).
+const TABLE_SCALE = 1.3;
 const SEAT_HALF_W = 44;
 const SEAT_HALF_H = 34;
 const BET_HALF_W = 30;
@@ -122,7 +125,7 @@ export function Table({
             <View style={[styles.feltLine, { borderRadius: w }]} />
           </View>
           {watermark ? (
-            <Text style={[styles.watermark, { top: h * 0.235, fontSize: 13 * scale }]}>{watermark.toUpperCase()}</Text>
+            <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.watermark, { top: h * 0.235, fontSize: 13 * scale }]}>{watermark.toUpperCase()}</Text>
           ) : null}
 
           {/* board */}
@@ -139,13 +142,13 @@ export function Table({
             <View style={[styles.potWrap, { top: h * 0.43 + (w < 360 ? 50 : 64) }]}>
               <View style={styles.pot}>
                 <View style={styles.potChip} />
-                <Text style={styles.potText}>{pot}</Text>
+                <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.potText}>{pot}</Text>
               </View>
             </View>
           ) : null}
           {narration ? (
             <View style={[styles.potWrap, { top: h * 0.43 - (w < 360 ? 52 : 60) }]}>
-              <Text style={styles.narration} numberOfLines={1}>
+              <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.narration} numberOfLines={1}>
                 {narration}
               </Text>
             </View>
@@ -161,7 +164,7 @@ export function Table({
                 {s.bet && !s.folded ? (
                   <View style={[styles.bet, { left: (b.x / 100) * w, top: (b.y / 100) * h }]}>
                     <View style={styles.betChip} />
-                    <Text style={styles.betText}>{s.bet}</Text>
+                    <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.betText}>{s.bet}</Text>
                   </View>
                 ) : null}
                 {isBtn ? (
@@ -173,7 +176,7 @@ export function Table({
                         top: (b.dealer.y / 100) * h,
                       },
                     ]}>
-                    <Text style={styles.dealerText}>D</Text>
+                    <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.dealerText}>D</Text>
                   </View>
                 ) : null}
               </React.Fragment>
@@ -223,32 +226,32 @@ export function Table({
                     s.folded && { opacity: 0.45 },
                   ]}>
                   <View style={styles.plateTop}>
-                    <Text style={[styles.name, s.hero && { color: C.accent }]} numberOfLines={1}>
+                    <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.name, s.hero && { color: C.accent }]} numberOfLines={1}>
                       {s.name}
                     </Text>
                     {s.pos && s.pos !== s.name ? (
                       <View style={styles.pos}>
-                        <Text style={styles.posText}>{s.pos}</Text>
+                        <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.posText}>{s.pos}</Text>
                       </View>
                     ) : null}
                   </View>
-                  <Text style={[styles.stack, s.allIn && { color: C.allin }]}>{s.allIn ? 'ALL-IN' : s.stack}</Text>
+                  <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.stack, s.allIn && { color: C.allin }]}>{s.allIn ? 'ALL-IN' : s.stack}</Text>
                 </View>
                 {s.action ? (
                   <View style={[styles.action, { backgroundColor: s.action.color }]}>
-                    <Text style={styles.actionText} numberOfLines={1}>
+                    <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.actionText} numberOfLines={1}>
                       {s.action.label}
                     </Text>
                   </View>
                 ) : null}
                 {s.winner ? (
                   <View style={styles.win}>
-                    <Text style={styles.winText} numberOfLines={1}>
+                    <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.winText} numberOfLines={1}>
                       {s.winner}
                     </Text>
                   </View>
                 ) : s.handName ? (
-                  <Text style={styles.handName} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.handName} numberOfLines={1}>
                     {s.handName}
                   </Text>
                 ) : null}
