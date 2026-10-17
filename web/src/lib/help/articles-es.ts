@@ -10,7 +10,7 @@ export const ES: Record<string, ArticleText> = {
       'Sweatbook no pide cuenta ni email. Todo lo que registras se queda en tu teléfono, y solo va a la nube si activas la copia de seguridad.',
       {
         steps: [
-          'La primera vez, la app muestra una mano de ejemplo y pregunta qué juegas, cuántas sesiones haces y en qué moneda. Puedes tocar Saltar.',
+          'La primera vez, la app muestra una mano de ejemplo y pregunta qué juegas, cuántas sesiones haces y en qué moneda. Puedes tocar Omitir.',
           'Toca el + en el centro, abajo (Nueva mano), para registrar tu primera mano.',
           'En la pantalla de inicio aparece la tarjeta Primera semana con los siguientes pasos.',
         ],
@@ -43,7 +43,7 @@ export const ES: Record<string, ArticleText> = {
     summary: '¿Cerraste a medias o guardaste con prisa? No se pierde nada.',
     body: [
       'Si cierras la pantalla con la X después de escribir algo, la mano queda como borrador. En la pantalla de inicio aparece Mano a medias: tócala para seguir o toca Descartar.',
-      'Las manos guardadas con Guardar ya o Voz quedan marcadas Por completar. Hay un filtro con ese nombre en la lista de manos, y en la página de la mano el aviso Mano por completar te lleva directo a editarla.',
+      'Las manos guardadas con Guardar ya o Voz quedan marcadas Sin completar. Hay un filtro con ese nombre en la lista de manos, y en la página de la mano el aviso Mano por completar te lleva directo a editarla.',
       { note: 'En el plan gratis, la 4.ª mano nueva del día queda guardada como borrador hasta que tengas manos libres o el Pro.' },
     ],
   },
@@ -88,7 +88,7 @@ export const ES: Record<string, ArticleText> = {
         ],
       },
       'Compartir por enlace es ilimitado, también en el plan gratis. Sin conexión, el enlace queda listo cuando vuelva la señal.',
-      { note: 'Para desactivar un enlace: en la página de la mano, en Comentarios, toca Borrar enlace. El enlace deja de funcionar y se borran los comentarios; la mano se queda en tu cuaderno.' },
+      { note: 'Para desactivar un enlace: en la página de la mano, en Comentarios, toca Dejar de compartir. El enlace deja de funcionar y se borran los comentarios; la mano se queda en tu cuaderno.' },
     ],
   },
   'what-a-link-shows': {
@@ -108,7 +108,7 @@ export const ES: Record<string, ArticleText> = {
     summary: 'Tu mano o tu sesión en Instagram, con los importes ocultos si quieres.',
     body: [
       'Mano: en la página de la mano, toca Story · Instagram. Hay tres modos: Pregunta (se detiene antes de la decisión), Resultado y Video (15 a 30 segundos, también para Reels, TikTok y WhatsApp). Necesita conexión.',
-      'Sesión: en el resumen de la sesión, toca Compartir sesión (o abre la sesión en Bankroll y toca Compartir). Elige el estilo Noite, Brasa o Sticker (fondo transparente para ponerlo sobre una foto) y activa Ocultar importes para mostrar solo horas, manos y botes en ciegas grandes.',
+      'Sesión: en el resumen de la sesión, toca Compartir sesión (o abre la sesión en Bankroll y toca Compartir). Elige el estilo Noite, Brasa o Sticker (fondo transparente para ponerlo sobre una foto) y activa Ocultar cantidades para mostrar solo horas, manos y botes en ciegas grandes.',
       { note: 'Con Pro puedes añadir tu voz y quitar la marca Sweatbook.' },
     ],
   },
@@ -117,7 +117,7 @@ export const ES: Record<string, ArticleText> = {
     title: 'Ocultar importes y bloquear la app',
     summary: 'Enseña la app en la mesa sin enseñar tus números.',
     body: [
-      'Ajustes → Privacidad → Ocultar importes: en toda la app aparece ••• en lugar de dinero.',
+      'Ajustes → Privacidad → Ocultar cantidades: en toda la app aparece ••• en lugar de dinero.',
       'Ajustes → Privacidad → Bloquear la app: pide Face ID, huella o el código del teléfono al abrir la app y cuando vuelves tras 30 segundos fuera. También puedes usar un PIN de 4 dígitos.',
       { note: 'Un PIN olvidado no se puede recuperar. Antes de activarlo, activa la copia en la nube y guarda el código de recuperación.' },
     ],
@@ -128,8 +128,8 @@ export const ES: Record<string, ArticleText> = {
     summary: 'Una página tuya con las manos y sesiones que elijas.',
     body: [
       'Ajustes → Herramientas → Perfil público. Elige tu nombre de usuario, el nombre que se muestra y una bio, y toca Crear perfil público. La página queda en sweatbook.poker/u/nombre.',
-      'Solo entran las manos que ya compartiste por enlace y las sesiones terminadas que elijas (hasta 30). Ocultar importes quita resultados y buy-ins.',
-      { note: 'Si cambias el nombre de usuario, el enlace antiguo deja de funcionar. Borrar perfil quita la página.' },
+      'Solo entran las manos que ya compartiste por enlace y las sesiones terminadas que elijas (hasta 30). Ocultar montos quita resultados y buy-ins.',
+      { note: 'Si cambias el nombre de usuario, el enlace antiguo deja de funcionar. Eliminar perfil quita la página.' },
     ],
   },
   staking: {
@@ -146,7 +146,7 @@ export const ES: Record<string, ArticleText> = {
         ],
       },
       'Para enviar las cuentas, abre al backer y toca Enviar cuentas. El enlace lleva solo la parte de ese backer (hasta 30 sesiones), sin notas, manos ni otros backers, y los números van en el propio enlace: el servidor no los ve.',
-      'Enlace en directo: en Staking, toca Crear enlace para esta sesión. Tus backers ven tu stack, el nivel y el resultado actualizarse, sin notas, manos ni nombres.',
+      'Link en directo: en Staking, toca Crear link para esta sesión. Tus backers ven tu stack, el nivel y el resultado actualizarse, sin notas, manos ni nombres.',
       { note: 'La gestión del staking (saldos, makeup y extractos de los backers) es parte del Pro.' },
     ],
   },
@@ -159,7 +159,7 @@ export const ES: Record<string, ArticleText> = {
         steps: [
           'En Bankroll → Swaps, toca Nuevo swap.',
           'Elige con quién, el porcentaje (desactiva El mismo porcentaje para un swap desigual, por ejemplo 3% por 2%) y si es para Un evento o para la Serie completa.',
-          'Toca Crear y enviar enlace y envíaselo solo al otro jugador.',
+          'Toca Crear y enviar link y envíaselo solo al otro jugador.',
           'Él toca Confirmo el swap en el navegador, con o sin la app. Desde ese momento, los términos y la hora quedan fijados y los dos reciben el código del acuerdo.',
         ],
       },
@@ -206,16 +206,16 @@ export const ES: Record<string, ArticleText> = {
     summary: 'Una mano para GTO Wizard o todo el año en PDF.',
     body: [
       'Una mano: en la página de la mano, toca Solver · PokerStars y luego Copiar texto o Guardar archivo .txt. El formato PokerStars se abre en GTO Wizard, PioSolver, Hold’em Manager y PokerTracker. Solo funciona con manos completas.',
-      'Varias manos a la vez: selecciónalas en la lista de manos y toca Exportar para solver (Pro).',
+      'Varias manos a la vez: selecciónalas en la lista de manos y toca Exportar al solver (Pro).',
       'Informes: Ajustes → Copia de seguridad → Informe PDF y CSV. Elige el periodo y exporta el informe en PDF, o las sesiones o las manos en CSV (Pro). La copia completa en .json es gratis.',
     ],
   },
   'erase-all': {
     slug: 'borrar-todo',
-    title: 'Borrar todos mis datos',
+    title: 'Eliminar todos mis datos',
     summary: 'Borra todo de tu teléfono y de nuestros servidores.',
     body: [
-      'Ajustes → Tus datos → Borrar todos mis datos → Borrar todo.',
+      'Ajustes → Tus datos → Eliminar todos mis datos → Eliminar todo.',
       {
         list: [
           'En el teléfono: manos, sesiones, notas de jugadores, bankroll, staking, ajustes, el bloqueo y las notificaciones.',

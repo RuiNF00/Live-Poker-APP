@@ -34,16 +34,16 @@ export const BR: Record<string, ArticleText> = {
       },
       'O jogo, os blinds e o número de jogadores aparecem no topo. Com uma sessão em andamento, a mão usa esses dados. Para mudar, toque nessa barra (Contexto da mão): torneio ou cash, sala, blinds, ante, jogadores na mesa e, em torneio, a fase, o nível e os jogadores restantes.',
       'O número de lugares padrão (6 a 10) muda em Configurações → Perfil → Jogadores na mesa.',
-      { note: 'Sem tempo? Salvar já salva a mão como está, e Voz grava uma nota de voz e salva a mão quando você para. Você termina depois.' },
+      { note: 'Sem tempo? Salvar agora salva a mão como está, e Voz grava uma nota de voz e salva a mão quando você para. Você termina depois.' },
     ],
   },
   'unfinished-hands': {
-    slug: 'maos-pela-metade',
-    title: 'Mãos pela metade e a completar',
+    slug: 'maos-incompletas',
+    title: 'Mãos incompletas',
     summary: 'Fechou no meio ou salvou com pressa? Nada se perde.',
     body: [
-      'Se você fechar a tela com o X depois de ter preenchido algo, a mão fica como rascunho. Na tela inicial aparece Mão pela metade: toque para continuar ou em Descartar.',
-      'As mãos salvas com Salvar já ou Voz ficam marcadas A completar. Há um filtro com esse nome na lista de mãos, e na página da mão o aviso Mão a completar leva direto para a edição.',
+      'Se você fechar a tela com o X depois de ter preenchido algo, a mão fica como rascunho. Na tela inicial aparece Mão incompleta: toque para continuar ou em Descartar.',
+      'As mãos salvas com Salvar agora ou Voz ficam marcadas Incompleta. Há um filtro com esse nome na lista de mãos, e na página da mão o aviso Mão incompleta leva direto para a edição.',
       { note: 'No plano grátis, a 4ª mão nova do dia fica salva como rascunho até você ter mãos livres ou o Pro.' },
     ],
   },
@@ -86,7 +86,7 @@ export const BR: Record<string, ArticleText> = {
         ],
       },
       'Compartilhar por link é ilimitado, também no plano grátis. Sem internet, o link fica pronto quando o sinal voltar.',
-      { note: 'Para desativar um link: na página da mão, em Comentários, toque em Apagar link. O link para de funcionar e os comentários são apagados; a mão continua no seu caderno.' },
+      { note: 'Para desativar um link: na página da mão, em Comentários, toque em Excluir compartilhamento. O link para de funcionar e os comentários são apagados; a mão continua no seu caderno.' },
     ],
   },
   'what-a-link-shows': {
@@ -127,7 +127,7 @@ export const BR: Record<string, ArticleText> = {
     body: [
       'Configurações → Ferramentas → Perfil público. Escolha o nome de usuário, o nome exibido e uma bio, e toque em Criar perfil público. A página fica em sweatbook.poker/u/nome.',
       'Só entram as mãos que você já compartilhou por link e as sessões encerradas que escolher (até 30). Esconder valores tira resultados e buy-ins.',
-      { note: 'Se você mudar o nome de usuário, o link antigo para de funcionar. Apagar perfil tira a página do ar.' },
+      { note: 'Se você mudar o nome de usuário, o link antigo para de funcionar. Excluir perfil tira a página do ar.' },
     ],
   },
   staking: {
@@ -156,12 +156,12 @@ export const BR: Record<string, ArticleText> = {
       {
         steps: [
           'Em Bankroll → Swaps, toque em Novo swap.',
-          'Escolha com quem, a porcentagem (desligue A mesma porcentagem para um swap desigual, por exemplo 3% por 2%) e se é para Um evento ou para a Série inteira.',
+          'Escolha com quem, a porcentagem (desligue A mesma percentagem para um swap desigual, por exemplo 3% por 2%) e se é para Um evento ou para a Série inteira.',
           'Toque em Criar e enviar link e mande só para o outro jogador.',
           'Ele toca em Confirmo o swap no navegador, com ou sem o app. A partir daí, os termos e o horário ficam fixados e os dois recebem o código do acordo.',
         ],
       },
-      'Quando alguém forra, toque em Forrei e registre o prêmio. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
+      'Quando alguém ganhar prêmio, toque em Ganhei prêmio e registre o valor. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
       'Criar swaps e fazer o acerto faz parte do Pro. Confirmar um swap pelo link é sempre grátis.',
       { note: 'Só registro e contas: nenhum dinheiro passa pelo Sweatbook, os pagamentos são feitos entre vocês. Só para maiores de 18 anos.' },
     ],
@@ -182,7 +182,7 @@ export const BR: Record<string, ArticleText> = {
     summary: 'Um código de recuperação e todas as suas mãos voltam.',
     body: [
       'Configurações → Backup → Ativar backup na nuvem. Você recebe um código de recuperação de 26 caracteres: guarde num lugar seguro. O backup é criptografado no celular com esse código antes de sair, e se atualiza sozinho.',
-      { steps: ['No celular novo, instale o Sweatbook.', 'Vá em Configurações → Backup → Recuperar com código.', 'Cole o código e toque em Recuperar.'] },
+      { steps: ['No celular novo, instale o Sweatbook.', 'Vá em Configurações → Backup → Restaurar com código.', 'Cole o código e toque em Restaurar.'] },
       'Você também pode salvar um arquivo: Exportar tudo cria um .json com tudo, sempre grátis. Importar arquivo junta esse arquivo ao que você já tem, sem apagar nada.',
       { note: 'Sem o código ninguém consegue ler o backup, nem nós. Se você perder o código, não há como recuperar.' },
     ],
@@ -208,10 +208,10 @@ export const BR: Record<string, ArticleText> = {
   },
   'erase-all': {
     slug: 'apagar-tudo',
-    title: 'Apagar todos os meus dados',
+    title: 'Excluir todos os meus dados',
     summary: 'Apaga tudo do celular e dos nossos servidores.',
     body: [
-      'Configurações → Seus dados → Apagar todos os meus dados → Apagar tudo.',
+      'Configurações → Seus dados → Excluir todos os meus dados → Excluir tudo.',
       {
         list: [
           'No celular: mãos, sessões, notas de jogadores, bankroll, staking, configurações, o bloqueio e as notificações.',
