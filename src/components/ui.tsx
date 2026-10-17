@@ -943,7 +943,8 @@ export function KeyboardDoneBar() {
 }
 
 /** Whole-number field: chips, money, places. */
-export function NumField({ label, value, onChange, suffix, autoFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean }) {
+/** `selectOnFocus`: the number is selected when the field opens, so typing replaces it (correcting a typo). */
+export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFocus }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; autoFocus?: boolean; selectOnFocus?: boolean }) {
   return (
     <Field
       label={label}
@@ -953,6 +954,7 @@ export function NumField({ label, value, onChange, suffix, autoFocus }: { label:
       keyboardType="number-pad"
       inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_DONE_ID : undefined}
       autoFocus={autoFocus}
+      selectTextOnFocus={selectOnFocus}
       placeholder={suffix ? `0 ${suffix}` : '0'}
       inputStyle={{ fontFamily: F.mono, fontVariant: ['tabular-nums'] }}
     />

@@ -1532,6 +1532,7 @@ const ptBR: Record<string, string> = {
   'República Dominicana': 'República Dominicana',
   'Criar e enviar por WhatsApp': 'Criar e enviar pelo WhatsApp',
   'Mais formas de partilhar': 'Mais formas de compartilhar',
+  'Sessão apagada': 'Sessão excluída',
 };
 
 export default ptBR;
