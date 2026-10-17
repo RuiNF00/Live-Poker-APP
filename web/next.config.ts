@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
     '/api/story-video': ['./node_modules/ffmpeg-static/ffmpeg'],
     // Brand font for the link preview images.
     '/h/[id]/og': ['./assets/fonts/*.ttf'],
+    '/live/[id]/og': ['./assets/fonts/*.ttf'],
+    '/og/invite': ['./assets/fonts/*.ttf'],
+    '/opengraph-image': ['./assets/fonts/*.ttf'],
   },
   // Store legal pages (generated from store/web by the store-release work) live in public/.
   async rewrites() {
