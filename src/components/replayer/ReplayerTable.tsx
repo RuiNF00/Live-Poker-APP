@@ -31,6 +31,8 @@ export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
 
 /** Same marks as the tags beside the two boards. */
 const RUN_MARK = { 1: '①', 2: '②' } as const;
+/** The table is a drawing scaled to the screen width: its labels grow a little with the system text size, never past their plates (the info bar and the screen reader carry the same facts at full size). */
+const TABLE_TEXT = 1.2;
 
 /** Run it twice: both boards stacked, smaller, each tagged with its number. */
 function RunBoards({ boards, k, top, reduce }: { boards: string[][]; k: number; top: number; reduce: boolean }) {
@@ -54,7 +56,7 @@ function RunBoards({ boards, k, top, reduce }: { boards: string[][]; k: number; 
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Text style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>{j + 1}</Text>
+            <Text maxFontSizeMultiplier={TABLE_TEXT} style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>{j + 1}</Text>
           </View>
           {b.map((c, i) => (
             <RiseIn key={`${i}-${c}`} reduce={reduce}>
@@ -169,11 +171,24 @@ export function ReplayerTable({
           }}
           accessibilityLabel={spokenTable(view)}
           accessibilityHint={onTapRight ? t('Toca duas vezes para avançar.') : undefined}
-          accessibilityActions={[{ name: 'activate' }]}
-          onAccessibilityAction={() => onTapRight?.()}>
+          // The swipe has a screen-reader twin: VoiceOver's actions rotor (swipe up or down) changes street.
+          accessibilityActions={[
+            { name: 'activate' },
+            ...(onSwipe
+              ? [
+                  { name: 'nextStreet', label: t('Próxima street') },
+                  { name: 'prevStreet', label: t('Street anterior') },
+                ]
+              : []),
+          ]}
+          onAccessibilityAction={(e) => {
+            if (e.nativeEvent.actionName === 'nextStreet') onSwipe?.(1);
+            else if (e.nativeEvent.actionName === 'prevStreet') onSwipe?.(-1);
+            else onTapRight?.();
+          }}>
           <Felt w={w} h={h} />
 
-          <Text
+          <Text maxFontSizeMultiplier={TABLE_TEXT}
             style={{
               position: 'absolute',
               top: (BRAND_Y / 100) * h - 8,
@@ -257,7 +272,7 @@ export function ReplayerTable({
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                <Text style={{ color: '#3B3424', fontSize: 10 * k, fontFamily: ff(800) }}>D</Text>
+                <Text maxFontSizeMultiplier={TABLE_TEXT} style={{ color: '#3B3424', fontSize: 10 * k, fontFamily: ff(800) }}>D</Text>
               </View>
             );
           })()}
@@ -309,7 +324,7 @@ function Pill({ text, k, strong }: { text: string; k: number; strong?: boolean }
         paddingHorizontal: 6 * k,
         paddingVertical: 1.5 * k,
       }}>
-      <Text allowFontScaling={false} style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: (strong ? 12 : 10.5) * k, fontVariant: ['tabular-nums'] }}>
+      <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} style={{ color: '#F5EDD8', fontFamily: F.mono, fontSize: (strong ? 12 : 10.5) * k, fontVariant: ['tabular-nums'] }}>
         {text}
       </Text>
     </View>
@@ -333,7 +348,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
       {/* cards, or the red FOLD of a player out of the hand */}
       <View style={{ height: ch * cardShow(s.hero), width: pw, alignItems: 'center', justifyContent: 'flex-end', zIndex: 0 }}>
         {s.folded ? (
-          <Text allowFontScaling={false} style={{ color: C.muted, fontFamily: ff(800), fontSize: 11 * k, letterSpacing: 1, marginBottom: 2 }}>
+          <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} style={{ color: C.muted, fontFamily: ff(800), fontSize: 11 * k, letterSpacing: 1, marginBottom: 2 }}>
             FOLD
           </Text>
         ) : s.cards !== undefined ? (
@@ -370,18 +385,18 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
           shadowRadius: s.acting ? 8 : 4,
         }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-          <Text allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, color: C.text, fontFamily: ff(600), fontSize: 10.5 * k, letterSpacing: -0.1 }}>
+          <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, color: C.text, fontFamily: ff(600), fontSize: 10.5 * k, letterSpacing: -0.1 }}>
             {s.name}
           </Text>
           {s.pos && s.pos !== s.name ? (
             <View style={{ backgroundColor: pos.bg, borderRadius: 3, paddingHorizontal: 2.5 * k, flexShrink: 0 }}>
-              <Text allowFontScaling={false} style={{ color: pos.fg, fontFamily: ff(800), fontSize: 8 * k }}>
+              <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} style={{ color: pos.fg, fontFamily: ff(800), fontSize: 8 * k }}>
                 {s.pos}
               </Text>
             </View>
           ) : null}
         </View>
-        <Text allowFontScaling={false} numberOfLines={1} style={{ color: s.stack === 'ALL-IN' ? C.allin : C.text, fontFamily: F.mono, fontSize: 11.5 * k, fontVariant: ['tabular-nums'] }}>
+        <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} numberOfLines={1} style={{ color: s.stack === 'ALL-IN' ? C.allin : C.text, fontFamily: F.mono, fontSize: 11.5 * k, fontVariant: ['tabular-nums'] }}>
           {s.stack}
         </Text>
       </View>
@@ -398,7 +413,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
               : { top: ch * cardShow(s.hero) - 8 * k, left: -spare, right: -spare, alignItems: 'center' }),
           }}>
           <View style={{ backgroundColor: badge.bg, borderRadius: 4, paddingHorizontal: 4 * k, paddingVertical: 1, maxWidth: '100%' }}>
-            <Text allowFontScaling={false} numberOfLines={1} style={{ color: badge.fg, fontFamily: F.mono, fontSize: 8.5 * k }}>
+            <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} numberOfLines={1} style={{ color: badge.fg, fontFamily: F.mono, fontSize: 8.5 * k }}>
               {badge.label}
             </Text>
           </View>
@@ -418,7 +433,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
             paddingHorizontal: 4 * k,
             zIndex: 3,
           }}>
-          <Text allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
+          <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} style={{ color: s.equity >= bestEquity ? '#06200F' : '#F5EDD8', fontFamily: F.mono, fontSize: 9 * k }}>
             {s.equity >= bestEquity ? '★ ' : ''}
             {pct(s.equity)}
           </Text>

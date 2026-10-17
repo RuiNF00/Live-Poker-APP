@@ -1,5 +1,6 @@
 'use client';
 
+import { scrollMode } from '@/lib/motion';
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
 import { stakesText, straddleOf, type ActionType, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
 import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
@@ -11,6 +12,7 @@ import { Comments } from './Comments';
 import { Quiz } from './Quiz';
 import { AppCta } from './AppCta';
 import { readLocal, voterId, writeLocal } from '@/lib/local';
+import { spokenStep } from '@/lib/spoken';
 import { track } from '@/lib/track';
 
 interface Props {
@@ -80,7 +82,7 @@ export function ShareView(props: Props) {
   const commentNow = () => {
     setPlaying(false);
     const box = document.getElementById('comment-text');
-    box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    box?.scrollIntoView({ behavior: scrollMode(), block: 'center' });
     box?.focus({ preventScroll: true });
   };
 
@@ -215,7 +217,7 @@ export function ShareView(props: Props) {
   const replayer = useRef<HTMLElement>(null);
   const finishQuiz = () => {
     // The vote panel goes away: put the table back on screen for the reveal.
-    replayer.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    replayer.current?.scrollIntoView({ behavior: scrollMode(), block: 'start' });
     setQuizState('done');
     setIndex(quizStep);
     setTimeout(() => setPlaying(true), 900);
@@ -231,9 +233,11 @@ export function ShareView(props: Props) {
           <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
         </div>
 
-        <div className="step-line" aria-live="polite">
-          <span className={`street-pill street-${step.street}`}>{streetLabel(step.street, locale)}</span>
-          <span className="step-text">{describeStep(step, bb, mode, locale)}</span>
+        <div className="step-line">
+          <span className={`street-pill street-${step.street}`} aria-hidden>{streetLabel(step.street, locale)}</span>
+          <span className="step-text" aria-hidden>{describeStep(step, bb, mode, locale)}</span>
+          {/* Read out as a sentence on every step: "Vilão no BTN faz raise para 2,5 BB". */}
+          <span className="sr-only" aria-live="polite">{spokenStep(step, bb, mode, locale)}</span>
           {canComment && (
             <button className="comment-here" onClick={commentNow} aria-label={`${d.send} · ${streetLabel(step.street, locale)}`}>
               {d.send}
@@ -300,10 +304,10 @@ export function ShareView(props: Props) {
           <button className="ctl" onClick={() => { setPlaying(false); goTo(steps.length - 1); }} aria-label={d.end}>
             <Icon name="last" />
           </button>
-          <button className="ctl ctl-text" onClick={nextSpeed} aria-label={d.speed}>
+          <button className="ctl ctl-text" onClick={nextSpeed} aria-label={`${d.speed} ${SPEEDS[speed]}×`}>
             {SPEEDS[speed]}×
           </button>
-          <button className="ctl ctl-text" onClick={toggleMode}>
+          <button className="ctl ctl-text" onClick={toggleMode} aria-label={mode === 'chips' ? d.showBB : d.showChips}>
             {mode === 'chips' ? 'BB' : '#'}
           </button>
         </div>
@@ -362,7 +366,7 @@ export function ShareView(props: Props) {
           onJump={(i) => {
             setPlaying(false);
             goTo(i);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: scrollMode() });
           }}
         />
       )}
@@ -377,7 +381,7 @@ export function ShareView(props: Props) {
 /** The hand just ended: the friend's attention peaks here, so ask for a reply and show the app. */
 function EndCard({ locale, allowComments, onComment }: { locale: Locale; allowComments: boolean; onComment: () => void }) {
   const d = t(locale);
-  const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: scrollMode(), block: 'start' });
   return (
     <div className="end-card">
       <div className="end-title">{d.endTitle}</div>

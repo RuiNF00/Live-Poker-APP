@@ -1469,6 +1469,8 @@ const ptBR: Record<string, string> = {
   'Partilhar stack': 'Compartilhar stack',
   'No saco': 'Fichas guardadas',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Fim do Dia {n}: {chips}',
+  // Replayer read aloud (VoiceOver/TalkBack).
+  '{name} no {pos}': '{name} no {pos}',
   'Enviar a {name} ({n}%)': 'Enviar para {name} ({n}%)',
   'Já jogaste? Junta uma sessão passada': 'Já jogou? Adicione uma sessão passada',
   'Começa uma sessão quando te sentares. O lucro, o €/hora e o ROI aparecem aqui.': 'Comece uma sessão quando se sentar. O lucro, o €/hora e o ROI aparecem aqui.',
