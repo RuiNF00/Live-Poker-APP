@@ -16,8 +16,6 @@ export interface CreateShareInput {
   revealAll?: boolean;
   quiz?: QuizSpot | null;
   allowComments?: boolean;
-  /** Hash of the sharer's app id (same as their comment author key); never returned, only as `from`. */
-  senderKey?: string | null;
 }
 
 export interface NewComment {
@@ -102,7 +100,6 @@ interface ShareRow {
   allow_comments: boolean;
   view_count: number;
   created_at: string;
-  sender_key?: string | null;
 }
 
 interface CommentRow {
@@ -123,8 +120,6 @@ const toComment = (r: CommentRow, handId: string): HandComment => ({
   ...(r.author_key ? { by: opaqueId(`comment:${handId}`, r.author_key) } : {}),
 });
 
-const fromOf = (senderKey: string | null | undefined) => (senderKey ? { from: opaqueId('sender', senderKey) } : {});
-
 class SupabaseStore implements ShareStore {
   constructor(private db: SupabaseClient) {}
 
@@ -135,7 +130,6 @@ class SupabaseStore implements ShareStore {
       p_reveal_all: input.revealAll ?? false,
       p_quiz: input.quiz ?? null,
       p_allow_comments: input.allowComments ?? true,
-      p_sender_key: input.senderKey ?? null,
     });
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
@@ -157,7 +151,6 @@ class SupabaseStore implements ShareStore {
       allowComments: data.allow_comments,
       viewCount: data.view_count,
       createdAt: data.created_at,
-      ...fromOf(data.sender_key),
     };
   }
 
@@ -254,7 +247,7 @@ class SupabaseStore implements ShareStore {
 // ---------- Local JSON file (development and demos without Supabase) ----------
 
 interface LocalData {
-  shares: Record<string, SharedHand & { editTokenHash: string; senderKey?: string | null }>;
+  shares: Record<string, SharedHand & { editTokenHash: string }>;
   comments: Record<string, HandComment[]>;
   votes: Record<string, Record<string, VoteChoice>>;
   reports?: Record<string, string[]>;
@@ -322,7 +315,6 @@ class LocalStore implements ShareStore {
         viewCount: 0,
         createdAt: new Date().toISOString(),
         editTokenHash: sha256(editToken),
-        senderKey: input.senderKey ?? null,
       };
     });
     return { id, editToken };
@@ -331,8 +323,8 @@ class LocalStore implements ShareStore {
   async getShare(id: string) {
     const s = (await this.read()).shares[id];
     if (!s) return null;
-    const { editTokenHash: _, senderKey, ...share } = s;
-    return { ...share, ...fromOf(senderKey) };
+    const { editTokenHash: _, ...share } = s;
+    return share;
   }
 
   async deleteShare(id: string, editToken: string) {

@@ -53,19 +53,17 @@ export async function uploadHand(hand: Hand, opts?: ShareOptions): Promise<{ id:
   const res = await fetch(`${API}/api/hands`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    // The install's random id, so a friend can block every hand from this phone (the server keeps only a hash).
-    body: JSON.stringify({ hand: publicHand(hand, opts), authorId: await authorId() }),
+    body: JSON.stringify({ hand: publicHand(hand, opts) }),
   });
   if (!res.ok) throw new Error('upload ' + res.status);
   return res.json();
 }
 
-/** A shared hand and `from`, the opaque id of the phone that shared it (for "Bloquear quem enviou"). */
-export async function fetchHand(id: string): Promise<{ hand: Hand; from?: string }> {
+export async function fetchHand(id: string): Promise<Hand> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error('fetch ' + res.status);
   const j = await res.json();
-  return { hand: (j.hand ?? j) as Hand, from: typeof j.from === 'string' ? j.from : undefined };
+  return (j.hand ?? j) as Hand;
 }
 
 /** How many times the shared page was opened. */

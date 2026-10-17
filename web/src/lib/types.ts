@@ -16,8 +16,6 @@ export interface SharedHand {
   allowComments: boolean;
   viewCount: number;
   createdAt: string;
-  /** Opaque id of the app install that shared it (the same for all its hands), for "block who sent this". */
-  from?: string;
 }
 
 /** Same shape the app's share-api expects (name, text, createdAt in ms). */

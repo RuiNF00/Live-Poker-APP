@@ -39,23 +39,17 @@ describe('owner removes and blocks', () => {
 });
 
 describe('reader blocks', () => {
-  it('gives opaque ids: per hand for commenters, one per sender, never the keys', async () => {
+  it('gives commenters an opaque id per hand, never the key', async () => {
     const { getStore } = await import('../src/lib/store');
     const store = getStore();
-    const a = await store.createShare({ payload: { version: 1 }, senderKey: 'sK' });
-    const b = await store.createShare({ payload: { version: 1 }, senderKey: 'sK' });
-    const c = await store.createShare({ payload: { version: 1 } });
-    const [sa, sb, sc] = await Promise.all([store.getShare(a.id), store.getShare(b.id), store.getShare(c.id)]);
-    expect(sa!.from).toMatch(/^[a-f0-9]{20}$/);
-    expect(sb!.from).toBe(sa!.from);
-    expect(sc!.from).toBeUndefined();
-    expect(JSON.stringify(sa)).not.toContain('sK');
+    const a = await store.createShare({ payload: { version: 1 } });
+    const b = await store.createShare({ payload: { version: 1 } });
     const posted = await store.addComment(a.id, { name: 'Zé', text: 'Call', stepIndex: null, authorKey: 'kZ' });
     await store.addComment(b.id, { name: 'Zé', text: 'Fold', stepIndex: null, authorKey: 'kZ' });
     const [la, lb] = [await store.listComments(a.id), await store.listComments(b.id)];
+    expect(la[0].by).toMatch(/^[a-f0-9]{20}$/);
     expect(posted!.by).toBe(la[0].by);
     expect(la[0].by).not.toBe(lb[0].by);
-    expect(la[0].by).not.toBe(sa!.from);
     expect(JSON.stringify([posted, la, lb])).not.toContain('kZ');
   });
 });

@@ -1358,7 +1358,6 @@ const ptBR: Record<string, string> = {
   'O que queres saber? (opcional)': 'O que você quer saber? (opcional)',
   'Ex.: call ou fold no river?': 'Ex.: call ou fold no river?',
   'Deixas de ver os comentários desta pessoa nesta mão. Ela não é avisada.': 'Você deixa de ver os comentários dessa pessoa nesta mão. Ela não é avisada.',
-  'As mãos desta pessoa saem da tua lista e não voltam a entrar. Ela não é avisada.': 'As mãos dessa pessoa saem da sua lista e não voltam a entrar. Ela não é avisada.',
   '1 comentário novo': '1 comentário novo',
   '{n} comentários novos': '{n} comentários novos',
   'Nas mãos partilhadas': 'Nas mãos compartilhadas',

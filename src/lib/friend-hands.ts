@@ -17,7 +17,7 @@ const SEEN_KEY = 'rl.commentsSeen.v1';
 // Hands you reported: they leave the list and don't come back if the link is opened again.
 const HIDDEN_KEY = 'rl.friendHandsHidden.v1';
 const MAX_HIDDEN = 200;
-// Blocked on this phone: "c:<id>" a commenter on one hand, "s:<id>" every hand from one sender.
+// Commenters blocked on this phone ("c:<id>", the id is per hand).
 const BLOCKED_KEY = 'rl.blocked.v1';
 const REFRESH_MS = 60_000;
 
@@ -72,10 +72,10 @@ async function set(next: Partial<State>) {
 }
 
 /** A friend's hand opened in the app: it goes on the list (your own links never do). */
-export async function rememberFriendHand(id: string, title: string, cards?: string[], from?: string) {
+export async function rememberFriendHand(id: string, title: string, cards?: string[]) {
   await load();
-  if (state.hidden.includes(id) || (from && state.blocked.includes(`s:${from}`))) return;
-  await set({ hands: remember(state.hands, { id, title, cards, from }, Date.now()) });
+  if (state.hidden.includes(id)) return;
+  await set({ hands: remember(state.hands, { id, title, cards }, Date.now()) });
 }
 
 /** Reported: off the list for good on this phone. */
@@ -96,13 +96,6 @@ export async function blockCommenter(by: string) {
   if (!state.blocked.includes(`c:${by}`)) await set({ blocked: [`c:${by}`, ...state.blocked].slice(0, MAX_HIDDEN) });
 }
 
-/** Every hand from this sender leaves the list and won't come back on this phone. */
-export async function blockSender(from: string, handId: string) {
-  await load();
-  const hands = state.hands.filter((h) => h.id !== handId && h.from !== from);
-  await set({ hands, blocked: state.blocked.includes(`s:${from}`) ? state.blocked : [`s:${from}`, ...state.blocked].slice(0, MAX_HIDDEN) });
-}
-
 /** What this phone blocked, for screens that show other people's comments. */
 export function useBlocked() {
   const [b, setB] = useState(state.blocked);
@@ -114,7 +107,7 @@ export function useBlocked() {
       listeners.delete(l);
     };
   }, []);
-  return useMemo(() => ({ commenter: (by?: string) => !!by && b.includes(`c:${by}`), sender: (from?: string) => !!from && b.includes(`s:${from}`) }), [b]);
+  return useMemo(() => ({ commenter: (by?: string) => !!by && b.includes(`c:${by}`) }), [b]);
 }
 
 /** The comments of this hand were on screen: none of them is new any more. */

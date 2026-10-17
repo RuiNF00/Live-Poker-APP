@@ -14,7 +14,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const share = await loadShare(id);
   if (!share) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: cors });
   return NextResponse.json(
-    { id: share.id, hand: share.payload, title: share.title, quiz: share.quiz, createdAt: share.createdAt, views: share.viewCount, from: share.from },
+    { id: share.id, hand: share.payload, title: share.title, quiz: share.quiz, createdAt: share.createdAt, views: share.viewCount },
     { headers: cors },
   );
 }

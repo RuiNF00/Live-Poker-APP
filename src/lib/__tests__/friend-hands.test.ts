@@ -37,7 +37,3 @@ test('keeps the hole cards only when they are two real cards', () => {
   assert.equal(parseFriendHands([{ id: 'abcd1', title: '', openedAt: 1, cards: ['As'] }])[0].cards, undefined);
 });
 
-test('keeps the sender id only when it looks like one', () => {
-  assert.equal(remember([], { id: 'abcd1', title: '', from: '0123456789abcdef0123' }, 1)[0].from, '0123456789abcdef0123');
-  assert.equal(remember([], { id: 'abcd1', title: '', from: 'not an id!' }, 1)[0].from, undefined);
-});
