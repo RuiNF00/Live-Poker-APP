@@ -17,6 +17,7 @@ delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 const hands = await import('../src/app/api/hands/route');
 const comments = await import('../src/app/api/hands/[id]/comments/route');
 const mine = await import('../src/app/api/hands/my-comments/route');
+const one = await import('../src/app/api/hands/[id]/comments/[commentId]/route');
 
 const req = (method: string, body: object) => new Request('http://x/api', { method, body: JSON.stringify(body) });
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -39,6 +40,16 @@ describe('erasing my comments', () => {
     expect(await list(b.id)).toEqual([]);
     // Sent again from the outbox: nothing left, still fine.
     expect((await (await mine.DELETE(req('DELETE', { authorId: me }))).json()).deleted).toBe(0);
+  });
+
+  it('keeps a block: a blocked author who erases still can’t comment there with the same id', async () => {
+    const h = await (await hands.POST(req('POST', { hand: SAMPLE_TOURNAMENT_HAND }))).json();
+    const troll = 'troll-author-5678';
+    const c = await (await comments.POST(req('POST', { name: 'X', text: 'Mau.', authorId: troll }), ctx(h.id))).json();
+    const block = new Request('http://x/api?block=1', { method: 'DELETE', headers: { 'x-edit-token': h.token } });
+    expect((await one.DELETE(block, { params: Promise.resolve({ id: h.id, commentId: c.comment.id }) })).ok).toBe(true);
+    await mine.DELETE(req('DELETE', { authorId: troll }));
+    expect((await comments.POST(req('POST', { name: 'X', text: 'Outra vez.', authorId: troll }), ctx(h.id))).status).toBe(403);
   });
 
   it('refuses a missing or malformed id', async () => {

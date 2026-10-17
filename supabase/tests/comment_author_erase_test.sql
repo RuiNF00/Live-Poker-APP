@@ -18,7 +18,7 @@ select count(*) = 0 as author_comments_gone from hand_comments where author_key 
 select count(*) = 1 as other_author_stays from hand_comments where id = :'cb1';
 select count(*) = 1 as keyless_stays from hand_comments where hand_id = :'e1' and author_key is null;
 reset role;
-select count(*) = 0 as blocks_gone from hand_comment_blocks where author_key = :'ka';
+select count(*) = 1 as blocks_stay from hand_comment_blocks where author_key = :'ka';
 set role service_role;
 select delete_comments_by_author(:'ka') = 0 as erase_again_is_zero;
 select delete_comments_by_author('nope') = 0 as bad_key_is_zero;
