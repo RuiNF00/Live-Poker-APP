@@ -30,9 +30,22 @@ function note(title: string, body?: string) {
 }
 
 /** What support needs to reproduce a bug, and nothing about the player. */
-function supportParams(topic?: 'bug' | 'suggestion') {
-  const p: Record<string, string> = { app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang };
-  return new URLSearchParams(topic ? { topic, ...p } : p).toString();
+function deviceLine() {
+  return `Sweatbook ${Constants.expoConfig?.version ?? ''} · ${Platform.OS} ${Platform.Version} · ${lang}`;
+}
+
+const MAIL_SUBJECT = { bug: 'Problema na Sweatbook', suggestion: 'Sugestão para a Sweatbook', support: 'Pedido de suporte' } as const;
+
+/**
+ * Opens an email to support with the app version, system and language
+ * already filled in. No mail app (or the web): the support page instead.
+ */
+function mailSupport(topic: keyof typeof MAIL_SUBJECT) {
+  const subject = encodeURIComponent(t(MAIL_SUBJECT[topic]));
+  const body = encodeURIComponent(`\n\n\n— ${deviceLine()}`);
+  const page = () => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`).catch(() => {});
+  if (Platform.OS === 'web') return void page();
+  Linking.openURL(`mailto:${BRAND.supportEmail}?subject=${subject}&body=${body}`).catch(page);
 }
 
 /**
@@ -202,10 +215,10 @@ export default function SettingsScreen() {
 
         <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
           <ListGroup>
-            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams('suggestion')}`)} />
-            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams('bug')}`)} />
+            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => mailSupport('suggestion')} />
+            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => mailSupport('bug')} />
             <ListItem icon="book-outline" title={t('Ajuda')} subtitle={t('Respostas às dúvidas mais comuns')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/${lang === 'pt' ? 'ajuda' : 'help'}`)} />
-            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams()}`)} />
+            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => mailSupport('support')} />
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />

@@ -677,6 +677,9 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Problema na Sweatbook': 'Problem in Sweatbook',
+  'Sugestão para a Sweatbook': 'Suggestion for Sweatbook',
+  'Pedido de suporte': 'Support request',
   'Ajuda': 'Help',
   'Respostas às dúvidas mais comuns': 'Answers to the most common questions',
   'Vibração': 'Haptics',
