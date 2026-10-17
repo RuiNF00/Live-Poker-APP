@@ -3052,6 +3052,11 @@ const es: Record<string, string> = {
   'Par, {rank}': 'Pareja, {rank}',
   '{a} e {b}, mesmo naipe': '{a} y {b}, del mismo palo',
   '{a} e {b}, naipes diferentes': '{a} y {b}, de palos distintos',
+  'Sticker Sondagem aqui': 'Sticker Encuesta aquí',
+  'O que aconteceu': 'Qué pasó',
+  'Junta a sondagem': 'Añade la encuesta',
+  'No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.': 'En Instagram, pon el sticker Encuesta en el espacio vacío con {options}. Luego publica la story Resultado o deja el enlace para que vean qué hiciste.',
+  'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Se detiene antes de tu decisión y deja espacio para la encuesta de Instagram.',
 };
 
 export default es;

@@ -1407,6 +1407,10 @@ const ptBR: Record<string, string> = {
   "buy-ins {cost} · recebeste {back}": "buy-ins {cost} · você recebeu {back}",
   'Toca duas vezes para avançar.': 'Toque duas vezes para avançar.',
   'tu': 'você',
+  'Sticker Sondagem aqui': 'Figurinha Enquete aqui',
+  'Junta a sondagem': 'Adicione a enquete',
+  'No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.': 'No Instagram, coloque a figurinha Enquete no espaço vazio com {options}. Depois publique o story Resultado ou deixe o link para verem o que você fez.',
+  'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
 };
 
 export default ptBR;

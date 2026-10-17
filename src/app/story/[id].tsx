@@ -47,6 +47,8 @@ export default function StoryScreen() {
   const [progress, setProgress] = useState<string | null>(null);
   // What the voice chip shows: sample bars on screen, an empty slot while capturing for the video.
   const [chip, setChip] = useState<'preview' | 'slot' | null>('preview');
+  // Question stories: Instagram gets an empty space for its Poll sticker, other apps get the options drawn.
+  const [capture, setCapture] = useState<'preview' | 'instagram' | 'post'>('preview');
   const onVoice = useCallback((uri: string | null, ms?: number) => {
     setVoice(uri);
     setVoiceMs(ms ?? 0);
@@ -77,13 +79,15 @@ export default function StoryScreen() {
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
   const noteHint = hand.notes.trim().split(/(?<=[.?!])\s/)[0]?.slice(0, MAX_COMMENT);
 
-  const captureAs = async (c: 'slot' | null) => {
+  const captureAs = async (c: 'slot' | 'preview' | null, to: 'instagram' | 'post' = 'instagram') => {
     setChip(c);
+    setCapture(to);
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
       return await captureStory(card);
     } finally {
       setChip('preview');
+      setCapture('preview');
     }
   };
 
@@ -177,10 +181,17 @@ export default function StoryScreen() {
         }
         target = video ? await shareStory(video, link, 'video') : await shareStory(await captureAs(null), link);
       } else {
-        target = await shareStory(await captureStory(card), link);
+        target = await shareStory(await captureAs('preview'), link);
       }
       track('story_shared', { target: String(target), voice: !!voice, share_id: shareId, ref, question: mode === 'question' });
-      if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
+      if (mode === 'question')
+        Alert.alert(
+          t('Junta a sondagem'),
+          t('No Instagram, põe o sticker Sondagem no espaço vazio com {options}. Depois publica a story Resultado ou deixa o link para verem o que fizeste.', {
+            options: moment.options.map((o) => o.label).join(' / '),
+          }),
+        );
+      else if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
@@ -216,7 +227,7 @@ export default function StoryScreen() {
     try {
       const l = await linkFor(to === 'x' ? 'x' : 'link');
       if (!l) return;
-      await sharePost([await captureStory(card)], postText(l.link), to);
+      await sharePost([await captureAs('preview', 'post')], postText(l.link), to);
       track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -255,7 +266,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} />
+                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : 'hint'} />
               </View>
             </View>
           </View>
@@ -277,7 +288,7 @@ export default function StoryScreen() {
             {video
               ? t('A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.')
               : mode === 'question'
-                ? t('Pára antes da tua decisão e esconde o resultado.')
+                ? t('Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.')
                 : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 
