@@ -3191,6 +3191,7 @@ const es: Record<string, string> = {
   'República Dominicana': 'República Dominicana',
   'Criar e enviar por WhatsApp': 'Crear y enviar por WhatsApp',
   'Enviar o link': 'Enviar el enlace',
+  'Mais formas de partilhar': 'Más formas de compartir',
 };
 
 export default es;

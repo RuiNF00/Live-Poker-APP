@@ -3197,6 +3197,7 @@ const en: Record<string, string> = {
   'República Dominicana': 'Dominican Republic',
   'Criar e enviar por WhatsApp': 'Create and send on WhatsApp',
   'Enviar o link': 'Send the link',
+  'Mais formas de partilhar': 'More ways to share',
 };
 
 export default en;

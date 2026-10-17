@@ -15,13 +15,14 @@ import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
-import { ShareSheet } from '@/components/ShareSheet';
+import { ShareSheet, type ShareOption } from '@/components/ShareSheet';
 import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
+import { lastShare, rememberShare } from '@/lib/share-last';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
 import { markCommentsSeen } from '@/lib/friend-hands';
@@ -354,6 +355,25 @@ ${link}`;
       ]);
   };
 
+  // The destinations the sheet lists first; the one used last is also the button on the screen.
+  const destinations: ShareOption[] = [
+    { key: 'whatsapp', icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
+    { key: 'instagram', icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
+    { key: 'x', icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
+    { key: 'other', icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
+    { key: 'copy', icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
+  ];
+  // Sent to WhatsApp last time: the button goes straight there (one tap less); the sheet stays one tap away.
+  // "Outras apps" keeps the sheet, so the system one never opens unasked.
+  const last = lastShare();
+  const quick = last === 'whatsapp' ? { icon: 'logo-whatsapp' as const, label: 'WhatsApp' } : last === 'instagram' ? { icon: 'logo-instagram' as const, label: t('Story no Instagram') } : last === 'x' ? { icon: 'logo-x' as const, label: t('Publicar no X') } : last === 'copy' ? { icon: 'link-outline' as const, label: t('Copiar link') } : null;
+  const sendLast = () => {
+    const o = destinations.find((d) => d.key === last);
+    if (!o?.key) return;
+    rememberShare(o.key);
+    o.onPress();
+  };
+
   const edit = () => router.push({ pathname: '/hand/new', params: { edit: hand.id } });
   // Live, or the latest hand of a table still going: the next hand is one tap away.
   // Only once the hand is finished: an unfinished pot would carry the wrong stacks over.
@@ -384,7 +404,20 @@ ${link}`;
         </View>
         {/* The next hand from the one just saved: one tap, not back and then "Nova mão". */}
         <Row gap={S.sm}>
-          <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} style={{ flex: 1 }} lines={2} />
+          {quick && !busy && !shareWaiting ? (
+            <>
+              <Button
+                title={quick.label}
+                icon={quick.icon}
+                onPress={sendLast}
+                style={{ flex: 1 }}
+                lines={2}
+              />
+              <IconButton name="ellipsis-horizontal" size={46} label={t('Mais formas de partilhar')} onPress={() => setShareOpen(true)} />
+            </>
+          ) : (
+            <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} style={{ flex: 1 }} lines={2} />
+          )}
           {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
         </Row>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
@@ -446,13 +479,7 @@ ${link}`;
         onClose={() => setShareOpen(false)}
         groups={[
           {
-            options: [
-              { key: 'whatsapp', icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
-              { key: 'instagram', icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
-              { key: 'x', icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
-              { key: 'other', icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
-              { key: 'copy', icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
-            ],
+            options: destinations,
           },
           {
             title: t('Mais'),

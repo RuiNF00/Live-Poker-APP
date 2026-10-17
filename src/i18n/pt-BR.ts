@@ -1531,6 +1531,7 @@ const ptBR: Record<string, string> = {
   'Punta Cana, janeiro 2027': 'Punta Cana, janeiro de 2027',
   'República Dominicana': 'República Dominicana',
   'Criar e enviar por WhatsApp': 'Criar e enviar pelo WhatsApp',
+  'Mais formas de partilhar': 'Mais formas de compartilhar',
 };
 
 export default ptBR;
