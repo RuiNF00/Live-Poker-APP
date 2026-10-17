@@ -28,7 +28,8 @@ const total = (c: Counts) => KINDS.reduce((n, k) => n + (c[k] ?? 0), 0);
 export function uploadBlock(data: Counts, c: CloudState, force = false): 'would_shrink' | null {
   if (force) return null;
   const n = total(data);
-  if (!n) return 'would_shrink';
+  // An empty phone may be a restore not loaded yet, unless the cloud copy is empty too (just turned on).
+  if (!n) return c.counts && !total(c.counts) ? null : 'would_shrink';
   if (c.counts && n * 2 < total(c.counts)) return 'would_shrink';
   return null;
 }
