@@ -58,7 +58,7 @@ export const FREE = {
   bankrolls: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'generic';
+export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -85,6 +85,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   welcome: {
     title: t('Primeira mão feita'),
     body: t('Com Pro, guardas todas as mãos da sessão.'),
+  },
+  plan: {
+    title: t('Começa o teu plano'),
+    body: t('Tudo o que escolheste. Sem limites.'),
   },
   generic: {
     title: 'Sweatbook Pro',

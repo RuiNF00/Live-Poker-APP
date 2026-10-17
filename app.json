@@ -201,7 +201,26 @@
         "expo-widgets",
         {
           "enableAndroid": true,
-          "widgets": []
+          "widgets": [
+            {
+              "name": "SweatbookHome",
+              "displayName": "Sweatbook",
+              "description": "Sessão a decorrer ou o resultado da semana.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ]
+              },
+              "android": {
+                "minWidth": 110,
+                "minHeight": 110,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
+            }
+          ]
         }
       ]
     ],
