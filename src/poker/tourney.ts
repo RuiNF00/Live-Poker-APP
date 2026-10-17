@@ -24,6 +24,8 @@ export interface Tourney {
   startStack?: number;
   /** Prize for each place, 1st first. */
   payouts?: number[];
+  /** Bounties won so far, in the session's currency. Part of the prize (cashOut), not on top of it. */
+  bounties?: number;
 }
 
 /** Generic structures to start from: the app's blind ladder with a big-blind ante, at common level lengths. */
