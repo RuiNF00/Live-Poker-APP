@@ -14,7 +14,7 @@ test('cached formatters print exactly what toLocaleString printed', () => {
     if (a < 10000)
       assert.equal(chips(n), (n < 0 ? '-' : '') + (whole ? Math.round(a).toLocaleString(locale) : a.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })).replace(/\s/g, ' '));
     const cents = Math.round(a * 100);
-    const s = a >= 1000 ? Math.round(a).toLocaleString(locale) : cents % 100 === 0 ? String(cents / 100) : (cents / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const s = cents % 100 === 0 ? (cents / 100).toLocaleString(locale) : (cents / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     assert.ok(rawMoney(n, '€').includes(s), `${n}: ${rawMoney(n, '€')} vs ${s}`);
   }
   for (const [x, d] of [[0.847, 1], [0.5, 0], [0.12345, 2], [1, 0]] as const)
