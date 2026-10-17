@@ -1426,6 +1426,8 @@ const ptBR: Record<string, string> = {
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
   'Partilhar stack': 'Compartilhar stack',
+  'No saco': 'Fichas guardadas',
+  '{name} · Dia {n} ensacado: {chips}': '{name} · Fim do Dia {n}: {chips}',
 };
 
 export default ptBR;
