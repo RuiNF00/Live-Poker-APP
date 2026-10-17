@@ -36,11 +36,12 @@ const PREVIEW = 0.62;
 export default function MonthScreen() {
   const { sessions, hands, settings, setSettings } = useStore();
   const locked = useLocked('monthCompare');
-  const params = useLocalSearchParams<{ m?: string }>();
+  const params = useLocalSearchParams<{ m?: string; c?: string }>();
   const months = useMemo(() => recapMonths(sessions).slice(0, 12), [sessions]);
   const [key, setKey] = useState(() => (params.m && /^\d{4}-\d{2}$/.test(params.m) ? params.m : defaultMonth(sessions)));
   const hidden = !!settings.hideAmounts;
-  const r = useMemo(() => (key ? monthRecap(sessions, key) : null), [sessions, key]);
+  // Opened from the Bankroll tab: that bankroll's currency, while the month has sessions in it.
+  const r = useMemo(() => (key ? monthRecap(sessions, key, params.c && inMonth(sessions, key).some((s) => s.currency === params.c) ? params.c : undefined) : null), [sessions, key, params.c]);
   const cmp = useMemo(() => (key && r ? compareMonths(sessions, key, r.currency) : null), [sessions, key, r]);
   const [hideMoney, setHideMoney] = useState(true);
   const [busy, setBusy] = useState(false);

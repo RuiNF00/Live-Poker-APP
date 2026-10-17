@@ -99,13 +99,16 @@ function BankrollTab() {
   const bal = useMemo(() => balanceOf(scope, sessions, transfers, bankrolls), [scope, sessions, transfers, bankrolls]);
   const tot = useMemo(() => totals(list, cur), [list, cur]);
   const wr = useMemo(() => winRate(cashDone(list, cur)), [list, cur]);
+  // Same as the month screen it opens: every session in this currency, no filters.
   const lastMonth = useMemo(() => {
-    const k = defaultMonth(list);
-    return k ? monthRecap(list, k, cur) : null;
-  }, [list, cur]);
+    const mine = sessions.filter((s) => s.currency === cur);
+    const k = defaultMonth(mine);
+    return k ? monthRecap(mine, k, cur) : null;
+  }, [sessions, cur]);
   // "How is this month going?" one tap from the balance, without scrolling to the recap row.
   const [monthNow] = useState(() => monthKey(Date.now()));
-  const thisMonth = useMemo(() => monthRecap(list, monthNow, cur), [list, monthNow, cur]);
+  // Every session in the bankroll's currency, no filters: the same month the link opens.
+  const thisMonth = useMemo(() => monthRecap(sessions, monthNow, cur), [sessions, monthNow, cur]);
   const hidden = !!settings.hideAmounts;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt only changes with `hidden`
   const verdictNow = useMemo(() => verdict(list, cur, (n) => fmt(n, cur)), [list, cur, hidden]);
@@ -180,7 +183,7 @@ function BankrollTab() {
               .join(' · ')}
           </T>
           {thisMonth.sessions ? (
-            <T v="small" color={C.accent} accessibilityRole="link" onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key } })}>
+            <T v="small" color={C.accent} accessibilityRole="link" onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key, c: cur } })}>
               {t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: Math.round(thisMonth.hours) })} ›
             </T>
           ) : null}
@@ -326,7 +329,7 @@ function BankrollTab() {
                   iconColor={C.accent}
                   title={t('Resumo do mês')}
                   subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: Math.round(lastMonth.hours) })}
-                  onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key } })}
+                  onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key, c: cur } })}
                 />
               ) : null}
               {tot.sessions && list.some((x) => x.kind === 'cash') ? (
