@@ -2800,6 +2800,7 @@ const en: Record<string, string> = {
   'Fotografar a folha da estrutura: disponível na versão da loja': 'Photograph the structure sheet: available in the store version',
   'Não conseguimos ler os níveis nesta foto. Tenta com mais luz e a folha direita, ou cola o texto.': 'We couldn\'t read the levels in this photo. Try with more light and the sheet straight, or paste the text.',
   "Ver contas": "See the balance",
+  "Quanto acertas com cada backer, já calculado. Com o Pro.": "How you settle up with each backer, worked out for you. With Pro.",
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Who owes whom and how much, worked out for you. With Pro.",
   "À espera do resultado de {name}": "Waiting for {name}'s result",
   "Enviar o meu resultado sozinho": "Send my result automatically",

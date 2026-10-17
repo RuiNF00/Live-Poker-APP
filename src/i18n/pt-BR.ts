@@ -1286,6 +1286,7 @@ const ptBR: Record<string, string> = {
   'Aviso antes de cobrar': 'Aviso antes da cobrança',
   'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante o teste grátis, avisamos você antes de cobrar.',
   'Grupo de {n}: pagas {each} a cada um ({amount})': 'Grupo de {n}: você paga {each} a cada um ({amount})',
+  "Quanto acertas com cada backer, já calculado. Com o Pro.": "Quanto você acerta com cada backer, já calculado. Com o Pro.",
 };
 
 export default ptBR;

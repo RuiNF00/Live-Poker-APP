@@ -3,6 +3,7 @@
 // and the accounts can close (spec: design/notificacoes.md, row 12). Only when
 // notifications are already allowed; no amounts, so nothing private on the lock
 // screen. Held while a session is being played: it is scheduled again when it ends.
+// Off with Settings › Notificações › Swaps e staking; never in the quiet hours.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect } from 'react';
@@ -10,6 +11,7 @@ import { AppState, Platform } from 'react-native';
 
 import { t } from '@/i18n';
 import { notifications, setup } from '@/lib/lock-screen/reminder';
+import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { FESTIVALS } from '@/poker/festivals';
 import { getOffers, settleReminders, useOffers } from '@/store/action-offer';
 import { festivalName, getPlan } from '@/store/festival-plan';
@@ -31,13 +33,13 @@ async function sync(names: Map<string, string>, playing: boolean) {
       await n.setNotificationChannelAsync(CHANNEL, { name: t('Swaps e staking'), importance: n.AndroidImportance.DEFAULT, lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE });
     for (const r of await n.getAllScheduledNotificationsAsync()) if (r.identifier.startsWith(PREFIX)) await n.cancelScheduledNotificationAsync(r.identifier);
     // Nothing during a session: it comes back when the session ends or pauses.
-    if (playing) return;
+    if (playing || !notifyKindOn('money')) return;
     const sent: Record<string, number> = JSON.parse((await AsyncStorage.getItem(SENT_KEY)) ?? '{}');
     const items = getOffers().flatMap((o) => {
       const f = FESTIVALS.find((x) => x.id === o.festivalId);
       return f ? [{ f, o, started: getPlan(f.id).sessions }] : [];
     });
-    for (const r of settleReminders(items, Date.now(), sent)) {
+    for (const r of settleReminders(items, Date.now(), sent).map((x) => ({ ...x, at: notifyAt('money', x.at) }))) {
       const it = items.find((x) => x.o.id === r.offerId)!;
       const backers = it.o.lines.map((l) => names.get(l.backerId)).filter(Boolean);
       await n.scheduleNotificationAsync({
@@ -61,7 +63,8 @@ async function sync(names: Map<string, string>, playing: boolean) {
 /** Keeps the settlement reminders in step with the packages, the sessions and the answers. */
 export function SettleReminder() {
   const offers = useOffers();
-  const { sessions, backers } = useStore();
+  const { sessions, backers, settings } = useStore();
+  const on = settings.notify?.money !== false;
   const key = backers.map((b) => `${b.id}:${b.name}`).join('|');
   const playing = sessions.some((s) => !s.endedAt && !isPaused(s));
   useEffect(() => {
@@ -72,8 +75,8 @@ export function SettleReminder() {
       if (s === 'active') void sync(names, playing);
     });
     return () => sub.remove();
-    // Re-sync when packages, sessions (and so the plan's links), backer names or playing change.
+    // Re-sync when packages, sessions (and so the plan's links), backer names, playing or the switch change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offers, sessions, key, playing]);
+  }, [offers, sessions, key, playing, on]);
   return null;
 }

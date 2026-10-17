@@ -2773,6 +2773,7 @@ const es: Record<string, string> = {
   "Deves {mine} dos teus prémios · {name} deve {theirs} dos seus": "Debes {mine} de tus premios · {name} debe {theirs} de los suyos",
   "Regista só os teus prémios; {name} regista os seus.": "Registra solo tus premios; {name} registra los suyos.",
   "Ver contas": "Ver cuentas",
+  "Quanto acertas com cada backer, já calculado. Com o Pro.": "Cómo quedan las cuentas con cada backer, ya calculado. Con Pro.",
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Quién le debe a quién y cuánto, ya calculado. Con Pro.",
   "À espera do resultado de {name}": "Esperando el resultado de {name}",
   "Enviar o meu resultado sozinho": "Enviar mi resultado automáticamente",
