@@ -36,6 +36,14 @@ export function LiveView({
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [gone, setGone] = useState(false);
   const [now, setNow] = useState(initialUpdatedAt);
+  // The player can send each backer the link with their own % after #p= (the fragment never
+  // reaches the server): the page then shows that backer's piece instead of only the total sold.
+  const [mine, setMine] = useState<number | null>(null);
+
+  useEffect(() => {
+    const p = Number(new URLSearchParams(window.location.hash.slice(1)).get('p'));
+    if (p > 0 && p <= 100) setMine(p);
+  }, []);
 
   useEffect(() => {
     setNow(Date.now());
@@ -130,7 +138,11 @@ export function LiveView({
             {money(result)}
           </p>
           {/* The result above is the whole session's; backers own only their piece of the prize. */}
-          {s.sold && s.cashOut ? (
+          {mine && s.cashOut ? (
+            <p className="live-delta up">
+              {c.yourPrize(mine)} {money((mine / 100) * s.cashOut)}
+            </p>
+          ) : s.sold && s.cashOut ? (
             <p className="live-delta">
               {c.backersShare(s.sold)} {money((s.sold / 100) * s.cashOut)}
             </p>
@@ -159,6 +171,9 @@ export function LiveView({
         </section>
       )}
 
+      {/* Right under the stack: the first thing a backer looks for after it. */}
+      {mine && !ended ? <p className="live-sold">{c.yourShare(mine)}</p> : null}
+
       <section className="live-grid">
         <Tile label={s.level ? c.level(s.level) : c.blinds} value={`${num(s.sb)}/${num(s.bb)}`} sub={s.ante ? `ante ${num(s.ante)}` : undefined} />
         <Tile label={c.time} value={clock(played)} />
@@ -168,7 +183,7 @@ export function LiveView({
         {s.hands ? <Tile label={c.hands} value={num(s.hands)} /> : null}
       </section>
 
-      {s.sold ? <p className="live-sold">{c.sold(s.sold)}</p> : null}
+      {!mine && s.sold ? <p className="live-sold">{c.sold(s.sold)}</p> : null}
       <p className="live-updated">
         {c.updated(ago)}
         {ended ? '' : ` · ${c.autoRefresh}`}

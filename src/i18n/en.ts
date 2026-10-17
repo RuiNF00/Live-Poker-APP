@@ -3117,6 +3117,7 @@ const en: Record<string, string> = {
   'No saco': 'Bagged',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Day {n} bagged: {chips}',
   '{name} · Dia {n}: {chips} em fichas': '{name} · Day {n}: {chips} in chips',
+  'Enviar a {name} ({n}%)': 'Send to {name} ({n}%)',
 };
 
 export default en;

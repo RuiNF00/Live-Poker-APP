@@ -1460,6 +1460,7 @@ const ptBR: Record<string, string> = {
   'Partilhar stack': 'Compartilhar stack',
   'No saco': 'Fichas guardadas',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Fim do Dia {n}: {chips}',
+  'Enviar a {name} ({n}%)': 'Enviar para {name} ({n}%)',
 };
 
 export default ptBR;
