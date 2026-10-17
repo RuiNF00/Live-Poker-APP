@@ -16,7 +16,6 @@ export interface PackStore {
   /** Null when one of the hands isn't the caller's. */
   create(title: string, hands: PackHandClaim[], hideAmounts: boolean): Promise<{ id: string; ownerToken: string } | null>;
   get(id: string): Promise<PackRecord | null>;
-  recordView(id: string): Promise<void>;
   remove(id: string, ownerToken: string): Promise<boolean>;
 }
 
@@ -25,7 +24,6 @@ interface Row {
   title: string;
   hand_ids: string[];
   hide_amounts: boolean;
-  view_count: number;
   created_at: string;
 }
 
@@ -43,11 +41,7 @@ class SupabasePacks implements PackStore {
     const { data, error } = await this.db.rpc('get_hand_pack', { p_id: id });
     if (error) throw error;
     const r = (data as Row[] | null)?.[0];
-    return r ? { id: r.id, title: r.title, handIds: r.hand_ids, hideAmounts: r.hide_amounts, viewCount: r.view_count, createdAt: r.created_at } : null;
-  }
-
-  async recordView(id: string) {
-    await this.db.rpc('record_pack_view', { p_id: id });
+    return r ? { id: r.id, title: r.title, handIds: r.hand_ids, hideAmounts: r.hide_amounts, createdAt: r.created_at } : null;
   }
 
   async remove(id: string, ownerToken: string) {
@@ -89,7 +83,7 @@ class LocalPacks implements PackStore {
     const id = randomBytes(6).toString('hex');
     const ownerToken = randomBytes(32).toString('hex');
     await this.mutate((d) => {
-      d[id] = { id, title, handIds: hands.map((h) => h.id), hideAmounts, viewCount: 0, createdAt: new Date().toISOString(), ownerHash: sha256(ownerToken) };
+      d[id] = { id, title, handIds: hands.map((h) => h.id), hideAmounts, createdAt: new Date().toISOString(), ownerHash: sha256(ownerToken) };
     });
     return { id, ownerToken };
   }
@@ -99,12 +93,6 @@ class LocalPacks implements PackStore {
     if (!r) return null;
     const { ownerHash: _o, ...rec } = r;
     return rec;
-  }
-
-  async recordView(id: string) {
-    await this.mutate((d) => {
-      if (d[id]) d[id].viewCount++;
-    });
   }
 
   async remove(id: string, ownerToken: string) {

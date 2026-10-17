@@ -10,8 +10,6 @@ select length(:'p') = 12 and length(:'o') = 64 as pack_created;
 select (select hand_ids from get_hand_pack(:'p')) = array[:'h2', :'h1'] as order_kept;
 select count(*) = 0 as owner_token_not_stored_in_clear from hand_packs where owner_token_hash = :'o';
 select count(*) = 0 as others_hand_refused from create_hand_pack('x', jsonb_build_array(jsonb_build_object('id', :'h1', 'token', 'wrong')), true);
-select record_pack_view(:'p');
-select (select view_count from get_hand_pack(:'p')) = 1 as view_counted;
 select delete_hand_pack(:'p', 'nope') = false as delete_needs_owner;
 select delete_hand_pack(:'p', :'o') as deleted;
 select count(*) = 0 as pack_gone from get_hand_pack(:'p');

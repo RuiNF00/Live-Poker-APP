@@ -10,7 +10,7 @@ export interface ShareOptions {
   notes: boolean;
 }
 
-export const DEFAULT_SHARE: ShareOptions = { names: false, notes: true };
+export const DEFAULT_SHARE: ShareOptions = { names: false, notes: false };
 
 export function publicHand(hand: Hand, opts: ShareOptions = DEFAULT_SHARE): Hand {
   const { sessionId: _s, shareToken: _t, shareId: _i, voiceNote: _v, folders: _f, streetNotes: _n, ...rest } = hand;

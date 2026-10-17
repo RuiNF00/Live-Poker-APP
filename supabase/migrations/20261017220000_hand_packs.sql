@@ -11,7 +11,6 @@ create table public.hand_packs (
   title text not null default '' check (char_length(title) <= 80),
   hand_ids text[] not null check (cardinality(hand_ids) between 1 and 30),
   hide_amounts boolean not null default true,
-  view_count integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -42,14 +41,9 @@ begin
 end $$;
 
 create or replace function public.get_hand_pack(p_id text)
-returns table (id text, title text, hand_ids text[], hide_amounts boolean, view_count integer, created_at timestamptz)
+returns table (id text, title text, hand_ids text[], hide_amounts boolean, created_at timestamptz)
 language sql stable security definer set search_path = public as $$
-  select p.id, p.title, p.hand_ids, p.hide_amounts, p.view_count, p.created_at from hand_packs p where p.id = p_id;
-$$;
-
-create or replace function public.record_pack_view(p_id text) returns void
-language sql security definer set search_path = public as $$
-  update hand_packs set view_count = view_count + 1 where id = p_id;
+  select p.id, p.title, p.hand_ids, p.hide_amounts, p.created_at from hand_packs p where p.id = p_id;
 $$;
 
 create or replace function public.delete_hand_pack(p_id text, p_owner_token text) returns boolean
@@ -72,12 +66,10 @@ end $$;
 
 revoke execute on function public.create_hand_pack(text, jsonb, boolean) from public, anon, authenticated;
 revoke execute on function public.get_hand_pack(text) from public, anon, authenticated;
-revoke execute on function public.record_pack_view(text) from public, anon, authenticated;
 revoke execute on function public.delete_hand_pack(text, text) from public, anon, authenticated;
 revoke execute on function public.purge_hand_packs() from public, anon, authenticated;
 grant execute on function public.create_hand_pack(text, jsonb, boolean) to service_role;
 grant execute on function public.get_hand_pack(text) to service_role;
-grant execute on function public.record_pack_view(text) to service_role;
 grant execute on function public.delete_hand_pack(text, text) to service_role;
 grant execute on function public.purge_hand_packs() to service_role;
 grant select, insert, update, delete on public.hand_packs to service_role;

@@ -10,7 +10,6 @@ export interface PackRecord {
   title: string;
   handIds: string[];
   hideAmounts: boolean;
-  viewCount: number;
   createdAt: string;
 }
 

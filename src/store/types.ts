@@ -288,5 +288,5 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultTableSize: 9,
   onboarded: false,
   shareNames: false,
-  shareNotes: true,
+  shareNotes: false,
 };

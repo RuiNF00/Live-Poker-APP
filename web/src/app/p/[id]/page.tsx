@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { after } from 'next/server';
 import { cache } from 'react';
 import { handTitle } from '@livepoker/hand-format';
 import { Mark } from '@/components/Brand';
@@ -71,7 +70,6 @@ export default async function PackPage({ params, searchParams }: Params & Search
       </main>
     );
   }
-  after(() => packStore().recordView(id).catch(() => {}));
   return (
     <PackView
       title={found.pack.title}
