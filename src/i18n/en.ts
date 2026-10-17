@@ -445,6 +445,20 @@ const en: Record<string, string> = {
   'Incluir as minhas notas da mão': 'Include my notes on the hand',
   'Vale para links novos. Uma mão já partilhada fica como estava.': 'Applies to new links. A hand already shared stays as it was.',
   'Novos: {list}. O que já tinhas ficou.': 'New: {list}. Everything you had is still there.',
+  'Blinds e antes': 'Blinds and antes',
+  'ganha': 'wins',
+  'Efetivo': 'Effective',
+  'HERO A DECIDIR': 'HERO TO ACT',
+  'Pot odds': 'Pot odds',
+  'Próxima street': 'Next street',
+  'Velocidade': 'Speed',
+  'Mostrar cartas': 'Show cards',
+  'Vê o que aconteceu.': 'See what happened.',
+  'Ver em fichas': 'Show in chips',
+  'Ver em BB': 'Show in BB',
+  'Anterior': 'Previous',
+  'Seguinte': 'Next',
+  'Reproduzir': 'Play',
 };
 
 export default en;
