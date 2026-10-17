@@ -7,6 +7,8 @@ create or replace function public.release_swap_group_seat(p_id text, p_token tex
 language plpgsql security definer set search_path = public as $$
 begin
   if public.swap_group_seat(p_id, p_token) is distinct from 0 or p_seat is null or p_seat < 1 then return false; end if;
+  -- Lock the group first: a new entry from that seat waits for this, so the check below holds.
+  perform 1 from public.swap_groups g where g.id = p_id for update;
   if exists (select 1 from public.swap_groups g where g.id = p_id and g.left_at is not null) then return false; end if;
   if exists (
     select 1 from public.swap_groups g, jsonb_array_elements(g.entries) e
