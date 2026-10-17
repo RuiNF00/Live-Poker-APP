@@ -20,7 +20,7 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 > • Swaps: quando todos os resultados entram, aparece "falta acertar".
 > • Definições → "Exportar sessões em CSV", grátis.
 > • Partilha uma mão e pede a um amigo que comente: recebes um aviso (nunca entre as 23h e as 12h, sem valores).
-> • Cria o vídeo de uma mão ("Criar vídeo da mão") e diz-nos quanto demorou até abrir o Instagram e se a mesa aparece inteira em todo o vídeo. Manda um link de uma mão no WhatsApp ou no iMessage e vê se aparece a imagem grande e o título.
+> • Cria o vídeo de uma mão ("Criar vídeo da mão"), com e sem a tua cara, e diz-nos quanto demorou até abrir o Instagram e se a mesa aparece inteira em todo o vídeo. Manda um link de uma mão no WhatsApp ou no iMessage e vê se aparece a imagem grande e o título.
 >
 > Como reportar: faz uma captura de ecrã dentro da app e o TestFlight pergunta se a queres enviar. Diz o que fizeste, o que esperavas e o que aconteceu. Se a app fechar sozinha, aceita enviar o relatório.
 >
@@ -40,7 +40,7 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 > • Swaps: quando todos os resultados entram, aparece "falta acertar as contas".
 > • Configurações → "Exportar sessões em CSV", grátis.
 > • Compartilhe uma mão e peça para um amigo comentar: você recebe um aviso (nunca entre 23h e 12h, sem valores).
-> • Crie o vídeo de uma mão ("Criar vídeo da mão") e conte quanto demorou até abrir o Instagram e se a mesa aparece inteira no vídeo todo. Mande o link de uma mão no WhatsApp ou no iMessage e veja se aparece a imagem grande e o título.
+> • Crie o vídeo de uma mão ("Criar vídeo da mão"), com e sem o seu rosto, e conte quanto demorou até abrir o Instagram e se a mesa aparece inteira no vídeo todo. Mande o link de uma mão no WhatsApp ou no iMessage e veja se aparece a imagem grande e o título.
 >
 > Como reportar: tire um print dentro do app e o TestFlight pergunta se você quer enviar. Conte o que fez, o que esperava e o que aconteceu. Se o app fechar sozinho, aceite enviar o relatório.
 >
@@ -60,7 +60,7 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 > • Swaps: cuando entran todos los resultados, aparece "falta saldar cuentas".
 > • Ajustes → "Exportar sesiones en CSV", gratis.
 > • Comparte una mano y pide a un amigo que comente: recibes un aviso (nunca entre las 23 h y las 12 h, sin importes).
-> • Crea el video de una mano ("Crear video de la mano") y cuéntanos cuánto tardó en abrirse Instagram y si la mesa se ve entera en todo el video. Manda el link de una mano por WhatsApp o iMessage y mira si aparece la imagen grande y el título.
+> • Crea el video de una mano ("Crear video de la mano"), con y sin tu cara, y cuéntanos cuánto tardó en abrirse Instagram y si la mesa se ve entera en todo el video. Manda el link de una mano por WhatsApp o iMessage y mira si aparece la imagen grande y el título.
 >
 > Cómo reportar: haz una captura de pantalla dentro de la app y TestFlight te pregunta si quieres enviarla. Cuenta qué hiciste, qué esperabas y qué pasó. Si la app se cierra sola, acepta enviar el informe.
 >
@@ -80,7 +80,7 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 > • Swaps: once every result is in, "time to settle up" shows.
 > • Settings → "Export sessions as CSV", free.
 > • Share a hand and ask a friend to comment: you get a notice (never between 11 pm and noon, no amounts).
-> • Make a hand video ("Make hand video") and tell us how long it took to reach Instagram and whether the table is fully drawn throughout. Send a hand link in WhatsApp or iMessage and check the large image and title show.
+> • Make a hand video ("Make hand video"), with and without your face, and tell us how long it took to reach Instagram and whether the table is fully drawn throughout. Send a hand link in WhatsApp or iMessage and check the large image and title show.
 >
 > How to report: take a screenshot inside the app and TestFlight will ask if you want to send it. Say what you did, what you expected and what happened. If the app crashes, accept sending the report.
 >
