@@ -18,6 +18,7 @@ import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
+import { ProMoment, useProMoment } from '@/components/ProMoment';
 import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -85,6 +86,7 @@ export default function HandsScreen() {
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
   const incomplete = useMemo(() => hands.filter((h) => !rowSummary(h).done).length, [hands]);
   const checklist = useStartChecklist();
+  const moment = useProMoment();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
   const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
@@ -180,6 +182,8 @@ export default function HandsScreen() {
                 />
               ) : checklist ? (
                 <StartChecklist state={checklist} />
+              ) : moment ? (
+                <ProMoment state={moment} />
               ) : incomplete > 0 && tag !== INCOMPLETE ? (
                 <Banner
                   tone="warn"

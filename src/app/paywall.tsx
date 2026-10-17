@@ -172,7 +172,7 @@ export default function Paywall() {
             </T>
           </Pressable>
         </Row>
-        {reason === 'hands' && FREE.handsPerDay ? (
+        {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
           <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
             <Pressable onPress={() => router.replace('/invite')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="gift-outline" size={14} color={C.accent} />

@@ -93,7 +93,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const canShare = useCallback(() => canUse(usage, 'share', FREE.sharesPerDay, isPro), [usage, isPro]);
 
   const paywall = useCallback((reason: PaywallReason = 'generic') => {
-    if (reason === 'hands' || reason === 'shares') track('limit_hit', { reason });
+    if (reason === 'hands' || reason === 'handsLive' || reason === 'shares') track('limit_hit', { reason });
     track('paywall_shown', { reason, trial: trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout });
     router.push({ pathname: '/paywall', params: { reason } });
   }, [trialDays, paywallConfig]);

@@ -88,7 +88,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -111,6 +111,18 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   homeTotal: {
     title: t('Tudo numa moeda'),
     body: t('Património e resultado do ano, ao câmbio de cada dia.'),
+  },
+  handsLive: {
+    title: t('A sessão continua'),
+    body: t('Guarda esta mão e as próximas sem limite.'),
+  },
+  views: {
+    title: t('A tua mão está a ser vista'),
+    body: t('Com Pro, guardas e partilhas todas as mãos da sessão.'),
+  },
+  bigWin: {
+    title: t('Vê de onde vem o teu lucro'),
+    body: t('Salas, jogos e stakes, com filtros e CSV.'),
   },
   shares: {
     title: t('Já partilhaste a mão de hoje'),
@@ -156,7 +168,8 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
 
 /** Features in paywall order: the one the player just reached for comes first. */
 export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATURES)[number]; highlight: boolean }[] {
-  const key: FeatureKey | null = reason === 'hands' || reason === 'welcome' ? 'hands' : reason === 'stats' || reason === 'story' ? reason : null;
+  const key: FeatureKey | null =
+    reason === 'hands' || reason === 'handsLive' || reason === 'welcome' || reason === 'views' ? 'hands' : reason === 'bigWin' ? 'stats' : reason === 'stats' || reason === 'story' ? reason : null;
   const first = PRO_FEATURES.filter((f) => f.key === key);
   return [...first, ...PRO_FEATURES.filter((f) => f.key !== key)].map((feature) => ({ feature, highlight: feature.key === key }));
 }

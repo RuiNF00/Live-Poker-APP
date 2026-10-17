@@ -198,7 +198,7 @@ export default function NewHand() {
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
     if (!isEdit && !pro.canSaveHand()) {
       if (over) update(hand);
-      pro.paywall('hands');
+      pro.paywall(activeSession ? 'handsLive' : 'hands');
       return;
     }
     // Named villains go into the player notes, so the next time they are one tap away.

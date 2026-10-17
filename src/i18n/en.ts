@@ -2075,6 +2075,15 @@ const en: Record<string, string> = {
   'Envia o link só a {name}: quem o abrir primeiro pode confirmar.': 'Send the link only to {name}: whoever opens it first can confirm.',
   'Não deu para ligar à {store}': "Couldn't reach the {store}",
   'Não deu para ligar à {store}. Tenta outra vez.': "Couldn't reach the {store}. Please try again.",
+  'A sessão continua': 'The session goes on',
+  'Guarda esta mão e as próximas sem limite.': 'Save this hand and the next ones, no limit.',
+  'A tua mão está a ser vista': 'Your hand is being watched',
+  'Com Pro, guardas e partilhas todas as mãos da sessão.': 'With Pro, save and share every hand of the session.',
+  'Vê de onde vem o teu lucro': 'See where your profit comes from',
+  'Salas, jogos e stakes, com filtros e CSV.': 'Rooms, games and stakes, with filters and CSV.',
+  'A tua mão foi vista {n} vezes': 'Your hand was viewed {n} times',
+  'A tua melhor sessão: {amount}': 'Your best session: {amount}',
+  'Vê em que salas, jogos e stakes ganhas mais.': 'See which rooms, games and stakes you win most at.',
 };
 
 export default en;
