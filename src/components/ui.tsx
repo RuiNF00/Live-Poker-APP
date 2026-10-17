@@ -15,6 +15,7 @@ import {
   Switch,
   Text as RNText,
   TextInput,
+  useWindowDimensions,
   View,
   type PressableProps,
   type ScrollViewProps,
@@ -318,6 +319,9 @@ export function ListGroup({ children, style }: { children: React.ReactNode; styl
   );
 }
 
+// Web ignores adjustsFontSizeToFit: there a long value (pt-BR amounts, dates) wraps instead of being cut.
+const STAT_LINES = Platform.OS === 'web' ? 2 : 1;
+
 export function ListItem({
   icon,
   iconColor,
@@ -348,10 +352,12 @@ export function ListItem({
   /** What VoiceOver reads for the row, when the visible text alone reads out of order. */
   accessibilityLabel?: string;
 }) {
+  // At 160%+ text the icon tile and chevron leave too little room: titles broke mid-word ("Viagen s").
+  const bigText = useWindowDimensions().fontScale >= 1.6;
   const body = (
     <>
       {left}
-      {icon ? (
+      {icon && !bigText ? (
         <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: (iconColor ? iconColor : C.text) === C.text ? C.surface3 : softOf(iconColor!), alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name={icon} size={17} color={iconColor ?? (destructive ? C.danger : C.text)} />
         </View>
@@ -375,7 +381,8 @@ export function ListItem({
         ) : null}
       </View>
       {value ? (
-        <T v="mono" color={valueColor ?? C.textDim}>
+        // Capped, so a long amount at large text can't squeeze the title to nothing.
+        <T v="mono" color={valueColor ?? C.textDim} numberOfLines={STAT_LINES} adjustsFontSizeToFit style={{ flexShrink: 1, maxWidth: '45%', textAlign: 'right' }}>
           {value}
         </T>
       ) : null}
@@ -452,9 +459,6 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor, 
 // ─── Numbers ─────────────────────────────────────────────────────────────────
 
 /** A labelled number tile. `tone` colours the value. */
-// Web ignores adjustsFontSizeToFit: there a long value (pt-BR amounts, dates) wraps instead of being cut.
-const STAT_LINES = Platform.OS === 'web' ? 2 : 1;
-
 export function Stat({
   label,
   value,
