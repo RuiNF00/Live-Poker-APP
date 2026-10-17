@@ -16,7 +16,7 @@ import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
-const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1' };
+const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', shared: 'rl.ref.shared.v1', seenDays: 'rl.ref.days.v1', checked: 'rl.ref.checked.v1' };
 const WINDOW = 7 * 86400000;
 
 export type ClaimSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
@@ -175,9 +175,33 @@ export async function inviteStatus(): Promise<InviteStatus | null> {
 
 /** The code to put in a link we're about to share: registered first, so claims on it count. */
 export async function shareRef(): Promise<string> {
+  void markShared();
   // Never hold up a share on a slow network: registration is retried next time.
   await Promise.race([ensureRegistered(), new Promise((r) => setTimeout(r, 2500))]);
   return refCode();
+}
+
+/** This install has sent its code out at least once: from now on, look for friends' first hands. */
+export async function markShared(): Promise<void> {
+  if (await getJSON<boolean>(K.shared)) return;
+  // Days counted from here: a friend's first hand after this share is news.
+  await AsyncStorage.multiSet([[K.shared, 'true'], [K.seenDays, '0']]).catch(() => {});
+}
+
+/**
+ * The inviter's side: Pro days earned since the app last looked, so they hear about it on the
+ * next open instead of finding it in Definições. Only for installs that have shared a link, at
+ * most every 6 hours, and never while offline.
+ */
+export async function newInviteDays(now = Date.now()): Promise<number> {
+  if (!isOnline() || !(await getJSON<boolean>(K.shared))) return 0;
+  if (now - ((await getJSON<number>(K.checked)) ?? 0) < 6 * 3600000) return 0;
+  await AsyncStorage.setItem(K.checked, JSON.stringify(now)).catch(() => {});
+  const s = await inviteStatus();
+  if (!s) return 0;
+  const seen = await getJSON<number>(K.seenDays);
+  if (seen !== s.daysEarned) await AsyncStorage.setItem(K.seenDays, JSON.stringify(s.daysEarned)).catch(() => {});
+  return seen === null ? 0 : Math.max(0, s.daysEarned - seen);
 }
 
 // "Delete all my data": the server forgets this install's code, RevenueCat id and invites.
