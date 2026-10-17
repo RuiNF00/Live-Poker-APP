@@ -9,7 +9,7 @@ import {
   type ReplayStep,
   type Street,
 } from '@livepoker/hand-format';
-import { numberTag, type Locale } from './i18n';
+import { numberFormat, numberTag, type Locale } from './i18n';
 
 // The shared hand-format package speaks pt-PT and English only. These wrappers give the site's
 // four locales the same functions: pt-PT goes straight through, the others get their own labels
@@ -72,21 +72,23 @@ export function buildReplay(hand: HandRecord, opts: Omit<BuildOptions, 'locale'>
   }));
 }
 
-/** Same rules as the package (plain number under 10k, then 12.5k / 250k / 1.25M), in the page's locale. */
+/** Same rules as the app (plain number under 10k, then 12,5k / 250k / 1,25M), in the page's locale. */
 export function formatChips(n: number, l: Locale): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a < 10_000) return sign + Math.round(a).toLocaleString(l === 'pt' ? 'pt-PT' : l === 'en' ? 'en-US' : numberTag(l)).replace(/\s/g, ' ');
-  if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0) + 'k';
-  return sign + fixed(a / 1_000_000, 2) + 'M';
+  if (a < 10_000) return sign + Math.round(a).toLocaleString(numberTag(l)).replace(/\s/g, ' ');
+  if (a < 1_000_000) return sign + fixed(a / 1000, a < 100_000 ? 1 : 0, l) + 'k';
+  return sign + fixed(a / 1_000_000, 2, l) + 'M';
 }
 
-function fixed(x: number, digits: number): string {
-  return x.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+/** Trailing zeros dropped; a decimal comma where the language writes one, as in the app. */
+function fixed(x: number, digits: number, l: Locale): string {
+  const s = x.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  return numberFormat(l).decimalComma ? s.replace('.', ',') : s;
 }
 
 export function formatAmount(n: number, bb: number, mode: AmountMode, l: Locale): string {
-  if (mode === 'bb') return `${(Math.round((n / bb) * 10) / 10).toString()} BB`;
+  if (mode === 'bb') return `${fixed(n / bb, 1, l)} BB`;
   return formatChips(n, l);
 }
 
