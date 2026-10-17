@@ -8,7 +8,7 @@ import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CardShareSheet } from '@/components/CardShareSheet';
@@ -47,6 +47,9 @@ export default function MonthScreen() {
   const [hideMoney, setHideMoney] = useState(true);
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(false);
+  // Narrow phones: the preview never runs past the screen edges.
+  const { width } = useWindowDimensions();
+  const preview = Math.min(PREVIEW, (width - 2 * S.gutter) / STORY_W);
   const card = useRef<React.ComponentRef<typeof View>>(null);
   const [granted, setGranted] = useState<boolean | null>(() => (notifications() ? null : false));
   useEffect(() => {
@@ -193,8 +196,8 @@ export default function MonthScreen() {
 
         <Section title={t('Partilhar o mês')} hint={t('Os valores começam escondidos: o cartão mostra horas, sessões e BB/h.')}>
           <View style={{ alignItems: 'center', gap: S.md }}>
-            <View style={{ width: STORY_W * PREVIEW, height: STORY_H * PREVIEW, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
-              <View style={{ position: 'absolute', left: (STORY_W * PREVIEW - STORY_W) / 2, top: (STORY_H * PREVIEW - STORY_H) / 2, transform: [{ scale: PREVIEW }] }}>
+            <View style={{ width: STORY_W * preview, height: STORY_H * preview, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
+              <View style={{ position: 'absolute', left: (STORY_W * preview - STORY_W) / 2, top: (STORY_H * preview - STORY_H) / 2, transform: [{ scale: preview }] }}>
                 <MonthCard ref={card} r={r} hideMoney={hideMoney} />
               </View>
             </View>
@@ -296,7 +299,7 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
           return (
             <View key={h.key} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
               <View style={{ width: '70%', height: hgt, borderRadius: 4, backgroundColor: h.profit > 0 ? C.good : h.profit < 0 ? C.bad : C.surface3, opacity: me ? 1 : 0.45 }} />
-              <T v="tiny" color={me ? C.text : C.muted} numberOfLines={1}>
+              <T v="tiny" color={me ? C.text : C.muted} numberOfLines={1} maxFontSizeMultiplier={1.3}>
                 {monthName(h.key).slice(0, 3)}
               </T>
             </View>

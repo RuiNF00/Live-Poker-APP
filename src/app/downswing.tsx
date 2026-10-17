@@ -120,8 +120,9 @@ function Read({ odds, big, cu, fmt, cur }: { odds: NonNullable<ReturnType<typeof
     const p = odds.atLeast(depth);
     const l = label(p);
     return (
-      <Row style={{ alignItems: 'flex-start' }}>
-        <View style={{ flex: 1, gap: 2 }}>
+      // Wraps at large text sizes: the reading drops below instead of squeezing the text.
+      <Row style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <View style={{ flex: 1, minWidth: 150, gap: 2 }}>
           <T v="body">{title}</T>
           <T v="small">{t('{pct} das simulações têm uma queda destas ou maior.', { pct: pct(p) })}</T>
         </View>
@@ -137,7 +138,7 @@ function Read({ odds, big, cu, fmt, cur }: { odds: NonNullable<ReturnType<typeof
       <T v="small">
         {t('Baralhámos as tuas {n} sessões 1000 vezes, com o resultado médio que tens tido ({amount} por sessão), e medimos a maior queda de cada vez.', { n: odds.sessions, amount: fmt(odds.mean) })}
       </T>
-      <Row gap={S.sm}>
+      <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
         <Mini label={t('Queda típica')} value={'−' + fmt(odds.typical)} />
         <Mini label={t('1 vez em 20')} value={'−' + fmt(odds.bad)} />
       </Row>
@@ -160,7 +161,8 @@ function Read({ odds, big, cu, fmt, cur }: { odds: NonNullable<ReturnType<typeof
 
 function Mini({ label, value }: { label: string; value: string }) {
   return (
-    <View style={{ flex: 1, gap: 2, padding: S.md, borderRadius: R.md, backgroundColor: C.surface2 }}>
+    // minWidth: at large text sizes the two tiles stack instead of breaking words.
+    <View style={{ flex: 1, minWidth: 128, gap: 2, padding: S.md, borderRadius: R.md, backgroundColor: C.surface2 }}>
       <T v="label">{label}</T>
       <T v="mono" color={C.bad} numberOfLines={1} adjustsFontSizeToFit>
         {value}
