@@ -22,7 +22,7 @@ import { mergeById, restoredSettings, type BackupData } from './backup';
 import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans, currentPlans, importPlans, type FestivalPlan } from './festival-plan';
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals } from './my-festivals';
-import { clearWeekly } from './weekly';
+import { clearWeekly, currentWeekly, importWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
@@ -94,6 +94,7 @@ interface StoreValue {
   /** Festival plans and the player's own festivals: their own stores, read here for the backup. */
   readonly festivalPlans: Record<string, FestivalPlan>;
   readonly ownFestivals: Festival[];
+  readonly weekly: WeeklyTournament[];
   importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
@@ -474,6 +475,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       importGroups(b.swapGroups ?? []).catch(() => {});
       importPlans(b.festivalPlans ?? {}).catch(() => {});
       importOwnFestivals(b.ownFestivals ?? []).catch(() => {});
+      importWeekly(b.weekly ?? []).catch(() => {});
       // Values another phone had set aside: kept here too; each launch tries them again with this version's checks.
       const q = (b.quarantine ?? []).filter(([k]) => !quarantine.some(([have]) => have === k));
       if (q.length) {
@@ -594,6 +596,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       get ownFestivals() {
         return currentOwnFestivals();
+      },
+      get weekly() {
+        return currentWeekly();
       },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
