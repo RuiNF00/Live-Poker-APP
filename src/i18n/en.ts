@@ -522,6 +522,8 @@ const en: Record<string, string> = {
   'Seguinte': 'Next',
   'Reproduzir': 'Play',
   // Redesign (design system thread)
+  'Nota da sessão': 'Session note',
+  'A mesa, como te sentes, o que queres lembrar…': 'The table, how you feel, anything to remember…',
   'Tirar filtro {name}': 'Remove filter {name}',
   '1 mão por completar': '1 hand to finish',
   '{n} mãos por completar': '{n} hands to finish',
