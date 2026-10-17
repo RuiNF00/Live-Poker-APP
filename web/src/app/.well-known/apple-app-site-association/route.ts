@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// iOS universal links: /h/<id> (shared hand), /r/<code> (invite), /live/<id> (backer page)
+// iOS universal links: /h/<id> (shared hand), /r/<code> (invite), /live/<id> (backer page), /swap/<token>, /b
 // /b#<statement> (a player's statement for their backer) and /swap/<id> (a swap between players)
 // open the app when installed; everything else, and the demo hand, stays in the browser.
 // Needs APPLE_TEAM_ID (Apple Developer > Membership) on the host.
