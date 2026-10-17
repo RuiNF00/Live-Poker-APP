@@ -60,7 +60,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';
+export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -83,6 +83,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   solver: {
     title: t('Leva as mãos todas para o solver'),
     body: t('Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.'),
+  },
+  coach: {
+    title: t('Revê as mãos com o teu coach'),
+    body: t('Com Pro, envias ao coach todas as pastas e mãos que quiseres.'),
   },
   welcome: {
     title: t('Primeira mão feita'),

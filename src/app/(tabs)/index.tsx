@@ -13,6 +13,8 @@ import { isComplete, positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, money, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { StreakStat } from '@/components/StreakStat';
+import { unreadByHand } from '@/lib/coach-core';
+import { useCoach } from '@/lib/coach-api';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { mainCurrency, profit } from '@/store/session-math';
@@ -56,6 +58,8 @@ export default function HandsScreen() {
   useOnboarding();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
+  const coach = useCoach();
+  const unread = useMemo(() => unreadByHand(coach), [coach]);
   const [searching, setSearching] = useState(false);
 
   const sections = useMemo(() => {
@@ -98,8 +102,8 @@ export default function HandsScreen() {
   const [tagging, setTagging] = useState(false);
 
   const renderItem = useCallback(
-    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} />,
-    [settings.inBB, picking, picked, togglePick],
+    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} />,
+    [settings.inBB, picking, picked, togglePick, unread],
   );
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
@@ -202,6 +206,15 @@ export default function HandsScreen() {
                     {shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}
                   </T>
                   {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : tag.startsWith(FOLDER) ? tag.slice(FOLDER.length) : t(tag)} onClear={() => setTag(null)} /> : null}
+                  {tag?.startsWith(FOLDER) && shown > 0 ? (
+                    <Button
+                      kind="secondary"
+                      size="sm"
+                      icon="school-outline"
+                      title={t('Enviar ao coach')}
+                      onPress={() => router.push({ pathname: '/coach/new', params: { folder: tag.slice(FOLDER.length) } })}
+                    />
+                  ) : null}
                 </Row>
               ) : null}
             </View>
@@ -240,6 +253,14 @@ export default function HandsScreen() {
           <T v="h3" numberOfLines={1} style={{ flex: 1 }} accessibilityLiveRegion="polite">
             {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
           </T>
+          <IconButton
+            name="school-outline"
+            label={t('Enviar ao coach')}
+            onPress={() => {
+              router.push({ pathname: '/coach/new', params: { ids: [...picked].join(',') } });
+              setPicked(new Set());
+            }}
+          />
           <IconButton name="analytics-outline" label={t('Exportar para solver')} onPress={() => (isPro ? exportSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
@@ -447,7 +468,7 @@ function rowSummary(hand: Hand) {
   return v;
 }
 
-const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void }) {
+const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPick, coach }: { hand: Hand; inBB: boolean; picking: boolean; picked: boolean; onPick: (id: string) => void; coach: number }) {
   const { net, done } = rowSummary(hand);
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   // Next to a full board only two tags fit on the line at 390 pt.
@@ -488,7 +509,7 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
           <T v="monoS">{timeOf(hand.createdAt)}</T>
         </View>
       </Row>
-      {hand.board.length || hand.tags.length || !done || hand.shareId ? (
+      {hand.board.length || hand.tags.length || !done || hand.shareId || coach ? (
         <Row gap={6} style={rowSt.wrap}>
           {hand.board.length ? (
             <Row gap={2} style={rowSt.board}>
@@ -497,6 +518,7 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
               ))}
             </Row>
           ) : null}
+          {coach ? <Pill icon="school" label={coach === 1 ? t('1 comentário do coach') : t('{n} comentários do coach', { n: coach })} color={C.accent} /> : null}
           {!done ? <Pill label={t('Por completar')} color={C.warn} /> : null}
           {hand.tags.slice(0, maxTags).map((x) => (
             <Pill key={x} label={t(x)} />
