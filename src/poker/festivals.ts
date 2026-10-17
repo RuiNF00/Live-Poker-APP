@@ -117,7 +117,7 @@ const lv = (...a: Parameters<typeof ev>): FestivalEvent => ({ ...ev(...a), unnum
  * organiser's schedule PDF:
  * https://cdn.wynnresorts.com/image/upload/v1757097329/visitwynn_pdfs_files/Poker/WPT/WPT_World_Championship_Schedule.pdf
  * Turbo flights run a faster structure the PDF doesn't give, and a Day 2 is a restart: neither gets one.
- * The High Roller (24) isn't confirmed yet and is left out.
+ * The High Roller (24) is on the PDF's page 2: 40-min levels, 60 later.
  */
 const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   1: [30000, 30],
@@ -143,6 +143,7 @@ const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   21: [40000, 40],
   22: [40000, 40],
   23: [40000, 40],
+  24: [200000, 40],
   25: [40000, 40],
   26: [100000, 30],
   27: [30000, 20],
