@@ -10,7 +10,7 @@ Data not linked to you:
 
 | Category → type | Purpose |
 |---|---|
-| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes) | App Functionality |
+| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers) | App Functionality |
 | Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
@@ -18,6 +18,8 @@ Data not linked to you:
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA) | Analytics, App Functionality |
 
 Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
+
+Voice notes on hands (PR #25) stay on the device and are not declared; only Instagram story voice notes are (Audio, processed ephemerally).
 
 Notes for the form: data the user keeps only on device is not "collected" for Apple's purposes, so local hands and player notes are not declared.
 
@@ -48,7 +50,7 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 
 | Data type | Collected | Optional | Purpose |
 |---|---|---|---|
-| App activity → Other user-generated content (shared hands, comments, optional cloud backup) | Yes | Yes (only when the user shares, comments or turns on backup) | App functionality |
+| App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers) | Yes | Yes (only when the user shares, comments, turns on backup or shares a session) | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites) | No | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
