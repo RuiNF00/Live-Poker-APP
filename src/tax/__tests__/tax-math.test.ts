@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { buildReport } from '../../export/report';
 import { reportHtml } from '../../export/report-html';
-import type { Session } from '../../store/types';
+import type { Session, Trip } from '../../store/types';
 import { countryOfVenue, countryOrder, flag } from '../countries';
 import { taxReport, usLossShare } from '../tax-math';
 
@@ -29,6 +29,7 @@ test('per country: winnings, losses and tax withheld to recover', () => {
   assert.deepEqual([us.sessions, us.wins, us.losses, us.net], [3, 10000, 1000 + 600, 10000 - 1600], 'expenses stay out of the gambling result');
   assert.deepEqual([us.withheld, us.toRecover, us.recovered, us.docs], [3000, 3000, 0, 1]);
   assert.deepEqual(r.pending, [{ currency: '$', amount: 3000 }]);
+  assert.deepEqual(r.expenses, [{ currency: '$', byKind: { flight: 0, hotel: 0, food: 0, coaching: 0, software: 0, other: 0 }, sessions: 100, total: 100 }]);
 });
 
 test('US filers deduct 90% of losses from 2026, never more than the winnings', () => {
@@ -55,6 +56,17 @@ test('the PDF has the tax section only when there is tax data, and says it is no
   assert.doesNotMatch(reportHtml(report, { now: 0 }), /Impostos por país/);
   const plain = [sess('x', { country: undefined })];
   assert.doesNotMatch(reportHtml(buildReport({ sessions: plain, transfers: [], bankrolls: [], range: year }), { now: 0, tax: taxReport(plain, year) }), /Impostos por país/, 'no country and nothing withheld');
+});
+
+test('trip expenses go in by kind', () => {
+  const list = [sess('a', { cashOut: 5000, startedAt: at(2026, 5, 1) })];
+  const trip: Trip = { id: 't', name: 'Vegas', venue: 'Aria', currency: '$', from: at(2026, 4, 30), to: at(2026, 5, 3), expenses: [{ id: 'e', kind: 'flight', amount: 900, currency: '$', at: at(2026, 4, 30), note: '' }, { id: 'f', kind: 'coaching', amount: 300, currency: '$', at: at(2026, 5, 1), note: '' }], createdAt: 0 };
+  const report = buildReport({ sessions: list, transfers: [], bankrolls: [], range: year, trips: [trip] });
+  const tax = taxReport(list, year, report.trips);
+  assert.deepEqual([tax.expenses[0].byKind.flight, tax.expenses[0].byKind.coaching, tax.expenses[0].total], [900, 300, 1200]);
+  const html = reportHtml(report, { now: 0, tax });
+  assert.match(html, /Despesas de póquer por tipo/);
+  assert.match(html, /Voo/);
 });
 
 test('a venue remembers its country', () => {

@@ -29,16 +29,31 @@ export type FunnelEvent =
   | 'paywall_closed'
   | 'trial_start';
 
+// The install id also lives in the keychain, which survives deleting the app on iOS: a
+// reinstall is the same install, so it can't claim the friend's 7 Pro days again.
+// Loaded lazily so web and the Node tests never touch expo-secure-store.
+type Keychain = Pick<typeof import('expo-secure-store'), 'getItemAsync' | 'setItemAsync'>;
+function keychain(): Keychain | null {
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-secure-store') as Keychain;
+  } catch {
+    return null;
+  }
+}
+const KEYCHAIN_KEY = 'sweatbook.install.v1';
+
 let install: Promise<string> | null = null;
 export function installId(): Promise<string> {
-  install ??= AsyncStorage.getItem(KEY)
-    .then(async (v) => {
-      if (v) return v;
-      const id = anonId();
-      await AsyncStorage.setItem(KEY, id);
-      return id;
-    })
-    .catch(() => anonId());
+  install ??= (async () => {
+    const kc = keychain();
+    const kept = kc ? await kc.getItemAsync(KEYCHAIN_KEY).catch(() => null) : null;
+    const id = kept || (await AsyncStorage.getItem(KEY).catch(() => null)) || anonId();
+    await AsyncStorage.setItem(KEY, id).catch(() => {});
+    if (kc && kept !== id) await kc.setItemAsync(KEYCHAIN_KEY, id).catch(() => {});
+    return id;
+  })();
   return install;
 }
 

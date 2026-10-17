@@ -133,6 +133,9 @@ test('live snapshot: only what backers need, clock changes are not an update', (
   assert.equal(a.stackLog.length, 120);
   assert.equal(a.sold, 25);
   assert.equal(a.cashOut, 0);
+  // Where the player is stays off the page unless they show it.
+  assert.equal(a.venue, '');
+  assert.equal(liveSnapshot({ ...s, live: { id: 'x', token: 'y', showVenue: true } }, 'Rui', 3).venue, s.venue);
   assert.equal(snapshotKey(a), snapshotKey(liveSnapshot(s, 'Rui', 3, 99_000)));
   assert.notEqual(snapshotKey(a), snapshotKey(liveSnapshot({ ...s, stack: 1 }, 'Rui', 3, 10_000)));
 });

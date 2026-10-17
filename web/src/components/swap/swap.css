@@ -1,0 +1,227 @@
+/* Swap page: builds on the live page's layout and the "Noite" tokens from globals.css. */
+.sw-terms {
+  gap: 10px;
+}
+
+.sw-term {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.sw-term b {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 22px;
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+.sw-note {
+  color: var(--muted);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.sw-seal {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sw-seal-line {
+  color: var(--win);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sw-code b {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  margin-left: 6px;
+}
+
+.sw-hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sw-error {
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sw-dim {
+  color: var(--muted);
+  font-size: 26px !important;
+}
+
+.sw-form {
+  gap: 12px;
+}
+
+.sw-form h2 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.sw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sw-field input {
+  height: 50px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+}
+
+.sw-field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.sw-pair {
+  display: flex;
+  gap: 10px;
+}
+
+.sw-narrow {
+  flex: 0 0 34%;
+}
+
+.sw-btn {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sw-btn:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: default;
+}
+
+.sw-seg {
+  display: flex;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.sw-seg button {
+  flex: 1;
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sw-seg button.on {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.sw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sw-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+}
+
+.sw-side-b {
+  border-left-color: var(--win);
+}
+
+.sw-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sw-row-title {
+  font-weight: 700;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.sw-row-sub,
+.sw-row-owe {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sw-row-owe {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sw-line {
+  font-size: 14px;
+}
+
+.sw-remove {
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.sw-copy {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sw-copy code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.sw-copy .lp-btn {
+  min-height: 44px;
+  cursor: pointer;
+}

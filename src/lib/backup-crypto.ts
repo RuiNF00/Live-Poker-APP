@@ -5,7 +5,7 @@
 import { gcm } from '@noble/ciphers/aes';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
-import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
+import { Gunzip, Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
 
 import { ALPHA } from './cloud-code';
 
@@ -58,11 +58,40 @@ interface Sealed {
   c: string;
 }
 
+function envelope(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): string {
+  const env: Sealed = { sweatbook: 'backup', v: 1, alg: 'A256GCM', n: toB64(nonce), c: toB64(gcm(key, nonce).encrypt(zipped)) };
+  return JSON.stringify(env);
+}
+
 /** gzip + AES-GCM, wrapped in JSON (the server only accepts JSON or gzip). */
 export function seal(plain: string, key: Uint8Array, nonce: Uint8Array): string {
-  const c = gcm(key, nonce).encrypt(gzipSync(strToU8(plain)));
-  const env: Sealed = { sweatbook: 'backup', v: 1, alg: 'A256GCM', n: toB64(nonce), c: toB64(c) };
-  return JSON.stringify(env);
+  return envelope(gzipSync(strToU8(plain)), key, nonce);
+}
+
+const SLICE = 32 * 1024;
+const breathe = () => new Promise<void>((r) => setTimeout(r, 0));
+
+/**
+ * Same result as seal, but gzips in 32 KB slices with a pause between them.
+ * gzip is the slow part (about half a second for 2,000 hands without a JIT,
+ * as on Hermes, and more on a cheap phone); in one piece it froze the app
+ * while the automatic backup ran a few seconds after launch.
+ */
+export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
+  const input = strToU8(plain);
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  const gz = new Gzip((chunk) => {
+    parts.push(chunk);
+    size += chunk.length;
+  });
+  for (let i = 0; ; i += SLICE) {
+    const last = i + SLICE >= input.length;
+    gz.push(input.subarray(i, i + SLICE), last);
+    if (last) break;
+    await pause();
+  }
+  return envelope(join(parts, size), key, nonce);
 }
 
 /** Opens a sealed backup; plain (older) backups pass through. Throws 'forbidden' on a wrong key. */
@@ -81,4 +110,52 @@ export function unseal(raw: Uint8Array, key: Uint8Array): string {
   } catch {
     throw new Error('forbidden');
   }
+}
+
+function join(parts: Uint8Array[], size: number): Uint8Array {
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
+}
+
+/** gunzip fed 24 KB at a time (a slice inflates ~20×, ~30 ms without a JIT), pausing in between. */
+async function gunzipSliced(raw: Uint8Array, pause: () => Promise<void>): Promise<Uint8Array> {
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  const gz = new Gunzip((chunk) => {
+    parts.push(chunk);
+    size += chunk.length;
+  });
+  for (let i = 0; ; i += 24576) {
+    const last = i + 24576 >= raw.length;
+    gz.push(raw.subarray(i, i + 24576), last);
+    if (last) break;
+    await pause();
+  }
+  return join(parts, size);
+}
+
+/** Same as unseal, with both gunzips sliced so a restore keeps the screen alive. */
+export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
+  const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await gunzipSliced(raw, pause) : raw;
+  const text = strFromU8(bytes);
+  let env: Partial<Sealed>;
+  try {
+    env = JSON.parse(text) as Partial<Sealed>;
+  } catch {
+    return text;
+  }
+  if (env?.sweatbook !== 'backup' || env.alg !== 'A256GCM' || !env.n || !env.c) return text;
+  let zipped: Uint8Array;
+  try {
+    zipped = gcm(key, fromB64(env.n)).decrypt(fromB64(env.c));
+  } catch {
+    throw new Error('forbidden');
+  }
+  await pause();
+  return strFromU8(await gunzipSliced(zipped, pause));
 }

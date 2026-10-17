@@ -1,7 +1,7 @@
 // Odds calculator: your two cards, the board so far and villain's cards or a range in,
 // your equity out. Same maths as the replayer's equity, works offline.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';

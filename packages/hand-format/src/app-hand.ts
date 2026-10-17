@@ -39,8 +39,10 @@ export interface AppHand {
   hero: number;
   actions: AppHandAction[];
   board: string[];
-  /** Run it twice: the second board (not replayed yet). */
+  /** Run it twice: the second run's cards, after the cards both runs share. */
   board2?: string[];
+  /** Run it twice: manual winners of the second run. */
+  winners2?: number[];
   tags?: string[];
   notes?: string;
   title?: string;
@@ -126,8 +128,10 @@ export function fromAppHand(a: AppHand): Converted {
       turn: (a.board[3] as Card) || undefined,
       river: (a.board[4] as Card) || undefined,
     },
+    board2: a.board2?.length ? (a.board2.slice(0, 5) as Card[]) : undefined,
     actions: {},
     winnerSeats: a.winners?.map(seat),
+    winnerSeats2: a.winners2?.length ? a.winners2.map(seat) : undefined,
     tournament:
       g.kind === 'mtt'
         ? { name: g.name || undefined, stage: g.stage && STAGE[g.stage], level: g.level, playersLeft: g.playersLeft, buyIn: g.buyIn }

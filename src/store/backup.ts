@@ -7,6 +7,7 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import type { Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
 export interface BackupData {
@@ -26,6 +27,8 @@ export interface BackupData {
   transfers?: Transfer[];
   /** Missing in backups made before trips existed. */
   trips?: Trip[];
+  /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
+  swaps?: Swap[];
   settings?: Partial<Settings>;
 }
 
@@ -41,6 +44,7 @@ export function buildBackup(
     payments?: BackerPayment[];
     trips?: Trip[];
     backing?: BackedPlayer[];
+    swaps?: Swap[];
     settings: Settings;
   },
   now = Date.now(),
@@ -59,6 +63,7 @@ export function buildBackup(
     payments: d.payments ?? [],
     trips: d.trips ?? [],
     backing: d.backing ?? [],
+    swaps: d.swaps ?? [],
     settings: d.settings,
   };
 }
@@ -95,6 +100,9 @@ export function parseBackup(text: string): BackupData {
       const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
+  const swaps = arr('swaps').filter(
+    (x) => isObj(x) && typeof x.token === 'string' && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+  ) as unknown as Swap[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -109,7 +117,35 @@ export function parseBackup(text: string): BackupData {
     bankrolls,
     transfers,
     trips,
+    swaps,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
+  };
+}
+
+/**
+ * Settings after a restore. On a phone with nothing on it yet (a new phone, a reinstall)
+ * the backup's preferences come back: currency, default bankroll, privacy mode and the
+ * rest. On a phone already in use, its own choices stay and only an empty nickname is filled.
+ */
+export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean): Settings {
+  if (!incoming) return cur;
+  if (!fresh) return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : '') };
+  const pick = <K extends keyof Settings>(k: K, ok: (v: unknown) => boolean): Partial<Settings> => (ok(incoming[k]) ? { [k]: incoming[k] } : {});
+  const isStr = (v: unknown) => typeof v === 'string';
+  const isBool = (v: unknown) => typeof v === 'boolean';
+  return {
+    ...cur,
+    ...pick('currency', (v) => isStr(v) && (v as string).length > 0 && (v as string).length <= 4),
+    ...pick('nickname', isStr),
+    ...pick('inBB', isBool),
+    ...pick('defaultTableSize', (v) => typeof v === 'number' && Number.isInteger(v) && v >= 2 && v <= 10),
+    ...pick('shareNames', isBool),
+    ...pick('shareNotes', isBool),
+    ...pick('bankrollId', isStr),
+    ...pick('hideAmounts', isBool),
+    ...pick('includeSwaps', isBool),
+    // Onboarding stays done: the restore itself happens after it.
+    onboarded: cur.onboarded || incoming.onboarded === true,
   };
 }
 
@@ -216,5 +252,5 @@ export function importSummary(n: { hands: number; sessions: number; players: num
 function decodeBacked(x: Record<string, unknown>): BackedPlayer | null {
   const st = isObj(x.statement) ? checkStatement(x.statement) : null;
   if (!st || st.id !== x.id) return null;
-  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, updatedAt: typeof x.updatedAt === 'number' ? x.updatedAt : undefined };
+  return { id: st.id, statement: st, createdAt: typeof x.createdAt === 'number' ? x.createdAt : 0, ...(typeof x.updatedAt === 'number' ? { updatedAt: x.updatedAt } : {}) };
 }

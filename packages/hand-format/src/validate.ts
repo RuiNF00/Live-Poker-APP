@@ -41,6 +41,15 @@ export function validateHand(input: unknown): string[] {
     else if (seen.has(c)) errors.push(`duplicate card ${c}`);
     else seen.add(c);
   }
+  if (h.board2 !== undefined) {
+    if (!Array.isArray(h.board2) || h.board2.length > 5) errors.push('board2');
+    else
+      for (const c of h.board2) {
+        if (!isValidCard(c)) errors.push(`board2 card ${c}`);
+        else if (seen.has(c)) errors.push(`duplicate card ${c}`);
+        else seen.add(c);
+      }
+  }
   if (!h.actions || typeof h.actions !== 'object') errors.push('actions');
   else
     for (const street of STREETS) {
@@ -58,6 +67,7 @@ export function validateHand(input: unknown): string[] {
   if (h.tags && (!Array.isArray(h.tags) || h.tags.length > 20 || h.tags.some((t) => typeof t !== 'string' || t.length > 40)))
     errors.push('tags');
   if (h.winnerSeats !== undefined && (!Array.isArray(h.winnerSeats) || h.winnerSeats.some((s) => !seats.has(s)))) errors.push('winnerSeats');
+  if (h.winnerSeats2 !== undefined && (!Array.isArray(h.winnerSeats2) || h.winnerSeats2.some((s) => !seats.has(s)))) errors.push('winnerSeats2');
   if (h.notes !== undefined && (typeof h.notes !== 'string' || h.notes.length > 2000)) errors.push('notes');
   return errors;
 }

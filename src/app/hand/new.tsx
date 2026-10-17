@@ -11,7 +11,7 @@
 //  - no time at the table: "Voz" records a note and saves the hand as it is,
 //    to be completed after the session.
 
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';

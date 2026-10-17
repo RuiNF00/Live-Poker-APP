@@ -115,7 +115,12 @@ export function LiveView({
         <p className="live-sub">{[s.player, c.startedAt(time(s.startedAt))].filter(Boolean).join(' · ')}</p>
       </section>
 
-      {ended ? (
+      {ended && s.heldUntil ? (
+        <section className="live-card live-result">
+          <p className="live-label">{c.ended}</p>
+          <p className="live-delta">{c.resultAt(time(s.heldUntil))}</p>
+        </section>
+      ) : ended ? (
         <section className="live-card live-result">
           <p className="live-label">{mtt ? (s.cashOut ? c.prize : c.busted) : c.cashOut}</p>
           {s.cashOut || !mtt ? <p className="live-big">{money(s.cashOut)}</p> : null}
