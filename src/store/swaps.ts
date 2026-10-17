@@ -4,6 +4,8 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
+import type { Session } from './types';
+
 export type SwapSide = 'a' | 'b';
 
 export interface SwapTerms {
@@ -65,6 +67,8 @@ export interface Swap {
   /** Settled and put away. */
   archived?: boolean;
   syncedAt?: number;
+  /** This phone only: which of my sessions each of my prizes came from (entry cid → session id). */
+  links?: Record<string, string>;
   createdAt: number;
   updatedAt: number;
 }
@@ -208,4 +212,63 @@ export function mergeSwaps(local: Swap[], incoming: Swap[]): { list: Swap[]; add
     }
   }
   return { list: changed ? [...byId.values()] : local, added };
+}
+
+const DAY = 86400000;
+
+export interface SwapAssignment {
+  /** Per session id: what swaps add (+) or take (−). */
+  bySession: Map<string, number>;
+  /** Prizes with no session of mine to count them in (shown on the swaps screen). */
+  unassigned: { swapId: string; cid: string }[];
+}
+
+/**
+ * Where each swapped prize lands in my results:
+ * - my prize: the session it came from (the link saved when I picked it, else my finished
+ *   tournament in that currency with that exact prize, preferring the same name) loses my %;
+ * - their prize: my latest finished session in that currency since the swap began, up to
+ *   when they recorded it, gains my share (for a single event, my session of that event).
+ * Busts (prize 0) change nothing. Unconfirmed swaps count for nothing.
+ */
+export function assignSwaps(sessions: Session[], swaps: Swap[]): SwapAssignment {
+  const bySession = new Map<string, number>();
+  const unassigned: SwapAssignment['unassigned'] = [];
+  const ended = sessions.filter((s) => s.endedAt).sort((a, b) => b.endedAt! - a.endedAt!);
+  const add = (id: string, d: number) => bySession.set(id, (bySession.get(id) ?? 0) + d);
+  for (const sw of swaps) {
+    if (!sw.confirmedAt) continue;
+    const cur = sw.terms.currency;
+    const from = sw.terms.createdAt - 2 * DAY;
+    const mine = ended.filter((s) => s.currency === cur && s.startedAt >= from);
+    for (const e of sw.entries) {
+      if (e.kind !== 'result' || !e.amount) continue;
+      const owed = owedOn(sw.terms, e);
+      let id: string | undefined;
+      if (e.side === sw.side) {
+        id = sw.links?.[e.cid];
+        if (!id || !sessions.some((s) => s.id === id)) {
+          const same = mine.filter((s) => s.kind === 'mtt' && s.cashOut === e.amount);
+          id = (same.find((s) => s.name === e.event) ?? same[0])?.id;
+        }
+      } else {
+        const upTo = mine.filter((s) => s.startedAt <= e.at + DAY);
+        id = (sw.terms.scope === 'event' ? upTo.find((s) => s.name === sw.terms.title) : undefined)?.id ?? upTo[0]?.id;
+      }
+      if (id) add(id, e.side === sw.side ? -owed : owed);
+      else unassigned.push({ swapId: sw.id, cid: e.cid });
+    }
+  }
+  return { bySession, unassigned };
+}
+
+/** The sessions with Session.swapNet filled in (read by profit()). Unchanged sessions keep their identity. */
+export function withSwaps(sessions: Session[], swaps: Swap[]): Session[] {
+  if (!swaps.length && !sessions.some((s) => s.swapNet)) return sessions;
+  const { bySession } = assignSwaps(sessions, swaps);
+  return sessions.map((s) => {
+    const n = bySession.get(s.id);
+    const v = n && Math.abs(n) >= 0.005 ? Math.round(n * 100) / 100 : undefined;
+    return (s.swapNet ?? undefined) === v ? s : { ...s, swapNet: v };
+  });
 }

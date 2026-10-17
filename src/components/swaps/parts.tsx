@@ -141,7 +141,8 @@ export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; o
   );
 }
 
-export type EntryDraft = Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>;
+/** What the sheet saves; sessionId when it came from one of my sessions (counts the swap there). */
+export type EntryDraft = Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'> & { sessionId?: string };
 
 /** Add a prize (with my recent cashes one tap away) or a payment (pre-filled with what I owe). */
 export function EntrySheet({
@@ -173,6 +174,7 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
   const [event, setEvent] = useState(swap.terms.scope === 'event' ? swap.terms.title : '');
   const [amount, setAmount] = useState(k0 === 'payment' && owe > 0 ? String(Math.round(owe * 100) / 100) : '');
   const [finish, setFinish] = useState('');
+  const [sessionId, setSessionId] = useState<string | undefined>();
   const names = swapNames(swap);
   const them = names[other(swap.side)];
   // Cashes from my own sessions since the swap was made, in its currency: one tap fills the form.
@@ -209,6 +211,7 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
                   setEvent(s.name);
                   setAmount(String(s.cashOut));
                   setFinish(s.finish ? String(s.finish) : '');
+                  setSessionId(s.id);
                 }}
               />
             ))}
@@ -244,7 +247,7 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
       <Button
         title={t('Guardar')}
         disabled={!ok}
-        onPress={() => onSave({ kind, amount: Math.round(value * 100) / 100, event: kind === 'result' ? event.trim() : '', finish: kind === 'result' && finish ? Number(finish) : null })}
+        onPress={() => onSave({ kind, amount: Math.round(value * 100) / 100, event: kind === 'result' ? event.trim() : '', finish: kind === 'result' && finish ? Number(finish) : null, sessionId: kind === 'result' ? sessionId : undefined })}
       />
     </>
   );

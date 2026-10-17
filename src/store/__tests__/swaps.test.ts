@@ -4,7 +4,9 @@ import { test } from 'node:test';
 
 import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
-import { mergeRemote, mergeSwaps, swapDeleteJobs, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { profit } from '../session-math';
+import type { Session } from '../types';
+import { assignSwaps, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -87,4 +89,35 @@ test('swaps survive a backup round trip, and a restore keeps entries not sent ye
   assert.equal(merged.entries.length, 2);
   assert.ok(merged.entries.some((x) => x.cid === 'p9'));
   assert.equal(mergeSwaps(local, [swap({ updatedAt: 0 })]).list, local);
+});
+
+const sess = (over: Partial<Session>): Session => ({
+  id: 'x', kind: 'mtt', name: '', venue: '', currency: '$', startedAt: 100 * DAYMS, endedAt: 100 * DAYMS + 3600000, breaks: [], buyIn: 1000, entries: 1, addOn: 0,
+  cashOut: 0, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '', ...over,
+});
+const DAYMS = 86400000;
+
+test('swaps land in my results: my prize loses my %, theirs adds my share to my latest session', () => {
+  const t0 = 99 * DAYMS;
+  const sw = swap({ terms: { ...terms, createdAt: t0 }, entries: [e('a', 'result', 20000, { event: 'Main', at: 101 * DAYMS }), e('b', 'result', 100000, { at: 102 * DAYMS })] });
+  const main = sess({ id: 'main', name: 'Main', cashOut: 20000 });
+  const later = sess({ id: 'later', startedAt: 101.5 * DAYMS, endedAt: 101.6 * DAYMS });
+  const other$ = sess({ id: 'eur', currency: '€', startedAt: 101.7 * DAYMS, endedAt: 101.8 * DAYMS });
+  const out = withSwaps([main, later, other$], [sw]);
+  assert.equal(out.find((s) => s.id === 'main')!.swapNet, -1000); // 5% of my 20k
+  assert.equal(out.find((s) => s.id === 'later')!.swapNet, 3000); // 3% of their 100k
+  assert.equal(out.find((s) => s.id === 'eur')!.swapNet, undefined);
+  assert.equal(profit(out.find((s) => s.id === 'main')!), 20000 - 1000 - 1000);
+});
+
+test('a saved link wins over matching, unconfirmed swaps count for nothing, and leftovers are reported', () => {
+  const a = sess({ id: 'a', name: 'X', cashOut: 500 });
+  const b = sess({ id: 'b', name: 'Y', cashOut: 500, startedAt: 100.5 * DAYMS, endedAt: 100.6 * DAYMS });
+  const sw = swap({ links: { mine: 'a' }, terms: { ...terms, createdAt: 99 * DAYMS }, entries: [e('a', 'result', 500, { cid: 'mine', event: 'Y' })] });
+  assert.equal(assignSwaps([a, b], [sw]).bySession.get('a'), -25);
+  assert.equal(assignSwaps([a, b], [{ ...sw, confirmedAt: undefined }]).bySession.size, 0);
+  const lone = assignSwaps([], [swap({ entries: [e('b', 'result', 100)] })]);
+  assert.equal(lone.unassigned.length, 1);
+  const list = [a];
+  assert.equal(withSwaps(list, []), list);
 });

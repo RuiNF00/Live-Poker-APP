@@ -1648,6 +1648,10 @@ const en: Record<string, string> = {
   'A apagar…': 'Deleting…',
   'Apagar todos os meus dados': 'Delete all my data',
   'Neste telemóvel, na nuvem e nos links públicos': 'On this phone, in the cloud and in public links',
+  'Incluir swaps no resultado': 'Include swaps in results',
+  'A tua % sai da sessão onde cobraste; a tua parte dos prémios dele entra na tua última sessão. Conta na bankroll, no €/h e nos relatórios.': 'Your % comes off the session where you cashed; your share of their prizes goes into your latest session. It counts in bankroll, €/h and reports.',
+  '1 prémio ainda não entra: falta uma sessão tua terminada nessa moeda, desde o início do swap.': '1 prize isn\'t counted yet: you need a finished session in that currency since the swap began.',
+  '{n} prémios ainda não entram: falta uma sessão tua terminada nessa moeda, desde o início do swap.': '{n} prizes aren\'t counted yet: you need a finished session in that currency since the swap began.',
 };
 
 export default en;

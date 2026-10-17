@@ -31,6 +31,8 @@ export interface Session {
   live?: { id: string; token: string };
   /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
   makeupCut?: number;
+  /** What swaps add to (their share of the other player's prizes) or take from (your share given away) this session. Derived (withSwaps). */
+  swapNet?: number;
   // Live table state, used to pre-fill every new hand.
   sb: number;
   bb: number;
@@ -246,6 +248,8 @@ export interface Settings {
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */
   hideAmounts?: boolean;
+  /** Count swaps in results (Session.swapNet). Missing = yes. */
+  includeSwaps?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
 }

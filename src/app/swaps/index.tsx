@@ -7,15 +7,19 @@ import { RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { pctLabel } from '@/components/swaps/parts';
-import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T } from '@/components/ui';
+import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
-import { other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
+import { useStore } from '@/store/store';
+import { assignSwaps, other, settled, swapLedger, swapNames, swapsTotal, type Swap } from '@/store/swaps';
 import { syncAllSwaps, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
 export default function SwapsScreen() {
   const { swaps, ready } = useSwaps();
+  const { sessions, settings, setSettings } = useStore();
+  const include = settings.includeSwaps !== false;
+  const loose = include ? assignSwaps(sessions, swaps).unassigned.length : 0;
   const [refreshing, setRefreshing] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -79,6 +83,27 @@ export default function SwapsScreen() {
             </Card>
 
             <Button title={t('Novo swap')} icon="add" onPress={() => router.push('/swaps/new')} />
+
+            {tot.open ? (
+              <Section
+                hint={
+                  loose
+                    ? loose === 1
+                      ? t('1 prémio ainda não entra: falta uma sessão tua terminada nessa moeda, desde o início do swap.')
+                      : t('{n} prémios ainda não entram: falta uma sessão tua terminada nessa moeda, desde o início do swap.', { n: loose })
+                    : undefined
+                }>
+                <ListGroup>
+                  <ToggleItem
+                    icon="stats-chart-outline"
+                    title={t('Incluir swaps no resultado')}
+                    subtitle={t('A tua % sai da sessão onde cobraste; a tua parte dos prémios dele entra na tua última sessão. Conta na bankroll, no €/h e nos relatórios.')}
+                    value={include}
+                    onChange={(v) => setSettings({ includeSwaps: v })}
+                  />
+                </ListGroup>
+              </Section>
+            ) : null}
 
             {active.length ? (
               <Section title={t('Ativos')}>

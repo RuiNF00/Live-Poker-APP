@@ -21,8 +21,8 @@ import { bankrollOf, ensureBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans } from './festival-plan';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { withCuts } from './staking';
-import type { Swap } from './swaps';
-import { currentSwaps, importSwaps } from './swaps-store';
+import { withSwaps, type Swap } from './swaps';
+import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
 const KEYS = {
@@ -177,8 +177,8 @@ function draftKeyOf(h: Hand | null): number {
 
 /** A session as stored: without the derived makeup cut. */
 function bare(s: Session): Session {
-  if (s.makeupCut === undefined) return s;
-  const { makeupCut: _, ...rest } = s;
+  if (s.makeupCut === undefined && s.swapNet === undefined) return s;
+  const { makeupCut: _, swapNet: __, ...rest } = s;
   return rest;
 }
 
@@ -202,9 +202,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [payments, setPayments] = useState<BackerPayment[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [backing, setBacking] = useState<BackedPlayer[]>([]);
-  // What screens see: each session with its makeup package cut (derived, never stored).
-  const sessions = useMemo(() => withCuts(rawSessions, packages), [rawSessions, packages]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  // What screens see: each session with its makeup package cut and what swaps add or take
+  // (derived, never stored; swaps can be turned off).
+  const { swaps } = useSwaps();
+  const includeSwaps = settings.includeSwaps !== false;
+  const sessions = useMemo(() => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : []), [rawSessions, packages, swaps, includeSwaps]);
   // Privacy mode applies to every amount on screen, set before anything renders with it.
   setMoneyMasked(!!settings.hideAmounts);
   // The draft changes on every tap of hand entry. Keeping it in a ref (and

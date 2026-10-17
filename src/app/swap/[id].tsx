@@ -169,7 +169,8 @@ function OwnSwap({ s }: { s: Swap }) {
 
   async function save(e: EntryDraft) {
     setSheet(null);
-    const res = await addEntry(s.id, e);
+    const { sessionId, ...entry } = e;
+    const res = await addEntry(s.id, entry, sessionId);
     tap('success');
     if (res === 'queued') setOffline(true);
   }

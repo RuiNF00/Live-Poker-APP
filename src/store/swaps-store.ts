@@ -119,11 +119,12 @@ export async function syncAllSwaps(): Promise<void> {
 }
 
 /** A prize I won or a payment I made: saved at once, sent now or on the next sync. */
-export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>): Promise<'sent' | 'queued'> {
+export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>, sessionId?: string): Promise<'sent' | 'queued'> {
   const s = getSwap(id);
   if (!s) return 'queued';
   const cid = newCid();
-  saveSwap({ ...s, entries: [...s.entries, { ...e, id: cid, cid, side: s.side, at: Date.now(), pending: true }], updatedAt: Date.now() });
+  const links = sessionId ? { ...s.links, [cid]: sessionId } : s.links;
+  saveSwap({ ...s, links, entries: [...s.entries, { ...e, id: cid, cid, side: s.side, at: Date.now(), pending: true }], updatedAt: Date.now() });
   await syncSwap(id);
   return getSwap(id)?.entries.some((x) => x.cid === cid && x.pending) ? 'queued' : 'sent';
 }
