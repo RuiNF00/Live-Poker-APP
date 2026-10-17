@@ -50,6 +50,6 @@ python3 store/scripts/check-lengths.py store/out/listing/*.md   # confirma limit
 
 As páginas de `web/` são servidas pela app web de partilha de mãos (pasta `web/` na raiz do repositório, projeto Vercel único em `https://sweatbook.poker`), nos caminhos `/privacy`, `/terms`, `/support` e `/delete-account`. Os HTML daqui são a fonte: depois de alterar, correr `scripts/fill.sh` e copiar `out/web/` para `web/public/`.
 
-## Conta de demonstração para os revisores
+## Revisores
 
-Criar no Supabase de produção: `review@{{WEB_DOMAIN}}` com ~20 mãos de exemplo. Colocar email e password em App Store Connect → App Review Information e em Play Console → App access. Não guardar a password neste repositório.
+A app não tem contas, por isso não é precisa conta de demonstração. As notas para o revisor estão em `review-risks.md`. Para as subscrições, a Apple testa com o sandbox e a Google com os *license testers* (Play Console → Settings → License testing).

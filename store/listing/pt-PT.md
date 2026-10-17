@@ -41,7 +41,7 @@ PARTILHA E PEDE OPINIÃO
 PARA QUEM JOGA LIVE
 • Torneios e cash games
 • Organiza por torneio, sessão e data
-• Os teus dados ficam no teu telemóvel e na tua conta
+• Sem contas: as tuas mãos ficam no teu telemóvel
 
 {{APP_NAME}} é uma ferramenta de registo e estudo. Não permite apostar nem jogar a dinheiro.
 

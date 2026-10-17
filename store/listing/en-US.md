@@ -41,7 +41,7 @@ SHARE AND GET FEEDBACK
 BUILT FOR LIVE PLAYERS
 • Tournaments and cash games
 • Organized by tournament, session and date
-• Your data stays on your phone and in your account
+• No account needed: your hands stay on your phone
 
 {{APP_NAME}} is a logging and study tool. It does not offer real-money gaming or betting of any kind.
 

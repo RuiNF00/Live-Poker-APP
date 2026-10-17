@@ -65,7 +65,7 @@ For the thread that owns the app code. Merge these into `app.json` (`expo` key);
 - `supportsTablet: false`: avoids Apple requiring iPad screenshots and iPad layout review. Turn on later.
 - `ITSAppUsesNonExemptEncryption: false`: skips the export compliance question on every upload (HTTPS only is exempt).
 - `privacyManifests`: Apple rejects uploads whose SDKs use required-reason APIs without a manifest. Keep the collected types in sync with `store/privacy-forms.md`.
-- `usesAppleSignIn`: required by guideline 4.8 if the app offers Google sign-in. Drop it if login is email-only.
+- `usesAppleSignIn`: not needed while there are no accounts; remove it.
 - `associatedDomains` / `intentFilters`: share links `https://{{WEB_DOMAIN}}/h/<id>` open the app when installed. The web side must serve `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json`.
 - `blockedPermissions`: some Expo libraries add these by default; any of them triggers extra Play Console declarations and review questions.
 - `targetSdkVersion: 36`: Google Play requires API 36 for new apps since 31 August 2026. Expo SDK 54+ defaults to it; the plugin line just pins it.

@@ -22,15 +22,14 @@ A hand tracker is not gambling. Reviewers see "poker" and check for money.
 - Copy says "logging and study tool, no real-money gaming" (already in listing and terms).
 - Review notes (paste into App Review Information → Notes):
 
-  > This app is a notebook for players of live (in-person) poker. Users record hands they played at a casino and replay them to study. There is no gameplay, no real-money or simulated gambling, no betting and no purchases. To test sharing, sign in with the demo account below, open any hand and tap Share.
+  > This app is a notebook for players of live (in-person) poker. Users record hands they played at a casino and replay them to study. There is no gameplay, no real-money or simulated gambling, no betting and no purchases. No account is needed. To test sharing, open the sample hand on the home screen and tap Share; the link opens a web replayer with comments. Comments can be reported and the hand owner can delete the hand with all its comments.
 
 - Avoid casino imagery that suggests play money: no slot icons, chip-stack "win" animations, or "jackpot" wording in screenshots.
 
-## 4. Account requirements (Apple 5.1.1(v), 4.8; Play account deletion)
+## 4. Accounts and in-app purchases
 
-- If the app lets you create an account it must let you delete it inside the app.
-- If it offers Google sign-in on iOS it must also offer Sign in with Apple.
-- Play requires a web URL for deletion: `delete-account.html` covers it.
+- v1 has no accounts, so in-app account deletion (5.1.1(v)) and Sign in with Apple (4.8) do not apply. If accounts are added later, both become mandatory.
+- Subscriptions: paid digital features must use Apple/Google in-app purchase (Apple 3.1.1). The paywall must show price, period, that it auto-renews, how to cancel, and links to the terms and privacy policy (3.1.2), plus a **Restore purchases** button. Free features must work without paying, so the reviewer sees a functional app. Products must be created and attached to the version before submitting, or the review fails.
 
 ## 5. User-generated content (Apple 1.2)
 
