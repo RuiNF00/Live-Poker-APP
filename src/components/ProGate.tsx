@@ -10,7 +10,7 @@ import { Button, Card, Empty, Screen, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { C, R, S } from '@/theme';
 
-const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar', moveUpPlan: 'layers', villainRange: 'grid' } as const satisfies Record<ProFeature, string>;
+const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar', moveUpPlan: 'layers', villainRange: 'grid', faceVideo: 'videocam' } as const satisfies Record<ProFeature, string>;
 
 /** True when this feature needs Pro and the player doesn't have it. */
 export function useLocked(feature: ProFeature): boolean {

@@ -11,6 +11,20 @@ import type { Hand } from '@/poker/types';
 
 export const canShareStory = false;
 export const canMakeVideo = false;
+export const canRecordFace = false;
+export const MAX_FACE_BYTES = 3.2 * 1024 * 1024;
+
+export interface FaceClip {
+  uri: string;
+  ms: number;
+  bytes: number;
+}
+
+export function dropLocal(_uri: string | null | undefined): void {}
+
+export async function recordFace(): Promise<FaceClip | null> {
+  throw new Error('The face camera needs the iOS app');
+}
 
 export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: ShareOptions): Promise<string> {
   if (hand.shareId) return hand.shareId;
@@ -25,6 +39,10 @@ export async function captureStory(_ref: React.RefObject<React.ComponentRef<type
 
 export type StoryTarget = 'instagram' | 'sheet';
 
+export async function storyGoesToInstagram(): Promise<boolean> {
+  return false;
+}
+
 export async function renderVoiceStory(_frame: string, _voice: string, _slot: { x: number; y: number; w: number; h: number }): Promise<string> {
   throw new Error('Voice stories need the iOS or Android app');
 }
@@ -33,7 +51,7 @@ export async function shareStory(_file: string, _link: string, _kind: 'image' | 
   throw new Error('Story sharing needs the iOS or Android app');
 }
 
-export async function captureFrame(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+export async function captureFrame(_ref: React.RefObject<React.ComponentRef<typeof View> | null>, _quality = 0.82): Promise<string> {
   throw new Error('Hand videos need the iOS or Android app');
 }
 
@@ -42,6 +60,7 @@ export async function renderReplayVideo(
   _durations: number[],
   _voice: string | null,
   _slot: { x: number; y: number; w: number; h: number } | null,
+  _face?: { uri: string; slot: { x: number; y: number; d: number } } | null,
 ): Promise<string> {
   throw new Error('Hand videos need the iOS or Android app');
 }

@@ -1444,6 +1444,19 @@ const ptBR: Record<string, string> = {
   'Importar': 'Importar',
   'Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV': 'Cópia do Sweatbook ou de outro app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV',
   'O ficheiro não diz se é cash ou torneio. Começámos pelo que mais jogas; podes mudar cada sessão depois.': 'O arquivo não diz se é cash ou torneio. Começamos pelo que você mais joga; você pode mudar cada sessão depois.',
+  'A juntar a tua cara…': 'Adicionando seu rosto…',
+  'O vídeo da cara é grande demais': 'O vídeo do rosto ficou grande demais',
+  'Grava outra vez, um pouco mais curto.': 'Grave de novo, um pouco mais curto.',
+  'Não conseguimos abrir a câmara. Tenta outra vez.': 'Não conseguimos abrir a câmera. Tente de novo.',
+  'A tua cara, {s} s': 'Seu rosto, {s} s',
+  'Gravar com a cara': 'Gravar com o rosto',
+  'Toca para gravar outra vez': 'Toque para gravar de novo',
+  'Câmara frontal, até 30 s, com a tua voz. Fica só neste vídeo.': 'Câmera frontal, até 30 s, com a sua voz. Só vai neste vídeo.',
+  'Tirar a cara': 'Tirar o rosto',
+  'A tua cara no vídeo da mão': 'Seu rosto no vídeo da mão',
+  'Explica a mão a falar, com a tua cara num canto.': 'Explique a mão falando, com seu rosto num canto.',
+  'Vídeo com a tua cara': 'Vídeo com seu rosto',
+  'A explicar a mão, num canto': 'Explicando a mão, num canto',
 };
 
 export default ptBR;
