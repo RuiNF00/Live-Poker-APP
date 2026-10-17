@@ -9,6 +9,7 @@ import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard
 import { Button, Chip, Empty, Row, T, tap } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
+import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareLink, renderVoiceStory, shareStory } from '@/lib/instagram-story';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
@@ -94,6 +95,7 @@ export default function StoryScreen() {
       } else {
         target = await shareStory(await captureStory(card), link);
       }
+      track('story_shared', { target: String(target), voice: !!voice });
       if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
