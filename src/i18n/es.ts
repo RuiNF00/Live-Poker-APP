@@ -2691,6 +2691,8 @@ const es: Record<string, string> = {
   'Texto para fórum': 'Texto para foros',
   'TwoPlusTwo, Reddit, grupos': 'TwoPlusTwo, Reddit, grupos',
   'Formato PokerStars': 'Formato PokerStars',
+  'Visto em 1 sessão': 'Visto en 1 sesión',
+  'Visto em {n} sessões': 'Visto en {n} sesiones',
   'Publicar no X': 'Publicar en X',
   // Swaps: groups, history, read-only copy
   "Tens 1 swap por acertar. A outra pessoa fica com a cópia dela.": "Tienes 1 swap por liquidar. La otra persona conserva su copia.",
