@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,11 +10,12 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { shareRef } from '@/lib/referrals';
-import { canShareStory, captureStory, ensureShareId, renderVoiceStory, shareStory } from '@/lib/instagram-story';
+import { canShareStory, captureFrame, captureStory, ensureShareId, renderReplayVideo, renderVoiceStory, shareStory, shareVideo } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
+import { reelDurations, reelSteps } from '@/story/reel';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
@@ -28,21 +29,41 @@ export default function StoryScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const ask = hand ? canAsk(hand) : false;
-  const [mode, setMode] = useState<StoryMode>(ask ? 'question' : 'result');
+  const [mode, setMode] = useState<StoryMode | 'video'>(ask ? 'question' : 'result');
+  const video = mode === 'video';
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const pro = usePro();
   const [brand, setBrand] = useState(true);
   const [voice, setVoice] = useState<string | null>(null);
+  const [voiceMs, setVoiceMs] = useState(0);
+  // Video mode: the replay step on the card, and how far the frame capture got.
+  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState<string | null>(null);
   // What the voice chip shows: sample bars on screen, an empty slot while capturing for the video.
   const [chip, setChip] = useState<'preview' | 'slot' | null>('preview');
-  const onVoice = useCallback((uri: string | null) => setVoice(uri), []);
+  const onVoice = useCallback((uri: string | null, ms?: number) => {
+    setVoice(uri);
+    setVoiceMs(ms ?? 0);
+  }, []);
   const withVoice = !!voice && pro.isPro;
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
   const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
-  const moment = useMemo(() => (shown ? storyMoment(shown, mode, settings.inBB) : null), [shown, mode, settings.inBB]);
+  const moment = useMemo(() => (shown ? storyMoment(shown, video ? 'result' : mode, settings.inBB) : null), [shown, mode, video, settings.inBB]);
+  const reel = useMemo(() => (shown && moment ? reelSteps(shown, moment.replay) : []), [shown, moment]);
+
+  // The preview plays the hand on a loop while video is picked.
+  useEffect(() => {
+    if (!video || busy || !reel.length) return;
+    let j = 0;
+    const id = setInterval(() => {
+      j = (j + 1) % (reel.length + 2);
+      setStep(Math.min(j, reel.length - 1));
+    }, 900);
+    return () => clearInterval(id);
+  }, [video, busy, reel]);
   if (!hand || !shown || !moment) return <Empty title={t('Mão não encontrada')} />;
 
   // Preview fits the screen; the captured view inside stays 360×640.
@@ -56,6 +77,57 @@ export default function StoryScreen() {
       return await captureStory(card);
     } finally {
       setChip('preview');
+    }
+  };
+
+  const postVideo = async () => {
+    tap('medium');
+    const isNew = !hand.shareId;
+    if (isNew && !pro.canShare()) {
+      pro.paywall('shares');
+      return;
+    }
+    setBusy(true);
+    try {
+      let shareId: string;
+      try {
+        shareId = await ensureShareId(hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+      } catch {
+        Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        return;
+      }
+      if (isNew) pro.record('share');
+      const ref = await shareRef();
+      const link = shareLink(shareId, 'story', { quiz: false, ref });
+      // One frame per key moment, captured from the card itself.
+      if (withVoice) setChip('slot');
+      const frames: string[] = [];
+      for (let i = 0; i < reel.length; i++) {
+        setProgress(t('A gravar a mão… {i}/{n}', { i: i + 1, n: reel.length }));
+        setStep(i);
+        // Two frames to lay out, then the table's 220 ms fade-in.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise((r) => setTimeout(r, 280));
+        frames.push(await captureFrame(card));
+      }
+      setChip('preview');
+      setProgress(withVoice ? t('A juntar a tua voz…') : t('A montar o vídeo…'));
+      const durations = reelDurations(moment.replay, reel, withVoice ? voiceMs / 1000 : null);
+      let file: string;
+      try {
+        file = await renderReplayVideo(frames, durations, withVoice ? voice : null, withVoice ? voiceSlotPx() : null);
+      } catch {
+        Alert.alert(t('Não deu para criar o vídeo'), t('Verifica a internet e tenta outra vez daqui a pouco.'));
+        return;
+      }
+      await shareVideo(file, link);
+      track('story_shared', { target: 'video', voice: withVoice, share_id: shareId, ref, question: false, frames: frames.length });
+    } catch {
+      Alert.alert(t('Não deu'), t('Não conseguimos criar o vídeo. Tenta outra vez.'));
+    } finally {
+      setChip('preview');
+      setProgress(null);
+      setBusy(false);
     }
   };
 
@@ -131,7 +203,7 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} />
+                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step] ?? 0) : undefined} />
               </View>
             </View>
           </View>
@@ -140,12 +212,21 @@ export default function StoryScreen() {
             options={[
               { key: 'question', label: t('Pergunta') },
               { key: 'result', label: t('Resultado') },
+              { key: 'video', label: t('Vídeo') },
             ]}
             value={mode}
-            onChange={(m) => (m === 'question' && !ask ? undefined : setMode(m))}
+            onChange={(m) => {
+              if (m === 'question' && !ask) return;
+              setStep(0);
+              setMode(m);
+            }}
           />
           <T v="small" style={{ textAlign: 'center', marginTop: -4 }}>
-            {mode === 'question' ? t('Pára antes da tua decisão e esconde o resultado.') : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
+            {video
+              ? t('A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.')
+              : mode === 'question'
+                ? t('Pára antes da tua decisão e esconde o resultado.')
+                : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 
           {canShareStory ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
@@ -170,7 +251,9 @@ export default function StoryScreen() {
           </ListGroup>
         </ScrollView>
         <View style={{ paddingHorizontal: S.gutter, paddingTop: S.sm + 2, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
-          {canShareStory ? (
+          {canShareStory && video ? (
+            <Button title={progress ?? (busy ? t('A preparar…') : t('Criar vídeo da mão'))} icon="film-outline" disabled={busy} onPress={postVideo} />
+          ) : canShareStory ? (
             <Button
               title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : t('Partilhar no Instagram')}
               icon="logo-instagram"

@@ -78,7 +78,7 @@ interface StoreValue {
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
-  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number };
+  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number };
 }
 
 const Ctx = createContext<StoreValue | null>(null);
@@ -400,7 +400,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setPackages(mergeById(packages, b.packages ?? []).list);
       setPayments(mergeById(payments, b.payments ?? []).list);
       setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
-      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added };
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments],
   );

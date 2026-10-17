@@ -44,9 +44,14 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
   return [...bankrolls, ...made];
 }
 
-/** Oldest first: the first bankroll in a currency is where unassigned sessions go. */
+/**
+ * The ones made automatically for older data ("Principal") first, then by
+ * creation. An import brings bankrolls created before the auto one was made
+ * on this phone; they must not jump ahead of it.
+ */
 export function sortBankrolls(list: Bankroll[]): Bankroll[] {
-  return [...list].sort((a, b) => a.createdAt - b.createdAt);
+  const auto = (b: Bankroll) => (b.id.startsWith('br_auto_') ? 0 : 1);
+  return [...list].sort((a, b) => auto(a) - auto(b) || a.createdAt - b.createdAt);
 }
 
 /** The bankroll a session counts towards. Unknown or missing id: the first bankroll in its currency. */

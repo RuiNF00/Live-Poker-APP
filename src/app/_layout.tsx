@@ -77,9 +77,14 @@ export default function RootLayout() {
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
+            <Stack.Screen name="variance" options={{ title: t('Variância') }} />
+            <Stack.Screen name="festival" options={{ title: 'Festival' }} />
+            <Stack.Screen name="odds" options={{ title: t('Calculadora de odds') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
+            <Stack.Screen name="export" options={{ title: t('Exportar') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
+            <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
           </ProProvider>
         </StoreProvider>

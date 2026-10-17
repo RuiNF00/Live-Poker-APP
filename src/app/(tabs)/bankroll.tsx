@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
-import { BankrollForm, blankTransfer, effectiveRange, FilterForm, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
+import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
@@ -23,6 +25,8 @@ import {
   scopeIds,
   scopeOptions,
   sessionsIn,
+  stakeKey,
+  stakeLabel,
   stakeOptions,
   transfersIn,
   type DateRange,
@@ -30,13 +34,31 @@ import {
   type Scope,
   type SessionFilter,
 } from '@/store/bankroll-math';
+import { bestWeekday, dailyResults, drawdown, lastResults } from '@/store/results-math';
 import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
 
+/** Amounts on this tab, or ••• when the player hid them (at the table). */
+const Hidden = createContext(false);
+function useFmt() {
+  const hidden = useContext(Hidden);
+  return (n: number, currency: string) => (hidden ? '•••' : money(n, currency));
+}
+
 export default function BankrollScreen() {
-  const { sessions, transfers, bankrolls, defaultBankroll, saveSession, deleteSession, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, settings } = useStore();
+  const { settings: st0 } = useStore();
+  return (
+    <Hidden.Provider value={!!st0.hideAmounts}>
+      <BankrollTab />
+    </Hidden.Provider>
+  );
+}
+
+function BankrollTab() {
+  const fmt = useFmt();
+  const { sessions, transfers, bankrolls, defaultBankroll, saveSession, deleteSession, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, settings, setSettings } = useStore();
   const { isPro, paywall } = usePro();
   const [scopePick, setScope] = useState<Scope>({ bankrollId: defaultBankroll.id });
   const [game, setGame] = useState<SessionFilter['game']>('all');
@@ -59,6 +81,10 @@ export default function BankrollScreen() {
   const bal = balanceOf(scope, sessions, transfers, bankrolls);
   const tot = totals(list, cur);
   const pts = curve(list, cur).map((p) => p.v);
+  const dd = drawdown(pts);
+  const last5 = lastResults(list, 5);
+  const first = list.filter((s) => s.endedAt).reduce((a, s) => Math.min(a, s.startedAt), Infinity);
+  const hidden = !!settings.hideAmounts;
   const onlyResults = game !== 'all' || format !== 'all' || stakes.length > 0;
   const history = ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range)));
   const nFilters = activeFilters(filter);
@@ -66,7 +92,7 @@ export default function BankrollScreen() {
   const single = 'bankrollId' in scope ? bankrolls.find((b) => b.id === scope.bankrollId) : undefined;
   const scopeName = single?.name ?? t('Todas {currency}', { currency: cur });
   const pct = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
-  const signedMoney = (n: number) => (n > 0 ? '+' : '') + money(n, cur);
+  const signedMoney = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : '') + fmt(n, cur));
   const pastBankroll = single ?? scopeBankrolls[0] ?? defaultBankroll;
 
   const newBankroll = () => (!isPro && FREE.bankrolls !== null && bankrolls.length >= FREE.bankrolls ? paywall('stats') : setSheet({ type: 'bankroll' }));
@@ -81,7 +107,15 @@ export default function BankrollScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Screen title="Bankroll" right={<IconButton name="add" label={t('Sessão passada')} onPress={() => setSheet({ type: 'session', s: 'new' })} />} contentStyle={{ gap: S.lg }}>
+      <Screen
+        title="Bankroll"
+        right={
+          <>
+            <IconButton name={settings.hideAmounts ? 'eye-off-outline' : 'eye-outline'} label={settings.hideAmounts ? t('Mostrar valores') : t('Esconder valores')} onPress={() => setSettings({ hideAmounts: !settings.hideAmounts })} />
+            <IconButton name="add" label={t('Sessão passada')} onPress={() => setSheet({ type: 'session', s: 'new' })} />
+          </>
+        }
+        contentStyle={{ gap: S.lg }}>
         <ChipRow>
           {scopeOptions(bankrolls).map((o) => (
             <Chip key={'bankrollId' in o.scope ? o.scope.bankrollId : 'all' + o.currency} label={o.label} icon={'currency' in o.scope ? 'albums-outline' : undefined} active={sameScope(o.scope, scope)} onPress={() => setScope(o.scope)} />
@@ -94,16 +128,16 @@ export default function BankrollScreen() {
             <T v="label" style={{ flex: 1 }} numberOfLines={1}>
               {t('Saldo · {name}', { name: scopeName })}
             </T>
-            {single ? <IconButton name="ellipsis-horizontal" size={30} label={t('Gerir bankroll')} onPress={() => setSheet({ type: 'bankroll', b: single })} /> : null}
+            {single ? <IconButton name="ellipsis-horizontal" size={36} label={t('Gerir bankroll')} onPress={() => setSheet({ type: 'bankroll', b: single })} /> : null}
           </Row>
           <T v="monoXL" color={bal.balance < 0 ? C.bad : C.text} numberOfLines={1} adjustsFontSizeToFit>
-            {money(bal.balance, cur)}
+            {fmt(bal.balance, cur)}
           </T>
           <T v="small" numberOfLines={2}>
             {[
               t('Resultado {amount}', { amount: signedMoney(bal.results) }),
-              bal.deposits ? t('Depósitos {amount}', { amount: money(bal.deposits, cur) }) : '',
-              bal.withdrawals ? t('Levantamentos {amount}', { amount: money(bal.withdrawals, cur) }) : '',
+              bal.deposits ? t('Depósitos {amount}', { amount: fmt(bal.deposits, cur) }) : '',
+              bal.withdrawals ? t('Levantamentos {amount}', { amount: fmt(bal.withdrawals, cur) }) : '',
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -135,9 +169,17 @@ export default function BankrollScreen() {
             onChange={setFormat}
           />
           <ChipRow>
-            <Chip icon={locked ? 'lock-closed' : 'calendar-outline'} label={rangeLabel(preset, custom)} active={preset !== 'all'} onPress={openFilters} />
-            <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
             {nFilters ? <Chip icon="close" label={t('Limpar')} onPress={clearFilters} /> : null}
+            <Chip icon={locked ? 'lock-closed' : 'layers-outline'} label={stakes.length ? t('Stakes · {n}', { n: stakes.length }) : t('Todas as stakes')} active={stakes.length > 0} onPress={openFilters} />
+            {PRESETS.map((o) => (
+              <Chip
+                key={o.key}
+                label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
+                icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
+                active={preset === o.key}
+                onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
+              />
+            ))}
           </ChipRow>
         </View>
 
@@ -157,26 +199,68 @@ export default function BankrollScreen() {
         ) : (
           <>
             <Card style={{ gap: S.sm, paddingBottom: S.md }}>
-              <T v="label">{nFilters ? t('Lucro · filtrado') : t('Lucro')}</T>
+              <Row>
+                <T v="label" style={{ flex: 1 }} numberOfLines={1}>
+                  {t('Resultado de póquer') + ' · ' + (preset === 'all' ? t('Tudo') : rangeLabel(preset, custom)).toLowerCase()}
+                </T>
+                <Dots results={last5} />
+              </Row>
               <T v="monoL" color={tot.profit >= 0 ? C.good : C.bad} numberOfLines={1} adjustsFontSizeToFit>
-                {signedMoney(tot.profit)}
+                {hidden ? '•••' : signedMoney(tot.profit)}
               </T>
               <T v="small">
-                {(tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions })) + ' · ' + t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) })}
+                {[
+                  tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions }),
+                  t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
+                  tot.hours >= 0.25 ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
+                  first ? t('desde {date}', { date: shortDate(first) }) : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </T>
               <View style={{ marginTop: S.sm, marginHorizontal: -S.xs }}>
-                <LineChart values={pts} height={120} />
+                <LineChart values={pts} height={120} peaks={dd.peaks} />
               </View>
+              <Row gap={S.sm}>
+                <Mini label={t('Pico')} value={fmt(dd.peak, cur)} />
+                <Mini label={t('Maior queda')} value={dd.max ? '−' + fmt(dd.max, cur) : '—'} color={dd.max ? C.bad : undefined} />
+                <Mini label={t('Abaixo do pico')} value={dd.current ? '−' + fmt(dd.current, cur) : t('No pico')} color={dd.current ? C.bad : C.good} />
+              </Row>
             </Card>
-            <StatGrid cols={3}>
-              <Stat label={t('Por hora')} value={tot.hours >= 0.25 ? money(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
-              {tot.roi !== null ? <Stat label="ROI" value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
-              {tot.itm !== null ? <Stat label="ITM" value={`${tot.itm.toFixed(0)}%`} /> : null}
-              <Stat label={t('Investido')} value={money(tot.invested, cur)} />
-              <Stat label={t('Melhor')} value={money(tot.best, cur)} tone="good" />
-              <Stat label={t('Pior')} value={money(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
+            <StatGrid cols={2}>
+              <Stat label={t('Por hora')} sub={t('Lucro por hora à mesa')} value={tot.hours >= 0.25 ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
+              {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por € em torneios')} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
+              {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
+              <Stat label={t('Investido')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
+              <Stat label={t('Melhor')} sub={t('Melhor sessão')} value={fmt(tot.best, cur)} tone="good" />
+              <Stat label={t('Pior')} sub={t('Pior sessão')} value={fmt(tot.worst, cur)} tone={tot.worst < 0 ? 'bad' : undefined} />
             </StatGrid>
+            <Calendar list={list} cur={cur} />
             <Breakdowns list={list} cur={cur} />
+            {!isPro ? (
+              <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
+                <Row>
+                  <Ionicons name="sparkles" size={18} color={C.accent} />
+                  <T v="h3" style={{ flex: 1 }}>
+                    {t('Onde é que ganhas mais?')}
+                  </T>
+                </Row>
+                <T v="small">{t('Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.')}</T>
+                <T v="h3" color={C.accent}>
+                  {t('Experimentar Pro')} ›
+                </T>
+              </Card>
+            ) : null}
+            <Card onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })} style={{ gap: S.xs }} accessibilityLabel={t('Calculadora de variância')}>
+              <Row>
+                <Ionicons name="pulse" size={18} color={C.accent} />
+                <T v="h3" style={{ flex: 1 }}>
+                  {t('Calculadora de variância')}
+                </T>
+                <Ionicons name="chevron-forward" size={17} color={C.muted} />
+              </Row>
+              <T v="small">{t('Quanto podes ganhar ou perder nas próximas horas ou torneios, com o teu win rate e desvio padrão.')}</T>
+            </Card>
           </>
         )}
         {history.length ? (
@@ -239,7 +323,7 @@ export default function BankrollScreen() {
               sheet.isNew
                 ? undefined
                 : () =>
-                    confirmAction(t('Apagar este movimento?'), money(sheet.x.amount, cur), t('Apagar'), () => {
+                    confirmAction(t('Apagar este movimento?'), fmt(sheet.x.amount, cur), t('Apagar'), () => {
                       deleteTransfer(sheet.x.id);
                       setSheet(null);
                     })
@@ -341,6 +425,7 @@ function BankrollEditor({
 }
 
 function TransferRow({ x, bankroll, onPress }: { x: Transfer; bankroll?: string; onPress: () => void }) {
+  const fmt = useFmt();
   const dep = x.kind === 'deposit';
   const { bankrolls } = useStore();
   const cur = bankrolls.find((b) => b.id === x.bankrollId)?.currency ?? '€';
@@ -352,7 +437,7 @@ function TransferRow({ x, bankroll, onPress }: { x: Transfer; bankroll?: string;
       subtitle={[shortDate(x.at), bankroll, x.note].filter(Boolean).join(' · ')}
       right={
         <T v="mono" color={C.textDim}>
-          {(dep ? '+' : '−') + money(Math.abs(x.amount), cur)}
+          {(dep ? '+' : '−') + fmt(Math.abs(x.amount), cur)}
         </T>
       }
       chevron={false}
@@ -361,11 +446,96 @@ function TransferRow({ x, bankroll, onPress }: { x: Transfer; bankroll?: string;
   );
 }
 
+/** Last sessions as green / red dots, oldest on the left. */
+function Dots({ results }: { results: number[] }) {
+  if (results.length < 2) return null;
+  return (
+    <Row gap={4} style={{ alignItems: 'center' }}>
+      <T v="tiny">{t('Últimas {n}', { n: results.length })}</T>
+      {results.map((r, i) => (
+        <View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r > 0 ? C.good : r < 0 ? C.bad : C.muted }} />
+      ))}
+    </Row>
+  );
+}
+
+const WEEKS = 15;
+const WEEKDAYS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+
+/** Signature view: the last 15 weeks, one square per day, coloured by the day's result. */
+function Calendar({ list, cur }: { list: Session[]; cur: string }) {
+  const fmt = useFmt();
+  const days = dailyResults(list);
+  const best = bestWeekday(list);
+  if (!days.size) return null;
+  const max = Math.max(1, ...[...days.values()].map(Math.abs));
+  // Columns are weeks (Monday first), the last one holds today.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - mondayOffset - (WEEKS - 1) * 7);
+  const cols = Array.from({ length: WEEKS }, (_, w) =>
+    Array.from({ length: 7 }, (_, d) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + w * 7 + d);
+      return { ts: day.getTime(), future: day.getTime() > today.getTime(), r: days.get(day.getTime()) };
+    }),
+  );
+  const shown = cols.flat().filter((c) => c.r !== undefined).length;
+  return (
+    <Section title={t('Calendário')} hint={t('Cada quadrado é um dia: verde ganhaste, vermelho perdeste. Mais forte, mais dinheiro.')}>
+      <Card style={{ gap: S.md }}>
+        <View style={{ flexDirection: 'row', gap: 3 }}>
+          {cols.map((col, w) => (
+            <View key={w} style={{ flex: 1, gap: 3 }}>
+              {col.map((c) => (
+                <View
+                  key={c.ts}
+                  style={{
+                    aspectRatio: 1,
+                    borderRadius: 3,
+                    backgroundColor: c.r === undefined ? (c.future ? 'transparent' : C.surface3) : c.r >= 0 ? C.good : C.bad,
+                    opacity: c.r === undefined ? 1 : 0.35 + 0.65 * Math.min(1, Math.abs(c.r) / max),
+                  }}
+                />
+              ))}
+            </View>
+          ))}
+        </View>
+        <T v="small">
+          {best
+            ? t('O teu melhor dia é {day}: {amount} em {n} sessões.', { day: t(WEEKDAYS[best.day]), amount: fmt(Math.round(best.profit), cur), n: best.sessions })
+            : shown
+              ? t('{n} dias jogados nas últimas 15 semanas.', { n: shown })
+              : t('Sem sessões nas últimas 15 semanas.')}
+        </T>
+      </Card>
+    </Section>
+  );
+}
+
+const pctOf = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
+
+function Mini({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <View style={{ flex: 1, gap: 2 }}>
+      <T v="tiny" numberOfLines={1}>
+        {label}
+      </T>
+      <T v="mono" color={color ?? C.text} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 15, lineHeight: 20 }}>
+        {value}
+      </T>
+    </View>
+  );
+}
+
 function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
+  const fmt = useFmt();
   const { isPro, paywall } = usePro();
-  const [by, setBy] = useState<'venue' | 'name'>('venue');
-  const rows = breakdown(list, by, cur);
-  if (breakdown(list, 'venue', cur).length + breakdown(list, 'name', cur).length === 0) return null;
+  const [by, setBy] = useState<'venue' | 'name' | 'stakes'>('venue');
+  const rows = breakdown(list, by === 'stakes' ? (s) => stakeLabel(stakeKey(s), cur) : by, cur);
+  if (!list.some((s) => s.endedAt)) return null;
   // Free plan sees the best row; the rest is a Pro reason.
   const shown = isPro ? rows : rows.slice(0, 1);
   const max = Math.max(1, ...rows.map((b) => Math.abs(b.profit)));
@@ -377,6 +547,7 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
           options={[
             { key: 'venue', label: t('Salas') },
             { key: 'name', label: t('Jogos') },
+            { key: 'stakes', label: 'Stakes' },
           ]}
           value={by}
           onChange={setBy}
@@ -393,11 +564,12 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
                   </T>
                   <T v="tiny">
                     {b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions })}
-                    {b.hours >= 0.25 ? ' · ' + t('{amount}/h', { amount: money(Math.round(b.hourly), cur) }) : ''}
+                    {b.hours >= 0.25 && b.mtts < b.sessions ? ' · ' + t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : ''}
+                    {b.roi !== null ? ' · ROI ' + pctOf(b.roi) : ''}
                   </T>
                 </View>
                 <T v="mono" color={b.profit >= 0 ? C.good : C.bad}>
-                  {(b.profit > 0 ? '+' : '') + money(b.profit, cur)}
+                  {(b.profit > 0 ? '+' : '') + fmt(b.profit, cur)}
                 </T>
               </Row>
               <View style={{ height: 4, borderRadius: 2, backgroundColor: C.surface3 }}>
@@ -413,6 +585,7 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
 }
 
 function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: string; onDelete: () => void; onEdit: () => void }) {
+  const fmt = useFmt();
   const [open, setOpen] = useState(false);
   const p = profit(s);
   const mtt = s.kind === 'mtt';
@@ -425,7 +598,7 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
         subtitle={[shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
         right={
           <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
-            {(p > 0 ? '+' : '') + money(p, s.currency)}
+            {(p > 0 ? '+' : '') + fmt(p, s.currency)}
           </T>
         }
         chevron={false}
@@ -434,11 +607,11 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
       {open && (
         <View style={{ paddingHorizontal: S.lg, paddingBottom: S.md, gap: S.md }}>
           <T v="small">
-            {s.entries} × {money(s.buyIn, s.currency)}
-            {s.addOn ? ` + add-on ${money(s.addOn, s.currency)}` : ''} → {money(s.cashOut, s.currency)}
-            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: money(owedToBackers(s), s.currency) }) : ''}
-            {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: money(s.makeupCut, s.currency) }) : ''}
-            {s.expenses ? '\n' + t('Despesas {amount}', { amount: money(s.expenses, s.currency) }) : ''}
+            {s.entries} × {fmt(s.buyIn, s.currency)}
+            {s.addOn ? ` + add-on ${fmt(s.addOn, s.currency)}` : ''} → {fmt(s.cashOut, s.currency)}
+            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: fmt(owedToBackers(s), s.currency) }) : ''}
+            {s.makeupCut ? '\n' + t('A tua parte do pacote {amount}', { amount: fmt(s.makeupCut, s.currency) }) : ''}
+            {s.expenses ? '\n' + t('Despesas {amount}', { amount: fmt(s.expenses, s.currency) }) : ''}
           </T>
           <Row gap={S.sm}>
             <Button size="sm" kind="secondary" icon="pencil" title={t('Editar')} onPress={onEdit} />

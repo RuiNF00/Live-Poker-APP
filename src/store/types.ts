@@ -169,6 +169,8 @@ export interface Settings {
   shareNotes: boolean;
   /** Bankroll new sessions go to. */
   bankrollId?: string;
+  /** Bankroll tab shows ••• instead of amounts (for looking at it at the table). */
+  hideAmounts?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

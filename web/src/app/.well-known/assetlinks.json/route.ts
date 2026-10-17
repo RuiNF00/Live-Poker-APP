@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-// Android App Links for https://sweatbook.poker/h/<id>. Needs ANDROID_CERT_SHA256
+// Android App Links for https://sweatbook.poker/h/, /r/ and /live/ (paths are in the app's
+// intent filter, app.json). Needs ANDROID_CERT_SHA256
 // (comma-separated, from Play Console > App signing) on the host.
 export function GET() {
   const fingerprints = (process.env.ANDROID_CERT_SHA256 || '').split(',').map((s) => s.trim()).filter(Boolean);

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildBackup, mergeById, parseBackup, sessionsCsv } from '../backup';
+import { buildBackup, importSummary, mergeById, parseBackup, sessionsCsv } from '../backup';
 import { DEFAULT_SETTINGS, type Session } from '../types';
 
 const sess = (over: Partial<Session> = {}): Session => ({
@@ -36,4 +36,10 @@ test('csv quotes and computes profit', () => {
   const lines = csv.trim().split('\n');
   assert.equal(lines.length, 2);
   assert.match(lines[1], /^2026-10-01,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,200,1,0,200,450,0,,0,250,,,$/);
+});
+
+test('importSummary mentions bankrolls and transfers only when some came in', () => {
+  assert.ok(!importSummary({ hands: 1, sessions: 2, players: 0 }).includes('bankroll'));
+  const s = importSummary({ hands: 0, sessions: 0, players: 0, bankrolls: 2, transfers: 3 });
+  assert.ok(s.includes('2 bankrolls · 3 movimentos'), s);
 });

@@ -13,7 +13,7 @@ import { Button, Card, Field, ListGroup, ListItem, Pill, Row, Section, Segmented
 import { t } from '@/i18n';
 import { pickTextFile, saveTextFile } from '@/lib/files';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
-import { buildBackup, importSummary, parseBackup, sessionsCsv } from '@/store/backup';
+import { buildBackup, importSummary, parseBackup } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { BRAND, C, F, S } from '@/theme';
 
@@ -35,15 +35,6 @@ export default function SettingsScreen() {
     tap();
     try {
       await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup(store)), 'application/json');
-    } catch {
-      note(t('Não deu para exportar'), t('Tenta outra vez.'));
-    }
-  };
-  const exportCsv = async () => {
-    tap();
-    if (!pro.isPro) return pro.paywall('stats');
-    try {
-      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(sessions, store.bankrolls, store.transfers), 'text/csv');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }
@@ -111,7 +102,7 @@ export default function SettingsScreen() {
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
             <ListItem icon="push-outline" title={busy ? t('A importar…') : t('Importar ficheiro')} subtitle={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
             <ListItem icon="swap-horizontal-outline" iconColor={C.info} title={t('Importar de outra app')} subtitle={t('Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
-            <ListItem icon="grid-outline" title={t('Sessões em CSV')} subtitle={t('Para Excel ou Google Sheets')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={exportCsv} />
+            <ListItem icon="document-text-outline" title={t('Relatório PDF e CSV')} subtitle={t('Por ano ou datas: sessões, mãos, resultados')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={() => router.push('/export')} />
           </ListGroup>
         </Section>
 

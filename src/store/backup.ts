@@ -161,12 +161,15 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
 }
 
 /** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */
-export function importSummary(n: { hands: number; sessions: number; players: number; backers?: number }): string {
+export function importSummary(n: { hands: number; sessions: number; players: number; backers?: number; bankrolls?: number; transfers?: number }): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
     n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }),
     n.players === 1 ? t('1 jogador') : t('{n} jogadores', { n: n.players }),
   ];
   if (n.backers) parts.push(n.backers === 1 ? t('1 backer') : t('{n} backers', { n: n.backers }));
+  // Only when the backup had any: older backups have none to mention.
+  if (n.bankrolls) parts.push(n.bankrolls === 1 ? t('1 bankroll') : t('{n} bankrolls', { n: n.bankrolls }));
+  if (n.transfers) parts.push(n.transfers === 1 ? t('1 movimento') : t('{n} movimentos', { n: n.transfers }));
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }

@@ -34,6 +34,7 @@ import { newHand, nextLevel, rescaleStacks, resizeTable } from '@/poker/factory'
 import { amount, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
+import { opponentStats } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
 import { BRAND, C, R, S, SHADOW, ff, posColor } from '@/theme';
 
@@ -221,6 +222,7 @@ export default function NewHand() {
     router.back();
   };
 
+  const reads = useMemo(() => opponentStats(hands, store.players), [hands, store.players]);
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
@@ -565,6 +567,7 @@ export default function NewHand() {
         heroStack={hand.players[hand.hero].stack}
         bb={hand.game.bb}
         known={store.players}
+        stats={reads}
         onClose={() => setSeatEdit(null)}
         onSave={(p, all) => {
           if (seatEdit === null) return;
