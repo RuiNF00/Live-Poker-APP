@@ -41,6 +41,7 @@ SHARE AND GET FEEDBACK
 
 BUILT FOR LIVE PLAYERS
 • Tournaments and cash games, with a session clock and stack tracking
+• Your live session on the lock screen: time played, stack and level
 • Bankroll and results by venue, with staking (percentage sold, markup) and expenses
 • Final-table deal calculator (ICM and chip chop)
 • Reads on the players at your table during the session

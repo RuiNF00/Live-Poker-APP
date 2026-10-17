@@ -41,6 +41,7 @@ PARTILHA E PEDE OPINIÃO
 
 PARA QUEM JOGA LIVE
 • Torneios e cash games, com relógio de sessão e registo do stack
+• A sessão em curso no ecrã bloqueado: tempo de jogo, stack e nível
 • Bankroll e resultados por casino, com staking (percentagem vendida, markup) e despesas
 • Calculadora de deal para a mesa final (ICM e chip chop)
 • Leituras dos jogadores da tua mesa durante a sessão
