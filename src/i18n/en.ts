@@ -2290,6 +2290,12 @@ const en: Record<string, string> = {
   '{n} torneios · {e} entradas · {cur}': '{n} tournaments · {e} entries · {cur}',
   '{p}º de {n}': '{p} of {n}',
   '{x} por torneio': '{x} per tournament',
+  // Pro gates for insights and the downswing read; target reached live
+  'Salas, stakes, horas, sono e tilt: o que mexe no teu resultado.': 'Venues, stakes, hours, sleep and tilt: what moves your results.',
+  'Azar ou sinal?': 'Bad luck or a signal?',
+  'Vê se o teu downswing é normal para os teus resultados.': 'See whether your downswing is normal for your results.',
+  'Objetivo de bankroll atingido': 'Bankroll target reached',
+  'Com esta sessão passas os {target}. Boa altura para decidir se paras ou se sobes de stake.': 'This session takes you past {target}. A good moment to decide whether to stop or move up.',
 };
 
 export default en;

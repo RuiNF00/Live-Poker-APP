@@ -14,6 +14,7 @@ import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
 import { useSwaps } from '@/store/swaps-store';
 import { Insights } from '@/components/Insights';
+import { useLocked } from '@/components/ProGate';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
 import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
@@ -70,6 +71,7 @@ function BankrollTab() {
   const fmt = useFmt();
   const { sessions, transfers, bankrolls, defaultBankroll, saveSession, deleteSession, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, settings, setSettings } = useStore();
   const { isPro, paywall } = usePro();
+  const insightsLocked = useLocked('insights');
   const [scopePick, setScope] = useState<Scope>({ bankrollId: defaultBankroll.id });
   const [game, setGame] = useState<SessionFilter['game']>('all');
   const [format, setFormat] = useState<SessionFilter['format']>('all');
@@ -296,7 +298,7 @@ function BankrollTab() {
                 title={t('Diário mental')}
                 subtitle={(() => {
                   const n = list.filter((x) => x.mind).length;
-                  const top = isPro && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
+                  const top = !insightsLocked && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
                   return top ? top.title : n ? t('{n} check-ins · só tu vês', { n }) : t('Sono, foco e tilt: o que mexem no teu resultado');
                 })()}
                 onPress={() => router.push({ pathname: '/mind', params: { currency: cur } })}

@@ -32,6 +32,8 @@ test('below the smallest stake: nothing allowed, missing counts from zero', () =
 test('stakes played above the rules', () => {
   const list = [cash(), cash({ sb: 5, bb: 10 }), cash({ kind: 'mtt', buyIn: 1100 }), cash({ sb: 5, bb: 10, startedAt: NOW - 400 * 24 * H })];
   assert.deepEqual(aboveRules(list, 15000, DEFAULT_RULES, NOW - 90 * 24 * H), ['MTT 1100', '5/10']);
+  assert.deepEqual(aboveRules(list, 15000, DEFAULT_RULES, NOW - 90 * 24 * H, (n) => `${n}€`), ['MTT 1100€', '5/10']);
+  assert.deepEqual(aboveRules(list, 15000, DEFAULT_RULES, NOW - 90 * 24 * H, () => '•••'), ['MTT •••', '5/10']);
 });
 
 test('stop-loss per session uses the live stack', () => {
@@ -42,6 +44,8 @@ test('stop-loss per session uses the live stack', () => {
   assert.deepEqual([sl.lost, sl.left, sl.near, sl.hit], [800, 200, true, false]);
   assert.equal(stopLoss(r, [], null, NOW), null);
   assert.equal(stopLoss(DEFAULT_RULES, [], live, NOW), null, 'off when 0');
+  // A live tournament has no result yet: registering never trips the stop-loss.
+  assert.equal(liveResult({ ...live, kind: 'mtt', buyIn: 5300 }), 0);
 });
 
 test('stop-loss per day adds today\'s finished sessions, not yesterday\'s', () => {
@@ -59,4 +63,15 @@ test('target progress', () => {
   assert.equal(targetProgress({ ...DEFAULT_RULES, target: 20000 }, 15000), 0.75);
   assert.equal(targetProgress({ ...DEFAULT_RULES, target: 20000 }, 25000), 1);
   assert.equal(targetProgress(DEFAULT_RULES, 15000), null);
+});
+
+test('the target is crossed during the live session only when the live result takes the balance past it', async () => {
+  const { goalReachedLive } = await import('../rules-math');
+  const r = { ...DEFAULT_RULES, target: 10000 };
+  const live = cash({ endedAt: undefined, entries: 1, stack: 1400 }); // up 900
+  assert.equal(goalReachedLive(r, 9500, live), true);
+  assert.equal(goalReachedLive(r, 8000, live), false, 'not there yet');
+  assert.equal(goalReachedLive(r, 10500, live), false, 'already past it before the session');
+  assert.equal(goalReachedLive({ ...r, target: 0 }, 9500, live), false);
+  assert.equal(goalReachedLive(r, 9500, null), false);
 });
