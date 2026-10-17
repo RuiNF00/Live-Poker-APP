@@ -701,6 +701,8 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
     }),
   );
   const shown = cols.flat().filter((c) => c.r !== undefined).length;
+  const won = cols.flat().filter((c) => c.r !== undefined && c.r >= 0).length;
+  const lost = cols.flat().filter((c) => c.r !== undefined && c.r < 0).length;
   return (
     <Section title={t('Calendário')} hint={t('Cada quadrado é um dia: verde ganhaste, vermelho perdeste. Mais forte, mais dinheiro.')}>
       <Card style={{ gap: S.md }}>
@@ -708,11 +710,11 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
           style={{ flexDirection: 'row', gap: 3 }}
           accessible
           accessibilityRole="image"
-          accessibilityLabel={t('Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.', {
-            n: shown,
-            won: cols.flat().filter((c) => c.r !== undefined && c.r >= 0).length,
-            lost: cols.flat().filter((c) => c.r !== undefined && c.r < 0).length,
-          })}>
+          accessibilityLabel={
+            shown === 1
+              ? t('Calendário das últimas 15 semanas: 1 dia jogado, {won} a ganhar, {lost} a perder.', { won, lost })
+              : t('Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.', { n: shown, won, lost })
+          }>
           {cols.map((col, w) => (
             <View key={w} style={{ flex: 1, gap: 3 }}>
               {col.map((c) => (
@@ -731,9 +733,11 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
         </View>
         <T v="small">
           {best
-            ? t('O teu melhor dia é {day}: {amount} em {n} sessões.', { day: t(WEEKDAYS[best.day]), amount: fmt(Math.round(best.profit), cur), n: best.sessions })
+            ? (best.sessions === 1 ? t('O teu melhor dia é {day}: {amount} em 1 sessão.', { day: t(WEEKDAYS[best.day]), amount: fmt(Math.round(best.profit), cur), n: best.sessions }) : t('O teu melhor dia é {day}: {amount} em {n} sessões.', { day: t(WEEKDAYS[best.day]), amount: fmt(Math.round(best.profit), cur), n: best.sessions }))
             : shown
-              ? t('{n} dias jogados nas últimas 15 semanas.', { n: shown })
+              ? shown === 1
+                ? t('1 dia jogado nas últimas 15 semanas.')
+                : t('{n} dias jogados nas últimas 15 semanas.', { n: shown })
               : t('Sem sessões nas últimas 15 semanas.')}
         </T>
       </Card>

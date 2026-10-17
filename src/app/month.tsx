@@ -200,7 +200,7 @@ export default function MonthScreen() {
             <View style={{ width: STORY_W * preview, height: STORY_H * preview, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
               <View style={{ position: 'absolute', left: (STORY_W * preview - STORY_W) / 2, top: (STORY_H * preview - STORY_H) / 2, transform: [{ scale: preview }] }}>
                 {/* The card's own text reads out; this says what it is. */}
-                <View accessible accessibilityRole="image" accessibilityLabel={t('Cartão do mês a partilhar: {h} h, {n} sessões.', { h: Math.round(r.hours), n: r.sessions })}>
+                <View accessible accessibilityRole="image" accessibilityLabel={(r.sessions === 1 ? t('Cartão do mês a partilhar: {h} h, 1 sessão.', { h: Math.round(r.hours), n: r.sessions }) : t('Cartão do mês a partilhar: {h} h, {n} sessões.', { h: Math.round(r.hours), n: r.sessions }))}>
                   <MonthCard ref={card} r={r} hideMoney={hideMoney} />
                 </View>
               </View>

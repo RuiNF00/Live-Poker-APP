@@ -3215,6 +3215,15 @@ const en: Record<string, string> = {
   'Dia {n} a {date}: lembrar-me': 'Day {n} on {date}: remind me',
   'Avisamos-te {n} min antes.': "We'll remind you {n} min before.",
   'Avisamos-te antes do Dia {n}': "We'll remind you before Day {n}",
+  'Calendário das últimas 15 semanas: 1 dia jogado, {won} a ganhar, {lost} a perder.': 'Calendar for the last 15 weeks: 1 day played, {won} up, {lost} down.',
+  'O teu melhor dia é {day}: {amount} em 1 sessão.': 'Your best day is {day}: {amount} in 1 session.',
+  '1 dia jogado nas últimas 15 semanas.': '1 day played in the last 15 weeks.',
+  'Cartão do mês a partilhar: {h} h, 1 sessão.': 'Month card to share: {h} h, 1 session.',
+  '1 despesa': '1 expense',
+  '{h} h em 1 sessão': '{h} h in 1 session',
+  'Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.': 'You have 1 session. The first findings show up at around {m}.',
+  '1 sessão · {h}h': '1 session · {h}h',
+  'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Still watching (1 session): the verdict shows after 100 h of cash or 50 tournaments.',
 };
 
 export default en;

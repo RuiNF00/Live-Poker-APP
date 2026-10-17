@@ -192,7 +192,7 @@ export function verdict(list: Session[], currency: string, money: (n: number) =>
     if (mtt.roi + 1.645 * se < 0) return { ready: true, tone: 'bad', text: t('Perdes nos torneios: ROI de {roi} em {n} torneios, e já não é azar.', { roi, n }) };
     return { ready: true, tone: 'neutral', text: t('Com {n} torneios, um ROI de {roi} ainda cabe na variância dos torneios.', { roi, n }) };
   }
-  return { ready: false, tone: 'neutral', text: t('Ainda a observar ({n} sessões): o veredito aparece com 100 h de cash ou 50 torneios.', { n: done.length }) };
+  return { ready: false, tone: 'neutral', text: done.length === 1 ? t('Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.') : t('Ainda a observar ({n} sessões): o veredito aparece com 100 h de cash ou 50 torneios.', { n: done.length }) };
 }
 
 export interface Downswing {

@@ -210,7 +210,7 @@ function StakeLine({ label, x, other, r, fg, dim, hideMoney }: { label: string; 
         {stakeName(x, r.currency, hideMoney, other)}
       </Text>
       {rate ? <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 24, lineHeight: 30, color: toneOf(v) ?? fg }}>{rate}</Text> : null}
-      <Caption dim={dim}>{t('{n} sessões · {h}h', { n: x.sessions, h: Math.round(x.hours) })}</Caption>
+      <Caption dim={dim}>{x.sessions === 1 ? t('1 sessão · {h}h', { h: Math.round(x.hours) }) : t('{n} sessões · {h}h', { n: x.sessions, h: Math.round(x.hours) })}</Caption>
     </View>
   );
 }

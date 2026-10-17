@@ -39,7 +39,7 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
       <Section title={t('Onde ganhas e onde perdes')}>
         <Card tone="inset" style={{ gap: S.xs }}>
           <T v="small">{t('Com mais sessões mostramos-te onde ganhas e onde perdes: horas, dias, salas, stakes e o que acontece depois de uma perda grande.')}</T>
-          <T v="tiny">{done < FIRST_AT ? t('Tens {n} sessões. As primeiras conclusões aparecem por volta das {m}.', { n: done, m: FIRST_AT }) : t('Ainda não há diferenças com sessões suficientes de cada lado.')}</T>
+          <T v="tiny">{done < FIRST_AT ? done === 1 ? t('Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.', { m: FIRST_AT }) : t('Tens {n} sessões. As primeiras conclusões aparecem por volta das {m}.', { n: done, m: FIRST_AT }) : t('Ainda não há diferenças com sessões suficientes de cada lado.')}</T>
         </Card>
       </Section>
     );

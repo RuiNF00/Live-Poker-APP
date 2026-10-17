@@ -1548,6 +1548,11 @@ const ptBR: Record<string, string> = {
   'Dia {n} a {date}: lembrar-me': 'Dia {n} em {date}: me lembre',
   'Avisamos-te {n} min antes.': 'A gente avisa {n} min antes.',
   'Avisamos-te antes do Dia {n}': 'A gente avisa antes do Dia {n}',
+  'Calendário das últimas 15 semanas: 1 dia jogado, {won} a ganhar, {lost} a perder.': 'Calendário das últimas 15 semanas: 1 dia jogado, {won} no positivo, {lost} no negativo.',
+  'O teu melhor dia é {day}: {amount} em 1 sessão.': 'Seu melhor dia é {day}: {amount} em 1 sessão.',
+  'Cartão do mês a partilhar: {h} h, 1 sessão.': 'Card do mês para compartilhar: {h} h, 1 sessão.',
+  'Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.': 'Você tem 1 sessão. As primeiras conclusões aparecem por volta de {m}.',
+  'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Ainda observando (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.',
 };
 
 export default ptBR;

@@ -319,7 +319,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
             <Row gap={S.md} style={{ alignItems: 'baseline' }}>
               <T v="display">{String(best.year)}</T>
               {best.byHours ? (
-                <T v="callout">{t('{n} sessões', { n: best.sessions })}</T>
+                <T v="callout">{best.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: best.sessions })}</T>
               ) : (
                 <T v="h1" color={C.good}>
                   {'+' + money(Math.round(best.profit), r.currency)}
