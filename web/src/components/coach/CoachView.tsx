@@ -37,6 +37,23 @@ export function CoachView(props: Props) {
   const [at, setAt] = useState(0);
   const [comments, setComments] = useState(props.comments);
   const [closed, setClosed] = useState(false);
+  // The coach's way out: hides the link in this browser and leaves a note the player's app syncs.
+  const [left, setLeft] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => setLeft(readLocal<boolean>(`coachLeft.${token}`) === true), [token]);
+  const leave = async () => {
+    const first = props.hands[0];
+    if (first && !closed) {
+      await fetch(`/api/coach/${token}/comments`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ handId: first.id, stepIndex: null, mark: null, name: readLocal<string>('coachName') || c.coach, body: c.leftNote }),
+      }).catch(() => {});
+    }
+    writeLocal(`coachLeft.${token}`, true);
+    setLeaving(false);
+    setLeft(true);
+  };
   const current = props.hands[at];
   const byHand = useMemo(() => {
     const m = new Map<string, CoachComment[]>();
@@ -58,6 +75,28 @@ export function CoachView(props: Props) {
   const expires = props.expiresAt
     ? new Date(props.expiresAt).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'long', timeZone: 'UTC' })
     : null;
+
+  if (left) {
+    return (
+      <div className="cv">
+        <div className="cv-top">
+          <h1>{c.leftTitle}</h1>
+          <p className="cv-meta">{c.leftBody}</p>
+          <p>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                writeLocal(`coachLeft.${token}`, false);
+                setLeft(false);
+              }}>
+              {c.comeBack}
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cv">
@@ -112,6 +151,23 @@ export function CoachView(props: Props) {
       {closed ? <p className="cv-closed">{c.closed}</p> : null}
       <footer className="cv-foot">
         <p>{c.privacy}</p>
+        {leaving ? (
+          <p>
+            {c.leaveSure}{' '}
+            <button type="button" className="btn" onClick={leave}>
+              {c.leaveYes}
+            </button>{' '}
+            <button type="button" className="btn" onClick={() => setLeaving(false)}>
+              {c.leaveNo}
+            </button>
+          </p>
+        ) : (
+          <p>
+            <button type="button" className="btn" onClick={() => setLeaving(true)}>
+              {c.leave}
+            </button>
+          </p>
+        )}
         <p>
           <a href="/" target="_blank" rel="noreferrer noopener">
             {c.cta}
@@ -312,7 +368,7 @@ function Composer({
   const [body, setBody] = useState('');
   const [mark, setMark] = useState<Mark | null>(null);
   const [whole, setWhole] = useState(false);
-  const [state, setState] = useState<'idle' | 'sending' | 'error' | 'limited'>('idle');
+  const [state, setState] = useState<'idle' | 'sending' | 'error' | 'limited' | 'offensive'>('idle');
   // The name is asked once; after that the composer is just the comment.
   const [knownName, setKnownName] = useState(false);
   useEffect(() => {
@@ -339,6 +395,7 @@ function Composer({
         onClosed();
         return setState('error');
       }
+      if (r.status === 422 && (await r.json().catch(() => null))?.error === 'offensive') return setState('offensive');
       if (!r.ok) return setState('error');
       onAdded((await r.json()).comment);
       setBody('');
@@ -381,6 +438,7 @@ function Composer({
       </button>
       {state === 'error' ? <p className="error">{c.error}</p> : null}
       {state === 'limited' ? <p className="error">{c.limited}</p> : null}
+      {state === 'offensive' ? <p className="error">{c.offensive}</p> : null}
     </form>
   );
 }

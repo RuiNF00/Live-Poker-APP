@@ -2845,6 +2845,11 @@ const es: Record<string, string> = {
   'Silenciar durante a sessão': 'Silenciar durante la sesión',
   'O resto chega quando paras ou acabas. Os níveis tocam sempre.': 'Lo demás llega cuando pausas o terminas. Los niveles suenan siempre.',
   'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Solo avisos que pediste. Nada de publicidad. Elige cuáles en los Ajustes de Sweatbook.',
+  // Reporting one comment
+  'Denunciar': 'Denunciar',
+  'Denunciado. Obrigado.': 'Denunciado. Gracias.',
+  'Denunciar comentário de': 'Denunciar comentario de',
+  'Comentário denunciado': 'Comentario denunciado',
 };
 
 export default es;

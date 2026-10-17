@@ -2852,6 +2852,11 @@ const en: Record<string, string> = {
   '{h} h em {n} sessões. O resumo do teu ano está pronto.': '{h} h in {n} sessions. Your year in review is ready.',
   '{h} h em {n} sessões, {amount}. O resumo do teu ano está pronto.': '{h} h in {n} sessions, {amount}. Your year in review is ready.',
   'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'No time? Position and cards are enough: tap “Save now” and finish it later.',
+  // Reporting one comment
+  'Denunciar': 'Report',
+  'Denunciado. Obrigado.': 'Reported. Thank you.',
+  'Denunciar comentário de': 'Report comment by',
+  'Comentário denunciado': 'Comment reported',
 };
 
 export default en;
