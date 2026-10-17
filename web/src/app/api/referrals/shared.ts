@@ -34,5 +34,8 @@ export async function readBody(req: Request, bucket: string) {
   return { b, body: { installId, rcUserId, myCode, raw: raw! } as ReferralBody };
 }
 
+/** The phone's platform, for the App Store code of an invite discount. */
+export const platformOf = (body: ReferralBody) => (body.raw.platform === 'ios' || body.raw.platform === 'android' ? body.raw.platform : 'web');
+
 /** Code to register for an install that has none yet: the app's own when it sent one. */
 export const codeToRegister = (body: ReferralBody, fallback: string | null = null) => body.myCode ?? fallback ?? newCode();

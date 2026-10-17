@@ -147,3 +147,36 @@ select erase_referrals('22222222-2222-2222-2222-222222222222');
 select purge_referrals();
 reset role;
 \set ON_ERROR_STOP on
+
+-- Discount reward (20261017370000): 50% off the first month for 72 h instead of Pro days
+set role service_role;
+\set dref '''a1111111-1111-1111-1111-111111111111'''
+\set dfriend '''a2222222-2222-2222-2222-222222222222'''
+select referral_code_for(:dref, 'DREF2345', 'rc_dref') = 'DREF2345' as discount_code_created;
+select claim_referral(:dfriend, 'DREF2345', 'link') = 'ok' as discount_claimed;
+reset role;
+insert into invite_offer_codes (code) values ('INVITEAAA111'), ('INVITEBBB222');
+set role service_role;
+select count(*) = 1 as discount_booked from (select activate_referral_discount(:dfriend)) x;
+select count(*) = 1 as discount_once from (select activate_referral_discount(:dfriend)) x;
+reset role;
+select count(*) = 2 and bool_and(kind = 'discount' and offer_until > now() + interval '71 hours' and pro_until is null) as both_get_discount
+  from referral_rewards where friend_install_id = :dfriend;
+set role service_role;
+select count(*) = 0 as discount_not_granted_on_rc from pending_referral_grants(:dref);
+select (select ios_code from referral_offer(:dfriend, 'android')) is null as android_needs_no_code;
+select (select ios_code from referral_offer(:dfriend, 'ios')) = 'INVITEAAA111' as ios_gets_a_code;
+select (select ios_code from referral_offer(:dfriend, 'ios')) = 'INVITEAAA111' as ios_code_is_stable;
+select (select ios_code from referral_offer(:dref, 'ios')) = 'INVITEBBB222' as each_reward_own_code;
+select discounts = 1 and days_earned = 0 as discount_status_ok from referral_status(:dref);
+reset role;
+update referral_rewards set offer_until = now() - interval '1 minute' where friend_install_id = :dfriend;
+set role service_role;
+select count(*) = 0 as expired_offer_gone from referral_offer(:dfriend, 'ios');
+reset role;
+\set ON_ERROR_STOP off
+set role anon;
+select * from invite_offer_codes;
+select referral_offer(:dfriend, 'ios');
+reset role;
+\set ON_ERROR_STOP on

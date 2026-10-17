@@ -1,6 +1,6 @@
 // The invite reward's state on the phone, kept apart from the network and React
 // Native so it can be tested: a friend who came through an invite and saved a
-// first hand turns on 7 days of Pro for both players. Either can happen first,
+// first hand books 50% off the first month of Pro for both players. Either can happen first,
 // and either can happen offline.
 
 export interface ClaimState {
@@ -18,7 +18,7 @@ interface KV {
 /** POST /api/referrals/activate. Throws when offline; null when invites are off on the server. */
 export type ActivatePost = () => Promise<{ booked?: boolean } | null>;
 
-/** granted: both get Pro now. not_yet: worth trying again (offline, or RevenueCat hasn't seen us). none: nothing to do. */
+/** granted: the discount is booked for both. not_yet: worth trying again (offline, or RevenueCat hasn't seen us). none: nothing to do. */
 export type Activation = 'granted' | 'not_yet' | 'none';
 
 export const CLAIM_KEY = 'rl.claim.v1';

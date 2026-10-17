@@ -183,7 +183,7 @@ export function siteOgImage() {
 }
 
 /** An invite (/r/<code>): the same for every code, so it caches like a static file. */
-export function inviteOgImage(days: number, c: { eyebrow: string; title: string; days: string }) {
+export function inviteOgImage(reward: string, c: { eyebrow: string; title: string; days: string }) {
   const [line1, line2] = c.days.split('\n');
   return render(
     <Frame>
@@ -206,7 +206,7 @@ export function inviteOgImage(days: number, c: { eyebrow: string; title: string;
             border: `2px solid ${K.accentLine}`,
           }}
         >
-          <div style={{ display: 'flex', fontSize: 64, fontWeight: 800, color: K.accent, letterSpacing: -2 }}>+{days}</div>
+          <div style={{ display: 'flex', fontSize: 64, fontWeight: 800, color: K.accent, letterSpacing: -2 }}>{reward}</div>
           <div style={{ display: 'flex', flexDirection: 'column', fontSize: 28, fontWeight: 500, color: K.dim, lineHeight: 1.2 }}>
             <span>{line1}</span>
             {line2 ? <span>{line2}</span> : null}

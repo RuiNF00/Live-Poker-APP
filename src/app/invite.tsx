@@ -1,20 +1,26 @@
-// Invite friends: your link, how many came and the Pro days you've earned.
+// Invite friends: your link, how many came, and the discount on the first month of Pro when one is waiting.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
+import { INVITE } from '@/billing/plans';
+import { usePro } from '@/billing/pro';
+import { redeemInviteOffer } from '@/billing/purchases';
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { withLang } from '@/lib/link-lang';
 import { markShared, inviteStatus, type InviteStatus } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { C, F, R, S } from '@/theme';
 
 export default function InviteScreen() {
+  const pro = usePro();
+  const [busy, setBusy] = useState(false);
   const [s, setS] = useState<InviteStatus | null | undefined>(undefined);
   const load = () => {
     setS(undefined);
@@ -28,7 +34,7 @@ export default function InviteScreen() {
   const share = async (to?: 'whatsapp') => {
     if (!s) return;
     tap('medium');
-    const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, ficamos os dois com 7 dias de Pro. {url}', { url: withLang(s.url, variant) });
+    const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, recebemos os dois {pct}% no primeiro mês do Pro. {url}', { pct: INVITE.pct, url: withLang(s.url, variant) });
     track('link_shared', { channel: to === 'whatsapp' ? 'invite_whatsapp' : 'invite' });
     void markShared();
     if (to === 'whatsapp') {
@@ -40,10 +46,24 @@ export default function InviteScreen() {
     else await Share.share({ message: msg });
   };
 
+  // The discount on the monthly: Google Play buys it here, the App Store redeems the player's code.
+  const takeOffer = async () => {
+    if (!s?.offer || busy) return;
+    const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
+    setBusy(true);
+    if (s.offer.iosCode) await Clipboard.setStringAsync(s.offer.iosCode);
+    const res = await redeemInviteOffer(pro.plans, s.offer.iosCode);
+    setBusy(false);
+    if (res === 'ok') router.back();
+    else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
+    else if (res === 'unavailable') notice(t('Não deu para abrir o desconto'), t('Tenta outra vez daqui a pouco. O desconto continua guardado aqui.'));
+    else if (res === 'error') notice(t('Não deu para concluir'), t('Tenta outra vez daqui a pouco. O desconto continua guardado aqui.'));
+  };
+
   const steps: [React.ComponentProps<typeof Ionicons>['name'], string][] = [
     ['paper-plane-outline', t('Envias o teu link a um amigo')],
     ['download-outline', t('O teu amigo instala e guarda a primeira mão')],
-    ['flash-outline', t('Recebem os dois 7 dias de Pro')],
+    ['flash-outline', t('Recebem os dois {pct}% no primeiro mês do Pro', { pct: INVITE.pct })],
   ];
 
   return (
@@ -55,12 +75,27 @@ export default function InviteScreen() {
             <Ionicons name="gift" size={34} color={C.accent} />
           </View>
           <T v="title" style={{ textAlign: 'center', fontSize: 28 }}>
-            {t('7 dias de Pro por amigo')}
+            {t('{pct}% no primeiro mês por amigo', { pct: INVITE.pct })}
           </T>
           <T v="callout" style={{ textAlign: 'center' }}>
             {t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
           </T>
         </View>
+
+        {s?.offer && !pro.isPro ? (
+          <Card tone="accent" style={{ gap: S.sm }}>
+            <T v="h3" color={C.accent}>
+              {t('Tens {pct}% no primeiro mês do Pro', { pct: INVITE.pct })}
+            </T>
+            <T v="small">{t('Do teu convite. Dá para usar até {date}.', { date: shortDate(Date.parse(s.offer.until)) })}</T>
+            {s.offer.iosCode ? (
+              <T v="small">
+                {t('Código da App Store: {code}. Fica copiado para colares se a App Store o pedir.', { code: s.offer.iosCode })}
+              </T>
+            ) : null}
+            <Button title={t('Usar o desconto')} icon="pricetag" disabled={busy} onPress={takeOffer} />
+          </Card>
+        ) : null}
 
         <ListGroup>
           {steps.map(([ic, label], i) => (
@@ -98,7 +133,7 @@ export default function InviteScreen() {
             <StatGrid cols={3}>
               <Stat label={t('Convidados')} value={String(s.invited)} />
               <Stat label={t('A usar')} value={String(s.activated)} />
-              <Stat label={t('Dias')} value={String(s.daysEarned)} tone={s.daysEarned ? 'accent' : undefined} />
+              <Stat label={t('Descontos')} value={String(s.discounts)} tone={s.discounts ? 'accent' : undefined} />
             </StatGrid>
             {s.proUntil ? (
               <T v="small" style={{ textAlign: 'center' }}>

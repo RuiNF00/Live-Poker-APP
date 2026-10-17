@@ -326,10 +326,10 @@ export const BR: Record<string, ArticleText> = {
   invite: {
     slug: 'convidar-amigos',
     title: 'Convidar amigos',
-    summary: 'Os dois ganham 7 dias de Pro.',
+    summary: 'Os dois recebem 50% no primeiro mês do Pro.',
     body: [
       'Configurações → Ferramentas → Convidar amigos → Compartilhar convite.',
-      'Quando o amigo instala e salva a primeira mão nos 7 dias seguintes, os dois ganham 7 dias de Pro. Você ganha com até 10 amigos por ano.',
+      'Quando o amigo instala e salva a primeira mão nos 7 dias seguintes, os dois recebem 50% no primeiro mês do Pro, para usar nas 72 horas seguintes. No iPhone o desconto é um código da App Store que o app abre para você. Vale para até 10 amigos por ano.',
       'Recebeu um código em vez de um link? Em Configurações, toque em Tenho um código de convite e depois em Usar (só nos primeiros 7 dias depois de instalar).',
     ],
   },

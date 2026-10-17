@@ -9,7 +9,8 @@ import { grantPromotional } from './revenuecat';
 // Referral loop (see supabase/migrations/20261017040000_referrals.sql for the rules).
 // Server-only: rewards are granted from here, so the tables are closed to app/browser keys.
 
-export const REWARD_DAYS = 7;
+/** How long each player can use the invite discount (50% off the first month, see the 370000 migration). */
+export const OFFER_HOURS = 72;
 export { CODE_RE, normalizeCode } from './refcode';
 
 export type ReferralSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
@@ -21,6 +22,14 @@ export interface ReferralStatus {
   activated: number;
   daysEarned: number;
   proUntil: string | null;
+  /** Discounts earned (one per friend who saved a first hand). */
+  discounts: number;
+}
+
+/** The invite discount this install can use now. iosCode: its one-time App Store offer code. */
+export interface InviteOffer {
+  until: string;
+  iosCode: string | null;
 }
 
 interface Grant {
@@ -40,6 +49,7 @@ interface ReferralBackend {
   pending(installId: string): Promise<Grant[]>;
   markGranted(installId: string, until: string): Promise<void>;
   status(installId: string): Promise<ReferralStatus | null>;
+  offer(installId: string, platform: 'ios' | 'android' | 'web'): Promise<InviteOffer | null>;
   /** "Delete all my data": this install's code, the invite it accepted and the ones it sent. */
   erase(installId: string): Promise<void>;
 }
@@ -69,7 +79,9 @@ class SupabaseReferrals implements ReferralBackend {
     return (await this.rpc<boolean>('referral_activated', { p_friend: friend })) === true;
   }
   async activate(friend: string) {
-    return (await this.rpc<Grant[]>('activate_referral', { p_friend: friend, p_days: REWARD_DAYS })) ?? [];
+    // Books a discount for both; nothing goes to RevenueCat (the stores apply the discount).
+    await this.rpc('activate_referral_discount', { p_friend: friend, p_hours: OFFER_HOURS });
+    return [];
   }
   async pending(installId: string) {
     return (await this.rpc<Grant[]>('pending_referral_grants', { p_install_id: installId })) ?? [];
@@ -78,12 +90,17 @@ class SupabaseReferrals implements ReferralBackend {
     await this.rpc('mark_referral_granted', { p_install_id: installId, p_until: until });
   }
   async status(installId: string) {
-    const rows = await this.rpc<{ code: string; invited: number; activated: number; days_earned: number; pro_until: string | null }[]>(
+    const rows = await this.rpc<{ code: string; invited: number; activated: number; days_earned: number; pro_until: string | null; discounts: number }[]>(
       'referral_status',
       { p_install_id: installId },
     );
     const r = rows?.[0];
-    return r ? { code: r.code, invited: r.invited, activated: r.activated, daysEarned: r.days_earned, proUntil: r.pro_until } : null;
+    return r ? { code: r.code, invited: r.invited, activated: r.activated, daysEarned: r.days_earned, proUntil: r.pro_until, discounts: r.discounts ?? 0 } : null;
+  }
+  async offer(installId: string, platform: 'ios' | 'android' | 'web') {
+    const rows = await this.rpc<{ offer_until: string; ios_code: string | null }[]>('referral_offer', { p_install_id: installId, p_platform: platform });
+    const r = rows?.[0];
+    return r ? { until: r.offer_until, iosCode: r.ios_code } : null;
   }
   async erase(installId: string) {
     await this.rpc('erase_referrals', { p_install_id: installId });
@@ -94,7 +111,7 @@ class SupabaseReferrals implements ReferralBackend {
 interface LocalReferrals {
   codes: Record<string, { code: string; appCode?: string; rcUserId: string | null }>;
   referrals: Record<string, { referrer: string; source: string; shareId: string | null; claimedAt: string; activatedAt: string | null }>;
-  rewards: { installId: string; friend: string; role: 'friend' | 'referrer'; days: number; proUntil: string; grantedAt: string | null; createdAt: string }[];
+  rewards: { installId: string; friend: string; role: 'friend' | 'referrer'; kind?: 'discount'; days: number; proUntil: string; grantedAt: string | null; createdAt: string; offerUntil?: string }[];
 }
 
 class LocalBackend implements ReferralBackend {
@@ -159,15 +176,14 @@ class LocalBackend implements ReferralBackend {
       const now = Date.now();
       r.activatedAt = new Date(now).toISOString();
       if (refRc === friendRc) return [];
-      const days = REWARD_DAYS * 86_400_000;
+      const offerUntil = new Date(now + OFFER_HOURS * 3_600_000).toISOString();
+      // A discount, never Pro time: nothing to grant on RevenueCat (proUntil is the booking time, already past).
+      const discount = { kind: 'discount' as const, days: 0, proUntil: r.activatedAt, grantedAt: r.activatedAt, createdAt: r.activatedAt, offerUntil };
       const hadFriendReward = d.rewards.some((w) => w.role === 'friend' && rc(w.installId) === friendRc);
-      if (!hadFriendReward) d.rewards.push({ installId: friend, friend, role: 'friend', days: REWARD_DAYS, proUntil: new Date(now + days).toISOString(), grantedAt: null, createdAt: r.activatedAt });
+      if (!hadFriendReward) d.rewards.push({ installId: friend, friend, role: 'friend', ...discount });
       const yearAgo = now - 365 * 86_400_000;
       const earned = d.rewards.filter((w) => rc(w.installId) === refRc && w.role === 'referrer' && Date.parse(w.createdAt) > yearAgo).length;
-      if (refRc && earned < 10) {
-        const prev = Math.max(now, ...d.rewards.filter((w) => w.installId === r.referrer).map((w) => Date.parse(w.proUntil)));
-        d.rewards.push({ installId: r.referrer, friend, role: 'referrer', days: REWARD_DAYS, proUntil: new Date(prev + days).toISOString(), grantedAt: null, createdAt: r.activatedAt });
-      }
+      if (refRc && earned < 10) d.rewards.push({ installId: r.referrer, friend, role: 'referrer', ...discount });
       return [friend, r.referrer];
     });
     return (await Promise.all(ids.map((id) => this.pending(id)))).flat();
@@ -189,14 +205,22 @@ class LocalBackend implements ReferralBackend {
     const c = d.codes[installId];
     if (!c) return null;
     const mine = Object.values(d.referrals).filter((r) => r.referrer === installId);
-    const rewards = d.rewards.filter((w) => w.installId === installId);
+    const rewards = d.rewards.filter((w) => w.installId === installId && w.kind !== 'discount');
     return {
       code: c.appCode ?? c.code,
       invited: mine.length,
       activated: mine.filter((r) => r.activatedAt).length,
       daysEarned: rewards.reduce((n, w) => n + w.days, 0),
       proUntil: rewards.map((w) => w.proUntil).sort().at(-1) ?? null,
+      discounts: d.rewards.filter((w) => w.installId === installId && w.kind === 'discount').length,
     };
+  }
+  async offer(installId: string, platform: 'ios' | 'android' | 'web') {
+    const d = await this.read();
+    const open = d.rewards.filter((w) => w.installId === installId && w.offerUntil && Date.parse(w.offerUntil) > Date.now());
+    const until = open.map((w) => w.offerUntil!).sort().at(-1);
+    // No App Store code pool in development: iOS opens the redeem sheet empty.
+    return until ? { until, iosCode: platform === 'ios' ? (process.env.INVITE_OFFER_CODE_DEV ?? null) : null } : null;
   }
   async erase(installId: string) {
     await this.mutate((d) => {
