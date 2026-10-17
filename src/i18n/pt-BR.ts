@@ -643,6 +643,7 @@ const ptBR: Record<string, string> = {
   'O Main Event não tem garantia publicada (o prémio adicionado não se aplica no Nevada).': 'O Main Event não tem garantia publicada (o prêmio adicionado não se aplica em Nevada).',
   'Por continuar': 'A continuar',
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'Sem conexão agora: o convite fica salvo e é ativado sozinho quando houver sinal.',
+  'Ensacado': 'Fichas guardadas',
   'Sem rede': 'Sem conexão',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Tudo salvo no celular. Envia quando houver sinal.',
