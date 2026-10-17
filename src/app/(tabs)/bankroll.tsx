@@ -12,8 +12,10 @@ import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
+import { useSwaps } from '@/store/swaps-store';
 import { Insights } from '@/components/Insights';
 import { RulesCard, RulesForm } from '@/components/BankrollRules';
+import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -160,6 +162,8 @@ function BankrollTab() {
 
         {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} /> : null}
 
+        <MoreTools />
+
         {/* Filters only once there is something to filter. */}
         {scoped.some((x) => x.endedAt) || nFilters ? (
           <View style={{ gap: S.sm }}>
@@ -198,9 +202,7 @@ function BankrollTab() {
           </View>
         ) : null}
 
-        <StakingEntry />
-        <TripsEntry />
-        <SwapsEntry />
+        <YearReviewEntry />
 
         {tot.sessions === 0 ? (
           nFilters ? (
@@ -691,5 +693,36 @@ function SessionRow({ s, bankroll, onDelete, onEdit }: { s: Session; bankroll?: 
         </View>
       )}
     </View>
+  );
+}
+
+/**
+ * Staking, trips and swaps stay one tap away without crowding a bankroll
+ * that doesn't use them: a tool shows on its own once it has something in
+ * it, and the rest wait behind one "Mais ferramentas" row.
+ */
+function MoreTools() {
+  const { backers, trips } = useStore();
+  const { swaps } = useSwaps();
+  const [open, setOpen] = useState(false);
+  const tools = [
+    { key: 'staking', used: backers.length > 0, el: <StakingEntry key="staking" />, name: 'Staking' },
+    { key: 'trips', used: trips.length > 0, el: <TripsEntry key="trips" />, name: t('viagens') },
+    { key: 'swaps', used: swaps.length > 0, el: <SwapsEntry key="swaps" />, name: 'swaps' },
+  ];
+  const idle = tools.filter((x) => !x.used);
+  return (
+    <>
+      {tools.filter((x) => x.used).map((x) => x.el)}
+      {idle.length ? (
+        open ? (
+          idle.map((x) => x.el)
+        ) : (
+          <ListGroup>
+            <ListItem icon="grid-outline" title={t('Mais ferramentas')} subtitle={idle.map((x) => x.name).join(', ').replace(/^./, (c) => c.toUpperCase())} onPress={() => setOpen(true)} />
+          </ListGroup>
+        )
+      ) : null}
+    </>
   );
 }

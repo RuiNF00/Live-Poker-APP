@@ -22,7 +22,7 @@ export const STICKER_H = 180;
 
 const INK = C.accentInk;
 
-function Logo({ size, color, cut }: { size: number; color: string; cut: string }) {
+export function Logo({ size, color, cut }: { size: number; color: string; cut: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
       <Svg width={size + 4} height={size + 4} viewBox="0 2 64 64">
@@ -37,7 +37,7 @@ function Logo({ size, color, cut }: { size: number; color: string; cut: string }
 }
 
 /** "Feito com Sweatbook": always on free cards. */
-function Watermark({ color, dim }: { color: string; dim: string }) {
+export function Watermark({ color, dim }: { color: string; dim: string }) {
   return (
     <View style={{ alignItems: 'center', gap: 2 }}>
       <Text style={{ fontFamily: ff(700), fontSize: 11, color: dim, letterSpacing: 0.4 }}>
