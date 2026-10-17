@@ -9,7 +9,7 @@ import { liveCopy } from '../src/components/live/copy';
 import { offerCopy } from '../src/components/offer/copy';
 import { profileCopy } from '../src/components/profile/copy';
 import { swapCopy } from '../src/components/swap/copy';
-import { describeStep, formatChips, streetLabel } from '../src/lib/hand-i18n';
+import { describeStep, formatAmount, formatChips, streetLabel } from '../src/lib/hand-i18n';
 
 describe('pickLocale', () => {
   it.each([
@@ -141,6 +141,13 @@ describe('hand text', () => {
     expect(formatChips(1500, 'en')).toBe('1,500');
     expect(formatChips(9500, 'pt-BR')).toBe('9.500');
     expect(formatChips(25_000, 'es')).toBe('25k');
+    // Same decimal mark as the app: "19,9k" in pt-PT, pt-BR and es, "19.9k" in English.
+    expect(formatChips(19_900, 'pt')).toBe('19,9k');
+    expect(formatChips(19_900, 'pt-BR')).toBe('19,9k');
+    expect(formatChips(1_250_000, 'es')).toBe('1,25M');
+    expect(formatChips(19_900, 'en')).toBe('19.9k');
+    expect(formatAmount(250, 100, 'bb', 'pt')).toBe('2,5 BB');
+    expect(formatAmount(250, 100, 'bb', 'en')).toBe('2.5 BB');
   });
   it('names streets and steps in Spanish', () => {
     expect(streetLabel('preflop', 'es')).toBe('Preflop');

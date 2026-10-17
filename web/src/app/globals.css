@@ -1308,3 +1308,18 @@ a {
   font-weight: 700;
   color: var(--text);
 }
+
+/* Support contact and "report this page" under every public page. */
+.page-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  padding: 24px 16px 96px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.page-footer a {
+  color: var(--muted);
+  text-decoration: underline;
+}

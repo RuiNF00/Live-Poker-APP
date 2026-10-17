@@ -28,6 +28,7 @@ export function CommentsList({
   onJumpStreet,
   notes,
   onNote,
+  onRemove,
 }: {
   shareId: string;
   comments: Comment[];
@@ -41,6 +42,8 @@ export function CommentsList({
   /** Private notes per street (never shared). */
   notes?: Partial<Record<Street, string>>;
   onNote?: (s: Street, text: string) => void;
+  /** Given on the owner's own hand: each comment offers "Apagar" instead of "Denunciar". */
+  onRemove?: (c: Comment) => void;
 }) {
   const [name, setName] = useState(defaultName);
   const [text, setText] = useState('');
@@ -122,6 +125,18 @@ export function CommentsList({
                     </T>
                   </Row>
                   <T v="body">{c.text}</T>
+                  {onRemove ? (
+                    <Pressable
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('Apagar comentário de')} ${c.name}`}
+                      onPress={() => onRemove(c)}
+                      style={{ alignSelf: 'flex-end', minHeight: 24, justifyContent: 'center' }}>
+                      <T v="tiny" color={C.muted}>
+                        {t('Apagar')}
+                      </T>
+                    </Pressable>
+                  ) : (
                   <Pressable
                     disabled={reported.has(c.id)}
                     hitSlop={10}
@@ -133,6 +148,7 @@ export function CommentsList({
                       {reported.has(c.id) ? t('Denunciado. Obrigado.') : t('Denunciar')}
                     </T>
                   </Pressable>
+                  )}
                 </View>
               </Row>
             ))}

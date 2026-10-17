@@ -9,6 +9,7 @@ import { swapCreatorPro } from '@/lib/swap-pro';
 import { loadSwap as loadSwapById, publicSwap } from '@/lib/swaps';
 import { SwapView } from '@/components/swap/SwapView';
 import { swapCopy } from '@/components/swap/copy';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -45,5 +46,10 @@ export default async function SwapPage({ params, searchParams }: Params & Search
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   // Who pays whom shows only when the swap's creator has Pro; otherwise just the results.
   const accounts = await swapCreatorPro(id);
-  return <SwapView locale={locale} initial={publicSwap(rec, null)} accounts={accounts} invite={invite} />;
+  return (
+    <>
+      <SwapView locale={locale} initial={publicSwap(rec, null)} accounts={accounts} invite={invite} />
+      <PageFooter locale={locale} page={`swap/${id}`} />
+    </>
+  );
 }

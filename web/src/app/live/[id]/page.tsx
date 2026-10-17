@@ -10,6 +10,7 @@ import { liveStore, loadLive as loadLiveById } from '@/lib/live';
 import { normalizeCode } from '@/lib/refcode';
 import { LiveView } from '@/components/live/LiveView';
 import { liveCopy } from '@/components/live/copy';
+import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -50,5 +51,10 @@ export default async function LivePage({ params, searchParams }: Params & Search
     if (!(await limited(req, `live-view:${id}`, 1, 86400))) await liveStore().recordView(id).catch(() => {});
   });
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
-  return <LiveView id={id} locale={locale} initial={rec.snapshot} initialUpdatedAt={Date.parse(rec.updatedAt)} invite={invite} />;
+  return (
+    <>
+      <LiveView id={id} locale={locale} initial={rec.snapshot} initialUpdatedAt={Date.parse(rec.updatedAt)} invite={invite} />
+      <PageFooter locale={locale} page={`live/${id}`} />
+    </>
+  );
 }

@@ -579,8 +579,9 @@ export function Button({
         style,
       ]}>
       {iconNode}
-      <View style={{ alignItems: 'center' }}>
-        <RNText numberOfLines={1} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1 }}>
+      {/* Shrinks to fit a narrow slot (the session dock at 200%) instead of cutting to "Nova…". */}
+      <View style={{ alignItems: 'center', flexShrink: 1 }}>
+        <RNText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1 }}>
           {title}
         </RNText>
         {sub ? <RNText maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}
