@@ -5,7 +5,7 @@
 import { gcm } from '@noble/ciphers/aes';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
-import { Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
+import { Gunzip, Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
 
 import { ALPHA } from './cloud-code';
 
@@ -91,13 +91,7 @@ export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Arra
     if (last) break;
     await pause();
   }
-  const zipped = new Uint8Array(size);
-  let at = 0;
-  for (const p of parts) {
-    zipped.set(p, at);
-    at += p.length;
-  }
-  return envelope(zipped, key, nonce);
+  return envelope(join(parts, size), key, nonce);
 }
 
 /** Opens a sealed backup; plain (older) backups pass through. Throws 'forbidden' on a wrong key. */
@@ -116,4 +110,52 @@ export function unseal(raw: Uint8Array, key: Uint8Array): string {
   } catch {
     throw new Error('forbidden');
   }
+}
+
+function join(parts: Uint8Array[], size: number): Uint8Array {
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
+}
+
+/** gunzip fed 24 KB at a time (a slice inflates ~20×, ~30 ms without a JIT), pausing in between. */
+async function gunzipSliced(raw: Uint8Array, pause: () => Promise<void>): Promise<Uint8Array> {
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  const gz = new Gunzip((chunk) => {
+    parts.push(chunk);
+    size += chunk.length;
+  });
+  for (let i = 0; ; i += 24576) {
+    const last = i + 24576 >= raw.length;
+    gz.push(raw.subarray(i, i + 24576), last);
+    if (last) break;
+    await pause();
+  }
+  return join(parts, size);
+}
+
+/** Same as unseal, with both gunzips sliced so a restore keeps the screen alive. */
+export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
+  const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await gunzipSliced(raw, pause) : raw;
+  const text = strFromU8(bytes);
+  let env: Partial<Sealed>;
+  try {
+    env = JSON.parse(text) as Partial<Sealed>;
+  } catch {
+    return text;
+  }
+  if (env?.sweatbook !== 'backup' || env.alg !== 'A256GCM' || !env.n || !env.c) return text;
+  let zipped: Uint8Array;
+  try {
+    zipped = gcm(key, fromB64(env.n)).decrypt(fromB64(env.c));
+  } catch {
+    throw new Error('forbidden');
+  }
+  await pause();
+  return strFromU8(await gunzipSliced(zipped, pause));
 }
