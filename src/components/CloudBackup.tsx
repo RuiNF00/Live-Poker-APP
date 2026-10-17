@@ -29,7 +29,7 @@ const ERR: Record<string, string> = {
   network: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
-  too_big: 'A cópia é grande demais para a nuvem. Exporta para ficheiro.',
+  too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
   quota: 'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.',
   disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
   would_shrink: 'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.',
@@ -70,7 +70,8 @@ function shareCode(c: CloudState) {
   Share.share({ message: t('Código da cópia Sweatbook: {code}', { code: formatCode(c) }) }).catch(() => {});
 }
 
-export function CloudBackup() {
+/** `onExport`: the «Exportar tudo» of the screen it sits on, offered when the copy outgrew the server limit. */
+export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   const store = useStore();
   const [cloud, setCloud] = useState<CloudState | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -159,6 +160,7 @@ export function CloudBackup() {
   const stalled = !!cloud && cloudAhead(countsOf(buildBackup(store)), cloud);
   const health = backupHealth(cloud, now);
   const warn = stalled || health.level !== 'ok';
+  const overLimit = health.level === 'failed' && health.reason === 'too_big';
 
   return (
     <Card style={{ gap: S.md }}>
@@ -181,6 +183,10 @@ export function CloudBackup() {
           )}
         </View>
       </Row>
+      {overLimit && onExport ? (
+        // The last copy that fit stays on the server; the file keeps everything.
+        <Button size="sm" icon="download-outline" title={t('Exportar tudo (ficheiro)')} onPress={onExport} />
+      ) : null}
       {cloud ? (
         <>
           <Pressable
@@ -295,7 +301,7 @@ export function AutoCloudBackup() {
 }
 
 function healthTitle(h: Exclude<Health, { level: 'ok' }>): string {
-  if (h.level === 'failed') return t('A última cópia na nuvem falhou');
+  if (h.level === 'failed') return h.reason === 'too_big' ? t('A cópia passou o limite: exporta para guardar tudo') : t('A última cópia na nuvem falhou');
   return !Number.isFinite(h.days) ? t('Ainda não há cópia na nuvem') : t('Última cópia na nuvem há {n} dias', { n: h.days });
 }
 
@@ -330,7 +336,10 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
   const store = useStore();
   const [busy, setBusy] = useState(false);
 
+  // Over the limit another try fails the same way: the export is in Settings.
+  const overLimit = health.level === 'failed' && health.reason === 'too_big';
   const copyNow = async () => {
+    if (overLimit) return router.push('/settings');
     const c = await loadCloud();
     if (!c || busy) return;
     tap();
@@ -351,7 +360,7 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
       icon="cloud-offline-outline"
       title={healthTitle(health)}
       // Same shape as the unfinished-hand card: what's wrong, then what a tap does.
-      body={busy ? t('A copiar…') : t('Fazer cópia agora')}
+      body={overLimit ? t('Exportar tudo') : busy ? t('A copiar…') : t('Fazer cópia agora')}
       onPress={copyNow}
       dismissLabel={t('Agora não')}
       onDismiss={onSnooze}

@@ -188,7 +188,7 @@ export default function SettingsScreen() {
         <NotificationSettings />
 
         <Section title={t('Cópia de segurança')} hint={t('Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.')}>
-          <CloudBackup />
+          <CloudBackup onExport={exportAll} />
           <DataRecovery />
           <ListGroup>
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
