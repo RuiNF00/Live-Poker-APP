@@ -23,7 +23,8 @@ export type FunnelEvent =
   | 'story_shared'
   | 'link_shared'
   | 'link_opened'
-  | 'invite_claimed';
+  | 'invite_claimed'
+  | 'cancel_flow';
 
 let install: Promise<string> | null = null;
 export function installId(): Promise<string> {
