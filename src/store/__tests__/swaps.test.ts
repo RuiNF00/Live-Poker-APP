@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { mergeRemote, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { mergeRemote, swapDeleteJobs, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -61,4 +61,12 @@ test('merging the server copy keeps entries not sent yet, and drops them once th
   const arrived = mergeRemote(m, { ...remote, entries: [...remote.entries, { ...pending, pending: undefined, id: 'srv' }] });
   assert.equal(arrived.entries.length, 2);
   assert.ok(arrived.entries.every((x) => !x.pending));
+});
+
+test('erasing queues a delete for every swap still on the server, with its own token', () => {
+  const jobs = swapDeleteJobs([swap({ id: 'mine', token: 'ta' }), swap({ id: 'theirs', side: 'b', token: 'tb', confirmedAt: undefined }), swap({ id: 'old', token: 'tc', gone: true })]);
+  assert.deepEqual(jobs, [
+    { id: 'mine', token: 'ta' },
+    { id: 'theirs', token: 'tb' },
+  ]);
 });

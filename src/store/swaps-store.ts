@@ -42,6 +42,17 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l);
 };
 
+/** Every swap on the phone, once loaded from disk. */
+export async function getAllSwaps(): Promise<Swap[]> {
+  await boot();
+  return state.swaps;
+}
+
+/** After "Delete all my data": the keys are already gone from disk, this empties memory. */
+export function forgetSwapsLocally() {
+  emit([]);
+}
+
 export function getSwap(id: string): Swap | undefined {
   return state.swaps.find((s) => s.id === id);
 }

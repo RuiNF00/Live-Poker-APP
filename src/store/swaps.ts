@@ -184,3 +184,8 @@ export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): 
 export function fromRemote(remote: RemoteSwap, token: string, side: SwapSide, now = Date.now()): Swap {
   return mergeRemote({ id: remote.id, token, side, terms: remote.terms, entries: [], createdAt: now, updatedAt: now }, remote, now);
 }
+
+/** The server deletes "Delete all my data" queues: every swap this phone can still reach. */
+export function swapDeleteJobs(list: Pick<Swap, 'id' | 'token' | 'gone'>[]): { id: string; token: string }[] {
+  return list.filter((s) => !s.gone && !!s.token).map((s) => ({ id: s.id, token: s.token }));
+}

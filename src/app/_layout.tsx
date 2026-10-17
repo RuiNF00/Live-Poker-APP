@@ -30,6 +30,8 @@ import { startSync } from '@/lib/sync';
 import { bootReferrals } from '@/lib/referrals';
 // Registers the queued share-link sender before the outbox first drains.
 import '@/lib/share-queue';
+// Registers the swap delete sender ("Delete all my data").
+import '@/lib/swap-cleanup';
 import { StoreProvider } from '@/store/store';
 import { C, ff } from '@/theme';
 
