@@ -1588,6 +1588,19 @@ const en: Record<string, string> = {
   '{n} sessões · {h}h': '{n} sessions · {h}h',
   '{year} em cartões para partilhar': '{year} in cards to share',
   'Onde ganhaste menos': 'Where you won the least',
+  'Sem data': 'No date',
+  'Data que não se lê': 'Date we can not read',
+  'Sem resultado, buy-in nem prémio': 'No result, buy-in or prize',
+  'Depósito ou levantamento sem valor': 'Deposit or withdrawal with no amount',
+  'Linhas que ficam de fora': 'Rows left out',
+  'O resto entra na mesma. Podes corrigir no ficheiro e importar outra vez: o que já entrou não se repete.': 'The rest still comes in. Fix the file and import again: nothing already in is added twice.',
+  'Linha {n}': 'Line {n}',
+  'Ver as {n}': 'See all {n}',
+  'Envia-nos o ficheiro': 'Send us the file',
+  'Vemos porque é que estas linhas não entram e melhoramos a importação para o teu ficheiro.': 'We look at why these rows do not come in and improve the import for your file.',
+  'O ficheiro tem os teus dados de póquer': 'The file has your poker data',
+  'Datas, salas e resultados. Só sai do telemóvel se o enviares tu, por email ou outra app à tua escolha. Nada é enviado sozinho.': 'Dates, card rooms and results. It only leaves your phone if you send it, by email or any app you pick. Nothing is sent on its own.',
+  'Escolher como enviar': 'Choose how to send',
 };
 
 export default en;

@@ -31,6 +31,17 @@ export interface ImportedMove {
   note: string;
 }
 
+/** Why a row of the file was left out. */
+export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMove';
+
+export interface FailedRow {
+  /** Line in the file (1 = first line). */
+  line: number;
+  reason: FailReason;
+  /** The cell that couldn't be read, or the start of the row. */
+  value: string;
+}
+
 export interface ImportResult {
   sessions: Session[];
   /** Deposits and withdrawals: bankroll moves, not poker. */
@@ -39,6 +50,8 @@ export interface ImportResult {
   transfers: number;
   /** Rows without a date or any money in them. */
   unreadable: number;
+  /** Every row left out (transfers and unreadable ones), in file order, with why. */
+  failed: FailedRow[];
   order: DateOrder;
   /** The file says which sessions are cash and which are tournaments. */
   kindKnown: boolean;
@@ -48,6 +61,8 @@ export interface ImportResult {
 
 /** Everything the import screen needs after a file is picked. */
 export interface Prepared {
+  /** The file as picked, kept so the player can choose to send it to us when something doesn't read. */
+  text: string;
   table: Table;
   source: SourceId;
   mapping: Mapping;
@@ -56,7 +71,7 @@ export interface Prepared {
 export function prepare(text: string): Prepared {
   const table = readTable(text, knownHeader);
   const source = detectSource(text, table);
-  return { table, source, mapping: mappingFor(source, table.headers) };
+  return { text, table, source, mapping: mappingFor(source, table.headers) };
 }
 
 const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL: 'R$', CHF: 'CHF', HKD: 'HK$', AUD: 'A$', '€': '€', $: '$', '£': '£', R$: 'R$', US$: '$' };
@@ -80,6 +95,8 @@ export function parseNum(raw: string | undefined): number | null {
     neg = true;
     s = s.slice(1, -1);
   }
+  // "1.5k" in a sheet typed by hand.
+  const k = /\d\s*k$/i.test(s) ? 1000 : 1;
   s = s.replace(/[^\d.,\-+eE]/g, '');
   if (s.startsWith('-')) {
     neg = !neg;
@@ -95,7 +112,7 @@ export function parseNum(raw: string | undefined): number | null {
   }
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
-  return neg ? -n : n;
+  return (neg ? -n : n) * k;
 }
 
 // ─── Dates ───────────────────────────────────────────────────────────────────
@@ -282,8 +299,11 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
   let transfers = 0;
   const moves: ImportedMove[] = [];
   let unreadable = 0;
+  const failed: FailedRow[] = [];
+  const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
 
-  for (const r of table.rows) {
+  table.rows.forEach((r, ri) => {
+    const line = table.lines?.[ri] ?? ri + 2;
     const k = kindUseful ? kindOf(get(r, 'kind')) : null;
     const nameRaw = get(r, 'name');
     const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
@@ -294,12 +314,16 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
         const dup = seen.get(m.id) ?? 0;
         seen.set(m.id, dup + 1);
         moves.push(dup ? { ...m, id: m.id + '_' + dup } : m);
-      } else transfers++;
-      continue;
+      } else {
+        transfers++;
+        failed.push({ line, reason: startP ? 'badMove' : get(r, 'start') ? 'badDate' : 'noDate', value: startP ? preview(r) : get(r, 'start') || preview(r) });
+      }
+      return;
     }
     if (!startP) {
       unreadable++;
-      continue;
+      failed.push({ line, reason: get(r, 'start') ? 'badDate' : 'noDate', value: get(r, 'start') || preview(r) });
+      return;
     }
     let start = startP.t;
     if (!startP.hasTime) {
@@ -318,7 +342,8 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     const srcExp = Math.abs(parseNum(get(r, 'expenses')) ?? 0);
     if (buyIn === null && cashOut === null && net === null) {
       unreadable++;
-      continue;
+      failed.push({ line, reason: 'noMoney', value: [get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')].filter(Boolean).join(' · ') || preview(r) });
+      return;
     }
 
     const finish = parseNum(get(r, 'finish'));
@@ -416,8 +441,8 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
       ...(format ? { format } : null),
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
-  }
-  return { sessions, moves, transfers, unreadable, order, kindKnown: kindUseful, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  });
+  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */
