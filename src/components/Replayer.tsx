@@ -245,7 +245,7 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
         borderRadius: R.md,
         backgroundColor: '#0E0D0B',
         borderWidth: 1,
-        borderColor: f || view.decision ? 'rgba(255,106,61,0.45)' : C.border,
+        borderColor: f || view.decision || view.heroBet ? 'rgba(255,106,61,0.45)' : C.border,
         paddingHorizontal: 12,
         paddingVertical: 7,
         flexDirection: 'row',
@@ -263,7 +263,25 @@ function InfoBar({ view }: { view: ReturnType<typeof viewAt> }) {
           <Stat label="Call" value={f.toCall} color={C.good} />
           <Stat label={t('Pot odds')} value={pct(f.potOdds, 1)} color={C.info} />
           <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
+          <Stat label={t('Aposta')} value={pct(f.betPct)} color={C.text} />
+          <Stat label="V:B" value={ratio(f.vb)} color={C.warn} />
           {view.rangeEq ? <RangeEq eq={view.rangeEq} /> : null}
+          <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
+            {view.info}
+          </Text>
+        </>
+      ) : view.heroBet ? (
+        <>
+          <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: 12, letterSpacing: 0.6 }}>
+            {t('HERO APOSTA')}
+            <Text style={{ color: C.textDim, fontFamily: F.medium, letterSpacing: 0 }}> {pct(view.heroBet.pct)} {t('do pote')}</Text>
+          </Text>
+          <Stat label="Bluff BE" value={pct(view.heroBet.bluffBE, 1)} color={C.accent} />
+          <Stat label="V:B" value={ratio(view.heroBet.vb)} color={C.warn} />
+          <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
+            {view.heroBet.vs}: {t('pot odds')} <Text style={{ color: C.info, fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsPotOdds, 1)}</Text> · MDF{' '}
+            <Text style={{ color: '#A78BFA', fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsMdf)}</Text>
+          </Text>
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
           </Text>
@@ -301,6 +319,11 @@ function RangeEq({ eq }: { eq: { equity: number; pct: number } }) {
       Equity <Text style={{ color: C.good, fontFamily: F.mono, fontSize: 13 }}>{pct(eq.equity)}</Text> {t('vs top')} {eq.pct}%
     </Text>
   );
+}
+
+/** Value:bluff as "2.3:1". */
+function ratio(x: number): string {
+  return `${pct(x / 100, 1).replace('%', '')}:1`;
 }
 
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {

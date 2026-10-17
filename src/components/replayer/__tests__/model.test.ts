@@ -106,3 +106,33 @@ test('a shove bigger than hero: pot odds against the effective bet', () => {
   // Pot that counts 1 + 2 + 100 = 103, call 100.
   assert.ok(Math.abs(v.facing!.potOdds - 100 / 203) < 1e-9);
 });
+
+test('facing a pot-size bet: 50% MDF, 2:1 value to bluffs, size 100%', () => {
+  // Hero BB vs BTN: limp-checked to the flop, then BTN bets pot.
+  const h = spot(
+    [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'check' }, { p: 2, kind: 'check' }, { p: 0, kind: 'bet', to: 5 }],
+    2,
+  );
+  h.board = ['2c', '7d', '9h'];
+  const v = lastView(h);
+  assert.ok(v.facing);
+  assert.ok(Math.abs(v.facing!.betPct - 1) < 1e-9);
+  assert.ok(Math.abs(v.facing!.mdf - 0.5) < 1e-9);
+  assert.ok(Math.abs(v.facing!.vb - 2) < 1e-9);
+  assert.equal(v.seats[0].badge?.label, 'BET 5 (100%)');
+});
+
+test('hero bets half pot: bluff needs 33%, villain gets 25% pot odds', () => {
+  const h = spot(
+    [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'check' }, { p: 2, kind: 'check' }, { p: 0, kind: 'bet', to: 2.5 }],
+    0,
+  );
+  h.board = ['2c', '7d', '9h'];
+  const v = lastView(h);
+  assert.equal(v.facing, null);
+  assert.ok(v.heroBet);
+  assert.ok(Math.abs(v.heroBet!.pct - 0.5) < 1e-9);
+  assert.ok(Math.abs(v.heroBet!.bluffBE - 1 / 3) < 1e-9);
+  assert.ok(Math.abs(v.heroBet!.vb - 3) < 1e-9);
+  assert.ok(Math.abs(v.heroBet!.vsPotOdds - 0.25) < 1e-9);
+});

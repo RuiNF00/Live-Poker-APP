@@ -2029,6 +2029,10 @@ const en: Record<string, string> = {
   'Passar ou apostar': 'Check or bet',
   'Pote com limps': 'Limped pot',
   'Abrir ou foldar': 'Open or fold',
+  'Aposta': 'Bet',
+  'HERO APOSTA': 'HERO BETS',
+  'do pote': 'of the pot',
+  'pot odds': 'pot odds',
 };
 
 export default en;
