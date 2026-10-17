@@ -62,7 +62,7 @@ function Tournament({ s }: { s: Session }) {
   const { saveSession } = useStore();
   const tour: Tourney = s.tourney ?? {};
   const st = tour.structure?.length ? tour.structure : undefined;
-  const [pad, setPad] = useState<null | 'stack' | 'left' | 'entries' | 'startStack'>(null);
+  const [pad, setPad] = useState<null | 'stack' | 'left' | 'entries' | 'startStack' | 'bounties'>(null);
   const [sheet, setSheet] = useState<null | 'structure' | 'payouts'>(null);
   const [allLevels, setAllLevels] = useState(false);
   const save = (p: Partial<Session>) => saveSession({ ...s, ...p });
@@ -70,7 +70,9 @@ function Tournament({ s }: { s: Session }) {
 
   const level = s.level ?? 1;
   const depth = stackDepth(s.stack, s, s.tableSize || 9);
-  const avg = averageStack(tour);
+  // The stack the session started with stands in until the player types the official one.
+  const startStack = tour.startStack || s.stackLog[0]?.stack || 0;
+  const avg = averageStack({ ...tour, startStack });
   const pay = tour.payouts?.length && tour.left ? payState(tour.payouts, tour.left) : null;
 
   const applyStructure = (structure: Level[], name?: string) => {
@@ -132,7 +134,14 @@ function Tournament({ s }: { s: Session }) {
             <Divider />
             <Row gap={S.md}>
               <Cell label={t('Entradas')} value={tour.entries ? tour.entries.toLocaleString(locale) : undefined} onPress={() => setPad('entries')} />
-              <Cell label={t('Stack inicial')} value={tour.startStack ? chips(tour.startStack) : undefined} onPress={() => setPad('startStack')} />
+              <Cell label={t('Stack inicial')} value={startStack ? chips(startStack) : undefined} onPress={() => setPad('startStack')} />
+            </Row>
+            <Divider />
+            <Row gap={S.md}>
+              <Cell label="Bounties" value={tour.bounties ? money(tour.bounties, s.currency) : undefined} onPress={() => setPad('bounties')} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <T v="tiny">{t('Contam no prémio: soma-os ao valor que recebes no fim.')}</T>
+              </View>
             </Row>
           </Card>
         </Section>
@@ -208,9 +217,9 @@ function Tournament({ s }: { s: Session }) {
         }}
       />
       <AmountPad
-        visible={pad === 'left' || pad === 'entries' || pad === 'startStack'}
+        visible={pad === 'left' || pad === 'entries' || pad === 'startStack' || pad === 'bounties'}
         plain
-        title={pad === 'left' ? t('Jogadores que restam') : pad === 'entries' ? t('Entradas') : t('Stack inicial')}
+        title={pad === 'left' ? t('Jogadores que restam') : pad === 'entries' ? t('Entradas') : pad === 'bounties' ? t('Bounties ganhos ({currency})', { currency: s.currency }) : t('Stack inicial')}
         bb={s.bb}
         onClose={() => setPad(null)}
         onDone={(v) => {

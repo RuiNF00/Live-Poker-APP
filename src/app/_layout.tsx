@@ -100,6 +100,8 @@ export default function RootLayout() {
             <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
             <Stack.Screen name="tournament" options={{ title: t('Modo torneio') }} />
+            <Stack.Screen name="tournament-stats" options={{ title: t('Torneios') }} />
+            <Stack.Screen name="tournament-card" options={{ title: t('Currículo de torneios'), presentation: 'modal' }} />
             <Stack.Screen name="odds" options={{ title: t('Calculadora de odds') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="profile" options={{ title: t('Perfil público') }} />

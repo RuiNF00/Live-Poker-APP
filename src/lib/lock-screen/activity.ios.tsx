@@ -5,7 +5,7 @@
 // "Noite" tokens from src/theme.ts, copied by value.
 
 import { HStack, Link, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { activityBackgroundTint, background, cornerRadius, font, foregroundStyle, frame, monospacedDigit, padding } from '@expo/ui/swift-ui/modifiers';
+import { activityBackgroundTint, background, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity, type LiveActivity } from 'expo-widgets';
 
 import type { LiveProps } from './live-state';
@@ -42,13 +42,19 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     </Link>
   );
 
+  // The banner carries the app's own wordmark, small and dim like a system app
+  // name: it says whose session this is, it isn't an ad.
   return {
     banner: (
       <VStack alignment="leading" spacing={12} modifiers={[padding({ all: 16 }), activityBackgroundTint('#0C1311')]}>
         <HStack spacing={6}>
           <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(p.paused ? warn : good)]}>{'● ' + p.status.toUpperCase()}</Text>
+          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{p.title}</Text>
           <Spacer />
-          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(dim)]}>{p.title}</Text>
+          <HStack spacing={0}>
+            <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(dim)]}>Sweat</Text>
+            <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(accent)]}>book</Text>
+          </HStack>
         </HStack>
         <HStack alignment="top" spacing={12}>
           <VStack alignment="leading" spacing={2}>
