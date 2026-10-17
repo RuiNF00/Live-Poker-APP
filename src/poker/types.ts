@@ -75,6 +75,11 @@ export interface Hand {
   tags: string[];
   /** Study folders the player made ("Rever com coach"); private, never shared. */
   folders?: string[];
+  /** Study state: waiting for review or reviewed (see poker/review.ts); private, never shared. */
+  review?: 'pending' | 'reviewed';
+  /** What you or your coach took from the hand; private, never shared. */
+  reviewNote?: string;
+  reviewedAt?: number;
   notes: string;
   title?: string;
   /** Manual winner(s) when showdown cards are unknown. */
