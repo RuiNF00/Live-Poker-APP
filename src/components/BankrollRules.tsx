@@ -33,8 +33,9 @@ export function RulesCard({ bankroll, sessions, balance, hidden, onEdit }: { ban
   const [now] = useState(() => Date.now());
   const info = useMemo(() => {
     if (!r) return null;
-    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance) };
-  }, [r, sessions, balance, now]);
+    return { a: allowedStakes(balance, r), over: aboveRules(sessions, balance, r, now - 30 * DAY, fmt), sl: r.stopLossPer === 'day' ? stopLoss(r, sessions, sessions.find((s) => !s.endedAt) ?? null, now) : null, goal: targetProgress(r, balance) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fmt changes with `hidden` and the currency only
+  }, [r, sessions, balance, now, hidden, cur]);
 
   if (!r || !info) {
     return (

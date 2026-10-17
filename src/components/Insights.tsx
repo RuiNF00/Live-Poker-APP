@@ -75,6 +75,11 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
 
 function InsightCard({ x, fmt }: { x: Insight; fmt: (n: number) => string }) {
   const max = Math.max(...x.groups.map((g) => Math.abs(g.rate)), 1);
+  // Rounded first, so a rate just above 0 doesn't read "+0"; masked amounts keep their sign.
+  const signed = (n: number) => {
+    const r = Math.round(n);
+    return (r > 0 ? '+' : r < 0 && fmt(-1) === '•••' ? '−' : '') + unit(r);
+  };
   const unit = (n: number) => (x.unit === 'hour' ? t('{amount}/h', { amount: fmt(Math.round(n)) }) : t('{amount}/sessão', { amount: fmt(Math.round(n)) }));
   return (
     <Card style={{ gap: S.md }}>
@@ -89,7 +94,7 @@ function InsightCard({ x, fmt }: { x: Insight; fmt: (n: number) => string }) {
               <View style={{ width: `${Math.max(3, (Math.abs(g.rate) / max) * 100)}%`, height: 8, borderRadius: R.pill, backgroundColor: g.rate >= 0 ? C.good : C.bad }} />
             </View>
             <T v="monoS" color={g.rate >= 0 ? C.good : C.bad} style={{ minWidth: 72, textAlign: 'right' }}>
-              {(g.rate > 0 ? '+' : '') + unit(g.rate)}
+              {signed(g.rate)}
             </T>
           </Row>
         ))}
