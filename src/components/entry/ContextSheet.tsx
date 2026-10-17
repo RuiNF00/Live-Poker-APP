@@ -55,7 +55,7 @@ export function ContextSheet({
               label={game.kind === 'mtt' ? t('Torneio') : t('Sala / jogo')}
               value={game.name}
               onChangeText={(name) => set({ name })}
-              placeholder={game.kind === 'mtt' ? t('Ex.: EPT Main Event') : t('Ex.: Casino Lisboa 1/2')}
+              placeholder={game.kind === 'mtt' ? t('Ex.: Main Event do festival') : t('Ex.: Casino, 1/2')}
             />
             {recentNames.length > 0 && (
               <ChipRow>

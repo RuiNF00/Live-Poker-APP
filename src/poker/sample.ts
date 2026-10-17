@@ -10,7 +10,7 @@ export function sampleHand(id: string): Hand {
     id,
     createdAt: now,
     updatedAt: now,
-    game: { kind: 'mtt', name: 'Estoril Poker Series €550', sb: 1000, bb: 2000, ante: 2000, anteType: 'bb', currency: '€', stage: 'bubble', level: 14, playersLeft: 58 },
+    game: { kind: 'mtt', name: t('Torneio de domingo') + ' €550', sb: 1000, bb: 2000, ante: 2000, anteType: 'bb', currency: '€', stage: 'bubble', level: 14, playersLeft: 58 },
     players: [
       { name: 'Hero', stack: 64000, cards: ['Ah', 'Qh'] },
       { name: '', stack: 51000 },

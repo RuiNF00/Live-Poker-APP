@@ -136,7 +136,7 @@ export function SessionForm({
           )}
         </View>
         <View style={{ gap: S.sm }}>
-          <Field label={online ? t('Sala online') : t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={online ? t('Ex.: PokerStars') : t('Ex.: Casino Estoril')} />
+          <Field label={online ? t('Sala online') : t('Casino / sala')} value={s.venue} onChangeText={(venue) => set({ venue })} placeholder={online ? t('Ex.: a tua sala online') : t('Ex.: Casino da cidade')} />
           {recentVenues.length > 0 && (
             <ChipRow style={{ marginHorizontal: -S.lg }}>
               {recentVenues.map((n) => (
