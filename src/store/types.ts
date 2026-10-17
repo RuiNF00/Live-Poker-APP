@@ -89,6 +89,21 @@ export interface Bankroll {
   currency: string;
   createdAt: number;
   updatedAt?: number;
+  /** The player's own limits for this bankroll. */
+  rules?: BankrollRules;
+}
+
+/** Bankroll rules; every amount is in the bankroll's currency. */
+export interface BankrollRules {
+  /** Buy-ins (100 big blinds each) the bankroll must hold to play a cash stake. */
+  cashBuyIns: number;
+  /** Buy-ins it must hold to play a tournament. */
+  mttBuyIns: number;
+  /** Stop after losing this much; 0 is off. */
+  stopLoss: number;
+  stopLossPer: 'session' | 'day';
+  /** Balance to reach; 0 is off. */
+  target: number;
 }
 
 /** Money moved into or out of a bankroll (not poker results). */

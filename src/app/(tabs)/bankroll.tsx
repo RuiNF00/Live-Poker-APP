@@ -12,6 +12,7 @@ import { dec } from '@/components/staking/sheets';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
 import { Insights } from '@/components/Insights';
+import { RulesCard, RulesForm } from '@/components/BankrollRules';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -152,6 +153,8 @@ function BankrollTab() {
             <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'withdrawal'), isNew: true })} />
           </Row>
         </Card>
+
+        {single ? <RulesCard bankroll={single} sessions={scoped} balance={bal.balance} hidden={!!settings.hideAmounts} onEdit={() => setSheet({ type: 'rules', b: single })} /> : null}
 
         {/* Filters only once there is something to filter. */}
         {scoped.some((x) => x.endedAt) || nFilters ? (
@@ -363,6 +366,27 @@ function BankrollTab() {
         ) : null}
       </Sheet>
 
+      <Sheet visible={sheet?.type === 'rules'} title={t('Regras de bankroll')} onClose={() => setSheet(null)}>
+        {sheet?.type === 'rules' ? (
+          <RulesForm
+            bankroll={sheet.b}
+            balance={bal.balance}
+            onSave={(rules) => {
+              saveBankroll({ ...sheet.b, rules });
+              setSheet(null);
+            }}
+            onRemove={
+              sheet.b.rules
+                ? () => {
+                    saveBankroll({ ...sheet.b, rules: undefined });
+                    setSheet(null);
+                  }
+                : undefined
+            }
+          />
+        ) : null}
+      </Sheet>
+
       <Sheet visible={sheet?.type === 'filters'} title={t('Filtros')} onClose={() => setSheet(null)}>
         <FilterForm
           preset={preset}
@@ -386,7 +410,8 @@ type SheetState =
   | { type: 'session'; s: Session | 'new' }
   | { type: 'transfer'; x: Transfer; isNew: boolean }
   | { type: 'bankroll'; b?: Bankroll }
-  | { type: 'filters' };
+  | { type: 'filters' }
+  | { type: 'rules'; b: Bankroll };
 
 function BankrollEditor({
   b,
