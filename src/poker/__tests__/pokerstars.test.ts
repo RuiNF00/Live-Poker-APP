@@ -65,8 +65,10 @@ function roundTrip(h: Hand) {
   assert.equal(back.button, h.button);
   assert.deepEqual(back.players.map((p) => p.stack), h.players.map((p) => p.stack));
   assert.deepEqual(back.board, h.board);
-  assert.equal(back.sb, h.game.sb);
-  assert.equal(back.bb, h.game.bb);
+  if (!h.game.bombPot) {
+    assert.equal(back.sb, h.game.sb);
+    assert.equal(back.bb, h.game.bb);
+  }
   const rebuilt: Hand = { ...h, players: back.players, actions: back.actions, board: back.board };
   const a = replay(h);
   const b = replay(rebuilt);
@@ -159,4 +161,43 @@ test('the sample hand and a file of several hands round-trip', () => {
 test('Eastern time follows US daylight saving', () => {
   assert.equal(easternTime(Date.UTC(2026, 0, 15, 12, 0, 5)), '2026/01/15 7:00:05 ET');
   assert.equal(easternTime(Date.UTC(2026, 6, 15, 12, 0, 5)), '2026/07/15 8:00:05 ET');
+});
+
+const live = (game: Partial<Hand['game']>, over: Partial<Hand> = {}) => mk({ game: { ...mk().game, name: 'Bellagio', currency: '$', ...game }, ...over });
+
+test('UTG straddle and re-straddle post after the blinds and the action starts after them', () => {
+  const h = live({ straddles: 2, straddleFrom: 'utg' }, {
+    actions: [{ p: 5, kind: 'raise', to: 20 }, { p: 0, kind: 'fold' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }, { p: 3, kind: 'fold' }, { p: 4, kind: 'call' }, { p: 4, kind: 'check' }, { p: 5, kind: 'bet', to: 25 }, { p: 4, kind: 'fold' }],
+    board: ['Qd', '8h', '3h'],
+  });
+  const txt = roundTrip(h);
+  assert.ok(txt.includes('SB: posts small blind $1\nBB: posts big blind $2\nUTG: posts straddle $4\nHJ: posts straddle $8\n*** HOLE CARDS ***'), txt);
+  assert.ok(txt.includes('CO: raises $12 to $20'), txt);
+});
+
+test('button straddle', () => {
+  const h = live({ straddles: 1, straddleFrom: 'btn' }, { actions: [{ p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }, { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }] });
+  const txt = roundTrip(h);
+  // The button straddler acts last; the action opens on the small blind.
+  assert.ok(txt.includes('BB: posts big blind $2\nHero: posts straddle $4\n*** HOLE CARDS ***\nDealt to Hero [As Kd]\nSB: folds'), txt);
+  assert.ok(txt.includes('Hero collected'), txt);
+});
+
+test('button ante is posted by the button', () => {
+  const h = live({ ante: 2, anteType: 'btn' }, { actions: [{ p: 3, kind: 'raise', to: 6 }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'fold' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }] });
+  const txt = roundTrip(h);
+  assert.ok(txt.includes('Hero: posts the ante $2\nSB: posts small blind $1'), txt);
+  assert.equal(txt.match(/posts the ante/g)?.length, 1);
+});
+
+test('bomb pot: everyone antes, no blinds, the hand opens on the flop and the table says so', () => {
+  const h = live({ bombPot: 10 }, {
+    actions: [{ p: 1, kind: 'bet', to: 20 }, { p: 2, kind: 'fold' }, { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'call' }, { p: 1, kind: 'check' }, { p: 0, kind: 'check' }, { p: 1, kind: 'check' }, { p: 0, kind: 'check' }],
+    board: ['Qd', '8h', '3h', '2c', 'Kc'],
+  });
+  const txt = roundTrip(h);
+  assert.ok(txt.includes("Table 'Bellagio - Bomb pot $10' 6-max"), txt);
+  assert.equal(txt.match(/posts the ante \$10/g)?.length, 6);
+  assert.ok(!/blind/.test(txt.split('*** SUMMARY ***')[0]), txt);
+  assert.ok(txt.includes('*** HOLE CARDS ***\nDealt to Hero [As Kd]\n*** FLOP *** [Qd 8h 3h]\nSB: bets $20'), txt);
 });
