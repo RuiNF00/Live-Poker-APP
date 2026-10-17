@@ -13,6 +13,7 @@ import { Avatar } from '@/components/Avatar';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { MindAfter } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -137,7 +138,12 @@ export default function SessionScreen() {
         ) : null}
         {/* Paper ticket from registration: the phone reads it and fills the tournament in. */}
         <ListGroup>
-          <ListItem icon="receipt-outline" iconColor={C.accent} title={t('Fotografa o recibo do buy-in')} subtitle={t('Torneio, buy-in, mesa e lugar preenchidos por ti')} onPress={() => router.push('/receipt')} chevron />
+          {canReadReceipts ? (
+            <ListItem icon="receipt-outline" iconColor={C.accent} title={t('Fotografa o recibo do buy-in')} subtitle={t('Torneio, buy-in, mesa e lugar preenchidos por ti')} onPress={() => router.push('/receipt')} chevron />
+          ) : (
+            // Expo Go and the web have no text recognition: say so, nothing to tap.
+            <ListItem icon="receipt-outline" iconColor={C.textDim} title={t('Fotografa o recibo do buy-in')} subtitle={t('Disponível na versão da loja')} chevron={false} />
+          )}
         </ListGroup>
         <SessionForm
           initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}

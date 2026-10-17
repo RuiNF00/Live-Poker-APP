@@ -2417,6 +2417,7 @@ const es: Record<string, string> = {
   'Escolher da galeria': 'Elegir de la galería',
   'Escolher a foto': 'Elegir la foto',
   'Mesa {n}': 'Mesa {n}',
+  'Disponível na versão da loja': 'Disponible en la versión de la tienda',
 };
 
 export default es;

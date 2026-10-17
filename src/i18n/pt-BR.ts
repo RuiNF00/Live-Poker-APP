@@ -1053,6 +1053,7 @@ const ptBR: Record<string, string> = {
   'Lemos o torneio, o buy-in e a fee, a data, a mesa e o lugar. Confirmas num toque.': 'Lemos o torneio, o buy-in e a fee, a data, a mesa e o lugar. Você confirma com um toque.',
   'Lido no teu telemóvel': 'Lido no seu celular',
   'A ler o recibo…': 'Lendo o recibo…',
+  'Disponível na versão da loja': 'Disponível na versão da loja do app',
 };
 
 export default ptBR;
