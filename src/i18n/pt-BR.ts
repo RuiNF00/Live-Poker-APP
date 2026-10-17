@@ -1134,6 +1134,9 @@ const ptBR: Record<string, string> = {
   'Como chegas e como sais de cada sessão. Só tu vês.': 'Como você chega e como sai de cada sessão. Só você vê.',
   'fez fold': 'deu fold',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} para {to}; o maior foi {max}.',
+  // Festival with dates only
+  'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': 'A programação ainda não saiu. Os torneios aparecem aqui quando o organizador publicar; você já pode criar a viagem.',
+  'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Datas a confirmar: por enquanto o organizador só publicou os dias do festival. Os torneios aparecem aqui quando sair a programação.',
 };
 
 export default ptBR;

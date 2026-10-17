@@ -115,29 +115,36 @@ export default function FestivalScreen() {
             <Ionicons name="pencil" size={16} color={C.textDim} />
           </Row>
           <T v="label">{`${f.venue} · ${f.city}`}</T>
-          <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T>
+          {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
         </View>
 
-        <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} />
+        {f.events.length ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
         <TripLink f={f} plan={plan} />
 
-        <ActionOffers f={f} picked={plan.picked} />
+        {f.events.length ? <ActionOffers f={f} picked={plan.picked} /> : null}
 
-        <ChipRow>
-          {(
-            [
-              ['all', t('Todos')],
-              ['mine', t('Os meus ({n})', { n: tot.events })],
-              ['NLH', 'NLH'],
-              ['PLO', 'PLO'],
-              ['Mix', 'Mix'],
-            ] as [Filter, string][]
-          ).map(([k, label]) => (
-            <Chip key={k} label={label} active={filter === k} onPress={() => setFilter(k)} />
-          ))}
-        </ChipRow>
+        {!f.events.length ? (
+          <Card tone="inset" style={{ gap: 4 }}>
+            <T v="h3">{f.dates ? t('{from} a {to}', { from: shortDay(f.dates.from), to: shortDay(f.dates.to) }) : t('Datas a confirmar')}</T>
+            <T v="small">{t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.')}</T>
+          </Card>
+        ) : (
+          <ChipRow>
+            {(
+              [
+                ['all', t('Todos')],
+                ['mine', t('Os meus ({n})', { n: tot.events })],
+                ['NLH', 'NLH'],
+                ['PLO', 'PLO'],
+                ['Mix', 'Mix'],
+              ] as [Filter, string][]
+            ).map(([k, label]) => (
+              <Chip key={k} label={label} active={filter === k} onPress={() => setFilter(k)} />
+            ))}
+          </ChipRow>
+        )}
 
-        {days.length === 0 ? (
+        {days.length === 0 && f.events.length ? (
           <Card tone="inset">
             <T v="small">{t('Ainda não marcaste nenhum evento. Toca no círculo à direita de um evento para o adicionar.')}</T>
           </Card>
@@ -187,6 +194,9 @@ export default function FestivalScreen() {
     </>
   );
 }
+
+/** "22 jan 2027" from 'YYYY-MM-DD', at noon so no timezone moves the day. */
+const shortDay = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** The trip for this festival: open it, or make it from the plan (dates from the planned events). */
 function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {

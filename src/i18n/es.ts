@@ -2604,6 +2604,11 @@ const es: Record<string, string> = {
   'Swaps e staking': 'Swaps y staking',
   'fez fold': 'foldeó',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} a {to}; el máximo fue {max}.',
+  // Festival with dates only
+  'Datas a confirmar': 'Fechas por confirmar',
+  'O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.': 'El programa aún no ha salido. Los torneos aparecerán aquí cuando el organizador lo publique; ya puedes crear el viaje.',
+  'Datas a confirmar: o organizador ainda só publicou os dias do festival. Os torneios aparecem aqui quando sair o programa.': 'Fechas por confirmar: por ahora el organizador solo ha publicado los días del festival. Los torneos aparecerán aquí cuando salga el programa.',
+  'Série de verão, janeiro 2027': 'Serie de verano, enero 2027',
 };
 
 export default es;

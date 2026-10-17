@@ -230,7 +230,7 @@ function FestivalItem({ f }: { f: Festival }) {
       icon="calendar-outline"
       iconColor={C.accent}
       title={festivalName(f, plan)}
-      subtitle={`${f.venue} · ${t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size })}`}
+      subtitle={`${f.venue} · ${f.events.length ? t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size }) : t('Datas a confirmar')}`}
       chevron
       onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
     />
