@@ -519,8 +519,9 @@ function Live({ s }: { s: Session }) {
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
         </View>
-        <View ref={handRef} collapsable={false} style={{ flex: 1.6 }}>
-          <Button size="md" title={t('Nova mão')} icon="add" onPress={() => router.push('/hand/new')} />
+        <View ref={handRef} collapsable={false} style={{ flex: 2 }}>
+          {/* "Nueva mano" / "Nova mão" at 200%: two lines rather than "Nueva m…". */}
+          <Button size="md" title={t('Nova mão')} icon="add" lines={2} style={{ paddingHorizontal: 12, gap: 6 }} onPress={() => router.push('/hand/new')} />
         </View>
       </View>
       <CoachMarks id="live-session" steps={tour} />
@@ -552,7 +553,7 @@ function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentPr
       }}
       style={({ pressed }) => [styles.thumb, { opacity: pressed ? 0.7 : 1, borderColor: active ? C.warn : C.border }]}>
       <Ionicons name={icon} size={20} color={active ? C.warn : C.text} />
-      <T v="tiny" numberOfLines={1} maxFontSizeMultiplier={1.2} color={active ? C.warn : C.textDim}>
+      <T v="tiny" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.2} color={active ? C.warn : C.textDim}>
         {label}
       </T>
     </Pressable>

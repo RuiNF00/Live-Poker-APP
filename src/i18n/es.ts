@@ -75,7 +75,7 @@ const es: Record<string, string> = {
   'O relógio conta o tempo à mesa, o stack fica guardado e cada mão que registares já vem com torneio, blinds e stack preenchidos.': 'El reloj cuenta tu tiempo en la mesa, tu stack queda guardado y cada mano que registres ya viene con torneo, ciegas y stack.',
   'Começar agora': 'Empezar ahora',
   'Retomar': 'Reanudar',
-  'Pausa': 'Descanso',
+  'Pausa': 'Pausa',
   'toca para atualizar': 'toca para actualizar',
   'Subir nível': 'Subir nivel',
   'Stack ao longo da sessão': 'Stack durante la sesión',

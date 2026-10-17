@@ -529,6 +529,7 @@ export function Button({
   size,
   haptic,
   sub,
+  lines = 1,
 }: {
   title: string;
   kind?: BtnKind;
@@ -544,6 +545,8 @@ export function Button({
   haptic?: boolean;
   /** Second line under the title (primary buttons with a price, say). */
   sub?: string;
+  /** Lines the title may take in a narrow slot. Web can't shrink text, and 200% may not fit in one line even shrunk. */
+  lines?: 1 | 2;
 }) {
   const sz: BtnSize = size ?? (small ? 'sm' : 'lg');
   const h = sz === 'lg' ? 54 : sz === 'md' ? 44 : 36;
@@ -584,7 +587,7 @@ export function Button({
       {iconNode}
       {/* Shrinks to fit a narrow slot (the session dock at 200%) instead of cutting to "Nova…". */}
       <View style={{ alignItems: 'center', flexShrink: 1 }}>
-        <RNText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1 }}>
+        <RNText numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, fontWeight: '800', fontFamily: ff(800), fontSize: fs, letterSpacing: -0.1, textAlign: 'center' }}>
           {title}
         </RNText>
         {sub ? <RNText maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: fg, opacity: 0.75, fontFamily: F.medium, fontSize: 12 }}>{sub}</RNText> : null}
