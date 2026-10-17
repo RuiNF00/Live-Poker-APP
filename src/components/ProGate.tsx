@@ -25,7 +25,7 @@ export function ProLocked({ feature, title }: { feature: ProFeature; title: stri
     <>
       <Stack.Screen options={{ title, headerBackTitle: t('Voltar') }} />
       <Screen contentStyle={{ paddingTop: S.xl }}>
-        <Empty icon={ICON[feature]} title={copy.title} body={copy.body} action={<Button title={t('Ver Pro')} iconRight="chevron-forward" onPress={() => paywall(feature)} />} />
+        <Empty icon={ICON[feature]} title={copy.title} body={copy.body} action={<Button title={t('Ver com Pro')} iconRight="chevron-forward" onPress={() => paywall(feature)} />} />
       </Screen>
     </>
   );

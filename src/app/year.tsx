@@ -250,7 +250,7 @@ function LockedCard({ title, onUnlock }: { title: string; onUnlock: () => void }
       <T v="callout" style={{ textAlign: 'center' }}>
         {t('As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.')}
       </T>
-      <Button kind="outline" size="sm" title={t('Desbloquear')} onPress={onUnlock} />
+      <Button kind="outline" size="sm" icon="lock-closed" title={t('Ver com Pro')} onPress={onUnlock} />
     </View>
   );
 }
