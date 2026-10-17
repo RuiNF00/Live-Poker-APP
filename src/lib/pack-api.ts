@@ -12,7 +12,8 @@ import { BRAND } from '@/theme';
 import { onEraseAll } from './erase-hooks';
 import { packEraseJobs, parsePacks, type HandPack } from './pack-core';
 import { uploadHand } from './share-api';
-import { takeDirectShare } from './share-queue';
+import { isOnline } from './online';
+import { isNetworkError, isShareWaiting, queueShare, takeDirectShare } from './share-queue';
 import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -68,21 +69,26 @@ export async function createPack(input: {
 }): Promise<{ ok: true; pack: HandPack; uploaded: number } | { ok: false; error: PackError }> {
   const claims: { id: string; token: string }[] = [];
   let uploaded = 0;
-  try {
-    for (const h of input.hands) {
-      if (h.shareId && h.shareToken) {
-        claims.push({ id: h.shareId, token: h.shareToken });
-        continue;
-      }
+  // Known offline: say so before touching any hand's queued link.
+  if (!isOnline()) return { ok: false, error: 'offline' };
+  for (const h of input.hands) {
+    if (h.shareId && h.shareToken) {
+      claims.push({ id: h.shareId, token: h.shareToken });
+      continue;
+    }
+    const waiting = await isShareWaiting(h.id);
+    try {
       const slot = await takeDirectShare(h.id);
       if (slot.kind === 'busy') return { ok: false, error: 'busy' };
       const link = slot.kind === 'ready' ? slot.link : await uploadHand(h, input.share).then((r) => ({ shareId: r.id, shareToken: r.token }));
       if (slot.kind !== 'ready') uploaded++;
       input.saveHand({ ...h, ...link });
       claims.push({ id: link.shareId, token: link.shareToken });
+    } catch (e) {
+      // The signal dropped mid-way: a link that was waiting for the network goes back in the queue.
+      if (waiting && isNetworkError(e)) queueShare(h, input.share);
+      return { ok: false, error: isNetworkError(e) ? 'offline' : 'failed' };
     }
-  } catch (e) {
-    return { ok: false, error: /^upload \d+$/.test((e as Error)?.message ?? '') ? 'failed' : 'offline' };
   }
   let r: Response;
   try {

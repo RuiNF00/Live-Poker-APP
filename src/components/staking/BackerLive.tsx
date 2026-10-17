@@ -10,6 +10,7 @@ import { Button, Card, Chip, ChipRow, Pill, Row, T, tap, ToggleItem } from '@/co
 import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
+import { queueLiveDelete } from '@/lib/live-cleanup';
 import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive } from '@/lib/live-link';
 import { shareRef } from '@/lib/referrals';
 import { useOnline } from '@/lib/sync';
@@ -42,6 +43,9 @@ export function BackerLiveCard({ s }: { s: Session }) {
     return b ? [{ id: b.id, name: b.name, share: x.share }] : [];
   });
   const [busy, setBusy] = useState(false);
+  // The session as it is now, not as it was at the tap: a stack typed while the link was being made stays.
+  const latest = useRef(s);
+  latest.current = s;
 
   const create = async () => {
     tap('medium');
@@ -49,7 +53,7 @@ export function BackerLiveCard({ s }: { s: Session }) {
     try {
       const n = hands.filter((h) => h.sessionId === s.id).length;
       const live = await createLive(liveSnapshot(s, settings.nickname, n));
-      saveSession({ ...s, live });
+      saveSession({ ...latest.current, live });
       await shareLink(s, live.id);
     } catch {
       note(t('Sem ligação'), t('Não deu para criar o link. Tenta outra vez quando tiveres rede.'));
@@ -64,9 +68,15 @@ export function BackerLiveCard({ s }: { s: Session }) {
       setBusy(true);
       try {
         await deleteLive(s.live);
-        saveSession({ ...s, live: undefined });
-      } catch {
-        note(t('Sem ligação'), t('O link continua ativo. Tenta outra vez quando tiveres rede.'));
+        saveSession({ ...latest.current, live: undefined });
+      } catch (e) {
+        if (/^live \d+$/.test((e as Error)?.message ?? '')) note(t('Sem ligação'), t('O link continua ativo. Tenta outra vez quando tiveres rede.'));
+        else {
+          // No signal: off on the phone now, and the page goes as soon as there's network.
+          queueLiveDelete(s.live);
+          saveSession({ ...latest.current, live: undefined });
+          note(t('Sem rede'), t('O link é desligado assim que houver sinal.'));
+        }
       } finally {
         setBusy(false);
       }
