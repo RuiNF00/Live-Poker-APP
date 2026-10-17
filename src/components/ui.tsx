@@ -120,8 +120,11 @@ function useWebFit(on: boolean, min: number) {
 
 /** Text that may shrink to one line on web too; same props as RN Text. */
 export function FitText({ style, onLayout, ...rest }: TextProps) {
-  const { ref, scale, fit } = useWebFit(WEB && !!rest.adjustsFontSizeToFit && rest.numberOfLines === 1, rest.minimumFontScale || 0.5);
-  if (!WEB) return <RNText {...rest} style={style} onLayout={onLayout} />;
+  const fits = WEB && !!rest.adjustsFontSizeToFit && rest.numberOfLines === 1;
+  const { ref, scale, fit } = useWebFit(fits, rest.minimumFontScale || 0.5);
+  // Only text that fits listens to layout: on web every onLayout is a forced
+  // measure, and with one per label a long screen took most of its first frame.
+  if (!fits) return <RNText {...rest} style={style} onLayout={onLayout} />;
   const size = scale < 1 ? StyleSheet.flatten(style)?.fontSize : undefined;
   return (
     <RNText

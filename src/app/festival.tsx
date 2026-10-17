@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { AddFestivalEvent } from '@/components/AddFestivalEvent';
+import { useAfterFirstFrame } from '@/components/Deferred';
 import { spanLabel } from '@/components/FestivalItem';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { useStartEvent } from '@/components/useStartEvent';
@@ -87,6 +88,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
   };
 
   const start = useStartEvent();
+  // The summary on the first frame; the schedule (dozens of events) right after.
+  const full = useAfterFirstFrame();
   // Opened from a reminder: scroll once to that event, whose card shows "Começar sessão".
   const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const focusAt = useRef({ day: -1, row: -1, done: !focus });
@@ -170,38 +173,42 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
           </Card>
         ) : null}
 
-        {days.map(([day, list]) => (
-          <View key={day} onLayout={list.some((e) => e.id === focus) ? (ev) => scrollToFocus({ day: ev.nativeEvent.layout.y }) : undefined}>
-          <Section title={dayLabel(day)}>
-            <View style={{ gap: S.sm }}>
-              {list.map((e) => (
-                <View key={e.id} onLayout={e.id === focus ? (ev) => scrollToFocus({ row: ev.nativeEvent.layout.y }) : undefined}>
-                <EventRow
-                  f={f}
-                  e={e}
-                  plan={plan}
-                  action={eventAction(f, plan, sessions, e)}
-                  lateOpen={lateFor === e.id}
-                  onToggle={() => toggle(e)}
-                  onLate={() => setLateFor(lateFor === e.id ? null : e.id)}
-                  onSetLate={(min) => {
-                    tap('select');
-                    updatePlan(f.id, (p) => {
-                      const lateReg = { ...p.lateReg };
-                      if (min) lateReg[e.id] = min;
-                      else delete lateReg[e.id];
-                      return { ...p, lateReg };
-                    });
-                    setLateFor(null);
-                  }}
-                  onStart={() => start(f, e)}
-                />
-                </View>
-              ))}
+        {!full ? (
+          <View style={{ height: 800 }} />
+        ) : (
+          days.map(([day, list]) => (
+            <View key={day} onLayout={list.some((e) => e.id === focus) ? (ev) => scrollToFocus({ day: ev.nativeEvent.layout.y }) : undefined}>
+            <Section title={dayLabel(day)}>
+              <View style={{ gap: S.sm }}>
+                {list.map((e) => (
+                  <View key={e.id} onLayout={e.id === focus ? (ev) => scrollToFocus({ row: ev.nativeEvent.layout.y }) : undefined}>
+                  <EventRow
+                    f={f}
+                    e={e}
+                    plan={plan}
+                    action={eventAction(f, plan, sessions, e)}
+                    lateOpen={lateFor === e.id}
+                    onToggle={() => toggle(e)}
+                    onLate={() => setLateFor(lateFor === e.id ? null : e.id)}
+                    onSetLate={(min) => {
+                      tap('select');
+                      updatePlan(f.id, (p) => {
+                        const lateReg = { ...p.lateReg };
+                        if (min) lateReg[e.id] = min;
+                        else delete lateReg[e.id];
+                        return { ...p, lateReg };
+                      });
+                      setLateFor(null);
+                    }}
+                    onStart={() => start(f, e)}
+                  />
+                  </View>
+                ))}
+              </View>
+            </Section>
             </View>
-          </Section>
-          </View>
-        ))}
+          ))
+        )}
 
         <AddFestivalEvent f={base} />
 
