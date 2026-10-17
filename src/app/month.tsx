@@ -15,7 +15,7 @@ import { SmallSample } from '@/components/SmallSample';
 import { useLocked } from '@/components/ProGate';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { locale, t } from '@/i18n';
+import { lang, locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
 import { canShareImage, shareImage } from '@/lib/share-image';
@@ -34,7 +34,7 @@ import { BRAND, C, R, S } from '@/theme';
 const PREVIEW = 0.62;
 
 export default function MonthScreen() {
-  const { sessions, settings, setSettings } = useStore();
+  const { sessions, hands, settings, setSettings } = useStore();
   const pro = usePro();
   const locked = useLocked('monthCompare');
   const params = useLocalSearchParams<{ m?: string }>();
@@ -93,13 +93,21 @@ export default function MonthScreen() {
     }
   };
 
-  // X, WhatsApp and the rest: the same card through the share sheet, the link copied.
+  // X, WhatsApp and the rest: the same card through the share sheet, the text and link copied for pasting.
   const postElsewhere = async () => {
     tap('medium');
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      await shareImage(await captureStory(card), `${BRAND.webUrl}/r/${ref}?utm_source=share&utm_medium=image&utm_campaign=month`);
+      const link = `${BRAND.webUrl}/r/${ref}?utm_source=share&utm_medium=image&utm_campaign=month`;
+      const name = monthName(key);
+      const text = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
+        month: lang === 'en' ? name : name.toLowerCase(),
+        sessions: r.sessions,
+        hours: Math.round(r.hours),
+        hands: hands.filter((h) => monthKey(h.createdAt) === key).length,
+      });
+      await shareImage(await captureStory(card), `${text}\n${link}`);
       track('story_shared', { target: 'sheet', kind: 'month', money: !hideMoney });
     } catch {
       // closed the sheet
