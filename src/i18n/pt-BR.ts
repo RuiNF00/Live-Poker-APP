@@ -1346,7 +1346,11 @@ const ptBR: Record<string, string> = {
   'vs a tua range': 'vs sua range',
   'A TUA EQUITY': 'SUA EQUITY',
   // Mãos partilhadas (friends' hands and new comments).
-  'Denunciar e tirar': 'Denunciar e remover',
+  '1 comentário novo': '1 comentário novo',
+  '{n} comentários novos': '{n} comentários novos',
+  'Nas mãos partilhadas': 'Nas mãos compartilhadas',
+  'Partilhar uma mão': 'Compartilhar uma mão',
+  'Tirar das mãos partilhadas': 'Remover das mãos compartilhadas',
   'Ao comentar ou partilhar aceitas os': 'Ao comentar ou compartilhar você aceita os',
   'Algum problema com uma mão ou comentário? Escreve para': 'Algum problema com uma mão ou comentário? Escreva para',
   '1 comentário novo nas mãos partilhadas': '1 comentário novo nas mãos compartilhadas',

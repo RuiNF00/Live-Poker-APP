@@ -2958,7 +2958,11 @@ const es: Record<string, string> = {
   'Repor': 'Restablecer',
   'Aplicar': 'Aplicar',
   // Mãos partilhadas (friends' hands and new comments).
-  'Denunciar e tirar': 'Denunciar y quitar',
+  '1 comentário novo': '1 comentario nuevo',
+  '{n} comentários novos': '{n} comentarios nuevos',
+  'Nas mãos partilhadas': 'En las manos compartidas',
+  'Partilhar uma mão': 'Compartir una mano',
+  'Tirar das mãos partilhadas': 'Quitar de las manos compartidas',
   'Ao comentar ou partilhar aceitas os': 'Al comentar o compartir aceptas los',
   'Algum problema com uma mão ou comentário? Escreve para': '¿Algún problema con una mano o un comentario? Escribe a',
   '1 comentário novo nas mãos partilhadas': '1 comentario nuevo en las manos compartidas',
