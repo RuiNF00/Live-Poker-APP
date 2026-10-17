@@ -382,7 +382,7 @@ const en: Record<string, string> = {
   'O teu plano está pronto': 'Your plan is ready',
   'A tua subscrição': 'Your subscription',
   'No teu caderno': 'In your notebook',
-  '{sessions} e {hands} desde {month}.': '{sessions} and {hands} since {month}.',
+  '{what} desde {month}.': '{what} since {month}.',
   'Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.': 'Everything stays saved. Without Pro, you go back to 3 hands a day.',
   'Porque queres cancelar?': 'Why do you want to cancel?',
   'Não estou a jogar live agora': "I'm not playing live right now",
