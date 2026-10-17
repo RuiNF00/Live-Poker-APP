@@ -79,3 +79,20 @@ test('last results, results per day and the best weekday', async () => {
   assert.equal(dailyResults(list).get(day), 100);
   assert.deepEqual(bestWeekday(list), { day: 5, profit: 150, sessions: 3 });
 });
+
+test('verdict: only with enough sample, and only when the rate clears variance', async () => {
+  const { verdict } = await import('../results-math');
+  const fmt = (n: number) => `${n}€`;
+  const mk = (i: number, hours: number, res: number): Session =>
+    ({ id: 'v' + i, kind: 'cash', name: '', venue: '', currency: '€', startedAt: i * 86400000, endedAt: i * 86400000 + hours * 3600000, breaks: [], buyIn: 500, entries: 1, addOn: 0, cashOut: 500 + res, sb: 2, bb: 5, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '' }) as Session;
+  assert.equal(verdict([mk(1, 5, 100)], '€', fmt).ready, false);
+  // 40 sessions × 5 h at a steady ~30/h: a clear winner.
+  const steady = Array.from({ length: 40 }, (_, i) => mk(i, 5, i % 2 ? 140 : 160));
+  const v = verdict(steady, '€', fmt);
+  assert.equal(v.ready, true);
+  assert.equal(v.tone, 'good');
+  assert.match(v.text, /30€\/h/);
+  // Same win rate, huge swings: still inside variance.
+  const swingy = Array.from({ length: 40 }, (_, i) => mk(i, 5, i % 2 ? 2150 : -1850));
+  assert.equal(verdict(swingy, '€', fmt).tone, 'neutral');
+});
