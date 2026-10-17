@@ -140,6 +140,20 @@ describe('run it twice', () => {
     expect(last.seats.find((s) => s.seat === 1)!.stack).toBe(1004);
   });
 
+  it('0.25/0.50: a round pot halves to the cent between the runs', () => {
+    // Stacks of 1: CO jams, button calls, blinds fold: 1 + 1 + 0.25 + 0.50 = 2.75 → 1.38 + 1.37.
+    // Stacks of 1.125: 1.125 + 1.125 + 0.75 = a round 3.00, which is 1.50 + 1.50, never 2 + 1.
+    const small = (h: AppHand, stack = 1): AppHand => ({ ...h, game: { ...h.game, sb: 0.25, bb: 0.5 }, players: h.players.map((p) => ({ ...p, stack })) });
+    const odd = small(jam(['2c', '7d', '9s', 'Jh', '3c'], ['Ks', '4h', '8d', 'Qc', '5s']));
+    expect(end(odd).runs?.map((r) => r.winners.map((w) => w.amount))).toEqual([[1.38], [1.37]]);
+    const round = small({
+      ...jam(['2c', '7d', '9s', 'Jh', '3c'], ['Ks', '4h', '8d', 'Qc', '5s']),
+      actions: [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'raise', to: 1.125 }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }],
+    }, 1.125);
+    const runs = end(round).runs!;
+    expect(runs.map((r) => r.winners.reduce((a, w) => a + w.amount, 0))).toEqual([1.5, 1.5]);
+  });
+
   it('turn all-in: the runs share the flop and turn', () => {
     const h = base({}, [
       { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'call' }, { p: 0, kind: 'call' }, { p: 1, kind: 'fold' }, { p: 2, kind: 'check' },

@@ -570,9 +570,9 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
     for (const pot of pots) {
       pot.winners = pick(pot, runs[0]);
       if (runs.length === 2) {
-        // Each run plays for half the pot; the odd chip goes with the first.
+        // Each run plays for half the pot; the odd chip (or cent, at 0.25/0.50) goes with the first.
         pot.winners2 = pick(pot, runs[1]);
-        const [first] = splitPot(pot.amount, 2);
+        const [first] = splitPot(pot.amount, 2, cash);
         pay(first, pot.winners);
         pay(pot.amount - first, pot.winners2);
       } else {
