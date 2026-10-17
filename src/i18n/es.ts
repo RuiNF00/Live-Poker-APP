@@ -2933,6 +2933,8 @@ const es: Record<string, string> = {
   'Ver tudo': 'Ver todo',
   'Estou à mesa: registar uma mão já': 'Estoy en la mesa: registrar una mano ya',
   // Crash reports switch (Definições → Os teus dados).
+  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'reto: ¿qué haces aquí? Vota antes de ver el resultado 🗳️',
+  'o que fazias aqui? 👀': '¿qué harías aquí? 👀',
   'Fazemos a primeira importação por ti. Só envias se aceitares.': 'Hacemos la primera importación por ti. Solo se envía si aceptas.',
   'Obrigado. Respondemos para o teu email.': 'Gracias. Te respondemos por email.',
   'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'Si el archivo no entra solo, lo importamos nosotros y te avisamos cuando esté listo.',
@@ -2946,8 +2948,6 @@ const es: Record<string, string> = {
   'Abrir o email': 'Abrir el email',
   'Torneios mais caros': 'Torneos más caros',
   'Torneios mais baratos': 'Torneos más baratos',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'reto: ¿qué haces aquí? Vota antes de ver el resultado 🗳️',
-  'o que fazias aqui? 👀': '¿qué harías aquí? 👀',
   'Desenha a range do vilão': 'Dibuja el rango del villano',
   'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Elige sus manos en la cuadrícula y mira tu equity contra ellas.',
   'vs a tua range': 'vs tu rango',

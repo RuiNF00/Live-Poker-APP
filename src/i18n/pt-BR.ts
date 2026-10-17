@@ -1329,6 +1329,8 @@ const ptBR: Record<string, string> = {
   'Estou à mesa: registar uma mão já': 'Estou na mesa: registrar uma mão agora',
   // Crash reports switch (Definições → Os teus dados).
   "Quanto acertas com cada backer, já calculado. Com o Pro.": "Quanto você acerta com cada backer, já calculado. Com o Pro.",
+  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
+  'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
   'Fazemos a primeira importação por ti. Só envias se aceitares.': 'Fazemos a primeira importação para você. Só é enviado se você aceitar.',
   'Obrigado. Respondemos para o teu email.': 'Obrigado. Respondemos no seu email.',
   'Se o ficheiro não entrar sozinho, importamo-lo nós e dizemos-te quando estiver pronto.': 'Se o arquivo não entrar sozinho, nós importamos e avisamos quando estiver pronto.',
@@ -1340,8 +1342,6 @@ const ptBR: Record<string, string> = {
   'Aceito enviar este ficheiro ao suporte': 'Aceito enviar este arquivo ao suporte',
   'Torneios mais caros': 'Torneios mais caros',
   'Torneios mais baratos': 'Torneios mais baratos',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'desafio: o que você faz aqui? Vote antes de ver o resultado 🗳️',
-  'o que fazias aqui? 👀': 'o que você faria aqui? 👀',
   'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Escolha as mãos dele na grade e veja sua equity contra elas.',
   'vs a tua range': 'vs sua range',
   'A TUA EQUITY': 'SUA EQUITY',
