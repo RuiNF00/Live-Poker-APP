@@ -1,5 +1,5 @@
 // The coach comments on a replay step of the web replayer (packages/hand-format). The phone
-// builds the same steps from the hand, so a comment reads "Turn · BTN aposta 12 bb" here too.
+// builds the same steps from the hand, so a comment reads "Turn · BTN bet 12 bb" here too.
 
 import { buildReplay, describeStep, fromAppHand, isAppHand, streetLabel, type Locale } from '../../packages/hand-format/src';
 

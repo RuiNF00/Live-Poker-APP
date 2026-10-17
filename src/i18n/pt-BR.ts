@@ -1124,9 +1124,8 @@ const ptBR: Record<string, string> = {
   'Precisas de': 'Você precisa de',
   'Prémios em percentagem do prize pool.': 'Prêmios em porcentagem do prize pool.',
   'No GTO Wizard, em Analyze › Upload, cola o texto e carrega em Upload.': 'No GTO Wizard, em Analyze › Upload, cole o texto e toque em Upload.',
-  'Aposta': 'Bet',
-  'HERO APOSTA': 'HERO DÁ BET',
-  'Passar ou apostar': 'Check ou bet',
+  'HERO FAZ BET': 'HERO DÁ BET',
+  'Check ou bet': 'Check ou bet',
   'Guardar mão': 'Salvar mão',
   'Contexto da mão: {context}. Toca para mudar': 'Contexto da mão: {context}. Toque para mudar',
   // Tournament breaks
