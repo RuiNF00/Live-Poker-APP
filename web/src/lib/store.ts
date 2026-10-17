@@ -3,18 +3,23 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { HandRecord } from '@livepoker/hand-format';
 import { DEMO_SHARE } from './demo';
 import type { HandComment, QuizSpot, SharedHand, VoteChoice } from './types';
 
 export * from './types';
 
 export interface CreateShareInput {
-  hand: HandRecord;
+  payload: unknown;
   title?: string | null;
   revealAll?: boolean;
   quiz?: QuizSpot | null;
   allowComments?: boolean;
+}
+
+export interface NewComment {
+  name: string;
+  text: string;
+  stepIndex: number | null;
 }
 
 export interface ShareStore {
@@ -23,7 +28,7 @@ export interface ShareStore {
   deleteShare(id: string, editToken: string): Promise<boolean>;
   recordView(id: string): Promise<void>;
   listComments(id: string): Promise<HandComment[]>;
-  addComment(id: string, c: { authorName: string; body: string; stepIndex: number | null }): Promise<HandComment | null>;
+  addComment(id: string, c: NewComment): Promise<HandComment | null>;
   vote(id: string, voterId: string, choice: VoteChoice): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
 }
@@ -32,7 +37,7 @@ export interface ShareStore {
 
 interface ShareRow {
   id: string;
-  payload: HandRecord;
+  payload: unknown;
   title: string | null;
   reveal_all: boolean;
   quiz: QuizSpot | null;
@@ -51,10 +56,10 @@ interface CommentRow {
 
 const toComment = (r: CommentRow): HandComment => ({
   id: r.id,
-  authorName: r.author_name,
-  body: r.body,
+  name: r.author_name,
+  text: r.body,
   stepIndex: r.step_index,
-  createdAt: r.created_at,
+  createdAt: new Date(r.created_at).getTime(),
 });
 
 class SupabaseStore implements ShareStore {
@@ -62,7 +67,7 @@ class SupabaseStore implements ShareStore {
 
   async createShare(input: CreateShareInput) {
     const { data, error } = await this.db.rpc('create_shared_hand', {
-      p_payload: input.hand,
+      p_payload: input.payload,
       p_title: input.title ?? null,
       p_reveal_all: input.revealAll ?? false,
       p_quiz: input.quiz ?? null,
@@ -83,7 +88,7 @@ class SupabaseStore implements ShareStore {
     if (!data) return null;
     return {
       id: data.id,
-      hand: data.payload,
+      payload: data.payload,
       title: data.title,
       revealAll: data.reveal_all,
       quiz: data.quiz,
@@ -114,11 +119,11 @@ class SupabaseStore implements ShareStore {
     return (data as CommentRow[]).map(toComment);
   }
 
-  async addComment(id: string, c: { authorName: string; body: string; stepIndex: number | null }) {
+  async addComment(id: string, c: NewComment) {
     const { data, error } = await this.db.rpc('add_hand_comment', {
       p_hand_id: id,
-      p_author_name: c.authorName,
-      p_body: c.body,
+      p_author_name: c.name,
+      p_body: c.text,
       p_step_index: c.stepIndex,
     });
     if (error) throw error;
@@ -168,10 +173,10 @@ class LocalStore implements ShareStore {
       data.comments.demo = [
         {
           id: randomUUID(),
-          authorName: 'Tiago',
-          body: 'Contra este big stack o 3-bet é muito forte. Pagar é ok, mas no turn o shove só é pago por melhor.',
+          name: 'Tiago',
+          text: 'Contra este big stack o 3-bet é muito forte. Pagar é ok, mas no turn o shove só é pago por melhor.',
           stepIndex: 17,
-          createdAt: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+          createdAt: Date.now() - 1000 * 60 * 42,
         },
       ];
       return data;
@@ -196,7 +201,7 @@ class LocalStore implements ShareStore {
     await this.mutate((d) => {
       d.shares[id] = {
         id,
-        hand: input.hand,
+        payload: input.payload,
         title: input.title ?? null,
         revealAll: input.revealAll ?? false,
         quiz: input.quiz ?? null,
@@ -236,10 +241,10 @@ class LocalStore implements ShareStore {
     return (await this.read()).comments[id] ?? [];
   }
 
-  async addComment(id: string, c: { authorName: string; body: string; stepIndex: number | null }) {
+  async addComment(id: string, c: NewComment) {
     return this.mutate((d) => {
       if (!d.shares[id]?.allowComments) return null;
-      const comment = { id: randomUUID(), ...c, createdAt: new Date().toISOString() };
+      const comment = { id: randomUUID(), ...c, createdAt: Date.now() };
       (d.comments[id] ??= []).push(comment);
       return comment;
     });

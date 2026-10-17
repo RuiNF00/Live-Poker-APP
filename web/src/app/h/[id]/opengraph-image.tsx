@@ -2,7 +2,9 @@ import { ImageResponse } from 'next/og';
 import { formatChips, type Card, type HandRecord } from '@livepoker/hand-format';
 import { brand } from '@/config/brand';
 import { loadShare } from '@/lib/store';
+import { resolveHand } from '@/lib/hand';
 import { SUIT_COLORS, SUIT_PATHS } from '@/components/PlayingCard';
+import { MARK_LINES, MARK_PATH } from '@/components/Brand';
 
 export const alt = 'Mão de póquer partilhada';
 export const size = { width: 1200, height: 630 };
@@ -57,12 +59,13 @@ function boardOf(hand: HandRecord): Card[] {
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const share = await loadShare(id);
-  const hand = share?.hand;
+  const hand = share ? resolveHand(share.payload)?.hand : undefined;
   const hero = hand?.players.find((p) => p.isHero);
   const board = hand ? boardOf(hand) : [];
   const stakes = hand
     ? `${formatChips(hand.blinds.sb)}/${formatChips(hand.blinds.bb)}${hand.blinds.ante ? ` (${formatChips(hand.blinds.ante)})` : ''}`
     : '';
+  const wordmark = /^(.*?)(book)$/i.exec(brand.name);
   const where = hand?.tournament?.name || hand?.location || (hand?.format === 'cash' ? 'Cash game' : '');
 
   return new ImageResponse(
@@ -81,23 +84,20 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 14,
-                background: brand.colors.accent,
-                color: '#111',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 32,
-                fontWeight: 800,
-              }}
-            >
-              {brand.name.slice(0, 1)}
+            <svg width={56} height={56} viewBox="0 2 64 64">
+              <path d={MARK_PATH} fill={brand.colors.accent} />
+              <path d={MARK_LINES} stroke={brand.colors.bg} strokeWidth="3.2" strokeLinecap="round" />
+            </svg>
+            <div style={{ fontSize: 36, fontWeight: 700, display: 'flex' }}>
+              {wordmark ? (
+                <>
+                  <span>{wordmark[1]}</span>
+                  <span style={{ color: brand.colors.accent }}>{wordmark[2]}</span>
+                </>
+              ) : (
+                brand.name
+              )}
             </div>
-            <div style={{ fontSize: 34, fontWeight: 700 }}>{brand.name}</div>
           </div>
           <div style={{ fontSize: 30, opacity: 0.85, display: 'flex' }}>{stakes}</div>
         </div>

@@ -69,6 +69,8 @@ export interface HandRecord {
   actions: Partial<Record<Street, Action[]>>;
   /** Optional explicit winners; when absent the engine evaluates showdown. */
   winners?: { seat: number; amount: number }[];
+  /** Seats that won at showdown when their cards are unknown (amounts are computed). */
+  winnerSeats?: number[];
   tournament?: TournamentInfo;
   tags?: string[];
   notes?: string;

@@ -282,6 +282,10 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
   if (hand.winners?.length) {
     winners = hand.winners.map((w) => ({ ...w, handLabel: seatState(w.seat).handLabel }));
   } else {
+    if (hand.winnerSeats?.length) {
+      // Manually picked winners outrank any evaluated hand.
+      for (const s of contenders) if (hand.winnerSeats.includes(s.seat)) values.set(s.seat, { score: Number.MAX_SAFE_INTEGER, category: 'high_card', cards: [] });
+    }
     winners = awardPots(seats, values, pot);
   }
   for (const w of winners) {

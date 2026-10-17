@@ -31,7 +31,7 @@ export function Quiz({ shareId, step, bb, mode, locale, onDone }: Props) {
     setMine(choice);
     writeLocal(`quiz:${shareId}`, choice);
     try {
-      const res = await fetch(`/api/share/${shareId}/vote`, {
+      const res = await fetch(`/api/hands/${shareId}/vote`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ voterId: voterId(), choice }),

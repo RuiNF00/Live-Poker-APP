@@ -4,7 +4,7 @@ import type { SharedHand } from './types';
 /** Example hand served at /h/demo (the landing page links to it). */
 export const DEMO_SHARE: SharedHand = {
   id: 'demo',
-  hand: SAMPLE_TOURNAMENT_HAND,
+  payload: SAMPLE_TOURNAMENT_HAND,
   title: 'AQ suited vs 3-bet do big stack',
   revealAll: false,
   quiz: { street: 'turn', actionIndex: 1 },

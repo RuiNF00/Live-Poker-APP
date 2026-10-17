@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { brand } from '@/config/brand';
 import { t, type Locale } from '@/lib/i18n';
+import { Mark, Wordmark } from './Brand';
 
 type Platform = 'ios' | 'android' | 'other';
 
@@ -29,8 +30,8 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
   return (
     <>
       <section className="cta">
-        <div className="cta-logo" aria-hidden>
-          {brand.name.slice(0, 1)}
+        <div className="cta-logo">
+          <Mark size={56} />
         </div>
         <h2 className="cta-title">{d.ctaTitle}</h2>
         <p className="cta-body">{d.ctaBody}</p>
@@ -59,7 +60,7 @@ export function AppCta({ locale, shareId }: { locale: Locale; shareId: string })
 
       <div className="sticky-cta">
         <div className="sticky-brand">
-          <strong>{brand.name}</strong>
+          <Wordmark className="sticky-word" />
           <span>{brand.tagline[locale]}</span>
         </div>
         {primary ? (

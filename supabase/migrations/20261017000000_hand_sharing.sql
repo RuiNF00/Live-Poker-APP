@@ -5,7 +5,7 @@
 create table public.shared_hands (
   id text primary key,
   payload jsonb not null
-    check (jsonb_typeof(payload) = 'object' and payload->>'version' = '1' and pg_column_size(payload) < 65536),
+    check (jsonb_typeof(payload) = 'object' and (payload->>'v' = '1' or payload->>'version' = '1') and pg_column_size(payload) < 65536),
   title text check (char_length(title) <= 120),
   owner_id uuid references auth.users (id) on delete set null,
   edit_token_hash text not null,

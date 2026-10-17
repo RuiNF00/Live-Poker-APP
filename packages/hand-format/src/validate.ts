@@ -57,6 +57,7 @@ export function validateHand(input: unknown): string[] {
     }
   if (h.tags && (!Array.isArray(h.tags) || h.tags.length > 20 || h.tags.some((t) => typeof t !== 'string' || t.length > 40)))
     errors.push('tags');
+  if (h.winnerSeats !== undefined && (!Array.isArray(h.winnerSeats) || h.winnerSeats.some((s) => !seats.has(s)))) errors.push('winnerSeats');
   if (h.notes !== undefined && (typeof h.notes !== 'string' || h.notes.length > 2000)) errors.push('notes');
   return errors;
 }

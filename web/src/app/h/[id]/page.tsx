@@ -3,7 +3,8 @@ import { headers } from 'next/headers';
 import { after } from 'next/server';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
-import { handTitle, validateHand } from '@livepoker/hand-format';
+import { handTitle } from '@livepoker/hand-format';
+import { resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
 import { pickLocale, t } from '@/lib/i18n';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
@@ -16,8 +17,8 @@ const loadShare = cache(loadShareById);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const share = await loadShare(id);
-  if (!share) return { title: 'Mão não encontrada', robots: { index: false } };
-  const hand = share.hand;
+  const hand = share && resolveHand(share.payload)?.hand;
+  if (!share || !hand) return { title: 'Mão não encontrada', robots: { index: false } };
   const title = share.title || handTitle(hand);
   const where = hand.tournament?.name || hand.location;
   const description = [where, 'Vê a mão e diz como jogavas.'].filter(Boolean).join(' · ');
@@ -38,7 +39,8 @@ export default async function SharePage({ params }: Params) {
   const store = getStore();
   after(() => store.recordView(id).catch(() => {}));
 
-  if (validateHand(share.hand).length) {
+  const resolved = resolveHand(share.payload);
+  if (!resolved) {
     return (
       <main className="page page-center">
         <p>{t(locale).invalid}</p>
@@ -49,7 +51,7 @@ export default async function SharePage({ params }: Params) {
   return (
     <ShareView
       shareId={id}
-      hand={share.hand}
+      hand={resolved.hand}
       title={share.title}
       revealAll={share.revealAll}
       quiz={share.quiz}

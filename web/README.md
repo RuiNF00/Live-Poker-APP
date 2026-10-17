@@ -1,4 +1,4 @@
-# Partilha de mãos (web)
+# Sweatbook · partilha de mãos (web)
 
 Página pública `/h/<id>` que reproduz uma mão partilhada a partir da app: replayer, comentários dos amigos (sem conta), votação "O que fazias aqui?" e imagem de pré-visualização para WhatsApp/Telegram/X.
 
@@ -14,21 +14,26 @@ Sem variáveis do Supabase, os dados ficam num ficheiro local (`web/.data/store.
 
 ## API para a app
 
-`POST /api/share`
+Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da app (v1) tal e qual; também aceita um `HandRecord` de `packages/hand-format`.
 
-```json
-{ "hand": HandRecord, "title": "AQ vs 3-bet", "quiz": { "street": "turn", "actionIndex": 1 }, "revealAll": false, "allowComments": true }
-```
+| Pedido | Resposta |
+|---|---|
+| `POST /api/hands` `{ hand, title?, quiz?: { action: n }, revealAll?, allowComments? }` | `201 { id, token, url }` |
+| `GET /api/hands/<id>` | `{ id, hand, title, quiz, createdAt }` |
+| `DELETE /api/hands/<id>` com header `x-edit-token: <token>` | `{ deleted }` |
+| `GET /api/hands/<id>/comments` | `{ comments: [{ id, name, text, createdAt (ms), stepIndex }] }` |
+| `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
+| `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` |
 
-Resposta `201 { "id", "url", "editToken" }`. A app guarda o `editToken` para apagar depois com `DELETE /api/share/<id>` e o header `x-edit-token`.
+`quiz.action` é o índice em `hand.actions` da decisão do herói que os amigos têm de adivinhar ("O que fazias aqui?").
 
-`HandRecord`, o motor de replay e o avaliador de mãos estão em `packages/hand-format` (partilhado com a app).
+O motor de replay, o avaliador e o conversor do `Hand` da app estão em `packages/hand-format`.
 
 ## Pôr online
 
 1. Supabase: criar projeto, correr `supabase/migrations/*.sql` (SQL editor ou `supabase db push`).
 2. Vercel: importar o repositório com **Root Directory = `web`**.
-3. Variáveis: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (domínio final), e quando existirem `NEXT_PUBLIC_APP_STORE_URL`, `NEXT_PUBLIC_PLAY_STORE_URL`, `NEXT_PUBLIC_BRAND_NAME`.
+3. Variáveis: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (por defeito `https://sweatbook.poker`), e quando existirem `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_PLAY_STORE_URL`.
 
 ## Testes
 

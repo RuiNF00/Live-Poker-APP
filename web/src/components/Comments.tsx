@@ -18,8 +18,8 @@ interface Props {
   onJump: (stepIndex: number) => void;
 }
 
-function ago(iso: string, d: Dict) {
-  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+function ago(ms: number, d: Dict) {
+  const min = Math.floor((Date.now() - ms) / 60000);
   if (min < 1) return d.justNow;
   if (min < 60) return d.minutesAgo(min);
   if (min < 60 * 24) return d.hoursAgo(Math.floor(min / 60));
@@ -47,12 +47,12 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
     setState('sending');
     writeLocal('name', name.trim());
     try {
-      const res = await fetch(`/api/share/${shareId}/comments`, {
+      const res = await fetch(`/api/hands/${shareId}/comments`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          authorName: name.trim(),
-          body: body.trim(),
+          name: name.trim(),
+          text: body.trim(),
           stepIndex: attach && currentStep > 0 ? currentStep : null,
         }),
       });
@@ -80,9 +80,9 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
             <li key={c.id} className="comment">
               <div className="comment-head">
                 <span className="avatar" aria-hidden>
-                  {c.authorName.slice(0, 1).toUpperCase()}
+                  {c.name.slice(0, 1).toUpperCase()}
                 </span>
-                <strong>{c.authorName}</strong>
+                <strong>{c.name}</strong>
                 <span className="muted">{ago(c.createdAt, d)}</span>
               </div>
               {c.stepIndex !== null && steps[c.stepIndex] && (
@@ -90,7 +90,7 @@ export function Comments({ shareId, comments, onAdded, steps, currentStep, bb, m
                   ▶ {anchorLabel(c.stepIndex)}
                 </button>
               )}
-              <p className="comment-body">{c.body}</p>
+              <p className="comment-body">{c.text}</p>
             </li>
           ))}
         </ul>

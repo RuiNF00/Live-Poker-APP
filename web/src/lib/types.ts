@@ -1,4 +1,4 @@
-import type { HandRecord, Street } from '@livepoker/hand-format';
+import type { Street } from '@livepoker/hand-format';
 
 export interface QuizSpot {
   street: Street;
@@ -8,7 +8,8 @@ export interface QuizSpot {
 
 export interface SharedHand {
   id: string;
-  hand: HandRecord;
+  /** Hand as uploaded: the app's `Hand` (v: 1) or a HandRecord (version: 1). */
+  payload: unknown;
   title: string | null;
   revealAll: boolean;
   quiz: QuizSpot | null;
@@ -17,12 +18,13 @@ export interface SharedHand {
   createdAt: string;
 }
 
+/** Same shape the app's share-api expects (name, text, createdAt in ms). */
 export interface HandComment {
   id: string;
-  authorName: string;
-  body: string;
+  name: string;
+  text: string;
   stepIndex: number | null;
-  createdAt: string;
+  createdAt: number;
 }
 
 export type VoteChoice = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';

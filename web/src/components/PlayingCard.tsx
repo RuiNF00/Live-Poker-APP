@@ -9,10 +9,10 @@ export const SUIT_PATHS: Record<string, string> = {
 
 /** Four-colour deck: easier to read suits at a glance on small screens. */
 export const SUIT_COLORS: Record<string, string> = {
-  s: '#1b1d22',
-  h: '#d42c3f',
-  d: '#2563d9',
-  c: '#1c9a52',
+  s: '#14161A',
+  h: '#D7263D',
+  d: '#1C6ED6',
+  c: '#16894A',
 };
 
 export function SuitIcon({ suit, size = 14 }: { suit: string; size?: number }) {
