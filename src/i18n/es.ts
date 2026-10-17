@@ -1718,6 +1718,7 @@ const es: Record<string, string> = {
   'México': 'México',
   'Canadá': 'Canadá',
   'Brasil': 'Brasil',
+  'EUA': 'EE. UU.',
   'Uruguai': 'Uruguay',
   'Austrália': 'Australia',
   'Macau': 'Macao',
