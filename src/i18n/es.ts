@@ -2867,6 +2867,8 @@ const es: Record<string, string> = {
   'Denunciado. Obrigado.': 'Denunciado. Gracias.',
   'Denunciar comentário de': 'Denunciar comentario de',
   'Comentário denunciado': 'Comentario denunciado',
+  'Partilhar imagem': 'Compartir imagen',
+  'Partilhar noutra app (X, WhatsApp…)': 'Compartir en otra app (X, WhatsApp…)',
 };
 
 export default es;
