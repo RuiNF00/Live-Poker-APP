@@ -15,9 +15,11 @@ import type { StoreLinks } from './StoreButtons';
  */
 export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; stores: StoreLinks }) {
   const [ios, setIos] = useState(false);
+  const [android, setAndroid] = useState(false);
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent));
+    setAndroid(/Android/i.test(navigator.userAgent));
     writeLocal('invite', code);
   }, [code]);
   const copy = async () => {
@@ -52,7 +54,8 @@ export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; 
       </div>
 
       <ol className="lp-steps">
-        {c.invite.steps.map((s, i) => (
+        {/* Step 2 per phone: iPhone pastes the copied link, Android gets it from the Play referrer. */}
+        {c.invite.steps.map((s, i) => (i === 1 && !ios ? (android ? c.invite.stepAndroid : c.invite.stepOther) : s)).map((s, i) => (
           <li key={s}>
             <span>{i + 1}</span>
             {s}

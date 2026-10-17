@@ -28,7 +28,7 @@ export default function InviteScreen() {
   const share = async (to?: 'whatsapp') => {
     if (!s) return;
     tap('medium');
-    const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: {url}', { url: withLang(s.url, variant) });
+    const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, ficamos os dois com 7 dias de Pro. {url}', { url: withLang(s.url, variant) });
     track('link_shared', { channel: to === 'whatsapp' ? 'invite_whatsapp' : 'invite' });
     void markShared();
     if (to === 'whatsapp') {
@@ -42,7 +42,7 @@ export default function InviteScreen() {
 
   const steps: [React.ComponentProps<typeof Ionicons>['name'], string][] = [
     ['paper-plane-outline', t('Envias o teu link a um amigo')],
-    ['download-outline', t('Ele instala e guarda a primeira mão')],
+    ['download-outline', t('O teu amigo instala e guarda a primeira mão')],
     ['flash-outline', t('Recebem os dois 7 dias de Pro')],
   ];
 
@@ -58,7 +58,7 @@ export default function InviteScreen() {
             {t('7 dias de Pro por amigo')}
           </T>
           <T v="callout" style={{ textAlign: 'center' }}>
-            {t('Para ti e para ele. Até 10 amigos por ano.')}
+            {t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
           </T>
         </View>
 
