@@ -11,6 +11,7 @@ import { Alert, Platform, Pressable, Share, View } from 'react-native';
 import { t } from '@/i18n';
 import { download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, backupHealth, cloudAhead, countsOf, type Health } from '@/lib/cloud-guard';
+import { syncCloudExpiry } from '@/lib/cloud-expiry';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary, type BackupData } from '@/store/backup';
@@ -196,6 +197,7 @@ export function CloudBackup() {
             <Ionicons name="copy-outline" size={18} color={C.accent} />
           </Pressable>
           <T v="small">{t('Guarda este código: é a única chave da tua cópia. Num telemóvel novo, usa «Recuperar com código».')}</T>
+          <T v="tiny">{t('Se não abrires a app durante 18 meses, a cópia é apagada do servidor. Com as notificações ligadas, avisamos um mês antes.')}</T>
           {cloud.saved ? null : (
             // Until the player says the code is kept somewhere else, the card keeps asking.
             <View style={{ gap: S.sm, padding: 12, borderRadius: R.md, backgroundColor: C.warnSoft }}>
@@ -247,6 +249,16 @@ export function AutoCloudBackup() {
   // Also when the signal comes back: a backup due while offline goes out then.
   const online = useOnline();
   const empty = ready && store.hands.length === 0 && store.sessions.length === 0;
+  // The notice a month before the server deletes an unused copy, moved on after every copy.
+  // Off the launch path, and only for players with a copy (it loads the notifications module).
+  useEffect(() => {
+    const id = setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), 8000);
+    const off = onCloudChange((c) => void syncCloudExpiry(c));
+    return () => {
+      clearTimeout(id);
+      off();
+    };
+  }, []);
   useEffect(() => {
     // App deleted and installed again: the keychain still has the code. Offer
     // the copy back once, before the player starts over on an empty app.

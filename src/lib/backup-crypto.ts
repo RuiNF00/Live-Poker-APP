@@ -63,7 +63,34 @@ function envelope(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): strin
   return JSON.stringify(env);
 }
 
-/** gzip + AES-GCM, wrapped in JSON (the server only accepts JSON or gzip). */
+/**
+ * v2, what the app sends: "SWB2", the nonce and the AES-GCM bytes of the gzipped
+ * backup, in a gzip container without compression (the server only takes JSON
+ * or gzip, and checks the magic bytes). Same encryption as v1, without base64:
+ * a quarter smaller, so a longer history fits the 2 MB.
+ */
+const V2 = [0x53, 0x57, 0x42, 0x32];
+
+function pack(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): Uint8Array {
+  const ct = gcm(key, nonce).encrypt(zipped);
+  const body = new Uint8Array(V2.length + nonce.length + ct.length);
+  body.set(V2, 0);
+  body.set(nonce, V2.length);
+  body.set(ct, V2.length + nonce.length);
+  return gzipSync(body, { level: 0 });
+}
+
+const isV2 = (b: Uint8Array) => b.length > 16 && V2.every((x, i) => b[i] === x);
+
+function openV2(b: Uint8Array, key: Uint8Array): Uint8Array {
+  try {
+    return gcm(key, b.subarray(4, 16)).decrypt(b.subarray(16));
+  } catch {
+    throw new Error('forbidden');
+  }
+}
+
+/** v1: gzip + AES-GCM, base64 in JSON. Still read; written only by older versions (and the tests). */
 export function seal(plain: string, key: Uint8Array, nonce: Uint8Array): string {
   return envelope(gzipSync(strToU8(plain)), key, nonce);
 }
@@ -72,12 +99,12 @@ const SLICE = 32 * 1024;
 const breathe = () => new Promise<void>((r) => setTimeout(r, 0));
 
 /**
- * Same result as seal, but gzips in 32 KB slices with a pause between them.
+ * Seals as v2, gzipping in 32 KB slices with a pause between them.
  * gzip is the slow part (about half a second for 2,000 hands without a JIT,
  * as on Hermes, and more on a cheap phone); in one piece it froze the app
  * while the automatic backup ran a few seconds after launch.
  */
-export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
+export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Array, pause: () => Promise<void> = breathe): Promise<Uint8Array> {
   const input = strToU8(plain);
   const parts: Uint8Array[] = [];
   let size = 0;
@@ -91,12 +118,13 @@ export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Arra
     if (last) break;
     await pause();
   }
-  return envelope(join(parts, size), key, nonce);
+  return pack(join(parts, size), key, nonce);
 }
 
 /** Opens a sealed backup; plain (older) backups pass through. Throws 'forbidden' on a wrong key. */
 export function unseal(raw: Uint8Array, key: Uint8Array): string {
   const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw;
+  if (isV2(bytes)) return strFromU8(gunzipSync(openV2(bytes, key)));
   const text = strFromU8(bytes);
   let env: Partial<Sealed>;
   try {
@@ -142,6 +170,11 @@ async function gunzipSliced(raw: Uint8Array, pause: () => Promise<void>): Promis
 /** Same as unseal, with both gunzips sliced so a restore keeps the screen alive. */
 export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe): Promise<string> {
   const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await gunzipSliced(raw, pause) : raw;
+  if (isV2(bytes)) {
+    const zipped = openV2(bytes, key);
+    await pause();
+    return strFromU8(await gunzipSliced(zipped, pause));
+  }
   const text = strFromU8(bytes);
   let env: Partial<Sealed>;
   try {

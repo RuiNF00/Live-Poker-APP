@@ -65,3 +65,11 @@ export function backupHealth(c: CloudState | null, now: number): Health {
   const days = c.lastAt ? Math.floor((now - c.lastAt) / 86400000) : Infinity;
   return days >= STALE_DAYS ? { level: 'stale', days } : { level: 'ok' };
 }
+
+/** The server deletes a copy not updated for 18 months: the notice goes out a month before. */
+export const EXPIRY_WARN_MS = 17 * 30 * 86400000;
+
+/** When that notice goes out for this copy, or null (nothing copied yet). */
+export function expiryWarnAt(c: Pick<CloudState, 'lastAt'> | null): number | null {
+  return c?.lastAt ? c.lastAt + EXPIRY_WARN_MS : null;
+}

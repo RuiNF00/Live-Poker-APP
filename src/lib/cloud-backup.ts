@@ -19,6 +19,8 @@ export { formatCode, parseCode, type CloudState } from './cloud-code';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const KEY = 'rl.cloud.v1';
+/** Same as BACKUP_MAX_BYTES on the server. */
+const MAX_BYTES = 2 * 1024 * 1024;
 
 
 function randomB32(n: number): string {
@@ -127,11 +129,14 @@ async function put(c: CloudState, data: BackupData, opts: { force?: boolean }): 
   if (block) throw new Error(block);
   const { auth, enc } = deriveKeys(c.secret);
   const body = await sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
+  // The server's limit: no point sending what it will refuse.
+  if (body.length > MAX_BYTES) throw new Error('too_big');
   const res = await fetch(`${API}/api/backup/${c.id}`, {
     method: 'PUT',
     // Encrypted on the phone; the server only ever sees a key derived from the code.
-    headers: { 'content-type': 'application/json', 'x-backup-key': auth },
-    body,
+    headers: { 'content-type': 'application/gzip', 'x-backup-key': auth },
+    // React Native sends typed arrays as they are (convertRequestBody).
+    body: body as Uint8Array<ArrayBuffer>,
     signal: longSignal(),
   });
   if (res.status === 413) throw new Error('too_big');

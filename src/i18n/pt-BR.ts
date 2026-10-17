@@ -1486,6 +1486,9 @@ const ptBR: Record<string, string> = {
   'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
   'Check até ao fim': 'Check até o fim',
+  'A tua cópia na nuvem vai ser apagada': 'Seu backup na nuvem vai ser apagado',
+  'Abre a Sweatbook este mês para a manter. Uma cópia sem uso durante 18 meses é apagada.': 'Abra o Sweatbook este mês para mantê-lo. Um backup sem uso por 18 meses é apagado.',
+  'Se não abrires a app durante 18 meses, a cópia é apagada do servidor. Com as notificações ligadas, avisamos um mês antes.': 'Se você não abrir o app por 18 meses, o backup é apagado do servidor. Com as notificações ligadas, avisamos um mês antes.',
 };
 
 export default ptBR;

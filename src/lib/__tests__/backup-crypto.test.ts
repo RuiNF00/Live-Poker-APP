@@ -51,7 +51,7 @@ test('sealAsync opens like seal, gzips in slices and never runs one slice too lo
       await new Promise((r) => setTimeout(r, 0));
       since = performance.now();
     });
-    assert.equal(unseal(enc(sealed), key), body);
+    assert.equal(unseal(sealed, key), body);
     assert.equal(pauses, Math.max(0, Math.ceil(new TextEncoder().encode(body).length / 32768) - 1));
     assert.ok(worst < 200, `slice took ${worst} ms`);
   }
@@ -78,4 +78,27 @@ test('unsealAsync opens everything unseal opens, in short slices', async () => {
     assert.ok(worst < 200, `slice took ${worst} ms`);
   }
   await assert.rejects(unsealAsync(enc(seal(big, key, new Uint8Array(12))), deriveKeys('ZZZZZZZZZZZZZZZZ').enc), /forbidden/);
+});
+
+test('v2 (what the app sends) is a gzip the server accepts, has no plaintext, and is smaller than v1 (no base64)', async () => {
+  const { enc: key } = deriveKeys('ABCDEFGHJKMNPQRS');
+  const { bigHistory } = await import('../../store/__tests__/fake-storage');
+  const body = JSON.stringify({ app: 'sweatbook', v: 1, hands: bigHistory(600), notes: 'Zé do boné' });
+  const v2 = await sealAsync(body, key, new Uint8Array(12).fill(9), async () => {});
+  const v1 = enc(seal(body, key, new Uint8Array(12).fill(9)));
+  assert.deepEqual([v2[0], v2[1]], [0x1f, 0x8b], 'gzip magic: the server stores it as application/gzip');
+  assert.ok(!Buffer.from(v2).includes(Buffer.from('Zé')) && !Buffer.from(v2).includes(Buffer.from('sweatbook')));
+  assert.ok(v2.length < v1.length * 0.85, `${v2.length} vs ${v1.length}`);
+  assert.equal(unseal(v2, key), body);
+  assert.equal(await unsealAsync(v2, key, async () => {}), body);
+  assert.throws(() => unseal(v2, deriveKeys('ZZZZZZZZZZZZZZZZ').enc), /forbidden/);
+  await assert.rejects(unsealAsync(v2, deriveKeys('ZZZZZZZZZZZZZZZZ').enc, async () => {}), /forbidden/);
+});
+
+test('the notice before the server deletes an unused copy: a month before 18 months', async () => {
+  const { expiryWarnAt, EXPIRY_WARN_MS } = await import('../cloud-guard');
+  assert.equal(expiryWarnAt(null), null);
+  assert.equal(expiryWarnAt({ lastAt: undefined }), null, 'nothing copied yet');
+  assert.equal(expiryWarnAt({ lastAt: 1000 }), 1000 + EXPIRY_WARN_MS);
+  assert.equal(Math.round(EXPIRY_WARN_MS / 86400000), 510);
 });

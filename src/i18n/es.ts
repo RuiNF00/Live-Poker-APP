@@ -3143,6 +3143,9 @@ const es: Record<string, string> = {
   'Praga': 'Praga',
   'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
+  'A tua cópia na nuvem vai ser apagada': 'Tu copia en la nube se va a borrar',
+  'Abre a Sweatbook este mês para a manter. Uma cópia sem uso durante 18 meses é apagada.': 'Abre Sweatbook este mes para conservarla. Una copia sin uso durante 18 meses se borra.',
+  'Se não abrires a app durante 18 meses, a cópia é apagada do servidor. Com as notificações ligadas, avisamos um mês antes.': 'Si no abres la app durante 18 meses, la copia se borra del servidor. Con las notificaciones activadas, te avisamos un mes antes.',
 };
 
 export default es;
