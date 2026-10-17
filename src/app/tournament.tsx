@@ -1,0 +1,398 @@
+// Tournament mode for the running tournament session: the blind structure and
+// the level clock synced to the floor's in one tap, your stack in BB and M
+// against the average, the pay jumps ahead, and the final-table deal. All of it
+// lives on the session (Session.tourney), so it works offline.
+
+import { Ionicons } from '@expo/vector-icons';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+
+import { AmountPad } from '@/components/AmountPad';
+import { Badge, Button, Card, Chip, ChipRow, Divider, Empty, Field, IconButton, ListGroup, ListItem, Row, Section, SheetHeader, Stat, StatGrid, T, tap } from '@/components/ui';
+import { locale, t } from '@/i18n';
+import { levelAfter, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { bbs, chips, money } from '@/poker/format';
+import { averageStack, levelOf, parsePayouts, parseStructure, payState, stackDepth, syncTo, syncedLevelStart, TEMPLATES, templateStructure, type Level, type Tourney } from '@/poker/tourney';
+import { useStore } from '@/store/store';
+import type { Session } from '@/store/types';
+import { C, S } from '@/theme';
+
+const TEMPLATE_NAME: Record<string, string> = { turbo: 'Turbo', standard: 'Normal', deep: 'Deep', highroller: 'High roller' };
+
+function useTick(ms = 1000) {
+  const [now, setNow] = useState(() => Date.now());
+  useFocusEffect(
+    useCallback(() => {
+      setNow(Date.now());
+      const id = setInterval(() => setNow(Date.now()), ms);
+      return () => clearInterval(id);
+    }, [ms]),
+  );
+  return now;
+}
+
+const mmss = (ms: number) => {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+};
+const blindsOf = (l: { sb: number; bb: number; ante: number }) => `${chips(l.sb)}/${chips(l.bb)}` + (l.ante ? ` (${chips(l.ante)})` : '');
+
+/** Minutes the player can tap to match the floor's clock: the last few one by one, then every 5. */
+function syncChoices(levelMinutes: number): number[] {
+  const out = [1, 2, 3, 4];
+  for (let m = 5; m <= levelMinutes; m += 5) out.push(m);
+  return out.filter((m) => m <= levelMinutes);
+}
+
+export default function TournamentScreen() {
+  const { activeSession } = useStore();
+  if (!activeSession || activeSession.kind !== 'mtt') {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter, justifyContent: 'center' }}>
+        <Stack.Screen options={{ title: t('Modo torneio') }} />
+        <Empty icon="trophy-outline" title={t('Sem torneio a decorrer')} body={t('Começa uma sessão de torneio para teres a estrutura, o relógio e os prémios aqui.')} action={<Button title={t('Ir para a sessão')} onPress={() => router.replace('/session')} />} />
+      </View>
+    );
+  }
+  return <Tournament s={activeSession} />;
+}
+
+function Tournament({ s }: { s: Session }) {
+  const { saveSession } = useStore();
+  const tour: Tourney = s.tourney ?? {};
+  const st = tour.structure?.length ? tour.structure : undefined;
+  const [pad, setPad] = useState<null | 'stack' | 'left' | 'entries' | 'startStack'>(null);
+  const [sheet, setSheet] = useState<null | 'structure' | 'payouts'>(null);
+  const [allLevels, setAllLevels] = useState(false);
+  const save = (p: Partial<Session>) => saveSession({ ...s, ...p });
+  const setTour = (p: Partial<Tourney>, extra: Partial<Session> = {}) => save({ ...extra, tourney: { ...tour, ...p } });
+
+  const level = s.level ?? 1;
+  const depth = stackDepth(s.stack, s, s.tableSize || 9);
+  const avg = averageStack(tour);
+  const pay = tour.payouts?.length && tour.left ? payState(tour.payouts, tour.left) : null;
+
+  const applyStructure = (structure: Level[], name?: string) => {
+    tap('success');
+    // Keep the level you're on; the clock starts on it now.
+    setTour({ structure, structureName: name }, syncTo(structure, level));
+  };
+  const goLevel = (dir: 1 | -1) => {
+    tap();
+    save(st ? syncTo(st, level + dir) : levelAfter(s, dir));
+  };
+  const syncMinutes = (m: number) => {
+    tap('success');
+    if (st) save(syncTo(st, level, m));
+    else if (s.levelMinutes) save({ levelStartedAt: syncedLevelStart(s.levelMinutes, m) });
+  };
+  const bust = (n: number) => {
+    if (!tour.left) return;
+    tap();
+    setTour({ left: Math.max(1, tour.left - n) });
+  };
+  const toChop = () => {
+    const n = Math.min(9, Math.max(2, tour.left ?? 3));
+    router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (tour.payouts ?? []).slice(0, n).join(',') } });
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title: t('Modo torneio') }} />
+      <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
+        <LevelCard s={s} st={st} onLevel={goLevel} onSync={syncMinutes} />
+
+        <Section title={t('O teu stack')}>
+          <Card onPress={() => setPad('stack')} accessibilityLabel={t('Atualizar stack')} style={{ gap: S.md }}>
+            <Row>
+              <T v="label" style={{ flex: 1 }}>
+                Stack
+              </T>
+              <Ionicons name="pencil" size={13} color={C.accent} />
+            </Row>
+            <T v="monoXL" style={{ fontSize: 34, lineHeight: 40 }}>
+              {chips(s.stack)}
+            </T>
+            <StatGrid cols={3}>
+              <Stat label="BB" value={depth.bb.toFixed(depth.bb < 10 ? 1 : 0)} tone={depth.bb < 10 ? 'bad' : depth.bb < 20 ? 'warn' : undefined} />
+              <Stat label="M" value={depth.m.toFixed(depth.m < 10 ? 1 : 0)} tone={depth.m < 6 ? 'bad' : depth.m < 12 ? 'warn' : undefined} />
+              <Stat label={t('vs média')} value={avg ? Math.round((s.stack / avg) * 100) + '%' : '—'} tone={avg ? (s.stack >= avg ? 'good' : 'bad') : undefined} />
+            </StatGrid>
+          </Card>
+        </Section>
+
+        <Section title={t('Jogadores')} hint={avg ? t('Stack médio {avg} · {bb}', { avg: chips(Math.round(avg)), bb: bbs(avg, s.bb) }) : t('Com entradas, jogadores e stack inicial vês o stack médio.')}>
+          <Card style={{ gap: S.md }}>
+            <Row gap={S.md}>
+              <Cell label={t('Restam')} value={tour.left ? tour.left.toLocaleString(locale) : undefined} onPress={() => setPad('left')} big />
+              <Button size="md" kind="secondary" title="−1" onPress={() => bust(1)} disabled={!tour.left} style={{ minWidth: 64 }} haptic={false} />
+              <Button size="md" kind="secondary" title="−5" onPress={() => bust(5)} disabled={!tour.left} style={{ minWidth: 64 }} haptic={false} />
+            </Row>
+            <Divider />
+            <Row gap={S.md}>
+              <Cell label={t('Entradas')} value={tour.entries ? tour.entries.toLocaleString(locale) : undefined} onPress={() => setPad('entries')} />
+              <Cell label={t('Stack inicial')} value={tour.startStack ? chips(tour.startStack) : undefined} onPress={() => setPad('startStack')} />
+            </Row>
+          </Card>
+        </Section>
+
+        <Section title={t('Prémios')} action={tour.payouts?.length ? t('Editar') : undefined} onAction={() => setSheet('payouts')}>
+          {tour.payouts?.length ? (
+            <PayCard pay={pay} payouts={tour.payouts} left={tour.left} currency={s.currency} />
+          ) : (
+            <Card onPress={() => setSheet('payouts')} style={{ gap: 4 }}>
+              <Row>
+                <Ionicons name="cash-outline" size={18} color={C.accent} />
+                <T v="h3" style={{ flex: 1 }}>
+                  {t('Colar a tabela de prémios')}
+                </T>
+                <Ionicons name="chevron-forward" size={16} color={C.muted} />
+              </Row>
+              <T v="small">{t('Vês quantos faltam para o dinheiro e para o próximo salto.')}</T>
+            </Card>
+          )}
+        </Section>
+
+        <Section title={t('Mesa final')}>
+          <ListGroup>
+            <ListItem icon="pie-chart-outline" title={t('Calculadora de deal')} subtitle={t('ICM e chip chop com os stacks da mesa')} onPress={toChop} chevron />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Estrutura')} action={st ? t('Colar outra') : undefined} onAction={() => setSheet('structure')}>
+          <ChipRow>
+            {TEMPLATES.map((x) => (
+              <Chip key={x.id} label={`${TEMPLATE_NAME[x.id]} · ${x.minutes}′`} active={tour.structureName === x.id} onPress={() => applyStructure(templateStructure(x.minutes), x.id)} />
+            ))}
+            <Chip icon="clipboard-outline" label={t('Colar')} active={!!st && !tour.structureName} onPress={() => setSheet('structure')} />
+          </ChipRow>
+          {st ? (
+            <Card padded={false}>
+              {st.map((l, i) => {
+                const n = i + 1;
+                if (!allLevels && (n < level - 1 || n > level + 4)) return null;
+                const cur = n === level;
+                return (
+                  <View key={n}>
+                    {n > Math.max(1, allLevels ? 1 : level - 1) ? <Divider inset={S.lg} /> : null}
+                    <Row style={{ paddingHorizontal: S.lg, paddingVertical: 11, backgroundColor: cur ? C.accentSoft : undefined }}>
+                      <T v="monoS" color={cur ? C.accent : C.muted} style={{ width: 28 }}>
+                        {n}
+                      </T>
+                      <T v="mono" color={cur ? C.accent : n < level ? C.muted : C.text} style={{ flex: 1 }}>
+                        {blindsOf(l)}
+                      </T>
+                      <T v="monoS">{l.minutes}′</T>
+                    </Row>
+                  </View>
+                );
+              })}
+              <Divider />
+              <Button kind="plain" size="sm" title={allLevels ? t('Mostrar menos') : t('Ver os {n} níveis', { n: st.length })} onPress={() => setAllLevels(!allLevels)} />
+            </Card>
+          ) : (
+            <T v="small">{t('Escolhe um modelo ou cola a estrutura do torneio. Subir de nível passa a seguir a estrutura, com a duração de cada nível.')}</T>
+          )}
+        </Section>
+      </ScrollView>
+
+      <AmountPad
+        visible={pad === 'stack'}
+        title={t('Stack atual')}
+        bb={s.bb}
+        onClose={() => setPad(null)}
+        onDone={(v) => {
+          setPad(null);
+          save({ stack: v, stackLog: [...s.stackLog, { t: Date.now(), stack: v, level: s.level }] });
+        }}
+      />
+      <AmountPad
+        visible={pad === 'left' || pad === 'entries' || pad === 'startStack'}
+        plain
+        title={pad === 'left' ? t('Jogadores que restam') : pad === 'entries' ? t('Entradas') : t('Stack inicial')}
+        bb={s.bb}
+        onClose={() => setPad(null)}
+        onDone={(v) => {
+          const k = pad!;
+          setPad(null);
+          setTour({ [k]: v });
+        }}
+      />
+      <PasteSheet
+        visible={sheet === 'structure'}
+        title={t('Estrutura de blinds')}
+        hint={t('Um nível por linha: blinds, ante e minutos. Ex.: 100/200/200 40')}
+        placeholder={'100/200/200 40\n200/300/300 40\n200/400/400 40'}
+        initial={st && !tour.structureName ? st.map((l) => `${l.sb}/${l.bb}/${l.ante} ${l.minutes}`).join('\n') : ''}
+        parse={(x) => parseStructure(x, s.levelMinutes || 30).length}
+        onClose={() => setSheet(null)}
+        onSave={(x) => {
+          setSheet(null);
+          applyStructure(parseStructure(x, s.levelMinutes || 30));
+        }}
+      />
+      <PasteSheet
+        visible={sheet === 'payouts'}
+        title={t('Tabela de prémios')}
+        hint={t('Um lugar por linha. Ex.: 1 250.000 ou 10-12 15.000')}
+        placeholder={'1 250000\n2 150000\n3 90000\n4-5 50000'}
+        initial={(tour.payouts ?? []).map((p, i) => `${i + 1} ${p}`).join('\n')}
+        parse={(x) => parsePayouts(x).length}
+        onClose={() => setSheet(null)}
+        onSave={(x) => {
+          setSheet(null);
+          tap('success');
+          setTour({ payouts: parsePayouts(x) });
+        }}
+      />
+    </>
+  );
+}
+
+/** A number you tap to type on the keypad; empty ones say so in the accent colour. */
+function Cell({ label, value, onPress, big }: { label: string; value?: string; onPress: () => void; big?: boolean }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={{ flex: 1, gap: 2, minHeight: 44, justifyContent: 'center' }}>
+      <T v="label">{label}</T>
+      <Row gap={6}>
+        {value ? (
+          <T v={big ? 'monoL' : 'mono'} style={big ? null : { fontSize: 18 }}>
+            {value}
+          </T>
+        ) : (
+          <T v="h3" color={C.accent}>
+            {t('Indicar')}
+          </T>
+        )}
+        <Ionicons name="pencil" size={12} color={C.accent} />
+      </Row>
+    </Pressable>
+  );
+}
+
+function LevelCard({ s, st, onLevel, onSync }: { s: Session; st?: Level[]; onLevel: (dir: 1 | -1) => void; onSync: (m: number) => void }) {
+  const now = useTick(1000);
+  const level = s.level ?? 1;
+  const nextAt = nextLevelAt(s, now);
+  const left = nextAt ? nextAt - now : 0;
+  const after = levelAfter(s, 1);
+  const due = !!nextAt && left <= 0;
+  const leftMin = Math.ceil(left / 60_000);
+  const lm = st ? levelOf(st, level).minutes : s.levelMinutes;
+  const choices = lm ? syncChoices(lm) : [];
+  const near = choices.reduce((a, m) => (Math.abs(m - leftMin) < Math.abs(a - leftMin) ? m : a), choices[0]);
+  return (
+    <Card tone="raised" style={{ gap: S.md }}>
+      <Row>
+        <IconButton name="remove" label={t('Nível anterior')} onPress={() => onLevel(-1)} color={level <= 1 ? C.muted : undefined} />
+        <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+          <T v="label">{t('Nível {n}', { n: level })}</T>
+          <T v="monoL" style={{ fontSize: 26, lineHeight: 32 }}>
+            {blindsOf(s)}
+          </T>
+        </View>
+        <IconButton name="add" label={t('Subir nível')} onPress={() => onLevel(1)} />
+      </Row>
+      <View style={{ alignItems: 'center', gap: 2 }}>
+        <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={due ? C.accent : nextAt && left < 120_000 ? C.warn : C.text}>
+          {nextAt ? (due ? '0:00' : mmss(left)) : '—:—'}
+        </T>
+        <T v="small">{!lm ? t('Escolhe a estrutura em baixo para teres o relógio do nível') : due ? t('Nível acabou · sobe para {blinds}', { blinds: blindsOf(after) }) : t('Depois: {blinds}', { blinds: blindsOf(after) })}</T>
+      </View>
+      {choices.length ? (
+        <View style={{ gap: S.sm }}>
+          <Row>
+            <Ionicons name="sync" size={13} color={C.textDim} />
+            <T v="tiny" color={C.textDim} style={{ flex: 1 }}>
+              {t('Minutos que o relógio do torneio mostra')}
+            </T>
+          </Row>
+          <ChipRow>
+            {[...choices].reverse().map((m) => (
+              <Chip key={m} label={m + '′'} active={!!nextAt && !due && m === near} onPress={() => onSync(m)} style={{ minWidth: 48 }} />
+            ))}
+          </ChipRow>
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+function PayCard({ pay, payouts, left, currency }: { pay: ReturnType<typeof payState>; payouts: number[]; left?: number; currency: string }) {
+  const [all, setAll] = useState(false);
+  // The podium and the places around you; the full list on request.
+  const near = new Set([1, 2, 3, ...(left ? [left - 2, left - 1, left, left + 1] : [4, 5])].filter((x) => x >= 1 && x <= payouts.length));
+  const shown = payouts.map((p, i) => ({ p, place: i + 1 })).filter((x) => all || near.has(x.place));
+  return (
+    <Card padded={false}>
+      <View style={{ padding: S.lg, gap: 6 }}>
+        {!pay ? (
+          <T v="small">{t('Indica quantos jogadores restam para veres o próximo salto.')}</T>
+        ) : pay.toMoney > 0 ? (
+          <>
+            <Badge label={pay.toMoney <= Math.max(3, Math.round(pay.paid * 0.05)) ? t('Bolha') : t('Fora do dinheiro')} color={C.warn} />
+            <T v="h2">{pay.toMoney === 1 ? t('Falta 1 jogador para o dinheiro') : t('Faltam {n} jogadores para o dinheiro', { n: pay.toMoney })}</T>
+            <T v="small">{t('Pagam {n} lugares · mínimo {amount}', { n: pay.paid, amount: money(payouts[pay.paid - 1], currency) })}</T>
+          </>
+        ) : (
+          <>
+            <Badge label={t('No dinheiro')} color={C.good} />
+            <T v="h2">{t('Garantido agora: {amount}', { amount: money(pay.now, currency) })}</T>
+            {pay.next !== null ? <T v="small">{pay.toNext === 1 ? t('Próximo salto: {amount}, falta 1 jogador', { amount: money(pay.next, currency) }) : t('Próximo salto: {amount}, faltam {n} jogadores', { amount: money(pay.next, currency), n: pay.toNext! })}</T> : <T v="small">{t('Ganhaste o torneio')}</T>}
+          </>
+        )}
+      </View>
+      {shown.map(({ p, place }, i) => {
+        const here = !!left && left === place;
+        const gap = i > 0 && place - shown[i - 1].place > 1;
+        return (
+          <View key={place}>
+            <Divider inset={S.lg} />
+            {gap ? (
+              <T v="monoS" color={C.muted} style={{ paddingHorizontal: S.lg, paddingVertical: 2 }}>
+                ···
+              </T>
+            ) : null}
+            <Row style={{ paddingHorizontal: S.lg, paddingVertical: 10, backgroundColor: here ? C.accentSoft : undefined }}>
+              <T v="monoS" color={here ? C.accent : C.muted} style={{ width: 44 }}>
+                {place}º
+              </T>
+              <T v="mono" color={here ? C.accent : C.text} style={{ flex: 1, textAlign: 'right' }}>
+                {money(p, currency)}
+              </T>
+            </Row>
+          </View>
+        );
+      })}
+      {payouts.length > shown.length || all ? (
+        <>
+          <Divider />
+          <Button kind="plain" size="sm" title={all ? t('Mostrar menos') : t('Ver os {n} lugares pagos', { n: payouts.length })} onPress={() => setAll(!all)} />
+        </>
+      ) : null}
+    </Card>
+  );
+}
+
+function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose, onSave }: { visible: boolean; title: string; hint: string; placeholder: string; initial: string; parse: (text: string) => number; onClose: () => void; onSave: (text: string) => void }) {
+  const [text, setText] = useState(initial);
+  const [shownFor, setShownFor] = useState(visible);
+  if (visible !== shownFor) {
+    setShownFor(visible);
+    if (visible) setText(initial);
+  }
+  const n = useMemo(() => parse(text), [parse, text]);
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
+          <SheetHeader title={title} onClose={onClose} />
+          <T v="small">{hint}</T>
+          <Field value={text} onChangeText={setText} placeholder={placeholder} multiline autoFocus autoCorrect={false} inputStyle={{ minHeight: 160, maxHeight: 280, textAlignVertical: 'top', paddingTop: 12 }} />
+          <Button title={n ? t('Usar {n} linhas', { n }) : t('Nada reconhecido ainda')} icon="checkmark" disabled={!n} onPress={() => onSave(text)} />
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
