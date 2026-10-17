@@ -181,6 +181,7 @@ export default function ActionPackageScreen() {
     // The first backer: offer the reminder that closes the accounts after each event (only asks once allowed or refused).
     if (!o.lines.length)
       void askNotify({
+        where: 'staking',
         title: t('Avisamos-te no dia a seguir a cada torneio para fechares as contas'),
         preview: { title: t('Acerto com {name}', { name: r.backer.name }), body: t('O torneio acabou. Regista o resultado para fechar as contas.') },
       });

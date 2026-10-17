@@ -73,7 +73,6 @@ export async function maybeAskForReview(moment: ReviewMoment): Promise<boolean> 
   try {
     if (!(await sr.isAvailableAsync())) return false;
     await save(noteAsk(s, n));
-    // 'review_prompt' joins FunnelEvent with Conversão's event list (#145); until then the cast keeps tsc quiet.
     track('review_prompt', { moment });
     await sr.requestReview();
     return true;
