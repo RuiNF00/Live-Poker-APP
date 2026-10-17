@@ -225,6 +225,8 @@ const en: Record<string, string> = {
   'O QUE FAZIAS?': 'WHAT WOULD YOU DO?',
   'MÃO JOGADA': 'HAND PLAYED',
   'Hero leva o pote': 'Hero takes the pot',
+  'RESULTADO DO HERO': "HERO'S RESULT",
+  'Pote {pot}': 'Pot {pot}',
   'Resultado do Hero': 'Hero\'s result',
   'Vota e vê o que aconteceu': 'Vote and see what happened',
   'Replay completo': 'Full replay',
