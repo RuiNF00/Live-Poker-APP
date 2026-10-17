@@ -17,7 +17,7 @@ import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
-import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
+import { canShareStory, capturePost, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
 import { shareRef } from '@/lib/referrals';
 import { notice } from '@/lib/notice';
 import { playedMs } from '@/store/session-math';
@@ -44,6 +44,7 @@ export default function SessionCardScreen() {
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(false);
   const refs = useRef<(React.ComponentRef<typeof View> | null)[]>([]);
+  const postCard = useRef<React.ComponentRef<typeof View>>(null);
 
   const stats = useMemo(() => (!s ? [] : chipCount ? stackStats(s) : sessionStats(s, hands, hideMoney)), [s, chipCount, hands, hideMoney]);
   const milestone = useMemo(() => (s && !chipCount ? milestoneFor(s, sessions, hands) : null), [s, chipCount, sessions, hands]);
@@ -83,13 +84,12 @@ export default function SessionCardScreen() {
     return withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`, variant);
   };
 
-  // X or any other app: the card (the story look, also for the sticker) as a picture, the invite link in the text.
+  // X or any other app: the card at 4:5 (the dark look for the sticker) as a picture, the invite link in the text.
   const postTo = async (to: 'x' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
-      const i = look === 'sticker' ? CARD_STYLES.indexOf('noite') : page;
-      await sharePost([await captureStory({ current: refs.current[i] })], postText(await inviteLink(to)), to);
+      await sharePost([await capturePost(postCard)], postText(await inviteLink(to)), to);
       track('story_shared', { target: to, kind: chipCount ? 'stack' : 'session', look, money: !hideMoney });
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -111,6 +111,20 @@ export default function SessionCardScreen() {
         onClose={() => setSheet(false)}
         instagram={post} instagramTitle={look === 'sticker' ? t('Sticker no Instagram') : undefined} x={() => postTo('x')} other={() => postTo('any')} copy={copy}
       />
+      {/* The 4:5 copy for X and other apps: drawn off screen, only ever captured. */}
+      <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
+        <SessionCard
+          ref={postCard}
+          session={s}
+          stats={stats}
+          look={look === 'sticker' ? 'noite' : look}
+          milestone={showMilestone ? milestone : null}
+          hideMoney={hideMoney}
+          brand={withBrand}
+          hideVenue={chipCount}
+          format="post"
+        />
+      </View>
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
           horizontal

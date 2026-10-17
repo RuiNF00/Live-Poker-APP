@@ -99,6 +99,11 @@ export async function captureStory(ref: React.RefObject<React.ComponentRef<typeo
   return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
 }
 
+/** A card drawn at 360×450 (POST_H), exported 1080×1350 for a post on X or another app. */
+export async function capturePost(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
+  return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1350, result: 'tmpfile' });
+}
+
 async function instagramInstalled(): Promise<boolean> {
   try {
     if (Platform.OS === 'android') return !!(await nativeShare()?.isPackageInstalled('com.instagram.android'))?.isInstalled;
