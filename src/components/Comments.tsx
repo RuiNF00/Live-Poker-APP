@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -34,6 +34,9 @@ export function CommentsList({
   onNote,
   onRemove,
   onBlock,
+  pending,
+  onUndo,
+  onCompose,
 }: {
   shareId: string;
   comments: Comment[];
@@ -47,8 +50,13 @@ export function CommentsList({
   /** Private notes per street (never shared). */
   notes?: Partial<Record<Street, string>>;
   onNote?: (s: Street, text: string) => void;
-  /** Given on the owner's own hand: each comment offers "Apagar" instead of "Denunciar". */
-  onRemove?: (c: Comment) => void;
+  /** Given on the owner's own hand: each comment offers "Bloquear" and "Apagar" instead of "Denunciar"; `block` also stops its author commenting there again. */
+  onRemove?: (c: Comment, block: boolean) => void;
+  /** Removals waiting a few seconds to be undone (the owner's): the comment shows "Desfazer" in its place. */
+  pending?: Record<string, 'remove' | 'block'>;
+  onUndo?: (c: Comment) => void;
+  /** "Responder" put the cursor in the box: the screen brings the box into view above the keyboard. */
+  onCompose?: () => void;
   /** On someone else's hand: "Bloquear" next to "Denunciar" hides that person's comments on this phone. */
   onBlock?: (c: Comment) => void;
 }) {
@@ -64,6 +72,15 @@ export function CommentsList({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [onStreet, setOnStreet] = useState(true);
+  const box = useRef<React.ComponentRef<typeof TextInput>>(null);
+  // One tap from the comment: the replay goes to its street, the reply is about that street, the keyboard opens.
+  const reply = (c: Comment) => {
+    if (c.street && c.street !== street) onJumpStreet?.(c.street);
+    setOnStreet(true);
+    setText((x) => (x.trim() ? x : `@${c.name} `));
+    box.current?.focus();
+    onCompose?.();
+  };
   const [reported, setReported] = useState<Set<string>>(() => new Set());
   const report = (id: string) => {
     setReported((r) => new Set(r).add(id));
@@ -76,7 +93,7 @@ export function CommentsList({
     setBusy(true);
     setErr('');
     try {
-      const c = await postComment(shareId, { name: name.trim() || t('Anónimo'), text: text.trim(), ...(about ? { street: about } : {}) });
+      const c = await postComment(shareId, { name: name.trim() || (onRemove ? t('Autor da mão') : t('Anónimo')), text: text.trim(), ...(about ? { street: about } : {}) });
       onPosted({ ...c, street: c.street ?? about ?? null });
       setText('');
       if (name.trim()) AsyncStorage.setItem(NAME_KEY, name.trim().slice(0, 40)).catch(() => {});
@@ -129,7 +146,24 @@ export function CommentsList({
             ) : null}
             {g.street && onNote ? <StreetNote key={g.street} street={g.street} value={notes?.[g.street] ?? ''} editable={here} onSave={(v) => onNote(g.street!, v)} /> : null}
             {grouped && here && g.items.length === 0 ? <T v="small">{t('Ainda nada sobre esta rua.')}</T> : null}
-            {g.items.map((c) => (
+            {g.items.map((c) => {
+              const gone = pending?.[c.id];
+              // Blocking takes the author's other comments with it: they go from the list at once.
+              if (!gone && c.by && comments.some((o) => o.by === c.by && pending?.[o.id] === 'block')) return null;
+              if (gone)
+                return (
+                  <Row key={c.id} gap={10} style={{ justifyContent: 'space-between', paddingVertical: 8, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.bgDeep }}>
+                    <T v="small" style={{ flex: 1 }}>
+                      {gone === 'block' ? t('{name} bloqueado nesta mão', { name: c.name }) : t('Comentário apagado')}
+                    </T>
+                    <Pressable hitSlop={10} accessibilityRole="button" onPress={() => onUndo?.(c)} style={{ minHeight: 24, justifyContent: 'center' }}>
+                      <T v="small" color={C.accent}>
+                        {t('Desfazer')}
+                      </T>
+                    </Pressable>
+                  </Row>
+                );
+              return (
               <Row key={c.id} gap={10} style={{ alignItems: 'flex-start' }}>
                 <Avatar name={c.name} size={32} />
                 <View style={{ flex: 1, backgroundColor: C.surface, borderRadius: R.md, borderTopLeftRadius: 4, paddingVertical: 10, paddingHorizontal: 12, gap: 3, borderWidth: 1, borderColor: C.border }}>
@@ -143,18 +177,32 @@ export function CommentsList({
                   </Row>
                   <T v="body">{c.text}</T>
                   {onRemove ? (
-                    <Pressable
-                      hitSlop={10}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t('Apagar comentário de')} ${c.name}`}
-                      onPress={() => onRemove(c)}
-                      style={{ alignSelf: 'flex-end', minHeight: 24, justifyContent: 'center' }}>
-                      <T v="tiny" color={C.muted}>
-                        {t('Apagar')}
-                      </T>
-                    </Pressable>
+                    <Row gap={16} style={{ alignSelf: 'flex-end' }}>
+                      <ReplyLink c={c} onPress={reply} />
+                      <Pressable
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('Bloquear')} ${c.name}`}
+                        onPress={() => onRemove(c, true)}
+                        style={{ minHeight: 24, justifyContent: 'center' }}>
+                        <T v="tiny" color={C.muted}>
+                          {t('Bloquear')}
+                        </T>
+                      </Pressable>
+                      <Pressable
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('Apagar comentário de')} ${c.name}`}
+                        onPress={() => onRemove(c, false)}
+                        style={{ minHeight: 24, justifyContent: 'center' }}>
+                        <T v="tiny" color={C.muted}>
+                          {t('Apagar')}
+                        </T>
+                      </Pressable>
+                    </Row>
                   ) : (
                   <Row gap={16} style={{ alignSelf: 'flex-end' }}>
+                    <ReplyLink c={c} onPress={reply} />
                     {onBlock && c.by ? (
                       <Pressable
                         hitSlop={10}
@@ -182,13 +230,14 @@ export function CommentsList({
                   )}
                 </View>
               </Row>
-            ))}
+              );
+            })}
           </View>
         );
       })}
       <Card style={{ gap: S.sm, marginTop: S.xs }}>
         <Field value={name} onChangeText={setName} placeholder={t('O teu nome')} />
-        <Field value={text} onChangeText={setText} placeholder={t('O que fazias? Fold, call, shove…')} multiline inputStyle={{ minHeight: 72 }} />
+        <Field ref={box} value={text} onChangeText={setText} placeholder={t('O que fazias? Fold, call, shove…')} multiline inputStyle={{ minHeight: 72 }} />
         {grouped && street ? (
           <Pressable onPress={() => setOnStreet((x) => !x)} accessibilityRole="checkbox" accessibilityState={{ checked: onStreet }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 }}>
             <Ionicons name={onStreet ? 'checkbox' : 'square-outline'} size={20} color={onStreet ? C.accent : C.muted} />
@@ -211,6 +260,16 @@ export function CommentsList({
         </T>
       </Card>
     </View>
+  );
+}
+
+function ReplyLink({ c, onPress }: { c: Comment; onPress: (c: Comment) => void }) {
+  return (
+    <Pressable hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t('Responder')} ${c.name}`} onPress={() => onPress(c)} style={{ minHeight: 24, justifyContent: 'center' }}>
+      <T v="tiny" color={C.accent}>
+        {t('Responder')}
+      </T>
+    </Pressable>
   );
 }
 

@@ -7,16 +7,18 @@
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { FestivalSlide, SLIDE_H, SLIDE_W } from '@/components/FestivalCarousel';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureSlide, shareCarousel, sharePost } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { carouselCaption, carouselSlides, eventRows, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
@@ -55,7 +57,7 @@ export default function FestivalCarouselScreen() {
   const slides = carouselSlides(recap, events, { showHand, brand: withBrand });
   const stats = recapStats(recap);
   const scale = Math.min((width - 48) / SLIDE_W, (height * 0.5) / SLIDE_H, 1);
-  const link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=carousel&utm_campaign=festival`;
+  const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=carousel&utm_campaign=festival`, variant);
   const caption = carouselCaption(recap, link, { showResult, showMoney });
 
   const copy = async () => {
@@ -74,7 +76,7 @@ export default function FestivalCarouselScreen() {
       setCopied(true);
       track('story_shared', { target: String(target), kind: 'festival_carousel', slides: slides.length, money: showMoney, result: showResult, hand: slides.includes('hand') });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -87,11 +89,11 @@ export default function FestivalCarouselScreen() {
     try {
       const files: string[] = [];
       for (let i = 0; i < slides.length; i++) if (to === 'any' || (slides[i] !== 'close' && files.length < 4)) files.push(await captureSlide({ current: refs.current[i] }));
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`;
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`, variant);
       await sharePost(files, carouselCaption(recap, link, { showResult, showMoney }), to);
       track('story_shared', { target: to, kind: 'festival_carousel', slides: files.length, money: showMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar o carrossel. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

@@ -4,7 +4,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState } from 'react-native';
+import { AppState } from 'react-native';
 
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
@@ -12,6 +12,7 @@ import { eraseLocal, eraseRemote } from '@/lib/erase-all';
 import { useRates } from '@/lib/fx';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
+import { notice } from '@/lib/notice';
 import { forgetHandShare } from '@/lib/share-queue';
 
 import { setMoneyMasked } from '@/poker/format';
@@ -102,7 +103,7 @@ function storageFailed(e: unknown) {
   console.warn('[store] write failed', e);
   if (warned) return;
   warned = true;
-  Alert.alert(
+  notice(
     t('Não foi possível guardar'),
     t('O telemóvel recusou gravar os dados (pouco espaço livre?). Tenta libertar espaço; a app volta a tentar sozinha.'),
   );
@@ -119,7 +120,7 @@ const loadAll = () => readAll(kv);
 /** Damaged values were set aside at launch: say so once, so nothing vanishes silently. */
 function quarantined(n: number) {
   console.warn('[store] values moved to quarantine', n);
-  Alert.alert(
+  notice(
     t('Alguns dados estavam danificados'),
     (n === 1 ? t('1 registo não pôde ser lido. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.') : t('{n} registos não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n: n })),
   );
@@ -216,7 +217,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       boot = null;
       if (!alive) return;
       if (d.quarantined) quarantined(d.quarantined);
-      else if (d.recovered) Alert.alert(t('Dados recuperados'), (d.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered })));
+      else if (d.recovered) notice(t('Dados recuperados'), (d.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered })));
       if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
       if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
       const w = {

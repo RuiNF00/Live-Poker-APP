@@ -20,6 +20,10 @@ interface Props {
   mode: AmountMode;
   locale: Locale;
   onJump: (stepIndex: number) => void;
+  /** The player's question, if any: the box asks it, so answering it is just typing. */
+  ask?: string | null;
+  /** Typing pauses the replay, so the comment stays on the moment on screen. */
+  onCompose?: () => void;
 }
 
 function ago(ms: number, d: Dict) {
@@ -30,7 +34,7 @@ function ago(ms: number, d: Dict) {
   return d.daysAgo(Math.floor(min / 1440));
 }
 
-export function Comments({ shareId, comments: all, onAdded, steps, currentStep, bb, mode, locale, onJump }: Props) {
+export function Comments({ shareId, comments: all, onAdded, steps, currentStep, bb, mode, locale, onJump, ask, onCompose }: Props) {
   const d = t(locale);
   // Challenge votes posted by the app as "🗳️ <choice>" comments are counted in the quiz, not listed.
   const comments = all.filter((c) => !voteFromComment(c.text));
@@ -164,11 +168,12 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
         <textarea
           id="comment-text"
           className="input"
-          placeholder={d.commentPlaceholder}
+          placeholder={ask || d.commentPlaceholder}
           value={body}
           maxLength={1000}
           rows={3}
           onChange={(e) => setBody(e.target.value)}
+          onFocus={onCompose}
           required
         />
         {currentStep > 0 && (

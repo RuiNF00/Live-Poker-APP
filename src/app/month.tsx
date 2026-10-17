@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
@@ -15,14 +15,15 @@ import { SmallSample } from '@/components/SmallSample';
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { lang, locale, t } from '@/i18n';
+import { lang, locale, t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
+import { notice } from '@/lib/notice';
 import { maybeAskForReview } from '@/lib/review';
 import { shareRef } from '@/lib/referrals';
-import { notice } from '@/lib/notice';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
 import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
@@ -87,11 +88,11 @@ export default function MonthScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=month`;
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=month`, variant);
       const target = await shareStory(await captureStory(card), link);
       track('story_shared', { target: String(target), kind: 'month', money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -100,7 +101,7 @@ export default function MonthScreen() {
   // Text G: time and volume only; the result stays on the card if the player shows it there.
   const postText = async (to: 'x' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`;
+    const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`, variant);
     const name = monthName(key);
     const line = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
       month: lang === 'en' ? name : name.toLowerCase(),
@@ -118,7 +119,7 @@ export default function MonthScreen() {
       await sharePost([await captureStory(card)], await postText(to), to);
       track('story_shared', { target: to, kind: 'month', money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

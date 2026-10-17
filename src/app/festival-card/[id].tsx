@@ -7,7 +7,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -15,12 +15,13 @@ import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { shareLink } from '@/lib/share-api';
-import { notice } from '@/lib/notice';
 import { carouselCaption, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -58,7 +59,7 @@ export default function FestivalCardScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      let link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`;
+      let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`, variant);
       // The best hand's replay is the link, when the player can still make one today.
       if (best && (best.hand.shareId || pro.canShare())) {
         try {
@@ -73,7 +74,7 @@ export default function FestivalCardScreen() {
       const target = await shareStory(await captureStory({ current: refs.current[page] }), link);
       track('story_shared', { target: String(target), kind: 'festival', look, money: showMoney, result: showResult, hand: !!best, days: recap.days, events: recap.events });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -83,7 +84,7 @@ export default function FestivalCardScreen() {
   // The post text (same as the carousel caption) with the best hand's replay, or the invite.
   const postText = async (to: 'x' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    let link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`;
+    let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=festival`, variant);
     if (best?.hand.shareId) link = shareLink(best.hand.shareId, to === 'x' ? 'x' : 'link', { ref });
     return carouselCaption(recap, link, { showResult, showMoney });
   };
@@ -95,7 +96,7 @@ export default function FestivalCardScreen() {
       await sharePost([await captureStory({ current: refs.current[page] })], await postText(to), to);
       track('story_shared', { target: to, kind: 'festival', look, money: showMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

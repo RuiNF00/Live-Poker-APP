@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
+import { notifyOwner } from '@/lib/comment-push';
 import { getStore } from '@/lib/store';
 import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
@@ -56,7 +57,10 @@ export async function POST(req: Request, { params }: Ctx) {
   try {
     const comment = await getStore().addComment(id, { name, text, stepIndex, authorKey });
     if (!comment) return NextResponse.json({ error: 'comments_closed' }, { status: 404, headers: cors });
-    return NextResponse.json({ comment: { ...comment, street: steps ? streetOfStep(steps, comment.stepIndex) : null } }, { status: 201, headers: cors });
+    const at = steps ? streetOfStep(steps, comment.stepIndex) : null;
+    // The owner hears about it (the database holds it in the quiet hours or until the last one is opened).
+    after(() => notifyOwner(id, at));
+    return NextResponse.json({ comment: { ...comment, street: at } }, { status: 201, headers: cors });
   } catch (e) {
     if (String((e as Error)?.message).includes('blocked')) {
       return NextResponse.json({ error: 'blocked' }, { status: 403, headers: cors });

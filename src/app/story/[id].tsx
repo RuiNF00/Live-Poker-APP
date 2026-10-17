@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -13,6 +13,7 @@ import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T,
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import {
   canMakeVideo,
@@ -33,7 +34,6 @@ import {
   type FaceClip,
 } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
-import { notice } from '@/lib/notice';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
@@ -156,7 +156,7 @@ export default function StoryScreen() {
       try {
         shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
-        Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share');
@@ -182,8 +182,8 @@ export default function StoryScreen() {
       try {
         file = await renderReplayVideo(frames, durations, withVoice ? voice : null, withVoice ? voiceSlotPx() : null, withFace && face ? { uri: face.uri, slot: faceSlotPx() } : null);
       } catch (e) {
-        if (e instanceof Error && e.message === 'too_large') Alert.alert(t('O vídeo da cara é grande demais'), t('Grava outra vez, um pouco mais curto.'));
-        else Alert.alert(t('Não deu para criar o vídeo'), t('Verifica a internet e tenta outra vez daqui a pouco.'));
+        if (e instanceof Error && e.message === 'too_large') notice(t('O vídeo da cara é grande demais'), t('Grava outra vez, um pouco mais curto.'));
+        else notice(t('Não deu para criar o vídeo'), t('Verifica a internet e tenta outra vez daqui a pouco.'));
         return;
       }
       if (withFace) setFaceClip(null);
@@ -195,7 +195,7 @@ export default function StoryScreen() {
       }
       track('story_shared', { target: 'video', voice: withVoice, face: withFace, share_id: shareId, ref, question: false, frames: frames.length });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos criar o vídeo. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos criar o vídeo. Tenta outra vez.'));
     } finally {
       setChip('preview');
       setFaceView('preview');
@@ -218,7 +218,7 @@ export default function StoryScreen() {
       try {
         shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
       } catch {
-        Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share');
@@ -258,7 +258,7 @@ export default function StoryScreen() {
         );
       else if (target === 'sheet') notice(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -276,7 +276,7 @@ export default function StoryScreen() {
     try {
       shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
     } catch {
-      Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+      notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
       return null;
     }
     if (isNew) pro.record('share');
@@ -295,7 +295,7 @@ export default function StoryScreen() {
       await sharePost([await captureAs('preview', 'post')], postText(l.link), to);
       track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -306,17 +306,24 @@ export default function StoryScreen() {
       pro.paywall('faceVideo');
       return;
     }
-    let clip: FaceClip | null = null;
+    let clip: FaceClip | 'denied' | null = null;
     try {
       clip = await recordFace();
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir a câmara. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir a câmara. Tenta outra vez.'));
+      return;
+    }
+    if (clip === 'denied') {
+      Alert.alert(t('Sem acesso à câmara ou ao microfone'), t('Liga-os nas Definições para gravares a tua cara.'), [
+        { text: t('Agora não'), style: 'cancel' },
+        { text: t('Abrir Definições'), onPress: () => Linking.openSettings().catch(() => {}) },
+      ]);
       return;
     }
     if (!clip) return;
     if (clip.bytes > MAX_FACE_BYTES) {
       dropLocal(clip.uri);
-      Alert.alert(t('O vídeo da cara é grande demais'), t('Grava outra vez, um pouco mais curto.'));
+      notice(t('O vídeo da cara é grande demais'), t('Grava outra vez, um pouco mais curto.'));
       return;
     }
     setFaceClip(clip);
@@ -374,7 +381,9 @@ export default function StoryScreen() {
             {video
               ? t('A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.')
               : mode === 'question'
-                ? t('Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.')
+                ? direct && igDirect
+                  ? t('Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.')
+                  : t('Pára antes da tua decisão, para quem vê votar no link.')
                 : t('Mostra a mão até ao fim, com as cartas e quem ganhou.')}
           </T>
 

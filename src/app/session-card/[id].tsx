@@ -6,7 +6,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
@@ -14,11 +14,12 @@ import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureSticker, captureStory, sharePost, shareSticker, shareStory } from '@/lib/instagram-story';
-import { shareRef } from '@/lib/referrals';
 import { notice } from '@/lib/notice';
+import { shareRef } from '@/lib/referrals';
 import { playedMs } from '@/store/session-math';
 import { CARD_STYLES, milestoneFor, sessionStats, stackPostText, stackStats, type CardStyle } from '@/share/session-card';
 import { useStore } from '@/store/store';
@@ -58,13 +59,13 @@ export default function SessionCardScreen() {
     setBusy(true);
     try {
       const ref = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=session`;
+      const link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=session`, variant);
       const node = { current: refs.current[page] };
       const target =
         look === 'sticker' ? await shareSticker(await captureSticker(node, STICKER_W, STICKER_H), link) : await shareStory(await captureStory(node), link);
       track('story_shared', { target: String(target), kind: chipCount ? 'stack' : 'session', look, money: !hideMoney, milestone: !!(milestone && showMilestone) });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
@@ -79,7 +80,7 @@ export default function SessionCardScreen() {
   };
   const inviteLink = async (to: 'x' | 'any') => {
     const ref = await shareRef().catch(() => '');
-    return `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`;
+    return withLang(`${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=session`, variant);
   };
 
   // X or any other app: the card (the story look, also for the sticker) as a picture, the invite link in the text.
@@ -91,7 +92,7 @@ export default function SessionCardScreen() {
       await sharePost([await captureStory({ current: refs.current[i] })], postText(await inviteLink(to)), to);
       track('story_shared', { target: to, kind: chipCount ? 'stack' : 'session', look, money: !hideMoney });
     } catch {
-      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
+      notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

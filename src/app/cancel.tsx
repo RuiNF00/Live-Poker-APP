@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, scrubNote, type CancelReason } from '@/billing/cancel';
@@ -12,6 +12,7 @@ import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer } fr
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
+import { notice } from '@/lib/notice';
 import { noteReviewBlocker } from '@/lib/review';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -67,9 +68,9 @@ export default function Cancel() {
   const result = (res: string, what: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: what, result: res });
     if (res === 'ok') {
-      Alert.alert(t('Feito'), t('O teu Pro continua.'));
+      notice(t('Feito'), t('O teu Pro continua.'));
       router.back();
-    } else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    } else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
   // Pro for good, but the subscription is still running: send them to the store to stop it.
   const lifetimeResult = (res: string) => {
@@ -78,12 +79,12 @@ export default function Cancel() {
       track('lifetime_purchased', lifetimeProps());
       // The subscription keeps renewing until the player cancels it: straight to the store's page (payments audit §7).
       toStore();
-    } else if (res === 'error') Alert.alert(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    } else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
   };
   const onRestore = async () => {
     track('cancel_flow', { step: 'restore' });
     const ok = await restore();
-    Alert.alert(ok ? t('Compras restauradas') : t('Sem compras'), ok ? t('O teu Pro está ativo nesta conta da loja.') : t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+    notice(ok ? t('Compras restauradas') : t('Sem compras'), ok ? t('O teu Pro está ativo nesta conta da loja.') : t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
   };
   const send = () => {
     track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: scrubNote(note) });

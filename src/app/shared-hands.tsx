@@ -1,9 +1,9 @@
 // "Mãos partilhadas": the hands friends sent you and your own shared hands, with the comments you
 // haven't seen yet. Sending still goes through WhatsApp or Instagram; this is where the talk comes back.
 
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
@@ -29,6 +29,15 @@ function comments(n: number | undefined) {
 
 export default function SharedHands() {
   const { friends, mine, counts, fresh } = useSharedHands({ refresh: true });
+  // From the "Novo comentário na tua mão" notice: straight on to that hand, on the newest comment's street.
+  const { open } = useLocalSearchParams<{ open?: string }>();
+  const jumped = useRef(false);
+  useEffect(() => {
+    const h = open ? mine.find((x) => x.shareId === open) : undefined;
+    if (!h || jumped.current) return;
+    jumped.current = true;
+    router.replace({ pathname: '/hand/[id]', params: { id: h.id, c: String(Math.max(1, fresh[open!] ?? 0)) } });
+  }, [open, mine, fresh]);
   // Your hands with something new first, then the latest.
   const ordered = [...mine].sort((a, b) => (fresh[b.shareId!] ?? 0) - (fresh[a.shareId!] ?? 0));
 

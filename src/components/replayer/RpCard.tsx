@@ -48,7 +48,7 @@ export function RpCard({
           style,
         ]}>
         <View style={{ position: 'absolute', top: 3, left: 3, right: 3, bottom: 3, borderRadius: r - 2, borderWidth: 1, borderColor: 'rgba(255,106,61,0.22)' }} />
-        <Text style={{ color: C.accent, fontFamily: ff(800), fontSize: w * 0.46, opacity: 0.85 }}>S</Text>
+        <Text allowFontScaling={false} style={{ color: C.accent, fontFamily: ff(800), fontSize: w * 0.46, opacity: 0.85 }}>S</Text>
       </View>
     );
   }

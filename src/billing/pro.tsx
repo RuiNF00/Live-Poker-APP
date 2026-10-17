@@ -3,7 +3,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { devPro } from './dev-pro';
@@ -38,7 +38,10 @@ interface ProValue {
   canSaveHand: () => boolean;
   canShare: () => boolean;
   record: (kind: UsageKind) => void;
-  paywall: (reason?: PaywallReason) => void;
+  /** Opens the paywall. `then` runs after a purchase or restore there, so the tapped action happens without tapping again. */
+  paywall: (reason?: PaywallReason, then?: () => void) => void;
+  /** The paywall takes the pending `then` (once) when Pro arrives, or drops it when closed. */
+  takeResume: () => (() => void) | null;
   purchase: (plan: PlanId, reason?: PaywallReason) => Promise<store.BuyResult>;
   restore: () => Promise<boolean>;
   /** Re-plan the trial and come-back notifications (after the player allows them). */
@@ -100,7 +103,14 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const canSaveHand = useCallback(() => canUse(usage, 'hand', FREE.handsPerDay, isPro), [usage, isPro]);
   const canShare = useCallback(() => canUse(usage, 'share', FREE.sharesPerDay, isPro), [usage, isPro]);
 
-  const paywall = useCallback((reason: PaywallReason = 'generic') => {
+  const resume = useRef<(() => void) | null>(null);
+  const takeResume = useCallback(() => {
+    const f = resume.current;
+    resume.current = null;
+    return f;
+  }, []);
+  const paywall = useCallback((reason: PaywallReason = 'generic', then?: () => void) => {
+    resume.current = then ?? null;
     if (reason === 'hands' || reason === 'handsLive' || reason === 'shares') track('limit_hit', { reason });
     track('paywall_shown', { reason, trial: trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout });
     void noteReviewBlocker('paywall');
@@ -156,8 +166,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession]);
 
   const value = useMemo(
-    () => ({ isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges }),
-    [isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, purchase, restore, refreshNudges],
+    () => ({ isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, takeResume, purchase, restore, refreshNudges }),
+    [isPro, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, canShare, record, paywall, takeResume, purchase, restore, refreshNudges],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

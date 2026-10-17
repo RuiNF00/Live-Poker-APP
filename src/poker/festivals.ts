@@ -597,10 +597,11 @@ export function eventTitle(e: FestivalEvent): string {
   return e.unnumbered ? e.name : `#${e.number} ${e.name}`;
 }
 
-/** First and last day, 'YYYY-MM-DD': from the schedule, else the official dates; null when neither is out. */
+/** First and last day, 'YYYY-MM-DD': the schedule and the official dates together; null when neither is out. */
 export function festivalSpan(f: Festival): { from: string; to: string } | null {
   if (f.events.length) {
-    const days = f.events.map(eventDay).sort();
+    // Official dates widen it: a final day can have no row of its own.
+    const days = [...f.events.map(eventDay), ...(f.dates ? [f.dates.from, f.dates.to] : [])].sort();
     return { from: days[0], to: days[days.length - 1] };
   }
   return f.dates ?? null;

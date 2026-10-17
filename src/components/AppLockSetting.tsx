@@ -2,11 +2,12 @@
 // code) it uses that; on a phone without one, the player picks a 4-digit PIN.
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, View } from 'react-native';
+import { Modal, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/i18n';
 import { askDevice, deviceLockAvailable, loadLock, lockSupported, PIN_LENGTH, pinConfig, saveLock } from '@/lib/app-lock';
+import { notice } from '@/lib/notice';
 import { C, S } from '@/theme';
 
 import { lockChanged, PinPad } from './AppLock';
@@ -61,7 +62,7 @@ export function AppLockSetting() {
             await saveLock(await pinConfig(pin));
             setSettingPin(false);
             done(true);
-            Alert.alert(t('PIN guardado'), t('Se o esqueceres, não há forma de o recuperar neste telemóvel. Liga a cópia na nuvem para não perderes nada.'));
+            notice(t('PIN guardado'), t('Se o esqueceres, não há forma de o recuperar neste telemóvel. Liga a cópia na nuvem para não perderes nada.'));
           }}
         />
       </Modal>

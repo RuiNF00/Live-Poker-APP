@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { scrollMode } from '@/lib/motion';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
 import { stakesText, straddleOf, type ActionType, type AmountMode, type HandRecord, type ReplayStep } from '@livepoker/hand-format';
 import { buildReplay, describeStep, formatAmount, streetLabel } from '@/lib/hand-i18n';
 import { t, type Locale } from '@/lib/i18n';
@@ -11,6 +12,7 @@ import { Comments } from './Comments';
 import { Quiz } from './Quiz';
 import { AppCta } from './AppCta';
 import { readLocal, voterId, writeLocal } from '@/lib/local';
+import { spokenStep } from '@/lib/spoken';
 import { track } from '@/lib/track';
 
 interface Props {
@@ -39,6 +41,7 @@ interface Props {
 }
 
 const PLAY_MS = 1100;
+const SPEEDS = [1, 1.5, 2, 0.5];
 
 export function ShareView(props: Props) {
   const { locale, quiz } = props;
@@ -53,6 +56,7 @@ export function ShareView(props: Props) {
   // A challenge opens straight on hero's decision: the table as it stands, question on screen.
   const [index, setIndex] = useState(quizStep > 0 ? quizStep - 1 : 0);
   const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(0);
   const [mode, setMode] = useState<AmountMode>(props.initialMode ?? 'chips');
   const [comments, setComments] = useState(props.initialComments);
 
@@ -73,11 +77,22 @@ export function ShareView(props: Props) {
   const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>(quizStep > 0 ? 'open' : 'pending');
   // Until the friend has voted, nothing may give the answer away: notes, tags, later actions, comments.
   const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
+  const canComment = props.allowComments && !quizHidesSpoilers;
+  // Straight into the comment box, keyboard up, on the moment on screen: pause, then type and send.
+  const commentNow = () => {
+    setPlaying(false);
+    const box = document.getElementById('comment-text');
+    box?.scrollIntoView({ behavior: scrollMode(), block: 'center' });
+    box?.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     // A pack that hides amounts opens in BB whatever the viewer picked last time.
     const saved = props.initialMode ? null : readLocal<AmountMode>('amountMode');
     if (saved === 'bb' || saved === 'chips') setMode(saved);
+    // The speed is a habit: it stays for the next hand this friend opens.
+    const sp = readLocal<number>('speed');
+    if (typeof sp === 'number' && sp >= 0 && sp < SPEEDS.length) setSpeed(sp);
     track('share_viewed', { shareId: props.shareId });
     const voted = !!readLocal<string>(`quiz:${props.shareId}`);
     if (voted) {
@@ -130,9 +145,9 @@ export function ShareView(props: Props) {
       setPlaying(false);
       return;
     }
-    const id = setTimeout(() => goTo(indexRef.current + 1), steps[index + 1]?.kind === 'street' ? PLAY_MS * 1.3 : PLAY_MS);
+    const id = setTimeout(() => goTo(indexRef.current + 1), (steps[index + 1]?.kind === 'street' ? PLAY_MS * 1.3 : PLAY_MS) / SPEEDS[speed]);
     return () => clearTimeout(id);
-  }, [playing, index, steps, goTo]);
+  }, [playing, index, steps, goTo, speed]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -149,6 +164,12 @@ export function ShareView(props: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [goTo]);
 
+  const nextSpeed = () => {
+    const n = (speed + 1) % SPEEDS.length;
+    setSpeed(n);
+    writeLocal('speed', n);
+  };
+
   const toggleMode = () => {
     const next = mode === 'chips' ? 'bb' : 'chips';
     setMode(next);
@@ -161,12 +182,42 @@ export function ShareView(props: Props) {
     () => steps.map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'street' || s.kind === 'start'),
     [steps],
   );
+  // On the table: a tap on the right steps forward, on the left back; a sideways swipe changes street.
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(0);
+  const streetFrom = (dir: 1 | -1) => {
+    const at = indexRef.current;
+    if (dir > 0) return streetStarts.find(({ i }) => i > at)?.i ?? steps.length - 1;
+    return [...streetStarts].reverse().find(({ i }) => i < at)?.i ?? 0;
+  };
+  const tableProps = {
+    onTouchStart: (e: TouchEvent) => {
+      touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    },
+    onTouchEnd: (e: TouchEvent) => {
+      const s = touch.current;
+      touch.current = null;
+      if (!s) return;
+      const dx = e.changedTouches[0].clientX - s.x;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < 2 * Math.abs(e.changedTouches[0].clientY - s.y)) return;
+      swiped.current = Date.now();
+      setPlaying(false);
+      goTo(streetFrom(dx < 0 ? 1 : -1));
+    },
+    onClick: (e: MouseEvent<HTMLDivElement>) => {
+      // The click that a browser fires after a swipe is not a tap.
+      if (Date.now() - swiped.current < 400) return;
+      const r = e.currentTarget.getBoundingClientRect();
+      setPlaying(false);
+      goTo(indexRef.current + (e.clientX - r.left < r.width * 0.35 ? -1 : 1));
+    },
+  };
   const commentSteps = new Set(comments.map((c) => c.stepIndex).filter((x): x is number => x !== null));
 
   const replayer = useRef<HTMLElement>(null);
   const finishQuiz = () => {
     // The vote panel goes away: put the table back on screen for the reveal.
-    replayer.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    replayer.current?.scrollIntoView({ behavior: scrollMode(), block: 'start' });
     setQuizState('done');
     setIndex(quizStep);
     setTimeout(() => setPlaying(true), 900);
@@ -178,11 +229,20 @@ export function ShareView(props: Props) {
       <Header {...props} hand={hand} spoilers={!quizHidesSpoilers} />
 
       <section className="replayer" aria-label="Replayer" ref={replayer}>
-        <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
+        <div className="table-tap" {...tableProps}>
+          <PokerTable step={step} tableSize={hand.tableSize} bb={bb} mode={mode} locale={locale} potLabel={d.pot} />
+        </div>
 
-        <div className="step-line" aria-live="polite">
-          <span className={`street-pill street-${step.street}`}>{streetLabel(step.street, locale)}</span>
-          <span className="step-text">{describeStep(step, bb, mode, locale)}</span>
+        <div className="step-line">
+          <span className={`street-pill street-${step.street}`} aria-hidden>{streetLabel(step.street, locale)}</span>
+          <span className="step-text" aria-hidden>{describeStep(step, bb, mode, locale)}</span>
+          {/* Read out as a sentence on every step: "Vilão no BTN faz raise para 2,5 BB". */}
+          <span className="sr-only" aria-live="polite">{spokenStep(step, bb, mode, locale)}</span>
+          {canComment && (
+            <button className="comment-here" onClick={commentNow} aria-label={`${d.send} · ${streetLabel(step.street, locale)}`}>
+              {d.send}
+            </button>
+          )}
         </div>
 
         {quizState === 'open' && quizStep > 0 && (
@@ -199,7 +259,7 @@ export function ShareView(props: Props) {
         )}
 
         {index === steps.length - 1 && !playing && quizState !== 'open' && (
-          <EndCard locale={locale} allowComments={props.allowComments} />
+          <EndCard locale={locale} allowComments={props.allowComments} onComment={commentNow} />
         )}
 
         <div className="scrub">
@@ -244,7 +304,10 @@ export function ShareView(props: Props) {
           <button className="ctl" onClick={() => { setPlaying(false); goTo(steps.length - 1); }} aria-label={d.end}>
             <Icon name="last" />
           </button>
-          <button className="ctl ctl-text" onClick={toggleMode}>
+          <button className="ctl ctl-text" onClick={nextSpeed} aria-label={`${d.speed} ${SPEEDS[speed]}×`}>
+            {SPEEDS[speed]}×
+          </button>
+          <button className="ctl ctl-text" onClick={toggleMode} aria-label={mode === 'chips' ? d.showBB : d.showChips}>
             {mode === 'chips' ? 'BB' : '#'}
           </button>
         </div>
@@ -298,25 +361,27 @@ export function ShareView(props: Props) {
           bb={bb}
           mode={mode}
           locale={locale}
+          ask={props.ask}
+          onCompose={() => setPlaying(false)}
           onJump={(i) => {
             setPlaying(false);
             goTo(i);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: scrollMode() });
           }}
         />
       )}
 
       <ReportHand shareId={props.shareId} locale={locale} />
 
-      <AppCta locale={locale} shareId={props.shareId} hideSticky={quizState === 'open' && quizStep > 0} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} />
+      <AppCta locale={locale} shareId={props.shareId} hideSticky={quizState === 'open' && quizStep > 0} invite={props.invite ?? null} utm={props.utm ?? { source: 'share', medium: 'hand' }} onComment={canComment ? commentNow : undefined} />
     </main>
   );
 }
 
 /** The hand just ended: the friend's attention peaks here, so ask for a reply and show the app. */
-function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boolean }) {
+function EndCard({ locale, allowComments, onComment }: { locale: Locale; allowComments: boolean; onComment: () => void }) {
   const d = t(locale);
-  const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: scrollMode(), block: 'start' });
   return (
     <div className="end-card">
       <div className="end-title">{d.endTitle}</div>
@@ -324,11 +389,7 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
         {allowComments && (
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => {
-              // Straight into the comment box (keyboard up): type, then Enviar.
-              scroll('comments');
-              document.getElementById('comment-text')?.focus({ preventScroll: true });
-            }}>
+            onClick={onComment}>
             {d.endComment}
           </button>
         )}

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { useLocked } from '@/components/ProGate';
@@ -23,8 +23,10 @@ import { motionTimeline } from './replayer/timeline';
 import { tap } from './ui';
 
 const SPEEDS = [1, 1.5, 2, 0.5];
-const TIPS_KEY = 'sweatbook.replayer.tips.v1';
+// v2: shown once more to everyone when swiping between streets arrived.
+const TIPS_KEY = 'sweatbook.replayer.tips.v2';
 const NAMES_KEY = 'sweatbook.replayer.hideNames.v1';
+const SPEED_KEY = 'sweatbook.replayer.speed.v1';
 /** Hands whose replay was already counted this app session (replay_opened fires once per hand). */
 const counted = new Set<string>();
 
@@ -91,6 +93,24 @@ export function Replayer({
   const [inBB, setInBB] = useState(initialInBB);
   const [reveal, setReveal] = useState(false);
   const [speed, setSpeed] = useState(0);
+  // The playback speed is a habit, not a per-hand choice: it stays for the next hand.
+  useEffect(() => {
+    let live = true;
+    AsyncStorage.getItem(SPEED_KEY)
+      .then((v) => {
+        const n = Number(v);
+        if (live && v != null && n >= 0 && n < SPEEDS.length) setSpeed(n);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const nextSpeed = () => {
+    const n = (speed + 1) % SPEEDS.length;
+    setSpeed(n);
+    AsyncStorage.setItem(SPEED_KEY, String(n)).catch(() => {});
+  };
 
   useEffect(() => {
     setI(start);
@@ -184,8 +204,9 @@ export function Replayer({
   const editRange = () => {
     if (!view.rangeEq) return;
     tap('select');
-    if (rangeLocked) return paywall('villainRange');
-    setRangeSheet(range ?? topClasses(view.rangeEq.pct));
+    const open = () => setRangeSheet(range ?? topClasses(view.rangeEq!.pct));
+    if (rangeLocked) return paywall('villainRange', open);
+    open();
   };
   const items = useMemo(() => timeline(shown, r, inBB), [shown, r, inBB]);
 
@@ -202,14 +223,50 @@ export function Replayer({
     if (at >= 0 && at <= last) go(at);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seek?.n]);
+  // From the result (where a saved hand opens), "next street" starts the hand again from preflop.
   const nextStreet = () => {
+    if (k >= last) return go(locked ? last : 0);
     const n = steps.findIndex((s, j) => j > k && (s.kind === 'board' || s.kind === 'showdown'));
     go(n < 0 ? last : n);
   };
+  // Back to the start of this street, or of the one before when already there.
+  const prevStreet = () => {
+    let n = 0;
+    steps.forEach((s, j) => {
+      if (j < k && (s.kind === 'start' || s.kind === 'board' || s.kind === 'showdown')) n = j;
+    });
+    go(n);
+  };
+  const togglePlay = () => {
+    tap();
+    if (k >= last) {
+      setI(0);
+      setPlaying(true);
+    } else setPlaying(!running);
+  };
+  // On a computer (the web build): arrows step, space plays, like a video.
+  const keys = useRef({ step: (_: number) => {}, play: () => {} });
+  useEffect(() => {
+    keys.current = { step: (d) => go(k + d), play: () => togglePlay() };
+  });
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'ArrowRight') keys.current.step(1);
+      else if (e.key === 'ArrowLeft') keys.current.step(-1);
+      else if (e.key === ' ') keys.current.play();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <View style={{ gap: 8 }}>
-      <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} />
+      <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} onSwipe={locked ? undefined : (d) => (d > 0 ? nextStreet() : prevStreet())} />
 
       {locked && k === last ? (
         <QuizPanel
@@ -257,13 +314,7 @@ export function Replayer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={running ? t('Pausa') : t('Reproduzir')}
-          onPress={() => {
-            tap();
-            if (k >= last) {
-              setI(0);
-              setPlaying(true);
-            } else setPlaying(!running);
-          }}
+          onPress={togglePlay}
           style={({ pressed }) => ({
             flex: 1.3,
             height: 46,
@@ -279,7 +330,7 @@ export function Replayer({
         </Pressable>
         <Ctrl icon="chevron-forward" label={t('Seguinte')} onPress={() => go(k + 1)} />
         <Ctrl icon="play-forward" label={t('Próxima street')} onPress={nextStreet} />
-        <Ctrl text={`${SPEEDS[speed]}×`} label={t('Velocidade')} onPress={() => setSpeed((s) => (s + 1) % SPEEDS.length)} />
+        <Ctrl text={`${SPEEDS[speed]}×`} label={`${t('Velocidade')} ${SPEEDS[speed]}×`} onPress={nextSpeed} />
         <Ctrl text={inBB ? 'BB' : '#'} label={inBB ? t('Ver em fichas') : t('Ver em BB')} active={inBB} onPress={() => {
             setInBB(!inBB);
             onInBB?.(!inBB);
@@ -301,7 +352,7 @@ export function Replayer({
           />
         </View>
         {/* Step counter, like a video's time: the scrubber already says it to screen readers. */}
-        <Text importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ minWidth: 40, textAlign: 'right', color: C.textDim, fontFamily: F.mono, fontSize: 11, fontVariant: ['tabular-nums'] }}>
+        <Text importantForAccessibility="no-hide-descendants" accessibilityElementsHidden maxFontSizeMultiplier={1.3} style={{ minWidth: 40, textAlign: 'right', color: C.textDim, fontFamily: F.mono, fontSize: 11, fontVariant: ['tabular-nums'] }}>
           {k + 1}/{last + 1}
         </Text>
         {named ? (
@@ -336,7 +387,7 @@ function TipBubble({ onClose }: { onClose: () => void }) {
       }}>
       <Ionicons name="hand-left-outline" size={18} color={C.accent} />
       <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>
-        {t('Toca à direita da mesa para avançar e à esquerda para recuar. Toca numa ação em baixo para saltar para ela.')}
+        {t('Toca à direita da mesa para avançar e à esquerda para recuar. Desliza na mesa para mudar de street.')}
       </Text>
       <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar')} onPress={onClose} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
         <Text style={{ color: C.accent, fontFamily: ff(700), fontSize: 13 }}>{t('Percebi')}</Text>
@@ -497,7 +548,8 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
             disabled={future}
             onPress={() => onPick(it.k)}
             accessibilityRole="button"
-            accessibilityLabel={`${it.label} ${it.detail ?? ''}`}
+            accessibilityLabel={it.spoken}
+            accessibilityState={{ selected: on }}
             style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : idx > at ? 0.55 : 1 }}>
             <View style={{ height: 20, justifyContent: 'center' }}>
               <View
@@ -512,11 +564,11 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                 }}
               />
             </View>
-            <Text numberOfLines={1} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
               {it.label}
             </Text>
             {it.detail ? (
-              <Text numberOfLines={1} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
+              <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
                 {it.detail}
               </Text>
             ) : null}
@@ -548,7 +600,7 @@ function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'
               alignItems: 'center',
               opacity: pressed ? 0.8 : 1,
             })}>
-            <Text style={{ color: o === 'Fold' ? C.text : C.accentInk, fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
+            <Text maxFontSizeMultiplier={1.6} numberOfLines={1} adjustsFontSizeToFit style={{ color: o === 'Fold' ? C.text : C.accentInk, fontFamily: ff(800), fontSize: 16 }}>{o}</Text>
           </Pressable>
         ))}
       </View>
@@ -590,7 +642,7 @@ function Ctrl({
         justifyContent: 'center',
         opacity: pressed ? 0.7 : 1,
       })}>
-      {icon ? <Ionicons name={icon} size={18} color={active ? C.accent : C.text} /> : <Text style={{ color: active ? C.accent : C.text, fontFamily: F.mono, fontSize: 12 }}>{text}</Text>}
+      {icon ? <Ionicons name={icon} size={18} color={active ? C.accent : C.text} /> : <Text maxFontSizeMultiplier={1.5} style={{ color: active ? C.accent : C.text, fontFamily: F.mono, fontSize: 12 }}>{text}</Text>}
     </Pressable>
   );
 }

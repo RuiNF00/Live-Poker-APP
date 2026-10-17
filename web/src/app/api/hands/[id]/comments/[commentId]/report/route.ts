@@ -21,9 +21,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const result = await getStore().reportComment(commentId, reporterId(req));
   if (result === 'ok') {
     after(async () => {
-      if (await firstTime('report-comment', commentId)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/h/${id}`);
+      if (await firstTime('report-comment', commentId)) await notifyModeration(`Nova denúncia de comentário (${commentId}): ${brand.siteUrl}/h/${id}`);
     });
   }
-  if (result === 'hidden') after(() => notifyModeration(`Comentário escondido por denúncias em ${brand.siteUrl}/h/${id}.`));
+  if (result === 'hidden') after(() => notifyModeration(`Comentário ${commentId} escondido por denúncias em ${brand.siteUrl}/h/${id}.`));
   return NextResponse.json({ reported: result !== 'missing' }, { status: result === 'missing' ? 404 : 200, headers: cors });
 }
