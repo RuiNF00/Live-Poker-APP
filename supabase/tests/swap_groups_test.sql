@@ -61,3 +61,19 @@ set role anon;
 \set ON_ERROR_STOP off
 select * from get_swap_group('x');
 select * from swap_groups;
+
+-- Pair swaps: erasing one side leaves a read-only record for the other.
+set role service_role;
+\set ON_ERROR_STOP on
+select id as sid, token as ta from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
+select confirm_swap(:'sid', 'Ana') as tb \gset
+select add_swap_entry(:'sid', :'tb', '{"kind":"result","amount":1000,"cid":"x"}'::jsonb) as ana_cashed;
+select leave_swap(:'sid', :'ta') as rui_left;
+select left_side = 'a' and terms->'a'->>'name' = '-' and jsonb_array_length(entries) = 1 as record_kept from get_swap(:'sid');
+select swap_side(:'sid', :'ta') is null as rui_token_dead;
+select add_swap_entry(:'sid', :'tb', '{"kind":"payment","amount":50,"cid":"y"}'::jsonb) = false as read_only_after_leave;
+select leave_swap(:'sid', :'tb') as ana_left_too;
+select count(*) = 0 as gone_when_both_left from get_swap(:'sid');
+select id as sid2, token as ta2 from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
+select leave_swap(:'sid2', :'ta2') as left_unconfirmed;
+select count(*) = 0 as unconfirmed_deleted from get_swap(:'sid2');

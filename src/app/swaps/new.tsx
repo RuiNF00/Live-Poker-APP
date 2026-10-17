@@ -7,6 +7,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
+import { usePro } from '@/billing/pro';
+import { FREE } from '@/billing/plans';
 import { pctLabel } from '@/components/swaps/parts';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -26,6 +28,9 @@ const CURRENCIES = ['$', '€', '£'];
 export default function NewSwap() {
   const { settings, sessions, activeSession, setSettings } = useStore();
   const { swaps } = useSwaps();
+  const { isPro, paywall } = usePro();
+  const proposed = swaps.filter((s) => s.side === 'a' && !s.archived && !s.gone).length;
+  const locked = !isPro && FREE.swaps !== null && proposed >= FREE.swaps;
   const live = activeSession?.kind === 'mtt' ? activeSession : null;
   const [me, setMe] = useState(settings.nickname);
   const [them, setThem] = useState('');
@@ -87,6 +92,7 @@ export default function NewSwap() {
 
   async function create() {
     if (!ok) return;
+    if (locked) return paywall('generic');
     setBusy(true);
     tap('medium');
     const terms: SwapTerms = {
@@ -219,7 +225,7 @@ export default function NewSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button title={busy ? t('A criar…') : t('Criar e enviar link')} icon="paper-plane-outline" disabled={!ok} onPress={create} />
+          <Button title={busy ? t('A criar…') : t('Criar e enviar link')} icon={locked ? 'lock-closed' : 'paper-plane-outline'} disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
               {t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name })}{' '}

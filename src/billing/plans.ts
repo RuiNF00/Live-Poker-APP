@@ -58,6 +58,11 @@ export const FREE = {
   bankrolls: 1 as number | null,
   /** Trips (festivals) with expenses. The first is free so a player sees it work on a real trip. */
   trips: 1 as number | null,
+  /**
+   * Pair swaps you propose that are still open. One is free so a player sees it work; group
+   * swaps and the swap history are Pro. Confirming someone else's swap is always free.
+   */
+  swaps: 1 as number | null,
 };
 
 export type PaywallReason = 'hands' | 'shares' | 'stats' | 'story' | 'solver' | 'welcome' | 'plan' | 'generic';

@@ -28,7 +28,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
   const [name, setName] = useState(initial.terms.b.name);
   const t = swap.terms;
   const you = token ? swap.you : null;
-  const names: Record<Side, string> = { a: t.a.name, b: swap.confirmedName || t.b.name };
+  const left = swap.leftSide ?? null;
+  const shown = (n: string) => (n === '-' ? c.left : n);
+  const names: Record<Side, string> = { a: shown(t.a.name), b: shown(swap.confirmedName || t.b.name) };
 
   const load = useCallback(
     async (tok: string | null) => {
@@ -214,7 +216,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
         </section>
       ) : null}
 
-      {confirmed && you ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
+      {left ? <p className="live-updated">{c.leftNote(c.leftPlayer)}</p> : null}
+
+      {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
 
       {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`sweatbook://swap/${id}?k=${token}`} /> : null}
 
@@ -225,12 +229,14 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
         </p>
       ) : null}
 
-      <section className="live-cta" id="baixar">
-        <Mark size={44} />
-        <h2>{c.ctaTitle}</h2>
-        <p>{c.ctaBody}</p>
-        <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
-      </section>
+      {/* Only once both confirmed: before that the page is about the deal, not the app. */}
+      {confirmed ? (
+        <section className="live-cta" id="baixar">
+          <Mark size={36} />
+          <p>{c.confirmedCta}</p>
+          <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
+        </section>
+      ) : null}
     </main>
   );
 }

@@ -203,3 +203,97 @@ begin
     perform cron.schedule('purge-swap-groups', '29 4 * * *', 'select public.purge_swap_groups()');
   end if;
 end $$;
+
+-- "Delete all my data" on a pair swap: the player who erases leaves, the other keeps the
+-- record (read-only, with a note that the other side erased their data). Their name and token
+-- go; the amounts stay so the other player still knows where they stand. Nobody left to keep
+-- it for (never confirmed, or the other side already left): deleted outright.
+alter table public.swaps add column left_side text check (left_side is null or left_side in ('a', 'b'));
+
+drop function if exists public.get_swap(text);
+create function public.get_swap(p_id text)
+returns table (id text, terms jsonb, confirmed_at timestamptz, confirmed_name text, entries jsonb, created_at timestamptz, updated_at timestamptz, left_side text)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.terms, s.confirmed_at, s.confirmed_name, s.entries, s.created_at, s.updated_at, s.left_side from swaps s where s.id = p_id;
+$$;
+
+create or replace function public.leave_swap(p_id text, p_token text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_side text := public.swap_side(p_id, p_token);
+begin
+  if v_side is null then return false; end if;
+  if exists (select 1 from public.swaps s where s.id = p_id and (s.confirmed_at is null or s.left_side is not null)) then
+    delete from public.swaps s where s.id = p_id;
+    return true;
+  end if;
+  update public.swaps s
+     set left_side = v_side,
+         terms = case when v_side = 'a' then jsonb_set(s.terms, '{a,name}', '"-"') else jsonb_set(s.terms, '{b,name}', '"-"') end,
+         confirmed_name = case when v_side = 'b' then '-' else s.confirmed_name end,
+         token_a_hash = case when v_side = 'a' then public.swap_hash(public.swap_new_token()) else s.token_a_hash end,
+         token_b_hash = case when v_side = 'b' then public.swap_hash(public.swap_new_token()) else s.token_b_hash end,
+         updated_at = now()
+   where s.id = p_id;
+  return true;
+end $$;
+
+-- Read-only once one side left: no new entries.
+create or replace function public.add_swap_entry(p_id text, p_token text, p_entry jsonb) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_side text := public.swap_side(p_id, p_token);
+  v_entry jsonb;
+begin
+  if v_side is null or jsonb_typeof(p_entry) <> 'object' then return false; end if;
+  if exists (select 1 from public.swaps s where s.id = p_id and s.left_side is not null) then return false; end if;
+  if exists (
+    select 1 from public.swaps s, jsonb_array_elements(s.entries) e
+     where s.id = p_id and e->>'side' = v_side and e->>'cid' = p_entry->>'cid'
+  ) then return true; end if;
+  v_entry := p_entry || jsonb_build_object(
+    'id', substr(public.swap_new_token(), 1, 12),
+    'side', v_side,
+    'at', (extract(epoch from now()) * 1000)::bigint
+  );
+  update public.swaps s
+     set entries = s.entries || jsonb_build_array(v_entry), updated_at = now()
+   where s.id = p_id and s.confirmed_at is not null;
+  return found;
+end $$;
+
+-- Group swaps the same way: once someone left, the group is read-only for the rest.
+create or replace function public.add_swap_group_entry(p_id text, p_token text, p_entry jsonb) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_seat smallint := public.swap_group_seat(p_id, p_token);
+  v_entry jsonb;
+begin
+  if v_seat is null or jsonb_typeof(p_entry) <> 'object' then return false; end if;
+  if exists (select 1 from public.swap_group_seats s where s.group_id = p_id and (s.confirmed_at is null or s.name = '-')) then return false; end if;
+  if p_entry->>'kind' = 'payment' and not exists (
+    select 1 from public.swap_group_seats s where s.group_id = p_id and s.seat::text = p_entry->>'to' and s.seat <> v_seat
+  ) then return false; end if;
+  if exists (
+    select 1 from public.swap_groups g, jsonb_array_elements(g.entries) e
+     where g.id = p_id and e->>'seat' = v_seat::text and e->>'cid' = p_entry->>'cid'
+  ) then return true; end if;
+  v_entry := p_entry || jsonb_build_object(
+    'id', substr(public.swap_new_token(), 1, 12),
+    'seat', v_seat,
+    'at', (extract(epoch from now()) * 1000)::bigint
+  );
+  update public.swap_groups g
+     set entries = g.entries || jsonb_build_array(v_entry), updated_at = now()
+   where g.id = p_id;
+  return found;
+end $$;
+
+revoke execute on function public.get_swap(text) from public, anon, authenticated;
+revoke execute on function public.leave_swap(text, text) from public, anon, authenticated;
+revoke execute on function public.add_swap_entry(text, text, jsonb) from public, anon, authenticated;
+revoke execute on function public.add_swap_group_entry(text, text, jsonb) from public, anon, authenticated;
+grant execute on function public.get_swap(text) to service_role;
+grant execute on function public.leave_swap(text, text) to service_role;
+grant execute on function public.add_swap_entry(text, text, jsonb) to service_role;
+grant execute on function public.add_swap_group_entry(text, text, jsonb) to service_role;

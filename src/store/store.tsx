@@ -23,6 +23,8 @@ import { createWriter, loadCollection, type CollectionSpec, type KV } from './pe
 import { withCuts } from './staking';
 import { withSwaps, type Swap } from './swaps';
 import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
+import type { SwapGroup } from './swap-groups';
+import { currentGroups, importGroups, useGroups } from './swap-groups-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
 const KEYS = {
@@ -99,6 +101,7 @@ interface StoreValue {
   /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
   /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
   readonly swaps: Swap[];
+  readonly swapGroups: SwapGroup[];
   importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
@@ -206,8 +209,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // What screens see: each session with its makeup package cut and what swaps add or take
   // (derived, never stored; swaps can be turned off).
   const { swaps } = useSwaps();
+  const { groups } = useGroups();
   const includeSwaps = settings.includeSwaps !== false;
-  const sessions = useMemo(() => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : []), [rawSessions, packages, swaps, includeSwaps]);
+  const sessions = useMemo(
+    () => withSwaps(withCuts(rawSessions, packages), includeSwaps ? swaps : [], includeSwaps ? groups : []),
+    [rawSessions, packages, swaps, groups, includeSwaps],
+  );
   // Privacy mode applies to every amount on screen, set before anything renders with it.
   setMoneyMasked(!!settings.hideAmounts);
   // The draft changes on every tap of hand entry. Keeping it in a ref (and
@@ -486,6 +493,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setBacking(mergeById(backing, b.backing ?? []).list);
       setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
       importSwaps(b.swaps ?? []).catch(() => {});
+      importGroups(b.swapGroups ?? []).catch(() => {});
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: br.added, transfers: tx.added, trips: tr.added };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing],
@@ -587,6 +595,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       importData,
       get swaps() {
         return currentSwaps();
+      },
+      get swapGroups() {
+        return currentGroups();
       },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.

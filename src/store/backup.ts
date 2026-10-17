@@ -7,6 +7,7 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import type { SwapGroup } from './swap-groups';
 import { validSwapId, validSwapToken, type Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 
@@ -29,6 +30,8 @@ export interface BackupData {
   trips?: Trip[];
   /** Swaps with this side's token, so a restored phone can still record prizes (absent before swaps). */
   swaps?: Swap[];
+  /** Group swaps with this player's seat token (absent before group swaps). */
+  swapGroups?: SwapGroup[];
   settings?: Partial<Settings>;
 }
 
@@ -45,6 +48,7 @@ export function buildBackup(
     trips?: Trip[];
     backing?: BackedPlayer[];
     swaps?: Swap[];
+    swapGroups?: SwapGroup[];
     settings: Settings;
   },
   now = Date.now(),
@@ -64,6 +68,7 @@ export function buildBackup(
     trips: d.trips ?? [],
     backing: d.backing ?? [],
     swaps: d.swaps ?? [],
+    swapGroups: d.swapGroups ?? [],
     settings: d.settings,
   };
 }
@@ -103,6 +108,11 @@ export function parseBackup(text: string): BackupData {
   const swaps = arr('swaps').filter(
     (x) => isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
   ) as unknown as Swap[];
+  const swapGroups = arr('swapGroups').filter(
+    (x) =>
+      isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && Number.isInteger(x.seat) && (x.seat as number) >= 0 && (x.seat as number) < 8 &&
+      (x.invite === undefined || validSwapToken(x.invite)) && isObj(x.terms) && Array.isArray(x.seats) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
+  ) as unknown as SwapGroup[];
   return {
     app: 'sweatbook',
     v: 1,
@@ -118,6 +128,7 @@ export function parseBackup(text: string): BackupData {
     transfers,
     trips,
     swaps,
+    swapGroups,
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
   };
 }

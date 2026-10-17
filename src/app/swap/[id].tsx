@@ -194,7 +194,9 @@ function OwnSwap({ s }: { s: Swap }) {
       <Screen contentStyle={{ paddingTop: S.lg }}>
         <Head terms={s.terms} names={names} />
 
-        {s.gone ? (
+        {s.left && s.left !== s.side ? (
+          <Banner tone="info" icon="lock-closed-outline" title={t('Só para leitura')} body={t('O outro jogador apagou os seus dados na Sweatbook. As contas ficam como estavam; já não dá para registar mais nada.')} />
+        ) : s.gone ? (
           <Banner tone="warn" icon="trash-outline" title={t('Apagado do servidor')} body={t('Um dos jogadores apagou o link. Esta cópia fica no teu telemóvel como registo.')} />
         ) : offline || pending ? (
           <Banner tone="info" icon="cloud-offline-outline" title={t('Sem rede')} body={t('O que registares fica guardado e é enviado quando houver sinal.')} />
@@ -215,7 +217,7 @@ function OwnSwap({ s }: { s: Swap }) {
 
         {s.confirmedAt ? <BalanceHero l={l} name={them} currency={cur} /> : null}
 
-        {s.confirmedAt && !s.gone ? (
+        {s.confirmedAt && !s.gone && !s.left ? (
           <Row gap={S.sm}>
             <Button title={t('Cobrei')} icon="trophy-outline" style={{ flex: 1 }} onPress={() => setSheet('result')} />
             <Button title={l.balance < -0.5 ? t('Paguei') : t('Pagamento')} kind="secondary" icon="cash-outline" style={{ flex: 1 }} onPress={() => setSheet('payment')} />

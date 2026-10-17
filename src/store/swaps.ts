@@ -4,7 +4,9 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
-import { assignGroups, type SwapGroup } from './swap-groups';
+import { assignGroups, groupLedger, groupReady, type SwapGroup } from './swap-groups';
+import { t } from '@/i18n';
+
 import type { Session } from './types';
 
 export type SwapSide = 'a' | 'b';
@@ -50,6 +52,8 @@ export interface RemoteSwap {
   code: string | null;
   you: SwapSide | null;
   updatedAt: string;
+  /** The side that erased their data: read-only from then on. */
+  leftSide?: SwapSide | null;
 }
 
 /** The phone's copy. */
@@ -67,6 +71,8 @@ export interface Swap {
   gone?: boolean;
   /** Settled and put away. */
   archived?: boolean;
+  /** The other player erased their data: kept here read-only, amounts as they were. */
+  left?: SwapSide;
   syncedAt?: number;
   /** This phone only: which of my sessions each of my prizes came from (entry cid → session id). */
   links?: Record<string, string>;
@@ -83,7 +89,9 @@ export const other = (s: SwapSide): SwapSide => (s === 'a' ? 'b' : 'a');
 
 /** Names as both players see them: the confirmed name wins over what the proposer typed. */
 export function swapNames(s: Pick<Swap, 'terms' | 'confirmedName'>): Record<SwapSide, string> {
-  return { a: s.terms.a.name, b: s.confirmedName || s.terms.b.name };
+  // "-": that player erased their data.
+  const n = (x: string) => (x === '-' ? t('o outro jogador') : x);
+  return { a: n(s.terms.a.name), b: n(s.confirmedName || s.terms.b.name) };
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -183,6 +191,7 @@ export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): 
     confirmedAt: remote.confirmedAt ? Date.parse(remote.confirmedAt) : undefined,
     confirmedName: remote.confirmedName ?? undefined,
     code: remote.code ?? undefined,
+    left: remote.leftSide ?? undefined,
     entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
     gone: false,
     syncedAt: now,
@@ -303,4 +312,11 @@ export function newFromOther(before: Swap | undefined, after: Swap): SwapEntry[]
   if (!before) return [];
   const seen = new Set(before.entries.map((e) => e.side + e.id));
   return after.entries.filter((e) => e.side !== after.side && !seen.has(e.side + e.id));
+}
+
+/** Swaps and groups where money is still owed either way ("Delete all my data" warns about them). */
+export function unsettledSwaps(swaps: Swap[], groups: SwapGroup[]): number {
+  const pairs = swaps.filter((s) => s.confirmedAt && !s.gone && !s.archived && !s.left && !settled(swapLedger(s))).length;
+  const grps = groups.filter((g) => groupReady(g) && !g.gone && !g.archived && Math.abs(groupLedger(g).balance) >= 0.5).length;
+  return pairs + grps;
 }

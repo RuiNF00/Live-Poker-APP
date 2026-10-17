@@ -121,6 +121,7 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
 
   const missing = group.seats.filter((s) => !s.confirmedAt).length;
   const ready = missing === 0;
+  const someoneLeft = group.seats.some((s) => s.name === '-');
   const net = groupNet(t, group.seats, group.entries);
   const transfers = minTransfers(net);
   const results = group.entries.filter((e) => e.kind === 'result');
@@ -234,7 +235,9 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
         </section>
       ) : null}
 
-      {ready && you !== null ? (
+      {someoneLeft ? <p className="live-updated">{c.leftSomeone}</p> : null}
+
+      {ready && you !== null && !someoneLeft ? (
         <AddEntry
           c={c}
           busy={busy}
@@ -254,12 +257,13 @@ export function GroupView({ locale, initial, invite: ref }: { locale: Locale; in
         </p>
       ) : null}
 
-      <section className="live-cta" id="baixar">
-        <Mark size={44} />
-        <h2>{c.ctaTitle}</h2>
-        <p>{c.ctaBody}</p>
-        <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
-      </section>
+      {ready ? (
+        <section className="live-cta" id="baixar">
+          <Mark size={36} />
+          <p>{c.confirmedCta}</p>
+          <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
+        </section>
+      ) : null}
     </main>
   );
 }
