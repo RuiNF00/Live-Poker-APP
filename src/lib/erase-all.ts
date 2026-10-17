@@ -13,6 +13,7 @@ import { lockSupported, saveLock } from './app-lock';
 import { loadCloud, queueCloudDelete, rememberedCode, saveCloud } from './cloud-backup';
 import { dropAllDocs } from './docs';
 import { keysToErase } from './erase-core';
+import { runErasers } from './erase-hooks';
 import { queueLiveDelete } from './live-cleanup';
 import { notifications } from './lock-screen/reminder';
 import { queueAgreementDelete } from './offer-api';
@@ -21,17 +22,7 @@ import { forgetHandShare } from './share-queue';
 import { dropSupportCopies } from './support-cache';
 import { dropAllVoiceNotes } from './voice-note';
 
-type Eraser = () => void | Promise<void>;
-const erasers = new Set<Eraser>();
-
-/**
- * A feature with its own public copy or local cache registers how to delete it.
- * Server deletes should be queued (see sync.queue), never awaited on the network.
- */
-export function onEraseAll(fn: Eraser): () => void {
-  erasers.add(fn);
-  return () => erasers.delete(fn);
-}
+export { onEraseAll } from './erase-hooks';
 
 /** Step 1, before the store empties: queue the delete of every public copy. */
 export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'shareToken'>[]; sessions: Pick<Session, 'live'>[] }) {
@@ -47,7 +38,7 @@ export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'sha
   // Also forgets the code kept in the keychain (it outlives reinstalling the app).
   await saveCloud(null).catch(() => {});
   await queueProfileDelete().catch(() => {});
-  for (const fn of erasers) await Promise.resolve(fn()).catch(() => {});
+  await runErasers();
 }
 
 /** Step 2, after the store wrote its empty lists: everything else on the phone. */

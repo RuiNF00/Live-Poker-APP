@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 import { appUserId } from '@/billing/purchases';
 import { BRAND } from '@/theme';
 
-import { onEraseAll } from './erase-all';
+import { onEraseAll } from './erase-hooks';
 import { installId, refCode, setRefCode, track } from './events';
 import { createInviteReward, type Activation, type ClaimState } from './invite-reward';
 import { isOnline } from './online';

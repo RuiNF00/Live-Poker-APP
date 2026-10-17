@@ -25,7 +25,7 @@ import {
   type CoachState,
   type ExpiryChoice,
 } from './coach-core';
-import { onEraseAll } from './erase-all';
+import { onEraseAll } from './erase-hooks';
 import { notifications, setup } from './lock-screen/reminder';
 import { notifyOrHold } from './notify-gate';
 import { outcomeOf, queue, registerSender } from './sync';

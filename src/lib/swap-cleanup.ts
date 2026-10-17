@@ -7,7 +7,7 @@ import { forgetGroupsLocally, getAllGroups } from '@/store/swap-groups-store';
 import { getAllSwaps, forgetSwapsLocally } from '@/store/swaps-store';
 import { swapDeleteJobs } from '@/store/swaps';
 
-import { onEraseAll } from './erase-all';
+import { onEraseAll } from './erase-hooks';
 import { deleteSwap, SwapError } from './swap-api';
 import { leaveGroup } from './swap-group-api';
 import { outcomeOf, queue, registerSender } from './sync';

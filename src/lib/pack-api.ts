@@ -9,7 +9,7 @@ import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 import { BRAND } from '@/theme';
 
-import { onEraseAll } from './erase-all';
+import { onEraseAll } from './erase-hooks';
 import { packEraseJobs, parsePacks, type HandPack } from './pack-core';
 import { uploadHand } from './share-api';
 import { takeDirectShare } from './share-queue';

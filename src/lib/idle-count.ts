@@ -5,8 +5,8 @@
 
 import { useEffect, useState } from 'react';
 
-/** How many items one slice handles before giving the frame back. */
-const SLICE = 250;
+/** How many items one slice handles before giving the frame back: about 15 ms on a slow phone, so a tap never waits on it. */
+const SLICE = 50;
 
 /** Counts `items` matching `test` in slices; pure, so the tests drive it with their own scheduler. */
 export function countInSlices<T>(items: readonly T[], test: (x: T) => boolean, done: (n: number) => void, schedule: (f: () => void) => unknown = (f) => setTimeout(f, 0)): () => void {

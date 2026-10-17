@@ -14,7 +14,7 @@ import { Platform } from 'react-native';
 import { variant } from '@/i18n';
 
 import { loadSentry, wipeSentryCache } from './crash-sdk';
-import { onEraseAll } from './erase-all';
+import { onEraseAll } from './erase-hooks';
 import { scrubBreadcrumb, scrubEvent, TAGS, type CrashTag } from './crash-scrub';
 
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined;
