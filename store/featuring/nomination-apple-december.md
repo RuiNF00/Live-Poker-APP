@@ -66,6 +66,15 @@ Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations 
 
 The festival date comes from `research/calendario-festivais.md` once it's official. Each submission needs Rui's yes, like step 36.
 
+## Timeline for the Spanish update (`marketing/lancamento-espanhol.md` §9)
+
+| By | What |
+|---|---|
+| end of January 2027 | App Store "App Enhancements" and Google Play featuring nominations for the es update |
+| D−21 before the es launch date | es In-App Event (draft in `lancamento-espanhol.md` §6) |
+| with the es launch | App Store Custom Product Page in Spanish and a Play custom store listing for Spain, Mexico and Argentina |
+| after the Brazil price test has a result | Rui's question: apply the local price in Mexico and Argentina if it wins in Brazil (recommended), or stay on automatic prices |
+
 ## Google Play
 
 Not for December (new apps need 8 weeks' notice, the build must already be in the Play Console and there are no ratings yet). The Play nomination goes with the pt-BR update at the end of January, submitted around **1 January 2027**; draft in `/mnt/project-files/launch/destaque-lojas.md` §5.
