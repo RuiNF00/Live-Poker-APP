@@ -54,7 +54,29 @@ export interface Session {
   format?: GameFormat;
   /** Bankroll it counts towards. Missing (older data): the first bankroll in its currency. */
   bankrollId?: string;
+  /** Country it was played in (ISO code, 'US', 'PT'…), for the tax report. */
+  country?: string;
+  /** Tax the cashier kept back from the prize, in the session's currency. */
+  withheld?: Withholding;
+  /** Receipts and tax forms, kept as files next to the app's data. */
+  docs?: SessionDoc[];
   updatedAt?: number;
+}
+
+/** 'recover': asking it back (e.g. 1042-S with a treaty or an ITIN return); 'final': credited on your return or not recoverable. */
+export interface Withholding {
+  amount: number;
+  form?: 'W-2G' | '1042-S' | 'other';
+  status: 'recover' | 'recovered' | 'final';
+}
+
+export interface SessionDoc {
+  id: string;
+  name: string;
+  /** File name inside the app's documents folder (the folder path changes between installs). */
+  file: string;
+  kind: 'receipt' | 'form' | 'other';
+  addedAt: number;
 }
 
 export type GameFormat = 'live' | 'online';
