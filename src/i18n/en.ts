@@ -3112,6 +3112,11 @@ const en: Record<string, string> = {
   'Explica a mão a falar, com a tua cara num canto.': 'Talk through the hand, with your face in a corner.',
   'Vídeo com a tua cara': 'Video with your face',
   'A explicar a mão, num canto': 'Explaining the hand, in a corner',
+  // Stack card for a festival day (share/session-card.ts).
+  'Partilhar stack': 'Share stack',
+  'No saco': 'Bagged',
+  '{name} · Dia {n} ensacado: {chips}': '{name} · Day {n} bagged: {chips}',
+  '{name} · Dia {n}: {chips} em fichas': '{name} · Day {n}: {chips} in chips',
 };
 
 export default en;

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { sampleHand } from '../../poker/sample';
 import type { Session } from '../../store/types';
-import { milestoneFor, potInBB, sessionStats } from '../session-card';
+import { milestoneFor, potInBB, sessionStats, stackPostText, stackStats } from '../session-card';
 
 const H = 3_600_000;
 function mk(over: Partial<Session> = {}): Session {
@@ -51,4 +51,16 @@ test('best month needs three months of history', () => {
   const list = [mk({ id: 'a', startedAt: 0, cashOut: 50 }), mk({ id: 'b', startedAt: month, cashOut: 120 }), mk({ id: 'c', startedAt: 2 * month, cashOut: 400 })];
   assert.equal(milestoneFor(list[2], list, [])?.kind, 'bestMonth');
   assert.equal(milestoneFor(list[2], list.slice(1), []), null);
+});
+
+test('stack card: chips, day and bb while playing; the bag once the day is over; never money or venue', () => {
+  const live = mk({ endedAt: undefined, stack: 85000, day: 1, level: 12 });
+  const now = 3 * H;
+  assert.deepEqual(stackStats(live, now).map((x) => x.key), ['stack', 'day', 'bb']);
+  assert.equal(stackStats(live, now)[0].value, '85k');
+  const bagged = mk({ stack: 91000, day: 1, bag: { stack: 91000, at: 4 * H } });
+  assert.deepEqual(stackStats(bagged, 5 * H).map((x) => x.key), ['stack', 'day', 'hours']);
+  const text = stackPostText(bagged);
+  assert.ok(text.includes('Main') && text.includes('91k'));
+  assert.ok(!text.includes('€') && !text.includes('Estoril'));
 });

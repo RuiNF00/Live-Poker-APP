@@ -27,7 +27,10 @@ export function AppCta({
   invite,
   utm,
   hideSticky = false,
+  onComment,
 }: {
+  /** The bar's "Comentar" (no store link yet): straight into the comment box instead of a plain jump. */
+  onComment?: () => void;
   /** While the friend is deciding on a challenge, the bar would cover the choices. */
   hideSticky?: boolean;
   locale: Locale;
@@ -78,7 +81,15 @@ export function AppCta({
             {d.ctaDownload}
           </a>
         ) : (
-          <a className="btn btn-primary btn-sm" href="#comments">
+          <a
+            className="btn btn-primary btn-sm"
+            href="#comments"
+            onClick={(e) => {
+              if (!onComment) return;
+              e.preventDefault();
+              onComment();
+            }}
+          >
             {d.send}
           </a>
         )}
