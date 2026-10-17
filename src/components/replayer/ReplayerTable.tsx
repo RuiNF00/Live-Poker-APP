@@ -176,8 +176,8 @@ function Felt({ w, h }: { w: number; h: number }) {
           <Stop offset="100%" stopColor="#060D0B" />
         </RadialGradient>
       </Defs>
-      <Rect x={w * 0.035} y={h * 0.03} width={w * 0.93} height={h * 0.94} rx={r} fill="url(#felt)" stroke="rgba(255,106,61,0.45)" strokeWidth={1.2} />
-      <Rect x={w * 0.065} y={h * 0.055} width={w * 0.87} height={h * 0.89} rx={r * 0.92} fill="none" stroke="rgba(255,106,61,0.18)" strokeWidth={1} />
+      <Rect x={w * 0.035} y={h * 0.03} width={w * 0.93} height={h * 0.94} rx={r} fill="url(#felt)" stroke={C.borderStrong} strokeWidth={1.2} />
+      <Rect x={w * 0.065} y={h * 0.055} width={w * 0.87} height={h * 0.89} rx={r * 0.92} fill="none" stroke={C.border} strokeWidth={1} />
       <Rect x={w * 0.012} y={h * 0.012} width={w * 0.976} height={h * 0.976} rx={r * 1.05} fill="none" stroke="rgba(245,237,216,0.07)" strokeWidth={6} />
     </Svg>
   );
@@ -215,7 +215,7 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
       {/* cards, or the red FOLD of a player out of the hand */}
       <View style={{ height: ch * 0.7, width: pw, alignItems: 'center', justifyContent: 'flex-end', zIndex: 0 }}>
         {s.folded ? (
-          <Text allowFontScaling={false} style={{ color: '#EF4444', fontFamily: ff(800), fontSize: 11 * k, letterSpacing: 1, marginBottom: 2 }}>
+          <Text allowFontScaling={false} style={{ color: C.muted, fontFamily: ff(800), fontSize: 11 * k, letterSpacing: 1, marginBottom: 2 }}>
             FOLD
           </Text>
         ) : s.cards !== undefined ? (
@@ -244,13 +244,13 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
           borderColor: border,
           paddingHorizontal: 5 * k,
           justifyContent: 'center',
-          opacity: s.folded ? 0.4 : 1,
+          opacity: s.folded ? 0.45 : 1,
           shadowColor: s.acting ? C.accent : '#000',
           shadowOpacity: s.acting ? 0.7 : 0.4,
           shadowRadius: s.acting ? 8 : 4,
         }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 3 }}>
-          <Text allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, color: s.hero ? '#F5C27A' : '#EFE7D2', fontFamily: SERIF, fontSize: 11 * k }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ flexShrink: 1, color: C.text, fontFamily: ff(600), fontSize: 11 * k }}>
             {s.name}
           </Text>
           {s.pos && s.pos !== s.name ? (
@@ -261,7 +261,7 @@ function Seat({ seat: s, x, y, k, bestEquity }: { seat: RpSeat; x: number; y: nu
             </View>
           ) : null}
         </View>
-        <Text allowFontScaling={false} numberOfLines={1} style={{ color: s.allIn ? '#F87171' : '#F5EDD8', fontFamily: F.mono, fontSize: 11.5 * k, fontVariant: ['tabular-nums'] }}>
+        <Text allowFontScaling={false} numberOfLines={1} style={{ color: s.stack === 'ALL-IN' ? C.allin : C.text, fontFamily: F.mono, fontSize: 11.5 * k, fontVariant: ['tabular-nums'] }}>
           {s.stack}
         </Text>
       </View>

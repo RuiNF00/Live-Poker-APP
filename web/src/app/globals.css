@@ -451,7 +451,7 @@ a {
 
 .rt-fold {
   margin-bottom: calc(var(--k) * var(--cw) * 1.39 * 0.3 + 2px);
-  color: #ef4444;
+  color: #7f8d87;
   font-weight: 800;
   font-size: calc(var(--k) * 11);
   letter-spacing: 1px;
@@ -490,7 +490,7 @@ a {
 }
 
 .rt-seat-folded .rt-plate {
-  opacity: 0.4;
+  opacity: 0.45;
 }
 
 .rt-plate-top {
@@ -507,13 +507,9 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #efe7d2;
-  font-family: Georgia, 'Times New Roman', serif;
+  color: #f1f4f2;
+  font-weight: 600;
   font-size: calc(var(--k) * 11);
-}
-
-.rt-seat-hero .rt-name {
-  color: #f5c27a;
 }
 
 .rt-pos {
@@ -534,7 +530,7 @@ a {
 }
 
 .rt-stack-allin {
-  color: #f87171;
+  color: #ff5a5f;
 }
 
 .rt-badge {

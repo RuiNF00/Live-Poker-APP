@@ -93,8 +93,8 @@ export function PokerTable({ step, tableSize, bb, mode, locale, potLabel }: Prop
             </radialGradient>
           </defs>
           <rect x="1.2" y="1.5" width="97.6" height="119" rx="46" ry="46" fill="none" stroke="rgba(245,237,216,0.07)" strokeWidth="1.6" />
-          <rect x="3.5" y="3.7" width="93" height="114.6" rx="44" ry="44" fill="url(#rt-felt)" stroke="rgba(255,106,61,0.45)" strokeWidth="0.35" vectorEffect="non-scaling-stroke" />
-          <rect x="6.5" y="6.7" width="87" height="108.6" rx="40.5" ry="40.5" fill="none" stroke="rgba(255,106,61,0.18)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <rect x="3.5" y="3.7" width="93" height="114.6" rx="44" ry="44" fill="url(#rt-felt)" stroke="rgba(238,242,239,0.16)" strokeWidth="0.35" vectorEffect="non-scaling-stroke" />
+          <rect x="6.5" y="6.7" width="87" height="108.6" rx="40.5" ry="40.5" fill="none" stroke="rgba(238,242,239,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
         </svg>
 
         <div className="rt-brand" style={{ top: `${BRAND_Y}%` }}>
