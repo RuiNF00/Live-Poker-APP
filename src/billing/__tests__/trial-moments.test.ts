@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { parsePaywallConfig } from '../experiments';
 import { addBlocked, sessionEndCard } from '../session-limit';
-import { ENDED_DAYS, sessionStartOffer, trialNotice } from '../trial-moments';
+import { ENDED_DAYS, inQuietHours, proEndNotice, sessionStartOffer, trialNotice } from '../trial-moments';
 
 const DAY = 86_400_000;
 const now = 1_800_000_000_000;
@@ -62,4 +62,24 @@ test('offering copy in pt-BR and es, pt-BR falling back to pt; defer on unless s
   assert.equal(parsePaywallConfig('x', { defer: false }, 'pt').defer, false);
   assert.equal(parsePaywallConfig('x', { defer: 'no' }, 'pt').defer, true);
   assert.equal(parsePaywallConfig('x', null, 'pt').defer, true);
+});
+
+test('Pro that ends another way is said once, calmly, and never on top of the trial screen', () => {
+  const ended = now - DAY;
+  assert.equal(proEndNotice(ended, null, null, { isPro: false, now }), true, 'invite days or a cancelled subscription ran out');
+  assert.equal(proEndNotice(ended, ended, null, { isPro: false, now }), false, 'once');
+  assert.equal(proEndNotice(ended, null, null, { isPro: true, now }), false, 'Pro came back');
+  assert.equal(proEndNotice(null, null, null, { isPro: false, now }), false);
+  assert.equal(proEndNotice(now - (ENDED_DAYS + 1) * DAY, null, null, { isPro: false, now }), false, 'too long ago to bring up');
+  assert.equal(proEndNotice(ended, null, ended - 2 * DAY, { isPro: false, now }), false, 'the trial just ran out: "O teu trial acabou" says it');
+  assert.equal(proEndNotice(ended, null, ended - 200 * DAY, { isPro: false, now }), true, 'the trial became a subscription, later cancelled');
+  const second = now - 2 * 3_600_000;
+  assert.equal(proEndNotice(second, ended, null, { isPro: false, now }), true, 'a later end (Pro again, then gone) is said again');
+});
+
+test('the one-time screens wait out the quiet hours, 23:00 to 12:00', () => {
+  assert.deepEqual(
+    [0, 8, 11, 12, 18, 22, 23].map(inQuietHours),
+    [true, true, true, false, false, false, true],
+  );
 });

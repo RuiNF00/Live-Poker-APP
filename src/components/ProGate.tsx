@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack } from 'expo-router';
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { PAYWALL_COPY, PRO_ONLY, type PaywallReason, type ProFeature } from '@/billing/plans';
@@ -31,13 +31,48 @@ export function ProLocked({ feature, title }: { feature: ProFeature; title: stri
   );
 }
 
-/** A screen that needs Pro. The screen itself mounts only when unlocked, so its hooks never run behind the gate. */
-export function withPro<P extends object>(feature: ProFeature, title: string, Inner: React.ComponentType<P>) {
+/** True inside a withPro screen kept open for the player's own data after Pro ended. */
+const ReadOnly = createContext(false);
+
+/**
+ * In a screen kept after Pro ended: `readOnly`, and `gate`, which sends a change through
+ * "Ver com Pro" (and makes it once Pro is back) instead of making it.
+ */
+export function useProReadOnly(feature: ProFeature) {
+  const readOnly = useContext(ReadOnly);
+  const { paywall } = usePro();
+  const gate =
+    <A extends unknown[]>(fn: (...a: A) => void) =>
+    (...a: A) =>
+      readOnly ? paywall(feature, () => fn(...a)) : fn(...a);
+  return { readOnly, gate };
+}
+
+/**
+ * A screen that needs Pro. The screen itself mounts only when unlocked, so its hooks never run behind the gate.
+ * With `keep`, a player who made something here while Pro (backers, packages) still sees it after Pro ends,
+ * read-only: nothing they made disappears.
+ */
+export function withPro<P extends object>(feature: ProFeature, title: string, Inner: React.ComponentType<P>, keep?: () => boolean) {
   function Gated(props: P) {
-    return useLocked(feature) ? <ProLocked feature={feature} title={title} /> : <Inner {...props} />;
+    const locked = useLocked(feature);
+    const has = keep?.() ?? false;
+    if (!locked) return <Inner {...props} />;
+    if (has)
+      return (
+        <ReadOnly.Provider value>
+          <Inner {...props} />
+        </ReadOnly.Provider>
+      );
+    return <ProLocked feature={feature} title={title} />;
   }
   Gated.displayName = `withPro(${feature})`;
   return Gated;
+}
+
+/** The line at the top of a kept screen: everything is here to see; changing it is with Pro. */
+export function ReadOnlyNote({ feature, body }: { feature: Exclude<PaywallReason, 'generic'>; body: string }) {
+  return <ProRow feature={feature} title={t('Só para ver')} body={body} />;
 }
 
 /**

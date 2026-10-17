@@ -8,7 +8,7 @@ import { View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankBacker } from '@/components/staking/sheets';
-import { balanceLabel, splitMoney, useStaking } from '@/components/staking/use-staking';
+import { balanceLabel, splitMoney, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -16,12 +16,14 @@ import { useStore } from '@/store/store';
 import type { BackerLedger, StakingTotals } from '@/store/staking';
 import type { Backer } from '@/store/types';
 import { C, S } from '@/theme';
-import { withPro } from '@/components/ProGate';
+import { ReadOnlyNote, useProReadOnly, withPro } from '@/components/ProGate';
 
 function StakingScreen() {
   const { backers, backing, saveBacker, activeSession } = useStore();
   const { ledgers, totals } = useStaking();
   const [edit, setEdit] = useState<Backer | null>(null);
+  const { readOnly, gate } = useProReadOnly('staking');
+  const add = gate(() => setEdit(blankBacker()));
 
   const all = [...ledgers.values()];
   // Makeup stays in each deal's currency: "makeup 2 000€ + 5 000$".
@@ -44,9 +46,10 @@ function StakingScreen() {
           />
         ) : (
           <>
+            {readOnly ? <ReadOnlyNote feature="staking" body={t('Os teus backers, pacotes e contas ficam aqui. Para mudar alguma coisa, é com o Pro.')} /> : null}
             <BalanceHeadline totals={totals} makeup={makeup} live={live} />
 
-            <Section title="Backers" action={t('+ Novo')} onAction={() => setEdit(blankBacker())}>
+            <Section title="Backers" action={t('+ Novo')} onAction={add}>
               <ListGroup>
                 {sorted.map((b) => {
                   const l = ledgers.get(b.id);
@@ -201,4 +204,4 @@ function BalanceHeadline({ totals, makeup, live }: { totals: StakingTotals; make
   );
 }
 
-export default withPro('staking', 'Staking', StakingScreen);
+export default withPro('staking', 'Staking', StakingScreen, useHasBackers);
