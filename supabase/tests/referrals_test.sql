@@ -49,3 +49,16 @@ reset role;
 set role anon;
 select log_app_event('invite_claimed', gen_random_uuid(), 'android', '{"source":"play_referrer","result":"ok"}') is null as invite_claimed_event_ok;
 reset role;
+
+-- Server code minted first (status before code): the app's code becomes an alias (20261017080000)
+set role service_role;
+select referral_code_for('77777777-7777-7777-7777-777777777777', 'QRST2345', null) = 'QRST2345' as server_code_first;
+select referral_code_for('77777777-7777-7777-7777-777777777777', 'b1b2c3d4e5', 'rc7') = 'b1b2c3d4e5' as app_code_wins;
+select referral_code_for('77777777-7777-7777-7777-777777777777', 'ZZZZ2345', null) = 'b1b2c3d4e5' as app_code_sticks;
+select (select code from referral_status('77777777-7777-7777-7777-777777777777')) = 'b1b2c3d4e5' as status_reports_app_code;
+select claim_referral('88888888-8888-8888-8888-888888888888', 'b1b2c3d4e5', 'share') = 'ok' as alias_claimed;
+select claim_referral('99999999-9999-9999-9999-999999999999', 'qrst2345', 'manual') = 'ok' as old_code_still_works;
+-- Someone else's app code is never stolen as an alias
+select referral_code_for('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'WXYZ2345', null) = 'WXYZ2345' as other_server_code;
+select referral_code_for('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4e5', null) = 'WXYZ2345' as taken_alias_refused;
+reset role;

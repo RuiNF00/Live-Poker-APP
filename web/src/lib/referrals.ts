@@ -76,7 +76,7 @@ class SupabaseReferrals implements ReferralBackend {
 
 // Local JSON file for development, same rules as the SQL functions.
 interface LocalReferrals {
-  codes: Record<string, { code: string; rcUserId: string | null }>;
+  codes: Record<string, { code: string; appCode?: string; rcUserId: string | null }>;
   referrals: Record<string, { referrer: string; source: string; shareId: string | null; claimedAt: string; activatedAt: string | null }>;
   rewards: { installId: string; friend: string; role: 'friend' | 'referrer'; days: number; proUntil: string; grantedAt: string | null; createdAt: string }[];
 }
@@ -105,14 +105,18 @@ class LocalBackend implements ReferralBackend {
   codeFor(installId: string, code: string, rcUserId: string | null) {
     return this.mutate((d) => {
       const cur = d.codes[installId];
-      d.codes[installId] = { code: cur?.code ?? code, rcUserId: rcUserId ?? cur?.rcUserId ?? null };
-      return d.codes[installId].code;
+      const c = (d.codes[installId] = { ...cur, code: cur?.code ?? code, rcUserId: rcUserId ?? cur?.rcUserId ?? null });
+      // The app's code lost the race to a server one: keep both, as the SQL does.
+      const isApp = (x: string) => /^[0-9a-f]{10}$/.test(x);
+      const taken = Object.values(d.codes).some((o) => o.code === code || o.appCode === code);
+      if (isApp(code) && !c.appCode && !isApp(c.code) && !taken) c.appCode = code;
+      return c.appCode ?? c.code;
     });
   }
   claim(friend: string, code: string, source: ReferralSource, shareId: string | null) {
     return this.mutate((d): ClaimResult => {
       if (d.referrals[friend]) return 'already';
-      const referrer = Object.entries(d.codes).find(([, c]) => c.code === code.toUpperCase() || c.code === code.toLowerCase())?.[0];
+      const referrer = Object.entries(d.codes).find(([, c]) => c.code === code.toUpperCase() || c.code === code.toLowerCase() || c.appCode === code.toLowerCase())?.[0];
       if (!referrer) return 'unknown_code';
       if (referrer === friend) return 'self';
       d.referrals[friend] = { referrer, source, shareId, claimedAt: new Date().toISOString(), activatedAt: null };
@@ -156,7 +160,7 @@ class LocalBackend implements ReferralBackend {
     const mine = Object.values(d.referrals).filter((r) => r.referrer === installId);
     const rewards = d.rewards.filter((w) => w.installId === installId);
     return {
-      code: c.code,
+      code: c.appCode ?? c.code,
       invited: mine.length,
       activated: mine.filter((r) => r.activatedAt).length,
       daysEarned: rewards.reduce((n, w) => n + w.days, 0),
