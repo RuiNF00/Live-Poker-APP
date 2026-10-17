@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { LandingCopy } from './copy';
 import { useStoreLink, type StoreLinks } from './StoreButtons';
+import { track } from '@/lib/track';
 
 /** Free vs Pro with the annual/monthly toggle. Purchases happen in the app, so CTAs go to the store. */
 export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
@@ -37,7 +38,7 @@ export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
               </li>
             ))}
           </ul>
-          <a className="lp-cta alt" href={downloadHref}>
+          <a className="lp-cta alt" href={downloadHref} onClick={() => track('store_click', { from: 'pricing_free' })}>
             {c.freeCta}
           </a>
         </div>
@@ -55,7 +56,7 @@ export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
               <li key={f}>{f}</li>
             ))}
           </ul>
-          <a className="lp-cta main" href={downloadHref}>
+          <a className="lp-cta main" href={downloadHref} onClick={() => track('store_click', { from: 'pricing_pro', plan: period })}>
             {p.cta}
           </a>
           <p className="lp-fine">{p.fine}</p>

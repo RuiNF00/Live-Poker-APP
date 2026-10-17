@@ -19,6 +19,7 @@ import { Comments } from './Comments';
 import { Quiz } from './Quiz';
 import { AppCta } from './AppCta';
 import { readLocal, voterId, writeLocal } from '@/lib/local';
+import { track } from '@/lib/track';
 
 interface Props {
   shareId: string;
@@ -56,6 +57,7 @@ export function ShareView(props: Props) {
     const saved = readLocal<AmountMode>('amountMode');
     if (saved === 'bb' || saved === 'chips') setMode(saved);
     if (readLocal<string>(`quiz:${props.shareId}`)) setQuizState('done');
+    track('share_viewed', { shareId: props.shareId });
     // Friends open the link from a chat: start playing right away.
     const id = setTimeout(() => setPlaying(true), 700);
     return () => clearTimeout(id);
