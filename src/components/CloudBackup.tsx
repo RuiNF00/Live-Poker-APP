@@ -3,7 +3,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -74,9 +74,11 @@ export function CloudBackup() {
     setBusy(true);
     try {
       const n = store.importData(await download(c));
-      // From now on this phone keeps the same cloud copy up to date.
-      await saveCloud(c);
-      setCloud(c);
+      // From now on this phone keeps the same cloud copy up to date. It was
+      // just downloaded, so the launch auto-backup has nothing new to send.
+      const next = { ...c, lastAt: Date.now() };
+      await saveCloud(next);
+      setCloud(next);
       setRestoring(false);
       setCode('');
       note(t('Cópia recuperada'), importSummary(n));
@@ -164,12 +166,19 @@ export function CloudBackup() {
 export function AutoCloudBackup() {
   const store = useStore();
   const { ready } = store;
+  // The timer reads the store as it is when it fires, not as it was at launch:
+  // a restore in the meantime must not be overwritten by the empty first render.
+  const latest = useRef(store);
+  latest.current = store;
   useEffect(() => {
     if (!ready) return;
     const id = setTimeout(async () => {
       const c = await loadCloud();
       if (!c || (c.lastAt && Date.now() - c.lastAt < 6 * 3600000)) return;
-      upload(c, buildBackup(store)).catch(() => {});
+      const data = buildBackup(latest.current);
+      // Never replace a cloud copy with an empty phone's data.
+      if (!data.hands.length && !data.sessions.length && !data.players.length) return;
+      upload(c, data).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
     // Only on launch: the store object changes on every edit.
