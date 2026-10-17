@@ -43,6 +43,7 @@ BUILT FOR LIVE PLAYERS
 • Tournaments and cash games
 • Organized by tournament, session and date
 • No account needed: your hands stay on your phone
+• Available in English and Portuguese
 
 SWEATBOOK PRO
 Free: up to 3 saved hands per day. Sweatbook Pro unlocks unlimited hands, the 30- and 90-day bankroll filters and voice-over Instagram Stories without the watermark. Monthly or yearly subscription, with a 1-week free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
