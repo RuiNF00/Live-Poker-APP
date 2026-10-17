@@ -83,6 +83,39 @@ export async function renderVoiceStory(frame: string, voice: string, slot: { x: 
   return out.uri;
 }
 
+/** A transparent PNG of the session sticker, at 3x its size. */
+export async function captureSticker(ref: React.RefObject<React.ComponentRef<typeof View> | null>, w: number, h: number): Promise<string> {
+  return captureRef(ref, { format: 'png', quality: 1, width: w * 3, height: h * 3, result: 'tmpfile' });
+}
+
+/**
+ * Opens Instagram's story editor with the sticker on top, so the player puts
+ * it over a photo of the table. Falls back to the share sheet (save the PNG,
+ * then add it as a sticker).
+ */
+export async function shareSticker(file: string, link: string): Promise<StoryTarget> {
+  await Clipboard.setStringAsync(link).catch(() => {});
+  const Share = nativeShare();
+  if (Share && META_APP_ID && (await instagramInstalled())) {
+    try {
+      await Share.shareSingle({
+        social: Share.Social.INSTAGRAM_STORIES as Social,
+        appId: META_APP_ID,
+        stickerImage: file,
+        backgroundTopColor: '#0C1311',
+        backgroundBottomColor: '#080E0C',
+        linkUrl: link,
+        attributionURL: link,
+      });
+      return 'instagram';
+    } catch {
+      // fall through to the share sheet
+    }
+  }
+  await Sharing.shareAsync(file, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('Partilhar sticker') });
+  return 'sheet';
+}
+
 /** One replay frame for the hand video. JPEG keeps a 20-frame upload under the server's limit. */
 export async function captureFrame(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {
   return captureRef(ref, { format: 'jpg', quality: 0.82, width: 1080, height: 1920, result: 'tmpfile' });

@@ -101,7 +101,8 @@ export default function SessionSummary() {
       </Card>
 
       <View style={{ gap: S.sm }}>
-        <Button title={t('Ver no bankroll')} icon="stats-chart" onPress={() => router.replace('/bankroll')} />
+        <Button title={t('Partilhar sessão')} icon="share-social" onPress={() => router.push(`/session-card/${id}`)} />
+        <Button kind="ghost" title={t('Ver no bankroll')} icon="stats-chart" onPress={() => router.replace('/bankroll')} />
         <Button kind="ghost" title={t('Fechar')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       </View>
     </Screen>
