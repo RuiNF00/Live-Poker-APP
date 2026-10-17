@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sweatbook Preços</title>
+<meta name="description" content="Regista as mãos que jogas ao vivo, revê-as rua a rua e partilha com os amigos. Grátis para experimentar, Pro por 29,99 US$/mês ou 199,99 US$/ano.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow column like a phone screen, hero hand card, then plans side by side that stack on phones. Sweatbook "Noite": felt-green night, sweat orange as the only strong colour. */
+:root {
+  --bg: #0C1311; --surface: #16201D; --surface2: #1B2723; --line: #24302C; --line-strong: #33433D;
+  --fg: #EEF2EF; --dim: #B3BEB9; --muted: #8C9A94;
+  --accent: #FF6A3D; --accent-ink: #1A0A04; --accent-soft: rgba(255,106,61,0.14);
+  --felt: #1C4A3C; --good: #4ADE80;
+  --heart: #D93A3A; --card: #F4F1EA;
+  --display: "Hanken Grotesk", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--display); margin: 0; }
+.wrap { max-width: 980px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; }
+.logo { font-weight: 800; font-size: 20px; letter-spacing: -0.3px; color: var(--fg); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+.logo i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+nav .links { display: flex; gap: 18px; font-size: 14px; font-weight: 700; }
+nav .links a { color: var(--dim); text-decoration: none; }
+
+.hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center; padding-block: 40px 56px; }
+.hero > * { min-width: 0; }
+h1 { font-size: clamp(36px, 6vw, 58px); line-height: 1.02; letter-spacing: -1.5px; font-weight: 800; margin: 0 0 18px; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+.lede { color: var(--dim); font-size: 18px; max-width: 34em; margin: 0 0 26px; }
+.stores { display: flex; gap: 10px; flex-wrap: wrap; }
+.store { display: inline-flex; flex-direction: column; padding: 9px 16px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); text-decoration: none; min-width: 150px; }
+.store small { font-size: 11px; color: var(--muted); font-weight: 500; }
+.store b { font-size: 16px; }
+.note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+
+/* The one hand card: what a friend sees when you share. */
+.hand { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 18px; display: grid; gap: 14px; transform: rotate(-1.5deg); box-shadow: 0 30px 60px rgba(0,0,0,0.45); }
+.hand .meta { font: 700 11px/1.3 var(--mono); color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; }
+.felt { background: radial-gradient(ellipse at center, #22594A 0%, var(--felt) 60%, #163D31 100%); border-radius: 999px; padding: 26px 18px; display: grid; justify-items: center; gap: 10px; border: 6px solid #0F1B17; }
+.cards { display: flex; gap: 6px; }
+.c { width: 40px; height: 56px; border-radius: 6px; background: var(--card); display: grid; place-items: center; font: 700 19px/1 var(--mono); color: #1B1D1C; }
+.c.h { color: var(--heart); }
+.c.cl { color: #1F9D57; }
+.c.back { background: repeating-linear-gradient(45deg, #2a3834 0 4px, #22302B 4px 8px); }
+.pot { font: 700 12px var(--mono); color: var(--fg); background: rgba(0,0,0,0.35); padding: 3px 10px; border-radius: 999px; }
+.q { font-weight: 800; font-size: 17px; }
+.votes { display: grid; gap: 7px; }
+.vote { display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; }
+.bar { height: 8px; border-radius: 4px; background: var(--surface2); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.vote .n { font: 700 12px var(--mono); color: var(--dim); text-align: right; }
+
+section { padding-block: 44px; border-top: 1px solid var(--line); }
+h2 { font-size: clamp(26px, 4vw, 36px); letter-spacing: -0.8px; line-height: 1.1; margin: 0 0 10px; text-wrap: balance; }
+.sub { color: var(--dim); margin: 0 0 28px; max-width: 36em; }
+
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.how > div { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; min-width: 0; }
+.how b { display: block; font-size: 17px; margin-bottom: 4px; }
+.how p { margin: 0; color: var(--dim); font-size: 15px; }
+.how .k { font: 700 12px var(--mono); color: var(--accent); margin-bottom: 10px; display: block; }
+
+.toggle { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin-bottom: 22px; }
+.toggle button { appearance: none; border: 0; background: transparent; color: var(--dim); font: 700 14px var(--display); padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.toggle .save { font-size: 11px; opacity: 0.85; margin-left: 4px; }
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.plan { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 22px; display: grid; gap: 16px; min-width: 0; }
+.plan.pro { border: 2px solid var(--accent); background: linear-gradient(180deg, var(--accent-soft), var(--surface) 55%); }
+.plan h3 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tag { font: 800 11px var(--display); background: var(--accent); color: var(--accent-ink); padding: 3px 9px; border-radius: 999px; letter-spacing: 0.3px; }
+.price { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.price b { font: 700 38px/1 var(--mono); letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.price span { color: var(--muted); font-size: 15px; }
+.price-note { color: var(--dim); font-size: 14px; margin-top: -8px; min-height: 1.5em; }
+ul.f { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+ul.f li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; font-size: 15px; }
+ul.f li::before { content: "✓"; color: var(--good); font-weight: 800; }
+ul.f li.x::before { content: "–"; color: var(--muted); }
+ul.f li.x { color: var(--muted); }
+.cta { display: block; text-align: center; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 16px; }
+.cta.main { background: var(--accent); color: var(--accent-ink); }
+.cta.alt { border: 1px solid var(--line-strong); color: var(--fg); }
+.fine { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
+
+.faq { display: grid; gap: 10px; max-width: 720px; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+summary { font-weight: 700; cursor: pointer; }
+details p { color: var(--dim); margin: 10px 0 0; }
+
+footer { border-top: 1px solid var(--line); padding-block: 26px 40px; display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+footer a { color: var(--dim); }
+
+@media (max-width: 760px) {
+  .hero, .plans, .how { grid-template-columns: 1fr; }
+  .hero { padding-block: 16px 40px; gap: 32px; }
+  .hand { transform: none; }
+  .plan.pro { order: -1; }
+  nav .links a.hide-sm { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bar span { animation: grow 900ms cubic-bezier(.2,.8,.2,1) both; animation-delay: 300ms; }
+  @keyframes grow { from { width: 0; } }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <a class="logo" href="#"><i></i>Sweatbook</a>
+    <div class="links"><a class="hide-sm" href="#como">Como funciona</a><a href="#precos">Preços</a><a href="#faq">Perguntas</a></div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Grava a mão <em>antes do próximo deal.</em></h1>
+      <p class="lede">O Sweatbook é o caderno do jogador de póquer live. Guardas a mão em segundos à mesa, revês rua a rua no replayer e mandas o link aos amigos. Eles votam e comentam no browser, sem instalar nada.</p>
+      <div class="stores">
+        <a class="store" href="#precos"><small>Em breve na</small><b>App Store</b></a>
+        <a class="store" href="#precos"><small>Em breve no</small><b>Google Play</b></a>
+      </div>
+      <p class="note">Grátis para começar. Sem jogo a dinheiro real.</p>
+    </div>
+
+    <div class="hand" aria-label="Exemplo de mão partilhada">
+      <div class="meta">Estoril Poker Series €550 · Bolha · Nível 14 · 58 restantes</div>
+      <div class="felt">
+        <div class="cards"><div class="c">K♠</div><div class="c h">9♥</div><div class="c h">4♥</div><div class="c cl">2♣</div><div class="c back"></div></div>
+        <span class="pot">Pote 41.000 · 20 BB</span>
+        <div class="cards"><div class="c h">A♥</div><div class="c h">Q♥</div></div>
+      </div>
+      <div class="q">Turn, o vilão faz shove. O que fazias aqui?</div>
+      <div class="votes">
+        <div class="vote">Fold <div class="bar"><span style="width:23%"></span></div><span class="n">12</span></div>
+        <div class="vote">Call <div class="bar"><span style="width:60%"></span></div><span class="n">31</span></div>
+        <div class="vote">Pensar <div class="bar"><span style="width:17%"></span></div><span class="n">9</span></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="como">
+    <h2>Feito para quem joga ao vivo</h2>
+    <p class="sub">Sem teclado de cartas a meio da mão nem 40 toques. O contexto do torneio já vem preenchido da tua sessão.</p>
+    <div class="how">
+      <div><span class="k">À mesa</span><b>Guarda em segundos</b><p>Blinds, nível, stack e quem está sentado vêm da sessão. Só tocas em quem entrou no pote.</p></div>
+      <div><span class="k">No intervalo</span><b>Revê rua a rua</b><p>Replayer com a mesa, as apostas em BB e as tuas notas. Completa o resto quando tiveres tempo.</p></div>
+      <div><span class="k">Depois</span><b>Pede opinião</b><p>Um link para o WhatsApp ou uma story para o Instagram. Os amigos votam e comentam sem app.</p></div>
+    </div>
+  </section>
+
+  <section id="precos">
+    <h2>Experimenta grátis. Passa a Pro quando a sessão pedir mais.</h2>
+    <p class="sub">O plano grátis chega para conheceres a app. O Pro é para quem guarda todas as mãos do torneio.</p>
+    <div class="toggle" role="group" aria-label="Período de pagamento">
+      <button type="button" id="b-annual" aria-pressed="true">Anual <span class="save">−44%</span></button>
+      <button type="button" id="b-monthly" aria-pressed="false">Mensal</button>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <h3>Grátis</h3>
+        <div class="price"><b>0 US$</b><span>para sempre</span></div>
+        <div class="price-note">Sem cartão.</div>
+        <ul class="f">
+          <li>3 mãos guardadas por dia</li>
+          <li>Replayer completo</li>
+          <li>Partilha por link com votos e comentários</li>
+          <li>Sessões, bankroll e notas de jogadores</li>
+          <li>Story para o Instagram com marca de água</li>
+          <li class="x">Filtros de bankroll por período</li>
+        </ul>
+        <a class="cta alt" href="#">Começar grátis</a>
+      </div>
+      <div class="plan pro">
+        <h3>Pro <span class="tag" id="trial-tag">7 dias grátis</span></h3>
+        <div class="price"><b id="p-price">199,99 US$</b><span id="p-period">/ ano</span></div>
+        <div class="price-note" id="p-note">Fica a 16,67 US$ por mês.</div>
+        <ul class="f">
+          <li>Mãos ilimitadas</li>
+          <li>Stories com a tua voz, sem marca de água</li>
+          <li>Bankroll completo: 30 dias, 90 dias, ano, ROI e ITM</li>
+          <li>Tudo o que o plano grátis tem</li>
+        </ul>
+        <a class="cta main" href="#" id="p-cta">Experimentar 7 dias grátis</a>
+        <p class="fine" id="p-fine">Grátis durante 7 dias, depois 199,99 US$ por ano. Renova automaticamente até cancelares na App Store ou no Google Play.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>Perguntas</h2>
+    <div class="faq">
+      <details><summary>O que acontece à 4.ª mão do dia no plano grátis?</summary><p>Fica guardada como rascunho no telemóvel. Não perdes nada: guardas amanhã ou passas a Pro e guardas logo.</p></details>
+      <details><summary>Os meus amigos precisam da app para ver a mão?</summary><p>Não. Abrem o link no browser, veem o replay, votam e comentam. Se gostarem, instalam.</p></details>
+      <details><summary>Posso cancelar quando quiser?</summary><p>Sim, nas definições da App Store ou do Google Play. Ficas com Pro até ao fim do período que já pagaste.</p></details>
+      <details><summary>Se deixar de ser Pro, perco as mãos?</summary><p>Não. Todas as mãos guardadas continuam tuas. Só voltas ao limite de 3 mãos novas por dia.</p></details>
+      <details><summary>É uma app de jogo a dinheiro?</summary><p>Não. O Sweatbook serve para registar e estudar as mãos que jogas ao vivo. Não há apostas nem jogo dentro da app.</p></details>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2026 Sweatbook</span>
+    <a href="https://sweatbook.poker/privacy.html">Privacidade</a>
+    <a href="https://sweatbook.poker/terms.html">Termos</a>
+    <a href="https://sweatbook.poker/support.html">Suporte</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var plans = {
+    annual: { price: '199,99 US$', period: '/ ano', note: 'Fica a 16,67 US$ por mês.', cta: 'Experimentar 7 dias grátis', trial: true,
+      fine: 'Grátis durante 7 dias, depois 199,99 US$ por ano. Renova automaticamente até cancelares na App Store ou no Google Play.' },
+    monthly: { price: '29,99 US$', period: '/ mês', note: 'Cancela quando quiseres.', cta: 'Subscrever Pro', trial: false,
+      fine: '29,99 US$ por mês. Renova automaticamente até cancelares na App Store ou no Google Play.' }
+  };
+  var bA = document.getElementById('b-annual'), bM = document.getElementById('b-monthly');
+  function set(k) {
+    var p = plans[k];
+    document.getElementById('p-price').textContent = p.price;
+    document.getElementById('p-period').textContent = p.period;
+    document.getElementById('p-note').textContent = p.note;
+    document.getElementById('p-cta').textContent = p.cta;
+    document.getElementById('p-fine').textContent = p.fine;
+    document.getElementById('trial-tag').hidden = !p.trial;
+    bA.setAttribute('aria-pressed', String(k === 'annual'));
+    bM.setAttribute('aria-pressed', String(k === 'monthly'));
+  }
+  bA.addEventListener('click', function () { set('annual'); });
+  bM.addEventListener('click', function () { set('monthly'); });
+})();
+</script>
+</body>
+</html>

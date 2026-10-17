@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { usePro } from '@/billing/pro';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Chip, Empty, Row, T } from '@/components/ui';
 import { comboLabel } from '@/poker/cards';
@@ -17,6 +18,7 @@ import { BRAND, C, R, ff } from '@/theme';
 export default function HandsScreen() {
   const insets = useSafeAreaInsets();
   const { hands, activeSession, saveHand, settings, draft } = useStore();
+  const { handsLeft, paywall } = usePro();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
 
@@ -41,6 +43,19 @@ export default function HandsScreen() {
               <T v="title">{BRAND.name}</T>
               <T v="small">{hands.length} mãos</T>
             </Row>
+            {handsLeft !== null && hands.length > 0 ? (
+              <Pressable
+                onPress={() => paywall(handsLeft === 0 ? 'hands' : 'generic')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderRadius: R.md, padding: 10, borderWidth: 1, borderColor: handsLeft === 0 ? 'rgba(255,106,61,0.45)' : C.border }}>
+                <Ionicons name="flash" size={14} color={C.accent} />
+                <T v="small" style={{ flex: 1 }}>
+                  {handsLeft === 0 ? 'Já usaste as mãos grátis de hoje' : `${handsLeft} ${handsLeft === 1 ? 'mão grátis' : 'mãos grátis'} hoje`}
+                </T>
+                <T v="small" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+                  Pro sem limites
+                </T>
+              </Pressable>
+            ) : null}
             {draft ? (
               <Pressable onPress={() => router.push('/hand/new')} style={{ backgroundColor: 'rgba(245,184,61,0.12)', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: 'rgba(245,184,61,0.4)' }}>
                 <T v="small" color={C.warn} style={{ fontWeight: '800', fontFamily: ff(800) }}>

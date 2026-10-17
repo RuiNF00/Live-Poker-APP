@@ -4,6 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
+import { usePro } from '@/billing/pro';
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
@@ -16,6 +17,7 @@ import { C } from '@/theme';
 export default function HandScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { hands, saveHand, deleteHand, settings } = useStore();
+  const pro = usePro();
   const hand = hands.find((h) => h.id === id);
   const [busy, setBusy] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -44,8 +46,14 @@ export default function HandScreen() {
 
   const share = async () => {
     tap('medium');
+    const isNew = !hand.shareId;
+    if (isNew && !pro.canShare()) {
+      pro.paywall('shares');
+      return;
+    }
     const link = await ensureLink();
     if (!link) return;
+    if (isNew) pro.record('share');
     const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}o que fazias aqui? 👀\n${link}`;
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);

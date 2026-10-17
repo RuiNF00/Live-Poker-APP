@@ -12,6 +12,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { usePro } from '@/billing/pro';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
 import { ContextSheet, inputStyle } from '@/components/entry/ContextSheet';
@@ -40,6 +41,7 @@ export default function NewHand() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ edit?: string }>();
   const store = useStore();
+  const pro = usePro();
   const { activeSession, settings, hands } = store;
 
   const [draft, setDraftState] = useState<Draft>(() => {
@@ -125,6 +127,11 @@ export default function NewHand() {
 
   const save = () => {
     tap('medium');
+    // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
+    if (!params.edit && !pro.canSaveHand()) {
+      pro.paywall('hands');
+      return;
+    }
     // Named villains go into the player notes, so the next time they are one tap away.
     const players = hand.players.map((p, i) => {
       if (i === hand.hero || !p.name.trim() || p.playerId) return p;
@@ -155,7 +162,10 @@ export default function NewHand() {
         roster: final.players.map((p) => p.name),
       });
     }
-    if (!params.edit) store.setDraft(null);
+    if (!params.edit) {
+      store.setDraft(null);
+      pro.record('hand');
+    }
     router.replace({ pathname: '/hand/[id]', params: { id: final.id } });
   };
 
