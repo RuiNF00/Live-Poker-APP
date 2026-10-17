@@ -17,10 +17,12 @@ import './swap.css';
 const POLL_MS = 30000;
 const other = (s: Side): Side => (s === 'a' ? 'b' : 'a');
 
-export function SwapView({ locale, initial, invite }: { locale: Locale; initial: PublicSwap; invite: string | null }) {
+/** `accounts`: the creator has Pro, so everyone sees who owes whom. Otherwise only the results. */
+export function SwapView({ locale, initial, accounts: initialAccounts, invite }: { locale: Locale; initial: PublicSwap; accounts: boolean; invite: string | null }) {
   const c = swapCopy(locale);
   const id = initial.id;
   const [swap, setSwap] = useState(initial);
+  const [accounts, setAccounts] = useState(initialAccounts);
   const [token, setToken] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,7 +39,10 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
       try {
         const res = await fetch(`/api/swaps/${encodeURIComponent(id)}`, { cache: 'no-store', headers: tok ? { 'x-edit-token': tok } : {} });
         if (res.status === 404) return setGone(true);
-        if (res.ok) setSwap(((await res.json()) as { swap: PublicSwap }).swap);
+        if (!res.ok) return;
+        const j = (await res.json()) as { swap: PublicSwap; accounts?: boolean };
+        setSwap(j.swap);
+        if (typeof j.accounts === 'boolean') setAccounts(j.accounts);
       } catch {}
     },
     [id],
@@ -169,7 +174,9 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
       ) : null}
       {!confirmed && you === 'a' ? <p className="live-updated">{c.waitingFor(t.b.name)}</p> : null}
 
-      {confirmed ? (
+      {confirmed && !accounts ? <AccountsInApp c={c} locale={locale} stores={stores} /> : null}
+
+      {confirmed && accounts ? (
         <section className="live-card">
           <p className="live-label">{creditor ? c.owes(names[other(creditor)], names[creditor]) : c.balance}</p>
           <p className={`live-big ${creditor ? '' : 'sw-dim'}`}>{creditor ? money(Math.abs(bal.net)) : c.square}</p>
@@ -190,9 +197,11 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
               <p className="sw-row-sub">
                 {[c.won(names[e.side]) + ' ' + money(e.amount), e.finish ? c.place(e.finish) : ''].filter(Boolean).join(' · ')}
               </p>
-              <p className="sw-row-owe">
-                {c.owes(names[e.side], names[other(e.side)])}: {c.owesPart(pctLabel(t[e.side].pct), money((t[e.side].pct / 100) * e.amount))}
-              </p>
+              {accounts ? (
+                <p className="sw-row-owe">
+                  {c.owes(names[e.side], names[other(e.side)])}: {c.owesPart(pctLabel(t[e.side].pct), money((t[e.side].pct / 100) * e.amount))}
+                </p>
+              ) : null}
             </EntryRow>
           ))}
         </section>
@@ -226,7 +235,7 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
       ) : null}
 
       {/* Only once both confirmed: before that the page is about the deal, not the app. */}
-      {confirmed ? (
+      {confirmed && accounts ? (
         <section className="live-cta" id="baixar">
           <Mark size={36} />
           <p>{c.confirmedCta}</p>
@@ -238,6 +247,21 @@ export function SwapView({ locale, initial, invite }: { locale: Locale; initial:
 }
 
 export type C = ReturnType<typeof swapCopy>;
+
+/** In place of the accounts when the creator doesn't have Pro: the results stay, the app does the maths. */
+export function AccountsInApp({ c, locale, stores }: { c: C; locale: Locale; stores: ReturnType<typeof storeLinks> }) {
+  return (
+    <section className="live-cta" id="baixar">
+      <Mark size={36} />
+      <p>
+        <b>{c.accountsInApp}</b>
+        <br />
+        {c.accountsInAppBody}
+      </p>
+      <StoreButtons c={landingCopy(locale)} stores={stores} from="swap" fallback="/" />
+    </section>
+  );
+}
 
 export function Top({ state, c }: { state: 'pending' | 'confirmed' | null; c: C }) {
   return (

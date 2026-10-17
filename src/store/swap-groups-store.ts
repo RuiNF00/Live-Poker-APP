@@ -5,8 +5,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
+import { appUserId } from '@/billing/purchases';
 import { SwapError, newCid } from '@/lib/swap-api';
-import { addGroupEntry, fetchGroup, leaveGroup, removeGroupEntry } from '@/lib/swap-group-api';
+import { addGroupEntry, fetchGroup, leaveGroup, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
 
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
@@ -100,6 +101,14 @@ export async function syncGroup(id: string): Promise<boolean> {
       }
     }
     g = getGroup(id)!;
+    if (g.seat === 0) {
+      // The accounts follow the creator's Pro: keep the server's copy of my id current.
+      const rc = await appUserId();
+      if (rc && rc !== g.ownerRc) {
+        await setGroupOwnerRc(id, g.token, rc).then(() => saveGroup({ ...getGroup(id)!, ownerRc: rc }), () => {});
+        g = getGroup(id)!;
+      }
+    }
     const remote = await fetchGroup(id, g.token);
     if (!remote) saveGroup({ ...g, gone: true, entries: g.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
     else applyRemote(id, remote);
