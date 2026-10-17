@@ -1259,6 +1259,14 @@ const en: Record<string, string> = {
   'Bahamas, dezembro 2026': 'Bahamas, December 2026',
   'site oficial do organizador': "the organiser's official site",
   'Nome do festival': 'Festival name',
+  // Multi-day tournaments
+  'Por continuar': 'To continue',
+  'Dia {n} · {chips} no saco': 'Day {n} · {chips} bagged',
+  'Ensacar fichas (fim do dia {n})': 'Bag chips (end of Day {n})',
+  'Fichas no saco': 'Chips bagged',
+  'Ensacado': 'Bagged',
+  'Começar Dia {n}': 'Start Day {n}',
+  'Re-entrar ({flight})': 'Re-enter ({flight})',
   // Home-screen widget
   'Esta semana': 'This week',
   'Sem sessões ainda': 'No sessions yet',

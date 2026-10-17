@@ -22,6 +22,7 @@ import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
 import { BAHAMAS_DEC_2026 } from '@/poker/festivals';
 import { STAGES } from '@/poker/types';
 import { festivalName, useFestivalPlan } from '@/store/festival-plan';
+import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
@@ -54,6 +55,7 @@ export default function SessionScreen() {
   const festivalPlan = useFestivalPlan(BAHAMAS_DEC_2026.id);
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
+  const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
 
   if (activeSession) return <Live s={activeSession} />;
   return (
@@ -69,6 +71,32 @@ export default function SessionScreen() {
           onPress={() => router.push('/festival')}
         />
       </ListGroup>
+      {bagged.length ? (
+        <Section title={t('Por continuar')}>
+          <ListGroup>
+            {bagged.map((b) => (
+              <ListItem
+                key={b.id}
+                icon="bag-handle-outline"
+                iconColor={C.accent}
+                title={b.name || t('Torneio')}
+                subtitle={t('Dia {n} · {chips} no saco', { n: dayOf(b), chips: chips(b.bag!.stack) })}
+                right={
+                  <Button
+                    size="sm"
+                    title={t('Dia {n}', { n: dayOf(b) + 1 })}
+                    icon="play"
+                    onPress={() => {
+                      tap('success');
+                      saveSession(resumeDay(b));
+                    }}
+                  />
+                }
+              />
+            ))}
+          </ListGroup>
+        </Section>
+      ) : null}
       <SessionForm
         initial={{ ...blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize), format: sessions[0]?.format, bankrollId: defaultBankroll.id }}
         bankrolls={bankrolls}
@@ -91,7 +119,7 @@ function Live({ s }: { s: Session }) {
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
   const now = useTick(1000);
   const { saveSession, hands } = useStore();
-  const [pad, setPad] = useState<null | 'stack' | 'cashout'>(null);
+  const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
@@ -133,7 +161,7 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
-      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
+      <Screen title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: 112 }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
           <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
@@ -221,7 +249,10 @@ function Live({ s }: { s: Session }) {
         </Section>
 
         {!ending ? (
-          <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+          <View style={{ gap: S.sm }}>
+            {mtt ? <Button title={t('Ensacar fichas (fim do dia {n})', { n: dayOf(s) })} kind="secondary" size="md" icon="bag-handle-outline" onPress={() => setPad('bag')} /> : null}
+            <Button title={t('Terminar sessão')} kind="danger" size="md" icon="flag-outline" onPress={() => setEnding(true)} />
+          </View>
         ) : (
           <Section title={t('Terminar sessão')}>
             <Card style={{ gap: S.md }}>
@@ -287,6 +318,17 @@ function Live({ s }: { s: Session }) {
           </Section>
         )}
 
+        <AmountPad
+          visible={pad === 'bag'}
+          title={t('Fichas no saco')}
+          bb={s.bb}
+          onClose={() => setPad(null)}
+          onDone={(v) => {
+            setPad(null);
+            tap('success');
+            saveSession(bagDay(s, v));
+          }}
+        />
         <AmountPad
           visible={pad === 'stack'}
           title={t('Stack atual')}

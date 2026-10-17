@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { bankrollShare, EMPTY_PLAN, festivalName, planReminders, planTotals, togglePicked } from '../festival-plan';
+import { bankrollShare, EMPTY_PLAN, eventAction, festivalName, planReminders, planTotals, togglePicked } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -64,4 +64,29 @@ test('ships without an event brand; the player can name the festival', () => {
   assert.equal(festivalName(F, EMPTY_PLAN), 'Bahamas, dezembro 2026');
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '  Bahamas com a malta ' }), 'Bahamas com a malta');
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '   ' }), 'Bahamas, dezembro 2026');
+});
+
+test('one tournament across flights and days: start, re-enter a later flight, resume Day 2', () => {
+  const base = { id: 'x', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, breaks: [], buyIn: 26000, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 60000, stackLog: [], roster: [], notes: '' };
+  const ev = (id: string) => F.events.find((e) => e.id === id)!;
+  assert.deepEqual(eventAction(F, EMPTY_PLAN, [], ev('12-A')), { kind: 'start' });
+  assert.equal(eventAction(F, EMPTY_PLAN, [], ev('12-2A')), null);
+
+  const plan = { ...EMPTY_PLAN, sessions: { '12-A': 'x' } };
+  // Playing Flight A: every row of #12 points at that session.
+  assert.equal(eventAction(F, plan, [base], ev('12-B'))!.kind, 'view');
+  // Busted in A: Flight B is a re-entry, A itself has nothing left to do.
+  const busted = { ...base, endedAt: 2 };
+  assert.equal(eventAction(F, plan, [busted], ev('12-B'))!.kind, 'reenter');
+  assert.equal(eventAction(F, plan, [busted], ev('12-A')), null);
+  assert.equal(eventAction(F, plan, [busted], ev('12-2A')), null);
+  // Bagged in A: Day 2 picks it up; no new flight while chips are in the bag.
+  const bagged = { ...base, endedAt: 2, bag: { stack: 185000, at: 2 } };
+  assert.equal(eventAction(F, plan, [bagged], ev('12-2A'))!.kind, 'resume');
+  // Bagged in Flight A: the 2BC restart isn't yours.
+  assert.equal(eventAction(F, plan, [bagged], ev('12-2BC')), null);
+  assert.equal(eventAction(F, { ...EMPTY_PLAN, sessions: { '12-C': 'x' } }, [bagged], ev('12-2BC'))!.kind, 'resume');
+  assert.equal(eventAction(F, plan, [bagged], ev('12-B')), null);
+  // Other events are untouched.
+  assert.deepEqual(eventAction(F, plan, [bagged], ev('13')), { kind: 'start' });
 });
