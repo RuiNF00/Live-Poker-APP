@@ -2933,6 +2933,7 @@ const en: Record<string, string> = {
   'A TUA EQUITY': 'YOUR EQUITY',
   'Repor': 'Reset',
   'Aplicar': 'Apply',
+  'Ao comentar aceitas os': 'By commenting you accept the',
 };
 
 export default en;

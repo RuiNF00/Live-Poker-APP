@@ -2927,6 +2927,7 @@ const es: Record<string, string> = {
   'A TUA EQUITY': 'TU EQUITY',
   'Repor': 'Restablecer',
   'Aplicar': 'Aplicar',
+  'Ao comentar aceitas os': 'Al comentar aceptas los',
 };
 
 export default es;

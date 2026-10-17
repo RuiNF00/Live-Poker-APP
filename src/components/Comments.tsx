@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
@@ -6,7 +7,7 @@ import { t } from '@/i18n';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
-import { C, F, R, S } from '@/theme';
+import { BRAND, C, F, R, S } from '@/theme';
 
 import { Avatar } from './Avatar';
 import { Button, Card, Field, Row, T } from './ui';
@@ -172,6 +173,12 @@ export function CommentsList({
           </T>
         ) : null}
         <Button size="md" icon="send" title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
+        <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>
+          {t('Ao comentar aceitas os')}{' '}
+          <T v="tiny" color={C.accent} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`).catch(() => {})}>
+            {t('Termos')}
+          </T>
+        </T>
       </Card>
     </View>
   );

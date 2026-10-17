@@ -1321,6 +1321,7 @@ const ptBR: Record<string, string> = {
   'Escolhe as mãos dele na grelha e vê a tua equity contra elas.': 'Escolha as mãos dele na grade e veja sua equity contra elas.',
   'vs a tua range': 'vs sua range',
   'A TUA EQUITY': 'SUA EQUITY',
+  'Ao comentar aceitas os': 'Ao comentar, você aceita os',
 };
 
 export default ptBR;
