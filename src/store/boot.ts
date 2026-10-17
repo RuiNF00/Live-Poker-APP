@@ -53,7 +53,92 @@ export interface Boot {
   quarantined: number;
   /** Values that couldn't even be read (kept where they are). */
   unreadable: number;
+  /** Everything in quarantine after this launch, [key, raw value]: goes into the backup and the support file. */
+  quarantine: [string, string][];
+  /** Items brought back from quarantine because this version can read them now. */
+  recovered: number;
   ms: number;
+}
+
+const LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing'] as const;
+type ListName = (typeof LISTS)[number];
+type Lists = { [K in ListName]: Loaded<{ id: string }> };
+const FIX: Record<ListName, (x: unknown) => { id: string } | null> = {
+  hands: fixHand,
+  sessions: fixSession,
+  players: fixPlayer,
+  bankrolls: fixItem,
+  transfers: fixItem,
+  backers: fixItem,
+  packages: fixItem,
+  payments: fixItem,
+  trips: fixTrip,
+  backing: fixBacked,
+};
+
+/** 'rl.quarantine.v1.<when>.rl.hand.v2.h1' → 'rl.hand.v2.h1'. */
+export function quarantinedFrom(key: string): string {
+  const rest = key.slice(QUARANTINE.length);
+  return rest.slice(rest.indexOf('.') + 1);
+}
+
+async function readQuarantine(kv: KV): Promise<[string, string][]> {
+  try {
+    const keys = (await kv.getAllKeys()).filter((k) => k.startsWith(QUARANTINE));
+    if (!keys.length) return [];
+    return (await kv.multiGet(keys)).filter((r): r is [string, string] => r[1] != null).map(([k, v]) => [k, v]);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Gives each quarantined list item another go with this version's checks (a
+ * later fix, or a backup restored onto a fixed build). What passes goes back
+ * into its list, item and index written before the quarantine copy is
+ * removed. Settings and the draft stay in quarantine: they were replaced.
+ */
+async function recover(kv: KV, entries: [string, string][], lists: Lists): Promise<{ left: [string, string][]; recovered: number }> {
+  const left: [string, string][] = [];
+  const done: string[] = [];
+  const back = new Map<ListName, { id: string }[]>();
+  for (const [key, raw] of entries) {
+    const from = quarantinedFrom(key);
+    const name = LISTS.find((n) => from.startsWith(SPECS[n].prefix) || ('legacy' in SPECS[n] && from === SPECS[n].legacy));
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = undefined;
+    }
+    const candidates = name ? (Array.isArray(parsed) && from !== SPECS[name].index ? parsed : [parsed]) : [];
+    const fixed = candidates.map((x) => (name ? FIX[name](x) : null));
+    if (!name || !fixed.length || fixed.some((x) => !x)) {
+      left.push([key, raw]);
+      continue;
+    }
+    const have = new Set([...lists[name].items, ...(back.get(name) ?? [])].map((x) => x.id));
+    back.set(name, [...(back.get(name) ?? []), ...(fixed as { id: string }[]).filter((x) => !have.has(x.id))]);
+    done.push(key);
+  }
+  let recovered = 0;
+  for (const [name, items] of back) {
+    const spec = SPECS[name];
+    const l = lists[name];
+    const next = [...l.items, ...items].sort((a, b) => ((b as { createdAt?: number }).createdAt ?? 0) - ((a as { createdAt?: number }).createdAt ?? 0));
+    try {
+      await kv.multiSet([...items.map((x): [string, string] => [spec.prefix + x.id, JSON.stringify(x)]), [spec.index, JSON.stringify(next.map((x) => x.id))]]);
+    } catch {
+      // Disk full: leave it all in quarantine and try again next launch.
+      return { left: entries, recovered: 0 };
+    }
+    // Fully on disk only if it already was (a pending repair or rebuilt index is still the writer's job).
+    if (l.persisted === l.items) l.persisted = next;
+    l.items = next;
+    recovered += items.length;
+  }
+  if (done.length) await kv.multiRemove(done).catch(() => {});
+  return { left, recovered };
 }
 
 /** A plain value (settings, draft): the parsed value, or `bad` when it isn't JSON. */
@@ -118,6 +203,7 @@ export async function loadAll(kv: KV, now = Date.now()): Promise<Boot> {
 
   const quarantined = await quarantine(kv, bad, now);
   const problems = lists.reduce((n, l) => n + l.problems, 0);
+  const { left, recovered } = await recover(kv, await readQuarantine(kv), { hands, sessions, players, bankrolls, transfers, backers, packages, payments, trips, backing } as unknown as Lists);
   return {
     hands,
     sessions,
@@ -133,6 +219,8 @@ export async function loadAll(kv: KV, now = Date.now()): Promise<Boot> {
     draft,
     quarantined,
     unreadable: Math.max(0, problems - lists.reduce((n, l) => n + l.bad.length, 0)) + Number(rawSettings.unreadable) + Number(rawDraft.unreadable),
+    quarantine: left,
+    recovered,
     ms: Date.now() - t0,
   };
 }

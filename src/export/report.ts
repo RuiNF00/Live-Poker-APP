@@ -21,6 +21,8 @@ export interface ReportInput {
   range: DateRange;
   /** Trips overlapping the range get their own table (every bankroll: a trip is its own thing). */
   trips?: Trip[];
+  /** The player's home currency leads when it's in the report; the rest follow by volume. */
+  home?: string;
 }
 
 export interface CurrencyReport {
@@ -29,7 +31,7 @@ export interface CurrencyReport {
   deposits: number;
   withdrawals: number;
   cash: { sessions: number; profit: number; hours: number };
-  mtt: { sessions: number; profit: number; buyIns: number; cashes: number };
+  mtt: { sessions: number; entries: number; profit: number; buyIns: number; cashes: number };
   /** Paid to backers out of prizes. */
   owedToBackers: number;
   byBankroll: Breakdown[];
@@ -78,6 +80,7 @@ export function buildReport(inp: ReportInput): Report {
   const curs = new Set([...list.map((s) => s.currency), ...tx.map(currencyOfTx)]);
   const groups = byCurrency(list).map((g) => g.currency);
   for (const c of curs) if (!groups.includes(c)) groups.push(c);
+  if (inp.home && groups.includes(inp.home)) groups.sort((a, b) => Number(b === inp.home) - Number(a === inp.home));
 
   const currencies = groups.map((currency): CurrencyReport => {
     const ss = list.filter((s) => s.currency === currency);
@@ -91,7 +94,7 @@ export function buildReport(inp: ReportInput): Report {
       deposits: xs.filter((x) => x.kind === 'deposit').reduce((a, x) => a + Math.abs(x.amount), 0),
       withdrawals: xs.filter((x) => x.kind === 'withdrawal').reduce((a, x) => a + Math.abs(x.amount), 0),
       cash: { sessions: cash.length, profit: cash.reduce((a, s) => a + profit(s), 0), hours: cash.reduce((a, s) => a + playedMs(s), 0) / 3600000 },
-      mtt: { sessions: mtt.length, profit: mtt.reduce((a, s) => a + profit(s), 0), buyIns: mtt.reduce((a, s) => a + cost(s), 0), cashes: mtt.filter((s) => s.cashOut > 0).length },
+      mtt: { sessions: mtt.length, entries: mtt.reduce((a, s) => a + (s.entries || 1), 0), profit: mtt.reduce((a, s) => a + profit(s), 0), buyIns: mtt.reduce((a, s) => a + cost(s), 0), cashes: mtt.filter((s) => s.cashOut > 0).length },
       owedToBackers: ss.reduce((a, s) => a + owedToBackers(s), 0),
       byBankroll: group(ss, name).sort(byProfit),
       byGame: breakdown(ss, 'name', currency),

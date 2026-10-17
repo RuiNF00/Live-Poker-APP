@@ -1045,6 +1045,18 @@ const ptBR: Record<string, string> = {
   'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Melhor sessão: {amount}. Toque para ver o resumo do mês.',
   'Toca para veres o resumo do mês.': 'Toque para ver o resumo do mês.',
   'Torneios com prémio: {cashes} de {n}': 'Torneios com prêmio: {cashes} de {n}',
+  'Já vem com o jogo, as blinds e o teu stack. Se fores chamado, fica guardada a meio.': 'Já vem com o jogo, as blinds e o seu stack. Se você for chamado, ela fica salva pela metade.',
+  'Junta o resultado do póquer em {c}, sem as despesas da viagem': 'Soma o resultado do poker em {c}, sem as despesas da viagem',
+  'Escolhe a app': 'Escolha o app',
+  'Exporta o ficheiro': 'Exporte o arquivo',
+  'O ano em que mais jogaste': 'O ano em que você mais jogou',
+  'O teu melhor ano': 'Seu melhor ano',
+  'Vê o teu ano em cartões para partilhar: horas, melhor sessão, stakes e o maior pote.': 'Veja seu ano em cards para compartilhar: horas, melhor sessão, stakes e o maior pote.',
+  '{n} registo(s) não abriram nesta versão': '{n} registro(s) não abriram nesta versão',
+  'Estão guardados neste telemóvel (e na cópia na nuvem, se a tiveres) e voltam sozinhos quando uma versão nova os conseguir ler. Para ajudarmos já, envia o ficheiro por email para {email}. Leva só esses registos.': 'Estão salvos neste celular (e no backup na nuvem, se você tiver) e voltam sozinhos quando uma versão nova conseguir lê-los. Para ajudarmos agora, envie o arquivo por email para {email}. Ele leva só esses registros.',
+  '{v} no póquer': '{v} no poker',
+  'Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.': 'Resultados registrados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.',
+  '{n} registo(s) que estavam guardados à parte voltaram a abrir e estão de volta na app.': '{n} registro(s) que estavam salvos à parte voltaram a abrir e estão de volta no app.',
 };
 
 export default ptBR;

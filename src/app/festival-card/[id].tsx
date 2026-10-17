@@ -126,7 +126,7 @@ export default function FestivalCardScreen() {
               value={showResult}
               onChange={setShowResult}
             />
-            <ToggleItem icon="cash-outline" title={t('Mostrar valores')} subtitle={t('Junta o resultado em {c}', { c: recap.currency })} value={showMoney} onChange={setShowMoney} />
+            <ToggleItem icon="cash-outline" title={t('Mostrar valores')} subtitle={t('Junta o resultado do póquer em {c}, sem as despesas da viagem', { c: recap.currency })} value={showMoney} onChange={setShowMoney} />
             {recap.bestHand ? (
               <ToggleItem icon="play-circle-outline" title={t('Melhor mão')} subtitle={t('O link da story abre o replay')} value={showHand} onChange={setShowHand} />
             ) : null}

@@ -14,6 +14,7 @@ import { StopLossBanner } from '@/components/BankrollRules';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
+import { MindAfter } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
@@ -29,6 +30,7 @@ import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
+import { useSheetAnimation } from '@/lib/motion';
 
 /**
  * Re-renders every `ms` while this tab is on screen and returns the time of
@@ -235,9 +237,13 @@ function Live({ s }: { s: Session }) {
     () => [
       { target: stackRef, title: t('O teu stack'), body: t('Toca para o atualizar entre mãos. As bb e o gráfico acompanham sozinhos.') },
       { target: barRef, title: t('Tudo ao alcance do polegar'), body: t('Pausa, rebuy e uma nota da sessão sem saíres deste ecrã.') },
-      { target: handRef, title: t('Regista uma mão'), body: t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') },
+      {
+        target: handRef,
+        title: t('Regista uma mão'),
+        body: mtt ? t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') : t('Já vem com o jogo, as blinds e o teu stack. Se fores chamado, fica guardada a meio.'),
+      },
     ],
-    [],
+    [mtt],
   );
 
   return (
@@ -358,6 +364,7 @@ function Live({ s }: { s: Session }) {
                   ))}
                 </View>
               </View>
+              <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />
               <StakeFields s={s} onChange={save} />
               {(() => {
                 const end = { ...s, cashOut: finish.cashOut };
@@ -479,6 +486,7 @@ function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentPr
 
 /** A free note on the session: table dynamics, how you felt, anything to remember. */
 function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; value: string; onClose: () => void; onSave: (v: string) => void }) {
+  const sheetAnim = useSheetAnimation();
   const [text, setText] = useState(value);
   const [shownFor, setShownFor] = useState(visible);
   // Start from the saved note each time the sheet opens.
@@ -487,7 +495,7 @@ function NoteSheet({ visible, value, onClose, onSave }: { visible: boolean; valu
     if (visible) setText(value);
   }
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: S.xxl, gap: S.md }}>
           <SheetHeader title={t('Nota da sessão')} onClose={onClose} />

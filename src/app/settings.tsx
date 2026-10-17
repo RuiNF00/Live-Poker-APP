@@ -33,9 +33,22 @@ function note(title: string, body?: string) {
 // The help centre in each app language (web /ajuda, /pt-br/ajuda, /es/ayuda, /help).
 const HELP_PATH: Record<Variant, string> = { 'pt-PT': 'ajuda', 'pt-BR': 'pt-br/ajuda', es: 'es/ayuda', en: 'help' };
 
-function supportParams(topic?: 'bug' | 'suggestion') {
-  const p: Record<string, string> = { app: Constants.expoConfig?.version ?? '', os: `${Platform.OS} ${Platform.Version}`, lang: variant };
-  return new URLSearchParams(topic ? { topic, ...p } : p).toString();
+function deviceLine() {
+  return `Sweatbook ${Constants.expoConfig?.version ?? ''} · ${Platform.OS} ${Platform.Version} · ${variant}`;
+}
+
+const MAIL_SUBJECT = { bug: 'Problema na Sweatbook', suggestion: 'Sugestão para a Sweatbook', support: 'Pedido de suporte' } as const;
+
+/**
+ * Opens an email to support with the app version, system and language
+ * already filled in. No mail app (or the web): the support page instead.
+ */
+function mailSupport(topic: keyof typeof MAIL_SUBJECT) {
+  const subject = encodeURIComponent(t(MAIL_SUBJECT[topic]));
+  const body = encodeURIComponent(`\n\n\n— ${deviceLine()}`);
+  const page = () => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`).catch(() => {});
+  if (Platform.OS === 'web') return void page();
+  Linking.openURL(`mailto:${BRAND.supportEmail}?subject=${subject}&body=${body}`).catch(page);
 }
 
 /**
@@ -157,6 +170,7 @@ export default function SettingsScreen() {
         <Section title={t('Privacidade')}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
+            <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, o widget mostra ••• em vez do resultado da semana. O ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
             {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>
@@ -206,10 +220,10 @@ export default function SettingsScreen() {
 
         <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
           <ListGroup>
-            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams('suggestion')}`)} />
-            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams('bug')}`)} />
+            <ListItem icon="bulb-outline" title={t('Enviar uma sugestão')} subtitle={t('O que falta ou o que mudavas')} onPress={() => mailSupport('suggestion')} />
+            <ListItem icon="bug-outline" title={t('Reportar um problema')} subtitle={t('Vai com a versão da app e do telemóvel')} onPress={() => mailSupport('bug')} />
             <ListItem icon="book-outline" title={t('Ajuda')} subtitle={t('Respostas às dúvidas mais comuns')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/${HELP_PATH[variant]}`)} />
-            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support?${supportParams()}`)} />
+            <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => mailSupport('support')} />
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
             <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
             <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />

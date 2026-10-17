@@ -32,7 +32,7 @@ export interface ImportedMove {
 }
 
 /** Why a row of the file was left out. */
-export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMove';
+export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove';
 
 export interface FailedRow {
   /** Line in the file (1 = first line). */
@@ -86,6 +86,9 @@ export function currencyOf(raw: string, fallback: string): string {
  * "1.234,56", "1,234.56", "-€120", "(45)", "0,5" → numbers. Comma alone is a
  * decimal mark unless it groups thousands ("1,500").
  */
+/** Cells that mean "nothing here" rather than an amount. */
+const NO_VALUE = /^(n\/?a|na|null|none|-+|—|–)$/i;
+
 export function parseNum(raw: string | undefined): number | null {
   if (raw === undefined) return null;
   let s = raw.trim().replace(/[−‒–]/g, '-');
@@ -342,6 +345,13 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
     const srcExp = Math.abs(parseNum(get(r, 'expenses')) ?? 0);
     const tips = Math.abs(parseNum(get(r, 'tips')) ?? 0);
     const handsDealt = parseNum(get(r, 'handsDealt'));
+    // "cem" or "?" where an amount goes: reading it as 0 would change the result without a word.
+    const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && /\p{L}|\?/u.test(v) && !NO_VALUE.test(v.trim()) && parseNum(v) === null);
+    if (bad) {
+      unreadable++;
+      failed.push({ line, reason: 'badMoney', value: bad });
+      return;
+    }
     if (buyIn === null && cashOut === null && net === null) {
       unreadable++;
       failed.push({ line, reason: 'noMoney', value: [get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')].filter(Boolean).join(' · ') || preview(r) });
@@ -396,7 +406,8 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
 
     let sb = parseNum(get(r, 'sb')) ?? 0;
     let bb = parseNum(get(r, 'bb')) ?? 0;
-    const stakes = get(r, 'stakes').match(/([\d.,]+)\s*\/\s*([\d.,]+)/);
+    // Blinds can sit in the stakes column, or only in the game or name ("NLH 1/2").
+    const stakes = [get(r, 'stakes'), ...(kind === 'cash' ? [get(r, 'game'), nameRaw] : [])].map((v) => v.match(/([\d.,]+)\s*\/\s*([\d.,]+)/)).find(Boolean);
     if (stakes && !bb) {
       sb = parseNum(stakes[1]) ?? 0;
       bb = parseNum(stakes[2]) ?? 0;

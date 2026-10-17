@@ -27,6 +27,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { SessionLockScreen } from '@/lib/lock-screen';
 import { HomeWidgetSync } from '@/lib/home-widget';
+import { useReduceMotion } from '@/lib/motion';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { startCoachSync } from '@/lib/coach-api';
@@ -61,6 +62,7 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   });
+  const reduceMotion = useReduceMotion();
   useEffect(() => {
     track('app_open');
     bootReferrals().catch(() => {});
@@ -87,6 +89,8 @@ export default function RootLayout() {
               headerBackButtonDisplayMode: 'minimal',
               contentStyle: { backgroundColor: C.bg },
               headerShadowVisible: false,
+              // Reduce Motion: screens fade in place instead of sliding across.
+              animation: reduceMotion ? 'fade' : 'default',
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="hand/new" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
