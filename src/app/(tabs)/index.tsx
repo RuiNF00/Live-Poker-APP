@@ -215,7 +215,7 @@ export default function HandsScreen() {
               ) : backup.health ? (
                 <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
               ) : !activeSession && shared.newTotal > 0 ? (
-                <SharedHandsCard n={shared.newTotal} />
+                <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
               ) : news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : checklist ? (

@@ -28,7 +28,8 @@ const MAX_COMMENT = 140;
 const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?'), t('Hero call ou spew?'), t('Cooler ou erro meu?')];
 
 export default function StoryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `to=instagram`: Instagram was already picked in the hand's Partilhar sheet, so the button goes straight there.
+  const { id, to } = useLocalSearchParams<{ id: string; to?: string }>();
   const { hands, saveHand, settings } = useStore();
   const hand = useMemo(() => hands.find((h) => h.id === id) ?? (id === 'sample' ? sampleHand('sample') : undefined), [hands, id]);
   const insets = useSafeAreaInsets();
@@ -53,6 +54,7 @@ export default function StoryScreen() {
     setVoiceMs(ms ?? 0);
   }, []);
   const withVoice = !!voice && pro.isPro;
+  const direct = withVoice || to === 'instagram';
   const card = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
@@ -311,10 +313,10 @@ export default function StoryScreen() {
             <Button title={t('Criar vídeo da mão')} sub={t('Disponível na versão da loja')} icon="film-outline" disabled onPress={() => {}} />
           ) : canShareStory ? (
             <Button
-              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : withVoice ? t('Partilhar no Instagram') : t('Partilhar')}
-              icon={withVoice ? 'logo-instagram' : 'share-outline'}
+              title={busy ? (withVoice ? t('A juntar a tua voz…') : t('A preparar…')) : direct ? t('Partilhar no Instagram') : t('Partilhar')}
+              icon={direct ? 'logo-instagram' : 'share-outline'}
               disabled={busy}
-              onPress={withVoice ? post : () => setSheet(true)}
+              onPress={direct ? post : () => setSheet(true)}
             />
           ) : (
             <T v="small" style={{ textAlign: 'center' }}>
