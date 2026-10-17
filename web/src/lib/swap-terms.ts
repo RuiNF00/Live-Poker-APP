@@ -44,6 +44,8 @@ export interface SwapRecord {
   terms: SwapTerms;
   confirmedAt: string | null;
   confirmedName: string | null;
+  /** The side that erased their data: the record stays read-only for the other. */
+  leftSide?: Side | null;
   entries: SwapEntry[];
   createdAt: string;
   updatedAt: string;

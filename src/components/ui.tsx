@@ -484,7 +484,7 @@ export function Stat({
         {value}
       </T>
       {sub ? (
-        <T v="tiny" numberOfLines={1}>
+        <T v="tiny" numberOfLines={2}>
           {sub}
         </T>
       ) : null}
@@ -816,6 +816,7 @@ export function Field({ label, style, inputStyle: ist, hint, ...rest }: TextInpu
       <TextInput
         placeholderTextColor={C.muted}
         selectionColor={C.accent}
+        maxFontSizeMultiplier={CONTROL_SCALE}
         {...rest}
         accessibilityLabel={rest.accessibilityLabel ?? label ?? rest.placeholder}
         onFocus={(e) => {
@@ -856,6 +857,7 @@ export function SearchField({ value, onChange, placeholder, style }: { value: st
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        maxFontSizeMultiplier={CONTROL_SCALE}
         placeholderTextColor={C.muted}
         selectionColor={C.accent}
         returnKeyType="search"
@@ -965,7 +967,7 @@ export function PressRow({ children, style, ...rest }: PressableProps & { childr
 export function Wordmark({ size = 30 }: { size?: number }) {
   const st: TextStyle = { fontSize: size, fontFamily: ff(800), fontWeight: '800', letterSpacing: -0.035 * size };
   return (
-    <RNText style={[st, { color: C.text }]}>
+    <RNText numberOfLines={1} allowFontScaling={false} style={[st, { color: C.text }]}>
       Sweat<RNText style={{ color: C.accent }}>book</RNText>
     </RNText>
   );

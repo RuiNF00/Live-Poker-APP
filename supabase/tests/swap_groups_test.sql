@@ -1,0 +1,99 @@
+-- Group swaps. Run as service_role, like the web server.
+\set ON_ERROR_STOP on
+set role service_role;
+
+select id as gid, token as t0, invite from create_swap_group('{"v":1,"title":"Bahamas","pct":2}'::jsonb, array['Rui','Ana','João']) \gset
+select jsonb_array_length(seats) = 3 and seats->0->>'confirmedAt' is not null and seats->1->>'confirmedAt' is null as creator_seated from get_swap_group(:'gid');
+select swap_group_seat(:'gid', :'t0') = 0 as creator_seat_known;
+select swap_group_seat(:'gid', 'wrong') is null as wrong_token_no_seat;
+
+-- Seats are claimed only with the invite, once each.
+select claim_swap_group_seat(:'gid', 'wrong', 1) is null as wrong_invite_refused;
+select claim_swap_group_seat(:'gid', '', 1) is null as empty_invite_refused;
+select claim_swap_group_seat(:'gid', :'invite', 1) as t1 \gset
+select claim_swap_group_seat(:'gid', :'invite', 1) is null as seat_claimed_once;
+select claim_swap_group_seat(:'gid', :'invite', 0) is null as creator_seat_not_claimable;
+select claim_swap_group_seat(:'gid', :'invite', 7) is null as missing_seat_refused;
+select swap_group_seat(:'gid', :'t1') = 1 as seat_1_known;
+
+-- Nothing is added until every seat is taken.
+select add_swap_group_entry(:'gid', :'t1', '{"kind":"result","amount":1000,"cid":"c1"}'::jsonb) = false as waits_for_everyone;
+select claim_swap_group_seat(:'gid', :'invite', 2) as t2 \gset
+
+-- The seat comes from the token; retries don't duplicate; payments go to another seat.
+select add_swap_group_entry(:'gid', :'t1', '{"kind":"result","amount":1000,"cid":"c1","seat":0}'::jsonb) as added;
+select add_swap_group_entry(:'gid', :'t1', '{"kind":"result","amount":1000,"cid":"c1"}'::jsonb) as retry_ok;
+select add_swap_group_entry(:'gid', :'t2', '{"kind":"payment","amount":20,"cid":"c1","to":1}'::jsonb) as payment_added;
+select add_swap_group_entry(:'gid', :'t2', '{"kind":"payment","amount":20,"cid":"c2","to":2}'::jsonb) = false as no_payment_to_self;
+select add_swap_group_entry(:'gid', :'t2', '{"kind":"payment","amount":20,"cid":"c3","to":5}'::jsonb) = false as no_payment_to_nobody;
+select jsonb_array_length(entries) = 2 and entries->0->>'seat' = '1' as seats_from_tokens from get_swap_group(:'gid');
+
+-- Nobody removes another seat's entries.
+select entries->0->>'id' as e1 from get_swap_group(:'gid') \gset
+select remove_swap_group_entry(:'gid', :'t2', :'e1') = false as others_cannot_remove;
+select remove_swap_group_entry(:'gid', :'t1', :'e1') as own_removed;
+
+-- Someone leaving keeps the accounts for the others; their token stops working.
+select leave_swap_group(:'gid', :'t2') as left_group;
+select seats->2->>'name' = '-' and jsonb_array_length(entries) = 1 as accounts_kept from get_swap_group(:'gid');
+select swap_group_seat(:'gid', :'t2') is null as left_token_dead;
+select add_swap_group_entry(:'gid', :'t1', '{"kind":"result","amount":5,"cid":"late"}'::jsonb) = false as group_read_only_after_leave;
+select left_at is not null as group_left_at_set from swap_groups where id = :'gid';
+-- The creator deleting removes it for everyone.
+select leave_swap_group(:'gid', :'t1') and leave_swap_group(:'gid', :'t0') as creator_deleted;
+select count(*) = 0 as group_gone from get_swap_group(:'gid');
+select count(*) = 0 as seats_gone from swap_group_seats where group_id = :'gid';
+
+\set ON_ERROR_STOP off
+-- Too small or too big, wrong version: refused. Hashes never come back.
+select create_swap_group('{"v":1}'::jsonb, array['a','b']);
+select create_swap_group('{"v":1}'::jsonb, array['a','b','c','d','e','f','g','h','i']);
+select create_swap_group('{"v":2}'::jsonb, array['a','b','c']);
+select invite_hash from get_swap_group(:'gid');
+\set ON_ERROR_STOP on
+
+-- Not everyone in after 31 days: purged.
+select id as old_gid from create_swap_group('{"v":1}'::jsonb, array['a','b','c']) \gset
+update swap_groups set created_at = now() - interval '31 days' where id = :'old_gid';
+select purge_swap_groups() >= 1 as purged;
+select count(*) = 0 as old_gone from get_swap_group(:'old_gid');
+
+reset role;
+set role anon;
+\set ON_ERROR_STOP off
+select * from get_swap_group('x');
+select * from swap_groups;
+
+-- Pair swaps: erasing one side leaves a read-only record for the other.
+set role service_role;
+\set ON_ERROR_STOP on
+select id as sid, token as ta from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
+select confirm_swap(:'sid', 'Ana') as tb \gset
+select add_swap_entry(:'sid', :'tb', '{"kind":"result","amount":1000,"cid":"x"}'::jsonb) as ana_cashed;
+select leave_swap(:'sid', :'ta') as rui_left;
+select left_side = 'a' and terms->'a'->>'name' = '-' and jsonb_array_length(entries) = 1 as record_kept from get_swap(:'sid');
+select swap_side(:'sid', :'ta') is null as rui_token_dead;
+select add_swap_entry(:'sid', :'tb', '{"kind":"payment","amount":50,"cid":"y"}'::jsonb) = false as read_only_after_leave;
+-- The read-only record lasts 90 days after leaving.
+select purge_swaps() >= 0 and exists (select 1 from swaps where id = :'sid') as kept_before_90_days;
+select leave_swap(:'sid', :'tb') as ana_left_too;
+select count(*) = 0 as gone_when_both_left from get_swap(:'sid');
+select id as sid2, token as ta2 from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
+select leave_swap(:'sid2', :'ta2') as left_unconfirmed;
+select count(*) = 0 as unconfirmed_deleted from get_swap(:'sid2');
+
+-- Left 91 days ago: purged, pair and group.
+select id as sid3, token as ta3 from create_swap('{"v":1,"title":"T","a":{"name":"Rui","pct":5},"b":{"name":"Ana","pct":5}}'::jsonb) \gset
+select confirm_swap(:'sid3', 'Ana') as tb3 \gset
+select leave_swap(:'sid3', :'tb3') as ana_left;
+update swaps set left_at = now() - interval '91 days' where id = :'sid3';
+select purge_swaps() >= 1 as purged_left_swap;
+select not exists (select 1 from swaps where id = :'sid3') as left_swap_purged;
+select id as gid9, token as g9t0, invite as g9inv from create_swap_group('{"v":1}'::jsonb, array['a','b','c']) \gset
+select claim_swap_group_seat(:'gid9', :'g9inv', 1) as g9t1 \gset
+select claim_swap_group_seat(:'gid9', :'g9inv', 2) as g9t2 \gset
+select leave_swap_group(:'gid9', :'g9t2') as g9_left;
+select purge_swap_groups() >= 0 and exists (select 1 from swap_groups where id = :'gid9') as group_kept_before_90_days;
+update swap_groups set left_at = now() - interval '91 days' where id = :'gid9';
+select purge_swap_groups() >= 1 as purged_left_group;
+select not exists (select 1 from swap_groups where id = :'gid9') as left_group_purged;

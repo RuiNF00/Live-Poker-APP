@@ -29,3 +29,8 @@ eas submit --platform ios --profile testflight --path sweatbook.ipa
 
 - Always run `npm run check:release` (scripts/pre-release.mjs: migration tests with old and corrupted data, types, lint, all tests, hand-format package, Expo config, bundle export; ~65 s, `--quick` skips the export) right before any store build. It stops at the first failure.
 - Both store profiles set `"environment": "production"` in eas.json, so the RevenueCat keys in the EAS production environment reach the testflight build too.
+
+## Beta builds vs store builds (EXPO_PUBLIC_BUILD_CHANNEL)
+- `testflight` and `play-test` builds set `EXPO_PUBLIC_BUILD_CHANNEL` (#145), so every event from a beta tester carries `channel: testflight` / `play-test` and can be left out of launch numbers (`launch/metricas-lancamento.md` §3).
+- The value is baked into the binary. So the build sent to App Review and to Play production is a fresh **`production`** build (no channel set), not the beta build: `eas build -p ios --profile production --auto-submit` and `eas build -p android --profile production --auto-submit`. Same code as the last beta build, new build number; QA smoke-tests it before release.
+- Play closed test: `eas build -p android --profile play-test --auto-submit-with-profile play-test` uploads to the closed track (`alpha`). The very first Android upload is still by hand (Rui, step 26).

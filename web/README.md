@@ -29,6 +29,7 @@ Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da 
 | `POST /api/referrals/claim` `{ installId, code, myCode?, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
 | `POST /api/referrals/activate` `{ installId, myCode?, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
 | `POST /api/referrals/status` `{ installId, myCode?, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |
+| `POST /api/referrals/erase` `{ installId }` | `{ erased: true }`. "Apagar todos os meus dados": apaga o código desta instalação, o convite que aceitou e os que enviou. O servidor apaga sozinho convites 400 dias depois do último evento e códigos sem convites 400 dias depois do último uso |
 
 Todas as rotas de convites aceitam `myCode` (o código local da app, 10 hex). A primeira que registar a instalação usa esse código. Se a instalação já tinha um código do servidor, o `myCode` fica como alias: os dois funcionam e a resposta passa a devolver o da app.
 | `PUT /api/backup/<id>` header `x-backup-key: <secret>`, corpo gzip ou JSON (até ~4,4 MB) | `204`; `403` se o id já existe com outro segredo |

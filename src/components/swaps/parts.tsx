@@ -5,20 +5,42 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
+import { usePro } from '@/billing/pro';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
 import { money, shortDate, timeOf } from '@/poker/format';
 import { useStore } from '@/store/store';
+import { CURRENCIES } from '@/store/currencies';
 import { other, owedOn, settled, swapNames, type Swap, type SwapEntry, type SwapLedger, type SwapSide, type SwapTerms } from '@/store/swaps';
 import { C, R, S } from '@/theme';
 
+/** An amount with its sign, so the direction never depends on colour alone: +1230$ / −1230$. */
+export const signed = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), cur);
+
 export const pctLabel = (n: number) => `${decimalComma ? String(n).replace('.', ',') : n}%`;
+
+const FIRST = ['$', '€', '£'];
+
+/** The swap's currency: the usual three plus the one picked, the rest one tap away. */
+export function CurrencyPick({ value, onChange, home }: { value: string; onChange: (c: string) => void; home?: string }) {
+  const [all, setAll] = useState(false);
+  const short = [...new Set([...FIRST, ...(home && CURRENCIES.includes(home) ? [home] : []), value])];
+  const list = all ? CURRENCIES : short;
+  return (
+    <ChipRow>
+      {list.map((c) => (
+        <Chip key={c} label={c} active={value === c} onPress={() => onChange(c)} />
+      ))}
+      {!all ? <Chip label={t('Mais moedas')} icon="add" onPress={() => setAll(true)} /> : null}
+    </ChipRow>
+  );
+}
 
 /** Both sides of the deal, as two lines anyone can check: "5% dos teus prémios vão para o João". */
 export function TermsCard({ terms, names, side, children }: { terms: SwapTerms; names: Record<SwapSide, string>; side: SwapSide | null; children?: React.ReactNode }) {
   const line = (s: SwapSide) => {
-    const from = side === s ? t('dos teus prémios') : t('dos prémios de {name}', { name: names[s] });
+    const from = side === s ? t('dos teus prémios') : terms[s].name === '-' ? t('dos prémios do outro jogador') : t('dos prémios de {name}', { name: names[s] });
     const to = side === other(s) ? t('vão para ti') : t('vão para {name}', { name: names[other(s)] });
     return `${from} ${to}`;
   };
@@ -52,7 +74,7 @@ export function Seal({ swap }: { swap: Pick<Swap, 'confirmedAt' | 'confirmedName
       <Row gap={6}>
         <Ionicons name="checkmark-circle" size={16} color={C.good} />
         <T v="small" color={C.good} style={{ flex: 1 }}>
-          {t('Confirmado por {name} · {date}, {time}', { name: swap.confirmedName || swap.terms.b.name, date: shortDate(swap.confirmedAt), time: timeOf(swap.confirmedAt) })}
+          {t('Confirmado por {name} · {date}, {time}', { name: swapNames(swap).b, date: shortDate(swap.confirmedAt), time: timeOf(swap.confirmedAt) })}
         </T>
       </Row>
       {swap.code ? (
@@ -65,6 +87,21 @@ export function Seal({ swap }: { swap: Pick<Swap, 'confirmedAt' | 'confirmedName
       ) : null}
       <T v="tiny">{t('O mesmo código aparece no telemóvel do outro jogador. Termos e hora já não mudam.')}</T>
     </View>
+  );
+}
+
+/** Settlement is Pro (PRO_ONLY.swaps): the results stay visible, the accounts open the paywall. */
+export function AccountsLocked() {
+  const { paywall } = usePro();
+  return (
+    <Card onPress={() => paywall('swaps')} accessibilityLabel={t('Ver contas')} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+      <Ionicons name="lock-closed" size={20} color={C.accent} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <T v="h3">{t('Ver contas')}</T>
+        <T v="small">{t('Quem deve a quem e quanto, já calculado. Com o Pro.')}</T>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={C.muted} />
+    </Card>
   );
 }
 
@@ -85,11 +122,11 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
       <T v="label">{verdict}</T>
       {square ? null : (
         <T v="monoXL" color={color} numberOfLines={1} adjustsFontSizeToFit>
-          {money(Math.abs(l.balance), currency)}
+          {signed(l.balance, currency)}
         </T>
       )}
       {l.iOwe >= 0.5 && l.theyOwe >= 0.5 ? (
-        <T v="small">{t('Deves {mine} dos teus prémios · {name} deve {theirs} dos dele', { mine: money(l.iOwe, currency), theirs: money(l.theyOwe, currency), name })}</T>
+        <T v="small">{t('Deves {mine} dos teus prémios · {name} deve {theirs} dos seus', { mine: money(l.iOwe, currency), theirs: money(l.theyOwe, currency), name })}</T>
       ) : null}
       {l.iPaid >= 0.5 || l.theyPaid >= 0.5 ? (
         <T v="small">
@@ -102,7 +139,7 @@ export function BalanceHero({ l, name, currency }: { l: SwapLedger; name: string
 }
 
 /** A prize or a payment, with what it means in money for each side. */
-export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; onLongPress?: () => void }) {
+export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: SwapEntry; onLongPress?: () => void; hideOwed?: boolean }) {
   const names = swapNames(swap);
   const mine = e.side === swap.side;
   const cur = swap.terms.currency;
@@ -127,6 +164,7 @@ export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; o
           {e.pending ? ` · ${t('por enviar')}` : ''}
         </T>
       </View>
+      {hideOwed && e.kind === 'result' ? null : (
       <View style={{ alignItems: 'flex-end', gap: 1 }}>
         {e.kind === 'result' ? (
           <T v="tiny" color={mine ? C.warn : C.good}>
@@ -134,9 +172,10 @@ export function EntryRow({ swap, e, onLongPress }: { swap: Swap; e: SwapEntry; o
           </T>
         ) : null}
         <T v="mono" color={e.kind === 'payment' ? C.textDim : mine ? C.warn : C.good}>
-          {owe ? money(owe, cur) : '—'}
+          {!owe ? '—' : e.kind === 'payment' ? money(owe, cur) : signed(mine ? -owe : owe, cur)}
         </T>
       </View>
+      )}
     </PressRow>
   );
 }
@@ -238,7 +277,7 @@ function EntryForm({ swap, kind: k0, owe, onSave }: { swap: Swap; kind: 'result'
               ? value === 0
                 ? t('Sem prémio: fica registado e ninguém deve nada por ele.')
                 : t('Deves {amount} a {name} ({pct} de {prize}).', { amount: money(preview, cur), name: them, pct: pctLabel(swap.terms[swap.side].pct), prize: money(value, cur) })
-              : t('Regista só os teus prémios; {name} regista os dele.', { name: them })
+              : t('Regista só os teus prémios; {name} regista os seus.', { name: them })
             : owe > 0
               ? t('Deves {amount} a {name} neste momento.', { amount: money(owe, cur), name: them })
               : t('Regista o que pagaste a {name}; o que ele te paga regista ele.', { name: them })}

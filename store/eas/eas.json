@@ -13,11 +13,13 @@
     "development": {
       "extends": "base",
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "preview": {
       "extends": "base",
       "distribution": "internal",
+      "channel": "preview",
       "android": {
         "buildType": "apk"
       },
@@ -28,6 +30,7 @@
     "production": {
       "extends": "base",
       "autoIncrement": true,
+      "channel": "production",
       "android": {
         "buildType": "app-bundle"
       },
@@ -40,11 +43,26 @@
       "extends": "production",
       "distribution": "store",
       "autoIncrement": true,
+      "channel": "production",
       "ios": {
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_WEB_URL": "https://{{WEB_DOMAIN}}"
+        "EXPO_PUBLIC_WEB_URL": "https://{{WEB_DOMAIN}}",
+        "EXPO_PUBLIC_BUILD_CHANNEL": "testflight"
+      },
+      "environment": "production"
+    },
+    "play-test": {
+      "extends": "production",
+      "autoIncrement": true,
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://{{WEB_DOMAIN}}",
+        "EXPO_PUBLIC_BUILD_CHANNEL": "play-test"
       },
       "environment": "production"
     }
@@ -60,6 +78,13 @@
     },
     "testflight": {
       "ios": {}
+    },
+    "play-test": {
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
     }
   }
 }
