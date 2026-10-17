@@ -38,7 +38,7 @@ Shared hands are public via link and may contain text. Apple requires, for UGC: 
 
 - "Report" on the public hand web page and in-app when viewing someone else's hand → email or a Supabase `reports` row.
 - Owner can delete a shared hand at any time.
-- If comments ship in v1: also "block user" and a filter. If they don't, say so in review notes.
+- Comments ship in v1 (web share page, no account, display name + text). Needed: "Report" on each comment, a profanity filter on submit, owner can delete comments on their hand, and rate limiting. Apple's 1.2 also asks for blocking abusive users; for anonymous web comments, owner-side delete + report covers it, but mention it in review notes.
 
 ## 6. Trademarks and names (Apple 2.3.7, 5.2)
 

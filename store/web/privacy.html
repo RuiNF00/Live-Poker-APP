@@ -21,6 +21,7 @@
 <tr><th>Data</th><th>Why</th><th>Where it lives</th></tr>
 <tr><td>Email address and sign-in identifier (if you create an account, including Sign in with Apple or Google)</td><td>To give you an account and sync your hands between devices</td><td>Our backend provider (Supabase, EU region)</td></tr>
 <tr><td>Hands, sessions, tournaments, tags and notes you enter</td><td>This is the app's core function</td><td>On your device; and on our backend if you are signed in</td></tr>
+<tr><td>Comments and votes on shared hands (display name, text, random browser ID)</td><td>To let friends give feedback on a hand</td><td>Our backend; comments are public to anyone with the link</td></tr>
 <tr><td>Hands you choose to share</td><td>To show them to anyone who opens the share link</td><td>Our backend, publicly readable by anyone with the link</td></tr>
 <tr><td>Crash reports and basic diagnostics (device model, OS version, app version)</td><td>To find and fix bugs</td><td>Our crash reporting provider</td></tr>
 </table>
@@ -31,7 +32,8 @@
 <p>The app lets you write notes or nicknames for people at your table. These notes are private to your account and are never included in shared hands unless you type them into a shared hand yourself. Please avoid writing sensitive personal information about other people.</p>
 
 <h2>Shared hands</h2>
-<p>When you share a hand, a link is created. Anyone with the link can view that hand and its replay. You can delete a shared hand at any time, which makes the link stop working.</p>
+<p>When you share a hand, a link is created. Anyone with the link can view that hand and its replay. You can delete a shared hand at any time, which makes the link stop working and also deletes its comments and votes.</p>
+<p>People who open a shared hand can comment without an account by choosing a display name and writing a message. Comments, with that name, are public to anyone with the link, so do not include personal details. They can also vote on the hand; to count one vote per browser we store a random identifier in the browser's local storage. It is not linked to any account or device identifier. To have a comment removed, use "Report" on the page or email us.</p>
 
 <h2>Legal basis (GDPR)</h2>
 <p>We process account and hand data to provide the service you asked for (performance of a contract), and crash diagnostics on the basis of our legitimate interest in keeping the app working.</p>
@@ -64,6 +66,7 @@
 <tr><th>Dados</th><th>Porquê</th><th>Onde ficam</th></tr>
 <tr><td>Email e identificador de início de sessão (se criares conta, incluindo Iniciar sessão com a Apple ou Google)</td><td>Para teres uma conta e sincronizares as mãos entre dispositivos</td><td>O nosso fornecedor de backend (Supabase, região UE)</td></tr>
 <tr><td>Mãos, sessões, torneios, tags e notas que introduzes</td><td>É a função principal da app</td><td>No teu dispositivo; e no nosso backend se tiveres sessão iniciada</td></tr>
+<tr><td>Comentários e votos em mãos partilhadas (nome escolhido, texto, ID aleatório do browser)</td><td>Para os amigos darem opinião sobre a mão</td><td>No nosso backend; os comentários são públicos para quem tem o link</td></tr>
 <tr><td>Mãos que decides partilhar</td><td>Para as mostrar a quem abrir o link</td><td>No nosso backend, visíveis a qualquer pessoa com o link</td></tr>
 <tr><td>Relatórios de erros e diagnóstico básico (modelo, versão do sistema e da app)</td><td>Para encontrar e corrigir erros</td><td>O nosso fornecedor de relatórios de erros</td></tr>
 </table>
@@ -74,7 +77,8 @@
 <p>A app permite escrever notas ou alcunhas sobre pessoas da tua mesa. Essas notas são privadas da tua conta e nunca entram nas mãos partilhadas, a não ser que as escrevas tu numa mão partilhada. Evita escrever informação pessoal sensível sobre outras pessoas.</p>
 
 <h2>Mãos partilhadas</h2>
-<p>Quando partilhas uma mão é criado um link. Qualquer pessoa com o link pode ver essa mão e o replayer. Podes apagar uma mão partilhada a qualquer momento e o link deixa de funcionar.</p>
+<p>Quando partilhas uma mão é criado um link. Qualquer pessoa com o link pode ver essa mão e o replayer. Podes apagar uma mão partilhada a qualquer momento: o link deixa de funcionar e os comentários e votos dessa mão também são apagados.</p>
+<p>Quem abre uma mão partilhada pode comentar sem conta, escolhendo um nome e escrevendo uma mensagem. Os comentários, com esse nome, são públicos para quem tiver o link, por isso não incluas dados pessoais. Também pode votar na mão; para contar um voto por browser guardamos um identificador aleatório no armazenamento local do browser, que não está ligado a nenhuma conta nem identificador do dispositivo. Para remover um comentário, usa "Denunciar" na página ou envia-nos um email.</p>
 
 <h2>Fundamento legal (RGPD)</h2>
 <p>Tratamos os dados de conta e das mãos para prestar o serviço que pediste (execução de contrato) e os diagnósticos de erros com base no nosso interesse legítimo em manter a app a funcionar.</p>
