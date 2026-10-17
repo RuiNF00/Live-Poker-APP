@@ -16,7 +16,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
-import { SwapError } from '@/lib/swap-api';
+import { newCreateKey, SwapError } from '@/lib/swap-api';
 import { createGroup, groupUrl } from '@/lib/swap-group-api';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -46,6 +46,8 @@ function NewGroupSwap() {
   const [busy, setBusy] = useState(false);
   // No signal: everything typed stays, and the swap is created by itself when the signal is back.
   const [waiting, setWaiting] = useState(false);
+  // The draft's own key: a retry (by hand or when the signal is back) can't make a second group.
+  const key = useRef({ token: newCreateKey(), invite: newCreateKey() });
 
   // Leaving with Voltar drops the draft (going to the background keeps it).
   useFocusEffect(
@@ -56,6 +58,7 @@ function NewGroupSwap() {
         setNote('');
         setBusy(false);
         setWaiting(false);
+        key.current = { token: newCreateKey(), invite: newCreateKey() };
       },
       [],
     ),
@@ -109,7 +112,7 @@ function NewGroupSwap() {
     const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: Date.now() };
     try {
       const rc = await appUserId();
-      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others], rc);
+      const { group, token, invite } = await createGroup(terms, [me.trim(), ...others], rc, key.current);
       saveGroup({ ...groupFromRemote(group, token, 0, invite), ownerRc: rc });
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');

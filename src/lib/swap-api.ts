@@ -16,6 +16,8 @@ export function swapUrl(id: string, ref?: string): string {
   return withLang(`${BRAND.webUrl}/swap/${id}${ref ? `?r=${encodeURIComponent(ref)}` : ''}`, variant);
 }
 
+/** One per draft: a create sent again with it (an automatic retry) gets the same swap back, never a second one. */
+export const newCreateKey = () => Array.from(Crypto.getRandomBytes(32), (b) => b.toString(16).padStart(2, '0')).join('');
 export const newCid = () => Crypto.randomUUID().replace(/-/g, '').slice(0, 16);
 
 export class SwapError extends Error {
@@ -40,8 +42,8 @@ async function call(path: string, init: RequestInit & { token?: string } = {}): 
 }
 
 /** `rcUserId`: my RevenueCat id, so the swap's accounts follow my Pro for both players. */
-export async function createSwap(terms: SwapTerms, rcUserId?: string): Promise<{ swap: RemoteSwap; token: string }> {
-  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, rcUserId }) });
+export async function createSwap(terms: SwapTerms, rcUserId?: string, key?: string): Promise<{ swap: RemoteSwap; token: string }> {
+  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, rcUserId, token: key }) });
   if (!j.swap || !j.token) throw new SwapError('bad_response', 500);
   return { swap: j.swap, token: j.token };
 }

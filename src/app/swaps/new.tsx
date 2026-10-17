@@ -16,7 +16,7 @@ import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
-import { createSwap, SwapError, swapUrl } from '@/lib/swap-api';
+import { createSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { fromRemote, swapNames, type SwapTerms } from '@/store/swaps';
@@ -43,6 +43,8 @@ function NewSwap() {
   const [busy, setBusy] = useState(false);
   // No signal: everything typed stays, and the swap is created by itself when the signal is back.
   const [waiting, setWaiting] = useState(false);
+  // The draft's own key: a retry (by hand or when the signal is back) can't make a second swap.
+  const key = useRef(newCreateKey());
 
   // Each visit starts fresh: leaving with Voltar drops the draft (going to the background keeps it).
   useFocusEffect(
@@ -55,6 +57,7 @@ function NewSwap() {
         setNote('');
         setBusy(false);
         setWaiting(false);
+        key.current = newCreateKey();
       },
       [],
     ),
@@ -111,7 +114,7 @@ function NewSwap() {
     };
     try {
       const rc = await appUserId();
-      const { swap, token } = await createSwap(terms, rc);
+      const { swap, token } = await createSwap(terms, rc, key.current);
       saveSwap({ ...fromRemote(swap, token, 'a'), ownerRc: rc });
       if (!settings.nickname) setSettings({ nickname: me.trim() });
       const ref = await shareRef().catch(() => '');

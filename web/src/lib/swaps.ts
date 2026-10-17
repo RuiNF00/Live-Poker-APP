@@ -15,8 +15,12 @@ export * from './swap-terms';
 
 type NewEntry = Omit<SwapEntry, 'id' | 'side' | 'at'>;
 
+/** A token the app picked for a create (64 hex), or undefined when it sent none or a bad one. */
+export const ownToken = (x: unknown): string | undefined => (typeof x === 'string' && /^[a-f0-9]{64}$/.test(x) ? x : undefined);
+
 export interface SwapStore {
-  create(t: SwapTerms): Promise<{ id: string; token: string }>;
+  /** `token`: the app's own (64 hex), so a repeated create returns the swap it already made. */
+  create(t: SwapTerms, token?: string): Promise<{ id: string; token: string }>;
   get(id: string): Promise<SwapRecord | null>;
   side(id: string, token: string): Promise<Side | null>;
   /** The other side's token, or null when it was already confirmed or is gone. */
@@ -46,8 +50,8 @@ interface Row {
 class SupabaseSwaps implements SwapStore {
   constructor(private db: SupabaseClient) {}
 
-  async create(t: SwapTerms) {
-    const { data, error } = await this.db.rpc('create_swap', { p_terms: t });
+  async create(t: SwapTerms, token?: string) {
+    const { data, error } = await this.db.rpc('create_swap', { p_terms: t, p_token: token ?? null });
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     return { id: row.id as string, token: row.token as string };
@@ -149,9 +153,11 @@ class LocalSwaps implements SwapStore {
     return null;
   }
 
-  async create(terms: SwapTerms) {
+  async create(terms: SwapTerms, own?: string) {
+    const token = own ?? randomBytes(32).toString('hex');
+    const again = Object.values(await this.read()).find((r) => r.aHash === sha256(token));
+    if (again) return { id: again.id, token };
     const id = shortId();
-    const token = randomBytes(32).toString('hex');
     const now = new Date().toISOString();
     await this.mutate((d) => {
       d[id] = { id, terms, confirmedAt: null, confirmedName: null, entries: [], createdAt: now, updatedAt: now, aHash: sha256(token), bHash: null };

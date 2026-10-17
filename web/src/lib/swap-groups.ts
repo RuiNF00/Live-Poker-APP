@@ -16,7 +16,8 @@ export * from './swap-group-terms';
 type NewEntry = Omit<GroupEntry, 'id' | 'seat' | 'at'>;
 
 export interface GroupStore {
-  create(t: GroupTerms, names: string[]): Promise<{ id: string; token: string; invite: string }>;
+  /** `own`: the app's token and invite (64 hex each), so a repeated create returns the group it already made. */
+  create(t: GroupTerms, names: string[], own?: { token: string; invite: string }): Promise<{ id: string; token: string; invite: string }>;
   get(id: string): Promise<GroupRecord | null>;
   seat(id: string, token: string): Promise<number | null>;
   /** The seat's token, or null (wrong invite, seat taken or missing). */
@@ -47,8 +48,8 @@ interface Row {
 class SupabaseGroups implements GroupStore {
   constructor(private db: SupabaseClient) {}
 
-  async create(t: GroupTerms, names: string[]) {
-    const { data, error } = await this.db.rpc('create_swap_group', { p_terms: t, p_names: names });
+  async create(t: GroupTerms, names: string[], own?: { token: string; invite: string }) {
+    const { data, error } = await this.db.rpc('create_swap_group', { p_terms: t, p_names: names, p_token: own?.token ?? null, p_invite: own?.invite ?? null });
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     return { id: row.id as string, token: row.token as string, invite: row.invite as string };
@@ -154,10 +155,12 @@ class LocalGroups implements GroupStore {
     return i < 0 ? null : i;
   }
 
-  async create(terms: GroupTerms, names: string[]) {
+  async create(terms: GroupTerms, names: string[], own?: { token: string; invite: string }) {
+    const token = own?.token ?? randomBytes(32).toString('hex');
+    const invite = own?.invite ?? randomBytes(32).toString('hex');
+    const again = Object.values(await this.read()).find((g) => g.hashes[0] === sha256(token) && g.inviteHash === sha256(invite));
+    if (again) return { id: again.id, token, invite };
     const id = shortId();
-    const token = randomBytes(32).toString('hex');
-    const invite = randomBytes(32).toString('hex');
     const now = new Date().toISOString();
     await this.mutate((d) => {
       d[id] = {
