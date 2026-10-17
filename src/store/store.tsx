@@ -7,7 +7,9 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Alert, AppState } from 'react-native';
 
 import { t } from '@/i18n';
+import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
+import { forgetHandShare } from '@/lib/share-queue';
 
 import type { Hand } from '@/poker/types';
 
@@ -307,7 +309,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [sessions, settings.currency]);
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
-  const deleteHand = useCallback((id: string) => setHands((l) => l.filter((x) => x.id !== id)), []);
+  // A deleted hand or session takes its public page with it (queued, so it also works
+  // without signal). The queue is keyed, so a second run of the updater changes nothing.
+  const deleteHand = useCallback(
+    (id: string) =>
+      setHands((l) => {
+        const h = l.find((x) => x.id === id);
+        if (h) forgetHandShare(h).catch(() => {});
+        return l.filter((x) => x.id !== id);
+      }),
+    [],
+  );
   const saveSession = useCallback(
     (s: Session) =>
       setSessions((l) => {
@@ -316,7 +328,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }),
     [],
   );
-  const deleteSession = useCallback((id: string) => setSessions((l) => l.filter((x) => x.id !== id)), []);
+  const deleteSession = useCallback(
+    (id: string) =>
+      setSessions((l) => {
+        const s = l.find((x) => x.id === id);
+        if (s?.live) queueLiveDelete(s.live);
+        return l.filter((x) => x.id !== id);
+      }),
+    [],
+  );
   const savePlayer = useCallback(
     (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),
     [],
