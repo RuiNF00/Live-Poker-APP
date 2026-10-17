@@ -1302,6 +1302,10 @@ const en: Record<string, string> = {
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
+  // Live link privacy
+  'Mostrar a sala': 'Show the venue',
+  '{venue} aparece no link. Desligado, ninguém sabe onde estás.': '{venue} shows on the link. Off, nobody knows where you are.',
+  'Desligado, ninguém sabe onde estás.': 'Off, nobody knows where you are.',
 };
 
 export default en;
