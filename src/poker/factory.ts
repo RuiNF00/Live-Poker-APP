@@ -18,6 +18,18 @@ export function defaultGame(kind: 'mtt' | 'cash', currency = '€'): GameInfo {
     : { kind, name: '', sb: 1, bb: 2, ante: 0, anteType: 'none', currency };
 }
 
+/**
+ * The first hand ever, with no session to copy from: the game the player said
+ * they play on first run (tournament, or cash at their stakes).
+ */
+export function gameForPlays(plays: string | null | undefined, currency = '€'): GameInfo | null {
+  if (!plays) return null;
+  if (plays.startsWith('mtt')) return defaultGame('mtt', currency);
+  const blinds: Record<string, [number, number]> = { cash1: [1, 2], cash2: [3, 5], cash3: [10, 20], cash4: [50, 100] };
+  const b = blinds[plays];
+  return b ? { ...defaultGame('cash', currency), sb: b[0], bb: b[1] } : null;
+}
+
 /** Hands this close together are taken to be at the same table. */
 const SAME_TABLE_MS = 6 * 3600 * 1000;
 

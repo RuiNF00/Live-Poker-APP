@@ -2604,6 +2604,7 @@ const es: Record<string, string> = {
   'Swaps e staking': 'Swaps y staking',
   'fez fold': 'foldeó',
   'Stack de {from} para {to}; o mais alto foi {max}.': 'Stack de {from} a {to}; el máximo fue {max}.',
+  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': '¿Sin tiempo? Posición y cartas bastan: «Guardar ya» y la completas después.',
 };
 
 export default es;

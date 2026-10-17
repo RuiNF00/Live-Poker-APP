@@ -2617,6 +2617,7 @@ const en: Record<string, string> = {
   'O torneio acabou. Regista o resultado para fechar as contas.': 'The event is over. Log the result to close the accounts.',
   'Acerto: {title}': 'Settle up: {title}',
   'Swaps e staking': 'Swaps and staking',
+  'Sem tempo? Posição e cartas já chegam: «Guardar já» e completas depois.': 'No time? Position and cards are enough: tap “Save now” and finish it later.',
 };
 
 export default en;
