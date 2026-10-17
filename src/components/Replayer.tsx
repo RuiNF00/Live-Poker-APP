@@ -44,12 +44,15 @@ export function Replayer({
   seek,
   streetNotes,
   source,
+  icm = false,
 }: {
   hand: Hand;
   /** Where the hand came from, for the replay_opened event. Previews (welcome) pass nothing and aren't counted. */
   source?: 'own' | 'sample' | 'shared';
   initialInBB?: boolean;
   autoPlay?: boolean;
+  /** Tournament hands: the ICM estimate (Settings, off by default). */
+  icm?: boolean;
   /** Kept for callers; the timeline replaces the old action list. */
   compact?: boolean;
   /** Stop before hero's last decision and ask "what do you do?". */
@@ -238,7 +241,7 @@ export function Replayer({
           <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>{note}</Text>
         </View>
       ) : null}
-      {hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
+      {icm && hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
       {answered ? (
         <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
           {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}

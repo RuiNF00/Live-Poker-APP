@@ -3058,6 +3058,10 @@ const es: Record<string, string> = {
   'Par, {rank}': 'Pareja, {rank}',
   '{a} e {b}, mesmo naipe': '{a} y {b}, del mismo palo',
   '{a} e {b}, naipes diferentes': '{a} y {b}, de palos distintos',
+  'ICM nos torneios': 'ICM en torneos',
+  'Uma estimativa no replayer, a partir de quantos jogadores restam': 'Una estimación en el replayer, a partir de cuántos jugadores quedan',
+  'estimativa': 'estimación',
+  'Estimativa: conta só com os stacks desta mesa e paga cerca de 15% do field. Serve de referência, não de resposta certa.': 'Estimación: cuenta solo los stacks de esta mesa y paga cerca del 15% del field. Sirve de referencia, no de respuesta exacta.',
 };
 
 export default es;

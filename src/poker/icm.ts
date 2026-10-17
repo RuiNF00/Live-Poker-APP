@@ -150,3 +150,18 @@ export function pkoRequiredEquity(call: number, potAfterCall: number, bountyChip
   const total = potAfterCall + Math.max(0, bountyChips);
   return total > 0 ? call / total : 0;
 }
+
+/** Share of the field a live tournament usually pays: the estimate's one assumption. */
+export const PAID_SHARE = 0.15;
+
+/**
+ * Paid places to price this table with, from "100 players left of 300": one player short of the
+ * money pays all but one at the table; far from it, or in it, everyone at the table counts as paid.
+ * Without both numbers it falls back to `fallback`.
+ */
+export function tablePaidPlaces(seated: number, left: number, entrants: number, fallback = seated): number {
+  if (!(left > 0) || !(entrants >= left)) return Math.max(1, Math.min(seated, fallback));
+  const toBubble = left - Math.ceil(entrants * PAID_SHARE);
+  if (toBubble <= 0 || toBubble >= seated) return seated;
+  return seated - toBubble;
+}

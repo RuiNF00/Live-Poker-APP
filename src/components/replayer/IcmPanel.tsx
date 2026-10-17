@@ -5,38 +5,28 @@ import { Pressable, Text, View } from 'react-native';
 import { t } from '@/i18n';
 import { positions } from '@/poker/engine';
 import { pct } from '@/poker/format';
-import { icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix, type PayoutPreset } from '@/poker/icm';
+import { icmCall, payoutPreset, pkoBountyChips, pkoRequiredEquity, riskPremiumMatrix, tablePaidPlaces } from '@/poker/icm';
 import type { Hand } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
-import { Chip, Field, tap } from '../ui';
+import { Field, tap } from '../ui';
 import type { RpFacing } from './model';
 
-const PRESETS: { key: PayoutPreset; label: string }[] = [
-  { key: 'satellite', label: 'Satélite' },
-  { key: 'flat', label: 'Flat' },
-  { key: 'standard', label: 'Média' },
-  { key: 'top', label: 'Top-heavy' },
-];
-
-/** Paid places at this table to start from: on the bubble one player misses out. */
-function defaultPaid(hand: Hand, n: number): number {
-  return hand.game.stage === 'bubble' ? Math.max(1, n - 1) : n;
-}
-
 /**
- * Tournament hands: what the prize money does to hero's decision. The call hero faces, priced
- * with ICM against the chips-only pot odds, and a risk-premium table for every pair at the table.
+ * Tournament hands, when the player turns it on in Settings: what the prize money does to hero's
+ * decision, as an estimate. The only input is "100 players left of 300"; the call hero faces is
+ * priced with ICM against the chips-only pot odds, with a risk-premium table for every pair.
  * PKO: a bounty hero covers lowers the equity needed. Prizes are shares of the pool.
  */
 export function IcmPanel({ hand, facing }: { hand: Hand; facing: RpFacing | null }) {
   const [open, setOpen] = useState(false);
-  const [preset, setPreset] = useState<PayoutPreset>('standard');
   const seated = useMemo(() => hand.players.map((p, i) => ({ i, stack: p.stack })).filter((p) => p.stack > 0), [hand.players]);
-  const [paid, setPaid] = useState(() => defaultPaid(hand, seated.length));
+  const [left, setLeft] = useState(hand.game.playersLeft ? String(hand.game.playersLeft) : '');
+  const [entrants, setEntrants] = useState('');
+  const paid = tablePaidPlaces(seated.length, Number(left) || 0, Number(entrants) || 0, hand.game.stage === 'bubble' ? seated.length - 1 : seated.length);
   const [bounty, setBounty] = useState('');
   const [start, setStart] = useState('');
-  const payouts = useMemo(() => payoutPreset(preset, Math.min(paid, seated.length)), [preset, paid, seated.length]);
+  const payouts = useMemo(() => payoutPreset('standard', paid), [paid]);
   const pos = useMemo(() => positions(hand.players.length, hand.button), [hand.players.length, hand.button]);
 
   const call = useMemo(() => {
@@ -58,7 +48,6 @@ export function IcmPanel({ hand, facing }: { hand: Hand; facing: RpFacing | null
   const buyIn = hand.game.buyIn ?? 0;
   const kappa = call?.covers ? pkoBountyChips(Number(bounty.replace(',', '.')) || 0, Number(start.replace(/\D/g, '')) || 0, buyIn) : 0;
   const pkoEq = call && kappa > 0 ? pkoRequiredEquity(facing!.call, call.potAfter, kappa) : null;
-  const bigField = (hand.game.playersLeft ?? 0) > seated.length;
 
   const summary = call
     ? `${t('Precisas de')} ${pct(call.icmEq, 1)} · ${call.riskPremium >= 0 ? '+' : ''}${pct(call.riskPremium, 1)} ${t('pelo ICM')}`
@@ -77,6 +66,7 @@ export function IcmPanel({ hand, facing }: { hand: Hand; facing: RpFacing | null
         style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, opacity: pressed ? 0.75 : 1 })}>
         <Ionicons name="trophy-outline" size={15} color={C.warn} />
         <Text style={{ color: C.text, fontFamily: ff(800), fontSize: 13, letterSpacing: 0.4 }}>ICM</Text>
+        <Text style={{ color: C.muted, fontFamily: F.medium, fontSize: 11 }}>{t('estimativa')}</Text>
         <Text numberOfLines={1} style={{ flex: 1, color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
           {summary}
         </Text>
@@ -85,17 +75,9 @@ export function IcmPanel({ hand, facing }: { hand: Hand; facing: RpFacing | null
 
       {open ? (
         <View style={{ paddingHorizontal: 12, paddingBottom: 12, gap: 12 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            {PRESETS.map((p) => (
-              <Chip key={p.key} label={t(p.label)} active={preset === p.key} onPress={() => setPreset(p.key)} style={{ minHeight: 30, paddingHorizontal: 10 }} />
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Text style={{ flex: 1, color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
-              {t('Lugares pagos nesta mesa')}: <Text style={{ color: C.text, fontFamily: F.mono }}>{Math.min(paid, seated.length)}</Text>
-            </Text>
-            <Step icon="remove" label={t('Menos lugares pagos')} onPress={() => setPaid((x) => Math.max(1, Math.min(x, seated.length) - 1))} />
-            <Step icon="add" label={t('Mais lugares pagos')} onPress={() => setPaid((x) => Math.min(seated.length, x + 1))} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Field style={{ flex: 1 }} label={t('Jogadores restantes')} keyboardType="number-pad" value={left} onChangeText={(v) => setLeft(v.replace(/\D/g, ''))} placeholder="100" />
+            <Field style={{ flex: 1 }} label={t('Inscritos')} keyboardType="number-pad" value={entrants} onChangeText={(v) => setEntrants(v.replace(/\D/g, ''))} placeholder="300" />
           </View>
 
           {call ? (
@@ -126,8 +108,7 @@ export function IcmPanel({ hand, facing }: { hand: Hand; facing: RpFacing | null
             </View>
           ) : null}
           <Text style={{ color: C.muted, fontFamily: F.regular, fontSize: 11, lineHeight: 15 }}>
-            {bigField ? t('Conta só com os jogadores desta mesa, como se fosse a mesa final.') + ' ' : ''}
-            {t('Prémios em percentagem do prize pool.')}
+            {t('Estimativa: conta só com os stacks desta mesa e paga cerca de 15% do field. Serve de referência, não de resposta certa.')}
           </Text>
         </View>
       ) : null}
@@ -141,22 +122,6 @@ function Line({ label, value, color }: { label: string; value: string; color: st
       <Text style={{ flex: 1, color: C.textDim, fontFamily: F.medium, fontSize: 13 }}>{label}</Text>
       <Text style={{ color, fontFamily: F.mono, fontSize: 14 }}>{value}</Text>
     </View>
-  );
-}
-
-function Step({ icon, label, onPress }: { icon: 'add' | 'remove'; label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={6}
-      onPress={() => {
-        tap('select');
-        onPress();
-      }}
-      style={({ pressed }) => ({ width: 34, height: 34, borderRadius: 17, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}>
-      <Ionicons name={icon} size={16} color={C.text} />
-    </Pressable>
   );
 }
 
