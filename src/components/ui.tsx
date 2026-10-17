@@ -31,7 +31,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { decimalComma, t } from '@/i18n';
-import { numText, parseNum, syncText } from '@/lib/num-input';
+import { numText, parseNum, syncText, typedText } from '@/lib/num-input';
 import { MASK, moneyMasked } from '@/poker/format';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
@@ -963,7 +963,8 @@ export function NumField({ label, value, onChange, suffix, autoFocus, selectOnFo
       oneLineLabel
       style={{ flex: 1, justifyContent: 'flex-end' }}
       value={shown}
-      onChangeText={(x) => {
+      onChangeText={(raw) => {
+        const x = typedText(raw, m, decimalComma);
         setText(x);
         onChange(parseNum(x, m, decimalComma));
       }}

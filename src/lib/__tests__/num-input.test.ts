@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { numText, parseNum, syncText } from '../num-input';
+import { numText, parseNum, syncText, typedText } from '../num-input';
 
 // pt-PT, pt-BR and es write "," as the decimal mark; en writes ".".
 const LANGS: [string, boolean][] = [['pt-PT', true], ['pt-BR', true], ['es', true], ['en', false]];
@@ -53,7 +53,24 @@ test('an outside change replaces the text; the same value keeps it', () => {
   assert.equal(numText(0, true, true), '');
 });
 
-test('whole fields stay whole', () => {
+test('whole fields stay whole and stop at the decimal mark', () => {
   assert.equal(parseNum('1.500', false, true), 1500);
   assert.equal(numText(12, false, true), '12');
+  for (const [, comma] of LANGS) {
+    assert.equal(parseNum('12,5', false, comma), 12);
+    assert.equal(parseNum('12.5', false, comma), 12);
+    assert.equal(parseNum('1.234,56', false, comma), 1234);
+  }
+});
+
+test('typing never shows a third decimal', () => {
+  for (const [, comma] of LANGS) {
+    const m = comma ? ',' : '.';
+    assert.equal(typedText(`51${m}999`, true, comma), `51${m}99`);
+    assert.equal(typedText(`51${m}9`, true, comma), `51${m}9`);
+    assert.equal(typedText('1.234,567', true, comma), '1.234,56');
+    assert.equal(typedText('51999', true, comma), '51999');
+  }
+  assert.equal(typedText('1.500', true, true), '1.500');
+  assert.equal(typedText('51,999', false, true), '51,999');
 });
