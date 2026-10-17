@@ -175,6 +175,13 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
           rows={3}
           onChange={(e) => setBody(e.target.value)}
           onFocus={onCompose}
+          // ⌘↩ / Ctrl+↩ sends, as in most chats on a computer; ↩ alone is a new line.
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
           required
         />
         {currentStep > 0 && (
