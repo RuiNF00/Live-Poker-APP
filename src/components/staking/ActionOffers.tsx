@@ -1,5 +1,5 @@
-// On the festival screen: the action packages for this festival, and a button to
-// start one from the events the player has planned.
+// On the festival screen: the action the player has sold for this festival
+// (logged per backer), and a button to log it from the events they planned.
 
 import { router } from 'expo-router';
 import React from 'react';
@@ -25,8 +25,8 @@ export function ActionOffers({ f, picked }: { f: Festival; picked: string[] }) {
       <Button
         kind="secondary"
         icon="people-outline"
-        title={t('Vender ação deste festival')}
-        sub={picked.length ? undefined : t('Marca primeiro os eventos que vais jogar')}
+        title={t('Registar ação vendida')}
+        sub={picked.length ? undefined : t('Marca primeiro os torneios que vais jogar')}
         onPress={start}
       />
     );
@@ -35,15 +35,15 @@ export function ActionOffers({ f, picked }: { f: Festival; picked: string[] }) {
       <ListGroup>
         {offers.map((o) => {
           const tot = offerTotals(f, o);
-          const pending = (o.reservations ?? []).filter((r) => r.status === 'pending').length;
+          const waiting = o.lines.filter((l) => l.remote && !l.confirmedAt).length;
           return (
             <ListItem
               key={o.id}
               icon="people-outline"
               iconColor={C.accent}
-              title={t('Pacote de ação')}
-              subtitle={[tot.events === 1 ? t('1 evento') : t('{n} eventos', { n: tot.events }), money(tot.price, f.currency), o.remote ? '' : t('por partilhar')].filter(Boolean).join(' · ')}
-              right={pending ? <Pill label={t('{n} por confirmar', { n: pending })} color={C.warn} /> : undefined}
+              title={t('Ação vendida: {pct}%', { pct: String(tot.sold).replace('.', ',') })}
+              subtitle={[o.lines.length === 1 ? t('1 backer') : t('{n} backers', { n: o.lines.length }), tot.events === 1 ? t('1 torneio') : t('{n} torneios', { n: tot.events }), money(tot.price, f.currency)].join(' · ')}
+              right={waiting ? <Pill label={t('{n} por confirmar', { n: waiting })} color={C.warn} /> : undefined}
               chevron
               onPress={() => router.push({ pathname: '/action/[id]', params: { id: o.id } })}
             />

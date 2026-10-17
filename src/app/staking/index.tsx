@@ -40,8 +40,8 @@ export default function StakingScreen() {
         {backers.length === 0 ? (
           <Empty
             icon="people-outline"
-            title={t('Vende ação com nome')}
-            body={t('Junta os teus backers, vende pacotes de vários torneios e vê quanto deves a cada um, com makeup incluído.')}
+            title={t('Regista a ação que vendes, com nome')}
+            body={t('Junta os teus backers, regista pacotes de vários torneios e vê quanto deves a cada um, com makeup incluído.')}
             action={<Button title={t('Adicionar backer')} icon="person-add-outline" onPress={() => setEdit(blankBacker())} />}
           />
         ) : (

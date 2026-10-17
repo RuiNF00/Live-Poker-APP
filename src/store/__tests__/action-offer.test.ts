@@ -3,77 +3,72 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
-import { newOffer, offerEvents, offerTotals, payload, reservationLabel, reservationPrice, setAllShares, stakesFor, taken, withOfferStakes, type ActionOffer, type Reservation } from '../action-offer';
+import { agreement, lineCost, lineRecords, newOffer, offerEvents, offerPackageIds, offerTotals, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 
-// Event 2 ($26,000), event 3 ($50,000), and a Day 2 that can't be sold.
+// Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
 const picked = ['2', '3', '12-2A'];
 
-test('a new offer sells 30% of each picked event, never a Day 2', () => {
+test('a new package has the picked events, never a Day 2, and no backers yet', () => {
   const o = newOffer(F, picked, 'o1', 1);
-  assert.deepEqual(Object.keys(o.shares).sort(), ['2', '3']);
+  assert.deepEqual(o.events, ['2', '3']);
   assert.deepEqual(offerEvents(F, o).map((e) => e.id), ['2', '3']);
+  assert.equal(o.lines.length, 0);
 });
 
-test('totals: price with markup, what the player keeps and puts in', () => {
-  const o: ActionOffer = { ...newOffer(F, picked, 'o1', 1), markup: 1.2, shares: { '2': 50, '3': 20 } };
+const pkg = (lines: ActionOffer['lines'], markup = 1.2): ActionOffer => ({ ...newOffer(F, picked, 'o1', 1), markup, lines });
+
+test('totals: what backers pay, what the player keeps and puts in', () => {
+  const o = pkg([
+    { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 },
+    { id: 'l2', backerId: 'b2', packageId: 'p2', pct: 5 },
+  ]);
   const t = offerTotals(F, o);
   assert.equal(t.buyIns, 76000);
-  assert.equal(t.face, 13000 + 10000);
-  assert.equal(t.price, 27600);
-  assert.equal(t.premium, 4600);
-  assert.equal(t.outOfPocket, 76000 - 27600);
-  assert.equal(t.perPct, 912);
-  assert.equal(setAllShares(o, 25).shares['3'], 25);
+  assert.equal(t.sold, 15);
+  assert.equal(t.price, 13680);
+  assert.equal(t.premium, 2280);
+  assert.equal(t.outOfPocket, 76000 - 13680);
+  assert.equal(t.keep, 85);
+  assert.equal(lineCost(F, o, 10), 9120);
 });
 
-test('the public payload carries no venue or notes and has a generic title', () => {
-  const o = newOffer(F, picked, 'o1', 1);
-  const p = payload(F, o, '  Rui  ', 'Festival de dezembro', 5);
+test("a backer's private link carries only their own piece, no venue or other backers", () => {
+  const o = pkg([
+    { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 },
+    { id: 'l2', backerId: 'b2', packageId: 'p2', pct: 5 },
+  ]);
+  const p = agreement(F, o, o.lines[1], '  Rui  ', 'Marta', 'Festival de dezembro', 5);
   assert.equal(p.player, 'Rui');
-  assert.equal(p.events.length, 2);
-  assert.equal(p.events[0].b, 26000);
-  assert.equal(p.events[0].s, 30);
-  assert.ok(!JSON.stringify(p).includes('Baha Mar'));
+  assert.equal(p.backer, 'Marta');
+  assert.deepEqual(p.events.map((e) => [e.b, e.p]), [[26000, 5], [50000, 5]]);
+  const json = JSON.stringify(p);
+  for (const leak of ['Baha Mar', 'b1', 'p1', '"10"']) assert.ok(!json.includes(leak), leak);
 });
 
-const res = (id: string, status: Reservation['status'], shares: Reservation['shares']): Reservation => ({ id, name: id, shares, status, createdAt: '' });
-
-test('reservations: price, taken and the stakes a confirmed one puts on a session', () => {
-  const o: ActionOffer = {
-    ...newOffer(F, picked, 'o1', 1),
-    markup: 1.1,
-    reservations: [
-      res('a', 'confirmed', [{ e: '2', p: 10 }, { e: '3', p: 10 }]),
-      res('b', 'pending', [{ e: '2', p: 5 }]),
-      res('c', 'declined', [{ e: '2', p: 15 }]),
-      res('d', 'confirmed', [{ e: '3', p: 5 }]),
-    ],
-    deals: { a: { backerId: 'bA', packageId: 'pA', paid: true }, d: { backerId: 'bD', packageId: 'pD' } },
-  };
-  assert.equal(reservationPrice(F, o, o.reservations![0]), 8360);
-  assert.deepEqual(taken(o.reservations), { '2': 15, '3': 15 });
-  assert.deepEqual(reservationLabel(o.reservations![0]), { pct: 10, events: 2 });
-  assert.deepEqual(stakesFor([o], F.id, '2'), [{ backerId: 'bA', packageId: 'pA', share: 10, markup: 1.1, unpaid: undefined }]);
-  const s3 = stakesFor([o], F.id, '3');
-  assert.equal(s3.length, 2);
-  assert.equal(s3[1].unpaid, true);
-  assert.deepEqual(stakesFor([o], 'other', '2'), []);
-  // Re-applying replaces the offer's own stakes and keeps the ones added by hand.
-  const byHand = { backerId: 'x', share: 5, markup: 1 };
-  const next = withOfferStakes([byHand, { backerId: 'bA', packageId: 'pA', share: 99, markup: 1 }], s3, new Set(['pA', 'pD']));
-  assert.deepEqual(next, [byHand, ...s3]);
-});
-
-test('a confirmed reservation reuses the backer with the same name', async () => {
-  const { dealRecords } = await import('../action-offer');
-  const r = res('x', 'pending', [{ e: '2', p: 10 }, { e: '3', p: 10 }]);
-  const mine = [{ id: 'b9', name: ' X ', note: '', createdAt: 0 }];
-  const a = dealRecords(r, mine, 'Festival', 1.15, { backer: 'nb', pkg: 'np' }, 5);
+test('a new line reuses the backer with the same name and makes a staking package', () => {
+  const o = pkg([], 1.15);
+  const mine = [{ id: 'b9', name: ' Marta ', note: '', createdAt: 0 }];
+  const a = lineRecords('marta', mine, 'Festival', o, 5, { line: 'l', backer: 'nb', pkg: 'np' }, 3);
   assert.equal(a.isNew, false);
-  assert.equal(a.pkg.backerId, 'b9');
-  assert.equal(a.pkg.share, 10);
-  assert.equal(a.pkg.markup, 1.15);
-  const b = dealRecords({ ...r, name: 'Ana', contact: '+351 9' }, mine, 'Festival', 1, { backer: 'nb', pkg: 'np' }, 5);
-  assert.equal(b.isNew, true);
-  assert.equal(b.backer.note, '+351 9');
+  assert.equal(a.line.backerId, 'b9');
+  assert.deepEqual([a.pkg.share, a.pkg.markup, a.pkg.kind], [5, 1.15, 'action']);
+  assert.equal(lineRecords('Ana', mine, 'Festival', o, 5, { line: 'l', backer: 'nb', pkg: 'np' }).isNew, true);
+});
+
+test('sessions from the package events carry each backer, unpaid until marked paid', () => {
+  const o = pkg([
+    { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10, paid: true },
+    { id: 'l2', backerId: 'b2', packageId: 'p2', pct: 5 },
+  ]);
+  assert.deepEqual(stakesFor([o], F.id, '2'), [
+    { backerId: 'b1', packageId: 'p1', share: 10, markup: 1.2, unpaid: undefined },
+    { backerId: 'b2', packageId: 'p2', share: 5, markup: 1.2, unpaid: true },
+  ]);
+  assert.deepEqual(stakesFor([o], F.id, '1-A'), []);
+  assert.deepEqual(stakesFor([o], 'other', '2'), []);
+  // Re-applying replaces the package's own stakes and keeps the ones added by hand.
+  const byHand = { backerId: 'x', share: 5, markup: 1 };
+  const next = withOfferStakes([byHand, { backerId: 'b1', packageId: 'p1', share: 99, markup: 1 }], stakesFor([o], F.id, '3'), offerPackageIds([o]));
+  assert.equal(next.length, 3);
+  assert.deepEqual(next[0], byHand);
 });

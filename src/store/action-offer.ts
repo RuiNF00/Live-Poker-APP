@@ -1,10 +1,12 @@
-// Selling action for a festival: the player picks events from their festival plan,
-// the % of each one on sale, the markup and a per-backer cap, then shares one link
-// (sweatbook.poker/o/<id>). Backers reserve a % on the web page; each reservation the
-// player confirms becomes a normal staking deal (a Backer and a StakePackage), and
-// the sessions started from those events carry the backers' stakes.
+// Action sold for a festival, as a record: the player picks events from their
+// festival plan and the markup, then logs each backer they agreed a piece with.
+// Each backer becomes a normal staking deal (a Backer and a StakePackage), the
+// sessions started from those events carry their stake, and each backer can get
+// a private link to confirm the agreed piece (sweatbook.poker/o/<id>).
 //
-// Contract with the web page and the database: /mnt/project-files/staking/pacotes-festival-spec.md.
+// Nothing is sold or paid through the app: no public offer, no reservations, no
+// payment (store policy: /mnt/project-files/research/politicas-lojas-jogo.md §3).
+// Contract with the web page: /mnt/project-files/staking/pacotes-festival-spec.md.
 // Kept apart from the main store like the festival plan: small and per device.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,175 +16,128 @@ import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poke
 import type { Backer, Stake, StakePackage } from '@/store/types';
 
 export const MARKUPS = [1, 1.05, 1.1, 1.15, 1.2, 1.3];
-export const SHARES = [10, 20, 30, 40, 50];
-export const CAPS = [5, 10, 20, 100];
+export const PIECES = [1, 2, 5, 10, 20];
 export const MAX_EVENTS = 40;
 
-export type ReservationStatus = 'pending' | 'confirmed' | 'declined';
-
-/** A backer's reservation, as the owner's GET returns it. */
-export interface Reservation {
+/** One backer's agreed piece of the package: the same % of every event in it. */
+export interface PackageLine {
   id: string;
-  name: string;
-  contact?: string;
-  shares: { e: string; p: number }[];
-  status: ReservationStatus;
-  createdAt: string;
-}
-
-/** What a confirmed reservation became in the player's staking. */
-export interface Deal {
   backerId: string;
+  /** The staking package this line created (markup and name come from the festival package). */
   packageId: string;
-  /** The backer has paid for the piece. */
+  pct: number;
+  /** The backer has paid for the piece (marked by the player; paid outside the app). */
   paid?: boolean;
+  /** The private confirmation link, once sent. */
+  remote?: { id: string; token: string; url: string };
+  /** When the backer confirmed these terms on the link (ISO), null/undefined until then. */
+  confirmedAt?: string | null;
 }
 
 export interface ActionOffer {
   id: string;
   festivalId: string;
-  /** Sold as a package: the same % of every event. */
-  whole: boolean;
-  /** % on sale of each event in the package (event id → %). Events at 0 aren't in it. */
-  shares: Record<string, number>;
+  /** Events in the package (ids from the festival). Day 2s are never in it. */
+  events: string[];
   markup: number;
-  /** Most one backer can take of each event, in %. */
-  cap: number;
-  /** Smallest piece, in %. */
-  min: number;
-  closed?: boolean;
-  /** Set once the link exists. */
-  remote?: { id: string; token: string; url: string };
-  /** Last list fetched from the server (owner view). */
-  reservations?: Reservation[];
-  /** Reservation id → staking deal, once confirmed. */
-  deals: Record<string, Deal>;
+  lines: PackageLine[];
   createdAt: number;
   updatedAt?: number;
 }
 
-/** The public payload (spec: Offer, v 1). Rebuilt field by field on the server too. */
-export interface OfferPayload {
+/** The private link's payload (spec: Agreement, v 1). Rebuilt field by field on the server too. */
+export interface AgreementPayload {
   v: 1;
   player: string;
+  backer: string;
   title: string;
   cur: string;
   markup: number;
-  cap: number;
-  min: number;
-  whole: boolean;
-  events: { id: string; n: string; d: number; b: number; s: number }[];
-  closed: boolean;
+  events: { id: string; n: string; d: number; b: number; p: number }[];
   at: number;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export function newOffer(f: Festival, picked: string[], id: string, now = Date.now()): ActionOffer {
-  const shares: Record<string, number> = {};
-  for (const e of f.events) if (picked.includes(e.id) && !e.day2) shares[e.id] = 30;
-  return { id, festivalId: f.id, whole: true, shares, markup: 1.1, cap: 10, min: 1, deals: {}, createdAt: now };
+  const events = f.events.filter((e) => picked.includes(e.id) && !e.day2).map((e) => e.id);
+  return { id, festivalId: f.id, events, markup: 1.1, lines: [], createdAt: now };
 }
 
-/** The events in the package, in schedule order. Day 2s never have a buy-in to sell. */
+/** The events in the package, in schedule order. */
 export function offerEvents(f: Festival, o: ActionOffer): FestivalEvent[] {
-  return f.events.filter((e) => !e.day2 && (o.shares[e.id] ?? 0) > 0);
+  const set = new Set(o.events);
+  return f.events.filter((e) => !e.day2 && set.has(e.id));
 }
 
-/** Same % for every event in the package (used when switching to "whole"). */
-export function setAllShares(o: ActionOffer, pct: number): ActionOffer {
-  const shares: Record<string, number> = {};
-  for (const k of Object.keys(o.shares)) shares[k] = pct;
-  return { ...o, shares };
+export function soldPct(o: ActionOffer): number {
+  return r2(o.lines.reduce((a, l) => a + l.pct, 0));
+}
+
+/** What one backer's piece costs them: their % of every buy-in, with the markup. */
+export function lineCost(f: Festival, o: ActionOffer, pct: number): number {
+  return r2((offerEvents(f, o).reduce((a, e) => a + e.buyIn, 0) * pct * o.markup) / 100);
 }
 
 export function offerTotals(f: Festival, o: ActionOffer) {
-  const list = offerEvents(f, o);
-  const buyIns = list.reduce((a, e) => a + e.buyIn, 0);
-  // Face value of what's on sale, and what backers pay for it with the markup.
-  const face = list.reduce((a, e) => a + (e.buyIn * o.shares[e.id]) / 100, 0);
+  const buyIns = offerEvents(f, o).reduce((a, e) => a + e.buyIn, 0);
+  const sold = soldPct(o);
+  const face = (buyIns * sold) / 100;
   const price = face * o.markup;
   return {
-    events: list.length,
+    events: offerEvents(f, o).length,
     buyIns,
-    face: r2(face),
+    sold,
+    /** What the backers pay the player, in total. */
     price: r2(price),
-    /** What the markup earns the player if everything sells. */
+    /** What the markup earns the player. */
     premium: r2(price - face),
-    /** What the player still puts in if everything sells. */
+    /** What the player still puts in. */
     outOfPocket: r2(buyIns - price),
-    /** Share of the total buy-ins the player keeps (weighted by buy-in). */
-    keep: buyIns ? r2(100 - (face / buyIns) * 100) : 100,
-    /** Price of 1% of every event in a whole package. */
-    perPct: r2((buyIns / 100) * o.markup),
+    keep: r2(100 - sold),
   };
 }
 
-export function payload(f: Festival, o: ActionOffer, player: string, title: string, now = Date.now()): OfferPayload {
+export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player: string, backer: string, title: string, now = Date.now()): AgreementPayload {
   return {
     v: 1,
     player: player.trim().slice(0, 40),
+    backer: backer.trim().slice(0, 40),
     title: title.trim().slice(0, 60),
     cur: f.currency.slice(0, 4),
     markup: r2(o.markup),
-    cap: r2(o.cap),
-    min: r2(Math.min(o.min, o.cap)),
-    whole: o.whole,
     events: offerEvents(f, o)
       .slice(0, MAX_EVENTS)
-      .map((e) => ({ id: e.id, n: (eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '')).slice(0, 80), d: venueTime(f, e.start), b: e.buyIn, s: r2(o.shares[e.id]) })),
-    closed: !!o.closed,
+      .map((e) => ({ id: e.id, n: (eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '')).slice(0, 80), d: venueTime(f, e.start), b: e.buyIn, p: r2(line.pct) })),
     at: now,
   };
 }
 
-/** What a reservation costs the backer. */
-export function reservationPrice(f: Festival, o: ActionOffer, r: Pick<Reservation, 'shares'>): number {
-  const byId = new Map(f.events.map((e) => [e.id, e]));
-  return r2(r.shares.reduce((a, x) => a + ((byId.get(x.e)?.buyIn ?? 0) * x.p) / 100, 0) * o.markup);
-}
-
-/** % reserved per event, pending and confirmed together (what the web page calls "taken"). */
-export function taken(rs: Reservation[] | undefined): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const r of rs ?? []) if (r.status !== 'declined') for (const x of r.shares) out[x.e] = r2((out[x.e] ?? 0) + x.p);
-  return out;
-}
-
-/** A whole package's reservation is the same % everywhere: show it as one number. */
-export function reservationLabel(r: Pick<Reservation, 'shares'>): { pct: number | null; events: number } {
-  const ps = new Set(r.shares.map((x) => x.p));
-  return { pct: ps.size === 1 ? r.shares[0].p : null, events: r.shares.length };
-}
-
 /**
- * A confirmed reservation as staking records: the backer you already have with
- * that name (or a new one) and a package with the offer's markup.
+ * A new line: the backer you already have with that name (or a new one) and a
+ * staking package with the festival package's markup.
  */
-export function dealRecords(r: Reservation, backers: Backer[], title: string, markup: number, ids: { backer: string; pkg: string }, now = Date.now()) {
-  const known = backers.find((b) => b.name.trim().toLowerCase() === r.name.trim().toLowerCase());
-  const backer: Backer = known ?? { id: ids.backer, name: r.name.trim(), note: r.contact ?? '', createdAt: now };
-  const label = reservationLabel(r);
-  const pkg: StakePackage = { id: ids.pkg, backerId: backer.id, name: title, kind: 'action', share: label.pct ?? Math.max(...r.shares.map((x) => x.p)), markup, playerCut: 0, createdAt: now };
-  return { backer, isNew: !known, pkg };
+export function lineRecords(name: string, backers: Backer[], title: string, o: ActionOffer, pct: number, ids: { line: string; backer: string; pkg: string }, now = Date.now()) {
+  const known = backers.find((b) => b.name.trim().toLowerCase() === name.trim().toLowerCase());
+  const backer: Backer = known ?? { id: ids.backer, name: name.trim(), note: '', createdAt: now };
+  const pkg: StakePackage = { id: ids.pkg, backerId: backer.id, name: title, kind: 'action', share: pct, markup: o.markup, playerCut: 0, createdAt: now };
+  const line: PackageLine = { id: ids.line, backerId: backer.id, packageId: pkg.id, pct };
+  return { backer, isNew: !known, pkg, line };
 }
 
-/**
- * The backers' stakes for a session started from this event: one per confirmed
- * reservation that covers it. Pieces not paid for yet count against the backer.
- */
+/** The backers' stakes for a session started from this event. Pieces not marked paid count against the backer. */
 export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: string): Stake[] {
   const out: Stake[] = [];
   for (const o of offers) {
-    if (o.festivalId !== festivalId) continue;
-    for (const r of o.reservations ?? []) {
-      const deal = o.deals[r.id];
-      if (r.status !== 'confirmed' || !deal) continue;
-      const piece = r.shares.find((x) => x.e === eventId);
-      if (piece) out.push({ backerId: deal.backerId, packageId: deal.packageId, share: piece.p, markup: o.markup, unpaid: deal.paid ? undefined : true });
-    }
+    if (o.festivalId !== festivalId || !o.events.includes(eventId)) continue;
+    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, unpaid: l.paid ? undefined : true });
   }
   return out;
+}
+
+/** Packages these offers created: their stakes on a session are replaced, the rest kept. */
+export function offerPackageIds(offers: ActionOffer[]): Set<string> {
+  return new Set(offers.flatMap((o) => o.lines.map((l) => l.packageId)));
 }
 
 /**
@@ -195,7 +150,7 @@ export function withOfferStakes(existing: Stake[] | undefined, fromOffer: Stake[
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
-const KEY = 'rl.actionOffers.v1';
+const KEY = 'rl.actionOffers.v2';
 type Offers = Record<string, ActionOffer>;
 
 let offers: Offers = {};
@@ -240,6 +195,10 @@ export function saveOffer(o: ActionOffer) {
 export function updateOffer(id: string, fn: (o: ActionOffer) => ActionOffer) {
   const o = offers[id];
   if (o) saveOffer(fn(o));
+}
+
+export function updateLine(offerId: string, lineId: string, fn: (l: PackageLine) => PackageLine) {
+  updateOffer(offerId, (o) => ({ ...o, lines: o.lines.map((l) => (l.id === lineId ? fn(l) : l)) }));
 }
 
 export function deleteOffer(id: string) {

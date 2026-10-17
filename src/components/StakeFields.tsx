@@ -67,7 +67,7 @@ export function StakeFields({ s, onChange, expenses = true }: { s: Session; onCh
             }}
           />
         ) : sold < 100 ? (
-          <Button kind="outline" size="md" icon="person-add-outline" title={stakes.length ? t('Vender a mais alguém') : t('Vender ação')} onPress={() => setAdding(true)} />
+          <Button kind="outline" size="md" icon="person-add-outline" title={stakes.length ? t('Registar outro backer') : t('Registar ação vendida')} onPress={() => setAdding(true)} />
         ) : null}
       </Section>
       {expenses && (

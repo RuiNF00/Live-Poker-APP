@@ -66,7 +66,7 @@ export default function BackedPlayerScreen() {
         </Card>
 
         <StatGrid cols={3}>
-          <Stat label={t('Investido')} value={money(st.inv, cur)} />
+          <Stat label={t('Custo')} value={money(st.inv, cur)} />
           <Stat label={t('Resultado')} value={money(st.res, cur)} tone={st.res > 0 ? 'good' : st.res < 0 ? 'bad' : undefined} />
           <Stat label="Makeup" value={money(st.mk, cur)} tone={st.mk ? 'warn' : undefined} />
         </StatGrid>
