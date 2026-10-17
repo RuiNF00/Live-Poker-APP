@@ -82,11 +82,11 @@ export default function SettingsScreen() {
   const shared = useSharedHands();
   const { settings, setSettings, hands, sessions, players } = store;
   const pro = usePro();
-  // A cancelled subscription still runs to the end of the paid period: say until when, so nobody asks for a refund thinking it stopped.
-  const [endsOn, setEndsOn] = useState<string | null>(null);
+  // Renewal date, or the end of the paid period once cancelled, so nobody wonders whether the cancel worked. Lifetime has no date.
+  const [period, setPeriod] = useState<{ date: string; renews: boolean } | null>(null);
   useEffect(() => {
     void (pro.isPro ? getSubscription() : Promise.resolve(null)).then((s) =>
-      setEndsOn(s && !s.willRenew && s.ends ? new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : null),
+      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew } : null),
     );
   }, [pro.isPro]);
   const insets = useSafeAreaInsets();
@@ -232,7 +232,7 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.billingIssue ? t('Pagamento por atualizar na loja') : endsOn ? t('Termina a {date}', { date: endsOn }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               // A failed renewal goes straight to the store's page, where the card is changed.
               onPress={() => (pro.billingIssue ? manageSubscription() : pro.isPro ? router.push('/cancel') : manageSubscription())}
             />

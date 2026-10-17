@@ -270,5 +270,5 @@ export function useWelcomeOffer(handsSaved: number) {
 export function restoreNotice(res: store.RestoreResult, storeName: string) {
   if (res === 'ok') notice(t('Compras restauradas'), t('O teu Pro está ativo nesta conta da loja.'));
   else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
-  else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Sem rede. Tenta outra vez quando tiveres sinal.'));
+  else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Verifica a rede e tenta outra vez daqui a pouco.'));
 }

@@ -3256,6 +3256,8 @@ const es: Record<string, string> = {
   'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Tu Pro sigue activo por ahora. Actualiza el pago en {store} para no perderlo.',
   'Atualizar pagamento': 'Actualizar pago',
   'Termina a {date}': 'Termina el {date}',
+  'Renova a {date}': 'Se renueva el {date}',
+  'Verifica a rede e tenta outra vez daqui a pouco.': 'Revisa la conexión y vuelve a intentarlo en un momento.',
 };
 
 export default es;

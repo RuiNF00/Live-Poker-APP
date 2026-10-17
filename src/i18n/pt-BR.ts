@@ -1579,6 +1579,8 @@ const ptBR: Record<string, string> = {
   'A {store} não conseguiu cobrar': 'A {store} não conseguiu cobrar',
   'O teu Pro continua por agora. Atualiza o pagamento na {store} para não o perder.': 'Seu Pro continua por enquanto. Atualize o pagamento na {store} para não perder.',
   'Termina a {date}': 'Termina em {date}',
+  'Renova a {date}': 'Renova em {date}',
+  'Verifica a rede e tenta outra vez daqui a pouco.': 'Verifique a conexão e tente de novo daqui a pouco.',
 };
 
 export default ptBR;

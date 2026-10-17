@@ -242,7 +242,8 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
 
 async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
   try {
-    return hasPro((await run()).customerInfo) ? 'ok' : 'error';
+    // The store finished the purchase but Pro isn't on yet (RevenueCat still syncing): never say nothing was charged.
+    return hasPro((await run()).customerInfo) ? 'ok' : 'pending';
   } catch (e) {
     return buyError(e);
   }
