@@ -1330,7 +1330,7 @@ const en: Record<string, string> = {
   'Horas locais de Nassau (hora de Nova Iorque).': 'Local Nassau times (same as New York).',
   'O organizador ainda não publicou o fecho do late reg nem as regras de re-entry: confirma no balcão do torneio.': "The organiser hasn't published late reg close times or re-entry rules yet: check at the tournament desk.",
   'Bahamas, dezembro 2026': 'Bahamas, December 2026',
-  'site oficial do organizador': "the organiser's official site",
+  'calendário oficial do organizador': "the organiser's official schedule",
   'Nome do festival': 'Festival name',
   // Multi-day tournaments
   'Dia 2': 'Day 2',
