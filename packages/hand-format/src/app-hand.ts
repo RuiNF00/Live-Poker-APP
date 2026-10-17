@@ -23,17 +23,24 @@ export interface AppHand {
     sb: number;
     bb: number;
     ante: number;
-    anteType: 'none' | 'bb' | 'all';
+    anteType: 'none' | 'bb' | 'all' | 'btn';
     currency?: string;
     buyIn?: number;
     playersLeft?: number;
     venue?: string;
+    /** Live straddles, each double the last: from UTG onwards, or one on the button. */
+    straddles?: number;
+    straddleFrom?: 'utg' | 'btn';
+    /** Bomb pot: everyone puts this in as dead money and the hand starts on the flop. */
+    bombPot?: number;
   };
   players: { name: string; stack: number; cards?: string[] }[];
   button: number;
   hero: number;
   actions: AppHandAction[];
   board: string[];
+  /** Run it twice: the second board (not replayed yet). */
+  board2?: string[];
   tags?: string[];
   notes?: string;
   title?: string;
@@ -58,6 +65,35 @@ export interface Converted {
   hand: HandRecord;
   /** Flat app action index -> { street, index in that street }. */
   actionMap: { street: Street; index: number }[];
+}
+
+/**
+ * Forced bets for the live cases the blinds alone can't describe (button ante,
+ * straddles, bomb pot), in app player indexes; null when the usual blinds and
+ * antes say it all. Mirrors initialState / straddleSeats in the app's engine.
+ */
+export function livePosts(a: AppHand): { p: number; type: Action['type']; amount: number }[] | null {
+  const g = a.game;
+  const n = a.players.length;
+  if (g.bombPot && g.bombPot > 0) return a.players.map((_, p) => ({ p, type: 'post_ante' as const, amount: g.bombPot! }));
+  const k = Math.floor(g.straddles ?? 0);
+  const straddled = n >= 3 && k > 0;
+  if (!straddled && g.anteType !== 'btn') return null;
+  const sb = n === 2 ? a.button : (a.button + 1) % n;
+  const bb = n === 2 ? (a.button + 1) % n : (a.button + 2) % n;
+  const out: { p: number; type: Action['type']; amount: number }[] = [];
+  if (g.ante > 0) {
+    if (g.anteType === 'all') for (let p = 0; p < n; p++) out.push({ p, type: 'post_ante', amount: g.ante });
+    if (g.anteType === 'bb') out.push({ p: bb, type: 'post_ante', amount: g.ante });
+    if (g.anteType === 'btn') out.push({ p: a.button, type: 'post_ante', amount: g.ante });
+  }
+  if (g.sb) out.push({ p: sb, type: 'post_sb', amount: g.sb });
+  out.push({ p: bb, type: 'post_bb', amount: g.bb });
+  if (straddled) {
+    if (g.straddleFrom === 'btn') out.push({ p: a.button, type: 'post_straddle', amount: g.bb * 2 });
+    else for (let j = 0; j < Math.min(k, n - 3); j++) out.push({ p: (bb + 1 + j) % n, type: 'post_straddle', amount: g.bb * 2 ** (j + 1) });
+  }
+  return out;
 }
 
 /** Converts an app Hand; seats are player index + 1. Throws on malformed input. */
@@ -107,16 +143,27 @@ export function fromAppHand(a: AppHand): Converted {
   const bets = new Array(n).fill(0);
   const folded = new Array(n).fill(false);
   let acted = new Array(n).fill(false);
-  for (const post of impliedPosts(hand)) {
+  // Live cases list their forced bets on the record, so the replay doesn't guess them from the blinds.
+  const explicit = livePosts(a);
+  const posts: Action[] = explicit
+    ? explicit.map((x) => ({ seat: seat(x.p), type: x.type, amount: x.amount }))
+    : impliedPosts(hand);
+  for (const post of posts) {
     const i = post.seat - 1;
     const paid = Math.min(post.amount ?? 0, stacks[i]);
     stacks[i] -= paid;
     if (post.type !== 'post_ante') bets[i] += paid;
   }
+  if (explicit) {
+    hand.blinds.ante = undefined;
+    hand.blinds.bbAnte = false;
+    if (g.bombPot && g.bombPot > 0) hand.blinds.sb = 0;
+  }
 
-  let street = 0;
+  // A bomb pot has no preflop betting: the first action is on the flop.
+  let street = g.bombPot && g.bombPot > 0 ? 1 : 0;
   const actionMap: Converted['actionMap'] = [];
-  const perStreet: Action[][] = [[], [], [], []];
+  const perStreet: Action[][] = [explicit ? posts.slice() : [], [], [], []];
   const live = () => folded.filter((f) => !f).length;
 
   for (const act of a.actions) {
