@@ -10,6 +10,7 @@ import {
   type AmountMode,
   type HandRecord,
   type ReplayStep,
+  stakesText,
 } from '@livepoker/hand-format';
 import { t, type Locale } from '@/lib/i18n';
 import type { HandComment, QuizSpot } from '@/lib/types';
@@ -340,9 +341,7 @@ function EndCard({ locale, allowComments }: { locale: Locale; allowComments: boo
 function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers: boolean }) {
   const d = t(locale);
   const tour = hand.tournament;
-  const stakes = `${formatAmount(hand.blinds.sb, hand.blinds.bb, 'chips', locale)}/${formatAmount(hand.blinds.bb, hand.blinds.bb, 'chips', locale)}${
-    hand.blinds.ante ? ` · ante ${formatAmount(hand.blinds.ante, hand.blinds.bb, 'chips', locale)}` : ''
-  }`;
+  const stakes = stakesText(hand.blinds, (n) => formatAmount(n, hand.blinds.bb, 'chips', locale));
   const meta = [
     hand.format === 'tournament' ? tour?.name || d.tournament : d.cash,
     tour?.level ? `${d.level} ${tour.level}` : null,
@@ -358,7 +357,7 @@ function Header({ hand, title, locale, viewCount, spoilers }: Props & { spoilers
         {hand.location && <span>· {hand.location}</span>}
         {viewCount > 0 && (
           <span>
-            · {viewCount} {d.views}
+            · {viewCount} {d.views(viewCount)}
           </span>
         )}
       </div>

@@ -161,7 +161,8 @@ export function fromAppHand(a: AppHand): Converted {
   if (explicit) {
     hand.blinds.ante = undefined;
     hand.blinds.bbAnte = false;
-    if (g.bombPot && g.bombPot > 0) hand.blinds.sb = 0;
+    if (g.bombPot && g.bombPot > 0) hand.blinds.bombPot = g.bombPot;
+    else if (g.anteType === 'btn' && g.ante > 0) hand.blinds.btnAnte = g.ante;
   }
 
   // A bomb pot has no preflop betting: the first action is on the flop.

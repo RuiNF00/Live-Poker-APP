@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReplay, fromAppHand, livePosts, validateHand, type AppHand } from '../src';
+import { buildReplay, fromAppHand, livePosts, stakesText, validateHand, type AppHand } from '../src';
 
 // A 6-handed 2/5 cash game; button on player 0, so SB = 1, BB = 2, UTG = 3, HJ = 4, CO = 5.
 const base = (game: Partial<AppHand['game']>, actions: AppHand['actions'], board: string[] = []): AppHand => ({
@@ -97,6 +97,14 @@ describe('live cases', () => {
     const last = end(h);
     expect(last.kind).toBe('showdown');
     expect(last.winners?.map((w) => [w.seat, w.amount])).toEqual([[1, 120]]);
+  });
+
+  it('the header names the bomb pot and the button ante', () => {
+    const bomb = fromAppHand(base({ bombPot: 20 }, [{ p: 1, kind: 'check' }])).hand;
+    expect(stakesText(bomb.blinds)).toBe('2/5 · bomb pot 20');
+    const btn = fromAppHand(base({ ante: 5, anteType: 'btn' }, [{ p: 3, kind: 'fold' }])).hand;
+    expect(stakesText(btn.blinds)).toBe('2/5 · ante BTN 5');
+    expect(stakesText(fromAppHand(base({ ante: 5, anteType: 'bb' }, [])).hand.blinds)).toBe('2/5 · ante 5');
   });
 
   it('a straddle keeps the action map pointing at the right step', () => {

@@ -60,7 +60,8 @@ export interface HandRecord {
   game: 'NLHE' | 'PLO';
   format: 'tournament' | 'cash';
   currency?: string;
-  blinds: { sb: number; bb: number; ante?: number; bbAnte?: boolean };
+  /** btnAnte and bombPot only label the header: their posts are in the preflop actions. */
+  blinds: { sb: number; bb: number; ante?: number; bbAnte?: boolean; btnAnte?: number; bombPot?: number };
   tableSize: number;
   buttonSeat: number;
   players: Player[];
