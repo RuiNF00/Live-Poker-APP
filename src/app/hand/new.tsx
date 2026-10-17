@@ -20,7 +20,7 @@ import { PlayingCard } from '@/components/PlayingCard';
 import { Table } from '@/components/Table';
 import { Button, Chip, Row, T, tap } from '@/components/ui';
 import { comboLabel } from '@/poker/cards';
-import { buttonForHeroPosition, legal, positionOrder, positions, replay, totalPot, usedCards } from '@/poker/engine';
+import { buttonForHeroPosition, callName, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { sizePresets, skipTargets, skipTo } from '@/poker/entry';
 import { newHand, resizeTable } from '@/poker/factory';
 import { amount, blindsLabel, chips } from '@/poker/format';
@@ -251,12 +251,12 @@ export default function NewHand() {
               {l.canCheck ? (
                 <Button title="Check" kind="secondary" style={{ flex: 1 }} onPress={() => act('check')} />
               ) : (
-                <Button title={`Call ${amount(l.toCall, hand, inBB)}`} style={{ flex: 1.4 }} onPress={() => act('call')} />
+                <Button title={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} style={{ flex: 1.4 }} onPress={() => act('call')} />
               )}
             </Row>
             {presets.length > 0 && (
               <View style={{ gap: 6 }}>
-                <T v="label">{l.canBet ? 'Bet' : 'Raise para'}</T>
+                <T v="label">{raiseName(s) + (l.canBet ? '' : ' para')}</T>
                 <Row style={{ flexWrap: 'wrap' }} gap={6}>
                   {presets.map((p) => (
                     <Pressable
