@@ -53,6 +53,7 @@ export const APP_EVENTS = [
   'landing_view',
   'link_shared',
   'link_opened',
+  'invite_claimed',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 
