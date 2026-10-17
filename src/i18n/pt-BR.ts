@@ -1570,6 +1570,7 @@ const ptBR: Record<string, string> = {
   'Cartão do mês a partilhar: {h} h, 1 sessão.': 'Card do mês para compartilhar: {h} h, 1 sessão.',
   'Tens 1 sessão. As primeiras conclusões aparecem por volta das {m}.': 'Você tem 1 sessão. As primeiras conclusões aparecem por volta de {m}.',
   'Ainda a observar (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.': 'Ainda observando (1 sessão): o veredito aparece com 100 h de cash ou 50 torneios.',
+  'Enviar o meu resultado para o swap': 'Enviar meu resultado para o swap',
 };
 
 export default ptBR;
