@@ -18,7 +18,7 @@ import { dropVoiceNote } from '@/lib/voice-note';
 import { shareRef } from '@/lib/referrals';
 import { isNetworkError, queueShare, useQueuedShare } from '@/lib/share-queue';
 import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
-import { handText } from '@/poker/text';
+import { forumText } from '@/poker/text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -96,11 +96,34 @@ ${link}`;
     } else await Share.share({ message: msg });
   };
 
-  const copyText = async () => {
+  // Standard hand history for TwoPlusTwo, Reddit or a WhatsApp group: positions, stacks in bb, every street.
+  const copyText = async (withLink: boolean) => {
+    let link: string | undefined;
+    if (withLink) {
+      const isNew = !hand.shareId;
+      if (isNew && !pro.canShare()) {
+        pro.paywall('shares');
+        return;
+      }
+      const shareId = await ensureId();
+      if (!shareId) return;
+      if (isNew) pro.record('share');
+      const ref = await shareRef();
+      link = shareLink(shareId, 'text', { ref });
+      track('link_shared', { channel: 'text', share_id: shareId, ref });
+    }
+    await Clipboard.setStringAsync(forumText(hand, { link, brand: !pro.isPro, notes: settings.shareNotes }));
+    Alert.alert(t('Texto copiado'), t('Cola no fórum, no Reddit ou no grupo de WhatsApp.'));
+  };
+
+  const askCopyText = () => {
     tap();
-    const link = hand.shareId ? shareLink(hand.shareId, 'text', { ref: await shareRef() }) : undefined;
-    await Clipboard.setStringAsync(handText(hand, { inBB: settings.inBB, link }));
-    Alert.alert(t('Texto copiado'), t('Cola no WhatsApp, Discord ou onde quiseres.'));
+    if (Platform.OS === 'web') return copyText(!!hand.shareId);
+    Alert.alert(t('Copiar como texto'), t('Histórico da mão em bb, no formato dos fóruns.'), [
+      { text: t('Com link do replay'), onPress: () => copyText(true) },
+      { text: t('Só o texto'), onPress: () => copyText(false) },
+      { text: t('Cancelar'), style: 'cancel' },
+    ]);
   };
 
   const unshare = () => {
@@ -165,7 +188,7 @@ ${link}`;
           <Row gap={S.sm}>
             <ShareTile icon="help-circle-outline" label={t('Desafio')} sub={t('Votação')} disabled={busy} onPress={() => share(true)} />
             <ShareTile icon="logo-instagram" label="Story" sub="Instagram" onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })} />
-            <ShareTile icon="copy-outline" label={t('Texto')} sub="WhatsApp" onPress={copyText} />
+            <ShareTile icon="copy-outline" label={t('Texto')} sub={t('Fórum')} disabled={busy} onPress={askCopyText} />
           </Row>
         </Section>
 
