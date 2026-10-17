@@ -1425,6 +1425,19 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e deixa espaço para a sondagem do Instagram.': 'Para antes da sua decisão e deixa espaço para a enquete do Instagram.',
   'Começar: {name}': 'Começar: {name}',
   'Às {time}': 'Às {time}',
+  'A juntar a tua cara…': 'Adicionando seu rosto…',
+  'O vídeo da cara é grande demais': 'O vídeo do rosto ficou grande demais',
+  'Grava outra vez, um pouco mais curto.': 'Grave de novo, um pouco mais curto.',
+  'Não conseguimos abrir a câmara. Tenta outra vez.': 'Não conseguimos abrir a câmera. Tente de novo.',
+  'A tua cara, {s} s': 'Seu rosto, {s} s',
+  'Gravar com a cara': 'Gravar com o rosto',
+  'Toca para gravar outra vez': 'Toque para gravar de novo',
+  'Câmara frontal, até 30 s, com a tua voz. Fica só neste vídeo.': 'Câmera frontal, até 30 s, com a sua voz. Só vai neste vídeo.',
+  'Tirar a cara': 'Tirar o rosto',
+  'A tua cara no vídeo da mão': 'Seu rosto no vídeo da mão',
+  'Explica a mão a falar, com a tua cara num canto.': 'Explique a mão falando, com seu rosto num canto.',
+  'Vídeo com a tua cara': 'Vídeo com seu rosto',
+  'A explicar a mão, num canto': 'Explicando a mão, num canto',
 };
 
 export default ptBR;

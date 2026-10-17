@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { ffmpegArgs, parseDurations, parseSlot, renderReplayVideo, renderStoryVideo, replayArgs } from '../src/lib/story-video';
+import { ffmpegArgs, isMp4, parseDurations, parseFaceSlot, parseSlot, renderReplayVideo, renderStoryVideo, replayArgs } from '../src/lib/story-video';
 
 describe('parseSlot', () => {
   it('accepts a slot inside the frame and rounds to even sizes', () => {
@@ -91,6 +91,27 @@ describe('replayArgs', () => {
   });
 });
 
+describe('face clip', () => {
+  it('takes a sane circle inside the frame only', () => {
+    expect(parseFaceSlot({ x: 762, y: 180, d: 276 })).toEqual({ x: 762, y: 180, d: 276 });
+    expect(parseFaceSlot({ x: 900, y: 180, d: 276 })).toBeNull();
+    expect(parseFaceSlot({ x: 10, y: 10, d: 20 })).toBeNull();
+    expect(parseFaceSlot({ x: 'a', y: 10, d: 200 })).toBeNull();
+    expect(parseFaceSlot(null)).toBeNull();
+  });
+  it('only accepts MP4/QuickTime bytes', () => {
+    expect(isMp4(new Uint8Array([0, 0, 0, 20, 0x66, 0x74, 0x79, 0x70, 0x71, 0x74, 0x20, 0x20, 0]))).toBe(true);
+    expect(isMp4(new Uint8Array([0xff, 0xd8, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))).toBe(false);
+  });
+  it('puts the face in a circle and uses its sound, not the voice note', () => {
+    const args = replayArgs(['a.jpg'], [2], null, 'o.mp4', null, { file: 'f.mov', slot: { x: 762, y: 180, d: 276 } }).join(' ');
+    expect(args).toContain('-f mov -i f.mov');
+    expect(args).toContain('overlay=762:180');
+    expect(args).toContain('[1:a]apad');
+    expect(args).not.toContain('anullsrc');
+  });
+});
+
 describe('renderReplayVideo', () => {
   it('renders the frames for the total of their durations, with or without voice', async () => {
     const ff = (process.env.FFMPEG_PATH || require('ffmpeg-static')) as string;
@@ -117,5 +138,10 @@ describe('renderReplayVideo', () => {
     expect(length(silent)).toBeCloseTo(4, 0);
     const voiced = await renderReplayVideo({ frames, durations: [1, 1, 2], voice: readFileSync(m4a), voiceExt: 'm4a', slot: { x: 648, y: 219, w: 342, h: 48 } });
     expect(length(voiced)).toBeCloseTo(4, 0);
+    const mov = path.join(dir, 'face.mov');
+    execFileSync(ff, ['-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=s=480x360:d=3', '-f', 'lavfi', '-i', 'sine=frequency=330:duration=3', '-c:v', 'libx264', '-c:a', 'aac', '-shortest', mov]);
+    const withFace = await renderReplayVideo({ frames, durations: [1, 1, 2], voice: null, voiceExt: 'm4a', slot: null, face: { bytes: readFileSync(mov), slot: { x: 762, y: 180, d: 276 } } });
+    expect(length(withFace)).toBeCloseTo(4, 0);
+    if (process.env.FACE_OUT) require('node:fs').writeFileSync(process.env.FACE_OUT, withFace);
   }, 60_000);
 });

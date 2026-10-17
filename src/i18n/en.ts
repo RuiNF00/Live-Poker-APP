@@ -3086,6 +3086,19 @@ const en: Record<string, string> = {
   '{month} até agora: {amount} em {h} h': '{month} so far: {amount} in {h} h',
   'Começar: {name}': 'Start: {name}',
   'Às {time}': 'At {time}',
+  'A juntar a tua cara…': 'Adding your face…',
+  'O vídeo da cara é grande demais': 'The face video is too big',
+  'Grava outra vez, um pouco mais curto.': 'Record it again, a bit shorter.',
+  'Não conseguimos abrir a câmara. Tenta outra vez.': 'We couldn\'t open the camera. Try again.',
+  'A tua cara, {s} s': 'Your face, {s} s',
+  'Gravar com a cara': 'Record with your face',
+  'Toca para gravar outra vez': 'Tap to record again',
+  'Câmara frontal, até 30 s, com a tua voz. Fica só neste vídeo.': 'Front camera, up to 30 s, with your voice. Used only for this video.',
+  'Tirar a cara': 'Remove the face',
+  'A tua cara no vídeo da mão': 'Your face in the hand video',
+  'Explica a mão a falar, com a tua cara num canto.': 'Talk through the hand, with your face in a corner.',
+  'Vídeo com a tua cara': 'Video with your face',
+  'A explicar a mão, num canto': 'Explaining the hand, in a corner',
 };
 
 export default en;

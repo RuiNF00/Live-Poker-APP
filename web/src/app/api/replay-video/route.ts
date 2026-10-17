@@ -3,13 +3,15 @@ import { NextResponse } from 'next/server';
 import { cors } from '@/lib/cors';
 import { limited } from '@/lib/abuse';
 import { hasPro, revenueCatConfigured } from '@/lib/revenuecat';
-import { MAX_FRAMES, parseDurations, parseSlot, renderReplayVideo } from '@/lib/story-video';
+import { isMp4, MAX_FRAMES, parseDurations, parseFaceSlot, parseSlot, renderReplayVideo } from '@/lib/story-video';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const MAX_FRAME = 600 * 1024;
 const MAX_VOICE = 3 * 1024 * 1024;
+/** The face clip (iOS front camera, medium quality). The whole request must stay under Vercel's 4.5 MB. */
+const MAX_FACE = 3.5 * 1024 * 1024;
 const VOICE_EXT: Record<string, string> = {
   'audio/mp4': 'm4a',
   'audio/m4a': 'm4a',
@@ -31,8 +33,11 @@ const isJpeg = (b: Uint8Array) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xf
  * Renders a hand's replay as a vertical video (Reels, TikTok, WhatsApp status).
  * Called by the app (src/lib/instagram-story.native.ts): multipart form with
  * `frame0`…`frameN` (JPEG 1080×1920, captured from the replayer), `durations`
- * (JSON seconds per frame), and optionally `voice` + `slot` + `rcUserId`.
- * Anyone can render the video; adding a voice note is Pro.
+ * (JSON seconds per frame), and optionally `voice` + `slot`, or `face` (the
+ * player's selfie clip, MP4/QuickTime) + `faceSlot`, with `rcUserId`.
+ * Anyone can render the video; adding a voice note or a face is Pro. Voice and
+ * face are used for this one render and deleted with its temp folder: never
+ * stored, never logged.
  */
 export async function POST(req: Request) {
   if (await limited(req, 'replay', 20, 3600)) {
@@ -61,10 +66,8 @@ export async function POST(req: Request) {
   if (!durations) return NextResponse.json({ error: 'invalid_durations' }, { status: 422, headers: cors });
 
   const voice = form.get('voice');
-  let voiceBytes: Uint8Array | null = null;
-  let voiceExt = 'm4a';
-  let slot = null;
-  if (voice instanceof Blob) {
+  const faceFile = form.get('face');
+  if (voice instanceof Blob || faceFile instanceof Blob) {
     const rcUserId = form.get('rcUserId');
     if (revenueCatConfigured()) {
       if (typeof rcUserId !== 'string' || !rcUserId || rcUserId.length > 100 || !(await hasPro(rcUserId))) {
@@ -73,6 +76,27 @@ export async function POST(req: Request) {
     } else if (process.env.NODE_ENV === 'production') {
       return NextResponse.json({ error: 'unavailable' }, { status: 503, headers: cors });
     }
+  }
+
+  let face = null;
+  if (faceFile instanceof Blob) {
+    if (faceFile.size > MAX_FACE) return NextResponse.json({ error: 'too_large' }, { status: 413, headers: cors });
+    let faceSlot = null;
+    try {
+      faceSlot = parseFaceSlot(JSON.parse(String(form.get('faceSlot') ?? '')));
+    } catch {
+      faceSlot = null;
+    }
+    if (!faceSlot) return NextResponse.json({ error: 'invalid_slot' }, { status: 422, headers: cors });
+    const bytes = new Uint8Array(await faceFile.arrayBuffer());
+    if (!isMp4(bytes)) return NextResponse.json({ error: 'invalid_face' }, { status: 422, headers: cors });
+    face = { bytes, slot: faceSlot };
+  }
+
+  let voiceBytes: Uint8Array | null = null;
+  let voiceExt = 'm4a';
+  let slot = null;
+  if (voice instanceof Blob && !face) {
     if (voice.size > MAX_VOICE) return NextResponse.json({ error: 'too_large' }, { status: 413, headers: cors });
     voiceBytes = new Uint8Array(await voice.arrayBuffer());
     voiceExt = VOICE_EXT[voice.type.split(';')[0]] ?? 'm4a';
@@ -87,7 +111,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const mp4 = await renderReplayVideo({ frames, durations, voice: voiceBytes, voiceExt, slot });
+    const mp4 = await renderReplayVideo({ frames, durations, voice: voiceBytes, voiceExt, slot, face });
     return new NextResponse(new Uint8Array(mp4), {
       headers: { ...cors, 'content-type': 'video/mp4', 'content-length': String(mp4.length), 'cache-control': 'no-store' },
     });
