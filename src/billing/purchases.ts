@@ -79,6 +79,8 @@ function fallbackPlans(): StorePlan[] {
   return (Object.keys(PLANS) as PlanId[]).map((id) => ({ id, price: PLANS[id].price, priceString: usd(PLANS[id].price), currency: 'USD', trialDays: PLANS[id].trialDays }));
 }
 
+const PLANS_TIMEOUT_MS = 12_000;
+
 /**
  * Store plans, or null when the store couldn't be reached. A real build never
  * shows made-up prices (App Review 2.1): the paywall offers a retry instead.
@@ -87,7 +89,11 @@ function fallbackPlans(): StorePlan[] {
 export async function getPlans(): Promise<StorePlan[] | null> {
   if (!LIVE) return fallbackPlans();
   try {
-    const offerings = await (await rc()).getOfferings();
+    // A card room's network can leave the request hanging: give up and show the retry instead of a spinner forever.
+    const offerings = await Promise.race([
+      (await rc()).getOfferings(),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), PLANS_TIMEOUT_MS)),
+    ]);
     const pkgs = offerings.current?.availablePackages ?? [];
     const plans: StorePlan[] = [];
     for (const id of Object.keys(PRODUCTS) as PlanId[]) {
