@@ -5,11 +5,13 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
+import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
+import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
 import { SmallSample } from '@/components/SmallSample';
 import { useLocked } from '@/components/ProGate';
@@ -17,8 +19,7 @@ import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { lang, locale, t } from '@/i18n';
 import { track } from '@/lib/events';
-import { canShareStory, captureStory, shareStory } from '@/lib/instagram-story';
-import { canShareImage, shareImage } from '@/lib/share-image';
+import { canShareStory, captureStory, sharePost, shareStory } from '@/lib/instagram-story';
 import { askNotificationPermission, notifications } from '@/lib/lock-screen/reminder';
 import { recapHidden } from '@/lib/month-recap';
 import { maybeAskForReview } from '@/lib/review';
@@ -45,6 +46,7 @@ export default function MonthScreen() {
   const cmp = useMemo(() => (key && r ? compareMonths(sessions, key, r.currency) : null), [sessions, key, r]);
   const [hideMoney, setHideMoney] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const card = useRef<React.ComponentRef<typeof View>>(null);
   const [granted, setGranted] = useState<boolean | null>(() => (notifications() ? null : false));
   useEffect(() => {
@@ -93,28 +95,38 @@ export default function MonthScreen() {
     }
   };
 
-  // X, WhatsApp and the rest: the same card through the share sheet, the text and link copied for pasting.
-  const postElsewhere = async () => {
+  // Text G: time and volume only; the result stays on the card if the player shows it there.
+  const postText = async (to: 'x' | 'any') => {
+    const ref = await shareRef().catch(() => '');
+    const link = `${BRAND.webUrl}/r/${ref}?utm_source=${to === 'x' ? 'x' : 'app'}&utm_medium=post&utm_campaign=month`;
+    const name = monthName(key);
+    const line = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
+      month: lang === 'en' ? name : name.toLowerCase(),
+      sessions: r.sessions,
+      hours: Math.round(r.hours),
+      hands: hands.filter((h) => monthKey(h.createdAt) === key).length,
+    });
+    return `${line}\n${link}`;
+  };
+
+  const postTo = async (to: 'x' | 'any') => {
     tap('medium');
     setBusy(true);
     try {
-      const ref = await shareRef().catch(() => '');
-      const link = `${BRAND.webUrl}/r/${ref}?utm_source=share&utm_medium=image&utm_campaign=month`;
-      const name = monthName(key);
-      const text = t('O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.', {
-        month: lang === 'en' ? name : name.toLowerCase(),
-        sessions: r.sessions,
-        hours: Math.round(r.hours),
-        hands: hands.filter((h) => monthKey(h.createdAt) === key).length,
-      });
-      await shareImage(await captureStory(card), `${text}\n${link}`);
-      track('story_shared', { target: 'sheet', kind: 'month', money: !hideMoney });
+      await sharePost([await captureStory(card)], await postText(to), to);
+      track('story_shared', { target: to, kind: 'month', money: !hideMoney });
     } catch {
-      // closed the sheet
+      Alert.alert(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }
   };
+
+  const copy = async () => {
+    await Clipboard.setStringAsync(await postText('any')).catch(() => {});
+    Alert.alert(t('Link copiado'));
+  };
+
 
   const toggle = async (v: boolean) => {
     setSettings({ monthRecap: v });
@@ -124,6 +136,7 @@ export default function MonthScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t('Resumo do mês') }} />
+      <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView
         style={{ flex: 1, backgroundColor: C.bg }}
         contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}
@@ -195,10 +208,7 @@ export default function MonthScreen() {
                 }}
               />
               {canShareStory ? (
-                <>
-                  <Button title={busy ? t('A preparar…') : t('Partilhar no Instagram')} icon="logo-instagram" disabled={busy} onPress={post} />
-                  {canShareImage ? <IconButton name="share-outline" label={t('Partilhar noutra app (X, WhatsApp…)')} onPress={postElsewhere} /> : null}
-                </>
+                <Button title={busy ? t('A preparar…') : t('Partilhar')} icon="share-outline" disabled={busy} onPress={() => setSheet(true)} />
               ) : (
                 <T v="small" style={{ flex: 1 }}>
                   {t('Abre a app no telemóvel para publicar no Instagram.')}

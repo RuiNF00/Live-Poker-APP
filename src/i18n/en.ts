@@ -227,8 +227,6 @@ const en: Record<string, string> = {
   'Notas (o que pensaste, reads, dúvidas…)': 'Notes (what you thought, reads, doubts…)',
   // Hand screen and sharing
   'Não deu para criar o link agora. Podes partilhar o texto da mão.': 'Couldn\'t create the link right now. You can share the hand as text.',
-  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
-  'o que fazias aqui? 👀': 'what would you do here? 👀',
   'Texto copiado': 'Text copied',
   'Cola no fórum, no Reddit ou no grupo de WhatsApp.': 'Paste it into a forum, Reddit or your WhatsApp group.',
   'Copiar como texto': 'Copy as text',
@@ -2897,6 +2895,20 @@ const en: Record<string, string> = {
   // Crash reports switch (Definições → Os teus dados).
   'Enviar relatórios de erros': 'Send crash reports',
   'Só o que falhou e a versão, para corrigirmos depressa. Sem nomes, mãos nem montantes.': 'Only what failed and the version, so we can fix it fast. No names, hands or amounts.',
+  'Não conseguimos preparar a imagem. Tenta outra vez.': 'We couldn\'t prepare the image. Try again.',
+  'Carrossel no Instagram': 'Instagram carousel',
+  'Copiar legenda': 'Copy caption',
+  '{h} h ao vivo, {hands} mãos registadas.': '{h} h live, {hands} hands logged.',
+  '{h} h ao vivo.': '{h} h live.',
+  'Sticker no Instagram': 'Instagram sticker',
+  'O meu {year} no póquer: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'My {year} in poker: {sessions} sessions, {hours} hours and {hands} hands logged.',
+  'WhatsApp, Mensagens, guardar imagem…': 'WhatsApp, Messages, save image…',
+  '{game}: o que fazes aqui? Vota antes de ver o resultado 🗳️': '{game}: what do you do here? Vote before you see the result 🗳️',
+  'O que fazes aqui? Vota antes de ver o resultado 🗳️': 'What do you do here? Vote before you see the result 🗳️',
+  '{game}: o que fazias aqui? A mão toda, rua a rua, no link 👀': '{game}: what would you do here? The full hand, street by street, at the link 👀',
+  'O que fazias aqui? A mão toda, rua a rua, no link 👀': 'What would you do here? The full hand, street by street, at the link 👀',
+  '{game}: o que fazias aqui? 👀': '{game}: what would you do here? 👀',
+  'O que fazias aqui? 👀': 'What would you do here? 👀',
   'Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.': 'You pay once. Your subscription isn\'t cancelled or refunded on its own: you cancel it in {store} right after.',
   '{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.': '{price} a month for {n} months. Then {monthly} a month until you cancel.',
   'Cancela quando quiseres na Google Play, em Pagamentos e subscrições.': 'Cancel any time in Google Play, under Payments & subscriptions.',
@@ -2925,6 +2937,8 @@ const en: Record<string, string> = {
   'Aceito enviar este ficheiro ao suporte': 'I agree to send this file to support',
   'Abrir o email': 'Open email',
   'O meu {month} ao vivo: {sessions} sessões, {hours} horas e {hands} mãos registadas.': 'My {month} live: {sessions} sessions, {hours} hours and {hands} hands logged.',
+  'desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️': 'challenge: what do you do here? Vote before you see the result 🗳️',
+  'o que fazias aqui? 👀': 'what would you do here? 👀',
 };
 
 export default en;
