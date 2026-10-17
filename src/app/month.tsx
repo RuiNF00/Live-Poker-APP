@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Alert, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
@@ -196,7 +196,10 @@ export default function MonthScreen() {
           <View style={{ alignItems: 'center', gap: S.md }}>
             <View style={{ width: STORY_W * preview, height: STORY_H * preview, borderRadius: R.xl, overflow: 'hidden', borderWidth: 1, borderColor: C.borderStrong }}>
               <View style={{ position: 'absolute', left: (STORY_W * preview - STORY_W) / 2, top: (STORY_H * preview - STORY_H) / 2, transform: [{ scale: preview }] }}>
-                <MonthCard ref={card} r={r} hideMoney={hideMoney} />
+                {/* The card's own text reads out; this says what it is. */}
+                <View accessible accessibilityRole="image" accessibilityLabel={t('Cartão do mês a partilhar: {h} h, {n} sessões.', { h: Math.round(r.hours), n: r.sessions })}>
+                  <MonthCard ref={card} r={r} hideMoney={hideMoney} />
+                </View>
               </View>
             </View>
             <Row gap={S.sm}>
@@ -275,7 +278,12 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
   return (
     <Card style={{ gap: S.md }}>
       <T v="h3">{verdict}</T>
-      <Row gap={6} style={{ alignItems: 'flex-end', height: 96 }}>
+      <Row
+        gap={6}
+        style={{ alignItems: 'flex-end', height: 96 }}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={t('Resultado por mês: {list}.', { list: c.history.map((h) => `${monthName(h.key)} ${signed(h.profit)}`).join(', ') })}>
         {c.history.map((h) => {
           const me = h.key === r.key;
           const hgt = Math.max(3, (Math.abs(h.profit) / top) * 72);

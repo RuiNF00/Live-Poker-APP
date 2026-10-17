@@ -2339,7 +2339,7 @@ const es: Record<string, string> = {
   '{n} mãos desta sessão, rua a rua, enquanto estão frescas.': '{n} manos de esta sesión, calle a calle, mientras están frescas.',
   'Vê em que salas, jogos e stakes ganhas mais.': 'Mira en qué salas, juegos y stakes ganas más.',
   'Torneios por buy-in, festival e jogo': 'Torneos por buy-in, festival y juego',
-  'Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}.': 'Gráfico del resultado acumulado: {now} en {n} sesiones, máximo {max}.',
+  'Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.': 'Gráfico del resultado acumulado: {now} en {n} sesiones, máximo {max}, mayor caída {drop}.',
   'Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.': 'Gráfico de las caídas: ahora −{now} por debajo del pico, como máximo −{max}.',
   'cerca de': 'alrededor de',
   'Win rate': 'Win rate',
@@ -3058,6 +3058,11 @@ const es: Record<string, string> = {
   'Par, {rank}': 'Pareja, {rank}',
   '{a} e {b}, mesmo naipe': '{a} y {b}, del mismo palo',
   '{a} e {b}, naipes diferentes': '{a} y {b}, de palos distintos',
+  'Últimas {n} sessões: {won} a ganhar, {lost} a perder.': 'Últimas {n} sesiones: {won} en positivo, {lost} en negativo.',
+  'Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.': 'Calendario de las últimas 15 semanas: {n} días jugados, {won} en positivo, {lost} en negativo.',
+  'Cartão do mês a partilhar: {h} h, {n} sessões.': 'Tarjeta del mes para compartir: {h} h, {n} sesiones.',
+  'Resultado por mês: {list}.': 'Resultado por mes: {list}.',
+  'Gráfico das quedas: agora no pico, no máximo −{max}.': 'Gráfico de las caídas: ahora en el pico, como máximo −{max}.',
 };
 
 export default es;

@@ -272,7 +272,7 @@ function BankrollTab() {
                   values={pts}
                   height={120}
                   peaks={dd.peaks}
-                  label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)) })}
+                  label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)), drop: dd.max ? (hidden ? '•••' : '−' + fmt(dd.max, cur)) : '—' })}
                 />
               </View>
               <Row gap={S.sm}>
@@ -570,7 +570,7 @@ function TransferRow({ x, bankroll, onPress }: { x: Transfer; bankroll?: string;
 function Dots({ results }: { results: number[] }) {
   if (results.length < 2) return null;
   return (
-    <Row gap={4} style={{ alignItems: 'center' }}>
+    <Row gap={4} style={{ alignItems: 'center' }} accessible accessibilityLabel={t('Últimas {n} sessões: {won} a ganhar, {lost} a perder.', { n: results.length, won: results.filter((r) => r > 0).length, lost: results.filter((r) => r < 0).length })}>
       <T v="tiny">{t('Últimas {n}', { n: results.length })}</T>
       {results.map((r, i) => (
         <View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r > 0 ? C.good : r < 0 ? C.bad : C.muted }} />
@@ -606,7 +606,15 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
   return (
     <Section title={t('Calendário')} hint={t('Cada quadrado é um dia: verde ganhaste, vermelho perdeste. Mais forte, mais dinheiro.')}>
       <Card style={{ gap: S.md }}>
-        <View style={{ flexDirection: 'row', gap: 3 }}>
+        <View
+          style={{ flexDirection: 'row', gap: 3 }}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={t('Calendário das últimas 15 semanas: {n} dias jogados, {won} a ganhar, {lost} a perder.', {
+            n: shown,
+            won: cols.flat().filter((c) => c.r !== undefined && c.r >= 0).length,
+            lost: cols.flat().filter((c) => c.r !== undefined && c.r < 0).length,
+          })}>
           {cols.map((col, w) => (
             <View key={w} style={{ flex: 1, gap: 3 }}>
               {col.map((c) => (
@@ -639,7 +647,7 @@ const pctOf = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
 
 function Mini({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <View style={{ flex: 1, gap: 2 }}>
+    <View style={{ flex: 1, gap: 2 }} accessible accessibilityLabel={`${label}: ${value}`}>
       <T v="tiny" numberOfLines={2}>
         {label}
       </T>
@@ -676,7 +684,19 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
           <T v="small">{by === 'venue' ? t('Dá um nome à sala nas sessões para ver aqui.') : t('Dá um nome ao jogo nas sessões para ver aqui.')}</T>
         ) : (
           shown.map((b) => (
-            <View key={b.key} style={{ gap: 6 }}>
+            <View
+              key={b.key}
+              style={{ gap: 6 }}
+              accessible
+              accessibilityLabel={[
+                b.key,
+                b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions }),
+                b.hours >= 0.25 && b.mtts < b.sessions ? t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : '',
+                b.roi !== null ? 'ROI ' + pctOf(b.roi) : '',
+                (b.profit > 0 ? '+' : '') + fmt(b.profit, cur),
+              ]
+                .filter(Boolean)
+                .join(', ')}>
               <Row>
                 <View style={{ flex: 1 }}>
                   <T v="h3" numberOfLines={1}>

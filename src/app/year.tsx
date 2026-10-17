@@ -194,8 +194,8 @@ export default function YearScreen() {
                   </View>
                 )}
                 {/* Tap the edges to step, like stories; swiping works too. */}
-                {i > 0 ? <Pressable accessibilityLabel={t('Anterior')} onPress={() => go(i - 1)} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
-                {i < cards.length - 1 ? <Pressable accessibilityLabel={t('Seguinte')} onPress={() => go(i + 1)} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
+                {i > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('Anterior')} onPress={() => go(i - 1)} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
+                {i < cards.length - 1 ? <Pressable accessibilityRole="button" accessibilityLabel={t('Seguinte')} onPress={() => go(i + 1)} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '25%' }} /> : null}
               </View>
             </View>
           );

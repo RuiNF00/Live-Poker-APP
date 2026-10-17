@@ -93,7 +93,7 @@ export default function TripScreen() {
           <Divider />
           <PokerVsCosts poker={s.poker} expenses={s.expenses} byKind={s.byKind} fmt={fmt} signed={signed} />
           {other && !(other.rate > 0) ? (
-            <T v="tiny" color={C.warn} onPress={() => setSheet({ type: 'trip' })}>
+            <T v="tiny" color={C.warn} onPress={() => setSheet({ type: 'trip' })} accessibilityRole="button">
               {t('Define o câmbio {a} → {b} para converter o resultado e as despesas em {b}.', { a: cur, b: other.currency })}
             </T>
           ) : null}
@@ -239,7 +239,7 @@ function PokerVsCosts({
   const kinds = EXPENSE_KINDS.filter((k) => byKind[k] > 0);
   return (
     <View style={{ gap: S.sm }}>
-      <Row>
+      <Row accessible accessibilityLabel={`${t('Póquer')}: ${signed(poker)}`}>
         <T v="small" style={{ flex: 1 }}>
           {t('Póquer')}
         </T>
@@ -247,7 +247,7 @@ function PokerVsCosts({
           {signed(poker)}
         </T>
       </Row>
-      <Row>
+      <Row accessible accessibilityLabel={`${t('Despesas')}: ${expenses ? '−' + fmt(expenses) : fmt(0)}`}>
         <T v="small" style={{ flex: 1 }}>
           {t('Despesas')}
         </T>
@@ -257,7 +257,8 @@ function PokerVsCosts({
       </Row>
       {kinds.length ? (
         <>
-          <View style={{ flexDirection: 'row', height: 8, borderRadius: R.pill, overflow: 'hidden', backgroundColor: C.surface3, gap: 2 }}>
+          {/* The legend below reads each kind; the bar is only its picture. */}
+          <View style={{ flexDirection: 'row', height: 8, borderRadius: R.pill, overflow: 'hidden', backgroundColor: C.surface3, gap: 2 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             {kinds.map((k) => (
               <View key={k} style={{ flex: byKind[k], backgroundColor: KIND[k].color }} />
             ))}
@@ -290,7 +291,7 @@ function FestivalPlanCard({ trip, fmt }: { trip: Trip; fmt: (n: number) => strin
         <T v="h3" style={{ flex: 1 }}>
           {t('Plano do festival')}
         </T>
-        <T v="small" color={C.accent} onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}>
+        <T v="small" color={C.accent} onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })} accessibilityRole="link">
           {t('Abrir')}
         </T>
       </Row>

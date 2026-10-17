@@ -23,6 +23,7 @@ import {
   type TextInputProps,
   type TextProps,
   type TextStyle,
+  type ViewProps,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -120,8 +121,15 @@ export function Amount({ value, text, v = 'mono', style, neutral }: { value: num
 
 // ─── Layout ──────────────────────────────────────────────────────────────────
 
-export function Row({ children, style, gap = S.sm }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; gap?: number }) {
-  return <View style={[{ flexDirection: 'row', alignItems: 'center', gap }, style]}>{children}</View>;
+/** a11y: a row that reads as one line for screen readers (label and value together). */
+type RowA11y = Partial<Pick<ViewProps, 'accessible' | 'accessibilityLabel' | 'accessibilityRole'>>;
+
+export function Row({ children, style, gap = S.sm, ...a11y }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; gap?: number } & RowA11y) {
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap }, style]} {...a11y}>
+      {children}
+    </View>
+  );
 }
 
 export function Spacer() {
@@ -277,7 +285,12 @@ export function Card({
   accessibilityLabel?: string;
 }) {
   const base: ViewStyle = { borderRadius: R.lg, borderWidth: 1, padding: padded ? S.lg : 0, overflow: 'hidden', ...CARD_TONE[tone], ...(tone === 'default' || tone === 'raised' ? SHADOW : null) };
-  if (!onPress) return <View style={[base, style]}>{children}</View>;
+  if (!onPress)
+    return (
+      <View style={[base, style]} accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel}>
+        {children}
+      </View>
+    );
   return (
     <Pressable
       accessibilityRole="button"
@@ -480,7 +493,11 @@ export function Stat({
 }) {
   const col = tone === 'good' ? C.good : tone === 'bad' ? C.bad : tone === 'accent' ? C.accent : tone === 'warn' ? C.warn : C.text;
   return (
-    <Card onPress={onPress} style={[{ flex: 1, gap: 6, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 }, style]}>
+    <Card
+      onPress={onPress}
+      style={[{ flex: 1, gap: 6, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 }, style]}
+      // Read as one line: "Por hora: 26 €. Lucro ÷ horas à mesa".
+      accessibilityLabel={`${label}: ${locked ? t('Pro') : value}${sub ? '. ' + sub : ''}`}>
       <Row gap={4}>
         <T v="label" numberOfLines={1} style={{ flexShrink: 1 }}>
           {label}
