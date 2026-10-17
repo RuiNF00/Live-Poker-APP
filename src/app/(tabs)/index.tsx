@@ -10,7 +10,7 @@ import { Badge, Banner, Button, Chip, ChipRow, Empty, IconButton, Pill, Row, Scr
 import { locale, t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
-import { amount, blindsLabel, chips, duration, timeOf } from '@/poker/format';
+import { amount, blindsLabel, timeOf } from '@/poker/format';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
@@ -44,7 +44,7 @@ function dayTitle(day: number) {
 const Separator = () => <View style={{ height: S.sm }} />;
 
 export default function HandsScreen() {
-  const { hands, activeSession, settings, draft, setDraft } = useStore();
+  const { hands, settings, draft, setDraft } = useStore();
   const { handsLeft, trialDays, paywall } = usePro();
   useWelcomeOffer(hands.length);
   const [q, setQ] = useState('');
@@ -103,14 +103,6 @@ export default function HandsScreen() {
                   </>
                 }
               />
-              {activeSession ? (
-                <Banner
-                  live
-                  title={t('Sessão em curso · {time}', { time: duration(Date.now() - activeSession.startedAt) })}
-                  body={[activeSession.name || t('Sem nome'), 'Stack ' + chips(activeSession.stack)].join(' · ')}
-                  onPress={() => router.push('/session')}
-                />
-              ) : null}
               {hasDraft ? (
                 <Banner
                   tone="warn"
