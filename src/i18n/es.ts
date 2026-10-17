@@ -2403,6 +2403,8 @@ const es: Record<string, string> = {
   'Torneios com prémio: {cashes} de {n}': 'Torneos con premio: {cashes} de {n}',
   'Este mês / o mês anterior com sessões': 'Este mes / el mes anterior con sesiones',
   'Este mês / média dos {n} meses anteriores': 'Este mes / media de los {n} meses anteriores',
+  '1 dia de viagem': '1 día de viaje',
+  '{n} dias de viagem': '{n} días de viaje',
 };
 
 export default es;

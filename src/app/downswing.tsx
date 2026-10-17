@@ -88,7 +88,9 @@ export default function DownswingScreen() {
               <Read odds={odds} big={big} cu={cu} fmt={fmt} cur={cur} />
             ) : (
               <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-                <Read odds={odds} big={big} cu={cu} fmt={() => '•••'} cur={cur} />
+                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
+                  <Read odds={odds} big={big} cu={cu} fmt={() => '•••'} cur={cur} />
+                </View>
                 <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
                   <T v="h3" style={{ textAlign: 'center' }}>
                     {t('Vê se este downswing é azar ou sinal')}

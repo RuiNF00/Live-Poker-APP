@@ -200,7 +200,7 @@ function Locked({ locked, title, onUnlock, children }: { locked: boolean; title:
   if (!locked) return <>{children}</>;
   return (
     <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-      {children}
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>{children}</View>
       <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
         <T v="h3" style={{ textAlign: 'center' }}>
           {title}

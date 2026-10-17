@@ -2428,6 +2428,8 @@ const en: Record<string, string> = {
   'Melhor sessão: {amount} em {venue}. Toca para veres o resumo do mês.': 'Best session: {amount} at {venue}. Tap to see the month\'s recap.',
   'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Best session: {amount}. Tap to see the month\'s recap.',
   'Toca para veres o resumo do mês.': 'Tap to see the month\'s recap.',
+  '1 dia de viagem': '1 day away',
+  '{n} dias de viagem': '{n} days away',
 };
 
 export default en;

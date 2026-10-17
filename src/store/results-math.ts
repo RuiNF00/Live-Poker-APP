@@ -200,9 +200,9 @@ export interface Downswing {
   depth: number;
   /** When the peak was reached (end of that session; the first session's start for a fall from zero). */
   from: number;
-  /** The lowest point. */
+  /** The lowest point (for the current one: the last session). */
   to: number;
-  /** Sessions from the peak to the low. */
+  /** Sessions from the peak to the low (for the current one: to now). */
   sessions: number;
   /** When the curve got back to the peak; null while still below it. */
   recovered: number | null;
@@ -238,7 +238,10 @@ export function downswings(list: Session[], currency: string): { underwater: num
     }
     underwater.push(v - peak);
   });
-  return { underwater, biggest: biggest ? { ...(biggest as Downswing) } : null, current: open ? { ...(open as Downswing) } : null };
+  // The current one is where the curve is now, not its deepest point since the peak (that one counts for the biggest).
+  const last = done[done.length - 1];
+  const current: Downswing | null = open && last ? { ...(open as Downswing), depth: peak - v, to: last.endedAt!, sessions: done.length - peakIdx } : null;
+  return { underwater, biggest: biggest ? { ...(biggest as Downswing) } : null, current };
 }
 
 /** Seeded PRNG (mulberry32), so a simulation reads the same every time it is drawn. */

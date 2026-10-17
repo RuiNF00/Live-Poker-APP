@@ -37,7 +37,9 @@ export default function WinRateScreen() {
       body
     ) : (
       <View style={{ borderRadius: R.lg, overflow: 'hidden' }}>
-        {body}
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
+          {body}
+        </View>
         <BlurView intensity={28} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: S.lg, gap: S.sm }]}>
           <T v="h3" style={{ textAlign: 'center' }}>
             {title}
