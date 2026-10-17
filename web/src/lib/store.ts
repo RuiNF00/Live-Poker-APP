@@ -107,6 +107,8 @@ export const APP_EVENTS = [
   'notify_permission',
   'replay_opened',
   'review_prompt',
+  'receipt_read',
+  'invite_rewarded',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 
