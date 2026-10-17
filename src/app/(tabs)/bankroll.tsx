@@ -640,7 +640,7 @@ const pctOf = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
 function Mini({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <View style={{ flex: 1, gap: 2 }}>
-      <T v="tiny" numberOfLines={1}>
+      <T v="tiny" numberOfLines={2}>
         {label}
       </T>
       <T v="mono" color={color ?? C.text} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 15, lineHeight: 20 }}>

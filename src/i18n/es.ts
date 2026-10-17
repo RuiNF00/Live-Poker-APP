@@ -1571,7 +1571,7 @@ const es: Record<string, string> = {
   'Viagens': 'Viajes',
   'Quanto ganhaste mesmo na viagem?': '¿Cuánto ganaste de verdad en el viaje?',
   'Junta as sessões de um festival e o que gastaste em voos, hotel e comida. Vês o resultado depois das despesas, na moeda da viagem e na tua.': 'Junta las sesiones de un festival y lo que gastaste en vuelos, hotel y comida. Ves el resultado después de gastos, en la moneda del viaje y en la tuya.',
-  'Criar para o {name}': 'Crear para {name}',
+  'Criar viagem: {name}': 'Crear viaje: {name}',
   'Nova viagem': 'Nuevo viaje',
   'Estás em viagem': 'Estás de viaje',
   'No plano grátis tens uma viagem. Com Pro, guardas todas e levas as despesas para o relatório.': 'En el plan gratis tienes un viaje. Con Pro, guardas todos y llevas los gastos al informe.',

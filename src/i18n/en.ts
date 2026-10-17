@@ -1679,7 +1679,7 @@ const en: Record<string, string> = {
   'Viagens': 'Trips',
   'Quanto ganhaste mesmo na viagem?': 'What did the trip really make you?',
   'Junta as sessões de um festival e o que gastaste em voos, hotel e comida. Vês o resultado depois das despesas, na moeda da viagem e na tua.': "Group a festival's sessions with what you spent on flights, hotel and food. See the result after expenses, in the trip's currency and yours.",
-  'Criar para o {name}': 'Create for {name}',
+  'Criar viagem: {name}': 'New trip: {name}',
   'Nova viagem': 'New trip',
   'Estás em viagem': "You're on a trip",
   'No plano grátis tens uma viagem. Com Pro, guardas todas e levas as despesas para o relatório.': 'The free plan has one trip. With Pro, keep them all and take the expenses to your report.',
