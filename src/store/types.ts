@@ -19,6 +19,10 @@ export interface Session {
   cashOut: number;
   finish?: number;
   field?: number;
+  /** Travel, hotel, tips: comes off your result. */
+  expenses?: number;
+  /** Action sold to backers: `sold` in % of the whole, `markup` as a multiplier (1.1 = 10%). */
+  staking?: { sold: number; markup: number };
   // Live table state, used to pre-fill every new hand.
   sb: number;
   bb: number;
@@ -32,6 +36,7 @@ export interface Session {
   /** Names at the table by seat (0 = seat 1). */
   roster: string[];
   notes: string;
+  updatedAt?: number;
 }
 
 /** Stored in Portuguese; translate with t() only when shown. */

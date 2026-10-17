@@ -9,8 +9,9 @@ import { STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard
 import { Button, Chip, Empty, Row, T, tap } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
-import { track } from '@/lib/events';
-import { canShareStory, captureStory, ensureShareLink, renderVoiceStory, shareStory } from '@/lib/instagram-story';
+import { refCode, track } from '@/lib/events';
+import { canShareStory, captureStory, ensureShareId, renderVoiceStory, shareStory } from '@/lib/instagram-story';
+import { shareLink } from '@/lib/share-api';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
 import { useStore } from '@/store/store';
@@ -65,16 +66,17 @@ export default function StoryScreen() {
     }
     setBusy(true);
     try {
-      let link: string;
+      let shareId: string;
       try {
-        link = await ensureShareLink(hand, saveHand);
+        shareId = await ensureShareId(hand, saveHand);
       } catch {
         Alert.alert(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share');
       // Question stories open the challenge view: vote first, result after.
-      if (mode === 'question') link += '?q=1';
+      const ref = await refCode();
+      const link = shareLink(shareId, 'story', { quiz: mode === 'question', ref });
       let target;
       if (withVoice && voice) {
         // Capture with the waveform slot empty; the server animates it over the voice.
@@ -95,7 +97,7 @@ export default function StoryScreen() {
       } else {
         target = await shareStory(await captureStory(card), link);
       }
-      track('story_shared', { target: String(target), voice: !!voice });
+      track('story_shared', { target: String(target), voice: !!voice, share_id: shareId, ref, question: mode === 'question' });
       if (target === 'sheet') Alert.alert(t('Link copiado'), t('No Instagram, escolhe Story e cola o link num sticker de Link para os teus amigos votarem.'));
     } catch {
       Alert.alert(t('Não deu'), t('Não conseguimos abrir o Instagram. Tenta outra vez.'));

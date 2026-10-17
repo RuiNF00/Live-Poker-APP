@@ -41,7 +41,12 @@ export default function HandsScreen() {
           <View style={{ gap: 12, marginBottom: 4 }}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Wordmark />
-              <T v="small">{hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length })}</T>
+              <Row gap={12}>
+                <T v="small">{hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length })}</T>
+                <Pressable hitSlop={10} onPress={() => router.push('/settings')} accessibilityLabel={t('Definições')}>
+                  <Ionicons name="settings-outline" size={21} color={C.textDim} />
+                </Pressable>
+              </Row>
             </Row>
             {handsLeft !== null && hands.length > 0 ? (
               <Pressable

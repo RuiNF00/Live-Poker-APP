@@ -10,9 +10,10 @@ import type { Session } from '@/store/types';
 import { C } from '@/theme';
 
 import { inputStyle, NumField } from './entry/ContextSheet';
+import { StakeFields } from './StakeFields';
 import { Button, Chip, Row, T } from './ui';
 
-export function blankSession(kind: GameKind, currency: string): Session {
+export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
   return {
     id: uid('s_'),
@@ -32,7 +33,7 @@ export function blankSession(kind: GameKind, currency: string): Session {
     anteType: mtt ? 'bb' : 'none',
     level: mtt ? 1 : undefined,
     stage: mtt ? 'early' : undefined,
-    tableSize: 9,
+    tableSize,
     stack: mtt ? 30000 : 200,
     stackLog: [],
     roster: [],
@@ -64,8 +65,8 @@ export function SessionForm({
   return (
     <View style={{ gap: 14 }}>
       <Row>
-        <Chip big label={t('Torneio')} active={mtt} onPress={() => setS({ ...blankSession('mtt', s.currency), id: s.id, name: s.name, venue: s.venue })} />
-        <Chip big label="Cash game" active={!mtt} onPress={() => setS({ ...blankSession('cash', s.currency), id: s.id, name: s.name, venue: s.venue })} />
+        <Chip big label={t('Torneio')} active={mtt} onPress={() => setS({ ...blankSession('mtt', s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue })} />
+        <Chip big label="Cash game" active={!mtt} onPress={() => setS({ ...blankSession('cash', s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue })} />
       </Row>
       <View style={{ gap: 6 }}>
         <T v="label">{mtt ? t('Torneio') : t('Jogo')}</T>
@@ -119,6 +120,7 @@ export function SessionForm({
           </View>
         </>
       )}
+      <StakeFields s={s} onChange={set} expenses={!!past} />
       <Button
         title={submitLabel}
         onPress={() => {

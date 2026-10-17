@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 
 import type { Hand } from '@/poker/types';
 
+import { mergeById, type BackupData } from './backup';
 import { DEFAULT_SETTINGS, type PlayerNote, type Session, type Settings } from './types';
 
 const KEYS = {
@@ -37,6 +38,8 @@ interface StoreValue {
   setSettings: (patch: Partial<Settings>) => void;
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
+  /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
+  importData: (b: BackupData) => { hands: number; sessions: number; players: number };
 }
 
 const Ctx = createContext<StoreValue | null>(null);
@@ -105,7 +108,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
   const deleteHand = useCallback((id: string) => setHands((l) => l.filter((x) => x.id !== id)), []);
-  const saveSession = useCallback((s: Session) => setSessions((l) => upsert(l, s)), []);
+  const saveSession = useCallback((s: Session) => setSessions((l) => upsert(l, { ...s, updatedAt: Date.now() })), []);
   const deleteSession = useCallback((id: string) => setSessions((l) => l.filter((x) => x.id !== id)), []);
   const savePlayer = useCallback(
     (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),
@@ -118,6 +121,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (h) persist(KEYS.draft, h);
     else AsyncStorage.removeItem(KEYS.draft).catch(() => {});
   }, []);
+
+  const importData = useCallback(
+    (b: BackupData) => {
+      const h = mergeById(hands, b.hands);
+      const s = mergeById(sessions, b.sessions);
+      const p = mergeById(players, b.players);
+      setHands(h.list);
+      setSessions(s.list);
+      setPlayers(p.list);
+      setSettingsState((cur) => ({ ...cur, nickname: cur.nickname || b.settings?.nickname || '' }));
+      return { hands: h.added, sessions: s.added, players: p.added };
+    },
+    [hands, sessions, players],
+  );
 
   const activeSession = useMemo(
     () => sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0] ?? null,
@@ -141,8 +158,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSettings,
       draft,
       setDraft,
+      importData,
     }),
-    [ready, hands, sessions, players, settings, activeSession, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, setSettings, draft, setDraft],
+    [ready, hands, sessions, players, settings, activeSession, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, setSettings, draft, setDraft, importData],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

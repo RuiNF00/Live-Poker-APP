@@ -15,6 +15,7 @@ import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
+import { AutoCloudBackup } from '@/components/CloudBackup';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { StoreProvider } from '@/store/store';
@@ -48,6 +49,7 @@ export default function RootLayout() {
         <StoreProvider>
           <ProProvider>
           <StatusBar style="light" />
+          <AutoCloudBackup />
           <Stack
             screenOptions={{
               headerStyle: { backgroundColor: C.bg },
@@ -62,6 +64,7 @@ export default function RootLayout() {
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
+            <Stack.Screen name="settings" options={{ title: t('Definições') }} />
           </Stack>
           </ProProvider>
         </StoreProvider>

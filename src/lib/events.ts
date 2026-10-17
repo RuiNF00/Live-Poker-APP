@@ -10,6 +10,7 @@ import { BRAND } from '@/theme';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const KEY = 'rl.install.v1';
+const REF_KEY = 'rl.ref.v1';
 
 export type FunnelEvent =
   | 'app_open'
@@ -18,7 +19,9 @@ export type FunnelEvent =
   | 'paywall_shown'
   | 'purchase'
   | 'share_created'
-  | 'story_shared';
+  | 'story_shared'
+  | 'link_shared'
+  | 'link_opened';
 
 let install: Promise<string> | null = null;
 function installId() {
@@ -31,6 +34,24 @@ function installId() {
     })
     .catch(() => anonId());
   return install;
+}
+
+let ref: Promise<string> | null = null;
+/**
+ * Short random referral code put on the links this install shares (`r=`), so a
+ * new install can be credited to whoever sent the link. Separate from the
+ * install id, which never appears in a URL.
+ */
+export function refCode(): Promise<string> {
+  ref ??= AsyncStorage.getItem(REF_KEY)
+    .then(async (v) => {
+      if (v) return v;
+      const code = anonId().replace(/-/g, '').slice(0, 10);
+      await AsyncStorage.setItem(REF_KEY, code);
+      return code;
+    })
+    .catch(() => anonId().replace(/-/g, '').slice(0, 10));
+  return ref;
 }
 
 export function track(event: FunnelEvent, props?: Record<string, string | number | boolean>) {

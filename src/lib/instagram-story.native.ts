@@ -14,7 +14,7 @@ import Share, { Social } from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
 
 import { t } from '@/i18n';
-import { API, shareUrl, uploadHand } from '@/lib/share-api';
+import { API, uploadHand } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 
 /** Meta (Facebook) app id. Required by Instagram for direct story sharing since 2023. */
@@ -22,12 +22,12 @@ const META_APP_ID = process.env.EXPO_PUBLIC_META_APP_ID as string | undefined;
 
 export const canShareStory = Platform.OS === 'ios' || Platform.OS === 'android';
 
-/** Upload the hand once and return its public link. */
-export async function ensureShareLink(hand: Hand, save: (h: Hand) => void): Promise<string> {
-  if (hand.shareId) return shareUrl(hand.shareId);
+/** Upload the hand once and return its public share id. */
+export async function ensureShareId(hand: Hand, save: (h: Hand) => void): Promise<string> {
+  if (hand.shareId) return hand.shareId;
   const { id, token } = await uploadHand(hand);
   save({ ...hand, shareId: id, shareToken: token });
-  return shareUrl(id);
+  return id;
 }
 
 export async function captureStory(ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {

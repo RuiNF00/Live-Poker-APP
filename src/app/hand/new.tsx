@@ -50,7 +50,7 @@ export default function NewHand() {
     if (editing) return { hand: editing, posChosen: true };
     if (store.draft) return { hand: store.draft, posChosen: !!store.draft.actions.length || store.draft.button !== 0 || !!store.draft.players[0].cards };
     const last = hands[0] ?? null;
-    return { hand: newHand({ id: uid('h_'), session: activeSession, last, currency: settings.currency }), posChosen: false };
+    return { hand: newHand({ id: uid('h_'), session: activeSession, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: false };
   });
   const [history, setHistory] = useState<Draft[]>([]);
   const [ctxOpen, setCtxOpen] = useState(false);

@@ -5,16 +5,16 @@
 import type React from 'react';
 import type { View } from 'react-native';
 
-import { shareUrl, uploadHand } from '@/lib/share-api';
+import { uploadHand } from '@/lib/share-api';
 import type { Hand } from '@/poker/types';
 
 export const canShareStory = false;
 
-export async function ensureShareLink(hand: Hand, save: (h: Hand) => void): Promise<string> {
-  if (hand.shareId) return shareUrl(hand.shareId);
+export async function ensureShareId(hand: Hand, save: (h: Hand) => void): Promise<string> {
+  if (hand.shareId) return hand.shareId;
   const { id, token } = await uploadHand(hand);
   save({ ...hand, shareId: id, shareToken: token });
-  return shareUrl(id);
+  return id;
 }
 
 export async function captureStory(_ref: React.RefObject<React.ComponentRef<typeof View> | null>): Promise<string> {

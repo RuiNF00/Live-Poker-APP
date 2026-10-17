@@ -12,7 +12,8 @@ import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, Empty, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { deleteShare, fetchComments, fetchVotes, shareUrl, uploadHand, type Comment } from '@/lib/share-api';
+import { refCode, track } from '@/lib/events';
+import { deleteShare, fetchComments, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { handText } from '@/poker/text';
 import { useStore } from '@/store/store';
 import { C, R } from '@/theme';
@@ -47,13 +48,13 @@ export default function HandScreen() {
       </ScrollView>
     );
 
-  const ensureLink = async (): Promise<string | null> => {
-    if (hand.shareId) return shareUrl(hand.shareId);
+  const ensureId = async (): Promise<string | null> => {
+    if (hand.shareId) return hand.shareId;
     setBusy(true);
     try {
       const { id: shareId, token } = await uploadHand(hand);
       saveHand({ ...hand, shareId, shareToken: token });
-      return shareUrl(shareId);
+      return shareId;
     } catch {
       Alert.alert(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
@@ -69,10 +70,12 @@ export default function HandScreen() {
       pro.paywall('shares');
       return;
     }
-    const base = await ensureLink();
-    if (!base) return;
+    const shareId = await ensureId();
+    if (!shareId) return;
     if (isNew) pro.record('share');
-    const link = quiz ? base + '?q=1' : base;
+    const ref = await refCode();
+    const link = shareLink(shareId, quiz ? 'challenge' : 'link', { quiz, ref });
+    track('link_shared', { channel: quiz ? 'challenge' : 'link', share_id: shareId, ref });
     const lead = quiz ? t('desafio: o que fazes aqui? Vota antes de ver o resultado 🗳️') : t('o que fazias aqui? 👀');
     const msg = `${hand.game.name ? hand.game.name + ' — ' : ''}${lead}
 ${link}`;
@@ -84,7 +87,8 @@ ${link}`;
 
   const copyText = async () => {
     tap();
-    await Clipboard.setStringAsync(handText(hand, { inBB: settings.inBB, link: hand.shareId ? shareUrl(hand.shareId) : undefined }));
+    const link = hand.shareId ? shareLink(hand.shareId, 'text', { ref: await refCode() }) : undefined;
+    await Clipboard.setStringAsync(handText(hand, { inBB: settings.inBB, link }));
     Alert.alert(t('Texto copiado'), t('Cola no WhatsApp, Discord ou onde quiseres.'));
   };
 

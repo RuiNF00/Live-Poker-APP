@@ -13,12 +13,13 @@ import { AmountPad } from '@/components/AmountPad';
 import { NumField } from '@/components/entry/ContextSheet';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, SessionForm } from '@/components/SessionForm';
+import { StakeFields } from '@/components/StakeFields';
 import { Button, Chip, Panel, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { bbs, chips, duration, money, shortDate } from '@/poker/format';
 import { STAGES } from '@/poker/types';
-import { cost, isPaused, playedMs, profit } from '@/store/session-math';
+import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, ff } from '@/theme';
@@ -52,7 +53,7 @@ export default function SessionScreen() {
           <T v="h2">{t('Começar sessão')}</T>
           <T v="small">{t('O relógio conta o tempo à mesa, o stack fica guardado e cada mão que registares já vem com torneio, blinds e stack preenchidos.')}</T>
           <SessionForm
-            initial={blankSession(sessions[0]?.kind ?? 'mtt', settings.currency)}
+            initial={blankSession(sessions[0]?.kind ?? 'mtt', settings.currency, settings.defaultTableSize)}
             recentNames={recentNames}
             recentVenues={recentVenues}
             submitLabel={t('Começar agora')}
@@ -167,12 +168,27 @@ function Live({ s }: { s: Session }) {
             {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
             {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
           </Row>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <T v="small">{t('Resultado')}</T>
-            <T v="mono" color={finish.cashOut - cost(s) >= 0 ? C.good : C.bad}>
-              {money(finish.cashOut - cost(s), s.currency)}
-            </T>
-          </Row>
+          <StakeFields s={s} onChange={save} />
+          {(() => {
+            const end = { ...s, cashOut: finish.cashOut };
+            const owed = owedToBackers(end);
+            return (
+              <>
+                {owed > 0 ? (
+                  <Row style={{ justifyContent: 'space-between' }}>
+                    <T v="small">{t('A pagar aos backers')}</T>
+                    <T v="mono">{money(owed, s.currency)}</T>
+                  </Row>
+                ) : null}
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <T v="small">{s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
+                  <T v="mono" color={profit(end) >= 0 ? C.good : C.bad}>
+                    {money(profit(end), s.currency)}
+                  </T>
+                </Row>
+              </>
+            );
+          })()}
           <Row gap={8}>
             <Button kind="ghost" title={t('Voltar')} style={{ flex: 1 }} onPress={() => setEnding(false)} />
             <Button

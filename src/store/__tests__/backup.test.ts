@@ -1,0 +1,39 @@
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { buildBackup, mergeById, parseBackup, sessionsCsv } from '../backup';
+import { DEFAULT_SETTINGS, type Session } from '../types';
+
+const sess = (over: Partial<Session> = {}): Session => ({
+  id: 's1', kind: 'cash', name: 'NLH 1/2, "deep"', venue: 'Estoril', currency: '€', startedAt: Date.UTC(2026, 9, 1), endedAt: Date.UTC(2026, 9, 1) + 2 * 3600000,
+  breaks: [], buyIn: 200, entries: 1, addOn: 0, cashOut: 450, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 200, stackLog: [], roster: [], notes: '',
+  ...over,
+});
+
+test('round trip through JSON', () => {
+  const b = buildBackup({ hands: [], sessions: [sess()], players: [], settings: DEFAULT_SETTINGS }, 5);
+  const back = parseBackup(JSON.stringify(b));
+  assert.equal(back.sessions.length, 1);
+  assert.equal(back.exportedAt, 5);
+});
+
+test('rejects other files and drops broken items', () => {
+  assert.throws(() => parseBackup('nope'), /invalid/);
+  assert.throws(() => parseBackup('{"app":"other","v":1}'), /invalid/);
+  const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, hands: [{ id: 'x' }, null], sessions: [{ id: 'a', startedAt: 1 }, { startedAt: 2 }], players: [{ id: 'p', name: 'Z' }] }));
+  assert.deepEqual([b.hands.length, b.sessions.length, b.players.length], [0, 1, 1]);
+});
+
+test('merge keeps the newer copy and counts new items', () => {
+  const r = mergeById([{ id: 'a', updatedAt: 5, v: 'local' }, { id: 'b', updatedAt: 9, v: 'local' }], [{ id: 'a', updatedAt: 7, v: 'in' }, { id: 'b', updatedAt: 1, v: 'in' }, { id: 'c', v: 'in' }]);
+  assert.equal(r.added, 1);
+  assert.deepEqual(r.list.map((x) => x.v), ['in', 'local', 'in']);
+});
+
+test('csv quotes and computes profit', () => {
+  const csv = sessionsCsv([sess(), sess({ id: 'live', endedAt: undefined })]);
+  const lines = csv.trim().split('\n');
+  assert.equal(lines.length, 2);
+  assert.match(lines[1], /^2026-10-01,cash,"NLH 1\/2, ""deep""",Estoril,€,2\.00,200,1,0,200,450,0,,0,250,,,$/);
+});

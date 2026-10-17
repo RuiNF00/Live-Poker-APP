@@ -17,6 +17,27 @@ export function shareUrl(id: string) {
   return `${BRAND.webUrl}/h/${id}`;
 }
 
+/** Where a shared link was sent from, for install attribution. */
+export type ShareChannel = 'link' | 'challenge' | 'story' | 'text';
+const CHANNEL: Record<ShareChannel, [source: string, medium: string]> = {
+  link: ['app', 'share_link'],
+  challenge: ['app', 'challenge'],
+  story: ['instagram', 'story'],
+  text: ['app', 'text'],
+};
+
+/** The public link with its channel, the hand as campaign and the sharer's referral code. */
+export function shareLink(id: string, channel: ShareChannel, opts: { quiz?: boolean; ref?: string } = {}) {
+  const [source, medium] = CHANNEL[channel];
+  const q = new URLSearchParams();
+  if (opts.quiz) q.set('q', '1');
+  q.set('utm_source', source);
+  q.set('utm_medium', medium);
+  q.set('utm_campaign', id);
+  if (opts.ref) q.set('r', opts.ref);
+  return `${shareUrl(id)}?${q.toString()}`;
+}
+
 function publicHand(hand: Hand): Hand {
   const { sessionId: _s, shareToken: _t, ...rest } = hand;
   return rest as Hand;

@@ -9,8 +9,8 @@ import { blankSession, SessionForm } from '@/components/SessionForm';
 import { Button, Chip, Empty, Panel, Row, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { duration, money, shortDate } from '@/poker/format';
-import { curve, playedMs, profit, totals } from '@/store/session-math';
-import { useStore } from '@/store/store';
+import { breakdown, curve, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
+import { uid, useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, ff } from '@/theme';
 
@@ -70,6 +70,7 @@ export default function BankrollScreen() {
               <Stat label={t('Melhor')} value={money(tot.best, cur)} />
               <Stat label={t('Pior')} value={money(tot.worst, cur)} />
             </Row>
+            <Breakdowns list={list} cur={cur} />
             <T v="h2">{t('Histórico')}</T>
             {done.map((s) => (
               <SessionRow key={s.id} s={s} onDelete={() => deleteSession(s.id)} />
@@ -89,18 +90,66 @@ export default function BankrollScreen() {
           </Row>
           <SessionForm
             past
-            initial={blankSession('mtt', cur)}
+            initial={blankSession('mtt', cur, settings.defaultTableSize)}
             recentNames={[...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8)}
             recentVenues={[...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8)}
             submitLabel={t('Guardar sessão')}
             onSubmit={(s) => {
-              saveSession(s);
+              // The sheet can stay mounted between opens: never reuse the last id.
+              saveSession({ ...s, id: uid('s_') });
               setAdding(false);
             }}
           />
         </ScrollView>
       </Modal>
     </View>
+  );
+}
+
+function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
+  const { isPro, paywall } = usePro();
+  const [by, setBy] = useState<'venue' | 'name'>('venue');
+  const rows = breakdown(list, by);
+  if (breakdown(list, 'venue').length + breakdown(list, 'name').length === 0) return null;
+  // Free plan sees the best row; the rest is a Pro reason.
+  const shown = isPro ? rows : rows.slice(0, 1);
+  return (
+    <Panel style={{ gap: 8 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <T v="h2">{t('Onde ganhas')}</T>
+        <Row gap={6}>
+          <Chip label={t('Salas')} active={by === 'venue'} onPress={() => setBy('venue')} />
+          <Chip label={t('Jogos')} active={by === 'name'} onPress={() => setBy('name')} />
+        </Row>
+      </Row>
+      {rows.length === 0 ? (
+        <T v="small">{by === 'venue' ? t('Dá um nome à sala nas sessões para ver aqui.') : t('Dá um nome ao jogo nas sessões para ver aqui.')}</T>
+      ) : (
+        shown.map((b) => (
+          <Row key={b.key} style={{ justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <T v="body" numberOfLines={1} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+                {b.key}
+              </T>
+              <T v="tiny">
+                {b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions })}
+                {b.hours >= 0.25 ? ' · ' + t('{amount}/h', { amount: money(Math.round(b.hourly), cur) }) : ''}
+              </T>
+            </View>
+            <T v="mono" color={b.profit >= 0 ? C.good : C.bad}>
+              {money(b.profit, cur)}
+            </T>
+          </Row>
+        ))
+      )}
+      {!isPro && rows.length > 1 ? (
+        <Pressable onPress={() => paywall('stats')} hitSlop={6}>
+          <T v="small" color={C.accent}>
+            {t('Ver as {n} todas · Pro', { n: rows.length })}
+          </T>
+        </Pressable>
+      ) : null}
+    </Panel>
   );
 }
 
@@ -138,6 +187,8 @@ function SessionRow({ s, onDelete }: { s: Session; onDelete: () => void }) {
           <T v="small">
             {s.entries} × {money(s.buyIn, s.currency)}
             {s.addOn ? ` + add-on ${money(s.addOn, s.currency)}` : ''} → {money(s.cashOut, s.currency)}
+            {s.staking?.sold ? '\n' + t('{sold}% vendido a {markup} · aos backers {owed}', { sold: s.staking.sold, markup: s.staking.markup.toFixed(2), owed: money(owedToBackers(s), s.currency) }) : ''}
+            {s.expenses ? '\n' + t('Despesas {amount}', { amount: money(s.expenses, s.currency) }) : ''}
           </T>
           <Pressable onPress={onDelete} hitSlop={8}>
             <T v="small" color={C.danger}>
