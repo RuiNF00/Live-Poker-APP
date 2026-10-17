@@ -85,8 +85,9 @@ export default function SettingsScreen() {
   // A cancelled subscription still runs to the end of the paid period: say until when, so nobody asks for a refund thinking it stopped.
   const [endsOn, setEndsOn] = useState<string | null>(null);
   useEffect(() => {
-    if (!pro.isPro) return setEndsOn(null);
-    void getSubscription().then((s) => setEndsOn(s && !s.willRenew && s.ends ? new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : null));
+    void (pro.isPro ? getSubscription() : Promise.resolve(null)).then((s) =>
+      setEndsOn(s && !s.willRenew && s.ends ? new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : null),
+    );
   }, [pro.isPro]);
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
