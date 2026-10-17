@@ -36,6 +36,18 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "react-native-share",
+        {
+          "ios": [
+            "instagram-stories",
+            "instagram"
+          ],
+          "android": [
+            "com.instagram.android"
+          ]
+        }
       ]
     ],
     "experiments": {

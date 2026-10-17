@@ -92,10 +92,16 @@ export default function HandScreen() {
       <ScrollView contentContainerStyle={{ padding: 12, gap: 14, paddingBottom: 48 }}>
         <HandHeader hand={hand} />
         <Replayer hand={hand} initialInBB={settings.inBB} />
+        <Button
+          title="Story no Instagram"
+          icon={<Ionicons name="logo-instagram" size={19} color={C.accentInk} />}
+          onPress={() => router.push({ pathname: '/story/[id]', params: { id: hand.id } })}
+        />
         <Row gap={8}>
           <Button
             title={busy ? 'A criar link…' : hand.shareId ? 'Partilhar link' : 'Partilhar com amigos'}
-            icon={<Ionicons name="share-social" size={18} color={C.accentInk} />}
+            kind="secondary"
+            icon={<Ionicons name="share-social" size={18} color={C.text} />}
             style={{ flex: 1 }}
             disabled={busy}
             onPress={share}

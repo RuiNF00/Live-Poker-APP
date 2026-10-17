@@ -55,6 +55,7 @@ export default function RootLayout() {
             <Stack.Screen name="hand/new" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="hand/[id]" options={{ title: 'Mão' }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
           </Stack>
         </StoreProvider>
       </ThemeProvider>
