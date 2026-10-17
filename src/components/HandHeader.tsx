@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View } from 'react-native';
 
@@ -6,11 +7,12 @@ import { comboLabel } from '@/poker/cards';
 import { autoTags, positions, replay } from '@/poker/engine';
 import { blindsLabel, shortDate, timeOf } from '@/poker/format';
 import { STAGES, type Hand } from '@/poker/types';
-import { C, R, ff } from '@/theme';
+import { C, S } from '@/theme';
 
 import { CardRow } from './PlayingCard';
-import { Row, T } from './ui';
+import { Badge, Card, Pill, Row, T } from './ui';
 
+/** Title block of a hand: hero's cards and position, the game, tags and notes. */
 export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
   const pos = positions(hand.players.length, hand.button);
   const g = hand.game;
@@ -18,10 +20,16 @@ export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
   const hero = hand.players[hand.hero];
   const auto = React.useMemo(() => (quiz ? [] : autoTags(hand, replay(hand))).filter((tg) => !hand.tags.includes(tg)), [hand, quiz]);
   return (
-    <View style={{ gap: 8 }}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="h1" numberOfLines={1}>
+    <View style={{ gap: S.md }}>
+      <Row gap={S.md} style={{ alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Row gap={6}>
+            <Badge label={pos[hand.hero]} />
+            <T v="monoS">
+              {comboLabel(hero.cards)} · {shortDate(hand.createdAt)} {timeOf(hand.createdAt)}
+            </T>
+          </Row>
+          <T v="h1" numberOfLines={2}>
             {hand.title || g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash')}
           </T>
           <T v="small">
@@ -30,33 +38,25 @@ export function HandHeader({ hand, quiz }: { hand: Hand; quiz?: boolean }) {
               .join(' · ')}
           </T>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 4 }}>
-          {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" /> : null}
-          <T v="tiny">
-            {pos[hand.hero]} · {comboLabel(hero.cards)} · {shortDate(hand.createdAt)} {timeOf(hand.createdAt)}
-          </T>
-        </View>
+        {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="md" gap={3} /> : null}
       </Row>
       {hand.tags.length + auto.length > 0 && (
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
           {hand.tags.map((tg) => (
-            <View key={tg} style={{ backgroundColor: C.accentSoft, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
-              <T v="tiny" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800) }}>
-                {t(tg)}
-              </T>
-            </View>
+            <Pill key={tg} label={t(tg)} color={C.accent} />
           ))}
           {auto.map((tg) => (
-            <View key={tg} style={{ borderColor: C.border, borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 2 }}>
-              <T v="tiny">{t(tg)}</T>
-            </View>
+            <Pill key={tg} label={t(tg)} />
           ))}
         </Row>
       )}
       {hand.notes && !quiz ? (
-        <T v="small" style={{ color: C.text, lineHeight: 19 }}>
-          {hand.notes}
-        </T>
+        <Card tone="inset" style={{ flexDirection: 'row', gap: 10, paddingVertical: 12 }}>
+          <Ionicons name="chatbubble-ellipses-outline" size={16} color={C.muted} style={{ marginTop: 2 }} />
+          <T v="callout" style={{ flex: 1, color: C.text }}>
+            {hand.notes}
+          </T>
+        </Card>
       ) : null}
     </View>
   );
