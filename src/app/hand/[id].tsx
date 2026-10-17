@@ -9,6 +9,7 @@ import { CoachThread } from '@/components/CoachThread';
 import { CommentsList, PrivateStreetNotes } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { isComplete, replay } from '@/poker/engine';
+import { sameTable } from '@/poker/factory';
 import { sampleHand } from '@/poker/sample';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
@@ -38,7 +39,7 @@ import type { Hand, Street } from '@/poker/types';
 export default function HandScreen() {
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   const { id, c: fresh } = useLocalSearchParams<{ id: string; c?: string }>();
-  const { hands, saveHand, deleteHand, settings, setSettings } = useStore();
+  const { hands, saveHand, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
   const isSample = id === 'sample';
@@ -305,6 +306,8 @@ ${link}`;
   };
 
   const edit = () => router.push({ pathname: '/hand/new', params: { edit: hand.id } });
+  // Live, or the latest hand of a table still going: the next hand is one tap away.
+  const nextHere = (!!activeSession && hand.sessionId === activeSession.id) || (hands[0]?.id === hand.id && sameTable(hand, null));
   return (
     <>
       <Stack.Screen
@@ -322,7 +325,11 @@ ${link}`;
         <View style={{ paddingHorizontal: 4 }}>
           <HandHeader hand={hand} inBB={settings.inBB} />
         </View>
-        <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} />
+        {/* The next hand from the one just saved: one tap, not back and then "Nova mão". */}
+        <Row gap={S.sm}>
+          <Button title={busy ? t('A criar link…') : shareWaiting ? t('Link à espera de rede') : t('Partilhar')} icon="share-social" disabled={busy} onPress={() => setShareOpen(true)} style={{ flex: 1 }} lines={2} />
+          {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
+        </Row>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
         <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
