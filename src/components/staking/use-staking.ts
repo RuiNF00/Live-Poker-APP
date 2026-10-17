@@ -48,7 +48,7 @@ export function useStaking() {
       }
     }
     const totals = stakingTotals([...ledgers.values()], home, table, manual);
-    return { pk, ledgers, totals };
+    return { pk, ledgers, totals, fx };
   }, [sessions, packages, payments, backers, offers, table, home, settings.fxManual]);
 }
 

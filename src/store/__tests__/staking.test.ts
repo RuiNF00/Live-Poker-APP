@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, closePackage, packageStates, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { backerLedger, closePackage, ledgerYears, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -198,6 +198,9 @@ test('closing with makeup: forgive it, or carry it to a new package where it is 
   assert.equal(forgiven.next, null);
   const { closed, next } = closePackage(p, 100, true, 'p2', 5);
   assert.deepEqual([closed.closedAt, next!.id, next!.makeupIn, next!.playerCut, next!.share], [5, 'p2', 100, 50, 100]);
+  // Numbered so the two stay apart in the list.
+  assert.equal(next!.name, `${p.name} (2)`);
+  assert.equal(closePackage(next!, 100, true, 'p3', 6).next!.name, `${p.name} (3)`);
   // In the new package a 250 win first pays back the 100 carried: cut on 150 only.
   const win = mk({ buyIn: 100, cashOut: 350, stakes: [{ ...stake, packageId: 'p2' }] }); // +250
   const st = packageStates([win], [next!]).states.get('p2')!;
@@ -210,4 +213,32 @@ test('closing with makeup: forgive it, or carry it to a new package where it is 
   // Nothing to carry, or an action package: no new package.
   assert.equal(closePackage(p, 0, true, 'p2').next, null);
   assert.equal(closePackage({ ...p, kind: 'action' }, 100, true, 'p2').next, null);
+});
+
+test("a backer's year: package by package, sessions counted in the year they started", () => {
+  const mkp = pkg({ id: 'pm', name: 'Série', share: 50, playerCut: 50, createdAt: 1 });
+  const act = pkg({ id: 'pa', name: 'Festival', kind: 'action', share: 10, markup: 1.2, playerCut: 0, createdAt: 2 });
+  const y26 = new Date(2026, 5, 1).getTime();
+  const y25 = new Date(2025, 5, 1).getTime();
+  const sessions = [
+    mk({ startedAt: y26, endedAt: y26 + 1, buyIn: 1000, cashOut: 0, stakes: [{ backerId: 'b1', packageId: 'pm', share: 50, markup: 1 }] }),
+    mk({ startedAt: y26 + 2, endedAt: y26 + 3, buyIn: 1000, cashOut: 5000, stakes: [{ backerId: 'b1', packageId: 'pa', share: 10, markup: 1.2 }] }),
+    mk({ startedAt: y26 + 4, endedAt: undefined, buyIn: 500, cashOut: 0, stakes: [{ backerId: 'b1', share: 20, markup: 1 }] }),
+    mk({ startedAt: y25, endedAt: y25 + 1, buyIn: 1000, cashOut: 0, stakes: [{ backerId: 'b1', packageId: 'pm', share: 50, markup: 1 }] }),
+  ];
+  const packages = [mkp, act];
+  const pk = packageStates(sessions, packages);
+  const l = backerLedger('b1', sessions, packages, [], pk);
+  assert.deepEqual(ledgerYears(l), [2026, 2025]);
+  const y = yearStatement(l, 2026, packages, pk);
+  assert.deepEqual(y.rows.map((r) => [r.name, r.sessions, r.cost, r.prizes, r.net]), [
+    ['Série', 1, 500, 0, -500],
+    ['Festival', 1, 120, 500, 380],
+    // Outside a package, still running: its cost counts, no result yet.
+    ['', 1, 100, 0, 0],
+  ]);
+  // The makeup package is open with 1000 to win back (two busts at 500, across both years).
+  assert.equal(y.rows[0].makeup, 1000);
+  assert.deepEqual([y.sessions, y.cost, y.prizes, y.net, y.makeup], [3, 720, 500, -120, 1000]);
+  assert.equal(yearStatement(l, 2025, packages, pk).sessions, 1);
 });

@@ -103,16 +103,22 @@ function merge(rows: { s: Session; x: Stake }[]): { s: Session; x: Stake }[] {
  * forgive it (it ends with the package) or carry it to a new package on the same
  * terms, where it is won back first. Returns the closed package and the new one.
  */
+function nextName(name: string): string {
+  const m = /^(.*) \((\d+)\)$/.exec(name);
+  return m ? `${m[1]} (${Number(m[2]) + 1})` : `${name} (2)`;
+}
+
 export function closePackage(p: StakePackage, makeup: number, carry: boolean, newId: string, now = Date.now()): { closed: StakePackage; next: StakePackage | null } {
   const closed = { ...p, closedAt: now };
   if (!carry || p.kind !== 'makeup' || makeup < 0.5) return { closed, next: null };
   const next: StakePackage = {
     id: newId,
     backerId: p.backerId,
-    name: p.name,
+    // "Outubro" → "Outubro (2)" → "Outubro (3)": the two packages stay apart in the list.
+    name: nextName(p.name),
     kind: 'makeup',
     share: p.share,
-    markup: 1,
+    markup: p.markup,
     playerCut: p.playerCut,
     makeupIn: Math.round(makeup * 100) / 100,
     createdAt: now,
@@ -230,6 +236,67 @@ function dealCurrency(rows: BackerLedgerRow[]): string | undefined {
   }
   return best;
 }
+
+/** One package's year with a backer (or the pieces sold outside a package: id null). */
+export interface YearPackage {
+  id: string | null;
+  name: string;
+  sessions: number;
+  /** Their money in. */
+  cost: number;
+  /** What they got back: their prize shares less your makeup cut (ended sessions). */
+  prizes: number;
+  /** Their result: what they got back less what the ended sessions cost them. */
+  net: number;
+  /** Makeup still to win back, if the package is open. */
+  makeup: number;
+}
+
+/** The years with sessions for this backer, newest first. */
+export function ledgerYears(l: BackerLedger): number[] {
+  return [...new Set(l.rows.map((r) => new Date(r.session.startedAt).getFullYear()))].sort((a, b) => b - a);
+}
+
+/**
+ * Everything with one backer in one year, package by package: their buy-ins, what
+ * they got back, their result and the makeup left. Sessions count in the year they
+ * started. `k` converts a session's money to the ledger's currency.
+ */
+export function yearStatement(l: BackerLedger, year: number, packages: StakePackage[], pk: PackageResult, k: (s: Session) => number = () => 1) {
+  const pkgOf = new Map(packages.map((p) => [p.id, p]));
+  const by = new Map<string, YearPackage>();
+  for (const r of l.rows) {
+    const s = r.session;
+    if (new Date(s.startedAt).getFullYear() !== year) continue;
+    const id = r.stake.packageId && pkgOf.has(r.stake.packageId) ? r.stake.packageId : null;
+    const key = id ?? '';
+    const p = id ? pkgOf.get(id)! : null;
+    const y = by.get(key) ?? { id, name: p?.name ?? '', sessions: 0, cost: 0, prizes: 0, net: 0, makeup: p && !p.closedAt ? (pk.states.get(p.id)?.makeup ?? 0) : 0 };
+    const x = k(s);
+    y.sessions++;
+    y.cost += r.cost * x;
+    if (s.endedAt) {
+      y.prizes += r.owed * x;
+      y.net += (r.owed - r.cost) * x;
+    }
+    by.set(key, y);
+  }
+  // Packages in the order they started; pieces outside a package last.
+  const rows = [...by.values()].sort((a, b) => (a.id ? (pkgOf.get(a.id)?.createdAt ?? 0) : Infinity) - (b.id ? (pkgOf.get(b.id)?.createdAt ?? 0) : Infinity));
+  const sum = (f: (y: YearPackage) => number) => rows.reduce((a, y) => a + f(y), 0);
+  return {
+    year,
+    currency: l.currency,
+    rows,
+    sessions: sum((y) => y.sessions),
+    cost: sum((y) => y.cost),
+    prizes: sum((y) => y.prizes),
+    net: sum((y) => y.net),
+    makeup: sum((y) => y.makeup),
+  };
+}
+
+export type YearStatement = ReturnType<typeof yearStatement>;
 
 /**
  * Where you stand with every backer, for the headline. Each balance stays in its
