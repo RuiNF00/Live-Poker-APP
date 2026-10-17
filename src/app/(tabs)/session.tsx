@@ -136,6 +136,8 @@ function Live({ s }: { s: Session }) {
         </Panel>
       )}
 
+      <TableReads roster={s.roster} />
+
       {mtt && (
         <Panel style={{ gap: 8 }}>
           <T v="label">{t('Fase')}</T>
@@ -156,6 +158,7 @@ function Live({ s }: { s: Session }) {
           <Button small kind="secondary" style={{ flex: 1 }} title={mtt ? '+ Re-entry' : '+ Rebuy'} onPress={() => confirm(t('Mais uma entrada?'), `${money(s.buyIn, s.currency)}`, () => save({ entries: s.entries + 1 }))} />
           {mtt ? <Button small kind="secondary" style={{ flex: 1 }} title="+ Add-on" onPress={() => confirm('Add-on?', `${money(s.buyIn, s.currency)}`, () => save({ addOn: (s.addOn || 0) + s.buyIn }))} /> : null}
         </Row>
+        {mtt ? <Button small kind="ghost" title={t('Calculadora de deal (ICM)')} onPress={() => router.push('/chop')} /> : null}
       </Panel>
 
       {!ending ? (
@@ -226,6 +229,40 @@ function Live({ s }: { s: Session }) {
         {t('Começou {date} · {total} no total · lucro atual {profit}', { date: shortDate(s.startedAt), total: duration(Date.now() - s.startedAt), profit: money(profit(s), s.currency) })}
       </T>
     </View>
+  );
+}
+
+/** Who's at your table, with your notes on them: a glance between hands. */
+function TableReads({ roster }: { roster: string[] }) {
+  const { players, settings } = useStore();
+  const known = roster
+    .map((name, seat) => ({ seat, name: name.trim(), note: players.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase()) }))
+    .filter((x) => x.name && x.name.toLowerCase() !== 'hero' && x.name !== settings.nickname && x.note && (x.note.tags.length || x.note.notes || x.note.look));
+  if (!known.length) return null;
+  return (
+    <Panel style={{ gap: 8 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <T v="label">{t('Na tua mesa')}</T>
+        <Pressable onPress={() => router.push('/players')} hitSlop={8}>
+          <T v="tiny" color={C.accent}>
+            {t('Notas')}
+          </T>
+        </Pressable>
+      </Row>
+      {known.map(({ seat, name, note }) => (
+        <View key={seat} style={{ gap: 1 }}>
+          <T v="body" style={{ fontWeight: '700', fontFamily: ff(700) }}>
+            {t('Lugar {n}', { n: seat + 1 })} · {name}
+            {note!.tags.length ? <T v="small" color={C.accent}>{'  ' + note!.tags.map((x) => t(x)).join(' · ')}</T> : null}
+          </T>
+          {note!.notes || note!.look ? (
+            <T v="small" numberOfLines={2}>
+              {[note!.look, note!.notes].filter(Boolean).join(' — ')}
+            </T>
+          ) : null}
+        </View>
+      ))}
+    </Panel>
   );
 }
 

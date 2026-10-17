@@ -2,7 +2,7 @@
 // and the legal pages the stores require.
 
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
@@ -103,6 +103,11 @@ export default function SettingsScreen() {
           <Item icon="download-outline" label={t('Exportar tudo (ficheiro)')} hint={t('{h} mãos · {s} sessões · {p} jogadores', { h: hands.length, s: sessions.length, p: players.length })} onPress={exportAll} />
           <Item icon="cloud-upload-outline" label={busy ? t('A importar…') : t('Importar ficheiro')} hint={t('Junta ao que já tens, não apaga nada')} onPress={importFile} />
           <Item icon="grid-outline" label={t('Sessões em CSV') + (pro.isPro ? '' : ' · Pro')} hint={t('Para Excel, Google Sheets ou o contabilista')} onPress={exportCsv} last />
+        </Panel>
+
+        <T v="h2">{t('Ferramentas')}</T>
+        <Panel style={{ gap: 0, padding: 0 }}>
+          <Item icon="pie-chart-outline" label={t('Calculadora de deal (ICM)')} hint={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} last />
         </Panel>
 
         <T v="h2">{t('Conta')}</T>

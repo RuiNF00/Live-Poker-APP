@@ -65,6 +65,7 @@ export default function RootLayout() {
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="story/[id]" options={{ title: 'Story', presentation: 'modal' }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
+            <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
           </Stack>
           </ProProvider>
         </StoreProvider>

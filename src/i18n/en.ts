@@ -379,6 +379,22 @@ const en: Record<string, string> = {
   'Não encontrámos nenhuma cópia com esse código.': 'We found no backup with that code.',
   'Este código não dá acesso a esta cópia.': "This code doesn't open this backup.",
   'A cópia é grande demais para a nuvem. Exporta para ficheiro.': 'The backup is too big for the cloud. Export it to a file.',
+  'Calculadora de deal (ICM)': 'Deal calculator (ICM)',
+  'Na tua mesa': 'At your table',
+  'Notas': 'Notes',
+  'Lugar {n}': 'Seat {n}',
+  'Calculadora de deal': 'Deal calculator',
+  'Jogadores que restam': 'Players left',
+  'Stacks': 'Stacks',
+  'Prémios ({currency})': 'Payouts ({currency})',
+  'Jogador {n}': 'Player {n}',
+  '{n}º lugar': 'Place {n}',
+  'Jogador': 'Player',
+  'Chip chop': 'Chip chop',
+  'ICM protege os stacks curtos; chip chop favorece o chip leader. Um deal justo costuma ficar entre os dois.': 'ICM protects the short stacks; a chip chop favours the chip leader. A fair deal usually lands between the two.',
+  'Preenche todos os stacks e pelo menos o 1º prémio.': 'Fill in every stack and at least the 1st place payout.',
+  'Ferramentas': 'Tools',
+  'Para dividir o prémio na mesa final': 'To split the prize at the final table',
 };
 
 export default en;
