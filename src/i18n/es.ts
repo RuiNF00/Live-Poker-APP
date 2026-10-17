@@ -3088,6 +3088,9 @@ const es: Record<string, string> = {
   'Começar: {name}': 'Empezar: {name}',
   'Às {time}': 'A las {time}',
   'Próxima mão': 'Siguiente mano',
+  '−1 órbita': '−1 vuelta',
+  'Mais detalhes': 'Más detalles',
+  'Menos detalhes': 'Menos detalles',
 };
 
 export default es;
