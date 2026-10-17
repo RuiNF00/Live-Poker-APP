@@ -10,7 +10,7 @@ import { BRAND } from '@/theme';
 
 import { deriveKeys, seal, unseal } from './backup-crypto';
 import { ALPHA, type CloudState } from './cloud-code';
-import { afterDelete, countsOf, uploadBlock, type Counts } from './cloud-guard';
+import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
@@ -40,24 +40,13 @@ export async function saveCloud(c: CloudState | null): Promise<void> {
   else await AsyncStorage.removeItem(KEY);
 }
 
-let deletes: Promise<void> = Promise.resolve();
-/** Called by the store on a deliberate delete, so the guard doesn't hold backups back (in order, never two at once). */
-export function noteDeleted(kind: keyof Counts): void {
-  deletes = deletes
-    .then(async () => {
-      const c = await loadCloud();
-      if (c?.counts) await saveCloud(afterDelete(c, kind));
-    })
-    .catch(() => {});
-}
-
 export function newCloud(): CloudState {
   return { id: randomB32(10), secret: randomB32(16) };
 }
 
 /**
- * Replaces the server copy. Refuses ('would_shrink') when this phone has less
- * than the copy it would replace, unless force (a brand-new code, or the user
+ * Replaces the server copy. Refuses ('would_shrink') when this phone is empty
+ * or has less than half of the copy it would replace, unless force (a brand-new code, or the user
  * confirmed they deleted things on purpose).
  */
 export async function upload(c: CloudState, data: BackupData, opts: { force?: boolean } = {}): Promise<CloudState> {

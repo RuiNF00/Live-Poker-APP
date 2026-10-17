@@ -7,7 +7,7 @@ export interface CloudState {
   secret: string;
   lastAt?: number;
   /** What the server copy held after the last upload or restore from this phone. */
-  counts?: { hands: number; sessions: number; players: number };
+  counts?: Partial<Record<string, number>>;
 }
 
 /** XXXXX-XXXXX-XXXXXXXXXXXXXXXX */

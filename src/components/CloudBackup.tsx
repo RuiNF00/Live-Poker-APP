@@ -118,7 +118,7 @@ export function CloudBackup() {
 
   if (cloud === undefined) return null;
   // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
-  const stalled = !!cloud && !!uploadBlock(countsOf(store), cloud);
+  const stalled = !!cloud && !!uploadBlock(countsOf(buildBackup(store)), cloud);
 
   return (
     <Card style={{ gap: S.md }}>
