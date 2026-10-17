@@ -6,6 +6,7 @@
 // story then goes out as a video rendered by the share server.
 
 import * as Clipboard from 'expo-clipboard';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import type React from 'react';
@@ -39,6 +40,9 @@ function nativeShare(): typeof RNShare | null {
 const META_APP_ID = process.env.EXPO_PUBLIC_META_APP_ID as string | undefined;
 
 export const canShareStory = Platform.OS === 'ios' || Platform.OS === 'android';
+
+/** The hand video is rendered from frames the store build captures; Expo Go shows "Disponível na versão da loja" instead. */
+export const canMakeVideo = canShareStory && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
 /** Upload the hand once and return its public share id. */
 export async function ensureShareId(hand: Hand, save: (h: Hand) => void, opts?: ShareOptions): Promise<string> {
