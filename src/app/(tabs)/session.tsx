@@ -34,7 +34,8 @@ import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
-import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
+import { cost, isPaused, playedMs, profit } from '@/store/session-math';
+import { endPreview } from '@/store/staking';
 import { eventDay } from '@/poker/festivals';
 import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
@@ -337,7 +338,7 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
-  const { saveSession, hands, settings, sessions } = useStore();
+  const { saveSession, hands, settings, sessions, packages } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   // Android back while closing the session works like «Voltar»: the form closes, the session stays.
@@ -625,9 +626,7 @@ function Live({ s }: { s: Session }) {
                   </View>
                 </View>
                 {(() => {
-                  const end = { ...s, cashOut: finish.cashOut, tips: finish.tips || undefined };
-                  const owed = owedToBackers(end);
-                  const p = profit(end);
+                  const { owed, profit: p } = endPreview({ ...s, cashOut: finish.cashOut, tips: finish.tips || undefined }, sessions, packages);
                   return (
                     <View style={{ gap: 6, paddingTop: S.xs }}>
                       {owed > 0 ? (
