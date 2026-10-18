@@ -145,7 +145,7 @@ export default function Paywall() {
     <>
       {/* Same terms on both stores: renews by itself, cancelled in the store's settings at least 24 h before (App Store 3.1.2, Google Play). */}
       {chosen ? (
-        <T v="tiny" numberOfLines={short ? 3 : undefined} style={{ textAlign: 'center' }}>
+        <T v="tiny" style={{ textAlign: 'center' }}>
           {trial
             ? t('Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.', { price: after, date: trialEnd(trial), store })
             : t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
@@ -187,10 +187,10 @@ export default function Paywall() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: compact ? S.lg : S.xl }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: short ? S.sm : compact ? S.lg : S.xl }}>
         <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
-        <View style={{ gap: S.md }}>
+        <View style={{ gap: short ? S.sm : S.md }}>
           {compact ? null : (
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
               <Ionicons name="flash" size={28} color={C.accentInk} />
@@ -234,7 +234,7 @@ export default function Paywall() {
             <T v="small">{t('A carregar os preços da {store}…', { store })}</T>
           </Row>
         ) : (
-          <View style={{ gap: S.sm + 2 }}>
+          <View style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">Sweatbook Pro</T>
             {inviteOffer ? (
@@ -270,7 +270,7 @@ export default function Paywall() {
         {short ? <View style={{ gap: S.sm }}>{extras}</View> : null}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + S.sm, gap: S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
+      <View style={{ paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
         {busy === 'buy' ? (
           <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator color={C.accent} />
@@ -339,7 +339,8 @@ function PlanCard({
         borderWidth: 2,
         borderColor: active ? C.accent : C.border,
         backgroundColor: active ? C.accentSoft : C.surface,
-        padding: compact ? S.md : S.lg,
+        paddingHorizontal: compact ? S.md : S.lg,
+        paddingVertical: compact ? S.sm : S.lg,
         gap: S.sm,
         opacity: pressed ? 0.9 : 1,
       })}>
