@@ -317,6 +317,8 @@ export function AutoCloudBackup() {
   }, [lockUp]);
   // The notice a month before the server deletes an unused copy, moved on after every copy.
   // Off the launch path, and only for players with a copy (it loads the notifications module).
+  // Under «Lembretes»: switched off in Settings, the notice already planned goes too (and comes back when on).
+  const tipsOn = store.settings.notify?.tips !== false;
   useEffect(() => {
     const id = setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), 8000);
     const off = onCloudChange((c) => void syncCloudExpiry(c));
@@ -324,7 +326,7 @@ export function AutoCloudBackup() {
       clearTimeout(id);
       off();
     };
-  }, []);
+  }, [tipsOn]);
   useEffect(() => {
     // App deleted and installed again: the keychain still has the code. Offer
     // the copy back once, before the player starts over on an empty app.
