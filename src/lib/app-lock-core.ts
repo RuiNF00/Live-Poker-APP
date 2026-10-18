@@ -106,3 +106,33 @@ export async function readLock(io: LockIO): Promise<LockConfig | null> {
   } catch {}
   return UNKNOWN_LOCK;
 }
+
+/**
+ * Whether the lock screen (or the app-switcher cover) is up, or may be about to come up (the lock
+ * is still being read). A sheet that opens by itself waits while this is true: a Modal shown later
+ * sits on top of the lock's own Modal, on Android and iOS alike, and would show over it.
+ */
+export function lockScreenUp(cfg: LockConfig | null | undefined, locked: boolean, cover: boolean): boolean {
+  if (cfg === undefined) return true;
+  return !!cfg && (locked || cover);
+}
+
+/** The lock screen's state for code outside AppLock, with listeners (one AppLock per app). */
+export function createLockUpState(initial = true) {
+  let up = initial;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => up,
+    set(v: boolean) {
+      if (v === up) return;
+      up = v;
+      for (const l of [...listeners]) l();
+    },
+    subscribe(l: () => void) {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+  };
+}
