@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
@@ -103,7 +103,9 @@ export function CommentsList({
     } catch (e) {
       const m = e instanceof Error ? e.message : '';
       // Blocked by the hand's owner: said plainly, without inviting retries (and without saying why).
-      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.'));
+      const msg = m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.');
+      setErr(msg);
+      AccessibilityInfo.announceForAccessibility(msg);
     } finally {
       setBusy(false);
     }
@@ -159,7 +161,7 @@ export function CommentsList({
                     <T v="small" style={{ flex: 1 }}>
                       {gone === 'block' ? t('{name} bloqueado nesta mão', { name: c.name }) : t('Comentário apagado')}
                     </T>
-                    <Pressable hitSlop={10} accessibilityRole="button" onPress={() => onUndo?.(c)} style={{ minHeight: 24, justifyContent: 'center' }}>
+                    <Pressable hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Desfazer, {name}', { name: c.name })} onPress={() => onUndo?.(c)} style={{ minHeight: 24, justifyContent: 'center' }}>
                       <T v="small" color={C.accent}>
                         {t('Desfazer')}
                       </T>
@@ -250,7 +252,7 @@ export function CommentsList({
           </Pressable>
         ) : null}
         {err ? (
-          <T v="small" color={C.danger}>
+          <T v="small" color={C.danger} accessibilityLiveRegion="assertive">
             {err}
           </T>
         ) : null}

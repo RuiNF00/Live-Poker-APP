@@ -3356,6 +3356,8 @@ const es: Record<string, string> = {
   'Para pagar': 'Para pagar',
   'Póster': 'Póster',
   'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'Tu mano como una carta de colección: tus cartas en grande y los números en bb.',
+  'Desfazer, {name}': 'Deshacer, {name}',
+  'Desfazer disponível.': 'Puedes deshacerlo.',
 };
 
 export default es;

@@ -110,7 +110,7 @@ export default function StoryScreen() {
 
   // The image goes public too: same privacy as the link.
   const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
-  const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', settings.inBB) : null), [shown, mode, video, settings.inBB]);
+  const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', settings.inBB) : null), [shown, mode, settings.inBB]);
   // The replayer's own motion timeline, so the video plays what the app shows.
   const motion = useMemo(() => (shown && moment ? motionTimeline(shown, moment.replay) : []), [shown, moment]);
   const talkS = withFace && face ? face.ms / 1000 : withVoice ? voiceMs / 1000 : null;
