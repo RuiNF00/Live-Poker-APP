@@ -1685,6 +1685,7 @@ const ptBR: Record<string, string> = {
   'O que percebemos': 'O que entendemos',
   'Escolhe a carta certa': 'Escolha a carta certa',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Depois você corrige o que faltar com toques, como numa mão normal.',
+  'Pôr na mesa': 'Colocar na mesa',
 };
 
 export default ptBR;
