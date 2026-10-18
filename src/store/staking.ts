@@ -151,6 +151,15 @@ export function closePackage(p: StakePackage, makeup: number, carry: boolean, ne
   return { closed, next };
 }
 
+/**
+ * The package closePackage carried this one's makeup to: same backer, made the instant this one
+ * closed, starting with makeup. Reopening this one must undo that, or the makeup counts twice.
+ */
+export function carriedTo(p: StakePackage, packages: StakePackage[]): StakePackage | undefined {
+  if (!p.closedAt || p.kind !== 'makeup') return undefined;
+  return packages.find((q) => q.id !== p.id && q.backerId === p.backerId && q.kind === 'makeup' && (q.makeupIn ?? 0) > 0 && q.createdAt === p.closedAt);
+}
+
 export interface BackerLedgerRow {
   session: Session;
   stake: Stake;

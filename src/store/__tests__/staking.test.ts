@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { backerLedger, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 
@@ -356,4 +356,33 @@ test('deleting a package or its backer keeps the makeup cut on past results', ()
   // Running sessions have no cut yet: nothing kept.
   const live = mk({ endedAt: undefined, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
   assert.deepEqual(keepCuts([live], [p], new Set(['p1'])).get(live.id), [{ backerId: 'b1', share: 50, markup: 1 }]);
+});
+
+test('reopening a closed package finds the one its makeup was carried to', () => {
+  // «Outubro» closed with 100 of makeup, carried to «Outubro (2)».
+  const p = pkg({ name: 'Outubro', createdAt: 1 });
+  const s = mk({ cashOut: 0, stakes: [{ backerId: 'b1', packageId: 'p1', share: 100, markup: 1 }] });
+  const { closed, next } = closePackage(p, 100, true, 'p2', 5000);
+  assert.equal(next!.name, 'Outubro (2)');
+  const other = pkg({ id: 'p3', makeupIn: 200, createdAt: 9000 });
+  const list = [closed, next!, other, pkg({ id: 'p4', backerId: 'b2', makeupIn: 100, createdAt: 5000 })];
+  assert.equal(carriedTo(closed, list)?.id, 'p2');
+  // Forgiven (no new package), or still open: nothing to undo.
+  assert.equal(carriedTo(closePackage(p, 100, false, 'p9', 5000).closed, [p]), undefined);
+  assert.equal(carriedTo(p, list), undefined);
+  // Reopened and the «(2)» kept: the same 100 twice (the bug).
+  const reopened = { ...closed, closedAt: undefined };
+  assert.equal(backerLedger('b1', [s], [reopened, next!], []).makeup, 200);
+  // With the empty «(2)» deleted, the old package shows its open makeup again, once,
+  // and nothing was carried on from the «(2)» (no «(3)» pointing at it).
+  const after = [reopened, other];
+  assert.equal(packageStates([s], after).states.get('p1')!.makeup, 100);
+  assert.equal(backerLedger('b1', [s], [reopened], []).makeup, 100);
+  assert.equal(carriedTo(next!, list), undefined);
+  // A «(2)» closed and carried on to a «(3)» points at it: the screen keeps the old one closed then.
+  const third = closePackage(next!, 100, true, 'p5', 7000);
+  assert.equal(carriedTo(third.closed, [closed, third.closed, third.next!])?.id, 'p5');
+  // Once the «(2)» has sessions the screen keeps the old one closed: the makeup is won back there.
+  const t = mk({ stakes: [{ backerId: 'b1', packageId: 'p2', share: 100, markup: 1 }] });
+  assert.equal(packageStates([s, t], list).states.get('p2')!.sessions, 1);
 });
