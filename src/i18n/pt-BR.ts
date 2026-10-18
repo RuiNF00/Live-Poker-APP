@@ -1653,6 +1653,8 @@ const ptBR: Record<string, string> = {
   '{rank}.º de {n} meses com sessões, do melhor para o pior.': '{rank}º de {n} meses com sessões, do melhor para o pior.',
   'Nada para importar': 'Nada para importar',
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'Nenhuma linha pôde ser lida. Corrija o arquivo e importe de novo.',
+  'Mudar para {name}?': 'Mudar para {name}?',
+  'Os valores ficam iguais e passam a {cur}.': 'Os valores continuam iguais e passam a {cur}.',
 };
 
 export default ptBR;

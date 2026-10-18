@@ -3345,6 +3345,8 @@ const en: Record<string, string> = {
   'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'This hand has data the page doesn\'t accept. Shorten names or notes and try again.',
   'Nada para importar': 'Nothing to import',
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'No row could be read. Fix the file and import it again.',
+  'Mudar para {name}?': 'Switch to {name}?',
+  'Os valores ficam iguais e passam a {cur}.': 'The amounts stay the same numbers and switch to {cur}.',
 };
 
 export default en;

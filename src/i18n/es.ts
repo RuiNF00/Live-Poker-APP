@@ -3339,6 +3339,8 @@ const es: Record<string, string> = {
   'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mano tiene datos que la página no acepta. Acorta nombres o notas e inténtalo de nuevo.',
   'Nada para importar': 'Nada que importar',
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'No se lee ninguna fila. Corrige el archivo e impórtalo otra vez.',
+  'Mudar para {name}?': '¿Cambiar a {name}?',
+  'Os valores ficam iguais e passam a {cur}.': 'Los importes siguen iguales y pasan a {cur}.',
 };
 
 export default es;
