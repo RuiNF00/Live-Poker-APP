@@ -8,6 +8,8 @@ import { useSyncExternalStore } from 'react';
 import { t } from '@/i18n';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 
+import { parseOrQuarantine } from './boot';
+import type { KV } from './persist';
 import { isBagged } from './multi-day';
 import type { Session } from './types';
 
@@ -307,8 +309,9 @@ function emit() {
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
-      if (!raw) return;
-      plans = { ...JSON.parse(raw), ...plans };
+      const saved = raw ? parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw) : null;
+      if (!saved) return;
+      plans = { ...saved, ...plans };
       emit();
     })
     .catch(() => {});

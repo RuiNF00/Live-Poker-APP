@@ -7,6 +7,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
+import { parseOrQuarantine } from './boot';
+import type { KV } from './persist';
 import type { Session } from './types';
 
 export interface WeeklyTournament {
@@ -85,7 +87,7 @@ function set(next: WeeklyTournament[]) {
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
-      const saved = raw ? (JSON.parse(raw) as WeeklyTournament[]) : [];
+      const saved = (raw && parseOrQuarantine<WeeklyTournament[]>(AsyncStorage as unknown as KV, KEY, raw)) || [];
       set([...saved.filter((w) => !list.some((x) => x.id === w.id)), ...list]);
     })
     .catch(() => {});

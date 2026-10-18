@@ -12,7 +12,7 @@ import { blindsLabel } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { balanceOf, ensureBankrolls } from '../bankroll-math';
-import { KEYS, QUARANTINE, SPECS, loadAll, type Boot } from '../boot';
+import { KEYS, QUARANTINE, SPECS, loadAll, parseOrQuarantine, type Boot } from '../boot';
 import { createWriter, type CollectionSpec } from '../persist';
 import { curve, playedMs, profit, totals } from '../session-math';
 import { withCuts } from '../staking';
@@ -356,4 +356,15 @@ test('definições e índices de quarentena ficam à parte e aparecem na lista',
   const d = await launch(r.kv);
   assert.equal(d.quarantine.length, 2);
   assert.equal((await loadAll(r.kv)).quarantine.length, 2);
+});
+
+test('festival plans that no longer parse are set aside in quarantine, not written over', async () => {
+  const kv = new FakeStorage();
+  kv.data.set('rl.festivalPlans.v1', '{"sp":');
+  assert.equal(parseOrQuarantine(kv, 'rl.festivalPlans.v1', '{"sp":'), null);
+  await new Promise((r) => setTimeout(r, 0));
+  const kept = [...kv.data].find(([k]) => k.startsWith(QUARANTINE) && k.endsWith('.rl.festivalPlans.v1'));
+  assert.equal(kept?.[1], '{"sp":');
+  assert.equal(kv.data.has('rl.festivalPlans.v1'), false);
+  assert.deepEqual(parseOrQuarantine(kv, 'k', '{"a":1}'), { a: 1 });
 });
