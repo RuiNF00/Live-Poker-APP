@@ -71,11 +71,12 @@ export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: 
   if (!clash.length) return incoming;
   const taken = new Set([...local, ...(incoming.bankrolls ?? [])].map((b) => b.id));
   const to = new Map(clash.map((b) => [b.id, freeAutoId(b.currency, taken)]));
-  const moved = (id: string | undefined) => (id && to.has(id) ? to.get(id)! : id);
+  const cur = new Map(clash.map((b) => [b.id, b.currency]));
   return {
     ...incoming,
     bankrolls: (incoming.bankrolls ?? []).map((b) => (to.has(b.id) ? { ...b, id: to.get(b.id)! } : b)),
-    sessions: incoming.sessions.map((x) => (x.bankrollId && to.has(x.bankrollId) ? { ...x, bankrollId: moved(x.bankrollId) } : x)),
+    // Only a session in that bankroll's currency is its: a $ one pointing at it belongs to the $ one here.
+    sessions: incoming.sessions.map((x) => (x.bankrollId && to.has(x.bankrollId) && x.currency === cur.get(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x)),
     transfers: incoming.transfers?.map((x) => (to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x)),
   };
 }

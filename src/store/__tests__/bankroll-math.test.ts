@@ -85,17 +85,19 @@ test('a backup bankroll under an id held here in another currency gets its own i
   const theirs: Bankroll = { ...br(autoBankrollId('€'), '€'), name: 'Principal', updatedAt: 20 };
   const backup = {
     bankrolls: [theirs],
-    sessions: [mk({ id: 'e', currency: '€', bankrollId: theirs.id, cashOut: 300 })],
+    sessions: [mk({ id: 'e', currency: '€', bankrollId: theirs.id, cashOut: 300 }), mk({ id: 'd', currency: '$', bankrollId: theirs.id })],
     transfers: [tx(theirs.id, 'deposit', 500)],
   };
   const out = separateBankrolls([here], backup);
   const id = autoBankrollId('€') + '_2';
   assert.deepEqual(out.bankrolls!.map((b) => [b.id, b.currency, b.name]), [[id, '€', 'Principal']]);
   assert.equal(out.sessions[0].bankrollId, id);
+  // A $ session pointing at that id is this phone's $ bankroll's.
+  assert.equal(out.sessions[1].bankrollId, here.id);
   assert.equal(out.transfers![0].bankrollId, id);
   // Two bankrolls, each currency's balance as it was: the $ one keeps none of the € deposit.
   const all = [here, ...out.bankrolls!];
-  assert.equal(balanceOf({ bankrollId: here.id }, out.sessions, out.transfers!, all).balance, 0);
+  assert.equal(balanceOf({ bankrollId: here.id }, out.sessions, out.transfers!, all).balance, -100);
   assert.equal(balanceOf({ bankrollId: id }, out.sessions, out.transfers!, all).balance, 700);
   // Nothing in common: the same backup back.
   assert.equal(separateBankrolls([br('x', '$')], backup), backup);
