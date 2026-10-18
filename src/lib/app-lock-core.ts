@@ -37,11 +37,24 @@ export const validPin = (pin: string) => new RegExp(`^\\d{${PIN_LENGTH}}$`).test
  * (app-lock.ts) saved a lock without it: a lock found next to any of these is this
  * install's own, from such a build, not one the keychain kept from a deleted install.
  */
-export const USED_INSTALL_KEYS = ['rl.hands.v2', 'rl.sessions.v2', 'rl.players.v2', 'rl.hands.v1', 'rl.sessions.v1', 'rl.players.v1'];
+export const USED_INSTALL_KEYS = ['rl.hands.v2', 'rl.sessions.v2', 'rl.players.v2', 'rl.hands.v1', 'rl.sessions.v1', 'rl.players.v1', 'rl.onboarding.v1'];
+
+/**
+ * The first-run questions answered or skipped: their answers are saved only then, by the player's
+ * own taps, never at launch (the launch writes '{}' at most). So a lock turned on before any hand,
+ * session or player is still known as this install's, and a fresh install never looks used.
+ */
+const answeredOnboarding = (v: string | null) => {
+  try {
+    return Array.isArray((JSON.parse(v ?? 'null') as { goals?: unknown } | null)?.goals);
+  } catch {
+    return false;
+  }
+};
 
 /** Whether a lock in the keychain belongs to this install: the marker, or this install's own data from a build before it. */
 export function lockIsThisInstalls(marker: string | null, used: readonly (readonly [string, string | null])[]): boolean {
-  return !!marker || used.some(([, v]) => v != null);
+  return !!marker || used.some(([k, v]) => (k === 'rl.onboarding.v1' ? answeredOnboarding(v) : v != null));
 }
 
 export interface LockIO {

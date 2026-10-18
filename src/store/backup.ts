@@ -13,7 +13,8 @@ import type { WeeklyTournament } from './weekly';
 import type { SwapGroup } from './swap-groups';
 import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
-import { validSwapId, validSwapToken, type Swap } from './swaps';
+import type { Swap } from './swaps';
+import { fixSwap, fixSwapGroup } from './swap-validate';
 import { fixHand, fixPlayer, fixSession, fixTrip } from './validate';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 import { csvCell, type CsvSep } from '../export/csv';
@@ -247,14 +248,9 @@ export function parseBackup(text: string): BackupData {
       const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
-  const swaps = arr('swaps').filter(
-    (x) => isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && (x.side === 'a' || x.side === 'b') && isObj(x.terms) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
-  ) as unknown as Swap[];
-  const swapGroups = arr('swapGroups').filter(
-    (x) =>
-      isObj(x) && validSwapId(x.id) && validSwapToken(x.token) && Number.isInteger(x.seat) && (x.seat as number) >= 0 && (x.seat as number) < 8 &&
-      (x.invite === undefined || validSwapToken(x.invite)) && isObj(x.terms) && Array.isArray(x.seats) && Array.isArray(x.entries) && typeof x.createdAt === 'number',
-  ) as unknown as SwapGroup[];
+  // Same checks as at launch (swap-validate.ts): a swap a screen would crash on never reaches one.
+  const swaps = arr('swaps').map(fixSwap).filter((x): x is Swap => !!x);
+  const swapGroups = arr('swapGroups').map(fixSwapGroup).filter((x): x is SwapGroup => !!x);
   return {
     app: 'sweatbook',
     v: 1,

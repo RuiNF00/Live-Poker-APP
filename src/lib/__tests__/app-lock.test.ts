@@ -48,3 +48,14 @@ test('readLock fails closed: a read error or a damaged value locks with the phon
   // A deleted install's leftover still goes, even if clearing it fails.
   assert.equal(await readLock(io({ installKeys: async () => [['m', null], ['rl.hands.v2', null]], clear: async () => { throw new Error('x'); } })), null);
 });
+
+test('a lock turned on before any data: the first-run answers say this install was used, a launch-time "{}" does not', async () => {
+  const { lockIsThisInstalls } = await import('../app-lock-core');
+  const answers = JSON.stringify({ goals: [], plays: null, volume: null });
+  assert.equal(lockIsThisInstalls(null, [['rl.hands.v2', null], ['rl.onboarding.v1', answers]]), true);
+  assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', JSON.stringify({ goals: ['leaks'], plays: 'mtt1', volume: 'some' })]]), true);
+  // A fresh reinstall writes '{}' when it opens the welcome flow: still a leftover lock.
+  assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', '{}']]), false);
+  assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', 'not json']]), false);
+  assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', null]]), false);
+});

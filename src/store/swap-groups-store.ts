@@ -12,6 +12,7 @@ import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, s
 
 import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
+import { fixSwapGroup } from './swap-validate';
 import { mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
 
 const SPEC: CollectionSpec = { index: 'rl.swapgroups.v1', prefix: 'rl.swapgroup.v1.' };
@@ -30,7 +31,7 @@ function emit(next: SwapGroup[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<SwapGroup>(kv, SPEC).then(async (d) => {
+  booting ??= loadCollection<SwapGroup>(kv, SPEC, { fix: fixSwapGroup }).then(async (d) => {
     // Records that no longer parse are kept aside (backup and support file), not dropped.
     await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swap-groups] write failed', e));
