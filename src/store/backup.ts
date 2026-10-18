@@ -218,8 +218,8 @@ export function parseBackup(text: string): BackupData {
     list
       .map((x) => {
         const ok = fix(x);
-        const id = (x as { id: string }).id;
-        if (!ok && !id.includes('\n')) setAside.push([`${QUARANTINE}backup.${prefix}${id}`, JSON.stringify(x)]);
+        const id = isObj(x) && typeof x.id === 'string' ? x.id : null;
+        if (!ok && id && !id.includes('\n')) setAside.push([`${QUARANTINE}backup.${prefix}${id}`, JSON.stringify(x)]);
         return ok;
       })
       .filter((x): x is T => x !== null);

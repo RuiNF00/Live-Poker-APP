@@ -186,3 +186,11 @@ test('a receipt file name that climbs out of the documents folder is dropped, th
   const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, sessions: [{ ...session, docs }] }));
   assert.deepEqual(b.sessions[0].docs!.map((d) => d.file), ['d1.jpg']);
 });
+
+test('a null record or one with no id next to good ones: the good ones still restore', () => {
+  const junk = [null, { name: 'sem id' }, { id: 7 }, 'texto'];
+  const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, hands: [...junk, hand], sessions: [...junk, session], players: [...junk], trips: [...junk] }));
+  assert.deepEqual(b.hands.map((h) => h.id), ['h1']);
+  assert.deepEqual(b.sessions.map((s) => s.id), ['s1']);
+  assert.deepEqual(b.quarantine, []);
+});
