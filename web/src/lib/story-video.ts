@@ -20,6 +20,11 @@ export interface Slot {
 
 const even = (n: number) => Math.max(2, Math.round(n / 2) * 2);
 
+// Frames are RGB; converted and tagged as BT.709 (limited range) so iPhone, Android, Instagram and
+// WhatsApp all show the same colours. Untagged, players guess: the brand orange came out lighter.
+const TO_YUV = `scale=${STORY_W}:${STORY_H}:out_color_matrix=bt709:out_range=tv`;
+const COLOR_TAGS = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv'];
+
 /** Clamp the waveform slot to the frame; null if it makes no sense. */
 export function parseSlot(raw: unknown): Slot | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -66,11 +71,11 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
   // The waveform branch is normalised so a quiet voice still moves the bars;
   // the audio itself goes out untouched.
   const filter = slot
-    ? `[0:v]scale=${STORY_W}:${STORY_H},setsar=1[bg];` +
+    ? `[0:v]${TO_YUV},setsar=1,format=yuv420p[bg];` +
       `[1:a]asplit[a][b];` +
       `[b]aformat=channel_layouts=mono,dynaudnorm=f=75:p=0.95,volume=3,showwaves=s=${slot.w}x${slot.h}:mode=cline:rate=24:colors=0xFF6A3D:scale=sqrt[w];` +
       `[bg][w]overlay=${slot.x}:${slot.y}:shortest=1,format=yuv420p[v]`
-    : `[0:v]scale=${STORY_W}:${STORY_H},setsar=1,format=yuv420p[v];[1:a]anull[a]`;
+    : `[0:v]${TO_YUV},setsar=1,format=yuv420p[v];[1:a]anull[a]`;
   return [
     '-hide_banner',
     '-loglevel', 'error',
@@ -94,6 +99,7 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
     '-preset', 'veryfast',
     '-crf', '26',
     '-profile:v', 'high',
+    ...COLOR_TAGS,
     '-c:a', 'aac',
     '-b:a', '96k',
     '-ar', '44100',
@@ -138,7 +144,7 @@ export function replayArgs(
     // a few times instead of 24 times a second, the slowest part of the render.
     inputs.push('-protocol_whitelist', 'file', '-f', 'image2', '-pattern_type', 'none', '-c:v', 'mjpeg', '-loop', '1', '-framerate', '4', '-t', len.toFixed(2), '-i', f);
   });
-  const parts = frames.map((_, i) => `[${i}:v]scale=${STORY_W}:${STORY_H},setsar=1,fps=24,format=yuv420p,settb=AVTB[f${i}]`);
+  const parts = frames.map((_, i) => `[${i}:v]${TO_YUV},setsar=1,fps=24,format=yuv420p,settb=AVTB[f${i}]`);
   let cur = 'f0';
   let at = 0;
   for (let i = 1; i < n; i++) {
@@ -187,6 +193,7 @@ export function replayArgs(
     '-crf', '24',
     '-profile:v', 'high',
     '-pix_fmt', 'yuv420p',
+    ...COLOR_TAGS,
     '-c:a', 'aac',
     '-b:a', '96k',
     '-ar', '44100',

@@ -25,6 +25,16 @@ describe('ffmpegArgs', () => {
   });
 });
 
+describe('colour', () => {
+  it('converts the RGB frames as BT.709 and tags the video so every player shows the same colours', () => {
+    for (const args of [ffmpegArgs('f.png', 'v.m4a', 'o.mp4', null), replayArgs(['a.jpg', 'b.jpg'], [2, 2], null, 'o.mp4', null)]) {
+      expect(args.join(' ')).toContain('out_color_matrix=bt709');
+      for (const flag of ['-colorspace', '-color_primaries', '-color_trc']) expect(args[args.indexOf(flag) + 1]).toBe('bt709');
+      expect(args[args.indexOf('-color_range') + 1]).toBe('tv');
+    }
+  });
+});
+
 describe('ffmpeg input hardening', () => {
   it('forces a demuxer per input and only local files', () => {
     const args = ffmpegArgs('/t/frame.png', '/t/voice.mp3', '/t/o.mp4', null);
