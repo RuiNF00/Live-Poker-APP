@@ -36,7 +36,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
@@ -124,8 +124,15 @@ export default function NewHand() {
     const down = checkDownFrom !== undefined && h.actions.length >= checkDownFrom ? checkDownFrom : undefined;
     setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen, autoFrom, checkDownFrom: down });
   };
+  // A reopened or edited hand has no tap history: undo then steps back through the hand itself.
+  const back = history.length ? null : stepBack(hand);
+  const canUndo = history.length > 0 || !!back;
   const undo = () => {
     tap();
+    if (!history.length) {
+      if (back) setDraftState({ ...draft, hand: { ...back, updatedAt: Date.now() }, autoFrom: undefined });
+      return;
+    }
     setHistory((x) => {
       if (!x.length) return x;
       setDraftState(x[x.length - 1]);
@@ -308,7 +315,10 @@ export default function NewHand() {
       pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0 });
     }
     // Finishing a half-saved hand: the detail screen offers the next one.
-    router.replace({ pathname: '/hand/[id]', params: justFinished ? { id: final.id, f: '1' } : { id: final.id } });
+    const to = { pathname: '/hand/[id]' as const, params: justFinished ? { id: final.id, f: '1' } : { id: final.id } };
+    // An edit opened from the hand goes back to it, so Back doesn't show the same hand twice.
+    if (isEdit) router.dismissTo(to);
+    else router.replace(to);
   };
 
   const voice = useVoiceCapture(async (recording) => {
@@ -444,7 +454,7 @@ export default function NewHand() {
           </T>
         </Pressable>
         {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} compact /> : null}
-        <View style={{ opacity: history.length ? 1 : 0.35 }} pointerEvents={history.length ? 'auto' : 'none'}>
+        <View style={{ opacity: canUndo ? 1 : 0.35 }} pointerEvents={canUndo ? 'auto' : 'none'}>
           <IconButton name="arrow-undo" label={t('Desfazer')} onPress={undo} />
         </View>
       </View>
@@ -452,7 +462,12 @@ export default function NewHand() {
       {phase !== 'hero' && <StreetDots street={s.street} done={phase === 'showdown' || phase === 'done'} />}
 
       {/* the felt takes whatever the dock leaves */}
-      <View style={{ flex: 1, minHeight: 160, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }} onLayout={(e) => setArea({ w: e.nativeEvent.layout.width - 16, h: e.nativeEvent.layout.height })}>
+      <View style={{ flex: 1, minHeight: 160, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }} onLayout={(e) => {
+          const w = e.nativeEvent.layout.width - 16;
+          const h = e.nativeEvent.layout.height;
+          // Sub-pixel changes are ignored: the showdown dock sizes itself from this, and the two chased each other every frame.
+          setArea((a) => (Math.abs(a.w - w) < 2 && Math.abs(a.h - h) < 2 ? a : { w, h }));
+        }}>
         {tableW > 0 && (
           <View style={{ width: tableW }}>
             <Table

@@ -53,3 +53,32 @@ test('hero in the BB: auto-fold stops at the SB instead of handing hero a walk',
   assert.notEqual(s.toAct, null);
   assert.notEqual(s.toAct, h.hero);
 });
+
+test('limped pot: "nobody else" folds BTN and SB but the big blind checks', () => {
+  let h = mk();
+  h = { ...h, actions: [...skipTo(h, replay(h).final, 0), { p: 0, kind: 'call' }] };
+  h = { ...h, actions: [...h.actions, ...onlyCaller(h, replay(h).final, null)] };
+  const f = replay(h).final;
+  const bb = (h.button + 2) % 9;
+  assert.equal(h.actions.at(-1)!.p, bb);
+  assert.equal(h.actions.at(-1)!.kind, 'check');
+  assert.equal(f.folded[bb], false);
+  assert.equal(f.needsBoard, true);
+});
+
+test('stepBack walks a saved hand back one step at a time', async () => {
+  const { stepBack } = await import('../entry');
+  let h = mk();
+  h = { ...h, actions: [...skipTo(h, replay(h).final, 0), { p: 0, kind: 'raise', to: 500 }] };
+  h = { ...h, actions: [...h.actions, ...onlyCaller(h, replay(h).final, h.button)], board: ['2c', '7d', 'Ts'] };
+  const n = h.actions.length;
+  // Flop dealt, nobody acted on it: the flop goes back with the action that closed preflop.
+  const b1 = stepBack(h)!;
+  assert.equal(b1.actions.length, n - 1);
+  assert.deepEqual(b1.board, []);
+  // A board card the action hasn't reached is the first thing to go.
+  const b2 = stepBack({ ...h, board: ['2c', '7d', 'Ts', 'Kh'] })!;
+  assert.deepEqual(b2.board, ['2c', '7d', 'Ts']);
+  assert.equal(b2.actions.length, n);
+  assert.equal(stepBack(mk()), null);
+});

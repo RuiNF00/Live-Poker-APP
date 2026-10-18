@@ -166,7 +166,8 @@ export function onlyCaller(hand: Hand, s: TableState, target: number | null): Ha
   const acts: HandAction[] = [];
   let st: TableState | null = s;
   for (let guard = 0; st && st.toAct !== null && st.toAct !== hand.hero && guard < 20; guard++) {
-    const a: HandAction = { p: st.toAct, kind: st.toAct === target ? 'call' : 'fold' };
+    // A seat that owes nothing (the big blind in a limped pot) checks instead of folding.
+    const a: HandAction = { p: st.toAct, kind: st.toAct === target ? 'call' : st.bets[st.toAct] >= st.currentBet ? 'check' : 'fold' };
     const next: TableState | null = apply(st, a, hand);
     if (!next) break;
     acts.push(a);
@@ -303,4 +304,23 @@ export function checkToRaiser(hand: Hand, s: TableState): HandAction[] {
 export function autoActions(hand: Hand, s: TableState): HandAction[] {
   const folds = autoFold(hand, s);
   return folds.length ? folds : checkToRaiser(hand, s);
+}
+
+/**
+ * Undo on a hand reopened from storage (an edit, or a draft after the app was
+ * closed), where there is no tap history: one step back through the hand
+ * itself. Winners first, then the second run's last card, then a board card
+ * not yet reached by the action, then the last action (with the cards it had
+ * dealt). Null when there is nothing left to take back.
+ */
+export function stepBack(hand: Hand): Hand | null {
+  if (hand.winners2?.length) return { ...hand, winners2: undefined };
+  if (hand.winners?.length) return { ...hand, winners: undefined };
+  if (hand.board2?.length) return { ...hand, board2: hand.board2.length > 1 ? hand.board2.slice(0, -1) : undefined };
+  const reached = replay(hand).final.boardCount;
+  if (hand.board.length > reached) return { ...hand, board: hand.board.slice(0, reached) };
+  if (!hand.actions.length) return null;
+  const actions = hand.actions.slice(0, -1);
+  const back = { ...hand, actions };
+  return { ...back, board: hand.board.slice(0, replay(back).final.boardCount) };
 }

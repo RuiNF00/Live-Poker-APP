@@ -135,3 +135,24 @@ test('who won, picked without cards: two winners all-in for the same amount chop
   const res = replay(h).result!;
   assert.equal(res.won[2], res.won[3]);
 });
+
+test('hero folding preflop finishes the hand for hero; a raise over a limp is a Raise', async () => {
+  const { buttonForHeroPosition, isComplete, isPlayedOut, raiseName, replay } = await import('../engine');
+  const { endStacks } = await import('../factory');
+  const players: Hand['players'] = Array.from({ length: 6 }, (_, i) => ({ name: i ? `V${i}` : 'Hero', stack: 200, cards: i ? undefined : (['7c', '2d'] as Hand['players'][number]['cards']) }));
+  const base: Hand = {
+    v: 1, id: 'f', actions: [], createdAt: 0, updatedAt: 0,
+    game: { kind: 'cash', name: 'C', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€' },
+    players, button: buttonForHeroPosition(6, 0, 'CO'), hero: 0, board: [], tags: [], notes: '',
+  };
+  const utg = (base.button + 3) % 6;
+  const limp: Hand = { ...base, actions: [{ p: utg, kind: 'call' }] };
+  // UTG limped: whoever acts next raises over a limper.
+  assert.equal(raiseName(replay(limp).final), 'Raise');
+  assert.equal(raiseName(replay({ ...base, actions: [] }).final), 'Open');
+  const hj = (utg + 1) % 6;
+  const h: Hand = { ...base, actions: [{ p: utg, kind: 'fold' }, { p: hj, kind: 'fold' }, { p: 0, kind: 'fold' }] };
+  assert.equal(isComplete(h), true);
+  assert.equal(isPlayedOut(h), false);
+  assert.deepEqual(endStacks(h), players.map((p) => p.stack));
+});
