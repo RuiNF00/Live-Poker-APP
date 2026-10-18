@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { groupNet, HALF_CENT, minTransfers, type GroupEntry, type SwapGroup } from '../swap-groups';
-import { mergeRemote, settled, settleGroups, settleNet, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { mergeRemote, seenTag, settled, settleGroups, settleNet, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 let seed = 42;
 const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
@@ -25,6 +25,35 @@ test('a payment sent again (same cid after no signal or a restore) is on the pho
   const merged = mergeRemote(local, remote);
   assert.equal(merged.entries.filter((x) => x.cid === 'k1').length, 1);
   assert.equal(swapLedger(merged).balance, 150);
+});
+
+test('«Paguei» and «Recebi» for the same money count once; a second real payment still counts', () => {
+  // B owes 600. B taps «Paguei 300» and A taps «Recebi 300» for the same transfer, neither phone
+  // having seen the other's (both ~0): one payment, 300 still owed.
+  const res = e('b', 'result', 6000);
+  const p1 = e('b', 'payment', 300, { cid: 'x' + seenTag([res], 'b', 'payment', 300) });
+  const r1 = e('a', 'received', 300, { cid: 'y' + seenTag([res], 'a', 'received', 300) });
+  const both = swap({ entries: [res, p1, r1] });
+  assert.equal(swapLedger(both).balance, 300);
+  assert.equal(swapLedger({ ...both, side: 'b' }).balance, -300);
+  // B pays the other 300, having already seen A's «Recebi 300» (~1): it counts, the swap is square.
+  const p2 = e('b', 'payment', 300, { cid: 'z' + seenTag([res, p1, r1], 'b', 'payment', 300) });
+  assert.match(p2.cid, /~1$/);
+  assert.ok(settled(swapLedger(swap({ entries: [res, p1, r1, p2] }))));
+  // Whatever order the server hands them back in.
+  assert.ok(settled(swapLedger(swap({ entries: [p2, r1, res, p1] }))));
+});
+
+test('«Acertar contas» on both phones at once closes the swap once', () => {
+  for (const owed of [987.4, 0.01, 1234.56]) {
+    const res = e('b', 'result', owed * 10);
+    const s = swap({ entries: [res] });
+    const fromA = settleSteps([s]).map((x) => e('a', x.kind, x.amount, { cid: 'a' + seenTag(s.entries, 'a', x.kind, x.amount) }));
+    const fromB = settleSteps([{ ...s, side: 'b' }]).map((x) => e('b', x.kind, x.amount, { cid: 'b' + seenTag(s.entries, 'b', x.kind, x.amount) }));
+    const all = [res, ...fromA, ...fromB];
+    assert.ok(settled(swapLedger(swap({ entries: all }))), `owed ${owed}`);
+    assert.ok(settled(swapLedger(swap({ entries: all, side: 'b' }))));
+  }
 });
 
 test('both sides mirror each other to the cent, and settling closes both at 0,00', () => {

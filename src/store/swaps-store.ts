@@ -13,12 +13,7 @@ import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOw
 import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
-import { t } from '@/i18n';
-import { notice } from '@/lib/notice';
-import { money } from '@/poker/format';
-
-import { HALF_CENT } from './swap-groups';
-import { mergeRemote, mergeSwaps, newFromOther, other, seenTag, swapNames, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -107,17 +102,6 @@ function applyRemote(id: string, remote: RemoteSwap) {
   if (news.length) newsListeners.forEach((l) => l(next, news));
 }
 
-function alreadyRecorded(s: Swap, e: SwapEntry, left: number) {
-  const name = swapNames(s)[other(s.side)];
-  const cur = s.terms.currency;
-  notice(
-    t('Já estava registado'),
-    left >= HALF_CENT
-      ? t('{name} já tinha registado este dinheiro, por isso os teus {amount} não contam duas vezes. Ainda falta acertar {left}.', { name, amount: money(e.amount, cur), left: money(left, cur) })
-      : t('{name} já tinha registado este dinheiro, por isso os teus {amount} não contam duas vezes. O swap está acertado.', { name, amount: money(e.amount, cur) }),
-  );
-}
-
 /**
  * Sends what is waiting, then takes the server's copy. Returns false without signal (the
  * phone's copy stays as it is). A swap the server no longer has is kept here, marked gone.
@@ -135,8 +119,6 @@ export async function syncSwap(id: string): Promise<boolean> {
         if (err instanceof SwapError && err.status === 422) {
           s = getSwap(id)!;
           saveSwap({ ...s, entries: s.entries.filter((x) => x.cid !== e.cid) });
-          // The other player had already marked this money: it doesn't count twice.
-          if (err.code === 'overpaid') alreadyRecorded(s, e, err.left ?? 0);
         } else if (!(err instanceof SwapError)) throw err;
       }
     }

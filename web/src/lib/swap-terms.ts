@@ -202,16 +202,3 @@ export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Paid[]):
  * a lost answer sends the same one and gets in, instead of "already confirmed".
  */
 export const newSwapKey = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('');
-
-/**
- * A payment ("payment" by the payer, or "received" by whoever got it) larger than what the payer
- * still owes is the same money recorded twice: both players marked one transfer. Returns what was
- * still owed when the entry is more than that (with a cent of slack for rounding), else null.
- */
-export function overpaid(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[], e: Pick<SwapEntry, 'side' | 'kind' | 'amount'>): number | null {
-  if (e.kind === 'result') return null;
-  const net = swapBalance(terms, entries).net;
-  const payer: Side = e.kind === 'payment' ? e.side : e.side === 'a' ? 'b' : 'a';
-  const room = Math.max(0, r2(payer === 'b' ? net : -net));
-  return e.amount > room + 0.015 ? room : null;
-}

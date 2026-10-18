@@ -1666,9 +1666,6 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
-  'Já estava registado': 'Já estava registrado',
-  '{name} já tinha registado este dinheiro, por isso os teus {amount} não contam duas vezes. Ainda falta acertar {left}.': '{name} já tinha registrado esse dinheiro, por isso os seus {amount} não contam duas vezes. Ainda falta acertar {left}.',
-  '{name} já tinha registado este dinheiro, por isso os teus {amount} não contam duas vezes. O swap está acertado.': '{name} já tinha registrado esse dinheiro, por isso os seus {amount} não contam duas vezes. O swap está acertado.',
 };
 
 export default ptBR;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { overpaid, parseEntry, parseName, parseTerms, seenTag, swapBalance } from '../src/lib/swap-terms';
+import { parseEntry, parseName, parseTerms, seenTag, swapBalance } from '../src/lib/swap-terms';
 
 const base = {
   v: 1, scope: 'series', title: 'WSOP Paradise 2026', venue: 'Atlantis', currency: '$',
@@ -148,25 +148,5 @@ describe('«Paguei» and «Recebi» of the same amount', () => {
     const b = swapBalance(terms, [...entries, { side: 'a', kind: 'received', amount: 1000, cid, at: 4 }]);
     expect(b.bPaid).toBe(2500);
     expect(b.net).toBe(0);
-  });
-});
-
-describe('the same money marked by both players', () => {
-  const terms = { a: { name: 'Ana', pct: 10 }, b: { name: 'Bruno', pct: 10 } };
-  const owes300 = [{ side: 'b' as const, kind: 'result' as const, amount: 3000 }];
-  it('lets the first one in and refuses the second', () => {
-    expect(overpaid(terms, owes300, { side: 'b', kind: 'payment', amount: 300 })).toBeNull();
-    const paid = [...owes300, { side: 'b' as const, kind: 'payment' as const, amount: 300 }];
-    expect(overpaid(terms, paid, { side: 'a', kind: 'received', amount: 300 })).toBe(0);
-  });
-  it('says what was still owed after a part payment', () => {
-    const part = [...owes300, { side: 'a' as const, kind: 'received' as const, amount: 100 }];
-    expect(overpaid(terms, part, { side: 'b', kind: 'payment', amount: 300 })).toBe(200);
-    expect(overpaid(terms, part, { side: 'b', kind: 'payment', amount: 200 })).toBeNull();
-  });
-  it('never touches prizes, and the payer is whoever owes', () => {
-    expect(overpaid(terms, owes300, { side: 'b', kind: 'result', amount: 1e6 })).toBeNull();
-    // Ana owes nothing: her payment is refused, Bruno's is fine.
-    expect(overpaid(terms, owes300, { side: 'a', kind: 'payment', amount: 10 })).toBe(0);
   });
 });
