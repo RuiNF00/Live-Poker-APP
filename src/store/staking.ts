@@ -3,7 +3,7 @@
 // the store's lists.
 
 import { rate, type ManualRates, type RateTable } from './fx-math';
-import { cost, pieceOf, stakesOf, type Cuts } from './session-math';
+import { cost, owedToBackers, pieceOf, profit, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
@@ -410,6 +410,18 @@ export function withCuts(sessions: Session[], packages: StakePackage[], fx?: Pac
     const v = c && Math.abs(c) >= 0.005 ? Math.round(c * 100) / 100 : undefined;
     return (s.makeupCut ?? undefined) === v ? s : { ...s, makeupCut: v };
   });
+}
+
+/**
+ * The end-of-session sheet before saving: what goes to the backers and the player's result with this
+ * prize. A makeup package's cut depends on it, so it is worked out as the store will once saved,
+ * and kept back from the backers' amount (2000 prize, 500 cut: 1500 to pay, +500 for me).
+ */
+export function endPreview(running: Session, sessions: Session[], packages: StakePackage[], now = Date.now()): { owed: number; profit: number } {
+  // Ended as of now: only ended sessions count in a package.
+  const ended = { ...running, endedAt: running.endedAt ?? now };
+  const end = ended.stakes?.some((x) => x.packageId) ? (withCuts(sessions.map((x) => (x.id === ended.id ? ended : x)), packages).find((x) => x.id === ended.id) ?? ended) : ended;
+  return { owed: Math.round((owedToBackers(end) - Math.max(0, end.makeupCut ?? 0)) * 100) / 100, profit: profit(end) };
 }
 
 /**

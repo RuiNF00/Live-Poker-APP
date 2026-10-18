@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, closePackage, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { backerLedger, closePackage, endPreview, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 
 let n = 0;
@@ -296,4 +296,19 @@ test('the player owes the backers exactly what their rows add up to', () => {
   const s = { cashOut: 222.22, stakes: [{ backerId: 'a', share: 15 }, { backerId: 'b', share: 15 }] } as unknown as Session;
   // 15% of 222,22 is 33,333 each: 33,33 + 33,33, never 66,67.
   assert.equal(owedToBackers(s), 66.66);
+});
+
+test('end-of-session sheet with a makeup package shows what the store will save', () => {
+  // Backer pays 100% of buy-ins, I keep 50% of profit: MK1 500 → 0, then MK2 500 → 2000.
+  const stake = { backerId: 'b1', packageId: 'p1', share: 100, markup: 1 };
+  const mk1 = mk({ buyIn: 500, cashOut: 0, stakes: [stake] });
+  const mk2 = mk({ buyIn: 500, cashOut: 0, endedAt: undefined, stakes: [stake] });
+  const sessions = withCuts([mk1, mk2], [pkg()]);
+  const pre = endPreview({ ...sessions[1], cashOut: 2000 }, sessions, [pkg()]);
+  assert.deepEqual(pre, { owed: 1500, profit: 500 });
+  // The same numbers once saved and recomputed.
+  const saved = withCuts([mk1, { ...mk2, cashOut: 2000, endedAt: mk2.startedAt + 500 }], [pkg()])[1];
+  assert.equal(profit(saved), 500);
+  // Without a package nothing changes: the whole prize share goes to the backer.
+  assert.deepEqual(endPreview(mk({ buyIn: 500, cashOut: 2000, stakes: [{ share: 50, markup: 1 }] }), [], []), { owed: 1000, profit: 750 });
 });

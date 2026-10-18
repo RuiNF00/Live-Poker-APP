@@ -94,6 +94,8 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
   }, [invite]);
 
   const fmt = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 2 });
+  // Markup always with two decimals, as in the app (1,20).
+  const fmt2 = new Intl.NumberFormat(numberTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const money = (n: number, cur: string) => formatMoney(n, cur, locale);
   const date = (t: number) => new Date(t).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' });
   // Today: the time; before: the day.
@@ -237,7 +239,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
               <div className="bk-main">
                 <p className="bk-name">{r.n || (r.k === 'mtt' ? 'MTT' : 'Cash')}</p>
                 <p className="bk-sub">
-                  {[date(r.d), `${fmt.format(r.sh)}%`, r.mu !== 1 ? fmt.format(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}
+                  {[date(r.d), `${fmt.format(r.sh)}%`, r.mu !== 1 ? fmt2.format(r.mu) : '', r.p ?? ''].filter(Boolean).join(' · ')}
                   {!r.e ? <span className="bk-pill bk-live">{c.running}</span> : null}
                   {r.u ? <span className="bk-pill bk-warn">{c.unpaid}</span> : null}
                 </p>
