@@ -392,13 +392,13 @@ export function awardRuns(
         best = scored.filter((x) => x.score === top);
       } else {
         // A hand in this pot is unknown: the picked winners decide it, like the app. They name who
-        // won something, not which pot: one all-in for exactly this level can only have won here,
-        // so it takes this pot; a deeper picked winner won a side pot. No picked winner here:
-        // nobody won it yet (an unresolved pot).
+        // won something, not which pot: the shortest picked winner here beat every deeper one (it
+        // won its own last pot against them), so it takes this pot; picked winners all-in for the
+        // same amount chop. No picked winner here: nobody won it yet (an unresolved pot).
         const w = eligible.filter((s) => picked[k]?.includes(s.seat));
         if (!w.length) return;
-        const last = w.filter((s) => s.invested === level);
-        best = last.length ? last : w;
+        const short = Math.min(...w.map((s) => s.invested));
+        best = w.filter((s) => s.invested === short);
       }
       const shares = splitChips(runAmount, best.length, cents);
       best.forEach((b, i) => won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + shares[i]));

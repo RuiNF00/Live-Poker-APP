@@ -556,11 +556,12 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
         return pot.eligible.filter((i) => run.scores.get(i) === best);
       }
       const w = (run.manual ?? []).filter((i) => pot.eligible.includes(i));
-      // "Quem ganhou?" names who won something, not which pot. A winner whose last pot this is
-      // (an all-in for less) can only have won here, so it takes this pot alone; a deeper winner
-      // won a side pot instead. Several winners all-in for the same amount chop.
-      const last = w.filter((i) => !pots.some((q) => q !== pot && q.amount > 0 && pots.indexOf(q) > pots.indexOf(pot) && q.eligible.includes(i)));
-      return last.length ? last : w.length ? w : null;
+      if (!w.length) return null;
+      // "Quem ganhou?" names who won something, not which pot. The shortest picked winner in this
+      // pot won its own last pot against every deeper one, so it beat them here too and takes this
+      // pot alone; a deeper winner won a side pot instead. Several all-in for the same amount chop.
+      const short = Math.min(...w.map((i) => s.invested[i]));
+      return w.filter((i) => s.invested[i] === short);
     };
     const cash = centGame(hand);
     const pay = (amount: number, winners: number[] | null) => {
