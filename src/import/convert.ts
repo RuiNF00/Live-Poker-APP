@@ -3,6 +3,7 @@
 // session is built to land on exactly that number. Pure, so it can be tested.
 
 import { t } from '@/i18n';
+import { storedCurrency } from '@/store/currencies';
 import type { Session } from '@/store/types';
 
 import { readTable, type Table } from './csv';
@@ -92,7 +93,16 @@ const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL:
 export function currencyOf(raw: string, fallback: string): string {
   const c = raw.trim();
   if (!c) return fallback;
-  return CURRENCY[c.toUpperCase()] ?? CURRENCY[c] ?? c.slice(0, 4);
+  return CURRENCY[c.toUpperCase()] ?? CURRENCY[c] ?? storedCurrency(c) ?? c.slice(0, 4);
+}
+
+/** The currency written in an amount cell ("$120", "80 €", "R$ 1.235"), when the file has no currency column. */
+export function currencyInAmount(cells: string[]): string | undefined {
+  for (const v of cells) {
+    const m = /R\$|US\$|HK\$|A\$|[€$£¥]|\b(EUR|USD|GBP|BRL|CHF|JPY)\b/i.exec(v);
+    if (m) return currencyOf(m[0], '') || undefined;
+  }
+  return undefined;
 }
 
 export { parseNum };
@@ -396,7 +406,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     // Sweatbook's own CSV: the makeup cut is inside profit; kept apart so cash_out stays as entered.
     const cut = opt.source === 'sweatbook' ? (parseNum(get(r, 'makeupCut')) ?? 0) : 0;
     // "cem" or "?" where an amount goes: reading it as 0 would change the result without a word.
-    const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && /\p{L}|\?/u.test(v) && !NO_VALUE.test(v.trim()) && parseNum(v) === null);
+    const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && !NO_VALUE.test(v.trim()) && parseNum(v) === null);
     if (bad) {
       unreadable++;
       failed.push({ line, reason: 'badMoney', value: bad });
@@ -487,7 +497,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       kind,
       name,
       venue,
-      currency: currencyOf(get(r, 'currency'), opt.currency),
+      currency: currencyOf(get(r, 'currency'), currencyInAmount([get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')]) ?? opt.currency),
       startedAt: start,
       endedAt: end,
       breaks,

@@ -152,6 +152,16 @@ test('rows without a date or money are counted, not imported', () => {
   assert.equal(r.unreadable, 2);
 });
 
+test('dot thousands, the currency written in the amount, and unreadable amounts', () => {
+  assert.equal(parseNum('R$ 1.235'), 1235);
+  assert.equal(parseNum('10.000 €'), 10000);
+  assert.equal(parseNum('1.000.000'), 1000000);
+  assert.equal(parseNum('1.250'), 1.25, 'a bare number keeps its decimal point');
+  const r = run('date,venue,profit\n2024-03-01,A,$120\n2024-03-02,B,80 €\n2024-03-03,C,R$ 1.235\n2024-03-04,D,12.5.3\n');
+  assert.deepEqual(r.sessions.map((s) => s.currency), ['$', '€', 'R$']);
+  assert.equal(r.unreadable, 1, '"12.5.3" is not read as 0');
+});
+
 test('numbers and dates', () => {
   assert.equal(parseNum('1.234,56'), 1234.56);
   assert.equal(parseNum('1,234.56'), 1234.56);

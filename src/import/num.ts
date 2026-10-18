@@ -34,6 +34,10 @@ export function parseNum(raw: string | undefined): number | null {
     s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
   } else if (lastComma >= 0) {
     s = /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(/,/g, '.');
+  } else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)) {
+    // "R$ 1.235", "10.000 €", "1.000.000": dots between groups of three are thousands
+    // (a bare "1.250" took the fast path above and stays 1.25).
+    s = s.replace(/\./g, '');
   }
   const n = Number(s);
   if (!Number.isFinite(n)) return null;

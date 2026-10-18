@@ -149,6 +149,8 @@ export default function ImportScreen() {
         setError(t('Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.'));
         return;
       }
+      // A spreadsheet (.xlsx), an image or a zip is not text: say so instead of listing junk rows.
+      if (text.includes('\0') || (text.match(/\uFFFD/g)?.length ?? 0) > text.length / 100) throw new Error('binary');
       const file = prepare(text);
       if (!file.table.rows.length) throw new Error('empty');
       if (file.source === 'generic' && source === 'pokeranalytics') file.source = 'pokeranalytics';

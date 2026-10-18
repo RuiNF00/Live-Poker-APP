@@ -198,7 +198,7 @@ function decodeOwnFestivals(x: unknown): Festival[] {
 export function parseBackup(text: string): BackupData {
   let j: unknown;
   try {
-    j = JSON.parse(text);
+    j = JSON.parse(text.replace(/^\uFEFF/, ''));
   } catch {
     throw new Error('invalid');
   }

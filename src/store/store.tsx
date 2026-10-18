@@ -467,7 +467,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setHands(into(b.hands));
       setSessions(into(incomingSessions));
       setPlayers(into(b.players));
-      setBankrolls((cur) => dropUnusedAuto(mergeById(cur, b.bankrolls ?? []).list, b.bankrolls ?? [], { bankrolls: cur, sessions: rawSessions, transfers }));
+      setBankrolls((cur) => {
+        const merged = mergeById(cur, b.bankrolls ?? []).list;
+        // What comes in counts as use too: imported € rows land in "Principal", which must stay.
+        return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: [...rawSessions, ...incomingSessions], transfers: [...transfers, ...(b.transfers ?? [])] });
+      });
       setTransfers(into(b.transfers ?? []));
       setBackers(into(b.backers ?? []));
       setPackages(into(b.packages ?? []));
