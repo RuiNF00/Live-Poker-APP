@@ -7,13 +7,26 @@
 // out as it went in: nothing quarantined, dropped or reset.
 //
 // The stores outside the main boot (festival plans, own festivals, weekly
-// tournaments, swaps, the outbox) and the app lock read the same fixtures from
-// their own keys.
+// tournaments, swaps, the outbox, cloud backup, invites, shared and coached
+// hands, packs, the cached Pro flag) and the app lock read the same fixtures
+// from their own keys.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { USED_INSTALL_KEYS, lockIsThisInstalls } from '@/lib/app-lock-core';
+import { createHash } from 'node:crypto';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { cachedPro } from '@/billing/limits';
+import { USED_INSTALL_KEYS, lockIsThisInstalls, readLock, type LockIO } from '@/lib/app-lock-core';
+import { formatCode, parseCloud, parseCode, type CloudState } from '@/lib/cloud-code';
+import { autoBackup, uploadBlock } from '@/lib/cloud-guard';
+import { parseCoachState, syncable } from '@/lib/coach-core';
+import { parseFriendHands, parseIds } from '@/lib/friend-hands-core';
+import { CLAIM_KEY, OFFER_KEY, createInviteReward, openOffer } from '@/lib/invite-reward';
 import { createOutbox } from '@/lib/outbox';
+import { parsePacks } from '@/lib/pack-core';
+import { keptOrNew } from '@/lib/stored-id';
 import { isComplete, replay } from '@/poker/engine';
 
 import { ensureBankrolls } from '../bankroll-math';
@@ -542,4 +555,184 @@ test('bloqueio da app ligado numa versão antes da marca de instalação continu
   // A reinstall: the keychain kept the lock, the app's storage is empty.
   assert.equal(lockIsThisInstalls(null, USED_INSTALL_KEYS.map((k) => [k, null] as const)), false);
   assert.equal(lockIsThisInstalls('1', []), true);
+});
+
+// ─── Small stores of the phone's own, read by the functions the app reads them with ─
+
+const stored = async (k: string) => JSON.parse((await AsyncStorage.getItem(k))!) as unknown;
+
+test('cópia na nuvem de cada versão: código, contagens e avisos lidos como estavam', async () => {
+  const id = 'ABCDE12345';
+  const secret = 'Q7M2X9KP4TZR8V3N';
+  const shapes: [string, CloudState][] = [
+    // 3aa9ef17: the code and when it last went up.
+    ['3aa9ef17', { id, secret, lastAt: T - 2 * H }],
+    // 4629aa71: what the server copy held, three kinds only.
+    ['4629aa71', { id, secret, lastAt: T - 2 * H, counts: { hands: 120, sessions: 14, players: 9 } }],
+    // 5886a23c every kind; 26a4e046 the last failure.
+    ['26a4e046', { id, secret, lastAt: T - 30 * H, counts: { hands: 120, sessions: 14, players: 9, transfers: 3, backers: 1, packages: 2, payments: 0, trips: 1 }, failedAt: T - H, failure: 'quota' }],
+    // 2451ee42: the player said the code is kept somewhere.
+    ['2451ee42', { id, secret, lastAt: T - 2 * H, counts: { hands: 120 }, saved: true }],
+    // 0c282c65: which copy this phone last sent.
+    ['0c282c65', { id, secret, lastAt: T - 2 * H, counts: { hands: 120, sessions: 14 }, sent: T - 2 * H, saved: true }],
+  ];
+  for (const [build, c] of shapes) {
+    webStorage({ 'rl.cloud.v1': c });
+    const got = parseCloud(await AsyncStorage.getItem('rl.cloud.v1'));
+    assert.deepEqual(got, c, build);
+    assert.deepEqual(parseCode(formatCode(got!)), { id, secret }, `${build}: same code`);
+  }
+  // Counts from the first builds still guard the server copy, and a copy without them still goes up.
+  const first = shapes[0][1];
+  const three = shapes[1][1];
+  const phone = { hands: 120, sessions: 14, players: 9 };
+  assert.equal(uploadBlock(phone, three), null);
+  assert.equal(uploadBlock({}, three), 'would_shrink');
+  assert.equal(uploadBlock({ hands: 10 }, three), 'would_shrink');
+  assert.equal(uploadBlock(phone, first), null);
+  assert.equal(autoBackup(first, phone, T + 5 * H), 'upload');
+});
+
+test('convites de versões antigas: o pedido, o código e o desconto ficam como estavam', async () => {
+  // 6c5295a2: { code, result } once the server accepted, `activated` once the reward was booked.
+  // 8f764f64: `handSaved` when a first hand came before the claim got through.
+  const claims = [
+    { code: 'ana7f3k2q1', result: 'ok', activated: true },
+    { code: 'ana7f3k2q1', result: 'already' },
+    { code: 'ana7f3k2q1', result: 'ok' },
+    { code: 'ana7f3k2q1', result: 'ok', handSaved: true },
+  ];
+  for (const c of claims) {
+    const m = webStorage({ [CLAIM_KEY]: c });
+    let posts = 0;
+    const reward = createInviteReward(AsyncStorage, async () => {
+      posts++;
+      return { booked: false };
+    });
+    assert.deepEqual(await reward.claimState(), c);
+    const due = c.result === 'ok' && !c.activated && !!c.handSaved;
+    assert.equal(await reward.pending(), due);
+    assert.equal(await reward.activate(), due ? 'not_yet' : 'none');
+    // Booked once is never booked again; nothing is reset either way.
+    assert.equal(posts, due ? 1 : 0);
+    assert.deepEqual(JSON.parse(m.get(CLAIM_KEY)!), c);
+  }
+
+  // 36c4f448: the last discount the server reported, with the App Store code on iPhone or null.
+  for (const offer of [
+    { until: new Date(T + 48 * H).toISOString(), iosCode: 'SWEAT50ANA' },
+    { until: new Date(T + 48 * H).toISOString(), iosCode: null },
+  ]) {
+    webStorage({ [OFFER_KEY]: offer });
+    assert.deepEqual(openOffer((await stored(OFFER_KEY)) as typeof offer, T), offer);
+  }
+
+  // 3aa9ef17 wrote the referral code and 2019ae4d the commenter id as plain strings (not JSON); setRefCode the server's.
+  const author = '6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f';
+  for (const code of ['a1b2c3d4e5', 'rui2026']) {
+    const m = webStorage({});
+    m.set('rl.ref.v1', code);
+    m.set('rl.commentAuthor.v1', author);
+    const fresh = () => assert.fail('a new id over the saved one');
+    assert.equal(await keptOrNew(AsyncStorage, 'rl.ref.v1', fresh), code);
+    assert.equal(await keptOrNew(AsyncStorage, 'rl.commentAuthor.v1', fresh), author);
+    assert.equal(m.get('rl.ref.v1'), code);
+    assert.equal(m.get('rl.commentAuthor.v1'), author);
+  }
+});
+
+test('mãos de amigos, bloqueios, coach e pacotes de versões antigas leem-se inteiros', async () => {
+  // 584b5f23 id, title, openedAt; a3797f41 the hero's cards.
+  const hands = [
+    { id: 'Xy12Ab34', title: 'AK na bolha', openedAt: T - 5 * H },
+    { id: 'Qq99_zz-01', title: 'Hero call no river', cards: ['As', 'Kd'], openedAt: T - 3 * H },
+  ];
+  // f34b172e also kept the sender's opaque id; b948b5d5 dropped it on purpose (Security). The hand stays.
+  const withSender = { id: 'Tt55Rr66', title: 'Bluff no turn', cards: ['7h', '6h'], from: '0123456789abcdef', openedAt: T - H };
+  // f34b172e: "c:<id>" a commenter, "s:<id>" a sender (no longer written, still kept).
+  const blocked = ['c:9f8e7d6c5b4a3210', 's:0123456789abcdef', 'c:aa11bb22'];
+  webStorage({ 'rl.friendHands.v1': [...hands, withSender], 'rl.blocked.v1': blocked });
+  const { from: _from, ...senderHand } = withSender;
+  assert.deepEqual(parseFriendHands(await stored('rl.friendHands.v1')), [...hands, senderHand]);
+  assert.deepEqual(parseIds(await stored('rl.blocked.v1')), blocked);
+
+  // de697e5a, the only shape so far.
+  const coach = {
+    links: [
+      {
+        token: 'ck_3f9a1b2c4d5e',
+        ownerToken: 'o'.repeat(48),
+        title: 'Main Event dia 2',
+        url: 'https://sweatbook.poker/c/ck_3f9a1b2c4d5e',
+        handIds: ['h1', 'h2'],
+        createdAt: new Date(T - 30 * H).toISOString(),
+        expiresAt: new Date(T + 6 * 24 * H).toISOString(),
+        revokedAt: null,
+        lastSync: new Date(T - 4 * H).toISOString(),
+      },
+      {
+        token: 'ck_old',
+        ownerToken: 'p'.repeat(48),
+        title: 'Cash 1/2',
+        url: 'https://sweatbook.poker/c/ck_old',
+        handIds: ['h9'],
+        createdAt: new Date(T - 60 * H).toISOString(),
+        expiresAt: null,
+        revokedAt: new Date(T - 10 * H).toISOString(),
+        lastSync: null,
+      },
+    ],
+    comments: {
+      ck_3f9a1b2c4d5e: [
+        { id: 'c1', handId: 'h1', stepIndex: 4, mark: 'mistake', author: 'coach', name: 'Coach Zé', body: '3-bet maior aqui.', createdAt: new Date(T - 5 * H).toISOString() },
+        { id: 'local-abc123', handId: 'h1', stepIndex: 4, mark: null, author: 'player', name: 'Rui', body: 'Ok, faz sentido.', createdAt: new Date(T - 4 * H).toISOString(), pending: true },
+      ],
+    },
+    seen: ['c1'],
+  };
+  webStorage({ 'rl.coach.v1': coach });
+  const c = parseCoachState(await stored('rl.coach.v1'));
+  assert.deepEqual(c, coach);
+  assert.deepEqual(
+    syncable(c, T).map((l) => l.token),
+    ['ck_3f9a1b2c4d5e', 'ck_old'],
+  );
+
+  // b9fe47a7, the only shape so far.
+  const packs = [
+    { id: 'pk_7a8b9c', ownerToken: 'q'.repeat(48), url: 'https://sweatbook.poker/p/pk_7a8b9c', title: 'Estoril Main', handIds: ['h1', 'h2', 'h3'], hideAmounts: true, createdAt: T - 8 * H },
+    { id: 'pk_1d2e3f', ownerToken: 'r'.repeat(48), url: 'https://sweatbook.poker/p/pk_1d2e3f', title: '', handIds: [], hideAmounts: false, createdAt: T - 2 * H },
+  ];
+  webStorage({ 'rl.packs.v1': packs });
+  assert.deepEqual(parsePacks(await stored('rl.packs.v1')), packs);
+});
+
+test('Pro guardado no telemóvel por versões antigas continua a abrir offline', async () => {
+  // 47c5dfdd wrote '1' or '0' (not JSON), the same today.
+  const m = webStorage({});
+  m.set('rl.pro.v1', '1');
+  assert.equal(cachedPro((await AsyncStorage.multiGet(['rl.pro.v1']))[0][1]), true);
+  m.set('rl.pro.v1', '0');
+  assert.equal(cachedPro((await AsyncStorage.multiGet(['rl.pro.v1']))[0][1]), false);
+});
+
+test('PIN da app de uma versão antiga: lido igual, com ou sem a marca de instalação', async () => {
+  // bc80e827: the keychain JSON a PIN lock was saved as (salt hex, sha256(salt + pin) hex).
+  const salt = '5d1c9a0e7b3f4a6c8e2d1b0a9f8e7d6c';
+  const pin = { mode: 'pin', salt, pinHash: createHash('sha256').update(salt + '2580').digest('hex') };
+  const keys = (marker: string | null) => [['sweatbook.app-lock.installed.v1', marker] as const, ...USED_INSTALL_KEYS.map((k) => [k, k === 'rl.hands.v2' ? '["h1","h2"]' : null] as const)];
+  for (const marker of [null, '1']) {
+    let marked = 0;
+    let cleared = 0;
+    const io: LockIO = {
+      read: async () => JSON.stringify(pin),
+      installKeys: async () => keys(marker),
+      markInstalled: async () => void marked++,
+      clear: async () => void cleared++,
+    };
+    assert.deepEqual(await readLock(io), pin);
+    assert.equal(cleared, 0);
+    // A build from before the marker: it is set now, so the lock is kept from here on.
+    assert.equal(marked, marker ? 0 : 1);
+  }
 });

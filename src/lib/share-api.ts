@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
 import { createKey, forgetCreateKey } from './create-key';
+import { keptOrNew } from './stored-id';
 import { publicHand, type ShareOptions } from '@/poker/privacy';
 import type { Hand, Street } from '@/poker/types';
 import { variant } from '@/i18n';
@@ -99,14 +100,7 @@ let author: Promise<string> | null = null;
  * hand can block it there. The server keeps only a hash.
  */
 function authorId(): Promise<string> {
-  author ??= AsyncStorage.getItem(AUTHOR_KEY)
-    .then(async (v) => {
-      if (v) return v;
-      const id = anonId();
-      await AsyncStorage.setItem(AUTHOR_KEY, id);
-      return id;
-    })
-    .catch(() => anonId());
+  author ??= keptOrNew(AsyncStorage, AUTHOR_KEY, anonId).catch(() => anonId());
   return author;
 }
 

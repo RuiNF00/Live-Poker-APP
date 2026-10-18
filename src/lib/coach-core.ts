@@ -39,6 +39,16 @@ export interface CoachState {
 }
 
 export const EMPTY_COACH: CoachState = { links: [], comments: {}, seen: [] };
+
+/** rl.coach.v1 as saved: each part kept as it is, an empty one where a part is missing or isn't the right kind. */
+export function parseCoachState(x: unknown): CoachState {
+  const v = (x && typeof x === 'object' ? x : {}) as Partial<CoachState>;
+  return {
+    links: Array.isArray(v.links) ? v.links : [],
+    comments: v.comments && typeof v.comments === 'object' ? v.comments : {},
+    seen: Array.isArray(v.seen) ? v.seen : [],
+  };
+}
 export const EXPIRY_CHOICES = [7, 30, null] as const;
 export type ExpiryChoice = (typeof EXPIRY_CHOICES)[number];
 export const MAX_COACH_HANDS = 50;

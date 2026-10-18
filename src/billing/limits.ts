@@ -37,3 +37,7 @@ export function pruneLog(log: UsageEvent[], now = Date.now()): UsageEvent[] {
   const from = startOfDay(now) - 86400000;
   return log.filter((e) => e.t >= from);
 }
+
+/** rl.pro.v1: the store's last answer, kept so Pro works offline. '1' Pro, '0' not, since the first Pro build. */
+export const proCache = (isPro: boolean) => (isPro ? '1' : '0');
+export const cachedPro = (v: string | null | undefined) => v === '1';
