@@ -24,7 +24,7 @@ const WINDOW = 7 * 86400000;
 
 export type ClaimSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
 /** queued: no signal now; the claim is kept on the phone and sent when there is. */
-export type ClaimResult = 'ok' | 'already' | 'unknown_code' | 'self' | 'too_late' | 'error' | 'disabled' | 'queued';
+export type ClaimResult = 'ok' | 'already' | 'unknown_code' | 'self' | 'too_late' | 'error' | 'disabled' | 'queued' | 'queued_busy';
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T | null> {
   const res = await fetch(`${API}/api/referrals/${path}`, {
@@ -116,9 +116,10 @@ export async function claimInvite(raw: string, source: ClaimSource, shareId?: st
   if (retry) {
     // Couldn't reach the server (a card room with no signal): keep it and send it later.
     queue('invite-claim', job, 'claim');
-    return 'queued';
+    // There was signal: the server was busy (a 429 or a 5xx), not the phone offline.
+    return result === 'busy' ? 'queued_busy' : 'queued';
   }
-  return result;
+  return result as ClaimResult;
 }
 
 interface ClaimJob {
@@ -128,14 +129,15 @@ interface ClaimJob {
 }
 
 /** retry: no signal or the server is down for now (worth sending again later). */
-async function sendClaim({ code, source, shareId }: ClaimJob): Promise<{ result: ClaimResult; retry: boolean }> {
+async function sendClaim({ code, source, shareId }: ClaimJob): Promise<{ result: ClaimResult | 'busy'; retry: boolean }> {
   let result: ClaimResult;
   try {
     const r = await post<{ result: ClaimResult }>('claim', { code, source, ...(shareId ? { shareId } : {}) });
     result = r ? r.result : 'disabled';
   } catch (e) {
     const status = Number((e as Error).message);
-    return { result: 'error', retry: !status || status === 429 || status >= 500 };
+    if (status === 429 || status >= 500) return { result: 'busy', retry: true };
+    return { result: 'error', retry: !status };
   }
   track('invite_claimed', { source, result });
   // A first hand saved while this claim waited for signal turns the reward on now.

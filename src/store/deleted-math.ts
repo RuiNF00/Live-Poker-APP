@@ -5,7 +5,7 @@
 // then the edit wins, as it does between two edits. Kept on the phone and in
 // the backup (deleted.ts). Pure, so it can be tested without a phone.
 
-export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing'] as const;
+export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing', 'ownFestivals', 'weekly'] as const;
 export type DeletedList = (typeof DELETED_LISTS)[number];
 /** 'sessions:<id>' → when it was deleted. */
 export type Deleted = Record<string, number>;

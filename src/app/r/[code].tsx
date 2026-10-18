@@ -15,6 +15,7 @@ import { C, S } from '@/theme';
 
 const COPY: Partial<Record<ClaimResult, string>> = {
   queued: 'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.',
+  queued_busy: 'O servidor está ocupado: o convite fica guardado e é ativado sozinho daqui a pouco.',
   ok: 'Convite ativado. Guarda a tua primeira mão e recebem os dois 50% no primeiro mês do Pro.',
   already: 'Já tens um convite ativo. Guarda uma mão para o usares.',
   self: 'Este é o teu próprio convite. Partilha-o com amigos.',

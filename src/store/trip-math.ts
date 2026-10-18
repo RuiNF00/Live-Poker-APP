@@ -165,3 +165,25 @@ export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx
     createdAt: now,
   };
 }
+
+/**
+ * An own festival's trip after the player changed the festival (dates, name or city), or null when
+ * nothing changes. Only what the trip still has as tripFromFestival made it from the festival as it
+ * was follows: a name the player typed or a day they moved stays theirs. It never narrows so a
+ * session it already counts falls out unseen: that side keeps its old day.
+ */
+export function tripFollowingFestival(trip: Trip, old: Festival, next: Festival, plan: FestivalPlan, sessions: Session[]): Trip | null {
+  const was = tripFromFestival(trip.id, old, plan, trip.fx, trip.createdAt);
+  const made = tripFromFestival(trip.id, next, plan, trip.fx, trip.createdAt);
+  const counted = sessions.filter((s) => inRange(s.startedAt, { from: trip.from, to: trip.to })).map((s) => s.startedAt);
+  let from = trip.from === was.from ? made.from : trip.from;
+  let to = trip.to === was.to ? made.to : trip.to;
+  if (from > trip.from && counted.some((at) => at < from)) from = trip.from;
+  if (to < trip.to && counted.some((at) => at > to)) to = trip.to;
+  // Days that no longer meet (the festival moved weeks away while one side stayed the player's): leave it.
+  if (from > to) return null;
+  const name = trip.name === was.name ? made.name : trip.name;
+  const venue = trip.venue === was.venue ? made.venue : trip.venue;
+  if (from === trip.from && to === trip.to && name === trip.name && venue === trip.venue) return null;
+  return { ...trip, from, to, name, venue };
+}

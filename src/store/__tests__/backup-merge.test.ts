@@ -4,6 +4,9 @@ import { test } from 'node:test';
 
 import { buildBackup, mergeById } from '../backup';
 import { mergeBackups, writtenElsewhere } from '../backup-merge';
+import { revive } from '../deleted-math';
+import type { WeeklyTournament } from '../weekly';
+import type { Festival } from '../../poker/festivals';
 import { DEFAULT_SETTINGS, type PlayerNote } from '../types';
 
 const note = (id: string, updatedAt: number, text = id): PlayerNote => ({ id, name: id, notes: text, updatedAt }) as unknown as PlayerNote;
@@ -31,6 +34,33 @@ test('two phones: weekly tournaments from both are kept, this phone’s copy of 
   const a = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w('w1', 60)] }, 100);
   const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, weekly: [w('w1', 80), w('w2', 30)] }, 90);
   assert.deepEqual(mergeBackups(a, b).weekly?.map((x) => [x.id, x.buyIn]), [['w1', 60], ['w2', 30]]);
+});
+
+test('two phones: an own festival or weekly tournament deleted on one doesn’t come back from the other', () => {
+  const fest = (id: string, updatedAt?: number) => ({ id, name: 'Malta, novembro 2026', venue: '', city: '', currency: '€', utcOffset: 0, source: { label: '', checked: '' }, notes: [], events: [], dates: { from: '2026-11-05', to: '2026-11-12' }, own: true, ...(updatedAt ? { updatedAt } : {}) });
+  const w = (id: string, updatedAt?: number) => ({ id, name: id, venue: '', currency: '€', weekday: 4, time: '21:00', buyIn: 60, ...(updatedAt ? { updatedAt } : {}) });
+  // A deleted Malta and w1 at 200; B still has both, and adds a session.
+  const a = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, ownFestivals: [], weekly: [], deleted: { 'ownFestivals:fx_1': 200, 'weekly:w1': 200 } }, 300);
+  const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, ownFestivals: [fest('fx_1', 100)], weekly: [w('w1')] }, 250);
+  for (const m of [mergeBackups(a, b), mergeBackups(b, a)]) {
+    assert.deepEqual(m.ownFestivals, []);
+    assert.deepEqual(m.weekly, []);
+  }
+  // Edited on B after A's delete: the edit wins.
+  const edited = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, ownFestivals: [fest('fx_1', 260)], weekly: [w('w1', 260)] }, 270);
+  assert.deepEqual(mergeBackups(a, edited).ownFestivals?.map((f) => f.id), ['fx_1']);
+  assert.deepEqual(mergeBackups(a, edited).weekly?.map((x) => x.id), ['w1']);
+  // Saved again on both: the later save of each.
+  assert.equal(mergeBackups(b, edited).ownFestivals?.[0].updatedAt, 260);
+});
+
+test('a file restore brings back an own festival and weekly tournament deleted here', () => {
+  const fest: Festival = { id: 'fx_1', name: 'Malta', venue: '', city: '', currency: '€', utcOffset: 0, source: { label: '', checked: '' }, notes: [], events: [], dates: { from: '2026-11-05', to: '2026-11-12' }, own: true };
+  const w: WeeklyTournament = { id: 'w1', name: 'Quinta', venue: '', currency: '€', weekday: 4, time: '21:00', buyIn: 60 };
+  const { backup, revived } = revive({ ownFestivals: [fest], weekly: [w] }, { 'ownFestivals:fx_1': 200, 'weekly:w1': 200 }, 900);
+  assert.deepEqual(revived.sort(), ['ownFestivals:fx_1', 'weekly:w1']);
+  assert.equal(backup.ownFestivals[0].updatedAt, 900);
+  assert.equal(backup.weekly[0].updatedAt, 900);
 });
 
 test('a restore merges into the list as it is when applied: a hand saved during the download stays', () => {
