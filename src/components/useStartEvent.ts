@@ -28,7 +28,8 @@ export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: numbe
   return {
     ...base,
     name: sessionName(e),
-    venue: `${f.venue}, ${t(f.city.split(',')[0])}`,
+    // An own festival has no city: just the venue, without a trailing comma.
+    venue: [f.venue, f.city && t(f.city.split(',')[0])].filter(Boolean).join(', '),
     buyIn: e.buyIn,
     bankrollId,
     // Backers who bought a piece of this event through an action package.

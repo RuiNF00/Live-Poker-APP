@@ -9,6 +9,8 @@ import { Alert, Platform, ScrollView, useWindowDimensions, View } from 'react-na
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { Button, Chip, ChipRow, Field, Row, Section, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { syncFestivalReminders } from '@/lib/festival-reminders';
+import { getPlan } from '@/store/festival-plan';
 import { dayKey, deleteOwnFestival, festivalById, ownFestival, ownFestivalOk, saveOwnFestival, type OwnFestivalInput } from '@/store/my-festivals';
 import { parseDay } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
@@ -62,7 +64,9 @@ export default function FestivalNewScreen() {
 
   const save = () => {
     tap('success');
-    const f = ownFestival(old?.own ? old.id : uid('fx_'), x);
+    const made = ownFestival(old?.own ? old.id : uid('fx_'), x);
+    // Same days: keep the offset it had, so its reminders don't move.
+    const f = old?.own && old.dates?.from === x.from && old.dates?.to === x.to ? { ...made, utcOffset: old.utcOffset } : made;
     saveOwnFestival(f);
     if (editing) router.back();
     else router.replace({ pathname: '/festival', params: { id: f.id } });
@@ -70,7 +74,11 @@ export default function FestivalNewScreen() {
 
   const remove = () => {
     const go = () => {
-      if (old) deleteOwnFestival(old.id);
+      if (old) {
+        // Its reminders go with it.
+        void syncFestivalReminders(old, getPlan(old.id), false);
+        deleteOwnFestival(old.id);
+      }
       router.dismissTo('/festivals');
     };
     if (Platform.OS === 'web') go();

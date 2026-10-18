@@ -58,6 +58,11 @@ export function ownEvent(id: string, x: OwnEventInput, n: number): FestivalEvent
   return { id, number: 100_000 + n, name: x.name.trim(), unnumbered: true, game: x.game, buyIn: x.buyIn, guarantee: 0, start: x.start, stack: x.stack || undefined, levelMinutes: x.levelMinutes || undefined, own: true };
 }
 
+/** The number for the next added tournament: one past the highest, so a deleted one's number is never reused (it would link sessions). */
+export function nextOwnNumber(p: FestivalPlan): number {
+  return Math.max(0, ...(p.events ?? []).map((e) => e.number - 100_000)) + 1;
+}
+
 /** Takes an added tournament out of the plan, with its reminders' late reg; a session already played keeps its data. */
 export function removeOwnEvent(p: FestivalPlan, id: string): FestivalPlan {
   const lateReg = { ...p.lateReg };

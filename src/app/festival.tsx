@@ -46,7 +46,12 @@ export default function FestivalScreen() {
   const festivals = useFestivals();
   const ready = useFestivalsReady();
   // An own festival's id before the list is read: wait, so nothing (a trip) attaches to another festival.
-  const f = festivals.find((x) => x.id === id) ?? (ready || !id ? festivals[0] : undefined);
+  const f = festivals.find((x) => x.id === id) ?? (!id ? festivals[0] : undefined);
+  // Read and still not there (deleted, or an old reminder): the list, not some other festival.
+  const gone = !!id && ready && !f;
+  useEffect(() => {
+    if (gone) router.replace('/festivals');
+  }, [gone]);
   return f ? <FestivalView key={f.id} f={f} focus={event} /> : null;
 }
 
@@ -403,7 +408,7 @@ function EventRow({
             {e.day2 ? <View style={{ flex: 1 }} /> : <Pressable
               onPress={onLate}
               accessibilityRole="button"
-              style={{ flex: 1, minWidth: 150, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+              style={{ flex: 1, minWidth: 150, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
               <Ionicons name="alarm-outline" size={15} color={late ? C.text : C.accent} />
               <T v="small" color={late ? C.text : C.accent} numberOfLines={1} style={{ flexShrink: 1 }}>
                 {lateLabel}

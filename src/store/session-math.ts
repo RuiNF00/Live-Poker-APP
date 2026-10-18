@@ -193,7 +193,10 @@ export function curve(list: Session[], currency?: string): { t: number; v: numbe
   return [{ t: done[0]?.startedAt ?? Date.now(), v: 0 }, ...done.map((s) => ({ t: s.endedAt!, v: (acc += profit(s)) }))];
 }
 
-/** dd/mm or dd/mm/yyyy (also with - or .), not in the future unless `future` (a trip being planned). */
+/**
+ * dd/mm or dd/mm/yyyy (also with - or .), not in the future unless `future` (a trip being planned).
+ * With `future`, a day typed without a year that has already gone by is next year's.
+ */
 export function parseDay(v: string, now = Date.now(), future = false): number | null {
   const m = v.trim().match(/^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?$/);
   if (!m) return null;
@@ -202,7 +205,10 @@ export function parseDay(v: string, now = Date.now(), future = false): number | 
   if (yy < 100) yy += 2000;
   const d = new Date(yy, mm - 1, dd);
   if (d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
-  if (future) return d.getTime();
+  if (future) {
+    if (!m[3] && d.getTime() < now - 86_400_000) d.setFullYear(yy + 1);
+    return d.getTime();
+  }
   if (!m[3] && d.getTime() > now) d.setFullYear(yy - 1);
   return d.getTime() > now ? null : d.getTime();
 }

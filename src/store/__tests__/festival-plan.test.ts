@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -390,4 +390,12 @@ test('no "registo fecha" reminder for an event the player is already in', () => 
   const lates = (p: typeof pick) => planReminders(LISBOA_NOV_2026, p, at).filter((r) => r.id.endsWith(':late'));
   assert.equal(lates(pick).length, 1);
   assert.equal(lates({ ...pick, sessions: { '5': 's1' } }).length, 0);
+});
+
+test('an added tournament never reuses a deleted one\'s number', () => {
+  const ev = (id: string, n: number) => ownEvent(id, { name: id, start: '2026-11-02T18:00', game: 'NLH', buyIn: 100 }, n);
+  assert.equal(nextOwnNumber(EMPTY_PLAN), 1);
+  const p = { ...EMPTY_PLAN, events: [ev('a', 1), ev('b', 2)] };
+  const after = removeOwnEvent(p, 'a');
+  assert.equal(nextOwnNumber(after), 3);
 });
