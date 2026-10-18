@@ -1666,6 +1666,7 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
+  'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este arquivo tem mais de 20 MB. Exporte só as sessões, ou um ano de cada vez, e tente de novo.',
 };
 
 export default ptBR;

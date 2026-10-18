@@ -34,6 +34,10 @@ export async function pickTextFileWithName(): Promise<{ text: string; name: stri
   const a = r.assets[0];
   // An .xlsx or a PDF isn't text: keep the file anyway, so it can go to support as it is.
   // Read as bytes: Excel's CSV is often Windows-1252 or UTF-16, which text() would garble.
-  const text = (a.size ?? 0) > MAX_TEXT_BYTES ? '' : await new File(a.uri).bytes().then((b) => decodeText(b).text, () => '');
+  if ((a.size ?? 0) > MAX_TEXT_BYTES) throw new Error('too_big');
+  const b = await new File(a.uri).bytes().catch(() => null);
+  // Some pickers don't give a size: check what was read, so a huge file can't go on to the parser.
+  if (b && b.length > MAX_TEXT_BYTES) throw new Error('too_big');
+  const text = b ? decodeText(b).text : '';
   return { text, name: a.name, uri: a.uri };
 }

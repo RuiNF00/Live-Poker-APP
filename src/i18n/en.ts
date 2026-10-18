@@ -1069,6 +1069,7 @@ const en: Record<string, string> = {
   '{n} depósitos ou levantamentos ficam de fora (não são sessões).': '{n} deposits or withdrawals left out (they aren\'t sessions).',
   '{n} já estavam no Sweatbook e ficaram como estavam.': '{n} were already in Sweatbook and stayed as they were.',
   '{n} já estão no Sweatbook e não entram outra vez.': '{n} are already in Sweatbook and won\'t be added again.',
+  'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'This file is over 20 MB. Export only the sessions, or one year at a time, and try again.',
   '{n} linhas sem data ou sem valores ficam de fora.': '{n} rows without a date or amounts left out.',
   '{n} sessões encontradas': '{n} sessions found',
   '{n} sessões importadas': '{n} sessions imported',

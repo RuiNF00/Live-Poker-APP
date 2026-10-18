@@ -163,7 +163,8 @@ export default function ImportScreen() {
       if (first) setStep({ at: 'review', file, first });
     } catch (e) {
       // A backup from a later version: refused whole, so say why instead of "can't read".
-      if ((e as Error)?.message === 'newer') setError(t('Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.'));
+      if ((e as Error)?.message === 'too_big') setError(t('Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.'));
+      else if ((e as Error)?.message === 'newer') setError(t('Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.'));
       else setError(t('Não conseguimos ler este ficheiro. Escolhe o CSV exportado pela outra app (ou um .json do Sweatbook).'));
     } finally {
       setBusy(false);
