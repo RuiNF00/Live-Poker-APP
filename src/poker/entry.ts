@@ -326,3 +326,16 @@ export function stepBack(hand: Hand): Hand | null {
   const back = { ...hand, actions };
   return { ...back, board: hand.board.slice(0, replay(back).final.boardCount) };
 }
+
+/**
+ * An opponent's call that would close the street before the river. The next
+ * street's first card can then stand for it: tapping the turn says they called.
+ * Calls only; a check can still be followed by a bet from the seat behind.
+ */
+export function closingCall(hand: Hand, s: TableState): HandAction | null {
+  const l = legal(s);
+  if (!l || l.p === hand.hero || !l.canCall || l.canCheck || s.street === 'river') return null;
+  const a: HandAction = { p: l.p, kind: 'call' };
+  const next = apply(s, a, hand);
+  return next && next.needsBoard ? a : null;
+}

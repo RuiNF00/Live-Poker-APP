@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -81,6 +81,8 @@ class Entry {
     // Labels follow the locale (2,5x in Portuguese); the tests name them with a dot.
     const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.label.replace(',', '.') === label);
     assert.ok(p, `no preset ${label}`);
+    // Where the next card stands for a call, the sizes are one tap away («Raise»).
+    if (closingCall(this.hand, this.s)) this.taps++;
     this.bet(p.to);
   }
   /** The keypad: open it, switch to bb, type the digits (e.g. "2,2" is 3), confirm. */
@@ -154,6 +156,17 @@ class Entry {
     this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
     this.hand = next;
     this.autoFrom = undefined;
+    this.settle();
+  }
+  /** A call that closes the street, entered as the next street's first card: one tap. */
+  callWithCard(card: string) {
+    const a = closingCall(this.hand, this.s);
+    assert.ok(a, 'next card not offered');
+    this.taps++;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    this.hand = { ...this.hand, actions: [...this.hand.actions, a], board: [...this.hand.board, card] };
+    this.autoFrom = undefined;
+    if (this.down && this.hand.board.length >= 4) this.hand = { ...this.hand, actions: [...this.hand.actions, ...checkDownNext(this.hand)] };
     this.settle();
   }
   /** Multiway showdown: a tap on the seat, then its two cards. */
@@ -729,14 +742,15 @@ test('round 4 · checks to the raiser: a donk bet is one tap on "Alguém fez bet
 // Round 5: amounts and showdown cards.
 test('round 5 · every typical size is one tap: 2.5x open, 3-bet, ⅓ c-bet, pot turn bet, all-in', () => {
   const e = new Entry('BTN', ['Ah', 'Kh']);
-  const one = (label: string) => {
+  // Round 6: a villain who could close the street with a call sees the next card first; their raise sizes are behind «Raise» (2 taps).
+  const one = (label: string, taps = 1) => {
     const before = e.taps;
     e.size(label);
-    assert.equal(e.taps - before, 1, label);
+    assert.equal(e.taps - before, taps, label);
   };
   one('2.5x');
   e.act('fold');
-  one('3x');
+  one('3x', 2); // BB's 3-bet heads-up
   e.act('call');
   e.board('Kd', '9s', '4c');
   e.act('check');
@@ -744,7 +758,7 @@ test('round 5 · every typical size is one tap: 2.5x open, 3-bet, ⅓ c-bet, pot
   e.act('call');
   e.board('2h'); // BB's check to the c-bettor is filled in by itself
   one('Pote');
-  one('All-in');
+  one('All-in', 2); // BB's shove facing the pot bet
 });
 
 test('round 5 · multiway showdown: two taps per hand shown, no tap on the seat', () => {
@@ -770,4 +784,58 @@ test('facing the only other player all-in: no raise sizes, just Call or Fold', (
   e.size('All-in');
   assert.equal(e.s.toAct, e.hand.hero);
   assert.deepEqual(sizePresets(e.hand, e.s), []);
+});
+
+// Round 6: a call that closes the street is the next street's first card.
+test('round 6 · 3-bet pot, c-bet called, turn checked, river to showdown — 17 taps (was 18)', () => {
+  const run = (card: boolean) => {
+    const e = new Entry('BTN', ['Qs', 'Qc']);
+    e.entered('CO');
+    e.size('2.5x');
+    e.size('3x');
+    e.only('CO');
+    e.board('Jh', '8c', '3d');
+    e.size('⅓');
+    if (card) e.callWithCard('2s');
+    else {
+      e.act('call');
+      e.board('2s');
+    }
+    e.checkDown();
+    e.board('7d');
+    e.shows('CO', ['Ad', 'Jd']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 18);
+  assert.equal(after.taps, 17);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 6 · the BB calling an open heads-up is the first flop card', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.act('fold');
+  const a = closingCall(e.hand, e.s);
+  assert.deepEqual(a, { p: e.seat('BB'), kind: 'call' });
+  e.callWithCard('Kc');
+  e.board('8d', '3s');
+  assert.equal(e.s.street, 'flop');
+  assert.equal(e.s.toAct, e.hand.hero, 'BB checks to the raiser by itself');
+});
+
+test('round 6 · no card shortcut for hero, for a check, on the river or when someone is still to act', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.entered('CO');
+  e.size('2.5x');
+  assert.equal(closingCall(e.hand, e.s), null, 'hero decides with the buttons');
+  e.act('call');
+  assert.equal(closingCall(e.hand, e.s), null, 'SB calling leaves the BB to act');
+  e.act('fold');
+  e.act('fold');
+  e.board('Kc', '8d', '3s');
+  assert.equal(closingCall(e.hand, e.s), null, 'a check never closes by a card');
 });

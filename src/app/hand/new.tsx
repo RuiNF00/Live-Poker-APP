@@ -36,7 +36,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -90,6 +90,8 @@ export default function NewHand() {
   // undefined: the picker opens by itself for the only opponent left; null: closed.
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
+  // Facing a bet that a call would close, the next card replaces the raise sizes; «Raise» brings them back for that spot.
+  const [raiseAt, setRaiseAt] = useState<string | null>(null);
 
   const hand = draft.hand;
   const n = hand.players.length;
@@ -245,6 +247,14 @@ export default function NewHand() {
     const down = draft.checkDownFrom !== undefined && next.board.length === boardNeeded ? checkDownNext(next) : [];
     update(down.length ? { ...next, actions: [...next.actions, ...down] } : next);
   };
+  // The next street's first card after a call that closes the street: one tap for both.
+  const callWithCard = (a: HandAction, c: string) => {
+    tap();
+    const next = { ...hand, actions: [...hand.actions, a], board: [...hand.board, c] };
+    const done = next.board.length === (s.street === 'preflop' ? 3 : s.street === 'flop' ? 4 : 5);
+    const down = draft.checkDownFrom !== undefined && done ? checkDownNext(next) : [];
+    update(down.length ? { ...next, actions: [...next.actions, ...down] } : next);
+  };
   // Run it twice: offered while an all-in runs out, and at showdown if forgotten.
   const canTwice = r.runoutFrom !== null && r.runoutFrom < 5 && s.folded.filter((f) => !f).length > 1;
   const twiceChip = canTwice ? (
@@ -357,6 +367,7 @@ export default function NewHand() {
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
+  const cardCall = phase === 'action' && raiseAt !== autoKey ? closingCall(hand, s) : null;
   const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
   const callers = phase === 'action' ? callerCandidates(hand, s) : [];
@@ -605,7 +616,7 @@ export default function NewHand() {
                 )}
               </ChipRow>
             )}
-            {presets.length > 0 && (
+            {presets.length > 0 && !cardCall && (
               <View style={{ gap: 4 }}>
                 <T v="label">{l.canBet ? raiseName(s) : t('{action} para', { action: raiseName(s) })}</T>
                 <Row gap={6}>
@@ -649,6 +660,15 @@ export default function NewHand() {
                     <Ionicons name="keypad" size={18} color={C.text} />
                   </Pressable>
                 </Row>
+              </View>
+            )}
+            {cardCall && (
+              <View style={{ gap: 6 }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <T v="label">{t('Call? Toca já na carta do {street}', { street: s.street === 'preflop' ? 'flop' : s.street === 'flop' ? 'turn' : 'river' })}</T>
+                  <Chip label={raiseName(s)} onPress={() => setRaiseAt(autoKey)} />
+                </Row>
+                <CardPicker used={usedCards(hand)} onPick={(c) => callWithCard(cardCall, c)} />
               </View>
             )}
             {/* Facing more than the seat has: their all-in for less, with no trip to the seat sheet. */}
