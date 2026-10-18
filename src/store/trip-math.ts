@@ -10,7 +10,7 @@ import { eventDay, type Festival } from '@/poker/festivals';
 
 import { endOfDay, inRange, startOfDay, type DateRange } from './bankroll-math';
 import type { FestivalPlan } from './festival-plan';
-import { playedMs, profit } from './session-math';
+import { addDays, playedMs, profit } from './session-math';
 import type { Expense, ExpenseKind, Session, Trip } from './types';
 
 const DAY = 86400000;
@@ -128,7 +128,7 @@ export function tripToCover(trips: Trip[], festivalId: string, at: number): Trip
 }
 
 export function blankTrip(id: string, currency: string, now = Date.now()): Trip {
-  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(now + 4 * DAY), expenses: [], createdAt: now };
+  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(addDays(now, 4)), expenses: [], createdAt: now };
 }
 
 export function blankExpense(id: string, kind: ExpenseKind, currency: string, now = Date.now()): Expense {
@@ -157,8 +157,8 @@ export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx
     name: f.own ? f.name : t(f.name),
     venue: [f.venue, f.city.split(',')[0]].filter(Boolean).join(', '),
     currency: f.currency,
-    from: startOfDay(localDay(days[0]) - DAY),
-    to: endOfDay(localDay(days[days.length - 1]) + DAY),
+    from: startOfDay(addDays(localDay(days[0]), -1)),
+    to: endOfDay(addDays(localDay(days[days.length - 1]), 1)),
     fx,
     festivalId: f.id,
     expenses: [],

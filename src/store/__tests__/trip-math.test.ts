@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festivals';
 import { SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals-nov-2026';
 import { EMPTY_PLAN, togglePicked } from '../festival-plan';
-import { changeTripCurrency, currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
+import { blankTrip, changeTripCurrency, currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
 import type { Session, Trip } from '../types';
 
 const H = 3600000;
@@ -139,4 +139,12 @@ test('changing the trip currency flips the rate to the other currency, or drops 
   assert.deepEqual(changeTripCurrency({ currency: '$' }, '€', 0, '€'), { currency: '€', fx: undefined });
   // Same currency: unchanged.
   assert.equal(changeTripCurrency(trip, '€', 0.92, '$'), trip);
+});
+
+// Meaningful in any time zone; checked by hand with TZ=Europe/Lisbon and TZ=America/Los_Angeles.
+test('a new trip lasts five calendar days across a DST change', () => {
+  const x = blankTrip('t', '€', new Date(2026, 9, 22, 0, 30).getTime());
+  assert.equal(x.to, new Date(2026, 9, 26, 23, 59, 59, 999).getTime());
+  const y = blankTrip('t', '€', new Date(2026, 2, 26, 23, 30).getTime());
+  assert.equal(y.to, new Date(2026, 2, 30, 23, 59, 59, 999).getTime());
 });

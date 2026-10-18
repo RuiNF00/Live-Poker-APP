@@ -7,6 +7,7 @@ import { t } from '@/i18n';
 import { eventDay, eventTitle } from '@/poker/festivals';
 import { festivalName, planned, usePlans } from '@/store/festival-plan';
 import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
+import { addDays } from '@/store/session-math';
 import { useStore } from '@/store/store';
 
 export interface SwapSuggestion {
@@ -23,7 +24,7 @@ export function useSwapSuggestions(): SwapSuggestion[] {
   const festivals = useFestivals();
   const plans = usePlans();
   const [today] = useState(() => dayKey(Date.now()));
-  const [tomorrow] = useState(() => dayKey(Date.now() + 86400000));
+  const [tomorrow] = useState(() => dayKey(addDays(Date.now(), 1)));
   return useMemo(() => {
     const out: SwapSuggestion[] = [];
     const add = (o: SwapSuggestion) => {
