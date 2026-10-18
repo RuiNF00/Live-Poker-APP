@@ -49,3 +49,23 @@ export function alive<T extends { id: string; updatedAt?: number }>(items: T[], 
   return items.some(gone) ? items.filter((x) => !gone(x)) : items;
 }
 
+
+/**
+ * A restore brings back what it holds, even what was deleted on this phone: those items come back
+ * with a fresh edit time, so another phone's older delete can't drop them again on the next copy.
+ * Returns the lists to use and the keys revived (no longer deleted here).
+ */
+export function revive<B extends Partial<Record<DeletedList, { id: string; updatedAt?: number }[]>>>(backup: B, here: Deleted, now: number): { backup: B; revived: string[] } {
+  const revived: string[] = [];
+  const out: B = { ...backup };
+  for (const k of DELETED_LISTS) {
+    const list = backup[k];
+    if (!list?.some((x) => here[keyOf(k, x.id)] !== undefined)) continue;
+    (out as Record<DeletedList, unknown>)[k] = list.map((x) => {
+      if (here[keyOf(k, x.id)] === undefined) return x;
+      revived.push(keyOf(k, x.id));
+      return { ...x, updatedAt: now };
+    });
+  }
+  return { backup: out, revived };
+}
