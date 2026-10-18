@@ -61,6 +61,7 @@ test('a shared hand is "gone" only when the server says so; no signal is not a d
   assert.equal(handLoadError(new Error('fetch 404')), 'gone');
   assert.equal(handLoadError(new Error('fetch 410')), 'gone');
   assert.equal(handLoadError(new Error('fetch 500')), 'offline');
+  assert.equal(handLoadError(new Error('fetch 429')), 'rate_limited');
   assert.equal(handLoadError(new TypeError('Network request failed')), 'offline');
   assert.equal(handLoadError(new Error('Aborted')), 'offline');
   assert.equal(handLoadError(undefined), 'offline');

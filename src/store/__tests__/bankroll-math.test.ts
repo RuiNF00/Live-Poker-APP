@@ -13,6 +13,7 @@ import {
   bankrollOf,
   endOfDay,
   ensureBankrolls,
+  separateBankrolls,
   NO_FILTER,
   presetRange,
   scopeOptions,
@@ -60,6 +61,46 @@ test('older data gets one bankroll per currency, the player\'s own first', () =>
   assert.equal(ensureBankrolls(made, sessions, '€'), made);
   // A brand new player still gets one.
   assert.equal(ensureBankrolls([], [], '£').length, 1);
+});
+
+test('a bankroll already holding a currency\'s id in another currency is never written over', () => {
+  // The onboarding of older builds moved the first "Principal" to dollars and kept the euro id.
+  const principal: Bankroll = { ...br(autoBankrollId('€'), '$'), name: 'Principal', updatedAt: 5 };
+  const made = ensureBankrolls([principal], [mk({ currency: '€', cashOut: 250 })], '$', 100);
+  assert.equal(made.length, 2);
+  assert.equal(made[0], principal);
+  assert.equal(made[1].currency, '€');
+  assert.equal(made[1].id, autoBankrollId('€') + '_2');
+  assert.equal(new Set(made.map((b) => b.id)).size, 2);
+  // The same id on every phone, and the € session counts in euros, not in the dollar Principal.
+  assert.equal(ensureBankrolls([principal], [mk({ currency: '€' })], '$', 7)[1].id, made[1].id);
+  assert.equal(bankrollOf(mk({ currency: '€', bankrollId: principal.id }), made)!.id, made[1].id);
+  // Two bankrolls with one id (what that left behind) become one, the first, and the € one comes back.
+  const twice = ensureBankrolls([principal, { ...br(autoBankrollId('€'), '€'), name: 'Bankroll €' }], [mk({ currency: '€' })], '$', 100);
+  assert.deepEqual(twice.map((b) => [b.id, b.currency]), [[principal.id, '$'], [autoBankrollId('€') + '_2', '€']]);
+});
+
+test('a backup bankroll under an id held here in another currency gets its own id, with its money', () => {
+  const here: Bankroll = { ...br(autoBankrollId('€'), '$'), name: 'Principal', updatedAt: 9 };
+  const theirs: Bankroll = { ...br(autoBankrollId('€'), '€'), name: 'Principal', updatedAt: 20 };
+  const backup = {
+    bankrolls: [theirs],
+    sessions: [mk({ id: 'e', currency: '€', bankrollId: theirs.id, cashOut: 300 }), mk({ id: 'd', currency: '$', bankrollId: theirs.id })],
+    transfers: [tx(theirs.id, 'deposit', 500)],
+  };
+  const out = separateBankrolls([here], backup);
+  const id = autoBankrollId('€') + '_2';
+  assert.deepEqual(out.bankrolls!.map((b) => [b.id, b.currency, b.name]), [[id, '€', 'Principal']]);
+  assert.equal(out.sessions[0].bankrollId, id);
+  // A $ session pointing at that id is this phone's $ bankroll's.
+  assert.equal(out.sessions[1].bankrollId, here.id);
+  assert.equal(out.transfers![0].bankrollId, id);
+  // Two bankrolls, each currency's balance as it was: the $ one keeps none of the € deposit.
+  const all = [here, ...out.bankrolls!];
+  assert.equal(balanceOf({ bankrollId: here.id }, out.sessions, out.transfers!, all).balance, -100);
+  assert.equal(balanceOf({ bankrollId: id }, out.sessions, out.transfers!, all).balance, 700);
+  // Nothing in common: the same backup back.
+  assert.equal(separateBankrolls([br('x', '$')], backup), backup);
 });
 
 test('sessions without a bankroll count towards the first one in their currency', () => {
@@ -151,6 +192,19 @@ test('restoring on a fresh phone: its own empty "Principal" gives way to the bac
   assert.equal(used.length, 2);
   // Nothing in the backup: nothing changes.
   assert.equal(dropUnusedAuto(fresh, [], { bankrolls: fresh, sessions: [], transfers: [] }), fresh);
+});
+
+test('restoring after the onboarding currency pick: one "Principal", not two (QA)', async () => {
+  const { autoBankrollId, dropUnusedAuto, ensureBankrolls } = await import('../bankroll-math');
+  const { mergeById } = await import('../backup');
+  // First launch makes a € Principal; the onboarding picks $ (saved: it has an edit time).
+  const picked = ensureBankrolls([], [], '€', 1).map((b) => ({ ...b, currency: '$', updatedAt: 7 }));
+  const backup: Bankroll[] = [{ id: autoBankrollId('$'), name: 'Principal', currency: '$', createdAt: 0, updatedAt: 0 }];
+  const merged = mergeById(picked, backup).list;
+  assert.deepEqual(dropUnusedAuto(merged, backup, { bankrolls: picked, sessions: [], transfers: [] }).map((b) => b.id), [autoBankrollId('$')]);
+  // Renamed or given rules after the pick: the player's own, it stays.
+  const renamed = picked.map((b) => ({ ...b, name: 'Casino' }));
+  assert.equal(dropUnusedAuto(mergeById(renamed, backup).list, backup, { bankrolls: renamed, sessions: [], transfers: [] }).length, 2);
 });
 
 test('bankrollsBack: a restore on a fresh phone counts the backup\'s Principal too', async () => {

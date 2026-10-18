@@ -86,7 +86,7 @@ function BankrollTab() {
   const [format, setFormat] = useState<SessionFilter['format']>('all');
   const [preset, setPreset] = useState<RangePreset>('all');
   const [custom, setCustom] = useState<DateRange>({});
-  const [stakes, setStakes] = useState<string[]>([]);
+  const [pickedStakes, setStakes] = useState<string[]>([]);
   const [sheet, setSheet] = useState<SheetState>(null);
   const locked = !isPro && !FREE.bankrollFilters;
 
@@ -141,6 +141,9 @@ function BankrollTab() {
   const inScope = useMemo(() => scopeIds(scope, bankrolls), [scope, bankrolls]);
   const scoped = useMemo(() => sessionsIn(scope, sessions, bankrolls), [scope, sessions, bankrolls]);
   const scopedTx = useMemo(() => transfersIn(scope, transfers, bankrolls), [scope, transfers, bankrolls]);
+  // Another bankroll has other stakes: one picked there doesn't filter here, where it can't be seen or unticked.
+  const stakeOpts = useMemo(() => stakeOptions(scoped, cur), [scoped, cur]);
+  const stakes = useMemo(() => pickedStakes.filter((k) => stakeOpts.some((o) => o.key === k)), [pickedStakes, stakeOpts]);
   const filter = useMemo<SessionFilter>(() => ({ game, format, stakes, range: effectiveRange(preset, custom) }), [game, format, stakes, preset, custom]);
   const range = filter.range;
   const list = useMemo(() => applyFilter(scoped, filter), [scoped, filter]);
@@ -580,7 +583,7 @@ function BankrollTab() {
           preset={preset}
           custom={custom}
           stakes={stakes}
-          options={stakeOptions(scoped, cur)}
+          options={stakeOpts}
           onApply={(p, c, st) => {
             setPreset(p);
             setCustom(c);

@@ -26,7 +26,7 @@ const STEPS = ['hero', 'goals', 'plays', 'volume', 'currency', 'plan'] as const;
  */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
-  const { settings, setSettings, bankrolls, sessions, transfers, saveBankroll } = useStore();
+  const { settings, setSettings, firstBankrollIn } = useStore();
   const { isPro } = usePro();
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>({ goals: [], plays: null, volume: null });
@@ -72,9 +72,8 @@ export default function Welcome() {
   };
   const pickCurrency = (c: string) => {
     setSettings({ currency: c });
-    // The bankroll made on first launch is still empty: give it the same currency.
-    const b = bankrolls[0];
-    if (bankrolls.length === 1 && b.currency !== c && !sessions.length && !transfers.length) saveBankroll({ ...b, currency: c });
+    // The bankroll made on first launch is still empty: it becomes one in this currency.
+    firstBankrollIn(c);
   };
   const toggle = (g: Goal) => setA((x) => ({ ...x, goals: x.goals.includes(g) ? x.goals.filter((y) => y !== g) : [...x.goals, g] }));
 

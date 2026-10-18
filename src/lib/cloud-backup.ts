@@ -208,6 +208,7 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
   if (res.status === 413) throw new Error('too_big');
   if (res.status === 507) throw new Error('quota');
   if (res.status === 503) throw new Error('disabled');
+  if (res.status === 429) throw new Error('rate_limited');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const { failedAt: _f, failure: _r, ...ok } = c;
   const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt };
@@ -230,6 +231,7 @@ async function get(c: CloudState): Promise<BackupData> {
   const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth }, signal: longSignal() });
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
+  if (res.status === 429) throw new Error('rate_limited');
   if (!res.ok) throw new Error('network');
   // Encrypted with this code's key or nothing: never a plain copy someone put on the server.
   return parseBackup(await crypto().unsealAsync(new Uint8Array(await res.arrayBuffer()), enc, undefined, true));
@@ -238,7 +240,7 @@ async function get(c: CloudState): Promise<BackupData> {
 export async function removeRemote(c: CloudState): Promise<void> {
   const res = await fetch(`${API}/api/backup/${c.id}`, { method: 'DELETE', headers: { 'x-backup-key': crypto().deriveKeys(c.secret).auth } }).catch(() => null);
   // 404: already gone. Anything else means the copy may still be on the server.
-  if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : 'network');
+  if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : res?.status === 429 ? 'rate_limited' : 'network');
 }
 
 /**

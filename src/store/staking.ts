@@ -8,7 +8,8 @@ import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
 /** To the cent: what the player and the backer see, and what they add up. */
-const cents = (n: number) => Math.round(n * 100) / 100;
+// Half cents always away from zero: 0.5 × 157.45 and 157.45 × 0.5 are not the same float.
+const cents = (n: number) => Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) / 100;
 
 /** The backer's money in one piece: action at markup, or their share of the buy-ins in a makeup deal. */
 export function stakeCost(s: Session, x: Stake): number {
@@ -52,6 +53,8 @@ export interface PackageResult {
   cuts: Cuts;
   /** Your cut per package and session, keyed `${packageId}:${sessionId}`. */
   byPackage: Map<string, number>;
+  /** The package's running result before each session, in that session's currency, keyed the same (see keepCuts). */
+  before: Map<string, number>;
 }
 
 /** Rates for sessions in another currency than their package's. Without them those sessions stay out of the makeup. */
@@ -64,6 +67,7 @@ export function packageStates(sessions: Session[], packages: StakePackage[], fx:
   const states = new Map<string, PackageState>();
   const cuts: Cuts = new Map();
   const byPackage = new Map<string, number>();
+  const before = new Map<string, number>();
   // Each package's sessions, with that session's pieces in it (normally one).
   const byPkg = new Map<string, Map<string, { s: Session; xs: Stake[] }>>();
   for (const s of sessions)
@@ -93,6 +97,7 @@ export function packageStates(sessions: Session[], packages: StakePackage[], fx:
         continue;
       }
       st.invested += xs.reduce((a, x) => a + stakeCost(s, x), 0) * r;
+      before.set(`${pkg.id}:${s.id}`, cum / r);
       if (!s.endedAt) {
         st.live++;
         continue;
@@ -115,7 +120,7 @@ export function packageStates(sessions: Session[], packages: StakePackage[], fx:
     st.makeup = pkg.kind === 'makeup' ? Math.max(0, -cum) : 0;
     states.set(pkg.id, st);
   }
-  return { states, cuts, byPackage };
+  return { states, cuts, byPackage, before };
 }
 
 /**
@@ -405,18 +410,30 @@ function packagePiece(s: Session, pkgId: string): number {
 }
 
 /**
- * Your makeup cut out of one piece, to the cent, in its session's currency (ended sessions only).
- * A piece whose package was deleted keeps the cut it had then (Stake.cut).
+ * The cut of a piece whose package was deleted: the package's rule kept on the piece (Stake.cutPct,
+ * Stake.cumBefore), worked out again from the session as it is now, so editing the prize or the
+ * buy-in still moves it. Same formula as packageStates, clawback included. Limit: a later session of
+ * that package keeps the running result it had, since the package is gone and nothing carries an
+ * edit forward. A piece with only a kept amount (Stake.cut) keeps that.
  */
+function goneCut(s: Session, x: Stake): number {
+  if (x.cutPct === undefined || x.cumBefore === undefined) return x.cut ?? 0;
+  const net = cents(stakePrize(s, x)) - cents(stakeCost(s, x));
+  return cents((x.cutPct / 100) * (Math.max(0, x.cumBefore + net) - Math.max(0, x.cumBefore)));
+}
+
+/** Your makeup cut out of one piece, to the cent, in its session's currency (ended sessions only). */
 function pieceCut(byPackage: PackageResult['byPackage'], s: Session, x: Stake, pkg: StakePackage | undefined): number {
   if (!s.endedAt) return 0;
-  if (!x.packageId) return x.cut ?? 0;
+  if (!x.packageId) return goneCut(s, x);
   return pkg?.kind === 'makeup' ? cents((byPackage.get(`${pkg.id}:${s.id}`) ?? 0) * (pieceOf(s, x) / packagePiece(s, pkg.id))) : 0;
 }
 
-/** The cuts kept on a session's pieces whose package is gone. */
+const hasGoneCut = (x: Stake) => !x.packageId && (x.cut !== undefined || x.cutPct !== undefined);
+
+/** The cuts of a session's pieces whose package is gone. */
 function keptCut(s: Session): number {
-  return stakesOf(s).reduce((a, x) => a + (!x.packageId && x.cut ? x.cut : 0), 0);
+  return s.endedAt ? stakesOf(s).reduce((a, x) => a + (hasGoneCut(x) ? goneCut(s, x) : 0), 0) : 0;
 }
 
 /**
@@ -436,8 +453,11 @@ export function keepCuts(sessions: Session[], packages: StakePackage[], gone: Se
       s.stakes!.map((x) => {
         if (!x.packageId || !gone.has(x.packageId)) return x;
         const { packageId: _, ...rest } = x;
-        const c = pieceCut(pk.byPackage, s, x, pkgOf.get(x.packageId));
-        return c ? { ...rest, cut: c } : rest;
+        const pkg = pkgOf.get(x.packageId);
+        if (pkg?.kind !== 'makeup') return rest;
+        // The package's rule for this piece, so the cut follows later edits of the session.
+        const cumBefore = (pk.before.get(`${pkg.id}:${s.id}`) ?? 0) * (pieceOf(s, x) / packagePiece(s, pkg.id));
+        return { ...rest, cutPct: pkg.playerCut, cumBefore: cumBefore || 0 };
       }),
     );
   return out;
@@ -449,7 +469,7 @@ export function keepCuts(sessions: Session[], packages: StakePackage[], gone: Se
  * Sessions whose cut is unchanged keep their identity, so nothing re-renders for nothing.
  */
 export function withCuts(sessions: Session[], packages: StakePackage[], fx?: PackageFx): Session[] {
-  if (!packages.length && !sessions.some((s) => s.makeupCut || keptCut(s))) return sessions;
+  if (!packages.length && !sessions.some((s) => s.makeupCut || stakesOf(s).some(hasGoneCut))) return sessions;
   const { cuts } = packageStates(sessions, packages, fx);
   return sessions.map((s) => {
     const c = cuts.get(s.id);

@@ -39,3 +39,12 @@ export function installFetchTimeout() {
   installed = true;
   globalThis.fetch = withTimeout(globalThis.fetch.bind(globalThis));
 }
+
+/**
+ * The server said 429 (too many requests): it was reached, so this is not "Sem ligação". Our
+ * request helpers throw `'<what> <status>'` ('upload 429', 'live 429'), a bare status, or 'rate_limited'.
+ */
+export function isRateLimited(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : '';
+  return msg === 'rate_limited' || /(^|\s)429$/.test(msg) || (e as { status?: unknown } | null)?.status === 429;
+}

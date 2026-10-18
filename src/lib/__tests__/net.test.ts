@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { longSignal, withTimeout } from '../net';
+import { isRateLimited, longSignal, withTimeout } from '../net';
 
 // A server that never answers, but honours abort like real fetch does.
 const hanging = ((_: unknown, init?: RequestInit) =>
@@ -37,4 +37,16 @@ test('big transfers get their own, longer limit', async () => {
   const t0 = Date.now();
   await assert.rejects(f('https://x.test', { method: 'PUT', signal: longSignal(120) }), /aborted/);
   assert.ok(Date.now() - t0 >= 100);
+});
+
+test('a 429 from the server is told apart from no signal', () => {
+  assert.equal(isRateLimited(new Error('upload 429')), true);
+  assert.equal(isRateLimited(new Error('live 429')), true);
+  assert.equal(isRateLimited(new Error('429')), true);
+  assert.equal(isRateLimited(new Error('rate_limited')), true);
+  assert.equal(isRateLimited(Object.assign(new Error('x'), { status: 429 })), true);
+  assert.equal(isRateLimited(new Error('upload 500')), false);
+  assert.equal(isRateLimited(new Error('upload 4290')), false);
+  assert.equal(isRateLimited(new TypeError('Network request failed')), false);
+  assert.equal(isRateLimited(undefined), false);
 });

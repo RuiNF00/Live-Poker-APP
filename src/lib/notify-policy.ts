@@ -101,3 +101,10 @@ export const IOS_BUDGET = { festival: 40, levels: 4, billing: 3, recap: 1, money
 export const SOFT_ASK_COOLDOWN = 30 * 86_400_000;
 
 export const softAskAllowed = (lastNo: number | null, now = Date.now()) => lastNo == null || now - lastNo >= SOFT_ASK_COOLDOWN;
+
+/**
+ * Notifications just went from refused or not asked to allowed (the ask before the system
+ * prompt, or back from the phone's settings). What was planned before that answer found no
+ * permission and scheduled nothing: it is planned again. Null: not known yet.
+ */
+export const becameAllowed = (was: boolean | null, now: boolean) => now && was === false;

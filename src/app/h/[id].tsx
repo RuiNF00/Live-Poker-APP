@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { usePro } from '@/billing/pro';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, confirmAction, Empty, IconButton, Row, T, Wordmark } from '@/components/ui';
@@ -38,12 +39,13 @@ export default function SharedHand() {
   }, [id, r, utm_source, utm_medium]);
   const [hand, setHand] = useState<Hand | null>(null);
   const blocked = useBlocked();
-  const [err, setErr] = useState<'gone' | 'offline' | null>(null);
+  const [err, setErr] = useState<'gone' | 'offline' | 'rate_limited' | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
   const { hands, settings, setSettings } = useStore();
   const mine = !!id && hands.some((h) => h.shareId === id);
+  const { isPro } = usePro();
   const { friends } = useSharedHands();
   const listed = !!id && friends.some((f) => f.id === id);
 
@@ -97,8 +99,12 @@ export default function SharedHand() {
       </Row>
       {err === 'gone' ? (
         <Empty title={t('Esta mão já não existe')} body={t('O link pode estar errado ou a mão foi apagada.')} />
-      ) : err === 'offline' ? (
-        <Empty title={t('Sem ligação')} body={t('Tenta outra vez quando tiveres rede.')} action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setErr(null), setAttempt((n) => n + 1))} />} />
+      ) : err === 'offline' || err === 'rate_limited' ? (
+        <Empty
+          title={err === 'rate_limited' ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Sem ligação')}
+          body={err === 'rate_limited' ? undefined : t('Tenta outra vez quando tiveres rede.')}
+          action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setErr(null), setAttempt((n) => n + 1))} />}
+        />
       ) : !hand ? (
         <T v="small">{t('A carregar a mão…')}</T>
       ) : (
@@ -124,6 +130,8 @@ export default function SharedHand() {
                 .catch(() => {})
             }
           />
+          {/* Not on the player's own hand, nor for Pro: there is nothing to try. */}
+          {mine || isPro ? null : (
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
             <T v="h2">{t('Regista as tuas mãos live em segundos')}</T>
             <T v="small">
@@ -133,6 +141,7 @@ export default function SharedHand() {
               <Button title={t('Experimentar grátis')} />
             </Link>
           </View>
+          )}
           <T v="h2">{t('Comentários')}</T>
           <React.Suspense fallback={null}>
           <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block}

@@ -464,6 +464,8 @@ export function ListItem({
             subtitle
           )
         ) : null}
+        {/* At 160%+ a pill beside the title left it 45 px ("Jo/aq/ui/m"): it goes under the text. */}
+        {right && bigText ? <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>{right}</View> : null}
       </View>
       {value ? (
         // Capped, so a long amount at large text can't squeeze the title to nothing.
@@ -471,7 +473,7 @@ export function ListItem({
           {value}
         </T>
       ) : null}
-      {right}
+      {bigText ? null : right}
       {chevron ?? !!onPress ? <Ionicons name="chevron-forward" size={17} color={C.muted} /> : null}
     </>
   );
