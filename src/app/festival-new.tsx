@@ -11,10 +11,11 @@ import { Button, Chip, ChipRow, Field, Row, Section, T, tap } from '@/components
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { useOffers } from '@/store/action-offer';
-import { getPlan } from '@/store/festival-plan';
+import { getPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayKey, deleteOwnFestival, festivalById, ownFestival, ownFestivalOk, saveOwnFestival, type OwnFestivalInput } from '@/store/my-festivals';
 import { parseDay } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
+import { tripFollowingFestival } from '@/store/trip-math';
 import { C, S } from '@/theme';
 
 /** "Malta, novembro 2026" from the city and the first day; just the city before there's a day. */
@@ -30,7 +31,7 @@ const dd = (day: string) => (day ? new Date(day + 'T12:00:00').toLocaleDateStrin
 export default function FestivalNewScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { fontScale } = useWindowDimensions();
-  const { settings, trips } = useStore();
+  const { settings, trips, sessions, saveTrip } = useStore();
   const offers = useOffers();
   const old = festivalById(id);
   const editing = !!old?.own;
@@ -75,6 +76,13 @@ export default function FestivalNewScreen() {
     // Same days: keep the offset it had, so its reminders don't move.
     const f = old?.own && old.dates?.from === x.from && old.dates?.to === x.to ? { ...made, utcOffset: old.utcOffset } : made;
     saveOwnFestival(f);
+    // Its trip follows the new days and name, where they are still the ones it was made with (trip-math.ts).
+    const trip = old?.own ? trips.find((tr) => tr.festivalId === old.id) : undefined;
+    if (old && trip) {
+      const p = getPlan(old.id);
+      const moved = tripFollowingFestival(trip, withPlanEvents(old, p), withPlanEvents(f, p), p, sessions);
+      if (moved) saveTrip(moved);
+    }
     if (editing) router.back();
     else router.replace({ pathname: '/festival', params: { id: f.id } });
   };
