@@ -60,8 +60,9 @@ function ask(title: string, body: string, yes: string, onYes: () => void, no = t
 }
 
 /**
- * Brings the cloud copy in (newer copy of each item wins, nothing local is
- * deleted) and makes this phone keep it up to date from now on.
+ * Brings the cloud copy in (newer copy of each item wins; only what another
+ * phone with this code deleted goes) and makes this phone keep it up to date
+ * from now on.
  */
 async function restoreFrom(c: CloudState, importData: ImportData): Promise<CloudState> {
   const remote = await download(c);
@@ -76,14 +77,14 @@ async function restoreFrom(c: CloudState, importData: ImportData): Promise<Cloud
   return next;
 }
 
-type ImportData = (b: BackupData) => Parameters<typeof importSummary>[0];
+type ImportData = (b: BackupData, opts?: { sync?: boolean }) => Parameters<typeof importSummary>[0];
 
 /**
  * For upload(): another phone with this code copied things this one doesn't
  * have. They come here too, and the player is told (never joined in silence).
  */
 const joinRemote = (importData: ImportData) => (remote: BackupData) => {
-  const n = importData(remote);
+  const n = importData(remote, { sync: true });
   if (Object.values(n).some((v) => v > 0)) note(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
 };
 
