@@ -13,10 +13,13 @@ import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly
 import { countryOfVenue } from '@/tax/countries';
 import { S } from '@/theme';
 
-import { MindAfter, MindBefore } from './MindCheckIn';
 import { StakeFields } from './StakeFields';
 import { TaxFields } from './TaxFields';
 import { Button, Card, Chip, ChipRow, confirmAction, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
+
+// Only when the check-in shows (it can be turned off): off the first frame.
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter })));
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
@@ -331,8 +334,8 @@ export function SessionForm({
       {past && <TaxFields s={s} onChange={set} />}
       {!past ? null : mindOpen ? (
         <Section title={t('Diário mental')}>
-          <MindBefore value={s.mind} onChange={(mind) => set({ mind })} />
-          <MindAfter value={s.mind} onChange={(mind) => set({ mind })} />
+          <React.Suspense fallback={null}><MindBefore value={s.mind} onChange={(mind) => set({ mind })} /></React.Suspense>
+          <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={(mind) => set({ mind })} /></React.Suspense>
         </Section>
       ) : (
         <Button kind="ghost" size="sm" icon="add" title={t('Diário mental')} onPress={() => setMindOpen(true)} style={{ alignSelf: 'flex-start' }} />

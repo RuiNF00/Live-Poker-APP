@@ -8,6 +8,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { sleepLabel } from '@/lib/mind-line';
 import type { MindCheck, Scale } from '@/store/types';
 import { C, R, S } from '@/theme';
 
@@ -16,7 +17,6 @@ import { Card, Chip, ChipRow, Field, Row, T, tap } from './ui';
 const SLEEP = [4, 5, 6, 7, 8, 9];
 export const MOODS = ['Calmo', 'Confiante', 'Ansioso', 'Irritado', 'Distraído'];
 
-const sleepLabel = (h: number) => (h <= 4 ? '≤4 h' : h >= 9 ? '9+ h' : `${h} h`);
 
 /** Before the session. */
 export function MindBefore({ value, onChange }: { value?: MindCheck; onChange: (m: MindCheck | undefined) => void }) {
@@ -127,17 +127,4 @@ export function ScaleRow({ label, low, high, value, onChange, hot }: { label: st
 function clean(m: MindCheck): MindCheck | undefined {
   const out = Object.fromEntries(Object.entries(m).filter(([, v]) => v !== undefined && v !== '')) as MindCheck;
   return Object.keys(out).length ? out : undefined;
-}
-
-/** Short summary for a list row: "7 h · energia 4 · foco 3 · tilt 2". */
-export function mindLine(m: MindCheck): string {
-  return [
-    m.sleep !== undefined ? sleepLabel(m.sleep) : '',
-    m.energy ? t('energia {n}', { n: m.energy }) : '',
-    m.focus ? t('foco {n}', { n: m.focus }) : '',
-    m.mood ? t(m.mood).toLowerCase() : '',
-    m.tilt ? t('tilt {n}', { n: m.tilt }) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
 }

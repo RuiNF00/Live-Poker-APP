@@ -20,7 +20,6 @@ import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
 import { useSwapEnd } from '@/components/swaps/SwapEndRow';
-import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
@@ -49,6 +48,10 @@ import { C, S } from '@/theme';
 import { reduceMotion, useSheetAnimation } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
 import { useScreenReader } from '@/lib/screen-reader';
+
+// Only when the check-in shows (it can be turned off): off the first frame.
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter })));
 
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
@@ -323,7 +326,7 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md, maxHeight: '92%' }}>
           <SheetHeader title={t('Antes de começar')} onClose={onClose} />
           <ScrollView contentContainerStyle={{ gap: S.md }} keyboardShouldPersistTaps="handled">
-            <MindBefore value={mind} onChange={setMind} />
+            <React.Suspense fallback={null}><MindBefore value={mind} onChange={setMind} /></React.Suspense>
           </ScrollView>
           <Row gap={S.sm}>
             <Button kind="secondary" size="md" title={t('Saltar')} haptic={false} style={{ flex: 1 }} onPress={() => s && onStart(s)} />
@@ -687,7 +690,7 @@ function Live({ s }: { s: Session }) {
                       <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={finish.tips} onChange={(tips) => setFinish((f) => ({ ...f, tips }))} />
                       <NumField label={t('Mãos jogadas')} value={finish.handsDealt} onChange={(handsDealt) => setFinish((f) => ({ ...f, handsDealt }))} />
                     </Row>
-                    {settings.mindAsk === false ? null : <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />}
+                    {settings.mindAsk === false ? null : <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={(mind) => save({ mind })} /></React.Suspense>}
                     <StakeFields s={s} onChange={save} />
                   </View>
                 ) : null}
