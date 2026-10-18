@@ -352,7 +352,7 @@ const ptBR: Record<string, string> = {
   'Stack efetivo a dividir pelo pote. Quanto mais baixo, mais perto do all-in está a mão.': 'Stack efetivo dividido pelo pote. Quanto mais baixo, mais perto do all-in está a mão.',
   'Quantas voltas aguentas só a pagar blinds e antes. Abaixo de 10 é hora de jogar push or fold.': 'Quantas voltas você aguenta só pagando blinds e antes. Abaixo de 10 é hora de jogar push or fold.',
   'Converte fichas em dinheiro tendo em conta os prémios que faltam: duplicar o stack não duplica o valor.': 'Converte fichas em dinheiro considerando os prêmios que faltam: dobrar o stack não dobra o valor.',
-  'Lucro a dividir pelo que pagaste em buy-ins. 20% quer dizer 20 cêntimos por cada euro.': 'Lucro dividido pelo que você pagou em buy-ins. 20% quer dizer 20 centavos para cada real.',
+  'Lucro a dividir pelo total gasto em buy-ins. 20% quer dizer 20 cêntimos de lucro por cada euro de buy-in.': 'Lucro dividido pelo total gasto em buy-ins. 20% quer dizer 20 centavos de lucro para cada real de buy-in.',
   'Percentagem de torneios em que acabaste nos prémios.': 'Porcentagem de torneios em que você terminou nos prêmios.',
   'Toca num número para o explicar': 'Toque em um número para ver a explicação',
   'Vai com a versão da app e do telemóvel': 'Vai com a versão do app e do celular',

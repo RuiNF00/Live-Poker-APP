@@ -773,7 +773,7 @@ const en: Record<string, string> = {
   'Stack efetivo a dividir pelo pote. Quanto mais baixo, mais perto do all-in está a mão.': 'Effective stack divided by the pot. The lower it is, the closer the hand is to all-in.',
   'Quantas voltas aguentas só a pagar blinds e antes. Abaixo de 10 é hora de jogar push or fold.': "How many orbits you last just paying blinds and antes. Under 10 it's push-or-fold time.",
   'Converte fichas em dinheiro tendo em conta os prémios que faltam: duplicar o stack não duplica o valor.': "Turns chips into money given the prizes left: doubling your stack doesn't double its value.",
-  'Lucro a dividir pelo que pagaste em buy-ins. 20% quer dizer 20 cêntimos por cada euro.': 'Profit divided by what you paid in buy-ins. 20% means 20 cents for every euro.',
+  'Lucro a dividir pelo total gasto em buy-ins. 20% quer dizer 20 cêntimos de lucro por cada euro de buy-in.': 'Profit divided by the total spent on buy-ins. 20% means 20 cents of profit for every euro of buy-ins.',
   'Percentagem de torneios em que acabaste nos prémios.': 'Share of tournaments where you finished in the money.',
   'amostra pequena': 'small sample',
   'Toca num número para o explicar': 'Tap a number to explain it',

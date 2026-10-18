@@ -701,7 +701,7 @@ const es: Record<string, string> = {
   'Stack efetivo a dividir pelo pote. Quanto mais baixo, mais perto do all-in está a mão.': 'Stack efectivo dividido entre el bote. Cuanto más bajo, más cerca del all-in está la mano.',
   'Quantas voltas aguentas só a pagar blinds e antes. Abaixo de 10 é hora de jogar push or fold.': 'Cuántas vueltas aguantas solo pagando ciegas y antes. Por debajo de 10 toca jugar push or fold.',
   'Converte fichas em dinheiro tendo em conta os prémios que faltam: duplicar o stack não duplica o valor.': 'Convierte fichas en dinero según los premios que faltan: duplicar el stack no duplica su valor.',
-  'Lucro a dividir pelo que pagaste em buy-ins. 20% quer dizer 20 cêntimos por cada euro.': 'Ganancia dividida entre lo que pagaste en buy-ins. 20% significa 20 céntimos por cada euro.',
+  'Lucro a dividir pelo total gasto em buy-ins. 20% quer dizer 20 cêntimos de lucro por cada euro de buy-in.': 'Ganancia dividida entre el total gastado en buy-ins. 20% significa 20 céntimos de ganancia por cada euro de buy-in.',
   'Percentagem de torneios em que acabaste nos prémios.': 'Porcentaje de torneos en los que terminaste en premios.',
   'amostra pequena': 'muestra pequeña',
   'Toca num número para o explicar': 'Toca un número para ver qué es',
