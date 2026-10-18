@@ -158,6 +158,7 @@ function upsert<T extends { id: string }>(list: T[], item: T): T[] {
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [bootError, setBootError] = useState<Error | null>(null);
   const [hands, setHands] = useState<Hand[]>([]);
   const [rawSessions, setSessions] = useState<Session[]>([]);
   const [players, setPlayers] = useState<PlayerNote[]>([]);
@@ -269,6 +270,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setDraftKey(draftKeyOf(d.draft));
       loaded.current = true;
       setReady(true);
+    }).catch((e: unknown) => {
+      // Launch couldn't finish reading: without this the splash would stay up forever. The root
+      // crash screen shows instead (retry, or save a copy of the data); retry reads again.
+      boot = null;
+      if (alive) setBootError(e instanceof Error ? e : new Error(String(e)));
     });
     return () => {
       alive = false;
@@ -619,6 +625,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
   );
 
+  // A launch that couldn't read the data goes to the root crash screen (see the launch effect).
+  if (bootError) throw bootError;
   // Nothing renders before the data is in, so no screen flashes its empty
   // state ("Regista a tua primeira mão") at a player with 2,000 hands.
   return <Ctx.Provider value={value}>{ready ? children : null}</Ctx.Provider>;

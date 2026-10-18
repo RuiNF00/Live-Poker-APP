@@ -3328,6 +3328,7 @@ const en: Record<string, string> = {
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'The microphone is busy. Try again in a moment.',
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'The backup was made with a newer version of Sweatbook. Update the app and try again; nothing was changed.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'We couldn’t read this backup. Nothing on this phone was changed.',
+  'Guardar uma cópia dos dados': 'Save a copy of my data',
 };
 
 export default en;
