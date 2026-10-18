@@ -4,17 +4,18 @@
 
 import { requireOptionalNativeModule } from 'expo';
 import * as Linking from 'expo-linking';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { cancelFestivalReminders, syncFestivalReminders } from '@/lib/festival-reminders';
+import { loadLock } from '@/lib/app-lock';
 import { kindOn } from '@/lib/notify-policy';
 import { useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 
-import { liveProps } from './live-state';
+import { liveProps, lockAction, lockActionPatch, parseTarget } from './live-state';
 import { onReminderTap, syncLevelReminder } from './reminder';
 
 type Native = typeof import('./activity');
@@ -43,9 +44,9 @@ function lockScreen(): Native | null {
   return native;
 }
 
-async function show(s: Session, hideAmounts: boolean) {
+async function show(s: Session, hideAmounts: boolean, inPlace: boolean) {
   try {
-    await lockScreen()?.showSession(liveProps(s, Date.now(), hideAmounts));
+    await lockScreen()?.showSession(liveProps(s, Date.now(), hideAmounts, inPlace));
   } catch (e) {
     // Live Activities switched off in Settings, notifications denied: the app works as before.
     console.warn('[lock-screen] show', e);
@@ -61,11 +62,43 @@ async function end() {
 }
 
 export function SessionLockScreen() {
-  const { activeSession, settings } = useStore();
+  const { activeSession, settings, saveSession } = useStore();
   // Money stays off the lock screen unless the player turned on "Mostrar valores nas notificações" (notificacoes.md rule 5).
   const hide = !!settings.hideAmounts || !settings.notifyAmounts;
   const levelsOn = kindOn(settings, 'levels');
   const festivalOn = kindOn(settings, 'festival');
+
+  // Lock-screen buttons act in place only when no app lock is on, as read from the keychain.
+  // Until it's read, or if reading fails, they open the app (which asks for the lock): fails closed.
+  const [noLock, setNoLock] = useState(false);
+  useEffect(() => {
+    const read = () => loadLock().then((c) => setNoLock(c === null), () => setNoLock(false));
+    read();
+    // The lock can be turned on in Settings: read again whenever the app comes back or goes away.
+    const sub = AppState.addEventListener('change', read);
+    return () => sub.remove();
+  }, []);
+
+  // A button pressed on the lock screen with the app in the background. The lock is read again here,
+  // not taken from the banner: one turned on since the banner was drawn wins.
+  const latest = useRef({ s: activeSession, saveSession });
+  useEffect(() => {
+    latest.current = { s: activeSession, saveSession };
+  });
+  useEffect(() => {
+    if (!lockScreenAvailable) return;
+    return lockScreen()?.onLockButton((target) => {
+      void (async () => {
+        const lock = await loadLock().catch(() => undefined);
+        if (lock !== null) return;
+        const { s, saveSession: save } = latest.current;
+        if (!s) return;
+        const { what, id } = parseTarget(target);
+        const a = lockAction(what, id, s);
+        if (a) save({ ...s, ...lockActionPatch(s, a) });
+      })();
+    });
+  }, []);
 
   useEffect(() => {
     const s = activeSession;
@@ -77,10 +110,10 @@ export function SessionLockScreen() {
     void (async () => {
       // No system prompt here: the session screen asks with its own primer
       // first. Without permission Android simply shows no notification.
-      await show(s, hide);
+      await show(s, hide, noLock);
       await syncLevelReminder(levelsOn ? s : null);
     })();
-  }, [activeSession, hide, levelsOn]);
+  }, [activeSession, hide, levelsOn, noLock]);
 
   // "Torneios planeados" switched off in Settings: what was planned goes too. On (at launch, after a
   // restore brought plans in, back on in Settings), every plan still ahead gets its reminders, in the
@@ -104,15 +137,15 @@ export function SessionLockScreen() {
   useEffect(() => {
     if (Platform.OS !== 'android' || !activeSession || !lockScreenAvailable) return;
     const s = activeSession;
-    const id = setInterval(() => void show(s, hide), 60_000);
+    const id = setInterval(() => void show(s, hide, noLock), 60_000);
     const sub = AppState.addEventListener('change', (st) => {
-      if (st !== 'active') void show(s, hide);
+      if (st !== 'active') void show(s, hide, noLock);
     });
     return () => {
       clearInterval(id);
       sub.remove();
     };
-  }, [activeSession, hide]);
+  }, [activeSession, hide, noLock]);
 
   useEffect(() => onReminderTap((url) => void Linking.openURL(url).catch(() => {})), []);
 

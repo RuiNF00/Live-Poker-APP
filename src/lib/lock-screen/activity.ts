@@ -7,3 +7,7 @@ import type { LiveProps } from './live-state';
 export async function showSession(_props: LiveProps): Promise<void> {}
 
 export async function endSession(): Promise<void> {}
+
+export function onLockButton(_cb: (target: string) => void): () => void {
+  return () => {};
+}

@@ -5,9 +5,9 @@
 // Android notifications can't run a live clock in a custom layout, so it shows
 // the start time and the played time as of the last update.
 
-import { Column, Row, Text } from '@expo/ui/jetpack-compose';
+import { Button, Column, Row, Text } from '@expo/ui/jetpack-compose';
 import { background, cornerRadius, fillMaxWidth, padding, paddingAll } from '@expo/ui/jetpack-compose/modifiers';
-import { createCustomNotification } from 'expo-widgets';
+import { addUserInteractionListener, createCustomNotification } from 'expo-widgets';
 
 import type { LiveProps } from './live-state';
 import { notificationChannels, SESSION_CHANNEL } from './reminder';
@@ -28,6 +28,12 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
       <Text color={color} style={{ fontSize: 17, fontWeight: '700', fontFamily: 'monospace' }}>{value}</Text>
       <Text color={dim} style={{ fontSize: 12 }}>{sub}</Text>
     </Column>
+  );
+  // Button's types have no `target`, but the widget renderer reads it to name the press.
+  const btn = (target: string, name: string) => (
+    <Button {...({ target } as object)} colors={{ containerColor: '#1A2521', contentColor: text }} modifiers={[padding(0, 0, 8, 0)]}>
+      <Text color={text} style={{ fontSize: 14, fontWeight: '600' }}>{name}</Text>
+    </Button>
   );
   const summary = (
     <Column modifiers={[fillMaxWidth()]}>
@@ -54,6 +60,14 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
             {'+ ' + p.labels.newHand}
           </Text>
         </Row>
+        {/* With no app lock on: pause/resume and rebuy right here (a button press reaches the app as an
+            event; see onLockButton). With a lock, the notification only opens the app. */}
+        {p.inPlace ? (
+          <Row modifiers={[fillMaxWidth(), padding(0, 8, 0, 0)]}>
+            {btn(p.pauseTarget, p.labels.pause)}
+            {btn(p.rebuyTarget, p.labels.rebuy)}
+          </Row>
+        ) : null}
       </Column>
     ),
   };
@@ -76,4 +90,12 @@ export async function showSession(props: LiveProps): Promise<void> {
 
 export async function endSession(): Promise<void> {
   await SessionNotification.cancelAll();
+}
+
+/** A pause, resume or rebuy pressed on the notification: its button target. */
+export function onLockButton(cb: (target: string) => void): () => void {
+  const sub = addUserInteractionListener((e) => {
+    if (e.source === 'SweatbookSession') cb(e.target);
+  });
+  return () => sub.remove();
 }

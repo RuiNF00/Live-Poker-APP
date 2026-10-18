@@ -4,9 +4,9 @@
 // (no theme import, no helpers from outside the function). Colours are the
 // "Noite" tokens from src/theme.ts, copied by value.
 
-import { HStack, Image, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { accessibilityLabel, activityBackgroundTint, background, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
-import { createLiveActivity, type LiveActivity } from 'expo-widgets';
+import { Button, HStack, Image, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { accessibilityLabel, activityBackgroundTint, background, buttonStyle, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
+import { addUserInteractionListener, createLiveActivity, type LiveActivity } from 'expo-widgets';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 import type { LiveProps } from './live-state';
@@ -44,18 +44,25 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
       <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
     </Link>
   );
-  // Secondary actions, one tap each: they open the session screen, which does them with "Anular"
-  // (only once the app lock, if any, is open). Icons keep the row on one line in every language.
-  const small = (url: string, icon: SFSymbol, name: string) => (
-    <Link destination={url} modifiers={[padding({ top: 9, bottom: 9, leading: 13, trailing: 13 }), background(track), cornerRadius(12), accessibilityLabel(name)]}>
-      <Image systemName={icon} size={16} color={text} />
-    </Link>
-  );
+  // Secondary actions, one tap each. With no app lock on they act in place (a LiveActivityIntent
+  // wakes the app in the background); otherwise they open the session screen, which asks for the
+  // lock first and then does them with "Anular". Icons keep the row on one line in every language.
+  const chip = [padding({ top: 9, bottom: 9, leading: 13, trailing: 13 }), background(track), cornerRadius(12)];
+  const small = (url: string, icon: SFSymbol, name: string, target = '') =>
+    target && p.inPlace ? (
+      <Button target={target} modifiers={[buttonStyle('plain'), ...chip, accessibilityLabel(name)]}>
+        <Image systemName={icon} size={16} color={text} />
+      </Button>
+    ) : (
+      <Link destination={url} modifiers={[...chip, accessibilityLabel(name)]}>
+        <Image systemName={icon} size={16} color={text} />
+      </Link>
+    );
   const actions = (
     <HStack spacing={8}>
       {newHand}
-      {small(p.pauseUrl, p.paused ? 'play.fill' : 'pause.fill', p.labels.pause)}
-      {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy)}
+      {small(p.pauseUrl, p.paused ? 'play.fill' : 'pause.fill', p.labels.pause, p.pauseTarget)}
+      {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy, p.rebuyTarget)}
       {/* A tournament: its chip count as a story, without opening the session first. */}
       {p.shareUrl ? small(p.shareUrl, 'square.and.arrow.up', p.labels.shareStack) : null}
     </HStack>
@@ -197,4 +204,12 @@ export async function endSession(): Promise<void> {
   const all = current ? [current, ...SessionActivity.getInstances().filter((a) => a.getId() !== current!.getId())] : SessionActivity.getInstances();
   current = null;
   await Promise.all(all.map((a) => a.end('immediate')));
+}
+
+/** A pause, resume or rebuy tapped on the Live Activity with the app in the background: its button target. */
+export function onLockButton(cb: (target: string) => void): () => void {
+  const sub = addUserInteractionListener((e) => {
+    if (e.source === 'SweatbookSession') cb(e.target);
+  });
+  return () => sub.remove();
 }

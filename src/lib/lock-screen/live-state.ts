@@ -45,6 +45,14 @@ export interface LiveProps {
   /** Pause or resume, and a rebuy (cash) or re-entry (tournament), one tap from the lock screen: see lockAction. */
   pauseUrl: string;
   rebuyUrl: string;
+  /**
+   * The buttons act without opening the app (iOS LiveActivityIntent, Android notification button).
+   * Only with no app lock known to be on: otherwise they open the app, which asks for the lock first.
+   */
+  inPlace: boolean;
+  /** Button targets for the in-place actions: "pause:<id>", read back by parseTarget. */
+  pauseTarget: string;
+  rebuyTarget: string;
   labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string };
 }
 
@@ -133,7 +141,7 @@ function hm(ms: number): string {
  * aren't money and stay. The session's name often carries the venue, so
  * privacy mode shows the game instead.
  */
-export function liveProps(s: Session, now = Date.now(), hideAmounts = false): LiveProps {
+export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inPlace = false): LiveProps {
   const paused = isPaused(s);
   const played = playedMs(s, now);
   const mtt = s.kind === 'mtt';
@@ -159,6 +167,9 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
     pauseUrl: `sweatbook://session?do=${paused ? 'resume' : 'pause'}&id=${encodeURIComponent(s.id)}`,
     rebuyUrl: `sweatbook://session?do=rebuy&id=${encodeURIComponent(s.id)}`,
+    inPlace,
+    pauseTarget: `${paused ? 'resume' : 'pause'}:${s.id}`,
+    rebuyTarget: `rebuy:${s.id}`,
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
@@ -203,6 +214,25 @@ export function askForLockScreen(os: string, s: Pick<Session, 'id' | 'endedAt'>,
 export function sessionNoticePreview(s: Session, now = Date.now(), hideAmounts = false): { title: string; body: string } {
   const p = liveProps(s, now, hideAmounts);
   return { title: p.title, body: `${p.status} · ${p.stack} · ${p.blinds}` };
+}
+
+/** "pause:<id>" from a lock-screen button back into the action and the session id. */
+export function parseTarget(target: string): { what: string; id: string } {
+  const i = target.indexOf(':');
+  return i < 0 ? { what: target, id: '' } : { what: target.slice(0, i), id: target.slice(i + 1) };
+}
+
+/**
+ * What a lock-screen action changes, the same as the session screen's buttons: a pause opens a
+ * break, a resume closes it, a rebuy adds an entry and its chips (cash: the buy-in on top;
+ * tournament: a fresh starting stack).
+ */
+export function lockActionPatch(s: Session, a: LockAction, now = Date.now()): Partial<Session> {
+  if (a === 'pause') return { breaks: [...s.breaks, { start: now }] };
+  if (a === 'resume') return { breaks: s.breaks.map((b, i) => (i === s.breaks.length - 1 && !b.end ? { ...b, end: now } : b)) };
+  const first = s.stackLog[0]?.stack ?? s.stack;
+  const stack = s.kind === 'mtt' ? s.tourney?.startStack || first : s.stack + s.buyIn;
+  return { entries: s.entries + 1, stack, stackLog: [...s.stackLog, { t: now, stack, level: s.level }] };
 }
 
 /** Text of the level-up reminder. */
