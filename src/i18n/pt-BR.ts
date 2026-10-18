@@ -1667,6 +1667,7 @@ const ptBR: Record<string, string> = {
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
   'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'A mão como um card de coleção: suas cartas em destaque e os números em bb.',
+  'Póster': 'Pôster',
 };
 
 export default ptBR;
