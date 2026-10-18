@@ -183,6 +183,9 @@ let current: LiveActivity<LiveProps> | null = null;
 export async function showSession(props: LiveProps): Promise<void> {
   // After a relaunch the activity is still up: pick it back up instead of starting a second one.
   current ??= SessionActivity.getInstances()[0] ?? null;
+  // Only ever one on the lock screen: any other left over (a start that raced a relaunch) goes.
+  const extra = SessionActivity.getInstances().filter((a) => a.getId() !== current?.getId());
+  await Promise.all(extra.map((a) => a.end('immediate').catch(() => {})));
   // Stale once the level should have gone up; a break stops that clock, so no stale date while paused.
   const stale = props.nextLevelAt && !props.paused ? new Date(props.nextLevelAt) : undefined;
   if (current) await current.update(props, stale);
