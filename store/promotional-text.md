@@ -1,7 +1,5 @@
 # Texto promocional das lojas: do lançamento ao fim de março
 
-# Texto promocional das lojas: do lançamento ao fim de março
-
 Rascunho de 2026-10-17. Quem aplica é o fio das lojas. Nada foi publicado.
 
 **Como funciona:**
@@ -88,17 +86,17 @@ Nota: no período 5 o pt-BR é o lançamento no Brasil e no período 6 o es é o
 
 ## 5. 22 jan → 8 fev (pt-BR desde 15 jan)
 
-**EN** (150)
-> Swaps in writing: both players confirm the terms on their phones and the app does the math at the end. Records only, no money moves through Sweatbook.
+**EN** (136)
+> Swaps in writing: both players confirm the terms on their phones and record the results. Records only, no money moves through Sweatbook.
 
-**PT-PT** (152)
-> Swaps por escrito: os dois confirmam os termos no telemóvel e a app faz as contas no fim. Registo e contas apenas: nenhum dinheiro passa pela Sweatbook.
+**PT-PT** (148)
+> Swaps por escrito: os dois confirmam os termos no telemóvel e registam os resultados. Registo e contas apenas: nenhum dinheiro passa pela Sweatbook.
 
 **pt-BR** (154)
 > Temporada de verão na Bahia: registre uma mão típica em 11 toques entre os níveis, compartilhe por link e acompanhe a banca. Grátis: 3 mãos novas por dia.
 
-**es** (159)
-> Swaps por escrito: los dos confirman los términos en el teléfono y la app hace las cuentas al final. Solo registro y cuentas: ningún dinero pasa por Sweatbook.
+**es** (151)
+> Swaps por escrito: los dos confirman los términos en el teléfono y registran los resultados. Solo registro y cuentas: ningún dinero pasa por Sweatbook.
 
 
 ## 6. 9 → 25 fev
