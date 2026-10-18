@@ -3341,6 +3341,12 @@ const es: Record<string, string> = {
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'No se lee ninguna fila. Corrige el archivo e impórtalo otra vez.',
   'Mudar para {name}?': '¿Cambiar a {name}?',
   'Os valores ficam iguais e passam a {cur}.': 'Los importes siguen iguales y pasan a {cur}.',
+  'Partilhar resumo da viagem': 'Compartir resumen del viaje',
+  'A viagem acabou': 'El viaje ha terminado',
+  'Criar story da viagem': 'Crear historia del viaje',
+  'RESUMO DA VIAGEM': 'RESUMEN DEL VIAJE',
+  'Partilhar viagem': 'Compartir viaje',
+  'Carrossel da viagem': 'Carrusel del viaje',
 };
 
 export default es;

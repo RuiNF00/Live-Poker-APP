@@ -3347,6 +3347,12 @@ const en: Record<string, string> = {
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'No row could be read. Fix the file and import it again.',
   'Mudar para {name}?': 'Switch to {name}?',
   'Os valores ficam iguais e passam a {cur}.': 'The amounts stay the same numbers and switch to {cur}.',
+  'Partilhar resumo da viagem': 'Share trip recap',
+  'A viagem acabou': 'The trip is over',
+  'Criar story da viagem': 'Create trip story',
+  'RESUMO DA VIAGEM': 'TRIP RECAP',
+  'Partilhar viagem': 'Share trip',
+  'Carrossel da viagem': 'Trip carousel',
 };
 
 export default en;

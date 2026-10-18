@@ -101,7 +101,7 @@ export default function FestivalCarouselScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('Carrossel do festival') }} />
+      <Stack.Screen options={{ title: trip.festivalId ? t('Carrossel do festival') : t('Carrossel da viagem') }} />
       <CardShareSheet
         visible={sheet}
         onClose={() => setSheet(false)}

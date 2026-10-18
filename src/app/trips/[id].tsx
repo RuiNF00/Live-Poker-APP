@@ -211,15 +211,15 @@ function ShareRecap({ trip }: { trip: Trip }) {
   if (!over) {
     return (
       <ListGroup>
-        <ListItem icon="logo-instagram" title={t('Partilhar resumo do festival')} subtitle={t('Uma story com os dias, eventos e a melhor mão')} onPress={open} />
+        <ListItem icon="logo-instagram" title={trip.festivalId ? t('Partilhar resumo do festival') : t('Partilhar resumo da viagem')} subtitle={t('Uma story com os dias, eventos e a melhor mão')} onPress={open} />
       </ListGroup>
     );
   }
   return (
     <Card tone="accent" style={{ gap: S.sm }}>
-      <T v="h3">{t('O festival acabou')}</T>
+      <T v="h3">{trip.festivalId ? t('O festival acabou') : t('A viagem acabou')}</T>
       <T v="small">{t('Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.')}</T>
-      <Button title={t('Criar story do festival')} icon="logo-instagram" onPress={open} />
+      <Button title={trip.festivalId ? t('Criar story do festival') : t('Criar story da viagem')} icon="logo-instagram" onPress={open} />
     </Card>
   );
 }

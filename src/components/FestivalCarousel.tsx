@@ -308,7 +308,7 @@ export function FestivalSlide({ kind, index, count, recap, stats, events, showMo
   return (
     <View ref={ref} collapsable={false} style={{ width: SLIDE_W, height: SLIDE_H, overflow: 'hidden', backgroundColor: C.bgDeep }}>
       <Backdrop glow={GLOW[kind]} />
-      {kind === 'close' ? null : <Top brand={brand} index={index} count={count} label={LABEL[kind]()} />}
+      {kind === 'close' ? null : <Top brand={brand} index={index} count={count} label={kind === 'summary' && !recap.festival ? t('RESUMO DA VIAGEM') : LABEL[kind]()} />}
       {kind === 'summary' ? <Summary recap={recap} stats={stats} showMoney={showMoney} showResult={showResult} last={count === 1} /> : null}
       {kind === 'hand' ? <BestHandSlide recap={recap} /> : null}
       {kind === 'events' ? <EventsSlide recap={recap} events={events} showMoney={showMoney} showResult={showResult} /> : null}

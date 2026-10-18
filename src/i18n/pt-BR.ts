@@ -1655,6 +1655,12 @@ const ptBR: Record<string, string> = {
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'Nenhuma linha pôde ser lida. Corrija o arquivo e importe de novo.',
   'Mudar para {name}?': 'Mudar para {name}?',
   'Os valores ficam iguais e passam a {cur}.': 'Os valores continuam iguais e passam a {cur}.',
+  'Partilhar resumo da viagem': 'Compartilhar resumo da viagem',
+  'A viagem acabou': 'A viagem acabou',
+  'Criar story da viagem': 'Criar story da viagem',
+  'RESUMO DA VIAGEM': 'RESUMO DA VIAGEM',
+  'Partilhar viagem': 'Compartilhar viagem',
+  'Carrossel da viagem': 'Carrossel da viagem',
 };
 
 export default ptBR;
