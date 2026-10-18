@@ -7,7 +7,7 @@ import { test } from 'node:test';
 
 import { buildBackup } from '../backup';
 import { mergeBackups } from '../backup-merge';
-import { cleanDeleted, entryId, joinDeleted, keyOf, liveSwaps, type Deleted } from '../deleted-math';
+import { cleanDeleted, entryId, joinDeleted, keyOf, liveSwaps, swapMarks, type Deleted } from '../deleted-math';
 import type { GroupEntry, SwapGroup } from '../swap-groups';
 import { mergeSwaps, swapLedger, type Swap, type SwapEntry } from '../swaps';
 import { DEFAULT_SETTINGS } from '../types';
@@ -77,4 +77,9 @@ test('groups: a group I left stays left, and a pending prize I deleted is not se
 test('swap marks survive a backup file and a restore (they are not brought back like the other lists)', () => {
   const d = cleanDeleted({ [keyOf('swaps', 's1')]: 5, [keyOf('swapGroups', 'g1')]: 5, [keyOf('swapEntries', entryId('s1', 'a', 'c~0'))]: 5, 'nope:x': 5 });
   assert.deepEqual(Object.keys(d).sort(), ['swapEntries:s1:ac~0', 'swapGroups:g1', 'swaps:s1']);
+});
+
+test('«Apagar tudo» keeps only the swaps’ marks', () => {
+  const d: Deleted = { [keyOf('hands', 'h1')]: 1, [keyOf('sessions', 's1')]: 1, [keyOf('swaps', 's1')]: 2, [keyOf('swapGroups', 'g1')]: 2, [keyOf('swapEntries', 'x:a1')]: 2 };
+  assert.deepEqual(Object.keys(swapMarks(d)).sort(), ['swapEntries:x:a1', 'swapGroups:g1', 'swaps:s1']);
 });

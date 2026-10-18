@@ -117,3 +117,6 @@ export function liveSwaps<T extends { id: string; entries: { cid: string; pendin
   }
   return changed ? out : items;
 }
+
+/** What «Apagar tudo» keeps: only the swaps' marks (see deleted.ts). */
+export const swapMarks = (d: Deleted): Deleted => Object.fromEntries(Object.entries(d).filter(([k]) => SWAP_DELETED_LISTS.some((l) => k.startsWith(l + ':'))));

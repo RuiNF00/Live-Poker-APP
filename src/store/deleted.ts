@@ -3,7 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { parseOrQuarantine } from './boot';
-import { cleanDeleted, joinDeleted, keyOf, SWAP_DELETED_LISTS, type Deleted, type DeletedList } from './deleted-math';
+import { cleanDeleted, joinDeleted, keyOf, swapMarks, type Deleted, type DeletedList } from './deleted-math';
 import type { KV } from './persist';
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -67,6 +67,6 @@ export function forgetDeleted(keys: string[]) {
  * (written again): the swaps left the server, so a backup file restored later can't bring them back.
  */
 export function clearDeleted() {
-  map = Object.fromEntries(Object.entries(map).filter(([k]) => SWAP_DELETED_LISTS.some((l) => k.startsWith(l + ':'))));
+  map = swapMarks(map);
   if (Object.keys(map).length) persist();
 }
