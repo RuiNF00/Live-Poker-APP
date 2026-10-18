@@ -21,7 +21,10 @@ export function autoBankrollId(currency: string): string {
  * none), and that there is at least one. Returns the same array when nothing
  * was missing, so callers can skip a save.
  */
-export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defaultCurrency: string, now = Date.now()): Bankroll[] {
+export function ensureBankrolls(list: Bankroll[], sessions: Session[], defaultCurrency: string, now = Date.now()): Bankroll[] {
+  // Older builds could make two bankrolls with one id (see freeAutoId): keep the first.
+  const ids = new Set(list.map((b) => b.id));
+  const bankrolls = ids.size === list.length ? list : list.filter((b) => ids.delete(b.id));
   const have = new Set(bankrolls.map((b) => b.currency));
   const need = byCurrency(sessions)
     .map((g) => g.currency)
@@ -31,8 +34,9 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
   if (!bankrolls.length && !need.length) need.push(defaultCurrency);
   if (!need.length) return bankrolls;
   const first = !bankrolls.length;
+  const taken = new Set(bankrolls.map((b) => b.id));
   const made = need.map((currency, i) => ({
-    id: autoBankrollId(currency),
+    id: freeAutoId(currency, taken),
     // The first one is just "Main"; any extra one says its currency.
     name: first && i === 0 ? t('Principal') : `Bankroll ${currency}`,
     currency,
@@ -40,6 +44,19 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
     updatedAt: 0,
   }));
   return [...bankrolls, ...made];
+}
+
+/**
+ * The stable id for a currency, unless a bankroll in another currency already has it: before
+ * the onboarding's currency pick made a new bankroll, it moved the first one to the new
+ * currency and kept its id ("br_auto_€" in dollars). Then "_2", "_3"…, the same on every phone.
+ */
+function freeAutoId(currency: string, taken: Set<string>): string {
+  const base = autoBankrollId(currency);
+  let id = base;
+  for (let n = 2; taken.has(id); n++) id = `${base}_${n}`;
+  taken.add(id);
+  return id;
 }
 
 /**

@@ -68,6 +68,8 @@ interface StoreValue {
   savePlayer: (p: PlayerNote) => void;
   deletePlayer: (id: string) => void;
   saveBankroll: (b: Bankroll) => void;
+  /** The onboarding's currency pick: the first-launch bankroll, still empty, is made again in that currency (a bankroll's currency never changes). */
+  firstBankrollIn: (currency: string) => void;
   /**
    * Deletes a bankroll; its sessions and transfers move to another bankroll
    * in the same currency. False (nothing changed) when there is none to take
@@ -407,6 +409,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setPlayers((l) => l.filter((x) => x.id !== id));
   }, []);
   const saveBankroll = useCallback((b: Bankroll) => setBankrolls((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
+  const firstBankrollIn = useCallback((c: string) => {
+    const b = bankrolls[0];
+    if (rawSessions.length || transfers.length || bankrolls.length !== 1 || b.currency === c || b.rules || b.shot) return;
+    setBankrolls(ensureBankrolls([], [], c));
+    setSettingsState((st) => (st.bankrollId === b.id ? { ...st, bankrollId: undefined } : st));
+  }, [bankrolls, rawSessions, transfers]);
   const saveTransfer = useCallback((x: Transfer) => setTransfers((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
   const deleteTransfer = useCallback((id: string) => {
     markDeleted('transfers', [id]);
@@ -656,6 +664,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       savePlayer,
       deletePlayer,
       saveBankroll,
+      firstBankrollIn,
       deleteBankroll,
       saveTransfer,
       deleteTransfer,
@@ -697,7 +706,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, firstBankrollIn, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
   );
 
   // A launch that couldn't read the data goes to the root crash screen (see the launch effect).

@@ -62,6 +62,23 @@ test('older data gets one bankroll per currency, the player\'s own first', () =>
   assert.equal(ensureBankrolls([], [], '£').length, 1);
 });
 
+test('a bankroll already holding a currency\'s id in another currency is never written over', () => {
+  // The onboarding of older builds moved the first "Principal" to dollars and kept the euro id.
+  const principal: Bankroll = { ...br(autoBankrollId('€'), '$'), name: 'Principal', updatedAt: 5 };
+  const made = ensureBankrolls([principal], [mk({ currency: '€', cashOut: 250 })], '$', 100);
+  assert.equal(made.length, 2);
+  assert.equal(made[0], principal);
+  assert.equal(made[1].currency, '€');
+  assert.equal(made[1].id, autoBankrollId('€') + '_2');
+  assert.equal(new Set(made.map((b) => b.id)).size, 2);
+  // The same id on every phone, and the € session counts in euros, not in the dollar Principal.
+  assert.equal(ensureBankrolls([principal], [mk({ currency: '€' })], '$', 7)[1].id, made[1].id);
+  assert.equal(bankrollOf(mk({ currency: '€', bankrollId: principal.id }), made)!.id, made[1].id);
+  // Two bankrolls with one id (what that left behind) become one, the first, and the € one comes back.
+  const twice = ensureBankrolls([principal, { ...br(autoBankrollId('€'), '€'), name: 'Bankroll €' }], [mk({ currency: '€' })], '$', 100);
+  assert.deepEqual(twice.map((b) => [b.id, b.currency]), [[principal.id, '$'], [autoBankrollId('€') + '_2', '€']]);
+});
+
 test('sessions without a bankroll count towards the first one in their currency', () => {
   const bs = [br('b', '€', 2), br('a', '€', 1), br('u', '$', 3)];
   assert.equal(bankrollOf(mk(), bs)!.id, 'a');
