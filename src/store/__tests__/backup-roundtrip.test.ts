@@ -108,6 +108,18 @@ test('restore onto a phone in use keeps its choices but adds the exchange rates 
   assert.deepEqual(restoredSettings({ ...DEFAULT_SETTINGS }, { fxManual: { ARS: 1100, bad: -1 } as Record<string, number> }, false).fxManual, { ARS: 1100 });
 });
 
+test('restore: the year notice that went out on the other phone doesn\'t go out again', () => {
+  const now = new Date(2027, 0, 5).getTime();
+  // Sent for 2025; the 2026 one fired on 31 December on the old phone.
+  const old = { yearRecapSent: 2025, yearRecapAt: new Date(2026, 11, 31, 20).getTime() };
+  assert.equal(restoredSettings({ ...DEFAULT_SETTINGS }, old, true, now).yearRecapSent, 2026);
+  assert.equal(restoredSettings({ ...DEFAULT_SETTINGS }, old, false, now).yearRecapSent, 2026);
+  // Still waiting to go out: not counted as sent.
+  assert.equal(restoredSettings({ ...DEFAULT_SETTINGS }, { yearRecapSent: 2025, yearRecapAt: now + 1 }, true, now).yearRecapSent, 2025);
+  // The phone's own later mark stays.
+  assert.equal(restoredSettings({ ...DEFAULT_SETTINGS, yearRecapSent: 2026 }, { yearRecapSent: 2024 }, false, now).yearRecapSent, 2026);
+});
+
 test('receipts: only the file name travels, never the picture', () => {
   const json = JSON.stringify(everything());
   assert.ok(json.includes('"file":"d1.jpg"'));
