@@ -1,6 +1,8 @@
-# App Store featuring nomination: December launch
+# App Store featuring nomination: launch on 17 November
 
 Ready to submit the moment the App Store Connect app record exists (Rui's checklist step 14). Submitting needs Rui's yes (checklist step 36). Source draft and background: `/mnt/project-files/launch/destaque-lojas.md`. Every claim below was checked against the integration branch at 179da6c (17 Oct 2026).
+
+Launch date is **17 November 2026** (release at 10:00 Lisbon). The App Launch window runs from launch through the December festival series; the In-App Event below stays on the December dates. Apple asks for 6 to 8 weeks of notice, so this goes in as soon as Rui says yes: on 18 October there are 4 weeks left.
 
 Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations → Create nomination** (or the App Store Connect API with the Admin key from step 15, if it accepts nominations for this account).
 
@@ -8,9 +10,9 @@ Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations 
 
 | Field | Value | Length |
 |---|---|---|
-| Name (internal) | `Sweatbook launch - December live festival season` | 48/60 |
+| Name (internal) | `Sweatbook launch - live festival season` | 39/60 |
 | Type | App Launch | |
-| Start date | 2026-12-02 | |
+| Start date | 2026-11-17 | |
 | End date | 2026-12-17 | |
 | Countries | All launch countries in `store/availability.md` (everything except France, mainland China, Russia and the default exclusions listed there). Priority: United States, United Kingdom, Canada, Australia, Portugal, Brazil | |
 | Platform | iOS (iPhone) | |
@@ -18,9 +20,9 @@ Where: App Store Connect → Apps → Sweatbook → **Featuring → Nominations 
 | Pre-order | No | |
 | Linked In-App Event | "Your festival diary" (below) | |
 
-**Description** (937/1000):
+**Description** (953/1000):
 
-> Sweatbook is a new notebook for people who play poker live, in casinos and at festivals, where there is no hand history. It launches in early December, when thousands of players travel to the winter festival season, including a two-week high-stakes series in the Bahamas. Players log a typical hand in 11 taps between levels, replay it street by street with pot and stack sizes, and share it as a link that opens a replayer in any browser, so friends and coaches can comment without installing anything. Around that, Sweatbook keeps the whole trip: sessions, a tournament clock with blinds and M, tournament ROI and ITM, bankroll in several currencies, travel expenses, and records of the deals players make in person with backers and friends. It is records and study only: no money moves through the app, there is no gameplay and no betting. Built in Portugal, it launches in English, Spanish and both European and Brazilian Portuguese.
+> Sweatbook is a new notebook for people who play poker live, in casinos and at festivals, where there is no hand history. It launches on 17 November, just before thousands of players travel to the winter festival season, including a two-week high-stakes series in the Bahamas in December. Players log a typical hand in 11 taps between levels, replay it street by street with pot and stack sizes, and share it as a link that opens a replayer in any browser, so friends and coaches can comment without installing anything. Around that, Sweatbook keeps the whole trip: sessions, a tournament clock with blinds and M, tournament ROI and ITM, bankroll in several currencies, travel expenses, and records of the deals players make in person with backers and friends. It is records and study only: no money moves through the app, there is no gameplay and no betting. Built in Portugal, it launches in English, Spanish and both European and Brazilian Portuguese.
 
 **Helpful details** (305/500), the version to submit today:
 
