@@ -35,3 +35,12 @@ export function pctOff(full: number | null | undefined, paid: number | null | un
   // Floored: never more discount than the real one (¥4,400 → ¥2,600 is −40%, not −41%).
   return Math.floor((1 - paid / full) * 100 + 1e-9);
 }
+
+/**
+ * The invite discount's % to show. On Google Play it is the store's own offer against the
+ * monthly price (null without both: no figure is claimed); on the App Store, Apple's code
+ * sheet shows the price and the configured % is the one loaded on the codes.
+ */
+export function invitePct(play: boolean, monthly: number | null | undefined, offer: number | null | undefined, configured: number): number | null {
+  return play ? pctOff(monthly, offer) : configured;
+}

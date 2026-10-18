@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LEGAL, legalUrl, offerMonths, pctOff } from '../disclosure';
+import { invitePct, LEGAL, legalUrl, offerMonths, pctOff } from '../disclosure';
 
 test('legal pages open at the player language section', () => {
   assert.equal(legalUrl('terms', 'en'), LEGAL.terms);
@@ -42,4 +42,16 @@ test('percent off only between two real prices', () => {
   // Not a discount: no "−0%" or a negative one.
   assert.equal(pctOff(29.99, 29.99), null);
   assert.equal(pctOff(29.99, 39.99), null);
+});
+
+test('invite %: on Google Play only from the store offer, never the configured figure', () => {
+  // Play offer at 14.99 against 29.99: 50%, from the store's prices.
+  assert.equal(invitePct(true, 29.99, 14.99, 50), 50);
+  // The store's offer gives less than the configured 50%: the store's figure, floored.
+  assert.equal(invitePct(true, 29.99, 15.5, 50), 48);
+  // No offer in the store (or no monthly price): no figure at all.
+  assert.equal(invitePct(true, 29.99, undefined, 50), null);
+  assert.equal(invitePct(true, undefined, 14.99, 50), null);
+  // App Store: Apple's code sheet shows the price; the configured % is the codes'.
+  assert.equal(invitePct(false, undefined, undefined, 50), 50);
 });
