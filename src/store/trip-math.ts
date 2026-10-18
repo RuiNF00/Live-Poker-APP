@@ -39,8 +39,8 @@ export function changeTripCurrency(trip: Pick<Trip, 'currency' | 'fx'>, fxCur: s
   if (next === fxCur) {
     if (!(rate > 0)) return { currency: next, fx: trip.fx ? { currency: trip.currency, rate: 0 } : undefined };
     const inv = 1 / rate;
-    // 4 decimals, like the ECB rate offered in the form; 4 significant digits for small rates (¥).
-    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(4)) } };
+    // 4 decimals, like the ECB rate offered in the form; 6 significant digits below 1, so going back and forth stays exact.
+    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(6)) } };
   }
   return { currency: next, fx: trip.fx && trip.fx.currency !== next ? { currency: trip.fx.currency, rate: 0 } : undefined };
 }
