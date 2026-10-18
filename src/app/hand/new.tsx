@@ -15,7 +15,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,7 +28,6 @@ import { CardPicker } from '@/components/CardPicker';
 import { TapCountProvider } from '@/components/TapCount';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
-import { VoiceHandSheet } from '@/components/entry/VoiceHandSheet';
 import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
@@ -60,6 +59,9 @@ interface Draft {
   /** "Check até ao fim": from this action on, each street checks around once its card is in. */
   checkDownFrom?: number;
 }
+
+// Loaded the first time the player opens it: the parser and the sheet stay out of the launch bundle.
+const VoiceHandSheet = React.lazy(() => import('@/components/entry/VoiceHandSheet').then((m) => ({ default: m.VoiceHandSheet })));
 
 export default function NewHand() {
   crashProbe('hand');
@@ -94,6 +96,7 @@ export default function NewHand() {
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
   const [telling, setTelling] = useState(false);
+  const [toldOpened, setToldOpened] = useState(false);
   // Set once a hand came from "Contar a mão": the hand_saved event says so.
   const toldRef = useRef(false);
 
@@ -577,6 +580,7 @@ export default function NewHand() {
                   tap();
                   // Pro: telling the hand. Entering it with taps stays free.
                   if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+                  setToldOpened(true);
                   setTelling(true);
                 }}
                 style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
@@ -828,7 +832,11 @@ export default function NewHand() {
         )}
       </View>
 
-      <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} />
+      {toldOpened ? (
+        <Suspense fallback={null}>
+          <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} />
+        </Suspense>
+      ) : null}
 
       <ContextSheet
         visible={ctxOpen}
