@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CANCEL_REASONS, cancelReasons, logged, scrubNote } from '../cancel';
+import { CANCEL_REASONS, cancelReasons, logged, offerOnScreen, offerTaken, scrubNote } from '../cancel';
 import type { Session } from '@/store/types';
 
 const s = (startedAt: number, buyIn: number, cashOut: number) =>
@@ -47,4 +47,19 @@ test('scrubNote drops emails, phone numbers and links', () => {
 
 test('scrubNote keeps stakes and short numbers', () => {
   assert.equal(scrubNote('só jogo 1/2 e 2/5, não preciso'), 'só jogo 1/2 e 2/5, não preciso');
+});
+
+test('a cancel offer is used up only when taken or turned down, never by just picking the reason', () => {
+  // Picking «Está caro» with the −40% on screen: that's the one «Continuar a cancelar» turns down.
+  assert.equal(offerOnScreen('bankroll', { discount: true, lifetime: true }), 'discount');
+  assert.equal(offerOnScreen('noSubscription', { discount: true, lifetime: true }), 'lifetime');
+  // Nothing on screen: the tap on the store link turns nothing down.
+  assert.equal(offerOnScreen('bankroll', { discount: false, lifetime: true }), null);
+  assert.equal(offerOnScreen('notPlaying', { discount: true, lifetime: true }), null);
+  assert.equal(offerOnScreen(null, { discount: true, lifetime: true }), null);
+  // A purchase the store took (or holds) uses it; one cancelled in the store sheet or failed leaves it for next time.
+  assert.equal(offerTaken('ok'), true);
+  assert.equal(offerTaken('pending'), true);
+  assert.equal(offerTaken('cancelled'), false);
+  assert.equal(offerTaken('error'), false);
 });

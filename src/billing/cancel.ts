@@ -75,3 +75,13 @@ export async function markOfferSeen(offer: CancelOffer): Promise<void> {
   const seen = await offersSeen();
   if (!seen.includes(offer)) await AsyncStorage.setItem(OFFERS_SEEN, JSON.stringify([...seen, offer])).catch(() => {});
 }
+
+/** The offer on screen for this reason, if any: the one a tap on «Continuar a cancelar» turns down. */
+export function offerOnScreen(reason: CancelReason | null, has: { discount: boolean; lifetime: boolean }): CancelOffer | null {
+  if (reason === 'bankroll' && has.discount) return 'discount';
+  if (reason === 'noSubscription' && has.lifetime) return 'lifetime';
+  return null;
+}
+
+/** A purchase uses the offer up once the store took it, holds it pending or says it's already owned; a cancelled or failed one leaves it. */
+export const offerTaken = (res: string) => res === 'ok' || res === 'pending' || res === 'owned';
