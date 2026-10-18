@@ -6,7 +6,7 @@
 import { execSync } from 'node:child_process';
 
 const BACKGROUND = ['fetch', 'processing'];
-const USAGE = ['NSCameraUsageDescription', 'NSFaceIDUsageDescription', 'NSMicrophoneUsageDescription', 'NSPhotoLibraryUsageDescription'];
+const USAGE = ['NSCameraUsageDescription', 'NSFaceIDUsageDescription', 'NSMicrophoneUsageDescription', 'NSPhotoLibraryUsageDescription', 'NSPhotoLibraryAddUsageDescription'];
 
 const config = JSON.parse(execSync('npx expo config --type introspect --json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 }));
 const plist = config.ios?.infoPlist ?? {};

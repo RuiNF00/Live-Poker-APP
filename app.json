@@ -27,7 +27,8 @@
         "usesNonExemptEncryption": true
       },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": true
+        "ITSAppUsesNonExemptEncryption": true,
+        "NSPhotoLibraryAddUsageDescription": "O Sweatbook adiciona às tuas fotos as imagens e os vídeos das mãos que partilhas, quando escolhes guardá-los."
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -252,7 +253,7 @@
         "expo-image-picker",
         {
           "photosPermission": "O Sweatbook usa as tuas fotos para guardares recibos e formulários de impostos junto das tuas sessões.",
-          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos e formulários de impostos (W-2G, 1042-S) e para gravares a tua cara nos vídeos das mãos."
+          "cameraPermission": "O Sweatbook usa a câmara para fotografares recibos, formulários de impostos (W-2G, 1042-S) e a folha da estrutura de um torneio, e para gravares a tua cara nos vídeos das mãos."
         }
       ],
       [
