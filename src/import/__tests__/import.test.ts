@@ -278,7 +278,9 @@ test('parseCsv: quotes, doubled quotes, line breaks inside quotes and text after
   assert.deepEqual(parseCsv('a, "b, c" ,"d ""e"""\r\n"x\ny",z\n"unclosed, \nend', ','), [
     ['a', 'b, c', 'd "e"'],
     ['x\ny', 'z'],
-    ['unclosed, \nend'],
+    // A quote that never closes is just text, so the rows after it stay rows.
+    ['unclosed', ''],
+    ['end'],
   ]);
   assert.deepEqual(parseCsv('"a"b,c "d"\n', ','), [['ab', 'c "d"']]);
   assert.deepEqual(parseCsv('﻿x;y\n1;2', ';'), [['x', 'y'], ['1', '2']]);

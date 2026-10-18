@@ -70,7 +70,7 @@ const SYN: Record<Field, string[]> = {
   buyIn: ['buyin', 'buyins', 'totalbuyin', 'buyintotal', 'entryfee', 'entry', 'invested', 'investment', 'cost', 'totalcost', 'entrada', 'custo', 'inversion', 'einsatz'],
   rebuyCost: ['rebuycosts', 'rebuycost', 'rebuyamount', 'rebuystotal', 'rebuy', 'recompras'],
   addOn: ['addoncosts', 'addoncost', 'addon', 'addons'],
-  cashOut: ['cashout', 'cashedout', 'winnings', 'prize', 'prizemoney', 'payout', 'won', 'return', 'premio', 'ganhos', 'ganancias', 'gains', 'gewinn', 'saida'],
+  cashOut: ['cashout', 'cashedout', 'winnings', 'prize', 'prizemoney', 'payout', 'won', 'return', 'premio', 'ganhos', 'ganancias', 'gains', 'gewinn', 'saida', 'auszahlung', 'ausgezahlt', 'cobrado', 'encaisse', 'vincite'],
   profit: ['netprofit', 'profit', 'net', 'netresult', 'result', 'results', 'profitloss', 'pl', 'winloss', 'amount', 'lucro', 'resultado', 'ganancia', 'benefice', 'resultat', 'netto'],
   expenses: ['expenses', 'expense', 'despesas', 'gastos', 'frais', 'ausgaben'],
   tips: ['tips', 'tip', 'dealertips', 'tokes', 'toke', 'gorjetas', 'gorjeta', 'propinas', 'pourboires', 'trinkgeld'],

@@ -110,3 +110,29 @@ test('blinds written only in the game column are read for cash, not for tourname
   assert.deepEqual([r.sessions[0].sb, r.sessions[0].bb], [1, 2]);
   assert.equal(r.sessions[1].bb, 0);
 });
+
+test('dates Excel left as serial numbers are read, the fraction as the time of day', () => {
+  const r = run(['Date,Venue,Buy-in,Cash-out', '45689,Estoril,100,250', '45690.75,Estoril,100,50'].join('\n'));
+  assert.deepEqual(r.failed, []);
+  assert.deepEqual(r.sessions.map((s) => day(s.startedAt)), ['2025-2-1', '2025-2-2']);
+  assert.equal(new Date(r.sessions[1].startedAt).getHours(), 18);
+});
+
+test('ISO dates with a space before the offset, and German dates with a dot and a month name', () => {
+  const r = run(['Date,Venue,Buy-in,Cash-out', '2025-02-03 20:00:00 +01:00,Estoril,100,250', '4. Mrz 2025,Wien,100,50'].join('\n'));
+  assert.deepEqual(r.failed, []);
+  assert.equal(r.sessions[0].startedAt, Date.parse('2025-02-03T19:00:00Z'));
+  assert.equal(day(r.sessions[1].startedAt), '2025-3-4');
+});
+
+test('a German cash-out column keeps its result', () => {
+  const r = run(['Datum;Ort;Buy-in;Auszahlung', '03.02.2025;Wien;100;250'].join('\n'));
+  assert.equal(r.sessions.length, 1);
+  assert.equal(profit(r.sessions[0]), 150);
+});
+
+test('a quote that never closes is read as text and no row after it is lost', () => {
+  const r = run(['Date,Venue,Buy-in,Cash-out,Notes', '2025-02-03,Estoril,100,250,"bad note', '2025-02-04,Estoril,100,50,ok', '2025-02-05,Estoril,100,80,ok'].join('\n'));
+  assert.equal(r.sessions.length, 3);
+  assert.equal(r.sessions[2].notes, 'ok');
+});

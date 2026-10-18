@@ -120,8 +120,8 @@ interface DateParts {
   hasTime: boolean;
 }
 
-// English, Portuguese, Spanish and French short names (accents dropped first).
-const MONTHS: Record<string, number> = { jan: 1, ene: 1, feb: 2, fev: 2, mar: 3, apr: 4, abr: 4, avr: 4, may: 5, mai: 5, jun: 6, jul: 7, aug: 8, ago: 8, aou: 8, sep: 9, set: 9, oct: 10, out: 10, nov: 11, dec: 12, dez: 12, dic: 12 };
+// English, Portuguese, Spanish, French, German and Italian short names (accents dropped first).
+const MONTHS: Record<string, number> = { jan: 1, ene: 1, gen: 1, feb: 2, fev: 2, mar: 3, mrz: 3, apr: 4, abr: 4, avr: 4, may: 5, mai: 5, mag: 5, jun: 6, giu: 6, jul: 7, lug: 7, aug: 8, ago: 8, aou: 8, sep: 9, set: 9, oct: 10, out: 10, okt: 10, ott: 10, nov: 11, dec: 12, dez: 12, dic: 12 };
 const month = (w: string) => MONTHS[w.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()];
 
 function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: boolean } {
@@ -169,7 +169,7 @@ function splitDateOnce(raw: string): DateParts | null {
     return { a: +m[1], b: +m[2], y, ymd: false, ...timeOf(m[4]) };
   }
   // "20 Sep 2024", "Sep 20, 2024", "20-set-2024"
-  m = s.match(/^(\d{1,2})[\s-]+(?:de\s+)?([^\d\s-]{3})[^\d\s-]*\.?[\s-]+(?:de\s+)?(\d{4})(.*)$/iu) ?? null;
+  m = s.match(/^(\d{1,2})\.?[\s-]+(?:de\s+)?([^\d\s-]{3})[^\d\s-]*\.?[\s-]+(?:de\s+)?(\d{4})(.*)$/iu) ?? null;
   if (m && month(m[2])) return { y: +m[3], a: month(m[2]), b: +m[1], ymd: true, ...timeOf(m[4]) };
   m = s.match(/^([^\d\s]{3})[^\d\s]*\.?\s+(\d{1,2}),?\s+(\d{4})(.*)$/iu);
   if (m && month(m[1])) return { y: +m[3], a: month(m[1]), b: +m[2], ymd: true, ...timeOf(m[4]) };
@@ -196,9 +196,19 @@ export function parseDate(raw: string | undefined, order: DateOrder): { t: numbe
   const s = raw.trim();
   if (/^\d{10}$/.test(s)) return { t: Number(s) * 1000, hasTime: true };
   if (/^\d{13}$/.test(s)) return { t: Number(s), hasTime: true };
-  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
-    const t = Date.parse(s);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s) || /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2}(\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})$/.test(s)) {
+    const t = Date.parse(s.replace(' ', 'T').replace(/\s+(?=[Z+-][\d:]*$)/, ''));
     return Number.isFinite(t) ? { t, hasTime: true } : null;
+  }
+  // A date Excel or Google Sheets left as its serial number: days since 30 Dec 1899, the fraction the time of day.
+  if (/^\d{5}(\.\d+)?$/.test(s)) {
+    const v = Number(s);
+    if (v < 32874 || v > 73051) return null; // 1990 to 2100, as below
+    const day = Math.floor(v);
+    const date = new Date(1899, 11, 30 + day);
+    const secs = Math.round((v - day) * 86400);
+    date.setHours(Math.floor(secs / 3600), Math.floor((secs % 3600) / 60), secs % 60, 0);
+    return { t: date.getTime(), hasTime: secs > 0 };
   }
   const p = splitDate(s);
   if (!p) return null;
