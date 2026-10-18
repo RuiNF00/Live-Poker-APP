@@ -6,9 +6,8 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useDeferredValue, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View, type ViewProps } from 'react-native';
 
-import { TapCounted } from '@/components/TapCount';
 import { t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
 import { positions, replay, usedCards } from '@/poker/engine';
@@ -81,7 +80,20 @@ function noteText(n: VoiceNote, hand: Hand): string {
   }
 }
 
-export function VoiceHandSheet({ visible, base, onClose, onDone }: { visible: boolean; base: Hand; onClose: () => void; onDone: (hand: Hand, posKnown: boolean) => void }) {
+export function VoiceHandSheet({
+  visible,
+  base,
+  onClose,
+  onDone,
+  Counted = View,
+}: {
+  visible: boolean;
+  base: Hand;
+  onClose: () => void;
+  onDone: (hand: Hand, posKnown: boolean) => void;
+  /** The entry screen's TapCounted, passed in: importing it here would make it a shared module, and shared modules go in the launch bundle. */
+  Counted?: React.ComponentType<ViewProps>;
+}) {
   const sheetAnimation = useSheetAnimation();
   const sheetPad = useSheetPad(24);
   const [text, setText] = useState('');
@@ -176,7 +188,7 @@ export function VoiceHandSheet({ visible, base, onClose, onDone }: { visible: bo
 
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={close}>
-      <TapCounted style={{ flex: 1 }}>
+      <Counted style={{ flex: 1 }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={close} />
           <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, maxHeight: '92%', borderTopWidth: 1, borderColor: C.border }}>
@@ -274,7 +286,7 @@ export function VoiceHandSheet({ visible, base, onClose, onDone }: { visible: bo
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
-      </TapCounted>
+      </Counted>
     </Modal>
   );
 }

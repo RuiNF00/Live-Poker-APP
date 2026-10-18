@@ -25,7 +25,7 @@ import { PRO_ONLY } from '@/billing/plans';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
-import { TapCountProvider } from '@/components/TapCount';
+import { TapCountProvider, TapCounted } from '@/components/TapCount';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
 import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
@@ -834,7 +834,7 @@ export default function NewHand() {
 
       {toldOpened ? (
         <Suspense fallback={null}>
-          <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} />
+          <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} Counted={TapCounted} />
         </Suspense>
       ) : null}
 
