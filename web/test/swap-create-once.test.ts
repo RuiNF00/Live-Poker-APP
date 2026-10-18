@@ -79,3 +79,18 @@ describe('a confirm or a seat claim sent again (automatic retry after a lost ans
     expect(await g.claim(id, k('4'), 1, k('3'))).toBeNull();
   });
 });
+
+describe('a payment both players record', () => {
+  it('is added once; the second answers with what was still owed', async () => {
+    const s = swapStore();
+    const t2 = { v: 1, scope: 'event', title: 'Main', venue: '', currency: '€', a: { name: 'Ana', pct: 10 }, b: { name: 'Bruno', pct: 10 }, note: '', createdAt: 1 } as never;
+    const { id, token: ta } = await s.create(t2);
+    const tb = (await s.confirm(id, 'Bruno', k('5')))!;
+    const e = (cid: string, kind: string, amount: number) => ({ cid, kind, amount, event: '', finish: null }) as never;
+    expect(await s.addEntry(id, tb, e('r1', 'result', 3000))).toBe(true);
+    expect(await s.addEntry(id, tb, e('p1', 'payment', 300))).toBe(true);
+    expect(await s.addEntry(id, ta, e('x1', 'received', 300))).toBe(0);
+    expect(await s.addEntry(id, tb, e('p1', 'payment', 300))).toBe(true);
+    expect((await s.get(id))?.entries).toHaveLength(2);
+  });
+});

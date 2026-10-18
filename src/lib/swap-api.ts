@@ -24,6 +24,8 @@ export class SwapError extends Error {
   constructor(
     public code: string,
     public status: number,
+    /** "overpaid": what the payer still owed when the server refused the payment. */
+    public left?: number,
   ) {
     super(code);
   }
@@ -35,8 +37,8 @@ async function call(path: string, init: RequestInit & { token?: string } = {}): 
     ...rest,
     headers: { 'content-type': 'application/json', ...(token ? { 'x-edit-token': token } : {}) },
   });
-  const j = (await res.json().catch(() => ({}))) as { swap?: RemoteSwap; token?: string; id?: string; error?: string; accounts?: boolean };
-  if (!res.ok) throw new SwapError(j.error ?? 'http_' + res.status, res.status);
+  const j = (await res.json().catch(() => ({}))) as { swap?: RemoteSwap; token?: string; id?: string; error?: string; accounts?: boolean; left?: unknown };
+  if (!res.ok) throw new SwapError(j.error ?? 'http_' + res.status, res.status, typeof j.left === 'number' ? j.left : undefined);
   if (j.swap && typeof j.accounts === 'boolean') j.swap = { ...j.swap, accounts: j.accounts };
   return j;
 }

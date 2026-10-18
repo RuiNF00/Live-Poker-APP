@@ -5,7 +5,7 @@ import path from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { serviceClient } from './supabase';
 import { shortId } from './store';
-import type { PublicSwap, Side, SwapEntry, SwapRecord, SwapTerms } from './swap-terms';
+import { overpaid, type PublicSwap, type Side, type SwapEntry, type SwapRecord, type SwapTerms } from './swap-terms';
 
 export * from './swap-terms';
 
@@ -28,7 +28,9 @@ export interface SwapStore {
    * own (64 hex), so a confirm sent again after a lost answer gets the same token back.
    */
   confirm(id: string, name: string, token?: string): Promise<string | null>;
-  addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
+  /** true: added (or already there). false: not confirmed or read-only. A number: refused as
+   * money already recorded, with what was still owed (see overpaid in swap-terms). */
+  addEntry(id: string, token: string, e: NewEntry): Promise<boolean | number>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   remove(id: string, token: string): Promise<boolean>;
   /** "Delete all my data": this side leaves; the other keeps a read-only record. */
@@ -82,9 +84,10 @@ class SupabaseSwaps implements SwapStore {
   }
 
   async addEntry(id: string, token: string, e: NewEntry) {
-    const { data, error } = await this.db.rpc('add_swap_entry', { p_id: id, p_token: token, p_entry: e });
+    const { data, error } = await this.db.rpc('add_swap_entry_checked', { p_id: id, p_token: token, p_entry: e });
     if (error) throw error;
-    return !!data;
+    const r = (data ?? {}) as { ok?: boolean; left?: number | string };
+    return r.left !== undefined && r.left !== null ? Number(r.left) : !!r.ok;
   }
 
   async removeEntry(id: string, token: string, entryId: string) {
@@ -201,6 +204,8 @@ class LocalSwaps implements SwapStore {
       const side = this.sideOf(r, token);
       if (!r || !side || !r.confirmedAt || r.leftSide) return false;
       if (r.entries.some((x) => x.side === side && x.cid === e.cid)) return true;
+      const left = overpaid(r.terms, r.entries, { ...e, side });
+      if (left !== null) return left;
       r.entries.push({ ...e, id: randomBytes(6).toString('hex'), side, at: Date.now() });
       r.updatedAt = new Date().toISOString();
       return true;

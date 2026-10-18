@@ -3352,6 +3352,9 @@ const es: Record<string, string> = {
   'Carrossel da viagem': 'Carrusel del viaje',
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
+  'Já estava registado': 'Ya estaba registrado',
+  '{name} já tinha registado este dinheiro, por isso os teus {amount} não contam duas vezes. Ainda falta acertar {left}.': '{name} ya había registrado este dinero, así que tus {amount} no cuentan dos veces. Aún falta saldar {left}.',
+  '{name} já tinha registado este dinheiro, por isso os teus {amount} não contam duas vezes. O swap está acertado.': '{name} ya había registrado este dinero, así que tus {amount} no cuentan dos veces. El swap está saldado.',
 };
 
 export default es;

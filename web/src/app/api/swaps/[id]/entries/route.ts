@@ -27,6 +27,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const side = await store.side(id, token);
   if (!side) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: swapCors });
   const ok = await store.addEntry(id, token, entry);
-  if (!ok) return NextResponse.json({ error: 'not_confirmed' }, { status: 409, headers: swapCors });
+  if (ok === false) return NextResponse.json({ error: 'not_confirmed' }, { status: 409, headers: swapCors });
+  // The other player already recorded this money: refused, with what is still owed and the swap as it is.
+  if (typeof ok === 'number') return swapResponse(id, token, 422, { error: 'overpaid', left: ok });
   return swapResponse(id, token);
 }

@@ -11,12 +11,12 @@ export const noStore = { ...swapCors, 'cache-control': 'no-store' };
  * Only a player in it (a valid token) gets `accounts`: whether the settlement is open to
  * everyone in the swap because its creator has Pro.
  */
-export async function swapResponse(id: string, token: string, status = 200) {
+export async function swapResponse(id: string, token: string, status = 200, extra: Record<string, unknown> = {}) {
   const rec = await loadSwap(id);
   if (!rec) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: noStore });
   const you: Side | null = token && validId(id) ? await swapStore().side(id, token) : null;
   const accounts = you ? { accounts: await swapCreatorPro(id) } : {};
-  return NextResponse.json({ ...accounts, swap: publicSwap(rec, you) }, { status, headers: noStore });
+  return NextResponse.json({ ...extra, ...accounts, swap: publicSwap(rec, you) }, { status, headers: noStore });
 }
 
 export const tokenOf = (req: Request) => req.headers.get('x-edit-token') ?? '';
