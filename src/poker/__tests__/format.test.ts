@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { locale } from '../../i18n';
-import { chips, pct, rawMoney, shortDate, timeOf } from '../format';
+import { FORMAT, locale } from '../../i18n';
+import { chips, compactMoney, pct, rawMoney, shortDate, timeOf } from '../format';
 
 test('cached formatters print exactly what toLocaleString printed', () => {
   const amounts = [0, 1, 7.5, 12.25, 950, 999.99, 1000, 1234.5, 9999, -42, -1234.56, 250000, 1e6];
@@ -31,4 +31,17 @@ test('cent blinds and chops keep their cents: 0,25/0,50 and 0,63, never 0/1 and 
   assert.equal(chips(0.5), `0${sep}50`);
   assert.equal(chips(0.63), `0${sep}63`);
   assert.equal(chips(5), '5');
+});
+
+test('big stacks roll over to the next unit instead of "1000k" or "1000000M"', () => {
+  const sep = FORMAT.decimalComma ? ',' : '.';
+  assert.equal(chips(12500), `12${sep}5k`);
+  assert.equal(chips(999999), '1M');
+  assert.equal(chips(1250000), `1${sep}25M`);
+  assert.equal(chips(999999999), '1B');
+  assert.equal(chips(2.5e9), `2${sep}5B`);
+  assert.equal(chips(-12345678901), `-12${sep}35B`);
+  assert.equal(chips(999999999999), '1T');
+  assert.equal(chips(4.2e15), '4200T');
+  assert.ok(compactMoney(999999999999, '€').includes('1T'));
 });
