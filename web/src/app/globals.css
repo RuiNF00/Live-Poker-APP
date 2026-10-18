@@ -273,7 +273,9 @@ a {
 .table-wrap {
   position: relative;
   width: 100%;
-  max-width: min(460px, calc(64dvh / 1.22));
+  /* Short screens (Instagram's and WhatsApp's in-app browsers): the whole felt plus the line and
+     the question under it fit on one screen, so the seats at the top are never scrolled away. */
+  max-width: min(460px, max(280px, calc(min(64dvh, 100dvh - 320px) / 1.22)));
   margin: 0 auto;
   container-type: inline-size;
 }
@@ -498,6 +500,31 @@ a {
 .rt-seat-hero .rt-seat-cards {
   --cw: 40;
   --tuck: 0.3;
+}
+
+/* Hole cards read like a real card's corner: rank over suit at the top left, so the part
+   tucked under the plate (or under a badge) hides nothing and the suit never needs the colour. */
+.rt-seat-cards .rt-card:not(.rt-card-back) {
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: calc(var(--k) * var(--cw) * 0.06) calc(var(--k) * var(--cw) * 0.12);
+}
+
+.rt-seat-cards .rt-rank {
+  font-size: calc(var(--k) * var(--cw) * 0.5);
+}
+
+.rt-seat-cards .rt-rank-10 {
+  font-size: calc(var(--k) * var(--cw) * 0.42);
+}
+
+.rt-seat-cards .rt-suit {
+  margin-top: 0;
+}
+
+.rt-seat-cards .rt-suit svg {
+  width: calc(var(--k) * var(--cw) * 0.3);
+  height: calc(var(--k) * var(--cw) * 0.3);
 }
 
 .rt-seat-cards .rt-card:nth-child(n + 2) {
