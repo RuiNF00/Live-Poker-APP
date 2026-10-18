@@ -358,6 +358,30 @@ test('deleting a package or its backer keeps the makeup cut on past results', ()
   assert.deepEqual(keepCuts([live], [p], new Set(['p1'])).get(live.id), [{ backerId: 'b1', share: 50, markup: 1 }]);
 });
 
+test('deleting a package with makeup to win back, or with cut taken back, changes no result', () => {
+  const stake = { backerId: 'b1', packageId: 'p1', share: 100, markup: 1 };
+  const pays: BackerPayment[] = [{ id: 'y', backerId: 'b1', amount: 300, at: 1, note: '', createdAt: 1 }];
+  // Carried in 1000 of makeup, then +3000: cut 1000. Then +2000 (cut 1000) and −1000 (cut −500 back).
+  const cases = [
+    { p: pkg({ makeupIn: 1000 }), list: [mk({ buyIn: 1000, cashOut: 4000, stakes: [stake] })] },
+    { p: pkg(), list: [mk({ buyIn: 1000, cashOut: 3000, stakes: [stake] }), mk({ buyIn: 1000, cashOut: 0, stakes: [{ ...stake, unpaid: true }] })] },
+  ];
+  for (const { p, list } of cases) {
+    const before = withCuts(list, [p]);
+    const lb = backerLedger('b1', before, [p], pays);
+    const kept = keepCuts(list, [p], new Set(['p1']));
+    const gone = list.map((s) => ({ ...s, stakes: kept.get(s.id)! }));
+    const after = withCuts(gone, []);
+    assert.deepEqual(after.map(profit), before.map(profit));
+    const la = backerLedger('b1', after, [], pays);
+    assert.deepEqual([la.cut, la.owed, la.balance], [lb.cut, lb.owed, lb.balance]);
+    // The backer deleted: unnamed pieces, the player's results the same.
+    const anon = withCuts(gone.map((s) => ({ ...s, stakes: s.stakes!.map((x) => ({ share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) })) })), []);
+    assert.deepEqual(anon.map(profit), before.map(profit));
+  }
+  assert.deepEqual(withCuts(cases[1].list, [pkg()]).map((s) => s.makeupCut), [1000, -500]);
+});
+
 test('reopening a closed package finds the one its makeup was carried to', () => {
   // «Outubro» closed with 100 of makeup, carried to «Outubro (2)».
   const p = pkg({ name: 'Outubro', createdAt: 1 });
