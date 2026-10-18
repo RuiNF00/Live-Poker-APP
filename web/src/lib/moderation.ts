@@ -3,6 +3,7 @@
 const BLOCKED = [
   // pt
   'caralho', 'foda-se', 'fodase', 'puta', 'putas', 'cabrão', 'cabrao', 'paneleiro', 'filho da puta', 'fdp', 'cona',
+  'foder', 'fode-te', 'fodam-se', 'mata-te', 'vai-te matar',
   'merdoso', 'otário', 'otario', 'atrasado mental', 'preto de merda', 'macaco',
   // pt-BR
   'viado', 'viadinho', 'arrombado', 'arrombada', 'cuzão', 'cuzao', 'buceta', 'vagabunda', 'vadia', 'retardado',
@@ -12,6 +13,7 @@ const BLOCKED = [
   'chinga tu madre', 'concha de tu madre', 'retrasado mental', 'mongólico', 'sudaca', 'negro de mierda',
   // en
   'fuck', 'fucking', 'cunt', 'nigger', 'nigga', 'faggot', 'retard', 'whore', 'slut', 'motherfucker',
+  'kill yourself', 'kys',
 ];
 
 const strip = (s: string) =>

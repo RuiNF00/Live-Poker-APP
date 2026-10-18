@@ -25,4 +25,9 @@ describe('isOffensive', () => {
     expect(isOffensive('Você deu call no river com par de damas? Eu foldava.')).toBe(false);
     expect(isOffensive('El torneo va retrasado, jugué el bote con proyecto de color')).toBe(false);
   });
+  it('blocks insults and self-harm taunts aimed at someone', () => {
+    for (const t of ['vai-te foder', 'fode-te', 'foder isto', 'mata-te', 'kill yourself', 'kys']) expect(isOffensive(t)).toBe(true);
+    expect(isOffensive('Skys the limit, jogaste bem o turn')).toBe(false);
+    expect(isOffensive('Matei o pote no river')).toBe(false);
+  });
 });
