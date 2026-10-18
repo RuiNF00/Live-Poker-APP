@@ -77,9 +77,9 @@ export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   return withPlanEvents(f, plan).events.filter((e) => set.has(e.id));
 }
 
-/** When a session started for this event runs its level clock from: the published start, or now when that's past. */
-export function levelStart(f: Festival, e: FestivalEvent, now = Date.now()): number | undefined {
-  return e.levelMinutes ? Math.max(now, venueTime(f, e.start)) : undefined;
+/** When a session started for this event runs its level clock from: the published start, also when joining in late reg (the floor's clock). */
+export function levelStart(f: Festival, e: FestivalEvent): number | undefined {
+  return e.levelMinutes ? venueTime(f, e.start) : undefined;
 }
 
 /** Schedule filters beyond the game: satellites, fast and deep structures, by the event's name or flight. */
@@ -137,6 +137,14 @@ export function planTotals(f: Festival, plan: FestivalPlan) {
   const list = planned(f, plan);
   const buys = list.filter((e) => !e.day2);
   return { events: list.length, entries: buys.length, buyIns: buys.reduce((a, e) => a + e.buyIn, 0) };
+}
+
+/** Planned buy-ins still to pay: an entry whose session has ended (busted, cashed or bagged) is already out of the bankroll. */
+export function buyInsLeft(f: Festival, plan: FestivalPlan, sessions: Session[]): number {
+  const ended = new Set(sessions.filter((s) => s.endedAt).map((s) => s.id));
+  return planned(f, plan)
+    .filter((e) => !e.day2 && !ended.has(plan.sessions[e.id] ?? ''))
+    .reduce((a, e) => a + e.buyIn, 0);
 }
 
 /** Planned buy-ins as a share of the bankroll: null with no (or a negative) bankroll. */
@@ -308,8 +316,8 @@ function emit() {
 
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
-    .then((raw) => {
-      const saved = raw ? parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw) : null;
+    .then(async (raw) => {
+      const saved = raw ? await parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw, (v) => !!v && typeof v === 'object' && !Array.isArray(v)) : null;
       if (!saved) return;
       plans = { ...saved, ...plans };
       emit();

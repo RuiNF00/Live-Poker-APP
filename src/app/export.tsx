@@ -153,10 +153,10 @@ export default function ExportScreen() {
 
         <Section title={t('Exportar')}>
           <ListGroup>
-            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')} right={lock} onPress={pdf} />
-            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
-            <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={t('Posição, cartas, board, resultado, tags e notas')} right={lock} onPress={handsFile} />
-            <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')} onPress={backup} />
+            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={<T v="small">{t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')}</T>} right={lock} onPress={pdf} />
+            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={<T v="small">{t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')}</T>} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
+            <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={<T v="small">{t('Posição, cartas, board, resultado, tags e notas')}</T>} right={lock} onPress={handsFile} />
+            <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={<T v="small">{t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')}</T>} onPress={backup} />
           </ListGroup>
         </Section>
       </ScrollView>

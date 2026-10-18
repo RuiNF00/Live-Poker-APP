@@ -24,7 +24,7 @@ import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
+import { bankrollShare, buyInCaps, buyInsLeft, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
@@ -70,7 +70,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
   const sameCurrency = bankroll.currency === f.currency;
   const balance = balanceOf({ bankrollId: bankroll.id }, sessions, transfers, bankrolls).balance;
   const tot = planTotals(f, plan);
-  const share = sameCurrency ? bankrollShare(tot.buyIns, balance) : null;
+  // What is still to pay: a buy-in already played is out of the balance.
+  const share = sameCurrency ? bankrollShare(buyInsLeft(f, plan, sessions), balance) : null;
 
   const remindersOn = kindOn(settings, 'festival');
   useEffect(() => {
