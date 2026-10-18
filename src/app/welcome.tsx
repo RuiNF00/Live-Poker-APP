@@ -206,7 +206,7 @@ export default function Welcome() {
                   ))}
               </View>
             </View>
-            <Preview mtt={isMtt(a.plays)} currency={settings.currency} />
+            <Preview mtt={isMtt(a.plays)} currency={settings.currency} plays={a.plays} />
             <View style={{ gap: S.md }}>
               {plan.points.map((p) => (
                 <Row key={p} gap={S.md}>
@@ -310,16 +310,28 @@ function Option({ label, sub, icon, badge, active, multi, compact, onPress }: { 
   );
 }
 
+/** Example numbers at the stakes the player just picked: a 5/10 example after choosing 1/2 read as someone else's game. */
+const EXAMPLE: Record<string, { stakes?: string; profit?: number; buyIn?: number }> = {
+  cash1: { stakes: '1/2', profit: 240 },
+  cash2: { stakes: '5/10', profit: 1240 },
+  cash3: { stakes: '10/20', profit: 2480 },
+  cash4: { stakes: '50/100', profit: 12400 },
+  mtt1: { buyIn: 330 },
+  mtt2: { buyIn: 1100 },
+  mtt3: { buyIn: 10300 },
+};
+
 /** The screen they'll use most, as it will look: a live session for cash, a tournament for MTT. Example numbers, labelled. */
-function Preview({ mtt, currency }: { mtt: boolean; currency: string }) {
+function Preview({ mtt, currency, plays }: { mtt: boolean; currency: string; plays?: string | null }) {
+  const ex = EXAMPLE[plays ?? ''] ?? {};
   const rows: [string, string][] = mtt
     ? [
-        [t('Buy-in'), money(1100, currency)],
+        [t('Buy-in'), money(ex.buyIn ?? 1100, currency)],
         [t('Dia'), '2'],
         [t('Stack'), chips(184000)],
       ]
     : [
-        [t('Stakes'), '5/10'],
+        [t('Stakes'), ex.stakes ?? '5/10'],
         [t('Tempo'), '4h 12m'],
         [t('Mãos'), '6'],
       ];
@@ -335,7 +347,7 @@ function Preview({ mtt, currency }: { mtt: boolean; currency: string }) {
         </T>
       </Row>
       <T v="monoL" color={C.good}>
-        {mtt ? t('Top {n}', { n: 38 }) : '+' + money(1240, currency)}
+        {mtt ? t('Top {n}', { n: 38 }) : '+' + money(ex.profit ?? 1240, currency)}
       </T>
       <Row gap={S.lg}>
         {rows.map(([k, v]) => (
