@@ -321,7 +321,12 @@ export function AutoCloudBackup() {
         t('Encontrámos a tua cópia na nuvem'),
         t('Este telemóvel guardou o código da tua cópia. Recuperar as mãos, sessões e notas?'),
         t('Recuperar'),
-        () => restoreFrom(c, latest.current.importData).catch((e) => note(t('Não deu para recuperar'), errText(e))),
+        () =>
+          restoreFrom(c, latest.current.importData).catch((e) => {
+            // Offered again next launch: the code is only in the keychain, the player may not have it written down.
+            AsyncStorage.removeItem(OFFER_KEY).catch(() => {});
+            note(t('Não deu para recuperar'), errText(e));
+          }),
         t('Agora não'),
       );
     })();
