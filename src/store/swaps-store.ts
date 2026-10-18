@@ -13,7 +13,7 @@ import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOw
 import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
-import { mergeRemote, mergeSwaps, newFromOther, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -149,7 +149,8 @@ export async function syncAllSwaps(): Promise<void> {
 export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>, sessionId?: string): Promise<'sent' | 'queued'> {
   const s = getSwap(id);
   if (!s) return 'queued';
-  const cid = newCid();
+  // A «Paguei» or «Recebi» carries how many of the other side's matching entries were here (paidBySide).
+  const cid = newCid() + seenTag(s.entries, s.side, e.kind, e.amount);
   const links = sessionId ? { ...s.links, [cid]: sessionId } : s.links;
   saveSwap({ ...s, links, entries: [...s.entries, { ...e, id: cid, cid, side: s.side, at: Date.now(), pending: true }], updatedAt: Date.now() });
   await syncSwap(id);

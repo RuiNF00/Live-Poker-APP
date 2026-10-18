@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEntry, parseName, parseTerms, swapBalance } from '../src/lib/swap-terms';
+import { parseEntry, parseName, parseTerms, seenTag, swapBalance } from '../src/lib/swap-terms';
 
 const base = {
   v: 1, scope: 'series', title: 'WSOP Paradise 2026', venue: 'Atlantis', currency: '$',
@@ -131,6 +131,22 @@ describe('a payment both players record', () => {
       { side: 'a', kind: 'payment', amount: 92.59 },
     ]);
     expect(b.aPaid).toBe(92.59);
+    expect(b.net).toBe(0);
+  });
+});
+
+describe('«Paguei» and «Recebi» of the same amount', () => {
+  it('stay two payments when the second was recorded after seeing the first', () => {
+    const terms = { a: { name: 'Rui', pct: 5 }, b: { name: 'Ana', pct: 5 } };
+    const entries = [
+      { side: 'b' as const, kind: 'result' as const, amount: 50000, cid: 'x1', at: 1 },
+      { side: 'b' as const, kind: 'payment' as const, amount: 1000, cid: 'x2', at: 2 },
+      { side: 'b' as const, kind: 'payment' as const, amount: 500, cid: 'x3', at: 3 },
+    ];
+    const cid = 'x4' + seenTag(entries, 'a', 'received', 1000);
+    expect(cid).toBe('x4~1');
+    const b = swapBalance(terms, [...entries, { side: 'a', kind: 'received', amount: 1000, cid, at: 4 }]);
+    expect(b.bPaid).toBe(2500);
     expect(b.net).toBe(0);
   });
 });
