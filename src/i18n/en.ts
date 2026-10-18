@@ -1646,6 +1646,7 @@ const en: Record<string, string> = {
   'A tua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirma aqui o que combinámos: {url}': 'Your piece of {title}: {pct} of {n} tournaments, markup {markup}. Confirm what we agreed here: {url}',
   'Um dos nomes não passou no filtro. Muda-o e tenta outra vez.': 'One of the names didn\'t pass the filter. Change it and try again.',
   'Demasiadas tentativas. Tenta daqui a pouco.': 'Too many tries. Try again in a bit.',
+  'Demasiados pedidos. Tenta daqui a pouco.': 'Too many requests. Try again in a bit.',
   'Regista cada backer com quem combinaste uma parte. As sessões destes torneios ficam com a parte de cada um.': 'Log each backer you agreed a piece with. Sessions for these tournaments carry each one\'s piece.',
   'Vendida a {n} backers por {price}. Pões {out} do teu bolso.': 'Sold to {n} backers for {price}. You put in {out} yourself.',
   'Buy-ins': 'Buy-ins',

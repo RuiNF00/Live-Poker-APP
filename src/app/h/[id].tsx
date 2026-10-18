@@ -39,7 +39,7 @@ export default function SharedHand() {
   }, [id, r, utm_source, utm_medium]);
   const [hand, setHand] = useState<Hand | null>(null);
   const blocked = useBlocked();
-  const [err, setErr] = useState<'gone' | 'offline' | null>(null);
+  const [err, setErr] = useState<'gone' | 'offline' | 'rate_limited' | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
@@ -99,8 +99,12 @@ export default function SharedHand() {
       </Row>
       {err === 'gone' ? (
         <Empty title={t('Esta mão já não existe')} body={t('O link pode estar errado ou a mão foi apagada.')} />
-      ) : err === 'offline' ? (
-        <Empty title={t('Sem ligação')} body={t('Tenta outra vez quando tiveres rede.')} action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setErr(null), setAttempt((n) => n + 1))} />} />
+      ) : err === 'offline' || err === 'rate_limited' ? (
+        <Empty
+          title={err === 'rate_limited' ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Sem ligação')}
+          body={err === 'rate_limited' ? undefined : t('Tenta outra vez quando tiveres rede.')}
+          action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setErr(null), setAttempt((n) => n + 1))} />}
+        />
       ) : !hand ? (
         <T v="small">{t('A carregar a mão…')}</T>
       ) : (

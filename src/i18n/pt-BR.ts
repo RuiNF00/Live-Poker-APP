@@ -769,6 +769,7 @@ const ptBR: Record<string, string> = {
   'A tua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirma aqui o que combinámos: {url}': 'Sua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirme aqui o que combinamos: {url}',
   'Um dos nomes não passou no filtro. Muda-o e tenta outra vez.': 'Um dos nomes não passou no filtro. Mude e tente de novo.',
   'Demasiadas tentativas. Tenta daqui a pouco.': 'Tentativas demais. Tente daqui a pouco.',
+  'Demasiados pedidos. Tenta daqui a pouco.': 'Pedidos demais. Tente daqui a pouco.',
   'Regista cada backer com quem combinaste uma parte. As sessões destes torneios ficam com a parte de cada um.': 'Registre cada backer com quem você combinou uma parte. As sessões desses torneios ficam com a parte de cada um.',
   'Vendida a {n} backers por {price}. Pões {out} do teu bolso.': 'Vendida a {n} backers por {price}. Você coloca {out} do seu bolso.',
   'Ficas com': 'Você fica com',

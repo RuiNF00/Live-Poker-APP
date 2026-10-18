@@ -31,6 +31,7 @@ function note(title: string, body?: string) {
 const ERR: Record<string, string> = {
   network: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   offline: 'Sem ligação. Tenta outra vez quando tiveres rede.',
+  rate_limited: 'Demasiados pedidos. Tenta daqui a pouco.',
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
