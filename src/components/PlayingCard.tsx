@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { displayRank, SUIT_SYMBOL } from '@/poker/cards';
+import { t } from '@/i18n';
+import { cardName, displayRank, SUIT_SYMBOL } from '@/poker/cards';
 import type { CardCode, Suit } from '@/poker/types';
 import { C, ff } from '@/theme';
 
@@ -15,7 +16,7 @@ const DIM: Record<CardSize, { w: number; h: number; rank: number; suit: number; 
 };
 
 // Cards fill long lists (every hand row has up to seven), so each size and
-// suit gets its styles built once instead of on every render.
+// suit gets its styles built once instead of on every render (the back reuses spades').
 const faceCache = new Map<string, ReturnType<typeof faceStyles>>();
 function faceStyles(size: CardSize, suit: Suit) {
   const d = DIM[size];
@@ -39,6 +40,17 @@ function faceStyles(size: CardSize, suit: Suit) {
     tint: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: col + '14' },
     rank: { color: col, fontSize: d.rank, fontWeight: '800', fontFamily: ff(800), lineHeight: d.rank * 1.08, letterSpacing: -0.5 },
     rank10: { letterSpacing: -1.5 },
+    back: {
+      width: d.w,
+      height: d.h,
+      borderRadius: d.r,
+      backgroundColor: '#1A2521',
+      borderWidth: 1,
+      borderColor: 'rgba(255,106,61,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backInner: { width: d.w - 8, height: d.h - 8, borderRadius: d.r - 2, borderWidth: 1, borderColor: 'rgba(255,106,61,0.45)', backgroundColor: '#1B2723' },
     suit: { color: col, fontSize: d.suit, lineHeight: d.suit * 1.1, position: 'absolute', right: size === 'xs' ? 2 : 4, bottom: size === 'xs' ? 1 : 3 },
   });
 }
@@ -66,34 +78,14 @@ export const PlayingCard = React.memo(function PlayingCard({
   highlight?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const d = DIM[size];
+  // Already memoised and its styles cached: the compiler's per-card caches would only add
+  // launch bytes (and would keep «Carta tapada» in the language the app started in).
+  'use no memo';
   if (faceDown || !card) {
+    const st = stylesFor(size, 's');
     return (
-      <View
-        style={[
-          {
-            width: d.w,
-            height: d.h,
-            borderRadius: d.r,
-            backgroundColor: '#1A2521',
-            borderWidth: 1,
-            borderColor: 'rgba(255,106,61,0.55)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: dim ? 0.35 : 1,
-          },
-          style,
-        ]}>
-        <View
-          style={{
-            width: d.w - 8,
-            height: d.h - 8,
-            borderRadius: d.r - 2,
-            borderWidth: 1,
-            borderColor: 'rgba(255,106,61,0.45)',
-            backgroundColor: '#1B2723',
-          }}
-        />
+      <View accessible accessibilityRole="image" accessibilityLabel={t('Carta tapada')} style={[st.back, dim && fx.dim, style]}>
+        <View style={st.backInner} />
       </View>
     );
   }
@@ -102,7 +94,7 @@ export const PlayingCard = React.memo(function PlayingCard({
   const st = stylesFor(size, suit);
   const rank = displayRank(card);
   return (
-    <View style={[st.face, highlight && fx.highlight, dim && fx.dim, style]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={cardName(card)} style={[st.face, highlight && fx.highlight, dim && fx.dim, style]}>
       {size === 'xs' ? null : <View style={st.tint} />}
       <Text allowFontScaling={false} style={[st.rank, rank.length > 1 && st.rank10]}>{rank}</Text>
       <Text allowFontScaling={false} style={st.suit}>{SUIT_SYMBOL[suit]}</Text>

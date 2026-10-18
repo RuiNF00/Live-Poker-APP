@@ -14,14 +14,14 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
-import { PRO_ONLY } from '@/billing/plans';
+import { FREE, PRO_ONLY } from '@/billing/plans';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
@@ -294,6 +294,8 @@ export default function NewHand() {
   const saved = useRef(false);
   // Player notes made by the first save: a repeat save (store not re-rendered yet) reuses them.
   const madePlayers = useRef(new Map<string, string>());
+  // Set when the free limit kept the hand as a draft: back from the paywall the editor says so.
+  const [heldBack, setHeldBack] = useState(false);
   const save = async (over?: Partial<Hand>) => {
     const again = saved.current;
     const asNew = !isEdit && !again;
@@ -303,10 +305,12 @@ export default function NewHand() {
     if (asNew && !pro.canSaveHand()) {
       if (over) update(hand);
       if (activeSession) void noteBlocked(activeSession.id, hand.id);
+      setHeldBack(true);
       pro.paywall(activeSession ? 'handsLive' : 'hands');
       return;
     }
     saved.current = true;
+    setHeldBack(false);
     // Named villains go into the player notes, so the next time they are one tap away.
     // A link to a note that was deleted (carried over from the last hand) counts as no link.
     const players = hand.players.map((p, i) => {
@@ -431,6 +435,34 @@ export default function NewHand() {
           ? t('Fold de todos até ti')
           : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
         : null;
+  // VoiceOver hears who acts now, on which street, and any folds made for them. TalkBack
+  // reads the same from the live region on the action heading, so Android isn't told twice.
+  const spoken =
+    phase === 'action' && l
+      ? [seatHint, STREET_PT[s.street], displayName(hand, l.p, pos)].filter(Boolean).join(', ')
+      : phase === 'board'
+        ? `${STREET_PT[s.street]}, ${boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}`
+        : phase === 'showdown'
+          ? 'Showdown'
+          : '';
+  useEffect(() => {
+    if (spoken && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(spoken);
+  }, [spoken]);
+  const heldBackText =
+    heldBack && !pro.isPro
+      ? t('Mão guardada como rascunho. Mãos grátis hoje: {left} de {n}.', { left: pro.handsLeft ?? 0, n: FREE.handsPerDay ?? 0 })
+      : '';
+  const heldBackRef = useRef('');
+  useEffect(() => {
+    heldBackRef.current = heldBackText;
+  }, [heldBackText]);
+  // Said each time the editor comes back to the front, so once the paywall closes and not over it
+  // (the banner's live region covers Android).
+  useFocusEffect(
+    useCallback(() => {
+      if (heldBackRef.current && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(heldBackRef.current);
+    }, []),
+  );
   // First hand only (onboarded is set when it's saved), and one tip at a time: the
   // way out while hero hasn't acted yet, then how to skip seats on the felt.
   const firstHint =
@@ -544,6 +576,11 @@ export default function NewHand() {
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
       <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
+        {heldBackText ? (
+          <T v="small" color={C.warn} accessibilityLiveRegion="polite">
+            {heldBackText}
+          </T>
+        ) : null}
         {capturing && (
           <Suspense fallback={null}>
             <VoiceCapture onDone={onRecorded} onEnd={() => setCapturing(false)} />
@@ -649,14 +686,14 @@ export default function NewHand() {
           <>
             {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
             <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <T v="h2" numberOfLines={2} style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
+              <T v="h2" numberOfLines={2} accessibilityLiveRegion="polite" style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
               {quickSave}
             </Row>
             {seatHint ? (
-              <T v="tiny" color={C.textDim} numberOfLines={2}>
+              <T v="tiny" color={C.textDim} numberOfLines={2} accessibilityLiveRegion="polite">
                 {seatHint}
               </T>
             ) : null}
@@ -765,7 +802,7 @@ export default function NewHand() {
         {!capturing && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2">
+              <T v="h2" accessibilityLiveRegion="polite">
                 {STREET_PT[s.street]} · {boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}
                 {s.bettingDone ? <T v="small" color={C.allin}>  all-in</T> : null}
               </T>
@@ -798,7 +835,7 @@ export default function NewHand() {
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
-                  <T v="h2">Showdown</T>
+                  <T v="h2" accessibilityLiveRegion="polite">Showdown</T>
                   {/* Who won comes first: it is the one answer the hand needs. Cards shown are optional. */}
                   {r.boards.length === 2 &&
                     r.boards.map((b, run) => (
@@ -993,7 +1030,8 @@ function BigAction({ label, kind, onPress }: { label: string; kind: 'fold' | 'ch
       onPress={onPress}
       style={({ pressed }) => ({
         flex: solid ? 1.4 : 1,
-        height: 56,
+        minHeight: 56,
+        paddingHorizontal: 6,
         borderRadius: R.md,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1002,7 +1040,7 @@ function BigAction({ label, kind, onPress }: { label: string; kind: 'fold' | 'ch
         borderColor: solid ? C.accent : C.borderStrong,
         opacity: pressed ? 0.8 : 1,
       })}>
-      <T v="body" numberOfLines={1} color={solid ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 17 }}>
+      <T v="body" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.6} color={solid ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 17 }}>
         {label}
       </T>
     </Pressable>

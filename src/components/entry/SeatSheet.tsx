@@ -111,7 +111,11 @@ export function SeatSheet({
         </View>
         <View style={{ gap: S.sm }}>
           <T v="label">{t('Stack no início da mão')}</T>
-          <Pressable onPress={() => setPad(true)} style={[inputStyle, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('Stack no início da mão: {chips}, {bb}', { chips: chips(stack), bb: bbs(stack, bb) })}
+            onPress={() => setPad(true)}
+            style={[inputStyle, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
             <T v="monoL">{chips(stack)}</T>
             <T v="monoS">{bbs(stack, bb)}</T>
           </Pressable>

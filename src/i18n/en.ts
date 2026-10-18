@@ -3370,6 +3370,9 @@ const en: Record<string, string> = {
   'Call? Toca já na carta do {street}': 'Call? Tap the {street} card now',
   'Corrigir:': 'Fix:',
   'Alguém pagou?': 'Anyone call?',
+  'Carta tapada': 'Face-down card',
+  'Mão guardada como rascunho. Mãos grátis hoje: {left} de {n}.': 'Hand saved as a draft. Free hands today: {left} of {n}.',
+  'Stack no início da mão: {chips}, {bb}': 'Stack at the start of the hand: {chips}, {bb}',
   'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': "This package's makeup already moved to «{name}». It keeps being recovered there.",
   // Contar a mão (voice hand entry)
   'Conta a mão, nós pomo-la na mesa': 'Tell the hand, we put it on the table',
