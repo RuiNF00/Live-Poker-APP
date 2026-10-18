@@ -16,6 +16,7 @@ import { invitePct } from './disclosure';
 import { FREE, INVITE, type PaywallReason, type PlanId } from './plans';
 import { deferState, markProEnded, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
+import { useLockScreenUp } from '@/components/AppLock';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { t } from '@/i18n';
@@ -280,9 +281,11 @@ export function useWelcomeOffer(handsSaved: number) {
   const { isPro, trialDays, paywall } = usePro();
   // At the table the offer waits: a live session gets it once it is closed (TrialFollowUp).
   const atTable = !!useStore().activeSession;
+  // Never over the app lock: the paywall would sit on top of it (as in TrialFollowUp). It waits for the unlock.
+  const lockUp = useLockScreenUp();
   useFocusEffect(
     useCallback(() => {
-      if (isPro || atTable || handsSaved < 1 || trialDays < 1) return;
+      if (isPro || atTable || lockUp || handsSaved < 1 || trialDays < 1) return;
       let live = true;
       // Let the screen settle after coming back before sliding the offer up.
       const timer = setTimeout(async () => {
@@ -296,7 +299,7 @@ export function useWelcomeOffer(handsSaved: number) {
         live = false;
         clearTimeout(timer);
       };
-    }, [isPro, atTable, handsSaved, trialDays, paywall]),
+    }, [isPro, atTable, lockUp, handsSaved, trialDays, paywall]),
   );
 }
 
