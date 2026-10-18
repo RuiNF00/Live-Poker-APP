@@ -50,3 +50,5 @@ Coordinator rule (17 Oct): a frame that opens the hand search must hide the chip
 ## Feature graphic (Play)
 
 Brand logo + "Log live poker hands in seconds" on brand background, no device frame, nothing important within 15% of the edges.
+
+Rendered by `node feature-graphic.mjs final/android` (same `playwright` setup): app icon (`assets/images/icon.png`), wordmark and tagline in Hanken Grotesk, one file per language (`feature-graphic-{pt,en,pt-BR,es}.png`). Re-run it after any icon change.
