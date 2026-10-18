@@ -76,7 +76,18 @@ export async function readLock(io: LockIO): Promise<LockConfig | null> {
   let keys: readonly (readonly [string, string | null])[];
   try {
     raw = await io.read();
-    if (!raw) return null;
+  } catch {
+    // The keychain can't be read. Only a phone where the lock was turned on (the marker, kept in
+    // the app's own storage) stays locked; everyone else isn't asked for Face ID at every launch.
+    try {
+      const [[, marker] = ['', null]] = await io.installKeys();
+      return marker ? UNKNOWN_LOCK : null;
+    } catch {
+      return UNKNOWN_LOCK;
+    }
+  }
+  if (!raw) return null;
+  try {
     keys = await io.installKeys();
   } catch {
     return UNKNOWN_LOCK;

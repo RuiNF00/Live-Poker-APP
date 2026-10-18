@@ -38,6 +38,9 @@ test('readLock fails closed: a read error or a damaged value locks with the phon
   });
   // Keychain error, storage error, damaged JSON, wrong shape: locked, asked with the phone's own lock.
   assert.deepEqual(await readLock(io({ read: async () => { throw new Error('keychain'); } })), UNKNOWN_LOCK);
+  // A keychain that fails on a phone that never turned the lock on (no marker): no lock screen at every launch.
+  assert.equal(await readLock(io({ read: async () => { throw new Error('keychain'); }, installKeys: async () => [['m', null]] })), null);
+  assert.deepEqual(await readLock(io({ read: async () => { throw new Error('keychain'); }, installKeys: async () => { throw new Error('x'); } })), UNKNOWN_LOCK);
   assert.deepEqual(await readLock(io({ installKeys: async () => { throw new Error('storage'); } })), UNKNOWN_LOCK);
   assert.deepEqual(await readLock(io({ read: async () => '{not json' })), UNKNOWN_LOCK);
   assert.deepEqual(await readLock(io({ read: async () => JSON.stringify({ mode: 'pin' }) })), UNKNOWN_LOCK);

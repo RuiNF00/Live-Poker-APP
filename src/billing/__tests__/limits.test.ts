@@ -93,6 +93,15 @@ test('per-month price is written like the store price next to it', async () => {
   assert.equal(priceLike('$189.990', 15832.5, 'CLP', 'es-CL'), '$15.833');
   assert.equal(priceLike('KWD 59.990', 4.99917, 'KWD', 'en'), 'KWD 4.999');
   assert.equal(priceLike('59,990 KWD', 4.99917, 'KWD', 'ar'), '4,999 KWD');
+  // CHF groups with ’; a store price with no cents still shows the monthly cents; KWD to the fils.
+  assert.equal(priceLike('CHF 1’999.00', 166.58, 'CHF', 'de-CH'), 'CHF 166.58');
+  assert.equal(priceLike('CHF 19’999.00', 1666.58, 'CHF', 'de-CH'), 'CHF 1’666.58');
+  assert.equal(priceLike('199 kr', 16.58, 'SEK', 'sv-SE'), '16,58 kr');
+  assert.equal(priceLike('199 kr', 17, 'SEK', 'sv-SE'), '17 kr');
+  const { perMonth: pm } = await import('../plans');
+  assert.equal(pm(59.99, 'KWD'), 4.999);
+  assert.equal(pm(199.99, 'USD'), 16.67);
+  assert.equal(pm(29800, 'JPY'), 2483);
   assert.match(priceLike('free', 16.67, 'EUR', 'pt-PT'), /16,67\s€/);
 });
 

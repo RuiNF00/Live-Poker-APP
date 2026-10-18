@@ -188,8 +188,8 @@ export default function Cancel() {
                       title={t('Anual: {price} por ano', { price: annual.priceString })}
                       body={
                         monthly && annualSavingPct(monthly.price, annual.price) > 0
-                          ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
-                          : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })
+                          ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
+                          : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })
                       }>
                       <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual', undefined, product ?? undefined), 'annual')} />
                     </OfferCard>

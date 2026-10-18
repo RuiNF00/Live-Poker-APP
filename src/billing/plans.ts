@@ -299,8 +299,10 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
   ];
 }
 
-export function perMonth(annualPrice: number): number {
-  return Math.round((annualPrice / 12) * 100) / 100;
+export function perMonth(annualPrice: number, currency?: string): number {
+  // To the currency's own smallest unit: KWD 59.990 a year is 4.999 a month, not 5.
+  const f = 10 ** (currency ? fractionDigits(currency) : 2);
+  return Math.round((annualPrice / 12) * f) / f;
 }
 
 /** Price in the store's own currency, for numbers we derive (per month, a year of monthly). */
@@ -318,20 +320,32 @@ export function formatPrice(n: number, currency: string, locale: string): string
  * ("$199.99" next to "US$16.67"). Falls back to Intl when the string has no number.
  */
 export function priceLike(priceString: string, n: number, currency: string, locale: string): string {
-  const num = priceString.match(/\d(?:[\d.,\s\u00a0\u202f']*\d)?/)?.[0];
+  const num = priceString.match(/\d(?:[\d.,\s\u00a0\u202f'\u2019]*\d)?/)?.[0];
   if (!num) return formatPrice(n, currency, locale);
   // The currency's own decimals (¥ and ₩ none, KWD three), so the store's separators read the right way round.
   const fd = fractionDigits(currency);
   const decAt = fd > 0 && /[.,]/.test(num[num.length - fd - 1] ?? '') && /^\d+$/.test(num.slice(-fd)) ? num.length - fd - 1 : -1;
-  const dec = decAt >= 0 ? num[decAt] : null;
   const intPart = decAt >= 0 ? num.slice(0, decAt) : num;
   const group = intPart.match(/[^\d]/)?.[0] ?? localeGroup(locale);
+  // A store price written without its cents ("199 kr") still gets them here when the monthly
+  // figure has some (16,58 kr, not a rounded-up 17 kr), with the separator the locale uses.
+  const fractional = fd > 0 && Math.round(n * 10 ** fd) % 10 ** fd !== 0;
+  const dec = decAt >= 0 ? num[decAt] : fractional ? localeDecimal(locale, group) : null;
   const [i, f] = n.toFixed(dec ? fd : 0).split('.');
   const grouped = i.replace(/\B(?=(\d{3})+(?!\d))/g, group);
   return priceString.replace(num, dec && f ? grouped + dec + f : grouped);
 }
 
-function fractionDigits(currency: string): number {
+/** The locale's decimal mark, never the same as the group mark the store used. */
+function localeDecimal(locale: string, group: string): string {
+  let d = ',';
+  try {
+    d = new Intl.NumberFormat(locale).formatToParts(1.5).find((p) => p.type === 'decimal')?.value ?? ',';
+  } catch {}
+  return d === group ? (d === ',' ? '.' : ',') : d;
+}
+
+export function fractionDigits(currency: string): number {
   try {
     return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
   } catch {

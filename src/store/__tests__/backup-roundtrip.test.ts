@@ -167,7 +167,14 @@ test('an item that fails the launch checks goes to quarantine on restore, once, 
   const { SPECS, QUARANTINE: BOOT_Q } = await import('../boot');
   const { ITEM_PREFIX, QUARANTINE } = await import('../backup');
   assert.equal(QUARANTINE, BOOT_Q);
-  for (const k of Object.keys(ITEM_PREFIX) as (keyof typeof ITEM_PREFIX)[]) assert.equal(ITEM_PREFIX[k], SPECS[k].prefix);
+  for (const k of ['hands', 'sessions', 'players', 'trips'] as const) assert.equal(ITEM_PREFIX[k], SPECS[k].prefix);
+  // Swaps live in their own stores (swaps-store.ts, swap-groups-store.ts).
+  assert.equal(ITEM_PREFIX.swaps, 'rl.swap.v1.');
+  assert.equal(ITEM_PREFIX.swapGroups, 'rl.swapgroup.v1.');
+  const badSwap = { ...swap, id: 'Bad00001', terms: null };
+  const sq = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, swaps: [swap, badSwap], swapGroups: [{ ...group, seats: 'x' }] }));
+  assert.deepEqual(sq.swaps!.map((x) => x.id), [swap.id]);
+  assert.deepEqual(sq.quarantine!.map(([k]) => k).sort(), [`${QUARANTINE}backup.rl.swap.v1.Bad00001`, `${QUARANTINE}backup.rl.swapgroup.v1.${group.id}`].sort());
   const bad = { ...session, id: 'sx', stakes: 'not a list' };
   const text = JSON.stringify({ app: 'sweatbook', v: 1, sessions: [session, bad], quarantine: [[`${QUARANTINE}backup.rl.session.v2.sx`, '{}']] });
   const b = parseBackup(text);

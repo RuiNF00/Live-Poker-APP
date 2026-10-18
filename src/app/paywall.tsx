@@ -208,7 +208,7 @@ export default function Paywall() {
                 title={t('Anual')}
                 big={annual.priceString}
                 unit={t('/ano')}
-                line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
+                line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })}
                 tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, saving !== null && saving > 0 ? '−' + saving + '%' : null]}
                 compact={compact}
               />
