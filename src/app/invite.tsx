@@ -30,12 +30,17 @@ export default function InviteScreen() {
   const offerPct = invitePct(playOffer, monthly?.price, offerPrice?.price, INVITE.pct);
   const [busy, setBusy] = useState(false);
   const [s, setS] = useState<InviteStatus | null | undefined>(undefined);
+  const [limited, setLimited] = useState(false);
+  const got = (r: InviteStatus | 'rate_limited' | null) => {
+    setLimited(r === 'rate_limited');
+    setS(r === 'rate_limited' ? null : r);
+  };
   const load = () => {
     setS(undefined);
-    inviteStatus().then(setS);
+    inviteStatus().then(got);
   };
   useEffect(() => {
-    inviteStatus().then(setS);
+    inviteStatus().then(got);
   }, []);
 
   // The friend's page opens in the inviter's language (the link carries ?lang=).
@@ -133,9 +138,9 @@ export default function InviteScreen() {
         {s === undefined ? null : s === null ? (
           <Card tone="warn" style={{ gap: S.sm }}>
             <T v="h3" color={C.warn}>
-              {t('Sem ligação ao servidor')}
+              {limited ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Sem ligação ao servidor')}
             </T>
-            <T v="small">{t('Não deu para carregar o teu link. Verifica a rede e tenta outra vez.')}</T>
+            {limited ? null : <T v="small">{t('Não deu para carregar o teu link. Verifica a rede e tenta outra vez.')}</T>}
             <Button size="sm" kind="secondary" icon="refresh" title={t('Tentar outra vez')} style={{ alignSelf: 'flex-start' }} onPress={load} />
           </Card>
         ) : (

@@ -21,7 +21,10 @@ export function autoBankrollId(currency: string): string {
  * none), and that there is at least one. Returns the same array when nothing
  * was missing, so callers can skip a save.
  */
-export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defaultCurrency: string, now = Date.now()): Bankroll[] {
+export function ensureBankrolls(list: Bankroll[], sessions: Session[], defaultCurrency: string, now = Date.now()): Bankroll[] {
+  // Older builds could make two bankrolls with one id (see freeAutoId): keep the first.
+  const ids = new Set(list.map((b) => b.id));
+  const bankrolls = ids.size === list.length ? list : list.filter((b) => ids.delete(b.id));
   const have = new Set(bankrolls.map((b) => b.currency));
   const need = byCurrency(sessions)
     .map((g) => g.currency)
@@ -31,8 +34,9 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
   if (!bankrolls.length && !need.length) need.push(defaultCurrency);
   if (!need.length) return bankrolls;
   const first = !bankrolls.length;
+  const taken = new Set(bankrolls.map((b) => b.id));
   const made = need.map((currency, i) => ({
-    id: autoBankrollId(currency),
+    id: freeAutoId(currency, taken),
     // The first one is just "Main"; any extra one says its currency.
     name: first && i === 0 ? t('Principal') : `Bankroll ${currency}`,
     currency,
@@ -40,6 +44,41 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
     updatedAt: 0,
   }));
   return [...bankrolls, ...made];
+}
+
+/**
+ * The stable id for a currency, unless a bankroll in another currency already has it: before
+ * the onboarding's currency pick made a new bankroll, it moved the first one to the new
+ * currency and kept its id ("br_auto_€" in dollars). Then "_2", "_3"…, the same on every phone.
+ */
+function freeAutoId(currency: string, taken: Set<string>): string {
+  const base = autoBankrollId(currency);
+  let id = base;
+  for (let n = 2; taken.has(id); n++) id = `${base}_${n}`;
+  taken.add(id);
+  return id;
+}
+
+/**
+ * A backup (or the other phone) with a bankroll under the id of one here in another currency
+ * (an older onboarding moved the first bankroll to a new currency and kept its id). One must
+ * never write over the other: this phone's stays, the incoming one takes the id of its own
+ * currency (with _2… when taken), and its sessions and transfers follow it.
+ */
+export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: Session[]; transfers?: Transfer[] }>(local: Bankroll[], incoming: B): B {
+  const mine = new Map(local.map((b) => [b.id, b]));
+  const clash = (incoming.bankrolls ?? []).filter((b) => mine.has(b.id) && mine.get(b.id)!.currency !== b.currency);
+  if (!clash.length) return incoming;
+  const taken = new Set([...local, ...(incoming.bankrolls ?? [])].map((b) => b.id));
+  const to = new Map(clash.map((b) => [b.id, freeAutoId(b.currency, taken)]));
+  const cur = new Map(clash.map((b) => [b.id, b.currency]));
+  return {
+    ...incoming,
+    bankrolls: (incoming.bankrolls ?? []).map((b) => (to.has(b.id) ? { ...b, id: to.get(b.id)! } : b)),
+    // Only a session in that bankroll's currency is its: a $ one pointing at it belongs to the $ one here.
+    sessions: incoming.sessions.map((x) => (x.bankrollId && to.has(x.bankrollId) && x.currency === cur.get(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x)),
+    transfers: incoming.transfers?.map((x) => (to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x)),
+  };
 }
 
 /**
@@ -56,7 +95,11 @@ export function dropUnusedAuto(merged: Bankroll[], incoming: Bankroll[], local: 
   return out.length ? out : merged;
 }
 
-/** This phone's own "Principal", made on its own and never renamed or used. */
+/**
+ * This phone's own "Principal", made on its own and never renamed or used. The onboarding's
+ * currency pick moves it to that currency (a save, so it has an edit time): still the same
+ * untouched "Principal", known by its id no longer matching its currency.
+ */
 function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }) {
   const used = new Set<string>();
   for (const x of local.sessions) {
@@ -64,7 +107,8 @@ function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfe
     if (b) used.add(b.id);
   }
   for (const x of local.transfers) used.add(x.bankrollId);
-  return (b: Bankroll) => b.id.startsWith('br_auto_') && !((b.updatedAt ?? 0) > 0) && !used.has(b.id);
+  const untouched = (b: Bankroll) => !((b.updatedAt ?? 0) > 0) || (b.id !== autoBankrollId(b.currency) && b.name === t('Principal') && !b.rules && !b.shot);
+  return (b: Bankroll) => b.id.startsWith('br_auto_') && untouched(b) && !used.has(b.id);
 }
 
 /**

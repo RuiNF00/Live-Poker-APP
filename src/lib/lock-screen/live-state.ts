@@ -89,6 +89,16 @@ export function levelsDue(s: Session, now = Date.now()): Partial<Session> | null
   return cur === s ? null : { sb: cur.sb, bb: cur.bb, ante: cur.ante, level: cur.level, levelMinutes: cur.levelMinutes, levelStartedAt: cur.levelStartedAt };
 }
 
+/**
+ * The session as its level clock says it is now. Only the session screen saves the levels that
+ * came due; back after hours on another tab, the lock screen and the reminder use this, not the
+ * level the app was left on (whose reminder has already gone by).
+ */
+export function caughtUp(s: Session, now = Date.now()): Session {
+  const due = levelsDue(s, now);
+  return due ? { ...s, ...due } : s;
+}
+
 /** The next break on a tournament's structure, timed from the level clock; null without one. */
 export function breakOf(s: Session, now = Date.now()): NextBreak | null {
   if (s.kind !== 'mtt') return null;

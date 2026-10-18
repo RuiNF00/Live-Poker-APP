@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { festivalPicks, ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
+import { festivalPicks, isMtt, ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { useFestivalPlans } from '@/store/festival-plan';
@@ -36,7 +36,9 @@ export function useStartChecklist() {
       .catch(() => setHidden(false));
   }, []);
   const START_STEPS = startSteps(plays);
-  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: festivalPicks(plans) });
+  // A finished one: a tournament for those who play tournaments («Regista um torneio»).
+  const logged = sessions.filter((s) => s.endedAt && (!isMtt(plays) || s.kind === 'mtt')).length;
+  const done = startProgress({ hands, sessions: logged, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: festivalPicks(plans) });
   const count = START_STEPS.filter((s) => done[s.key]).length;
   // First week means it: players whose first hand is older than two weeks don't need it.
   const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;

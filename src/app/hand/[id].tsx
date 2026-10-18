@@ -24,6 +24,7 @@ import { dropVoiceNote } from '@/lib/voice-note';
 import { shareDelay } from '@/lib/friction';
 import { markShared, readyRef } from '@/lib/referrals';
 import { lastShare, rememberShare } from '@/lib/share-last';
+import { isRateLimited } from '@/lib/net';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
 import { markCommentsSeen } from '@/lib/friend-hands';
@@ -206,6 +207,7 @@ export default function HandScreen() {
         queueShare({ ...hand, ask: ask.trim().slice(0, 140) || undefined }, opts);
         notice(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
       } else if ((e as Error)?.message === 'upload 422') notice(t('Não deu para criar o link'), t('Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.'));
+      else if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
       else notice(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
     } finally {
@@ -311,8 +313,9 @@ ${link}`;
       if (sid && hand.shareToken) await removeComment(sid, hand.shareToken, c.id, block);
       if (block) loadComments();
       else setComments((x) => x.filter((y) => y.id !== c.id));
-    } catch {
-      notice(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
+    } catch (e) {
+      if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+      else notice(t('Sem ligação'), t('Não deu para apagar o comentário agora. Tenta outra vez.'));
     } finally {
       setPending((p) => without(p, c.id));
     }
@@ -351,8 +354,9 @@ ${link}`;
         await deleteShare(hand.shareId, hand.shareToken);
         saveHand({ ...hand, shareId: undefined, shareToken: undefined });
         setComments([]);
-      } catch {
-        notice(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
+      } catch (e) {
+        if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+        else notice(t('Sem ligação'), t('Não deu para apagar a partilha agora. Tenta outra vez.'));
       }
     };
     // Asks on the web too: one tap would end the link and every comment.

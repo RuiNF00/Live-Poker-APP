@@ -221,6 +221,9 @@ export interface Stake {
   unpaid?: boolean;
   /** Your makeup cut out of this piece, kept when its package (or backer) was deleted: no package works it out any more. */
   cut?: number;
+  /** The deleted makeup package's rule for this piece: its cut % and its running result before this session (session currency). */
+  cutPct?: number;
+  cumBefore?: number;
 }
 
 export interface Backer {
