@@ -6,7 +6,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, confirmAction, Empty, IconButton, Row, T, Wordmark } from '@/components/ui';
@@ -23,6 +22,9 @@ import { blindsLabel } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { useStore } from '@/store/store';
 import { BRAND, C, R } from '@/theme';
+
+// Loaded with the page, not at launch.
+const CommentsList = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.CommentsList })));
 
 export default function SharedHand() {
   const insets = useSafeAreaInsets();
@@ -132,11 +134,13 @@ export default function SharedHand() {
             </Link>
           </View>
           <T v="h2">{t('Comentários')}</T>
+          <React.Suspense fallback={null}>
           <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block}
             streets={streets}
             street={street}
             onJumpStreet={(st) => setSeek((x) => ({ street: st, n: (x?.n ?? 0) + 1 }))}
           />
+          </React.Suspense>
           <Pressable
             disabled={reported}
             hitSlop={8}
