@@ -410,3 +410,33 @@ test('reopening a closed package finds the one its makeup was carried to', () =>
   const t = mk({ stakes: [{ backerId: 'b1', packageId: 'p2', share: 100, markup: 1 }] });
   assert.equal(packageStates([s, t], list).states.get('p2')!.sessions, 1);
 });
+
+test("a session's makeup cut is the sum of the backers' rounded lines", () => {
+  // Three backers at 1%, each in a 50% cut package: 100 buy-in, 1001 prize. Each line 4,505 → rounded on its own.
+  const pk3 = ['b1', 'b2', 'b3'].map((b, i) => pkg({ id: 'p' + i, backerId: b, share: 1 }));
+  const s = mk({ buyIn: 100, cashOut: 1001, stakes: pk3.map((p) => ({ backerId: p.backerId, packageId: p.id, share: 1, markup: 1 })) });
+  const [cut] = withCuts([s], pk3);
+  const pk = packageStates([s], pk3);
+  const lines = pk3.map((p) => backerLedger(p.backerId, [s], pk3, [], pk).cut);
+  const sum = Math.round(lines.reduce((a, x) => a + x, 0) * 100) / 100;
+  assert.equal(cut.makeupCut, sum);
+  assert.equal(Math.round(pk3.reduce((a, p) => a + pk.states.get(p.id)!.cut, 0) * 100) / 100, sum);
+  // The end-of-session sheet says the same: backers get their rows, the player the rest.
+  const pre = endPreview({ ...s, endedAt: undefined }, [{ ...s, endedAt: undefined }], pk3, s.endedAt);
+  assert.equal(pre.profit, profit(cut));
+  assert.equal(pre.owed, Math.round(pk3.reduce((a, p) => a + backerLedger(p.backerId, [s], pk3, [], pk).owed, 0) * 100) / 100);
+
+  // Three backers with a third each, makeup to win back first: what is left is the makeup less their rows.
+  const thirds = ['b1', 'b2', 'b3'].map((b, i) => pkg({ id: 'q' + i, backerId: b, share: 100 / 3, makeupIn: 10 }));
+  const loss = mk({ buyIn: 100, cashOut: 33.34, stakes: thirds.map((p) => ({ backerId: p.backerId, packageId: p.id, share: 100 / 3, markup: 1 })) });
+  const win = mk({ buyIn: 100, cashOut: 1000.01, stakes: thirds.map((p) => ({ backerId: p.backerId, packageId: p.id, share: 100 / 3, markup: 1 })) });
+  const r1 = packageStates([loss], thirds);
+  for (const p of thirds) {
+    const row = backerLedger(p.backerId, [loss], thirds, [], r1).rows[0];
+    assert.equal(r1.states.get(p.id)!.makeup, Math.round((10 - (row.owed - row.cost)) * 100) / 100);
+  }
+  const both = withCuts([loss, win], thirds);
+  const r2 = packageStates([loss, win], thirds);
+  const rows = thirds.map((p) => backerLedger(p.backerId, [loss, win], thirds, [], r2).rows.find((x) => x.session.id === win.id)!.cut);
+  assert.equal(both[1].makeupCut, Math.round(rows.reduce((a, x) => a + x, 0) * 100) / 100);
+});
