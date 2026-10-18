@@ -3358,10 +3358,10 @@ const en: Record<string, string> = {
   'Carrossel da viagem': 'Trip carousel',
   'Não dá para reabrir este pacote': "Can't reopen this package",
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
-  'Mão jogada': 'Hand played',
   'Street': 'Street',
   'Para pagar': 'To call',
-  'Contra': 'Against',
+  'Póster': 'Poster',
+  'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'Your hand as a collector card: your cards up big and the numbers in bb.',
 };
 
 export default en;

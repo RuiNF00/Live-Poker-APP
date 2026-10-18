@@ -3352,10 +3352,10 @@ const es: Record<string, string> = {
   'Carrossel da viagem': 'Carrusel del viaje',
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
-  'Mão jogada': 'Mano jugada',
   'Street': 'Street',
   'Para pagar': 'Para pagar',
-  'Contra': 'Contra',
+  'Póster': 'Póster',
+  'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'Tu mano como una carta de colección: tus cartas en grande y los números en bb.',
 };
 
 export default es;

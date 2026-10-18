@@ -20,7 +20,6 @@ test('a result names the hand, never an amount or Ganhei/Perdi', () => {
   const hand = sampleHand('s');
   const m = storyMoment(hand, 'result', false);
   const line = posterLine(hand, m, '');
-  assert.ok(line.length > 0);
   assert.doesNotMatch(line, /\d|€|\$|Ganhei|Perdi/);
-  if (m.replay.result?.handNames[hand.hero]) assert.ok(line.startsWith(m.replay.result.handNames[hand.hero]!));
+  assert.equal(line, m.replay.result?.handNames[hand.hero] ?? '');
 });
