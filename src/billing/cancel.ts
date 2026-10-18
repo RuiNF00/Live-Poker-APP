@@ -42,7 +42,9 @@ export function logged(
   if (!hands.length && !sessions.length) return null;
   const tot = totals(sessions);
   const since = Math.min(...hands.map((h) => h.createdAt), ...sessions.map((s) => s.startedAt));
-  return { sessions: sessions.length, hands: hands.length, profit: tot.profit, currency: tot.currency, since };
+  // The count goes next to the amount: only the finished sessions in that currency, like the amount.
+  if (!tot.sessions && !hands.length) return null;
+  return { sessions: tot.sessions, hands: hands.length, profit: tot.profit, currency: tot.currency, since };
 }
 
 /** The cancel note goes to our events table: drop emails, phone numbers and links, keep the reason. */
