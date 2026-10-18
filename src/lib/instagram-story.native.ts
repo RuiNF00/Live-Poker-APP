@@ -104,9 +104,18 @@ export async function capturePost(ref: React.RefObject<React.ComponentRef<typeof
   return captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1350, result: 'tmpfile' });
 }
 
+/** Android: whether an app is installed. Needs the package in app.json's react-native-share list (<queries>). */
+async function androidHas(pkg: string): Promise<boolean> {
+  try {
+    return !!(await nativeShare()?.isPackageInstalled(pkg))?.isInstalled;
+  } catch {
+    return false;
+  }
+}
+
 async function instagramInstalled(): Promise<boolean> {
   try {
-    if (Platform.OS === 'android') return !!(await nativeShare()?.isPackageInstalled('com.instagram.android'))?.isInstalled;
+    if (Platform.OS === 'android') return await androidHas('com.instagram.android');
     return await Linking.canOpenURL('instagram-stories://share');
   } catch {
     return false;
@@ -284,7 +293,9 @@ export async function sharePost(files: string[], text: string, to: 'x' | 'whatsa
   await Clipboard.setStringAsync(text).catch(() => {});
   const Share = nativeShare();
   if (Share) {
-    if (to !== 'any' && files.length === 1) {
+    // On Android an app that isn't installed (or isn't in the manifest's <queries>) doesn't fail:
+    // react-native-share opens the Play Store for WhatsApp and a text-only web page for X. Check first.
+    if (to !== 'any' && files.length === 1 && (Platform.OS !== 'android' || (await androidHas(to === 'x' ? 'com.twitter.android' : 'com.whatsapp')))) {
       try {
         const social = to === 'x' ? (Share.Social.TWITTER as Social.Twitter) : (Share.Social.WHATSAPP as Social.Whatsapp);
         await Share.shareSingle({ social, url: files[0], message: text, type: 'image/png' });

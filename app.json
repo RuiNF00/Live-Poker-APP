@@ -264,7 +264,9 @@
             "instagram"
           ],
           "android": [
-            "com.instagram.android"
+            "com.instagram.android",
+            "com.whatsapp",
+            "com.twitter.android"
           ]
         }
       ],
