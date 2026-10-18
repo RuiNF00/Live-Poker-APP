@@ -121,3 +121,16 @@ describe('rounding (same as the app)', () => {
     ]).net).toBe(0);
   });
 });
+
+describe('a payment both players record', () => {
+  it('counts once, like the app', () => {
+    const terms = { a: { name: 'Ana', pct: 7.5 }, b: { name: 'Eva', pct: 7.5 } };
+    const b = swapBalance(terms, [
+      { side: 'a', kind: 'result', amount: 1234.5 },
+      { side: 'b', kind: 'received', amount: 92.59 },
+      { side: 'a', kind: 'payment', amount: 92.59 },
+    ]);
+    expect(b.aPaid).toBe(92.59);
+    expect(b.net).toBe(0);
+  });
+});

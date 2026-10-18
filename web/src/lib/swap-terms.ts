@@ -127,21 +127,40 @@ export interface SwapBalance {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * What each side has paid the other. The payer's «Paguei» and the receiver's «Recebi» for the
+ * same money are one payment, often both tapped at the table before either phone syncs: per
+ * payer and amount, the larger count of the two kinds counts, never their sum. The same on
+ * the web and in the app (src/store/swaps.ts), whatever order the entries arrive in.
+ */
+export function paidBySide(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[]): { a: number; b: number } {
+  const by = new Map<string, { payer: 'a' | 'b'; cents: number; paid: number; received: number }>();
+  for (const e of entries) {
+    if (e.kind === 'result') continue;
+    const payer = e.kind === 'payment' ? e.side : e.side === 'a' ? 'b' : 'a';
+    const cents = Math.round(e.amount * 100);
+    const x = by.get(payer + cents) ?? { payer, cents, paid: 0, received: 0 };
+    if (e.kind === 'payment') x.paid++;
+    else x.received++;
+    by.set(payer + cents, x);
+  }
+  const out = { a: 0, b: 0 };
+  for (const x of by.values()) out[x.payer] += x.cents * Math.max(x.paid, x.received);
+  return { a: out.a / 100, b: out.b / 100 };
+}
+
 /** Who owes whom: each side's percentage of the other's prizes, less what each already paid. */
 export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[]): SwapBalance {
   let aOwes = 0;
   let bOwes = 0;
-  let aPaid = 0;
-  let bPaid = 0;
   for (const e of entries) {
     if (e.kind === 'result') {
       // Each prize's share to the cent, as the app does: the two never differ by a cent.
       if (e.side === 'a') aOwes += r2((terms.a.pct / 100) * e.amount);
       else bOwes += r2((terms.b.pct / 100) * e.amount);
-    } else if ((e.side === 'a') === (e.kind === 'payment')) aPaid += e.amount;
-    // A payment by b, or a's own note that b paid them.
-    else bPaid += e.amount;
+    }
   }
+  const { a: aPaid, b: bPaid } = paidBySide(entries);
   return { aOwes: r2(aOwes), bOwes: r2(bOwes), aPaid: r2(aPaid), bPaid: r2(bPaid), net: r2(bOwes - bPaid - (aOwes - aPaid)) };
 }
 
