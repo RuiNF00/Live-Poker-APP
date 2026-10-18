@@ -993,8 +993,8 @@ const es: Record<string, string> = {
   'Votação': 'Votación',
   'Atualizar': 'Actualizar',
   'Os teus amigos veem o replay no browser e comentam, mesmo sem a app.': 'Tus amigos ven el replay en el navegador y comentan, incluso sin la app.',
-  'Várias bankrolls, filtros, salas e jogos.': 'Varios bankrolls, filtros, salas y juegos.',
-  'Várias bankrolls e filtros': 'Varios bankrolls y filtros',
+  'Vários bankrolls, filtros, salas e jogos.': 'Varios bankrolls, filtros, salas y juegos.',
+  'Vários bankrolls e filtros': 'Varios bankrolls y filtros',
   'Apagar este movimento?': '¿Eliminar este movimiento?',
   'As sessões e os movimentos passam para {name}.': 'Las sesiones y los movimientos pasan a {name}.',
   'Depositar': 'Depositar',
@@ -1582,6 +1582,7 @@ const es: Record<string, string> = {
   'Nova despesa': 'Nuevo gasto',
   'Póquer': 'Póker',
   'Plano do festival': 'Plan del festival',
+  '1 evento marcado · {amount} em buy-ins': '1 evento marcado · {amount} en buy-ins',
   '{n} eventos marcados · {amount} em buy-ins': '{n} eventos marcados · {amount} en buy-ins',
   'Ainda não marcaste eventos. Marca-os no plano para veres os buy-ins aqui.': 'Aún no marcaste eventos. Márcalos en el plan para ver los buy-ins aquí.',
   'Viagens': 'Viajes',
@@ -3333,6 +3334,8 @@ const es: Record<string, string> = {
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Esta copia se hizo con una versión más reciente de Sweatbook. Actualiza la app e inténtalo de nuevo; no se cambió nada.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'No pudimos leer esta copia. No se cambió nada en este teléfono.',
   'Guardar uma cópia dos dados': 'Guardar una copia de los datos',
+  'Não deu para criar o link': 'No se pudo crear el enlace',
+  'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mano tiene datos que la página no acepta. Acorta nombres o notas e inténtalo de nuevo.',
 };
 
 export default es;

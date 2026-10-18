@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { assignGroups, groupLedger, groupNet, groupsForSession, mergeGroups, minTransfers, newFromOthers, type GroupEntry, type SwapGroup } from '../swap-groups';
+import { assignGroups, groupLedger, groupNet, groupOwedOn, groupShareOf, groupsForSession, mergeGroups, minTransfers, newFromOthers, type GroupEntry, type SwapGroup } from '../swap-groups';
 import { withSwaps } from '../swaps';
 import type { Session } from '../types';
 
@@ -119,4 +119,16 @@ test('group transfers count to the cent: 0,40 and 0,01 are still paid', () => {
     { from: 1, to: 2, amount: 0.01 },
   ]);
   assert.deepEqual(minTransfers(new Map([[0, 0.004], [1, -0.004]])), []);
+});
+
+test('what a winner owes is the rounded shares added up, so the ledger and the transfers agree to the cent', () => {
+  // 4 seats at 7.5%: 1234,50 → 92,59 to each of 3 others = 277,77 (one rounding of 277,7625 gave 277,76).
+  const g = group({ terms: { ...group().terms, pct: 7.5 }, entries: [e(0, 'result', 1234.5)] });
+  assert.equal(groupShareOf(g, 1234.5), 92.59);
+  assert.equal(groupOwedOn(g, 1234.5), 277.77);
+  const net = groupNet(g);
+  assert.equal(net.get(0), -277.77);
+  assert.equal(groupLedger(g).balance, net.get(0));
+  const tr = minTransfers(net);
+  assert.equal(Math.round(tr.reduce((a, t) => a + t.amount, 0) * 100) / 100, 277.77);
 });

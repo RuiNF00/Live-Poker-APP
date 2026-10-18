@@ -110,7 +110,7 @@ export function AmountPad({
                   setInBB(false);
                   setTxt(q.value % 1000 === 0 ? `${q.value / 1000}k` : String(q.value));
                 }}
-                style={({ pressed }) => ({ flexGrow: 1, paddingHorizontal: narrow ? 6 : 8, minHeight: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? C.surface3 : C.accentSoft, borderWidth: 1, borderColor: C.accentLine })}
+                style={({ pressed }) => ({ flexGrow: 1, paddingHorizontal: narrow ? 6 : 8, minHeight: 44, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? C.surface3 : C.accentSoft, borderWidth: 1, borderColor: C.accentLine })}
               >
                 <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: C.accent, fontSize: narrow ? 13 : 14, fontFamily: F.mono }}>
                   {q.label}

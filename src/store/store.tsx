@@ -20,16 +20,16 @@ import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
 import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
-import { clearPlans, currentPlans, importPlans, type FestivalPlan } from './festival-plan';
-import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals } from './my-festivals';
-import { clearWeekly, currentWeekly, importWeekly, type WeeklyTournament } from './weekly';
+import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } from './festival-plan';
+import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
+import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { createWriter, type KV } from './persist';
 import { withCuts } from './staking';
 import { mergeSwaps, withSwaps, type Swap } from './swaps';
-import { currentSwaps, importSwaps, useSwaps } from './swaps-store';
+import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
 import type { SwapGroup } from './swap-groups';
-import { currentGroups, importGroups, useGroups } from './swap-groups-store';
+import { currentGroups, getAllGroups, importGroups, useGroups } from './swap-groups-store';
 import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
 
 export function uid(prefix = ''): string {
@@ -134,6 +134,10 @@ function quarantined(n: number) {
 // Start reading as soon as the bundle runs, in parallel with fonts and the
 // first render, instead of after them.
 let boot: ReturnType<typeof loadAll> | null = loadAll();
+// The stores kept outside this one (festival plans, own festivals, weekly tournaments, swaps)
+// load lazily; launch waits for them too, so a backup or a restore merge never sees them empty.
+const loadSideStores = () => Promise.all([loadPlans(), loadOwnFestivals(), loadWeekly(), getAllSwaps(), getAllGroups()]).catch(() => {});
+let sideBoot: Promise<unknown> | null = loadSideStores();
 
 /** 0 none, 1 empty draft, 2 a draft with something in it (what the hands list shows). */
 function draftKeyOf(h: Hand | null): number {
@@ -219,8 +223,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    (boot ?? loadAll()).then((d) => {
+    Promise.all([boot ?? loadAll(), sideBoot ?? loadSideStores()]).then(([d]) => {
       boot = null;
+      sideBoot = null;
       if (!alive) return;
       if (d.quarantined) quarantined(d.quarantined);
       else if (d.recovered) notice(t('Dados recuperados'), (d.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered })));

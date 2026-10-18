@@ -39,6 +39,7 @@ import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, posit
 import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
+import { MAX_NOTES_LENGTH } from '@/poker/privacy';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
 import { opponentStats, sessionsSeen } from '@/store/queries';
@@ -902,7 +903,7 @@ function FinishPanel({ hand, onChange }: { hand: Hand; onChange: (h: Hand) => vo
           <Chip key={tg} label={t(tg)} active={hand.tags.includes(tg)} onPress={() => toggle(tg)} />
         ))}
       </ChipRow>
-      <Field value={hand.notes} onChangeText={(notes) => onChange({ ...hand, notes })} placeholder={t('Notas (o que pensaste, reads, dúvidas…)')} multiline inputStyle={{ minHeight: 70 }} />
+      <Field value={hand.notes} onChangeText={(notes) => onChange({ ...hand, notes })} placeholder={t('Notas (o que pensaste, reads, dúvidas…)')} multiline maxLength={MAX_NOTES_LENGTH} inputStyle={{ minHeight: 70 }} />
     </View>
   );
 }

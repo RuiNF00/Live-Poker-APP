@@ -65,3 +65,18 @@ test('breakdowns by game, stake, venue and weekday', () => {
   assert.equal(winRate(four.slice(0, 2)), null, 'needs 3 sessions');
   assert.equal(gameOf(cash(1, 1, 0, { name: 'Omaha hi-lo' })), 'PLO');
 });
+
+// A 3-minute session at +200 would read as +4000 €/h: no rate under MIN_RATE_HOURS (15 min) of play.
+test('no win rate from a few minutes of play, but the minutes still count', () => {
+  const blips = [cash(10, 0.05, 200), cash(11, 0.05, -50), cash(12, 0.05, 100)];
+  assert.equal(winRate(blips), null, '9 minutes in all');
+  const tiny = winRateBy([cash(13, 0.05, 200, { venue: 'Póker Lisboa' }), cash(14, 0.05, 100, { venue: 'Póker Lisboa' }), ...four], 'venue', '€');
+  assert.deepEqual(tiny.map((g) => g.label), ['Casino Estoril'], 'a group of two 3-minute sessions shows no rate');
+  // Mixed in with real hours, the short session's money and time are kept.
+  const w = winRate([...four, blips[0]])!;
+  assert.equal(r2(w.hours), 20.05);
+  assert.equal(w.hourly, 600 / w.hours);
+  const tt = totals([...four, blips[0]], '€');
+  assert.equal(tt.profit, 600);
+  assert.equal(r2(tt.hours), 20.05);
+});

@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { publicHand } from '../privacy';
+import { fromAppHand, validateHand } from '../../../packages/hand-format/src';
+import { MAX_NAME_LENGTH, MAX_NOTES_LENGTH, publicHand } from '../privacy';
 import type { Hand } from '../types';
 
 const hand = {
@@ -35,4 +36,17 @@ test('study folders never leave the phone', () => {
 test('private street notes never leave the phone, even with notes shared', () => {
   const p = publicHand({ ...hand, streetNotes: { turn: 'Devia ter apostado mais pequeno.' } }, { names: false, notes: true }) as unknown as Record<string, unknown>;
   assert.equal('streetNotes' in p, false);
+});
+
+test('names and notes longer than the share page accepts are cut, so old hands still share', () => {
+  const long = {
+    ...hand,
+    players: [{ name: 'R'.repeat(39) + '😀', stack: 200 }, { name: 'Z'.repeat(80), stack: 300 }],
+    notes: 'n'.repeat(5000),
+  } as Hand;
+  const p = publicHand(long, { names: true, notes: true });
+  assert.equal(p.players[0].name, 'R'.repeat(39), 'no half emoji left at the end');
+  assert.equal(p.players[1].name.length, MAX_NAME_LENGTH);
+  assert.equal(p.notes.length, MAX_NOTES_LENGTH);
+  assert.deepEqual(validateHand(fromAppHand(p).hand), []);
 });

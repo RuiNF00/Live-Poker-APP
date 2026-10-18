@@ -132,13 +132,34 @@ export interface SwapLedger {
   effect: number;
 }
 
+/**
+ * What each side has paid the other. The payer's «Paguei» and the receiver's «Recebi» for the
+ * same money are one payment, often both tapped at the table before either phone syncs: per
+ * payer and amount, the larger count of the two kinds counts, never their sum. The same on
+ * every phone and the web, whatever order the entries arrive in.
+ */
+export function paidBySide(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[]): Record<SwapSide, number> {
+  const by = new Map<string, { payer: SwapSide; cents: number; paid: number; received: number }>();
+  for (const e of entries) {
+    if (e.kind === 'result') continue;
+    const payer = e.kind === 'payment' ? e.side : other(e.side);
+    const cents = Math.round(e.amount * 100);
+    const k = payer + cents;
+    const x = by.get(k) ?? { payer, cents, paid: 0, received: 0 };
+    if (e.kind === 'payment') x.paid++;
+    else x.received++;
+    by.set(k, x);
+  }
+  const out: Record<SwapSide, number> = { a: 0, b: 0 };
+  for (const x of by.values()) out[x.payer] += x.cents * Math.max(x.paid, x.received);
+  return { a: out.a / 100, b: out.b / 100 };
+}
+
 /** Where I stand in one swap, from my side. Pending entries count: they are mine and real. */
 export function swapLedger(s: Pick<Swap, 'terms' | 'entries' | 'side'>): SwapLedger {
   const me = s.side;
   let iOwe = 0;
   let theyOwe = 0;
-  let iPaid = 0;
-  let theyPaid = 0;
   let myPrizes = 0;
   let theirPrizes = 0;
   for (const e of s.entries) {
@@ -152,10 +173,11 @@ export function swapLedger(s: Pick<Swap, 'terms' | 'entries' | 'side'>): SwapLed
         theyOwe += o;
         theirPrizes += e.amount;
       }
-    } else if (mine === (e.kind === 'payment')) iPaid += e.amount;
-    // Their payment, or my note that they paid me.
-    else theyPaid += e.amount;
+    }
   }
+  const paid = paidBySide(s.entries);
+  const iPaid = paid[me];
+  const theyPaid = paid[other(me)];
   return {
     iOwe: r2(iOwe),
     theyOwe: r2(theyOwe),

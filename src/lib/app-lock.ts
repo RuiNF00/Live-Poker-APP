@@ -40,6 +40,8 @@ export async function saveLock(cfg: LockConfig | null): Promise<void> {
   } else {
     await SecureStore.deleteItemAsync(KEY);
     await SecureStore.deleteItemAsync(FAILS).catch(() => {});
+    // Off: a keychain that later fails to read must not bring a lock screen back (readLock).
+    await AsyncStorage.removeItem(INSTALLED).catch(() => {});
   }
 }
 

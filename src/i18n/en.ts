@@ -1084,8 +1084,8 @@ const en: Record<string, string> = {
   'Atualizar': 'Refresh',
   'Os teus amigos veem o replay no browser e comentam, mesmo sem a app.': 'Friends watch the replay in their browser and comment, no app needed.',
   // Bankroll
-  'Várias bankrolls, filtros, salas e jogos.': 'Multiple bankrolls, filters, venues and games.',
-  'Várias bankrolls e filtros': 'Multiple bankrolls and filters',
+  'Vários bankrolls, filtros, salas e jogos.': 'Multiple bankrolls, filters, venues and games.',
+  'Vários bankrolls e filtros': 'Multiple bankrolls and filters',
   'Apagar este movimento?': 'Delete this transaction?',
   'As sessões e os movimentos passam para {name}.': 'Its sessions and transactions move to {name}.',
   'Depositar': 'Deposit',
@@ -1690,6 +1690,7 @@ const en: Record<string, string> = {
   'Nova despesa': 'New expense',
   'Póquer': 'Poker',
   'Plano do festival': 'Festival plan',
+  '1 evento marcado · {amount} em buy-ins': '1 event picked · {amount} in buy-ins',
   '{n} eventos marcados · {amount} em buy-ins': '{n} events picked · {amount} in buy-ins',
   'Ainda não marcaste eventos. Marca-os no plano para veres os buy-ins aqui.': "You haven't picked any events yet. Pick them in the plan to see the buy-ins here.",
   'Viagens': 'Trips',
@@ -3339,6 +3340,8 @@ const en: Record<string, string> = {
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'The backup was made with a newer version of Sweatbook. Update the app and try again; nothing was changed.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'We couldn’t read this backup. Nothing on this phone was changed.',
   'Guardar uma cópia dos dados': 'Save a copy of my data',
+  'Não deu para criar o link': 'Couldn\'t create the link',
+  'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'This hand has data the page doesn\'t accept. Shorten names or notes and try again.',
 };
 
 export default en;

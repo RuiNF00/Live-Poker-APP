@@ -382,6 +382,9 @@ export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null
       const runAmount = parts[k];
       const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
       const top = Math.max(...scored.map((x) => x.score));
+      // No picked winner and a hand in this pot unknown: nobody won it yet, like the app (an
+      // unresolved pot), rather than handing it to the only hand we can see.
+      if (top !== Number.MAX_SAFE_INTEGER && eligible.length > 1 && eligible.some((s) => !values.get(s.seat))) return;
       let best = scored.filter((x) => x.score === top);
       // Picked winners (no cards) name who won something, not which pot: one all-in for exactly
       // this level can only have won here, so it takes this pot; a deeper picked winner won a side pot.

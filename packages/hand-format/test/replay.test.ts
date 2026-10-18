@@ -164,6 +164,26 @@ describe('edge cases', () => {
     expect(won).toEqual({ 1: 150, 2: 140 });
   });
 
+  it('showdown with the villain unknown and no winner picked: the pot stays unresolved', () => {
+    const h = base({
+      players: [
+        { seat: 1, stack: 100 },
+        { seat: 2, stack: 100, cards: ['Ac', 'Ad'], isHero: true },
+      ],
+      board: { flop: ['Ks', 'Kh', 'Qs'], turn: 'Qh', river: 'Js' },
+      actions: { preflop: [{ seat: 1, type: 'call' }, { seat: 2, type: 'check' }], flop: [], turn: [], river: [] },
+    });
+    const end = buildReplay(h).at(-1)!;
+    expect(end.kind).toBe('showdown');
+    expect(end.winners).toEqual([]);
+    expect(end.seats.find((s) => s.seat === 2)!.won).toBeUndefined();
+    expect(end.seats.find((s) => s.seat === 2)!.stack).toBe(98);
+    expect(describeStep(end, 2, 'chips', 'pt')).toBe('Showdown');
+    // Once the winner is picked, they take it.
+    const picked = buildReplay({ ...h, winnerSeats: [1] }).at(-1)!;
+    expect(picked.winners).toEqual([{ seat: 1, amount: 4, handLabel: undefined }]);
+  });
+
   it('splits a whole-euro cash chop to the cent: €1 at 0.25/0.50 is 0.50 + 0.50', () => {
     const h = base({
       blinds: { sb: 0.25, bb: 0.5 },

@@ -14,6 +14,7 @@ import { usePaged } from '@/components/ShowMore';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { shortDate } from '@/poker/format';
+import { MAX_NAME_LENGTH } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 import { handCounts, opponentStats } from '@/store/queries';
 import { uid, useStore } from '@/store/store';
@@ -157,7 +158,7 @@ function PlayerEditor({ p, hands, onDraft, onSave, onClose, onDelete }: { p: Pla
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
       <SheetHeader title={p.name ? p.name : t('Novo jogador')} onClose={onClose} closeLabel={t('Fechar')} />
       <Card style={{ gap: S.lg }}>
-        <Field label={t('Nome ou alcunha')} value={x.name} onChangeText={(name) => setX({ ...x, name })} placeholder={t('Ex.: Boné azul')} autoFocus={!p.name} />
+        <Field label={t('Nome ou alcunha')} value={x.name} onChangeText={(name) => setX({ ...x, name })} placeholder={t('Ex.: Boné azul')} autoFocus={!p.name} maxLength={MAX_NAME_LENGTH} />
         <Field label={t('Como o reconheces')} value={x.look} onChangeText={(look) => setX({ ...x, look })} placeholder={t('Boné, óculos, lugar 3…')} />
       </Card>
       <Section title={t('Perfil')}>

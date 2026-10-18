@@ -275,3 +275,33 @@ test('settle-up leaves out swaps that are read-only, unconfirmed, archived or wa
   ];
   assert.equal(settleGroups(list).length, 0);
 });
+
+test('a payment both players record («Paguei» and «Recebi») counts once, in any order', () => {
+  const t75: SwapTerms = { ...terms, a: { name: 'Ana', pct: 7.5 }, b: { name: 'Eva', pct: 7.5 } };
+  const win = e('a', 'result', 1234.5);
+  const both = [win, e('a', 'payment', 92.59), e('b', 'received', 92.59)];
+  for (const entries of [both, [both[0], both[2], both[1]]]) {
+    const ana = swapLedger(swap({ terms: t75, side: 'a', entries }));
+    const eva = swapLedger(swap({ terms: t75, side: 'b', entries }));
+    assert.equal(ana.iPaid, 92.59);
+    assert.equal(eva.theyPaid, 92.59);
+    assert.equal(ana.balance, 0);
+    assert.equal(eva.balance, 0);
+  }
+  // Two different payments still add up, and the same payment tapped twice by its payer is two.
+  assert.equal(swapLedger(swap({ terms: t75, entries: [win, e('a', 'payment', 50), e('b', 'received', 42.59)] })).balance, 0);
+  assert.equal(swapLedger(swap({ terms: t75, entries: [win, e('a', 'payment', 46.3), e('a', 'payment', 46.3), e('b', 'received', 46.3)] })).iPaid, 92.6);
+});
+
+test('both players settling up before either syncs still leaves every swap at 0,00', () => {
+  const s1 = swap({ id: 's1', entries: [e('a', 'result', 1000), e('b', 'result', 300)] });
+  const s2 = swap({ id: 's2', entries: [e('b', 'result', 2000)] });
+  const mine = settleSteps([s1, s2]);
+  const theirs = settleSteps([s1, s2].map((s) => ({ ...s, side: 'b' as const })));
+  for (const s of [s1, s2]) {
+    const add = [...mine.filter((x) => x.id === s.id).map((x) => e('a', x.kind, x.amount)), ...theirs.filter((x) => x.id === s.id).map((x) => e('b', x.kind, x.amount))];
+    const entries = [...s.entries, ...add];
+    assert.equal(swapLedger({ ...s, entries }).balance, 0);
+    assert.equal(swapLedger({ ...s, side: 'b', entries }).balance, 0);
+  }
+});

@@ -8,6 +8,8 @@ import { useSyncExternalStore } from 'react';
 import { t } from '@/i18n';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 
+import { parseOrQuarantine } from './boot';
+import type { KV } from './persist';
 import { isBagged } from './multi-day';
 import type { Session } from './types';
 
@@ -307,8 +309,9 @@ function emit() {
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
     .then((raw) => {
-      if (!raw) return;
-      plans = { ...JSON.parse(raw), ...plans };
+      const saved = raw ? parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw) : null;
+      if (!saved) return;
+      plans = { ...saved, ...plans };
       emit();
     })
     .catch(() => {});
@@ -326,6 +329,9 @@ export function clearPlans() {
   plans = {};
   emit();
 }
+
+/** Reads the phone's plans; the app waits for it at launch so a backup never goes out without them. */
+export const loadPlans = (): Promise<void> => load();
 
 /** Every plan, for the backup. Starts reading the phone's copy if nothing has yet. */
 export function currentPlans(): Plans {

@@ -1,36 +1,10 @@
 // What a screen reader says for a card: "Rei de espadas", not "K ♠".
+// The rank and suit words live in cards.ts so every spoken card reads the same.
 import { t } from '@/i18n';
 
-import type { CardCode } from './types';
+import { cardName, rankName } from './cards';
 
-const RANK: Record<string, string> = {
-  A: 'Ás',
-  K: 'Rei',
-  Q: 'Dama',
-  J: 'Valete',
-  T: 'Dez',
-  '9': 'Nove',
-  '8': 'Oito',
-  '7': 'Sete',
-  '6': 'Seis',
-  '5': 'Cinco',
-  '4': 'Quatro',
-  '3': 'Três',
-  '2': 'Dois',
-};
-const SUIT: Record<string, string> = { s: 'espadas', h: 'copas', d: 'ouros', c: 'paus' };
-
-export function cardName(c: CardCode): string {
-  const r = RANK[c[0]];
-  const s = SUIT[c[1]];
-  if (!r || !s) return c;
-  return t('{rank} de {suit}', { rank: t(r), suit: t(s) });
-}
-
-/** A rank's word: "Ás", "Rei", "Dez". */
-export function rankName(r: string): string {
-  return RANK[r] ? t(RANK[r]) : r;
-}
+export { cardName, rankName };
 
 /** A starting hand class for a screen reader: "Ás e Rei, mesmo naipe", "Par, Sete". */
 export function handClassName(cls: string): string {

@@ -47,7 +47,7 @@ import {
 } from '@/store/bankroll-math';
 import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
-import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
+import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, rateShown, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
@@ -338,7 +338,7 @@ function BankrollTab() {
                   {[
                     tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions }),
                     t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
-                    tot.hours >= 0.25 ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
+                    rateShown(tot.hours) ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
                     first ? t('desde {date}', { date: shortDate(first) }) : '',
                   ]
                     .filter(Boolean)
@@ -360,7 +360,7 @@ function BankrollTab() {
                 <T v="tiny">{t('Pico: o teu melhor resultado acumulado. Maior queda: o máximo que já desceste a partir de um pico.')}</T>
               </Card>
               <StatGrid cols={2}>
-                <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={tot.hours >= 0.25 ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
+                <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={rateShown(tot.hours) ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
                 {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
                 {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
                 <Stat label={t('Buy-ins')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
@@ -807,7 +807,7 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
               accessibilityLabel={[
                 b.key,
                 b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions }),
-                b.hours >= 0.25 && b.mtts < b.sessions ? t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : '',
+                rateShown(b.hours) && b.mtts < b.sessions ? t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : '',
                 b.roi !== null ? 'ROI ' + pctOf(b.roi) : '',
                 (b.profit > 0 ? '+' : '') + fmt(b.profit, cur),
               ]
@@ -820,7 +820,7 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
                   </T>
                   <T v="tiny">
                     {b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions })}
-                    {b.hours >= 0.25 && b.mtts < b.sessions ? ' · ' + t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : ''}
+                    {rateShown(b.hours) && b.mtts < b.sessions ? ' · ' + t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : ''}
                     {b.roi !== null ? ' · ROI ' + pctOf(b.roi) : ''}
                   </T>
                 </View>

@@ -94,20 +94,40 @@ export function knownHeader(h: string): boolean {
   return ALL_SYN.has(h);
 }
 
-/** Maps every field whose name appears in the header; a column is used once. */
-export function autoMap(headers: string[]): Mapping {
+/** A cell holding only a clock time: "20:00", "8:30 PM", "20h00". */
+export const TIME_ONLY = /^\d{1,2}[:h]\d{2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?$/i;
+
+// A column literally called date goes before "Start", which may hold only a time.
+const DATE_NAMES = ['date', 'data', 'fecha'];
+
+/**
+ * Maps every field whose name appears in the header; a column is used once.
+ * With rows, a column whose values are only clock times is never taken as the date.
+ */
+export function autoMap(headers: string[], rows: string[][] = []): Mapping {
   const n = headers.map(norm);
+  const sample = rows.slice(0, 50);
+  const timeOnly = (k: number) => {
+    const v = sample.map((r) => (r[k] ?? '').trim()).filter(Boolean);
+    return v.length > 0 && v.every((x) => TIME_ONLY.test(x));
+  };
   const used = new Set<number>();
   const m: Mapping = {};
   for (const f of FIELDS) {
-    for (const syn of SYN[f]) {
-      const i = n.findIndex((h, k) => h === syn && !used.has(k));
+    const syns = f === 'start' ? [...DATE_NAMES, ...SYN.start] : SYN[f];
+    for (const syn of syns) {
+      const i = n.findIndex((h, k) => h === syn && !used.has(k) && !(f === 'start' && timeOnly(k)));
       if (i >= 0) {
         m[f] = i;
         used.add(i);
         break;
       }
     }
+  }
+  // "Date" next to a "Start": the start column gives the time of day.
+  if (m.time === undefined) {
+    const i = n.findIndex((h, k) => !used.has(k) && SYN.start.includes(h));
+    if (i >= 0) m.time = i;
   }
   // "date" and "time" in two columns, or just a start: fine. A lone "time"
   // column that means duration is caught later by its values.
@@ -137,8 +157,8 @@ export function detectSource(text: string, t: Table): SourceId {
 }
 
 /** Mapping for a known app; anything it doesn't cover falls back to the names. */
-export function mappingFor(source: SourceId, headers: string[]): Mapping {
-  const auto = autoMap(headers);
+export function mappingFor(source: SourceId, headers: string[], rows: string[][] = []): Mapping {
+  const auto = autoMap(headers, rows);
   if (source === 'pbt')
     return strip({
       start: idx(headers, 'starttime'),

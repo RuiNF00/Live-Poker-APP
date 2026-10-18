@@ -56,6 +56,8 @@ const SEAT_HALF_W = 44;
 const SEAT_HALF_H = 34;
 const BET_HALF_W = 30;
 const BET_HALF_H = 11;
+// Five md board cards and their gaps, before scaling.
+const BOARD_W = 5 * 40 + 4 * 4;
 function betXY(k: number, n: number, w: number, h: number, scale: number) {
   const seat = seatXY(k, n);
   const sx = (seat.x / 100) * w;
@@ -63,22 +65,23 @@ function betXY(k: number, n: number, w: number, h: number, scale: number) {
   const sy = (seat.y / 100) * h - 5 * scale;
   const dx = w / 2 - sx;
   const dy = h * 0.47 - sy;
-  const gap = 4;
-  const tx = Math.abs(dx) > 0.5 ? (SEAT_HALF_W * scale + BET_HALF_W + gap) / Math.abs(dx) : Infinity;
+  // Bet pills and the dealer disc shrink with the felt, like the seats.
+  const gap = 4 * scale;
+  const tx = Math.abs(dx) > 0.5 ? ((SEAT_HALF_W + BET_HALF_W) * scale + gap) / Math.abs(dx) : Infinity;
   // Hero's cards are drawn bigger and stand taller over the plate.
   const halfH = (SEAT_HALF_H + (k === 0 ? 14 : 0)) * scale;
-  const ty = Math.abs(dy) > 0.5 ? (halfH + BET_HALF_H + gap) / Math.abs(dy) : Infinity;
+  const ty = Math.abs(dy) > 0.5 ? (halfH + BET_HALF_H * scale + gap) / Math.abs(dy) : Infinity;
   const t = Math.min(Math.max(Math.min(tx, ty), 0.3), 0.62);
   const x = ((sx + dx * t) / Math.max(w, 1)) * 100;
   let y = ((sy + dy * t) / Math.max(h, 1)) * 100;
   // Over the board strip: step above or below it rather than sideways, which
   // would push the chip back onto a side seat.
-  const half = ((w < 360 ? 166 : 216) / 2 / Math.max(w, 1)) * 100 + 4;
+  const half = ((BOARD_W * scale) / 2 / Math.max(w, 1)) * 100 + 4;
   if (y > 33 && y < 55 && Math.abs(x - 50) < half) y = y < 44 ? 33 : 57;
   // The dealer button goes beside the bet, across the seat-to-middle line,
   // and also steps off the board strip.
   const len = Math.hypot(dx, dy) || 1;
-  const dealer = { x: x + ((-dy / len) * 44 * 100) / Math.max(w, 1), y: y + ((dx / len) * 44 * 100) / Math.max(h, 1) };
+  const dealer = { x: x + ((-dy / len) * 44 * scale * 100) / Math.max(w, 1), y: y + ((dx / len) * 44 * scale * 100) / Math.max(h, 1) };
   if (dealer.y > 33 && dealer.y < 55 && Math.abs(dealer.x - 50) < half + 4) dealer.y = dealer.y < 44 ? 33 : 57;
   return { x, y, dealer };
 }
@@ -114,6 +117,11 @@ export function Table({
   const onLayout = (e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width);
   const scale = w ? Math.min(1, w / 400) : 1;
   const cardSize = n > 7 && w < 380 ? 'xs' : 'sm';
+  // A shrunk seat (small felt) still answers a little past its plate, toward
+  // 44 pt, but never far enough to swallow its neighbour. hitSlop is in the
+  // seat's own (pre-scale) units. The chips under the felt are the big targets.
+  const pad = Math.min(6, Math.max(0, (44 - 40 * scale) / 2)) / scale;
+  const seatSlop = pad > 0 ? { top: pad, bottom: pad, left: pad / 2, right: pad / 2 } : undefined;
 
   return (
     <View onLayout={onLayout} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / ASPECT }}>
@@ -129,26 +137,24 @@ export function Table({
           ) : null}
 
           {/* board */}
-          <View style={[styles.board, { top: h * 0.43 }]}>
+          {/* Board, pot and chips scale with the felt like the seats do, so a
+              small table (320 pt phones, short screens) keeps them apart. */}
+          <View style={[styles.board, { top: h * 0.43, transform: [{ translateY: -28 * scale }, { scale }] }]}>
             {Array.from({ length: boardSlots }).map((_, i) =>
-              board[i] ? (
-                <PlayingCard key={board[i]} card={board[i]} size={w < 360 ? 'sm' : 'md'} />
-              ) : (
-                <View key={'slot' + i} style={[styles.slot, w < 360 ? { width: 30, height: 42 } : null]} />
-              ),
+              board[i] ? <PlayingCard key={board[i]} card={board[i]} size="md" /> : <View key={'slot' + i} style={styles.slot} />,
             )}
           </View>
           {pot ? (
-            <View style={[styles.potWrap, { top: h * 0.43 + (w < 360 ? 50 : 64) }]}>
-              <View style={styles.pot}>
+            <View style={[styles.potWrap, { top: h * 0.43 + 64 * scale }]}>
+              <View style={[styles.pot, { transform: [{ scale }] }]}>
                 <View style={styles.potChip} />
                 <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.potText}>{pot}</Text>
               </View>
             </View>
           ) : null}
           {narration ? (
-            <View style={[styles.potWrap, { top: h * 0.43 - (w < 360 ? 52 : 60) }]}>
-              <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.narration} numberOfLines={1}>
+            <View style={[styles.potWrap, { top: h * 0.43 - 60 * scale }]}>
+              <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.narration, { fontSize: 12 * scale }]} numberOfLines={1}>
                 {narration}
               </Text>
             </View>
@@ -162,7 +168,7 @@ export function Table({
             return (
               <React.Fragment key={'b' + i}>
                 {s.bet && !s.folded ? (
-                  <View style={[styles.bet, { left: (b.x / 100) * w, top: (b.y / 100) * h }]}>
+                  <View style={[styles.bet, { left: (b.x / 100) * w, top: (b.y / 100) * h, transform: [{ translateX: -26 }, { translateY: -10 }, { scale }] }]}>
                     <View style={styles.betChip} />
                     <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.betText}>{s.bet}</Text>
                   </View>
@@ -174,6 +180,7 @@ export function Table({
                       {
                         left: (b.dealer.x / 100) * w,
                         top: (b.dealer.y / 100) * h,
+                        transform: [{ translateX: -11 }, { translateY: -11 }, { scale }],
                       },
                     ]}>
                     <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.dealerText}>D</Text>
@@ -197,6 +204,7 @@ export function Table({
                 accessibilityActions={onSeatLongPress ? [{ name: 'longpress', label: t('Editar lugar') }] : undefined}
                 onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && onSeatLongPress?.(i)}
                 disabled={!onSeatPress && !onSeatLongPress}
+                hitSlop={seatSlop}
                 onPress={() => onSeatPress?.(i)}
                 onLongPress={onSeatLongPress ? () => onSeatLongPress(i) : undefined}
                 style={[styles.seat, { left: (p.x / 100) * w, top: (p.y / 100) * h, transform: [{ translateX: -44 }, { translateY: -38 }, { scale }] }]}>
@@ -315,7 +323,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 4,
-    transform: [{ translateY: -28 }],
   },
   slot: {
     width: 40,
@@ -345,7 +352,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    transform: [{ translateX: -26 }, { translateY: -10 }],
     zIndex: 2,
     backgroundColor: 'rgba(0,0,0,0.6)',
     borderRadius: 999,
@@ -362,7 +368,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4EFE1',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateX: -11 }, { translateY: -11 }],
     borderWidth: 1,
     borderColor: '#B9AF92',
   },

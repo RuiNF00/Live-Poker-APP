@@ -52,7 +52,7 @@ export interface BackupData {
 
 /** Same prefix and item keys as boot.ts (kept here so backups don't import the store's loader; a test checks they match). */
 export const QUARANTINE = 'rl.quarantine.v1.';
-export const ITEM_PREFIX = { hands: 'rl.hand.v2.', sessions: 'rl.session.v2.', players: 'rl.player.v2.', trips: 'rl.trip.v1.' };
+export const ITEM_PREFIX = { hands: 'rl.hand.v2.', sessions: 'rl.session.v2.', players: 'rl.player.v2.', trips: 'rl.trip.v1.', swaps: 'rl.swap.v1.', swapGroups: 'rl.swapgroup.v1.' };
 
 export function buildBackup(
   d: {
@@ -249,8 +249,9 @@ export function parseBackup(text: string): BackupData {
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
   // Same checks as at launch (swap-validate.ts): a swap a screen would crash on never reaches one.
-  const swaps = arr('swaps').map(fixSwap).filter((x): x is Swap => !!x);
-  const swapGroups = arr('swapGroups').map(fixSwapGroup).filter((x): x is SwapGroup => !!x);
+  // One that fails goes to quarantine like the others (the keys swaps-store and swap-groups-store use).
+  const swaps = fixed(arr('swaps'), fixSwap, ITEM_PREFIX.swaps);
+  const swapGroups = fixed(arr('swapGroups'), fixSwapGroup, ITEM_PREFIX.swapGroups);
   return {
     app: 'sweatbook',
     v: 1,

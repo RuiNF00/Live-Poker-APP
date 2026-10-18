@@ -660,8 +660,8 @@ const ptBR: Record<string, string> = {
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'Sem conexão agora: o convite fica salvo e é ativado sozinho quando houver sinal.',
   'Ensacado': 'Fichas guardadas',
   'Cancelar na {store}': 'Cancelar na {store}',
-  'Várias bankrolls e filtros': 'Vários bankrolls e filtros',
-  'Várias bankrolls, filtros, salas e jogos.': 'Vários bankrolls, filtros, salas e jogos.',
+  'Vários bankrolls e filtros': 'Vários bankrolls e filtros',
+  'Vários bankrolls, filtros, salas e jogos.': 'Vários bankrolls, filtros, salas e jogos.',
   'Registo do {event} fecha às {time}': 'Inscrições do {event} fecham às {time}',
   'Pára antes da tua decisão, para quem vê votar no link.': 'Termina antes da sua decisão, para quem vê votar no link.',
   '{who} faz bet de {amt}': '{who} dá bet de {amt}',
@@ -1642,6 +1642,7 @@ const ptBR: Record<string, string> = {
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Este backup foi feito numa versão mais recente do Sweatbook. Atualize o app e tente de novo; nada foi alterado.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'Não conseguimos ler este backup. Nada foi alterado neste celular.',
   'Guardar uma cópia dos dados': 'Salvar uma cópia dos dados',
+  'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mão tem dados que a página não aceita. Encurte nomes ou notas e tente de novo.',
 };
 
 export default ptBR;

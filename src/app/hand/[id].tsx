@@ -202,7 +202,8 @@ export default function HandScreen() {
         const opts = { names: settings.shareNames, notes: settings.shareNotes };
         queueShare({ ...hand, ask: ask.trim().slice(0, 140) || undefined }, opts);
         notice(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
-      } else notice(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
+      } else if ((e as Error)?.message === 'upload 422') notice(t('Não deu para criar o link'), t('Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.'));
+      else notice(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
     } finally {
       setBusy(false);

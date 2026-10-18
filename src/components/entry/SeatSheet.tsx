@@ -5,6 +5,7 @@ import { t } from '@/i18n';
 import { TapCounted } from '@/components/TapCount';
 import { useSheetAnimation } from '@/lib/motion';
 import { bbs, chips } from '@/poker/format';
+import { MAX_NAME_LENGTH } from '@/poker/privacy';
 import type { Player } from '@/poker/types';
 import type { OpponentStats } from '@/store/queries';
 import type { PlayerNote } from '@/store/types';
@@ -87,6 +88,7 @@ export function SeatSheet({
               setPlayerId(undefined);
             }}
             placeholder={isHero ? t('O teu nome') : t('Ex.: Boné vermelho')}
+            maxLength={MAX_NAME_LENGTH}
           />
           {!isHero && sugg.length > 0 && (
             <ChipRow>

@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { BottomTabBar, Tabs } from 'expo-router/js-tabs';
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenBoundary } from '@/components/ScreenError';
@@ -15,6 +15,13 @@ import { C, ff } from '@/theme';
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 // Filled icon when the tab is active, outline otherwise.
+// Tab labels and Larger Text: iOS keeps them fixed and shows the big label on a
+// long press (Large Content Viewer, set by the tab bar itself). Android has no
+// such viewer, so there the labels grow with the system font size, capped so
+// the bar keeps its height: 11 pt × 1.3 still fits under the icon in 62 pt.
+const LABEL_SCALES = Platform.OS !== 'ios';
+const LABEL_MAX_SCALE = 1.3;
+
 const icon = (on: IconName, off: IconName) => {
   const TabIcon = ({ color, focused }: { color: unknown; focused: boolean }) => <Ionicons name={focused ? on : off} color={color as string} size={24} />;
   return TabIcon;
@@ -85,12 +92,12 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: C.muted,
         // Shrinks rather than cutting "Bankroll" / "Jugadores" on a narrow screen or a zoomed browser.
         tabBarLabel: ({ color, children }) => (
-          <FitText allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color, fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2, textAlign: 'center' }}>
+          <FitText allowFontScaling={LABEL_SCALES} maxFontSizeMultiplier={LABEL_MAX_SCALE} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color, fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2, textAlign: 'center' }}>
             {children}
           </FitText>
         ),
         // The bar has a fixed height; iOS shows the big label on long-press instead.
-        tabBarAllowFontScaling: false,
+        tabBarAllowFontScaling: LABEL_SCALES,
       }}>
       <Tabs.Screen name="index" options={{ title: t('Mãos'), tabBarIcon: icon('albums', 'albums-outline') }} />
       <Tabs.Screen name="session" options={{ title: t('Sessão'), tabBarIcon: icon('timer', 'timer-outline') }} />

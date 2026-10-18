@@ -358,7 +358,10 @@ class LocalStore implements ShareStore {
       const data = await this.read();
       const out = fn(data);
       await fs.mkdir(path.dirname(this.file), { recursive: true });
-      await fs.writeFile(this.file, JSON.stringify(data, null, 2));
+      // Write then rename, so a read never sees half a file (and falls back to the demo data).
+      const tmp = `${this.file}.${process.pid}.tmp`;
+      await fs.writeFile(tmp, JSON.stringify(data, null, 2));
+      await fs.rename(tmp, this.file);
       return out;
     });
     this.queue = run.catch(() => undefined);

@@ -4,7 +4,7 @@
 // big rank in the suit colour, suit underneath.
 
 import React, { useState } from 'react';
-import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
 import { cardName, displayRank, RANKS, SUIT_SYMBOL, SUITS } from '@/poker/cards';
 import type { CardCode } from '@/poker/types';
@@ -29,6 +29,13 @@ export function CardPicker({
   const onLayout = (e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width);
   const gap = 3;
   const cw = w ? (w - gap * 12) / 13 : 0;
+  // Thirteen across can't be 44 pt wide on any phone, so each card's hit area
+  // reaches into the gaps (no dead taps between cards), and where the screen is
+  // tall enough the rows are 44 pt high. Short screens keep the smaller rows so
+  // the felt above still fits.
+  const tall = useWindowDimensions().height >= 780;
+  const ch = Math.max(Math.min(50, cw * 1.45), tall ? 44 : 0);
+  const slop = gap / 2;
   return (
     <View onLayout={onLayout} style={{ gap }}>
       {w > 0 &&
@@ -45,13 +52,14 @@ export function CardPicker({
                   accessibilityLabel={cardName(c)}
                   accessibilityState={{ disabled: isUsed, selected: isSel }}
                   disabled={isUsed}
+                  hitSlop={slop}
                   onPress={() => {
                     tap('select');
                     onPick(c);
                   }}
                   style={({ pressed }) => ({
                     width: cw,
-                    height: Math.min(50, cw * 1.45),
+                    height: ch,
                     borderRadius: 6,
                     backgroundColor: isUsed ? C.surface2 : FACE,
                     opacity: isUsed ? 0.3 : pressed ? 0.7 : 1,
