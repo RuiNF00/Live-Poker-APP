@@ -20,9 +20,9 @@ A hand tracker is not gambling. Reviewers see "poker" and check for money.
 
 - No in-app purchase of chips, no "play" button, no odds-for-betting tools aimed at casino betting, no links to online poker rooms or affiliates. Any affiliate link would make Play treat it as gambling-related ads and Apple ask for licences.
 - Copy says "logging and study tool, no real-money gaming" (already in listing and terms).
-- Review notes (paste into App Review Information → Notes; 4000-character limit, this one is about 3600; checked against e5f7c58 and the purpose strings in #234):
+- Review notes (paste into App Review Information → Notes; 4000-character limit, this one is about 3950; checked against 1c8de629 and the purpose strings in #234):
 
-  > Sweatbook is a notebook for live (in-person) poker players: they record hands they played and replay them to study. No gameplay, no real-money or simulated gambling, no betting, no ads, no links to gambling operators, no account needed. The app follows the device language (Portuguese, Spanish, English).
+  > Sweatbook is a notebook for live (in-person) poker players: they record hands they played and replay them to study. No gameplay, no real-money or simulated gambling, no betting, no ads, no links to gambling operators, no account needed. Rated 18+ (Apple age rating raised to 18+; Play target audience 18+ only). The app follows the device language (Portuguese, Spanish, English).
   >
   > How to test without a real tournament: on Hands, "See an example hand" plays in the replayer. Log a hand with + (about ten taps), open it and tap Share: the link opens a web replayer with comments and votes. Session → "New session" → Start runs a live session with any name. Session → Festivals lists published festival schedules: open one, pick an event and tap "Start a session" to see a tournament filled in from the schedule.
   >
