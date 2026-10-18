@@ -655,7 +655,8 @@ export default function NewHand() {
               {l.canCheck ? (
                 <BigAction label="Check" kind="check" onPress={() => act('check')} />
               ) : (
-                <BigAction label={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} kind="call" onPress={() => act('call')} />
+                // Calling with the whole stack (a 1 bb stack facing the big blind) is an all-in, not a limp.
+                <BigAction label={`${l.toCall >= s.stacks[l.p] ? 'All-in' : callName(s)} ${amount(l.toCall, hand, inBB)}`} kind="call" onPress={() => act('call')} />
               )}
             </Row>
           </>
