@@ -14,7 +14,7 @@ export function TripsEntry() {
   const on = currentTrip(trips);
   const x = on ?? trips[0];
   const s = x ? tripSummary(x, sessions) : null;
-  const net = s && (s.sessions || s.expenses) ? (settings.hideAmounts ? '•••' : (s.net > 0 ? '+' : '') + money(Math.round(s.net), s.currency)) : '';
+  const net = s && (s.sessions || s.expenses) ? (settings.hideAmounts ? '•••' : (s.net > 0 ? '+' : '') + money(s.net, s.currency)) : '';
   const sub = !x ? t('Festivais, voos, hotel e o que sobra no fim') : net ? t('{name}: {amount} depois das despesas', { name: x.name, amount: net }) : x.name;
   return (
     <ListGroup>

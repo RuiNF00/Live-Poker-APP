@@ -20,9 +20,9 @@ import { C, S } from '@/theme';
 
 const pct = (n: number | null, digits = 0) => (n === null ? '—' : `${n.toLocaleString(locale, { maximumFractionDigits: digits })}%`);
 const signedPct = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString(locale) + '%';
-const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : '') + money(Math.round(n), cur);
+const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : '') + money(n, cur);
 /** "+23.1k€" / "+$23.1k" in a tile: a full amount doesn't fit a third of the screen. */
-const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(Math.round(n), cur)) : (sign && n > 0 ? '+' : '') + compactMoney(n, cur));
+const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(n, cur)) : (sign && n > 0 ? '+' : '') + compactMoney(n, cur));
 
 export default function TournamentStatsScreen() {
   const { sessions, trips, settings } = useStore();

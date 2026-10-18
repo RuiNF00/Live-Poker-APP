@@ -747,7 +747,7 @@ function Calendar({ list, cur }: { list: Session[]; cur: string }) {
         </View>
         <T v="small">
           {best
-            ? (best.sessions === 1 ? t('O teu melhor dia é {day}: {amount} em 1 sessão.', { day: t(WEEKDAYS[best.day]), amount: fmt(Math.round(best.profit), cur), n: best.sessions }) : t('O teu melhor dia é {day}: {amount} em {n} sessões.', { day: t(WEEKDAYS[best.day]), amount: fmt(Math.round(best.profit), cur), n: best.sessions }))
+            ? (best.sessions === 1 ? t('O teu melhor dia é {day}: {amount} em 1 sessão.', { day: t(WEEKDAYS[best.day]), amount: fmt(best.profit, cur), n: best.sessions }) : t('O teu melhor dia é {day}: {amount} em {n} sessões.', { day: t(WEEKDAYS[best.day]), amount: fmt(best.profit, cur), n: best.sessions }))
             : shown
               ? shown === 1
                 ? t('1 dia jogado nas últimas 15 semanas.')
