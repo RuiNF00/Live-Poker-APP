@@ -162,6 +162,20 @@ test('dot thousands, the currency written in the amount, and unreadable amounts'
   assert.equal(r.unreadable, 1, '"12.5.3" is not read as 0');
 });
 
+test('the file decides the decimal mark: a bare "10.000" is never read as 10', () => {
+  const profits = (text: string) => run(text).sessions.map((x) => profit(x));
+  // Decimal commas elsewhere in the file: dots are thousands.
+  assert.deepEqual(profits('date,venue,profit\n2024-03-01,A,"10.000"\n2024-03-02,B,"12,50"\n2024-03-03,C,"-1.235"\n2024-03-04,D,(1.235)\n'), [10000, 12.5, -1235, -1235]);
+  // Semicolons and no decimals at all: the same.
+  assert.deepEqual(profits('date;venue;profit\n2024-03-01;A;100.000\n2024-03-02;B;1.500\n'), [100000, 1500]);
+  // Decimal points elsewhere: commas are thousands, "1.500" is one and a half.
+  assert.deepEqual(profits('date,venue,profit\n2024-03-01,A,"1,500"\n2024-03-02,B,12.50\n'), [1500, 12.5]);
+  // Nothing says which: a bare "10.000" fails the row instead of a silent guess; with a symbol it is clear.
+  const r = run('date,venue,profit\n2024-03-01,A,10.000\n2024-03-02,B,10.000 €\n2024-03-03,C,250\n');
+  assert.deepEqual(r.sessions.map((x) => profit(x)), [10000, 250]);
+  assert.equal(r.unreadable, 1);
+});
+
 test('numbers and dates', () => {
   assert.equal(parseNum('1.234,56'), 1234.56);
   assert.equal(parseNum('1,234.56'), 1234.56);

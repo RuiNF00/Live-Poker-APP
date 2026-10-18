@@ -8,12 +8,16 @@ export const NO_VALUE = /^(n\/?a|na|null|none|-+|—|–)$/i;
  * "1.234,56", "1,234.56", "-€120", "(45)", "0,5" → numbers. Comma alone is a
  * decimal mark unless it groups thousands ("1,500").
  */
-export function parseNum(raw: string | undefined): number | null {
+/** How the file writes decimals, when it says so: "12,50" (comma) or "12.50" (point). */
+export type DecimalMark = 'comma' | 'point';
+
+/** With `mark`, the file's own decimal mark decides; without it, each cell is read on its own. */
+export function parseNum(raw: string | undefined, mark?: DecimalMark): number | null {
   if (raw === undefined) return null;
   let s = raw.trim();
   if (!s) return null;
   // Most cells are plain numbers: skip the clean-up below (it adds up over thousands of rows).
-  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  if (mark !== 'comma' && /^-?\d+(\.\d+)?$/.test(s)) return Number(s);
   s = s.replace(/[−‒–]/g, '-');
   let neg = false;
   if (/^\(.*\)$/.test(s)) {
@@ -30,7 +34,9 @@ export function parseNum(raw: string | undefined): number | null {
   if (!/\d/.test(s)) return null;
   const lastDot = s.lastIndexOf('.');
   const lastComma = s.lastIndexOf(',');
-  if (lastDot >= 0 && lastComma >= 0) {
+  if (mark === 'comma') s = s.replace(/\./g, '').replace(/,(?=[^,]*$)/, '.').replace(/,/g, '');
+  else if (mark === 'point') s = s.replace(/,/g, '');
+  else if (lastDot >= 0 && lastComma >= 0) {
     s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
   } else if (lastComma >= 0) {
     s = /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(/,/g, '.');
