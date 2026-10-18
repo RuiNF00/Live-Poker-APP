@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { useLockScreenUp } from '@/components/AppLock';
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
 import { useRates } from '@/lib/fx';
@@ -130,7 +131,6 @@ const loadAll = () => readAll(kv);
 
 /** Damaged values were set aside at launch: say so once, so nothing vanishes silently. */
 function quarantined(n: number) {
-  console.warn('[store] values moved to quarantine', n);
   notice(
     t('Alguns dados estavam danificados'),
     (n === 1 ? t('1 registo não pôde ser lido. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.') : t('{n} registos não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n: n })),
@@ -181,6 +181,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [backing, setBacking] = useState<BackedPlayer[]>([]);
   const [quarantine, setQuarantine] = useState<[string, string][]>([]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  // What the launch found set aside or brought back, said once the app lock is down: a native alert would sit on top of it.
+  const bootNews = useRef<{ quarantined: number; recovered: number } | null>(null);
+  const [newsAt, setNewsAt] = useState(0);
+  const lockUp = useLockScreenUp();
+  useEffect(() => {
+    const n = bootNews.current;
+    if (lockUp || !n) return;
+    bootNews.current = null;
+    if (n.quarantined) quarantined(n.quarantined);
+    else if (n.recovered) notice(t('Dados recuperados'), (n.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: n.recovered })));
+  }, [lockUp, newsAt]);
   // What screens see: each session with its makeup package cut and what swaps add or take
   // (derived, never stored; swaps can be turned off).
   const { swaps } = useSwaps();
@@ -233,8 +244,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       boot = null;
       sideBoot = null;
       if (!alive) return;
-      if (d.quarantined) quarantined(d.quarantined);
-      else if (d.recovered) notice(t('Dados recuperados'), (d.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered })));
+      if (d.quarantined) console.warn('[store] values moved to quarantine', d.quarantined);
+      if (d.quarantined || d.recovered) {
+        bootNews.current = { quarantined: d.quarantined, recovered: d.recovered };
+        setNewsAt(Date.now());
+      }
       if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
       if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
       const w = {
