@@ -36,7 +36,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, cutAt, entryLine, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -182,6 +182,8 @@ export default function NewHand() {
 
   // After a limp, the chips are more limps: one tap each.
   const limped = autoSeats.length > 0 && s.street === 'preflop' && limpedPot(hand, draft.autoFrom);
+  // After a raise, the same chips are cold calls.
+  const coldCall = autoSeats.length > 0 && s.street === 'preflop' && !limped && raisedPot(hand, draft.autoFrom);
   const overlimp = (seat: number) => {
     if (draft.autoFrom === undefined) return;
     const actions = limpIn(hand, draft.autoFrom, seat);
@@ -367,10 +369,13 @@ export default function NewHand() {
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
+  const line = phase === 'action' || phase === 'board' ? entryLine(hand) : [];
   const cardCall = phase === 'action' && raiseAt !== autoKey ? closingCall(hand, s) : null;
+  // Heads-up the grid already says it: «Só X paga» is the Call button, «Todos fold» the Fold.
+  const callers = phase === 'action' && !cardCall ? callerCandidates(hand, s) : [];
   const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
-  const callers = phase === 'action' ? callerCandidates(hand, s) : [];
+
   const checks = phase === 'action' ? checkAround(hand, s) : [];
   // "Check até ao fim" on the flop and turn, also when the others already checked to hero.
   const checkDown = phase === 'action' && (s.street === 'flop' || s.street === 'turn') ? checkDownNow(hand, s) : [];
@@ -572,6 +577,27 @@ export default function NewHand() {
           </>
         )}
 
+        {/* What was entered, newest first: a tap on any action takes the hand back to just before it. */}
+        {!voice.recording && (phase === 'action' || phase === 'board') && line.length > 0 && (
+          <ChipRow>
+            <T v="tiny" color={C.textDim} style={{ alignSelf: 'center' }}>
+              {t('Corrigir:')}
+            </T>
+            {line.map((x, k) => (
+              <React.Fragment key={x.i}>
+                {k === 0 || line[k - 1].street !== x.street ? (
+                  <T v="tiny" color={C.textDim} style={{ alignSelf: 'center' }}>
+                    {STREET_PT[x.street]}
+                  </T>
+                ) : null}
+                <Chip
+                  label={`${displayName(hand, x.a.p, pos)} ${x.a.kind === 'bet' || x.a.kind === 'raise' ? `${x.a.kind === 'bet' ? 'Bet' : 'Raise'} ${amount(x.a.to ?? 0, hand, inBB)}` : x.a.kind[0].toUpperCase() + x.a.kind.slice(1)}`}
+                  onPress={() => update(cutAt(hand, x.i))}
+                />
+              </React.Fragment>
+            ))}
+          </ChipRow>
+        )}
         {!voice.recording && phase === 'action' && l && (
           <>
             {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
@@ -591,11 +617,11 @@ export default function NewHand() {
             {autoSeats.length > 0 && (
               <ChipRow>
                 <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
-                  {limped ? t('Mais limps?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
+                  {limped ? t('Mais limps?') : coldCall ? t('Alguém pagou?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
                 </T>
                 {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
                 {[...autoSeats].reverse().map((i) => (
-                  <Chip key={i} label={displayName(hand, i, pos)} onPress={() => (limped ? overlimp(i) : rewind(i))} />
+                  <Chip key={i} label={displayName(hand, i, pos)} onPress={() => (limped || coldCall ? overlimp(i) : rewind(i))} />
                 ))}
               </ChipRow>
             )}

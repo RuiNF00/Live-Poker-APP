@@ -3353,6 +3353,8 @@ const es: Record<string, string> = {
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
   'Call? Toca já na carta do {street}': '¿Call? Toca ya la carta del {street}',
+  'Corrigir:': 'Corregir:',
+  'Alguém pagou?': '¿Alguien pagó?',
 };
 
 export default es;

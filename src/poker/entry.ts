@@ -229,6 +229,16 @@ export function limpedPot(hand: Hand, from: number | undefined): boolean {
   return before.some((a) => a.kind === 'call') && !before.some((a) => a.kind === 'raise' || a.kind === 'bet');
 }
 
+/**
+ * Preflop, someone raised before the seats the app folded: one of them most
+ * likely called, so its chip is that call in one tap (a 3-bet is still a tap
+ * on its seat on the felt).
+ */
+export function raisedPot(hand: Hand, from: number | undefined): boolean {
+  if (from === undefined) return false;
+  return hand.actions.slice(0, from).some((a) => a.kind === 'raise' || a.kind === 'bet');
+}
+
 export function limpIn(hand: Hand, from: number, seat: number): HandAction[] | null {
   const actions = rewindTo(hand, from, seat);
   return actions && [...actions, { p: seat, kind: 'call' }];
@@ -338,4 +348,33 @@ export function closingCall(hand: Hand, s: TableState): HandAction | null {
   const a: HandAction = { p: l.p, kind: 'call' };
   const next = apply(s, a, hand);
   return next && next.needsBoard ? a : null;
+}
+
+/** An entered action, as the line above the buttons shows it. */
+export interface LineItem {
+  i: number;
+  street: TableState['street'];
+  a: HandAction;
+}
+
+/**
+ * The actions worth a tap to fix, newest first: everything except the preflop
+ * folds of seats that had not acted yet (the app's own folds, mostly).
+ */
+export function entryLine(hand: Hand): LineItem[] {
+  const out: LineItem[] = [];
+  for (const st of replay(hand).steps) {
+    if (st.kind !== 'action' || st.actionIndex === undefined) continue;
+    const i = st.actionIndex;
+    const a = hand.actions[i];
+    if (a.kind === 'fold' && st.actStreet === 'preflop' && !hand.actions.slice(0, i).some((x) => x.p === a.p)) continue;
+    out.push({ i, street: st.actStreet ?? st.street, a });
+  }
+  return out.reverse();
+}
+
+/** The hand back to just before action `i`: that action, the ones after it, the board they dealt and the winners go. */
+export function cutAt(hand: Hand, i: number): Hand {
+  const back: Hand = { ...hand, actions: hand.actions.slice(0, i), winners: undefined, winners2: undefined, board2: undefined };
+  return { ...back, board: hand.board.slice(0, replay(back).final.boardCount) };
 }

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, closingCall, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, cutAt, entryLine, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -106,6 +106,14 @@ class Entry {
   /** After a limp, the "Mais limps?" chip: that seat limps in one tap. */
   limp(label: string) {
     assert.ok(limpedPot(this.hand, this.autoFrom), '"mais limps?" not shown');
+    const actions = limpIn(this.hand, this.autoFrom!, this.seat(label));
+    assert.ok(actions);
+    this.taps++;
+    this.set(actions);
+  }
+  /** After a raise, the "Alguém pagou?" chip: that seat calls in one tap. */
+  coldCall(label: string) {
+    assert.ok(raisedPot(this.hand, this.autoFrom), '"alguém pagou?" not shown');
     const actions = limpIn(this.hand, this.autoFrom!, this.seat(label));
     assert.ok(actions);
     this.taps++;
@@ -257,12 +265,11 @@ test('3-bet pot: HJ opens, hero 3-bets on the BTN, HJ calls and folds the flop �
   assert.equal(r.result!.net[0] > 0, true);
 });
 
-test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 16 taps (was 17)', () => {
+test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 15 taps (was 17; 16 before «Alguém pagou?»)', () => {
   const e = new Entry('BTN', ['8h', '7h']);
   e.entered('UTG');
   e.size('2.5x');
-  e.entered('LJ');
-  e.act('call');
+  e.coldCall('LJ'); // round 6: one tap on the chip, it was the seat and then Call
   assert.equal(e.s.toAct, 0);
   e.act('call');
   e.only(null); // blinds fold: "todos fold" now also after hero calls
@@ -272,7 +279,7 @@ test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 16 t
   e.size('½');
   e.only(null);
   const r = e.save();
-  assert.equal(e.taps, 16);
+  assert.equal(e.taps, 15);
   assert.equal(r.final.foldWin, true);
 });
 
@@ -838,4 +845,29 @@ test('round 6 · no card shortcut for hero, for a check, on the river or when so
   e.act('fold');
   e.board('Kc', '8d', '3s');
   assert.equal(closingCall(e.hand, e.s), null, 'a check never closes by a card');
+});
+
+test('round 6 · the action line: newest first, no app folds, one tap takes the hand back to before any action', () => {
+  const e = new Entry('BTN', ['Qs', 'Qc']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.size('3x');
+  e.only('CO');
+  e.board('Jh', '8c', '3d');
+  e.size('⅓');
+  e.callWithCard('2s');
+  const line = entryLine(e.hand);
+  assert.deepEqual(
+    line.map((x) => `${x.street}:${x.a.kind}`),
+    ['turn:check', 'flop:call', 'flop:bet', 'flop:check', 'preflop:call', 'preflop:raise', 'preflop:raise'],
+    "the folds before CO and the blinds are the app's own; CO's turn check to the raiser was too, but it is an action",
+  );
+  // CO actually raised the c-bet: one tap on «CO Call», the turn card goes with it.
+  const back = cutAt(e.hand, line.find((x) => x.a.kind === 'call' && x.street === 'flop')!.i);
+  assert.deepEqual(back.board, ['Jh', '8c', '3d']);
+  assert.equal(replay(back).final.toAct, e.seat('CO'));
+  // Hero didn't 3-bet: back to preflop, no board.
+  const pre = cutAt(e.hand, line.find((x) => x.a.p === e.hand.hero && x.street === 'preflop')!.i);
+  assert.deepEqual(pre.board, []);
+  assert.equal(replay(pre).final.toAct, e.hand.hero);
 });
