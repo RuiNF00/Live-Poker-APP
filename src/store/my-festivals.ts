@@ -83,6 +83,8 @@ function set(next: Festival[]) {
 
 function load(): Promise<void> {
   loaded ??= loadShippedFestivals()
+    // The player's own festivals load even if the shipped schedules didn't.
+    .catch(() => {})
     .then(() => AsyncStorage.getItem(KEY))
     .then(async (raw) => {
       const saved = ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates);

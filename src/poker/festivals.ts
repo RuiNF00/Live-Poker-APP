@@ -603,8 +603,8 @@ let shipped: Promise<void> | null = null;
  * the launch bundle. The store waits for them, through my-festivals, before the
  * first screen, so every screen sees the whole list.
  */
-export function loadShippedFestivals(): Promise<void> {
-  shipped ??= import('./festivals-nov-2026').then(
+export function loadShippedFestivals(load: () => Promise<typeof import('./festivals-nov-2026')> = () => import('./festivals-nov-2026')): Promise<void> {
+  shipped ??= load().then(
     (m) => {
       const more = [m.TORRELODONES_NOV_2026, m.SAO_PAULO_NOV_2026, m.LISBOA_NOV_2026, m.PERALADA_NOV_2026, m.ESPINHO_DEC_2026, m.PRAGUE_DEC_2026, m.PUNTA_DEL_ESTE_DEC_2026, m.PUNTA_CANA_JAN_2027];
       FESTIVALS.push(...more.filter((f) => !FESTIVALS.includes(f)));
