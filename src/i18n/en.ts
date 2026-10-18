@@ -1329,7 +1329,7 @@ const en: Record<string, string> = {
   'Tudo acertado': 'All square',
   'Novo backer': 'New backer',
   'Ex.: João, o meu irmão': 'E.g. John, my brother',
-  'Contacto, IBAN, como combinaram…': 'Contact, bank details, what you agreed…',
+  'Contacto, como combinaram…': 'Contact, what you agreed…',
   'Apagar backer': 'Delete backer',
   '{share}% com makeup · ficas com {cut}% do lucro': '{share}% with makeup · you keep {cut}% of profit',
   '{share}% de cada torneio · {markup}': '{share}% of each tournament · {markup}',

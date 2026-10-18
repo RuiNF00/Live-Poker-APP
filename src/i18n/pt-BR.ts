@@ -606,7 +606,7 @@ const ptBR: Record<string, string> = {
   'Deves {amount}': 'Você deve {amount}',
   'Devem-te {amount}': 'Te devem {amount}',
   'Ex.: João, o meu irmão': 'Ex.: João, meu irmão',
-  'Contacto, IBAN, como combinaram…': 'Contato, Pix, como combinaram…',
+  'Contacto, como combinaram…': 'Contato, como combinaram…',
   'Apagar backer': 'Excluir backer',
   '{share}% com makeup · ficas com {cut}% do lucro': '{share}% com makeup · você fica com {cut}% do lucro',
   'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e só ganhas a tua parte do lucro quando o pacote estiver acima de zero.': 'O backer paga a sua parte dos buy-ins. As perdas acumulam (makeup) e você só ganha sua parte do lucro quando o pacote estiver acima de zero.',

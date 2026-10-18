@@ -1232,7 +1232,7 @@ const es: Record<string, string> = {
   'Tudo acertado': 'Todo a mano',
   'Novo backer': 'Nuevo backer',
   'Ex.: João, o meu irmão': 'Ej.: Juan, mi hermano',
-  'Contacto, IBAN, como combinaram…': 'Contacto, IBAN, lo que acordaron…',
+  'Contacto, como combinaram…': 'Contacto, lo que acordaron…',
   'Apagar backer': 'Eliminar backer',
   '{share}% com makeup · ficas com {cut}% do lucro': '{share}% con makeup · te quedas con {cut}% de la ganancia',
   '{share}% de cada torneio · {markup}': '{share}% de cada torneo · {markup}',
