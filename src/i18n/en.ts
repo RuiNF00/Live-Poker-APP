@@ -3360,7 +3360,7 @@ const en: Record<string, string> = {
   'Partilhar viagem': 'Share trip',
   'Carrossel da viagem': 'Trip carousel',
   'Não dá para reabrir este pacote': "Can't reopen this package",
-  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
+  'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': "This package's makeup already moved to «{name}». It keeps being recovered there.",
 };
 
 export default en;

@@ -3354,7 +3354,7 @@ const es: Record<string, string> = {
   'Partilhar viagem': 'Compartir viaje',
   'Carrossel da viagem': 'Carrusel del viaje',
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
-  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
+  'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}». Se sigue recuperando allí.',
 };
 
 export default es;
