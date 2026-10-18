@@ -89,6 +89,8 @@ export const PRO_ONLY = {
   villainRange: true,
   /** The player's face (front camera) in a circle on the hand video. The video itself, with or without the brand, stays free. */
   faceVideo: true,
+  /** "Contar a mão": the hand told by voice (or typed) and put on the felt. Entering it with taps stays free. */
+  voiceHand: true,
 };
 export type ProFeature = keyof typeof PRO_ONLY;
 
@@ -181,6 +183,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('A tua cara no vídeo da mão'),
     body: t('Explica a mão a falar, com a tua cara num canto.'),
   },
+  voiceHand: {
+    title: t('Conta a mão, nós pomo-la na mesa'),
+    body: t('Dizes a mão em voz alta e ela aparece no replayer, pronta a corrigir.'),
+  },
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
@@ -242,6 +248,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'trips', icon: 'airplane', title: t('Viagens'), body: t('Despesas e líquido por festival') },
   { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
   { key: 'faceVideo', icon: 'videocam', title: t('Vídeo com a tua cara'), body: t('A explicar a mão, num canto') },
+  { key: 'voiceHand', icon: 'mic', title: t('Mão por voz'), body: t('Contas e ela fica na mesa') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
@@ -270,6 +277,7 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   villainRange: 'villainRange',
   trips: 'trips',
   faceVideo: 'faceVideo',
+  voiceHand: 'voiceHand',
 };
 
 /** Three rows: the feature the player just reached for first, then generic ones. */
@@ -291,6 +299,7 @@ export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
     { label: 'Bankrolls', free: n(FREE.bankrolls), pro: '∞' },
     { label: 'Filtros e salas', free: FREE.bankrollFilters, pro: true },
     { label: 'Stories com voz', free: false, pro: true },
+    { label: 'Mão contada por voz', free: !PRO_ONLY.voiceHand, pro: true },
     { label: 'Várias mãos para o solver', free: false, pro: true },
     { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
     { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },

@@ -1642,6 +1642,25 @@ const ptBR: Record<string, string> = {
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Este backup foi feito numa versão mais recente do Sweatbook. Atualize o app e tente de novo; nada foi alterado.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'Não conseguimos ler este backup. Nada foi alterado neste celular.',
   'Guardar uma cópia dos dados': 'Salvar uma cópia dos dados',
+  // Contar a mão (voice hand entry)
+  'Conta a mão, nós pomo-la na mesa': 'Conte a mão, a gente coloca na mesa',
+  'Dizes a mão em voz alta e ela aparece no replayer, pronta a corrigir.': 'Você fala a mão em voz alta e ela aparece no replayer, pronta para corrigir.',
+  'Contas e ela fica na mesa': 'Você conta e ela vai pra mesa',
+  'Os naipes que não disseste foram escolhidos por nós. Toca numa carta para a mudar.': 'Escolhemos os naipes que você não disse. Toque numa carta para mudar.',
+  'Sem valor para o {pos}: ficou o tamanho habitual.': 'Sem valor para o {pos}: ficou o tamanho de sempre.',
+  'Um valor não foi dito: ficou o tamanho habitual.': 'Faltou um valor: ficou o tamanho de sempre.',
+  'Faltam cartas no {street}: a mão fica por aí e escolhes as cartas a seguir.': 'Faltam cartas no {street}: a mão para aí e você escolhe as cartas em seguida.',
+  'Não disseste a tua posição: ficaste no {pos}.': 'Você não disse sua posição: ficou no {pos}.',
+  'Não percebemos as tuas cartas: escolhes a seguir.': 'Não entendemos suas cartas: escolha em seguida.',
+  'O stack do {pos} subiu para caber o valor que disseste.': 'O stack do {pos} subiu para caber o valor que você disse.',
+  'Carta com naipe escolhido por nós. Toca para mudar': 'Escolhemos o naipe desta carta. Toque para mudar',
+  'Toca para mudar a carta': 'Toque para mudar a carta',
+  'Toca no microfone do teclado e conta a mão como a contarias a um amigo. Também podes escrever.': 'Toque no microfone do teclado e conte a mão como contaria a um amigo. Também dá para digitar.',
+  'A mão, por palavras tuas': 'A mão, com suas palavras',
+  'Estou no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago…': 'Tô no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago…',
+  'O que percebemos': 'O que entendemos',
+  'Escolhe a carta certa': 'Escolha a carta certa',
+  'Depois corriges o que faltar com toques, como numa mão normal.': 'Depois você corrige o que faltar com toques, como numa mão normal.',
 };
 
 export default ptBR;

@@ -9,7 +9,8 @@
 //  - "só X paga" / "todos fold" / "todos check" close a street in one tap,
 //  - context (tournament, blinds, table) carries over from the session,
 //  - no time at the table: "Voz" records a note and saves the hand as it is,
-//    to be completed after the session.
+//    to be completed after the session,
+//  - or the whole hand told in words ("Contar a mão"), put on the felt to fix with taps.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,12 +21,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
+import { PRO_ONLY } from '@/billing/plans';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
 import { TapCountProvider } from '@/components/TapCount';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
+import { VoiceHandSheet } from '@/components/entry/VoiceHandSheet';
 import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
@@ -89,6 +92,9 @@ export default function NewHand() {
   // undefined: the picker opens by itself for the only opponent left; null: closed.
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
+  const [telling, setTelling] = useState(false);
+  // Set once a hand came from "Contar a mão": the hand_saved event says so.
+  const toldRef = useRef(false);
 
   const hand = draft.hand;
   const n = hand.players.length;
@@ -313,7 +319,7 @@ export default function NewHand() {
     if (!settings.onboarded) store.setSettings({ onboarded: true });
     if (!isEdit) {
       store.setDraft(null);
-      pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0 });
+      pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0, ...(toldRef.current ? { voice: true } : {}) });
     }
     // Finishing a half-saved hand: the detail screen offers the next one.
     const to = { pathname: '/hand/[id]' as const, params: justFinished ? { id: final.id, f: '1' } : { id: final.id } };
@@ -326,6 +332,16 @@ export default function NewHand() {
     const voiceNote = await keepVoiceNote(recording, hand.id).catch(() => recording);
     save({ voiceNote });
   });
+
+  // "Contar a mão": the told hand replaces this one (same id, session and voice note). What it
+  // already has is kept as entered: no automatic folds on top of it, like a reopened draft.
+  const fromWords = (told: Hand, posKnown: boolean) => {
+    setTelling(false);
+    const next = { ...told, id: hand.id, createdAt: hand.createdAt, sessionId: hand.sessionId, voiceNote: hand.voiceNote, tags: hand.tags, notes: hand.notes };
+    autoDone.current = new Set(Array.from({ length: next.actions.length + 1 }, (_, k) => stateKey(next, k)));
+    toldRef.current = true;
+    update(next, posKnown || next.actions.length > 0 || draft.posChosen);
+  };
 
   const discard = () => {
     store.setDraft(null);
@@ -537,6 +553,24 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
+            {!hand.actions.length && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('Contar a mão por voz')}
+                onPress={() => {
+                  tap();
+                  // Pro: telling the hand. Entering it with taps stays free.
+                  if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+                  setTelling(true);
+                }}
+                style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
+                <Ionicons name="mic" size={16} color={C.accent} />
+                <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+                  {t('Contar a mão por voz')}
+                </T>
+                {!pro.isPro && PRO_ONLY.voiceHand ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
+              </Pressable>
+            )}
             {!settings.onboarded && !isEdit ? (
               <T v="tiny" style={{ textAlign: 'center' }}>
                 {t('Posição e duas cartas. Os folds até ti são automáticos.')}
@@ -774,6 +808,8 @@ export default function NewHand() {
           </>
         )}
       </View>
+
+      <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} />
 
       <ContextSheet
         visible={ctxOpen}
