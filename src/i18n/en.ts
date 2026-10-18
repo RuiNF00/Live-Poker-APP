@@ -646,7 +646,6 @@ const en: Record<string, string> = {
   'Convidados': 'Invited',
   'A usar': 'Using it',
   'Dias ganhos': 'Days earned',
-  'Pro de convites até {date}': 'Pro from invites until {date}',
   'Conta quando o amigo guarda a primeira mão nos 7 dias depois de instalar. Até 10 amigos por ano.': 'Counts when your friend saves a first hand within 7 days of installing. Up to 10 friends a year.',
   'Vens por convite': 'You were invited',
   'Não deu para ativar o convite agora. Podes escrever o código nas Definições.': "Couldn't activate the invite right now. You can enter the code in Settings.",
