@@ -105,11 +105,13 @@ const withId = (x: unknown) => isObj(x) && typeof x.id === 'string' && x.id.leng
 const isStr = (x: unknown): x is string => typeof x === 'string';
 const isNum = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** A venue time as the planner reads it ('YYYY-MM-DDTHH:MM'): anything else breaks venueTime. */
+const START = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 /** Keys from a file: never one that would reach the object's prototype. */
 const safeKey = (k: string) => k.length > 0 && k.length <= 100 && k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
 
 function okEvent(e: unknown): e is Record<string, unknown> {
-  return withId(e) && isObj(e) && isStr(e.name) && isNum(e.number) && isNum(e.buyIn) && isStr(e.start) && (e.game === 'NLH' || e.game === 'PLO' || e.game === 'Mix');
+  return withId(e) && isObj(e) && isStr(e.name) && isNum(e.number) && isNum(e.buyIn) && isStr(e.start) && START.test(e.start) && (e.game === 'NLH' || e.game === 'PLO' || e.game === 'Mix');
 }
 
 /** Only the fields the planner knows; nothing else from the file is kept. */

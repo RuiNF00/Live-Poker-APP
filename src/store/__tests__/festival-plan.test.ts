@@ -470,3 +470,11 @@ test('a stored plan of the wrong shape is dropped, the good ones are kept', () =
   assert.deepEqual(out['lisboa-nov-2026'], good);
   assert.deepEqual(out['espinho-dez-2026'], { picked: ['2'], lateReg: {}, sessions: {} });
 });
+
+test('an added tournament with a start the planner cannot read, or no buy-in, drops its plan', () => {
+  const ev = (over: object) => ({ 'las-vegas-dez-2026': { picked: ['o1'], events: [{ id: 'o1', number: 1, name: 'X', buyIn: 100, start: '2026-12-03T18:00', game: 'NLH', ...over }] } });
+  assert.equal(Object.keys(cleanPlans(ev({}))).length, 1);
+  assert.equal(Object.keys(cleanPlans(ev({ start: '2026-12-03' }))).length, 0);
+  assert.equal(Object.keys(cleanPlans(ev({ start: 'garbage' }))).length, 0);
+  assert.equal(Object.keys(cleanPlans(ev({ buyIn: undefined }))).length, 0);
+});
