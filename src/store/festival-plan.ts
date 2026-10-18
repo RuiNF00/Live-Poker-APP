@@ -327,6 +327,9 @@ export function clearPlans() {
   emit();
 }
 
+/** Reads the phone's plans; the app waits for it at launch so a backup never goes out without them. */
+export const loadPlans = (): Promise<void> => load();
+
 /** Every plan, for the backup. Starts reading the phone's copy if nothing has yet. */
 export function currentPlans(): Plans {
   void load();

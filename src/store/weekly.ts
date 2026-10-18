@@ -121,6 +121,9 @@ export function deleteWeekly(id: string) {
   persist();
 }
 
+/** Reads the weekly tournaments; the app waits for it at launch (see store.tsx). */
+export const loadWeekly = (): Promise<void> => load();
+
 /** Every weekly tournament, for the backup. */
 export function currentWeekly(): WeeklyTournament[] {
   void load();

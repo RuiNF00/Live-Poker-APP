@@ -303,7 +303,7 @@ function FestivalPlanCard({ trip, fmt }: { trip: Trip; fmt: (n: number) => strin
             ? spanLabel(span.from, span.to)
             : t('Datas a confirmar')
           : tot.events
-          ? t('{n} eventos marcados · {amount} em buy-ins', { n: tot.events, amount: f.currency === trip.currency ? fmt(tot.buyIns) : money(tot.buyIns, f.currency) })
+          ? t(tot.events === 1 ? '1 evento marcado · {amount} em buy-ins' : '{n} eventos marcados · {amount} em buy-ins', { n: tot.events, amount: f.currency === trip.currency ? fmt(tot.buyIns) : money(tot.buyIns, f.currency) })
           : t('Ainda não marcaste eventos. Marca-os no plano para veres os buy-ins aqui.')}
       </T>
     </Card>

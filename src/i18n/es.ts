@@ -1582,6 +1582,7 @@ const es: Record<string, string> = {
   'Nova despesa': 'Nuevo gasto',
   'Póquer': 'Póker',
   'Plano do festival': 'Plan del festival',
+  '1 evento marcado · {amount} em buy-ins': '1 evento marcado · {amount} en buy-ins',
   '{n} eventos marcados · {amount} em buy-ins': '{n} eventos marcados · {amount} en buy-ins',
   'Ainda não marcaste eventos. Marca-os no plano para veres os buy-ins aqui.': 'Aún no marcaste eventos. Márcalos en el plan para ver los buy-ins aquí.',
   'Viagens': 'Viajes',

@@ -132,6 +132,9 @@ export function saveOwnFestival(f: Festival) {
   persist();
 }
 
+/** Reads the player's own festivals; the app waits for it at launch (see store.tsx). */
+export const loadOwnFestivals = (): Promise<void> => load();
+
 /** The player's own festivals, for the backup. */
 export function currentOwnFestivals(): Festival[] {
   void load();
