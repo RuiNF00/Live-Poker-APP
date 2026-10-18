@@ -287,8 +287,9 @@ export default function NewHand() {
     }
     saved.current = true;
     // Named villains go into the player notes, so the next time they are one tap away.
+    // A link to a note that was deleted (carried over from the last hand) counts as no link.
     const players = hand.players.map((p, i) => {
-      if (i === hand.hero || !p.name.trim() || p.playerId) return p;
+      if (i === hand.hero || !p.name.trim() || (p.playerId && store.players.some((k) => k.id === p.playerId))) return p;
       const key = p.name.trim().toLowerCase();
       const existing = store.players.find((k) => k.name.trim().toLowerCase() === key)?.id ?? madePlayers.current.get(key);
       if (existing) return { ...p, playerId: existing };

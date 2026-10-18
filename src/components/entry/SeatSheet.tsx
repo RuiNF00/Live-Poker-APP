@@ -70,7 +70,8 @@ export function SeatSheet({
   if (!player) return null;
   const q = name.trim().toLowerCase();
   const sugg = known.filter((k) => !q || k.name.toLowerCase().includes(q)).slice(0, 8);
-  const knownId = playerId ?? known.find((k) => q && k.name.trim().toLowerCase() === q)?.id;
+  // A deleted note's id (carried over from the last hand) is no link: match by name instead.
+  const knownId = (playerId && known.some((k) => k.id === playerId) ? playerId : undefined) ?? known.find((k) => q && k.name.trim().toLowerCase() === q)?.id;
   const knownNote = knownId ? known.find((k) => k.id === knownId) : undefined;
   const quick = [20, 40, 60, 100].map((x) => x * bb);
   return (
