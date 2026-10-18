@@ -31,8 +31,8 @@ export function TermSheet({ k, onClose }: { k: TermKey | null; onClose: () => vo
   const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={!!k} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-        <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
+      <Pressable accessible={false} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+        <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={onClose} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
           {k ? (
             <>
               <SheetHeader title={k} onClose={onClose} />

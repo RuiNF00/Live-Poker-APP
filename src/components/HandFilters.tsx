@@ -56,8 +56,8 @@ export function HandFilterSheet({ visible, onClose, value, onChange, hands }: { 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' }}>
+        <Pressable accessible={false} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={onClose} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' }}>
             <ScrollView contentContainerStyle={{ padding: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
               <SheetHeader title={t('Filtrar mãos')} onClose={onClose} />
 

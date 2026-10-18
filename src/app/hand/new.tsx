@@ -548,7 +548,7 @@ export default function NewHand() {
         {!voice.recording && phase === 'action' && l && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2" numberOfLines={1} style={{ flex: 1 }}>
+              <T v="h2" numberOfLines={2} style={{ flex: 1 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>

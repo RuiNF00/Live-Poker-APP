@@ -69,9 +69,9 @@ export function SoftAskSheet({ ask, onAnswer }: { ask: SoftAsk | null; onAnswer:
   const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={!!ask} transparent animationType="fade" onRequestClose={() => onAnswer(false)}>
-      <Pressable accessibilityLabel={t('Agora não')} onPress={() => onAnswer(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+      <Pressable accessible={false} onPress={() => onAnswer(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
         {ask ? (
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={() => onAnswer(false)} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.lg }}>
             <View
               accessible
               accessibilityLabel={`${t('Exemplo de aviso')}: ${ask.preview.title}. ${ask.preview.body}`}

@@ -529,7 +529,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
-            <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
+            <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityHint={t('Duração do nível')}>
               <LevelAlarm s={s} onDue={levelUp} />
             </Pressable>
           </Card>

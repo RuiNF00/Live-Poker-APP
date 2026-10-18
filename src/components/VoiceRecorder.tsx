@@ -118,7 +118,7 @@ export function VoiceRecorder({
     return (
       <View style={box}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Pressable onPress={toggle} hitSlop={8}>
+          <Pressable onPress={toggle} hitSlop={8} accessibilityRole="button" accessibilityLabel={playing.playing ? t('Pausa') : t('Ouvir nota de voz')}>
             <Row gap={10}>
               <Ionicons name={playing.playing ? 'pause-circle' : 'play-circle'} size={30} color={C.accent} />
               <T v="h2">{t('A tua voz')}</T>
@@ -128,7 +128,7 @@ export function VoiceRecorder({
             </Row>
           </Pressable>
           <Row gap={16}>
-            <Pressable onPress={start} hitSlop={8}>
+            <Pressable onPress={start} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Gravar de novo')}>
               <Ionicons name="refresh" size={20} color={C.textDim} />
             </Pressable>
             <Pressable
@@ -136,7 +136,9 @@ export function VoiceRecorder({
                 if (playing.playing) player.pause();
                 onChange(null);
               }}
-              hitSlop={8}>
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('Apagar nota de voz')}>
               <Ionicons name="trash-outline" size={20} color={C.danger} />
             </Pressable>
           </Row>

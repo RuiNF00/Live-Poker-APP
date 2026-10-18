@@ -23,7 +23,9 @@ const trialEnd = (days: number) => new Date(Date.now() + days * 86_400_000).toLo
 export default function Paywall() {
   const insets = useSafeAreaInsets();
   // Small phones (SE, mini): drop the hero icon so the plans show without scrolling.
-  const compact = useWindowDimensions().height < 760;
+  const win = useWindowDimensions();
+  // Short screens and large text both: the plans stay above the fold.
+  const compact = win.height < 760 || win.fontScale > 1.3;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -251,7 +253,7 @@ export default function Paywall() {
         <T v="tiny" style={{ textAlign: 'center' }}>
           {Platform.OS === 'android' ? t('Renova automaticamente. Cancela na Google Play antes da data de renovação.') : t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
         </T>
-        <Row style={{ justifyContent: 'center' }} gap={S.lg}>
+        <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }} gap={S.lg}>
           <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
             <T v="tiny" color={C.textDim}>
               {t('Termos')}
