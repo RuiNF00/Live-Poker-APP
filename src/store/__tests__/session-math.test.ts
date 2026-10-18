@@ -180,3 +180,16 @@ test('ROI is the result over your share of the buy-ins, the same on every screen
   assert.equal(summarize(list, 'mine').roi, roi);
   assert.equal(mttStats(list)!.roi, roi);
 });
+
+test('ROI with a tournament sold 100%: its markup counts as result, nothing as buy-ins', () => {
+  // The staking convention: markup is profit, and a fully sold session adds no buy-ins of yours.
+  const sold = mk({ id: 's', buyIn: 1000, cashOut: 0, staking: { sold: 100, markup: 1.1 } });
+  assert.equal(ownBuyIns(sold), 0);
+  assert.equal(profit(sold), 100);
+  const plain = mk({ id: 'p', buyIn: 100, cashOut: 0 });
+  assert.equal(totals([sold, plain]).roi, 0);
+  // Only fully sold tournaments: no ROI to show, never 0% or a division by zero.
+  assert.equal(totals([sold]).roi, null);
+  assert.equal(summarize([sold], 'mine').roi, null);
+  assert.equal(mttStats([1, 2, 3, 4, 5].map((i) => ({ ...sold, id: 's' + i })))!.roi, null);
+});
