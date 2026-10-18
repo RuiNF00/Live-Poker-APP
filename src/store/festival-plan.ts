@@ -8,7 +8,7 @@ import { useSyncExternalStore } from 'react';
 import { t } from '@/i18n';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 
-import { parseOrQuarantine } from './boot';
+import { parseOrQuarantine, quarantine } from './boot';
 import type { KV } from './persist';
 import { isBagged } from './multi-day';
 import type { Session } from './types';
@@ -77,9 +77,15 @@ export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   return withPlanEvents(f, plan).events.filter((e) => set.has(e.id));
 }
 
-/** When a session started for this event runs its level clock from: the published start, also when joining in late reg (the floor's clock). */
-export function levelStart(f: Festival, e: FestivalEvent): number | undefined {
-  return e.levelMinutes ? venueTime(f, e.start) : undefined;
+/**
+ * When a session started for this event runs its level clock from: the published start, also when
+ * joining in late reg (the floor's clock). Past late reg (or LATE_DEFAULT_MIN when none is given), as
+ * when starting a row from an earlier day, the published start says nothing: the clock runs from now.
+ */
+export function levelStart(f: Festival, e: FestivalEvent, now = Date.now(), lateMin = e.lateRegMin): number | undefined {
+  if (!e.levelMinutes) return undefined;
+  const start = venueTime(f, e.start);
+  return now > start + (lateMin || LATE_DEFAULT_MIN) * 60_000 ? now : start;
 }
 
 /** Schedule filters beyond the game: satellites, fast and deep structures, by the event's name or flight. */
@@ -314,12 +320,39 @@ function emit() {
   for (const l of listeners) l();
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const isNumbers = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'number');
+const isStrings = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'string');
+
+/** The stored plans that have the right shape (fields left out take their empty value); the rest are dropped. */
+export function cleanPlans(saved: Record<string, unknown>): Plans {
+  const out: Plans = {};
+  for (const [id, p] of Object.entries(saved)) {
+    if (!isRecord(p)) continue;
+    const { picked = [], lateReg = {}, sessions = {}, name, events } = p;
+    if (!Array.isArray(picked) || !picked.every((x) => typeof x === 'string')) continue;
+    if (!isNumbers(lateReg) || !isStrings(sessions)) continue;
+    if (name !== undefined && typeof name !== 'string') continue;
+    if (events !== undefined && !(Array.isArray(events) && events.every((e) => isRecord(e) && typeof e.id === 'string' && typeof e.start === 'string' && typeof e.name === 'string'))) continue;
+    out[id] = { ...(p as unknown as FestivalPlan), picked, lateReg: lateReg as FestivalPlan['lateReg'], sessions: sessions as FestivalPlan['sessions'] };
+  }
+  return out;
+}
+
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
     .then(async (raw) => {
-      const saved = raw ? await parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw, (v) => !!v && typeof v === 'object' && !Array.isArray(v)) : null;
+      const kv = AsyncStorage as unknown as KV;
+      const saved = raw ? await parseOrQuarantine<Record<string, unknown>>(kv, KEY, raw, isRecord) : null;
       if (!saved) return;
-      plans = { ...saved, ...plans };
+      const good = cleanPlans(saved);
+      // One plan of the wrong shape would break the festival screen on every open: the stored
+      // value goes to quarantine as it was, and the good plans are kept.
+      if (Object.keys(good).length < Object.keys(saved).length) {
+        await quarantine(kv, [[KEY, raw!]]);
+        await AsyncStorage.setItem(KEY, JSON.stringify(good)).catch(() => {});
+      }
+      plans = { ...good, ...plans };
       emit();
     })
     .catch(() => {});
@@ -368,7 +401,9 @@ export function mergePlan(local: FestivalPlan | undefined, incoming: FestivalPla
 }
 
 /** Brings a backup's plans in (see mergePlan), after the phone's own are read so none is written over. */
-export async function importPlans(incoming: Plans): Promise<void> {
+export async function importPlans(raw: Plans): Promise<void> {
+  // A backup is outside data too: a plan of the wrong shape stays out.
+  const incoming = isRecord(raw) ? cleanPlans(raw) : {};
   const ids = Object.keys(incoming);
   if (!ids.length) return;
   await load();
