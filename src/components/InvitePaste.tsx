@@ -31,7 +31,7 @@ export function InvitePaste({ onClaimed }: { onClaimed: () => void }) {
     const code = data.type === 'text' ? inviteCodeFrom(data.text) : null;
     if (!code) return notice(t('Não encontrámos este convite.'), t('Abre outra vez o link que o teu amigo te mandou.'));
     const r = await claimInvite(code, 'manual');
-    if (r === 'ok' || r === 'already' || r === 'queued') {
+    if (r === 'ok' || r === 'already' || r === 'queued' || r === 'queued_busy') {
       setShow(false);
       onClaimed();
     } else if (r === 'too_late') notice(t('Os convites só contam nos 7 dias depois de instalar.'));

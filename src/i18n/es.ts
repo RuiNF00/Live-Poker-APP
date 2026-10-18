@@ -1418,6 +1418,7 @@ const es: Record<string, string> = {
   'Festival': 'Festival',
   'Flights 2A e 2BC do Main Event tratados como Dia 2 (sem novo buy-in).': 'Los flights 2A y 2BC del Main Event cuentan como Día 2 (sin nuevo buy-in).',
   'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.': 'Sin conexión ahora: la invitación queda guardada y se activa sola cuando haya señal.',
+  'O servidor está ocupado: o convite fica guardado e é ativado sozinho daqui a pouco.': 'El servidor está ocupado: la invitación queda guardada y se activa sola en un rato.',
   'O link é desligado assim que houver sinal.': 'El enlace se desactiva en cuanto haya señal.',
   'Sem rede: copia quando voltar': 'Sin conexión: se copia cuando vuelva',
   'Algo correu mal': 'Algo salió mal',
