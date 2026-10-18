@@ -3,7 +3,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 
 export async function saveTextFile(name: string, text: string, mime: string): Promise<void> {
-  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  // CSV: a byte-order mark, or Excel reads the accents (ç, ã, ñ) as the wrong letters.
+  const url = URL.createObjectURL(new Blob([mime === 'text/csv' ? '\uFEFF' + text : text], { type: mime }));
   const a = document.createElement('a');
   a.href = url;
   a.download = name;

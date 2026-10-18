@@ -66,6 +66,8 @@ export function parseCsv(text: string, sep = detectSeparator(text)): string[][] 
     row.push(last.trim());
     rows.push(row);
   }
+  // Text our own export kept from running as a formula ('=…, '-…): back to what was typed.
+  for (const r of rows) for (let c = 0; c < r.length; c++) if (r[c].charCodeAt(0) === 39 && /^'[=+\-@\t\r]/.test(r[c])) r[c] = r[c].slice(1);
   return rows;
 }
 

@@ -9,7 +9,8 @@ export async function saveTextFile(name: string, text: string, mime: string): Pr
   const f = new File(Paths.cache, name);
   if (f.exists) f.delete();
   f.create();
-  f.write(text);
+  // CSV: a byte-order mark, or Excel reads the accents (ç, ã, ñ) as the wrong letters.
+  f.write(mime === 'text/csv' ? '\uFEFF' + text : text);
   await Sharing.shareAsync(f.uri, { mimeType: mime, dialogTitle: name, UTI: mime === 'text/csv' ? 'public.comma-separated-values-text' : mime === 'text/plain' ? 'public.plain-text' : 'public.json' });
 }
 

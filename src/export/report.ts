@@ -11,6 +11,7 @@ import { bankrollOf, formatOf, inRange, type DateRange, type Scope, scopeIds } f
 import { breakdown, byCurrency, cost, owedToBackers, playedMs, profit, totals, type Breakdown, type Totals } from '@/store/session-math';
 import { tripsIn, tripSummary, type TripSummary } from '@/store/trip-math';
 import type { Bankroll, Session, Transfer, Trip } from '@/store/types';
+import { csvCell, type CsvSep } from './csv';
 
 export interface ReportInput {
   sessions: Session[];
@@ -121,16 +122,13 @@ export function buildReport(inp: ReportInput): Report {
 
 // ─── Hands CSV ───────────────────────────────────────────────────────────────
 
-function cell(v: string | number | undefined): string {
-  const s = v === undefined ? '' : String(v);
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** One row per hand: when, where, hero's spot and cards, the board and what hero won or lost. */
-export function handsCsv(hands: Hand[], sessions: Session[], range: DateRange = {}, shareBase?: string): string {
-  const head = ['date', 'time', 'type', 'game', 'venue', 'session', 'blinds', 'ante', 'players', 'position', 'hero_cards', 'combo', 'board', 'result_chips', 'result_bb', 'tags', 'title', 'notes', 'link'];
+export function handsCsv(hands: Hand[], sessions: Session[], range: DateRange = {}, shareBase?: string, sep: CsvSep = ','): string {
+  const cell = (v: string | number | undefined) => csvCell(v, sep);
+  // sb and bb apart: "1/2" in one cell is a date to Excel.
+  const head = ['date', 'time', 'type', 'game', 'venue', 'session', 'currency', 'sb', 'bb', 'ante', 'players', 'position', 'hero_cards', 'combo', 'board', 'result_chips', 'result_bb', 'tags', 'title', 'notes', 'link'];
   const byId = new Map(sessions.map((s) => [s.id, s]));
   const rows = hands
     .filter((h) => inRange(h.createdAt, range))
@@ -153,7 +151,9 @@ export function handsCsv(hands: Hand[], sessions: Session[], range: DateRange = 
         h.game.name,
         h.game.venue ?? s?.venue ?? '',
         s?.name ?? '',
-        `${h.game.sb}/${h.game.bb}`,
+        h.game.currency,
+        h.game.sb,
+        h.game.bb,
         h.game.ante || '',
         h.players.length,
         pos,
@@ -168,7 +168,7 @@ export function handsCsv(hands: Hand[], sessions: Session[], range: DateRange = 
         h.shareId && shareBase ? `${shareBase}/h/${h.shareId}` : '',
       ]
         .map(cell)
-        .join(',');
+        .join(sep);
     });
-  return [head.join(','), ...rows].join('\n') + '\n';
+  return [head.join(sep), ...rows].join('\n') + '\n';
 }

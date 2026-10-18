@@ -9,6 +9,7 @@ import { PRO_ONLY } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { Chip, ChipRow, Field, ListGroup, ListItem, Pill, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { csvSep } from '@/export/csv';
 import { buildReport, handsCsv } from '@/export/report';
 import { reportHtml } from '@/export/report-html';
 import { saveTextFile } from '@/lib/files';
@@ -89,9 +90,9 @@ export default function ExportScreen() {
       const list = report.currencies.flatMap((c) => c.sessions);
       const tx = transfers.filter((x) => (!ids || ids.has(x.bankrollId)) && inRange(x.at, range));
       const spent = trips.flatMap((trip) => trip.expenses.filter((x) => inRange(x.at, range)).map((x) => ({ trip, x })));
-      return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx, spent), 'text/csv');
+      return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx, spent, csvSep()), 'text/csv');
     });
-  const handsFile = () => run('hands', true, () => saveTextFile(`sweatbook-maos-${stamp}.csv`, handsCsv(hands, sessions, range, BRAND.webUrl), 'text/csv'));
+  const handsFile = () => run('hands', true, () => saveTextFile(`sweatbook-maos-${stamp}.csv`, handsCsv(hands, sessions, range, BRAND.webUrl, csvSep()), 'text/csv'));
   const backup = () => run('json', false, () => saveTextFile(`sweatbook-${new Date(now).toISOString().slice(0, 10)}.json`, JSON.stringify(buildBackup(store)), 'application/json'));
 
   const lock = pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />;

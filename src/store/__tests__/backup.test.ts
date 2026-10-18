@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { parseCsv } from '../../import/csv';
 import { buildBackup, importSummary, mergeById, parseBackup, restoredSettings, sessionsCsv } from '../backup';
 import { DEFAULT_SETTINGS, type Session } from '../types';
 
@@ -42,7 +43,20 @@ test('csv quotes and computes profit', () => {
   assert.equal(lines.length, 2);
   // Local date and start time, ..., hours, hands (none counted), ..., expenses, tips, profit.
   // Midnight UTC is the 30th west of Greenwich: the date is local. Then exact start, end and id, for the import.
-  assert.match(lines[1], /^2026-(09-30|10-01),\d\d:\d\d,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2\.00,,200,1,0,200,450,0,,0,0,250,,,,,,,,,,,,[\d-]{10} [\d:]{8},[\d-]{10} [\d:]{8},s1$/);
+  assert.match(lines[1], /^2026-(09-30|10-01),\d\d:\d\d,cash,live,,"NLH 1\/2, ""deep""",Estoril,€,2,,200,1,0,200,450,0,,0,0,250,,,,,,,,,,,,[\d-]{10} [\d:]{8},[\d-]{10} [\d:]{8},s1$/);
+});
+
+test('csv for Excel in Portuguese: semicolons, decimal commas, no formulas, a lone CR quoted, cost to the cent', () => {
+  const s = sess({ buyIn: 33.3, entries: 3, notes: '=HYPERLINK("http://x")\rsegunda' });
+  const [head, row] = sessionsCsv([s], [], [], [], ';').trim().split('\n');
+  const cols = head.split(';');
+  assert.equal(cols.length, 34);
+  const cells = parseCsv(head + '\n' + row + '\n', ';')[1];
+  assert.equal(cells.length, 34);
+  assert.equal(cells[cols.indexOf('total_cost')], '99,9');
+  assert.ok(row.includes(`"'=HYPERLINK(""http://x"")\rsegunda"`), 'kept as text in the spreadsheet');
+  assert.equal(cells[cols.indexOf('notes')], '=HYPERLINK("http://x")\rsegunda', 'the import reads back what was typed');
+  assert.equal(cells[cols.indexOf('id')], 's1');
 });
 
 test('csv says the day a multi-day tournament reached and the bagged stack', () => {

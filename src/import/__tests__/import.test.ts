@@ -115,6 +115,25 @@ test('Sweatbook CSV comes back as the same sessions', () => {
   assert.equal(new Date(r.sessions[0].startedAt).getHours(), 20, 'start time comes back too');
 });
 
+test('Sweatbook CSV in the Portuguese layout (semicolons, decimal commas, a BOM) imports back the same', () => {
+  const base: Session = {
+    id: 'pt', kind: 'cash', name: 'NLH 1/2', venue: 'Póvoa', currency: '€', startedAt: new Date(2026, 8, 3, 20).getTime(), endedAt: new Date(2026, 8, 3, 22, 30).getTime(),
+    breaks: [], buyIn: 33.3, entries: 3, addOn: 0, cashOut: 150.45, tips: 2.5, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '-bad beat',
+  };
+  const text = '\uFEFF' + sessionsCsv([base], [], [], [], ';');
+  const r = run(text);
+  assert.equal(r.source, 'sweatbook');
+  assert.equal(r.sessions.length, 1);
+  const s = r.sessions[0];
+  const c = (n: number) => Math.round(n * 100);
+  assert.equal(c(profit(s)), c(profit(base)));
+  assert.equal(s.cashOut, 150.45);
+  assert.equal(s.tips, 2.5);
+  assert.equal(s.venue, 'Póvoa');
+  assert.equal(s.notes, '-bad beat');
+  assert.equal(playedMs(s), 2.5 * 3600000);
+});
+
 test('Sweatbook CSV keeps tips and hands apart from expenses', () => {
   const base: Session = {
     id: 'y', kind: 'cash', name: 'NLH 2/5', venue: 'Bellagio', currency: '$', startedAt: new Date(2026, 8, 2, 19).getTime(), endedAt: new Date(2026, 8, 2, 23).getTime(),
