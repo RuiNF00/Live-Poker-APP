@@ -29,6 +29,22 @@ export function toTripCurrency(amount: number, currency: string, trip: Pick<Trip
   return null;
 }
 
+/**
+ * The trip's currency changes. Moving to the rate's other currency flips the
+ * rate (1 $ = 0,92 € becomes 1 € = 1,087 $), so amounts keep their value;
+ * any other currency drops the rate, which no longer means anything.
+ */
+export function changeTripCurrency(trip: Pick<Trip, 'currency' | 'fx'>, fxCur: string, rate: number, next: string): Pick<Trip, 'currency' | 'fx'> {
+  if (next === trip.currency) return trip;
+  if (next === fxCur) {
+    if (!(rate > 0)) return { currency: next, fx: trip.fx ? { currency: trip.currency, rate: 0 } : undefined };
+    const inv = 1 / rate;
+    // 4 decimals, like the ECB rate offered in the form; 4 significant digits for small rates (¥).
+    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(4)) } };
+  }
+  return { currency: next, fx: trip.fx && trip.fx.currency !== next ? { currency: trip.fx.currency, rate: 0 } : undefined };
+}
+
 export interface TripSummary {
   currency: string;
   days: number;

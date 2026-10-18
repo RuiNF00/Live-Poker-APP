@@ -10,7 +10,7 @@ import { useRates } from '@/lib/fx';
 import { endOfDay, startOfDay } from '@/store/bankroll-math';
 import { rate as fxRate } from '@/store/fx-math';
 import { parseDay } from '@/store/session-math';
-import { EXPENSE_KINDS } from '@/store/trip-math';
+import { changeTripCurrency, EXPENSE_KINDS } from '@/store/trip-math';
 import type { Expense, ExpenseKind, Trip } from '@/store/types';
 import { C, F, S } from '@/theme';
 
@@ -48,7 +48,8 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
   const [x, setX] = useState(initial);
   const [fromText, setFromText] = useState(dd(initial.from));
   const [toText, setToText] = useState(dd(initial.to));
-  const [rateText, setRateText] = useState(initial.fx?.rate ? String(initial.fx.rate).replace('.', decimalComma ? ',' : '.') : '');
+  const rateString = (r?: number) => (r ? String(r).replace('.', decimalComma ? ',' : '.') : '');
+  const [rateText, setRateText] = useState(rateString(initial.fx?.rate));
   const set = (p: Partial<Trip>) => setX((c) => ({ ...c, ...p }));
   const fxCur = x.fx?.currency && x.fx.currency !== x.currency ? x.fx.currency : x.currency === home ? CURRENCIES.find((c) => c !== x.currency)! : home;
   const rate = parseRate(rateText);
@@ -83,7 +84,19 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
       <Section title={t('Moeda da viagem')}>
         <ChipRow>
           {CURRENCIES.map((c) => (
-            <Chip key={c} label={c} active={x.currency === c} onPress={() => set({ currency: c })} style={{ minWidth: 48 }} />
+            <Chip
+              key={c}
+              label={c}
+              active={x.currency === c}
+              onPress={() => {
+                if (c === x.currency) return;
+                // The rate is per 1 unit of the trip's currency: flip it, or drop it for an unrelated currency.
+                const next = changeTripCurrency(x, fxCur, rate, c);
+                set(next);
+                setRateText(rateString(next.fx?.rate));
+              }}
+              style={{ minWidth: 48 }}
+            />
           ))}
         </ChipRow>
       </Section>

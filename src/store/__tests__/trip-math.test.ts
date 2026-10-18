@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festivals';
 import { SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals-nov-2026';
 import { EMPTY_PLAN, togglePicked } from '../festival-plan';
-import { currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
+import { changeTripCurrency, currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
 import type { Session, Trip } from '../types';
 
 const H = 3600000;
@@ -117,4 +117,22 @@ test('a festival session played after the trip\'s dates widens the trip, so it c
   assert.equal(tripToCover([], SP.id, on17), null);
   // Before the start too.
   assert.equal(tripToCover([made], SP.id, new Date(2026, 10, 10, 20).getTime())!.from, new Date(2026, 10, 10).getTime());
+});
+
+test('changing the trip currency flips the rate to the other currency, or drops it', () => {
+  const trip = { currency: '$', fx: { currency: '€', rate: 0.92 } };
+  const eur = changeTripCurrency(trip, '€', 0.92, '€');
+  assert.deepEqual(eur, { currency: '€', fx: { currency: '$', rate: 1.087 } });
+  // The 500 $ hotel is still about 460 €, not 543 €.
+  assert.ok(Math.abs(toTripCurrency(500, '$', eur)! - 460) < 0.1);
+  // And back: 1 $ = 0,92 € again.
+  assert.deepEqual(changeTripCurrency(eur, '$', 1.087, '$'), { currency: '$', fx: { currency: '€', rate: 0.92 } });
+  // Small rates keep their digits: 1 € = 160 ¥ → 1 ¥ = 0,006250 €.
+  assert.equal(changeTripCurrency({ currency: '€', fx: { currency: '¥', rate: 160 } }, '¥', 160, '¥').fx!.rate, 0.00625);
+  // An unrelated currency: the rate no longer means anything.
+  assert.deepEqual(changeTripCurrency(trip, '€', 0.92, '£'), { currency: '£', fx: { currency: '€', rate: 0 } });
+  // No rate typed: nothing to flip, nothing made up.
+  assert.deepEqual(changeTripCurrency({ currency: '$' }, '€', 0, '€'), { currency: '€', fx: undefined });
+  // Same currency: unchanged.
+  assert.equal(changeTripCurrency(trip, '€', 0.92, '$'), trip);
 });
