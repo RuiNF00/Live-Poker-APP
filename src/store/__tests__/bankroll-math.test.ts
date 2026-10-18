@@ -13,6 +13,7 @@ import {
   bankrollOf,
   endOfDay,
   ensureBankrolls,
+  separateBankrolls,
   NO_FILTER,
   presetRange,
   scopeOptions,
@@ -77,6 +78,27 @@ test('a bankroll already holding a currency\'s id in another currency is never w
   // Two bankrolls with one id (what that left behind) become one, the first, and the € one comes back.
   const twice = ensureBankrolls([principal, { ...br(autoBankrollId('€'), '€'), name: 'Bankroll €' }], [mk({ currency: '€' })], '$', 100);
   assert.deepEqual(twice.map((b) => [b.id, b.currency]), [[principal.id, '$'], [autoBankrollId('€') + '_2', '€']]);
+});
+
+test('a backup bankroll under an id held here in another currency gets its own id, with its money', () => {
+  const here: Bankroll = { ...br(autoBankrollId('€'), '$'), name: 'Principal', updatedAt: 9 };
+  const theirs: Bankroll = { ...br(autoBankrollId('€'), '€'), name: 'Principal', updatedAt: 20 };
+  const backup = {
+    bankrolls: [theirs],
+    sessions: [mk({ id: 'e', currency: '€', bankrollId: theirs.id, cashOut: 300 })],
+    transfers: [tx(theirs.id, 'deposit', 500)],
+  };
+  const out = separateBankrolls([here], backup);
+  const id = autoBankrollId('€') + '_2';
+  assert.deepEqual(out.bankrolls!.map((b) => [b.id, b.currency, b.name]), [[id, '€', 'Principal']]);
+  assert.equal(out.sessions[0].bankrollId, id);
+  assert.equal(out.transfers![0].bankrollId, id);
+  // Two bankrolls, each currency's balance as it was: the $ one keeps none of the € deposit.
+  const all = [here, ...out.bankrolls!];
+  assert.equal(balanceOf({ bankrollId: here.id }, out.sessions, out.transfers!, all).balance, 0);
+  assert.equal(balanceOf({ bankrollId: id }, out.sessions, out.transfers!, all).balance, 700);
+  // Nothing in common: the same backup back.
+  assert.equal(separateBankrolls([br('x', '$')], backup), backup);
 });
 
 test('sessions without a bankroll count towards the first one in their currency', () => {

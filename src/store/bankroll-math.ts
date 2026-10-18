@@ -60,6 +60,27 @@ function freeAutoId(currency: string, taken: Set<string>): string {
 }
 
 /**
+ * A backup (or the other phone) with a bankroll under the id of one here in another currency
+ * (an older onboarding moved the first bankroll to a new currency and kept its id). One must
+ * never write over the other: this phone's stays, the incoming one takes the id of its own
+ * currency (with _2… when taken), and its sessions and transfers follow it.
+ */
+export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: Session[]; transfers?: Transfer[] }>(local: Bankroll[], incoming: B): B {
+  const mine = new Map(local.map((b) => [b.id, b]));
+  const clash = (incoming.bankrolls ?? []).filter((b) => mine.has(b.id) && mine.get(b.id)!.currency !== b.currency);
+  if (!clash.length) return incoming;
+  const taken = new Set([...local, ...(incoming.bankrolls ?? [])].map((b) => b.id));
+  const to = new Map(clash.map((b) => [b.id, freeAutoId(b.currency, taken)]));
+  const moved = (id: string | undefined) => (id && to.has(id) ? to.get(id)! : id);
+  return {
+    ...incoming,
+    bankrolls: (incoming.bankrolls ?? []).map((b) => (to.has(b.id) ? { ...b, id: to.get(b.id)! } : b)),
+    sessions: incoming.sessions.map((x) => (x.bankrollId && to.has(x.bankrollId) ? { ...x, bankrollId: moved(x.bankrollId) } : x)),
+    transfers: incoming.transfers?.map((x) => (to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x)),
+  };
+}
+
+/**
  * After a backup is merged in: the bankroll this phone made on its own (the
  * fresh install's "Principal") goes away when nothing on the phone uses it,
  * so restoring on a new phone doesn't leave two "Principal". One the player
