@@ -9,7 +9,7 @@ import { readLocal, writeLocal } from '@/lib/local';
 import { appHref, useAndroid } from '@/lib/app-link';
 import { storeLinks } from '@/lib/storeLinks';
 import { OpenInApp } from '@/components/OpenInApp';
-import { newSwapKey, swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
+import { newSwapKey, seenTag, swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
 import '@/app/landing.css';
@@ -131,6 +131,8 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
   const owe = accounts && you && !left && creditor && creditor !== you ? Math.round(Math.abs(bal.net) * 100) / 100 : 0;
   // And the other way: what they owe me, marked as received when it arrives.
   const owed = accounts && you && !left && creditor === you ? Math.round(Math.abs(bal.net) * 100) / 100 : 0;
+  // A «Paguei» or «Recebi» carries how many of the other side's matching entries this page had (paidBySide).
+  const tagged = <E extends Tagged>(e: E): E => (you ? { ...e, cid: e.cid + seenTag(swap.entries, you, e.kind, e.amount) } : e);
 
   return (
     <main className="live">
@@ -195,7 +197,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
           {bal.bPaid >= 0.005 ? <p className="sw-hint sw-line">{c.paid(names.b, money(bal.bPaid))}</p> : null}
           {owe ? (
             <>
-              <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: payment(owe) }) })}>
+              <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: tagged(payment(owe)) }) })}>
                 {c.paidNow(money(owe))}
               </button>
               <p className="sw-hint">{c.paidNowHint}</p>
@@ -203,7 +205,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
           ) : null}
           {owed ? (
             <>
-              <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: { ...payment(owed), kind: 'received' } }) })}>
+              <button className="lp-btn main sw-btn" disabled={busy} onClick={() => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: tagged({ ...payment(owed), kind: 'received' }) }) })}>
                 {c.receivedNow(money(owed))}
               </button>
               <p className="sw-hint">{c.paidNowHint}</p>
@@ -249,7 +251,7 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 
       {left ? <p className="live-updated">{c.leftNote(c.leftPlayer)}</p> : null}
 
-      {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} owe={owe} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry }) })} /> : null}
+      {confirmed && you && !left ? <AddEntry c={c} busy={busy} error={error} title={t.scope === 'event' ? t.title : ''} owe={owe} onAdd={(entry) => send(`/api/swaps/${id}/entries`, { method: 'POST', body: JSON.stringify({ entry: tagged(entry as Tagged) }) })} /> : null}
 
       {privateLink && you === 'b' ? <PrivateLink c={c} link={privateLink} appLink={`swap/${id}?k=${token}`} /> : null}
 
@@ -277,6 +279,8 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
 }
 
 export type C = ReturnType<typeof swapCopy>;
+
+type Tagged = { cid: string; kind: string; amount: number };
 
 /** A payment entry for the API (the same shape AddEntry sends). */
 export function payment(amount: number, to?: number) {

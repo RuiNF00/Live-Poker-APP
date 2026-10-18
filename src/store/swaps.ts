@@ -134,25 +134,57 @@ export interface SwapLedger {
 
 /**
  * What each side has paid the other. The payer's «Paguei» and the receiver's «Recebi» for the
- * same money are one payment, often both tapped at the table before either phone syncs: per
- * payer and amount, the larger count of the two kinds counts, never their sum. The same on
- * every phone and the web, whatever order the entries arrive in.
+ * same money are one payment, often both tapped at the table before either phone syncs. Each
+ * one's cid ends in «~k»: how many entries of the other kind, for the same payer and amount, its
+ * phone had already seen. Two entries only merge when neither had seen the other, so two real
+ * payments of the same amount, one recorded by each side, both count. Entries from before the
+ * tag (no «~k») count as having seen none. The same on every phone and the web, whatever order
+ * the entries arrive in.
  */
-export function paidBySide(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[]): Record<SwapSide, number> {
-  const by = new Map<string, { payer: SwapSide; cents: number; paid: number; received: number }>();
+export function paidBySide(entries: Paid[]): { a: number; b: number } {
+  const by = new Map<string, { payer: SwapSide; cents: number; p: Paid[]; r: Paid[] }>();
   for (const e of entries) {
     if (e.kind === 'result') continue;
-    const payer = e.kind === 'payment' ? e.side : other(e.side);
+    const payer: SwapSide = e.kind === 'payment' ? e.side : other(e.side);
     const cents = Math.round(e.amount * 100);
-    const k = payer + cents;
-    const x = by.get(k) ?? { payer, cents, paid: 0, received: 0 };
-    if (e.kind === 'payment') x.paid++;
-    else x.received++;
-    by.set(k, x);
+    const x = by.get(payer + cents) ?? { payer, cents, p: [], r: [] };
+    (e.kind === 'payment' ? x.p : x.r).push(e);
+    by.set(payer + cents, x);
   }
-  const out: Record<SwapSide, number> = { a: 0, b: 0 };
-  for (const x of by.values()) out[x.payer] += x.cents * Math.max(x.paid, x.received);
+  const out = { a: 0, b: 0 };
+  for (const x of by.values()) {
+    const p = x.p.sort(byAt);
+    const r = x.r.sort(byAt);
+    const used = new Set<number>();
+    let matches = 0;
+    r.forEach((re, j) => {
+      const i = p.findIndex((pe, i) => !used.has(i) && i >= seenOf(re.cid) && j >= seenOf(pe.cid));
+      if (i >= 0) {
+        used.add(i);
+        matches++;
+      }
+    });
+    out[x.payer] += x.cents * (p.length + r.length - matches);
+  }
   return { a: out.a / 100, b: out.b / 100 };
+}
+
+type Paid = Pick<SwapEntry, 'side' | 'kind' | 'amount'> & Partial<Pick<SwapEntry, 'cid' | 'at'>>;
+const byAt = (u: Paid, v: Paid) => (u.at ?? 0) - (v.at ?? 0) || ((u.cid ?? '') < (v.cid ?? '') ? -1 : (u.cid ?? '') > (v.cid ?? '') ? 1 : 0);
+const seenOf = (cid = '') => {
+  const m = /~(\d+)$/.exec(cid);
+  return m ? Number(m[1]) : 0;
+};
+
+/**
+ * The «~k» for a new «Paguei» or «Recebi» by `me`: how many entries of the other kind, for the
+ * same payer and amount, this phone already has from the other side (see paidBySide).
+ */
+export function seenTag(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[], me: SwapSide, kind: string, amount: number): string {
+  if (kind !== 'payment' && kind !== 'received') return '';
+  const cents = Math.round(amount * 100);
+  const want = kind === 'payment' ? 'received' : 'payment';
+  return '~' + entries.filter((e) => e.side !== me && e.kind === want && Math.round(e.amount * 100) === cents).length;
 }
 
 /** Where I stand in one swap, from my side. Pending entries count: they are mine and real. */
