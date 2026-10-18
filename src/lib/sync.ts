@@ -14,7 +14,8 @@ import { createOutbox, type Outcome, type Sender } from './outbox';
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
 const senders: Record<string, Sender> = {};
-const outbox = createOutbox(AsyncStorage, senders);
+// Analytics go out with the rest but are not "por enviar" for the player.
+const outbox = createOutbox(AsyncStorage, senders, { quiet: ['event'] });
 
 /** Each feature registers how to send its kind of job. */
 export function registerSender(kind: string, send: Sender) {

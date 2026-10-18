@@ -190,7 +190,7 @@ export default function Cancel() {
               {reason === 'noSubscription' ? (
                 lifetime ? (
                   <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
-                    <Button kind="secondary" title={t('Comprar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
+                    <Button kind="secondary" title={t('Pagar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
                   </OfferCard>
                 ) : (
                   <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} />

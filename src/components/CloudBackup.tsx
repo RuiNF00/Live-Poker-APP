@@ -193,7 +193,9 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
   const stalled = !!cloud && cloudAhead(countsOf(buildBackup(store)), cloud);
   const health = backupHealth(cloud, now);
-  const warn = waiting || stalled || health.level !== 'ok';
+  // Only a copy that is on can be waiting: a failed «Ativar» offline must not promise one.
+  const pendingCopy = !!cloud && waiting;
+  const warn = pendingCopy || stalled || health.level !== 'ok';
   const overLimit = health.level === 'failed' && health.reason === 'too_big';
 
   return (
@@ -204,7 +206,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
         </View>
         <View style={{ flex: 1 }}>
           <T v="h3">{t('Cópia na nuvem')}</T>
-          {waiting ? (
+          {pendingCopy ? (
             <T v="tiny" color={C.warn}>
               {t('Sem rede: copia quando voltar')}
             </T>

@@ -143,3 +143,15 @@ test('has: a job waits until it is sent, then it is gone', async () => {
   await box.drain(true);
   assert.equal(await box.has('make', 'k1'), false);
 });
+
+test('quiet kinds go out but are not counted as waiting', async () => {
+  const kv = mem();
+  const box = createOutbox(kv, { event: async () => 'retry', share: async () => 'retry' }, { quiet: ['event'] });
+  const seen: number[] = [];
+  box.subscribe((n) => seen.push(n));
+  await box.enqueue('event', { e: 1 });
+  await box.enqueue('event', { e: 2 });
+  await box.enqueue('share', { h: 1 });
+  assert.equal(await box.size(), 1);
+  assert.equal(seen.at(-1), 1);
+});

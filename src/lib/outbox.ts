@@ -32,13 +32,16 @@ export function backoff(tries: number): number {
   return Math.min(10 * 60000, 5000 * 2 ** Math.max(0, tries - 1));
 }
 
-export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>, opts: { key?: string; now?: () => number } = {}) {
+/** `quiet`: kinds that go out like the rest but are not the player's work (analytics), so size() and listeners leave them out. */
+export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>, opts: { key?: string; now?: () => number; quiet?: string[] } = {}) {
   const KEY = opts.key ?? 'rl.outbox.v1';
   const now = opts.now ?? Date.now;
   let jobs: Job[] | null = null;
   let loading: Promise<Job[]> | null = null;
   let draining: Promise<void> | null = null;
   const listeners = new Set<(n: number) => void>();
+  const quiet = new Set(opts.quiet ?? []);
+  const count = (list: Job[] | null) => (list ?? []).filter((j) => !quiet.has(j.kind)).length;
   let seq = 0;
 
   const load = (): Promise<Job[]> => {
@@ -59,7 +62,7 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
   };
 
   const save = async () => {
-    for (const l of listeners) l(jobs?.length ?? 0);
+    for (const l of listeners) l(count(jobs));
     await kv.setItem(KEY, JSON.stringify(jobs ?? [])).catch(() => {});
   };
 
@@ -126,7 +129,7 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
     },
 
     async size(): Promise<number> {
-      return (await load()).length;
+      return count(await load());
     },
 
     /** Earliest time a job is due, or null when empty. */

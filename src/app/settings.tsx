@@ -201,7 +201,7 @@ export default function SettingsScreen() {
           <ListGroup>
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
             {/* One way in: the import screen reads Sweatbook copies and other apps' files alike. */}
-            <ListItem icon="push-outline" title={t('Importar')} subtitle={t('Cópia do Sweatbook ou de outra app: Poker Bankroll Tracker, Pokerbase, Poker Analytics, CSV')} onPress={() => router.push('/import')} />
+            <ListItem icon="push-outline" title={t('Importar')} subtitle={t('Do Sweatbook, Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
             <ListItem icon="grid-outline" title={t('Exportar sessões em CSV')} subtitle={t('Todas, para o Excel ou para importar outra vez')} onPress={exportCsv} />
             <ListItem icon="document-text-outline" title={t('Relatório PDF e CSV')} subtitle={t('Por ano ou datas: sessões, mãos, resultados')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={() => router.push('/export')} />
           </ListGroup>

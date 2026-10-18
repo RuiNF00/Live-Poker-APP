@@ -64,7 +64,7 @@ export default function TrialNotice() {
           <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={ended ? 'leaf-outline' : 'checkmark-circle-outline'} size={28} color={C.accent} />
           </View>
-          <T v="title">{ended ? t('O teu trial acabou') : t('O teu Pro continua até {date}', { date: until })}</T>
+          <T v="title">{ended ? t('O teu teste grátis acabou') : t('O teu Pro continua até {date}', { date: until })}</T>
           <T v="callout">{ended ? t('Nada do que registaste se perde.') : t('Não vais ser cobrado. Tudo o que registares fica teu, mesmo depois.')}</T>
         </View>
 
