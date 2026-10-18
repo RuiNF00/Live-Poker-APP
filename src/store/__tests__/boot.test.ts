@@ -361,10 +361,13 @@ test('definições e índices de quarentena ficam à parte e aparecem na lista',
 test('festival plans that no longer parse are set aside in quarantine, not written over', async () => {
   const kv = new FakeStorage();
   kv.data.set('rl.festivalPlans.v1', '{"sp":');
-  assert.equal(parseOrQuarantine(kv, 'rl.festivalPlans.v1', '{"sp":'), null);
-  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(await parseOrQuarantine(kv, 'rl.festivalPlans.v1', '{"sp":'), null);
   const kept = [...kv.data].find(([k]) => k.startsWith(QUARANTINE) && k.endsWith('.rl.festivalPlans.v1'));
   assert.equal(kept?.[1], '{"sp":');
   assert.equal(kv.data.has('rl.festivalPlans.v1'), false);
-  assert.deepEqual(parseOrQuarantine(kv, 'k', '{"a":1}'), { a: 1 });
+  assert.deepEqual(await parseOrQuarantine(kv, 'k', '{"a":1}'), { a: 1 });
+  // Valid JSON of the wrong shape (an object where a list belongs) is set aside too.
+  kv.data.set('rl.weekly.v1', '{"x":1}');
+  assert.equal(await parseOrQuarantine(kv, 'rl.weekly.v1', '{"x":1}', Array.isArray), null);
+  assert.equal(kv.data.has('rl.weekly.v1'), false);
 });

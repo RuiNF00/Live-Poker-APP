@@ -86,8 +86,8 @@ function set(next: WeeklyTournament[]) {
 
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
-    .then((raw) => {
-      const saved = (raw && parseOrQuarantine<WeeklyTournament[]>(AsyncStorage as unknown as KV, KEY, raw)) || [];
+    .then(async (raw) => {
+      const saved = (raw && (await parseOrQuarantine<WeeklyTournament[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || [];
       set([...saved.filter((w) => !list.some((x) => x.id === w.id)), ...list]);
     })
     .catch(() => {});

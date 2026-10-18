@@ -83,8 +83,8 @@ function set(next: Festival[]) {
 
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
-    .then((raw) => {
-      const saved = ((raw && parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw)) || []).filter((f) => f && f.own && f.dates);
+    .then(async (raw) => {
+      const saved = ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates);
       ready = true;
       set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]);
     })

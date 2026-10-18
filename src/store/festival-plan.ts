@@ -308,8 +308,8 @@ function emit() {
 
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
-    .then((raw) => {
-      const saved = raw ? parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw) : null;
+    .then(async (raw) => {
+      const saved = raw ? await parseOrQuarantine<Plans>(AsyncStorage as unknown as KV, KEY, raw, (v) => !!v && typeof v === 'object' && !Array.isArray(v)) : null;
       if (!saved) return;
       plans = { ...saved, ...plans };
       emit();
