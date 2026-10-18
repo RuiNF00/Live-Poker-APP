@@ -329,7 +329,8 @@ export function priceLike(priceString: string, n: number, currency: string, loca
   const group = intPart.match(/[^\d]/)?.[0] ?? localeGroup(locale);
   // A store price written without its cents ("199 kr") still gets them here when the monthly
   // figure has some (16,58 kr, not a rounded-up 17 kr), with the separator the locale uses.
-  const fractional = fd > 0 && Math.round(n * 10 ** fd) % 10 ** fd !== 0;
+  // Not past 1000 a month, though: stores write Ft and Rp whole even where ISO gives them cents.
+  const fractional = fd > 0 && n < 1000 && Math.round(n * 10 ** fd) % 10 ** fd !== 0;
   const dec = decAt >= 0 ? num[decAt] : fractional ? localeDecimal(locale, group) : null;
   const [i, f] = n.toFixed(dec ? fd : 0).split('.');
   const grouped = i.replace(/\B(?=(\d{3})+(?!\d))/g, group);

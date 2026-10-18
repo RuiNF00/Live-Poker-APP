@@ -97,6 +97,10 @@ test('per-month price is written like the store price next to it', async () => {
   assert.equal(priceLike('CHF 1’999.00', 166.58, 'CHF', 'de-CH'), 'CHF 166.58');
   assert.equal(priceLike('CHF 19’999.00', 1666.58, 'CHF', 'de-CH'), 'CHF 1’666.58');
   assert.equal(priceLike('199 kr', 16.58, 'SEK', 'sv-SE'), '16,58 kr');
+  // Forint and rupiah: ISO gives cents, stores write them whole, so a month past 1000 stays whole.
+  assert.equal(priceLike('79\u00a0990\u00a0Ft', 6665.83, 'HUF', 'hu-HU'), '6\u00a0666\u00a0Ft');
+  assert.equal(priceLike('Rp 3.299.000', 274916.67, 'IDR', 'id-ID'), 'Rp 274.917');
+  assert.equal(priceLike('2 399 kr', 199.92, 'SEK', 'sv-SE'), '199,92 kr');
   assert.equal(priceLike('199 kr', 17, 'SEK', 'sv-SE'), '17 kr');
   const { perMonth: pm } = await import('../plans');
   assert.equal(pm(59.99, 'KWD'), 4.999);

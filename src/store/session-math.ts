@@ -1,6 +1,5 @@
 import type { Session, Stake } from './types';
 
-/** Time actually at the table: wall time minus breaks. */
 /**
  * Fewest hours of play behind any per-hour rate (money/h, BB/h): 15 minutes. Under that a
  * rate is noise blown up (a 3-minute +200 reads as +4000/h), so it shows as "—" or not at all.
@@ -13,6 +12,7 @@ export function rateShown(hours: number): boolean {
   return hours >= MIN_RATE_HOURS;
 }
 
+/** Time actually at the table: wall time minus breaks. */
 export function playedMs(s: Session, now = Date.now()): number {
   const end = s.endedAt ?? now;
   const breaks = (s.breaks ?? []).reduce((a, b) => a + Math.max(0, (b.end ?? end) - b.start), 0);
