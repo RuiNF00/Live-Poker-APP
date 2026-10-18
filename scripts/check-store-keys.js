@@ -2,7 +2,7 @@
 // would show a paywall that can never sell, so it fails here instead.
 // Keys come from EAS environment variables (production environment).
 
-const STORE_PROFILES = ['production', 'testflight'];
+const STORE_PROFILES = ['production', 'testflight', 'play-test'];
 const profile = process.env.EAS_BUILD_PROFILE;
 const platform = process.env.EAS_BUILD_PLATFORM;
 
