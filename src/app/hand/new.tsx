@@ -267,7 +267,11 @@ export default function NewHand() {
   };
   const run2Board = [...hand.board.slice(0, r.runoutFrom ?? 0), ...(hand.board2 ?? [])];
 
+  // Set once the hand is saved: a second tap before the screen closes must not count it again
+  // (one hand would spend two of the day's free ones) or add its stack to the session twice.
+  const saved = useRef(false);
   const save = async (over?: Partial<Hand>) => {
+    if (saved.current) return;
     tap('medium');
     const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
@@ -277,6 +281,7 @@ export default function NewHand() {
       pro.paywall(activeSession ? 'handsLive' : 'hands');
       return;
     }
+    saved.current = true;
     // Named villains go into the player notes, so the next time they are one tap away.
     const players = hand.players.map((p, i) => {
       if (i === hand.hero || !p.name.trim() || p.playerId) return p;
