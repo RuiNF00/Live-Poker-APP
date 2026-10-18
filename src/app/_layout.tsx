@@ -12,6 +12,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import React, { Suspense, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
@@ -42,6 +43,10 @@ import { C, ff } from '@/theme';
 
 // Reminders, syncs and the lock-screen and widget bridges draw nothing on the first frame: their code loads after it.
 const AfterStart = React.lazy(() => import('@/components/AfterStart'));
+
+// A link opened with the app closed (an invite, a shared hand, a swap) lands on that screen alone:
+// without the tabs under it, "Fechar" and back had nowhere to go. On the web the link page stands alone.
+export const unstable_settings = Platform.OS === 'web' ? {} : { anchor: '(tabs)' };
 
 const theme = {
   ...DarkTheme,

@@ -62,3 +62,12 @@ export function newsTarget(fresh: Record<string, number>, mine: { id: string; sh
   const own = mine.find((h) => h.shareId === ids[0]);
   return own ? { kind: 'mine', id: own.id, n: fresh[ids[0]] } : { kind: 'friend', id: ids[0], n: fresh[ids[0]] };
 }
+
+/**
+ * Why a shared hand didn't open: the server said it isn't there (404, 410), or it couldn't be
+ * reached (no signal, a timeout, a server error). Only the first is "this hand no longer exists".
+ */
+export function handLoadError(e: unknown): 'gone' | 'offline' {
+  const m = /^fetch (\d{3})$/.exec(e instanceof Error ? e.message : '');
+  return m && (m[1] === '404' || m[1] === '410') ? 'gone' : 'offline';
+}

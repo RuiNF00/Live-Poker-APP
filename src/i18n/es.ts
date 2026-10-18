@@ -563,6 +563,7 @@ const es: Record<string, string> = {
   'Sem markup': 'Sin markup',
   'Despesas ({currency})': 'Gastos ({currency})',
   'Sem ligação. Tenta outra vez quando tiveres rede.': 'Sin conexión. Inténtalo de nuevo cuando tengas señal.',
+  'Tenta outra vez quando tiveres rede.': 'Inténtalo de nuevo cuando tengas señal.',
   'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.': 'El servidor está lleno ahora mismo. Tus manos están seguras en este teléfono; lo intentaremos más tarde.',
   'Não encontrámos nenhuma cópia com esse código.': 'No encontramos ninguna copia con ese código.',
   'Este código não dá acesso a esta cópia.': 'Este código no da acceso a esta copia.',
@@ -3319,6 +3320,8 @@ const es: Record<string, string> = {
   'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Activa la cámara para Sweatbook en los ajustes del teléfono.',
   'Não deu para gravar': 'No se pudo grabar',
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'El micrófono está ocupado. Inténtalo de nuevo en un momento.',
+  'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Esta copia se hizo con una versión más reciente de Sweatbook. Actualiza la app e inténtalo de nuevo; no se cambió nada.',
+  'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'No pudimos leer esta copia. No se cambió nada en este teléfono.',
 };
 
 export default es;

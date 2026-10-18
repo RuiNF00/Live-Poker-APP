@@ -14,6 +14,7 @@ import type { SwapGroup } from './swap-groups';
 import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
 import { validSwapId, validSwapToken, type Swap } from './swaps';
+import { fixHand, fixPlayer, fixSession, fixTrip } from './validate';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
 import { csvCell, type CsvSep } from '../export/csv';
 
@@ -48,8 +49,9 @@ export interface BackupData {
   quarantine?: [string, string][];
 }
 
-/** Same prefix as boot.ts (kept here so backups don't import the store's loader). */
-const QUARANTINE = 'rl.quarantine.v1.';
+/** Same prefix and item keys as boot.ts (kept here so backups don't import the store's loader; a test checks they match). */
+export const QUARANTINE = 'rl.quarantine.v1.';
+export const ITEM_PREFIX = { hands: 'rl.hand.v2.', sessions: 'rl.session.v2.', players: 'rl.player.v2.', trips: 'rl.trip.v1.' };
 
 export function buildBackup(
   d: {
@@ -203,14 +205,32 @@ export function parseBackup(text: string): BackupData {
   } catch {
     throw new Error('invalid');
   }
+  // A later version that changed the format: refused as such (not as a broken file), nothing is read.
+  if (isObj(j) && j.app === 'sweatbook' && isNum(j.v) && j.v > 1) throw new Error('newer');
   if (!isObj(j) || j.app !== 'sweatbook' || j.v !== 1) throw new Error('invalid');
   const arr = (k: string) => (Array.isArray(j[k]) ? (j[k] as unknown[]).filter(withId) : []);
-  const hands = arr('hands').filter((h) => isObj(h) && Array.isArray(h.players) && Array.isArray(h.actions)) as unknown as Hand[];
-  // A foreign or hand-edited backup may lack `breaks`; every session-time sum reads it.
-  const sessions = arr('sessions')
-    .filter((s): s is Record<string, unknown> => isObj(s) && typeof s.startedAt === 'number')
-    .map((s) => ({ ...s, breaks: Array.isArray(s.breaks) ? s.breaks : [] })) as unknown as Session[];
-  const players = arr('players').filter((p) => isObj(p) && typeof p.name === 'string') as unknown as PlayerNote[];
+  // The launch checks (validate.ts): an older copy gets the fields added since, one a screen
+  // would crash on (no players, a hero who isn't seated) is left out, as at launch.
+  // What fails goes to the same quarantine as at launch (keyed by where it would live, so a second
+  // restore doesn't add it twice), not quietly away: a later version gets another go at it.
+  const setAside: [string, string][] = [];
+  const fixed = <T>(list: unknown[], fix: (x: unknown) => T | null, prefix: string) =>
+    list
+      .map((x) => {
+        const ok = fix(x);
+        const id = isObj(x) && typeof x.id === 'string' ? x.id : null;
+        if (!ok && id && !id.includes('\n')) setAside.push([`${QUARANTINE}backup.${prefix}${id}`, JSON.stringify(x)]);
+        return ok;
+      })
+      .filter((x): x is T => x !== null);
+  const hands = fixed(arr('hands'), fixHand, ITEM_PREFIX.hands);
+  // A foreign or hand-edited backup may have no usable `breaks`: an empty list rather than losing the session.
+  const sessions = fixed(
+    arr('sessions').map((s) => (isObj(s) && !Array.isArray(s.breaks) ? { ...s, breaks: [] } : s)),
+    fixSession,
+    ITEM_PREFIX.sessions,
+  );
+  const players = fixed(arr('players'), (p) => (isObj(p) && typeof p.name === 'string' ? fixPlayer(p) : null), ITEM_PREFIX.players);
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];
   const backing = arr('backing')
@@ -221,8 +241,8 @@ export function parseBackup(text: string): BackupData {
   const transfers = arr('transfers').filter(
     (x) => isObj(x) && typeof x.bankrollId === 'string' && (x.kind === 'deposit' || x.kind === 'withdrawal') && typeof x.amount === 'number' && Number.isFinite(x.amount) && typeof x.at === 'number',
   ) as unknown as Transfer[];
-  const trips = arr('trips')
-    .filter((x): x is Record<string, unknown> => isObj(x) && typeof x.name === 'string' && typeof x.currency === 'string' && typeof x.from === 'number' && typeof x.to === 'number')
+  const tripOk = (x: unknown) => (isObj(x) && typeof x.name === 'string' && typeof x.currency === 'string' && typeof x.from === 'number' && typeof x.to === 'number' ? fixTrip(x) : null);
+  const trips = (fixed(arr('trips'), tripOk, ITEM_PREFIX.trips) as unknown as Record<string, unknown>[])
     .map((x) => {
       const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
       return { ...x, expenses: ex };
@@ -256,9 +276,12 @@ export function parseBackup(text: string): BackupData {
     weekly: decodeWeekly(j.weekly),
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
     // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
-    quarantine: Array.isArray(j.quarantine)
-      ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
-      : [],
+    quarantine: [
+      ...(Array.isArray(j.quarantine)
+        ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
+        : []),
+      ...setAside,
+    ].filter(([k], i, all) => all.findIndex(([x]) => x === k) === i),
   };
 }
 
@@ -269,7 +292,12 @@ export function parseBackup(text: string): BackupData {
  */
 export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean): Settings {
   if (!incoming) return cur;
-  if (!fresh) return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : '') };
+  // Rates typed for currencies the ECB doesn't publish: without them sessions in those currencies lose their value at home.
+  const rates = fxRates(incoming.fxManual);
+  if (!fresh) {
+    const fx = { ...rates, ...cur.fxManual };
+    return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : ''), ...(Object.keys(fx).length ? { fxManual: fx } : {}) };
+  }
   const pick = <K extends keyof Settings>(k: K, ok: (v: unknown) => boolean): Partial<Settings> => (ok(incoming[k]) ? { [k]: incoming[k] } : {});
   const isStr = (v: unknown) => typeof v === 'string';
   const isBool = (v: unknown) => typeof v === 'boolean';
@@ -284,9 +312,26 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('bankrollId', isStr),
     ...pick('hideAmounts', isBool),
     ...pick('includeSwaps', isBool),
+    ...pick('mindAsk', isBool),
+    ...pick('widgetResult', isBool),
+    ...pick('haptics', isBool),
+    ...pick('monthRecap', isBool),
+    ...pick('notifyAmounts', isBool),
+    ...pick('notifyHoldInSession', isBool),
+    ...pick('icm', isBool),
+    ...pick('streakPauses', (v) => Array.isArray(v) && v.every((p) => isObj(p) && isNum(p.from) && (p.to === undefined || isNum(p.to)))),
+    ...pick('notify', (v) => isObj(v) && Object.entries(v).every(([k, x]) => /^[a-z]{1,20}$/.test(k) && isBool(x))),
+    ...(Object.keys(rates).length ? { fxManual: rates } : {}),
     // Onboarding stays done: the restore itself happens after it.
     onboarded: cur.onboarded || incoming.onboarded === true,
   };
+}
+
+/** Units per 1 EUR by currency, from a file: only positive numbers under safe keys. */
+function fxRates(x: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (isObj(x)) for (const [k, v] of Object.entries(x)) if (safeKey(k) && k.length <= 8 && isNum(v) && v > 0) out[k] = v;
+  return out;
 }
 
 /** Union by id; the copy with the later updatedAt wins, ties keep the local one. */

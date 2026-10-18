@@ -273,6 +273,7 @@ const ptBR: Record<string, string> = {
   'Recuperar': 'Restaurar',
   'Recuperar com código': 'Restaurar com código',
   'Sem ligação. Tenta outra vez quando tiveres rede.': 'Sem conexão. Tente de novo quando tiver sinal.',
+  'Tenta outra vez quando tiveres rede.': 'Tente de novo quando tiver sinal.',
   'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.': 'O servidor está cheio no momento. Suas mãos estão seguras neste celular; tentamos de novo mais tarde.',
   'Não encontrámos nenhuma cópia com esse código.': 'Não encontramos nenhum backup com esse código.',
   'Este código não dá acesso a esta cópia.': 'Este código não dá acesso a este backup.',
@@ -1630,6 +1631,8 @@ const ptBR: Record<string, string> = {
   'Câmara desligada': 'Câmera desativada',
   'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Ative a câmera para o Sweatbook nas configurações do celular.',
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'O microfone está ocupado. Tente de novo daqui a pouco.',
+  'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Este backup foi feito numa versão mais recente do Sweatbook. Atualize o app e tente de novo; nada foi alterado.',
+  'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'Não conseguimos ler este backup. Nada foi alterado neste celular.',
 };
 
 export default ptBR;

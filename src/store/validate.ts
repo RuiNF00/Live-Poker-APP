@@ -66,6 +66,8 @@ function stripBad(g: Obj): Obj {
   return out;
 }
 
+const okDocFile = (f: unknown) => typeof f === 'string' && f.length <= 120 && /^[\w-][\w.-]*$/.test(f);
+
 export const fixSession: Fix<Session> = (x) => {
   if (!fixItem(x)) return null;
   const s = x as Obj;
@@ -84,6 +86,9 @@ export const fixSession: Fix<Session> = (x) => {
   if (s.breaks === undefined) patch.breaks = [];
   if (s.stackLog === undefined) patch.stackLog = [];
   if (s.roster === undefined) patch.roster = [];
+  // A receipt's file is a bare name inside the documents folder; one from a hand-edited backup
+  // that climbs out of it ("../", "..") is dropped, so opening or deleting it can't reach anything else.
+  if (Array.isArray(s.docs) && !(s.docs as Obj[]).every((d) => okDocFile(d.file))) patch.docs = (s.docs as Obj[]).filter((d) => okDocFile(d.file));
   return (Object.keys(patch).length ? { ...s, ...patch } : s) as unknown as Session;
 };
 

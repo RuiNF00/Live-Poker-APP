@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { APP_PREFIXES, KEEP_KEYS, keysToErase } from '../erase-core';
+import { APP_PREFIXES, DELETE_KINDS, KEEP_KEYS, keysToErase } from '../erase-core';
 
 test('erasing removes every hand, session, setting and cloud code, and keeps the pending deletes and the free-plan log', () => {
   const all = ['rl.hands.v2', 'rl.hand.v2.a', 'rl.session.v2.b', 'rl.settings.v1', 'rl.cloud.v1', 'rl.draft.v1', 'rl.festivalPlans.v1', 'sweatbook.replayer.tips.v1', ...KEEP_KEYS, 'expo.other'];
@@ -35,4 +35,20 @@ test('every storage key the app writes is one "delete all my data" knows about',
 
 test('apagar tudo não volta a ligar os relatórios de erros', () => {
   assert.ok(!keysToErase(['rl.crash.v1', 'rl.hands.v2']).includes('rl.crash.v1'));
+});
+
+test('every delete the app queues is one the outbox never gives up on', async () => {
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const dir = join(__dirname, '..');
+  const kinds = new Set<string>();
+  for (const f of readdirSync(dir)) {
+    if (!/\.tsx?$/.test(f)) continue;
+    for (const m of readFileSync(join(dir, f), 'utf8').matchAll(/registerSender\('([a-z-]+)'/g)) kinds.add(m[1]);
+  }
+  const deletes = [...kinds].filter((k) => /-(delete|erase|leave|revoke)$/.test(k));
+  assert.ok(deletes.length >= 10, `found ${deletes.length}`);
+  assert.deepEqual(deletes.filter((k) => !DELETE_KINDS.includes(k)), []);
+  // And no listed kind is a typo: each one has a sender.
+  assert.deepEqual(DELETE_KINDS.filter((k) => !kinds.has(k)), []);
 });

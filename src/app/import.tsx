@@ -161,8 +161,10 @@ export default function ImportScreen() {
         { onProgress: (done, total) => progress.set({ done, total }), cancelled: () => !alive.current },
       );
       if (first) setStep({ at: 'review', file, first });
-    } catch {
-      setError(t('Não conseguimos ler este ficheiro. Escolhe o CSV exportado pela outra app (ou um .json do Sweatbook).'));
+    } catch (e) {
+      // A backup from a later version: refused whole, so say why instead of "can't read".
+      if ((e as Error)?.message === 'newer') setError(t('Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.'));
+      else setError(t('Não conseguimos ler este ficheiro. Escolhe o CSV exportado pela outra app (ou um .json do Sweatbook).'));
     } finally {
       setBusy(false);
       progress.set(null);

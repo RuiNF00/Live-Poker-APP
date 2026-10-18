@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { isOnline, observeFetch, onReconnect, probeWhileOffline, reportNetwork } from '../online';
-import { MAX_AGE_MS, backoff, createOutbox, type Outcome } from '../outbox';
+import { MAX_AGE_MS, MAX_JOBS, MAX_TRIES, backoff, createOutbox, keptBackoff, type Outcome } from '../outbox';
 
 function mem() {
   const m = new Map<string, string>();
@@ -154,4 +154,50 @@ test('quiet kinds go out but are not counted as waiting', async () => {
   await box.enqueue('share', { h: 1 });
   assert.equal(await box.size(), 1);
   assert.equal(seen.at(-1), 1);
+});
+
+test('a promised delete is never given up on: not after many tries, not after weeks, not pushed out by events', async () => {
+  const kv = mem();
+  let clock = 0;
+  let up = false;
+  const sent: unknown[] = [];
+  const send = async (p: unknown): Promise<Outcome> => {
+    if (!up) return 'retry';
+    sent.push(p);
+    return 'done';
+  };
+  const senders: Record<string, (p: unknown) => Promise<Outcome>> = { 'cloud-delete': send, event: async () => 'retry' };
+  const box = createOutbox(kv, senders, { now: () => clock, keep: ['cloud-delete', 'offer-delete'] });
+  await box.enqueue('cloud-delete', { id: 'c' }, 'c');
+  // Queued before its sender is registered (a feature that loads later): it waits instead of being dropped.
+  await box.enqueue('offer-delete', { id: 'o' }, 'o');
+  for (let i = 0; i < MAX_TRIES + 5; i++) {
+    clock += 60_000;
+    await box.drain(true);
+  }
+  clock += MAX_AGE_MS * 2;
+  for (let i = 0; i < MAX_JOBS + 10; i++) await box.enqueue('event', { i });
+  await box.drain(true);
+  const after = createOutbox(kv, senders, { now: () => clock, keep: ['cloud-delete', 'offer-delete'] });
+  assert.ok(await after.has('cloud-delete', 'c'));
+  assert.ok(await after.has('offer-delete', 'o'));
+  up = true;
+  senders['offer-delete'] = send;
+  await after.drain(true);
+  assert.deepEqual(sent, [{ id: 'c' }, { id: 'o' }]);
+  assert.equal(await after.has('cloud-delete', 'c'), false);
+});
+
+test('a promised delete past MAX_TRIES waits 6 h between tries, not 10 min, and is still kept', async () => {
+  assert.equal(keptBackoff(MAX_TRIES), backoff(MAX_TRIES));
+  assert.equal(keptBackoff(MAX_TRIES + 1), 6 * 3600_000);
+  const kv = mem();
+  let clock = 0;
+  const box = createOutbox(kv, { 'cloud-delete': async () => 'retry' as Outcome, x: async () => 'retry' as Outcome }, { now: () => clock, keep: ['cloud-delete'] });
+  await box.enqueue('cloud-delete', {}, 'c');
+  for (let i = 0; i < MAX_TRIES + 1; i++) await box.drain(true);
+  assert.equal(await box.nextDue(), 6 * 3600_000);
+  // Other kinds keep the 10-minute cap.
+  assert.equal(backoff(MAX_TRIES + 1), 600000);
+  assert.ok(await box.has('cloud-delete', 'c'));
 });

@@ -592,6 +592,7 @@ const en: Record<string, string> = {
   'Sem markup': 'No markup',
   'Despesas ({currency})': 'Expenses ({currency})',
   'Sem ligação. Tenta outra vez quando tiveres rede.': 'No connection. Try again when you have signal.',
+  'Tenta outra vez quando tiveres rede.': 'Try again when you have signal.',
   'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.': 'Our server is full right now. Your hands are safe on this phone; we will try again later.',
   'Não encontrámos nenhuma cópia com esse código.': 'We found no backup with that code.',
   'Este código não dá acesso a esta cópia.': "This code doesn't open this backup.",
@@ -3325,6 +3326,8 @@ const en: Record<string, string> = {
   'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Turn on the camera for Sweatbook in your phone\'s settings.',
   'Não deu para gravar': 'Couldn\'t record',
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'The microphone is busy. Try again in a moment.',
+  'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'The backup was made with a newer version of Sweatbook. Update the app and try again; nothing was changed.',
+  'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'We couldn’t read this backup. Nothing on this phone was changed.',
 };
 
 export default en;

@@ -34,6 +34,9 @@ const ERR: Record<string, string> = {
   quota: 'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.',
   disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
   would_shrink: 'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.',
+  // Decrypted but not a copy this version can read (parseBackup): nothing was imported.
+  newer: 'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.',
+  invalid: 'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.',
 };
 /** A copy asked for with no signal: true until it goes out. */
 function useCopyWaiting(): boolean {
