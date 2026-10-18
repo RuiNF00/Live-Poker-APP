@@ -93,10 +93,13 @@ describe('live cases', () => {
     expect(hand.actions.flop).toHaveLength(6);
     expect(actionMap[0]).toEqual({ street: 'flop', index: 0 });
     expect(total(h)).toBe(120);
-    // Nobody bets after the flop: AA vs KK at showdown, the aces take the 120.
+    // Nobody bets after the flop: six hands at showdown, four of them unknown, so like the app
+    // nobody wins until the winner is picked; then the aces take the 120.
     const last = end(h);
     expect(last.kind).toBe('showdown');
-    expect(last.winners?.map((w) => [w.seat, w.amount])).toEqual([[1, 120]]);
+    expect(last.winners).toEqual([]);
+    const picked = end({ ...h, winners: [0] });
+    expect(picked.winners?.map((w) => [w.seat, w.amount])).toEqual([[1, 120]]);
   });
 
   it('the header names the bomb pot and the button ante', () => {
