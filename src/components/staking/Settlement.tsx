@@ -6,7 +6,7 @@ import { View } from 'react-native';
 
 import { Button, Card, Pill, Row, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { money, shortDate } from '@/poker/format';
+import { money, settledMoney, shortDate } from '@/poker/format';
 import { pieceSteps, type BackerLedger, type BackerLedgerRow } from '@/store/staking';
 import { C, F, S } from '@/theme';
 import { dec, Sheet } from './sheets';
@@ -15,7 +15,7 @@ const pct = (x: number) => `${Number.isInteger(Math.round(x * 1000) / 10) ? Math
 
 /** One line of the sums: what it is, how it was worked out, the amount. */
 function Step({ label, detail, amount, currency, total, color, sign = true }: { label: string; detail?: string; amount: number; currency: string; total?: boolean; color?: string; sign?: boolean }) {
-  const text = (sign && amount > 0.004 && !total ? '+' : amount < -0.004 ? '−' : '') + money(Math.abs(amount), currency);
+  const text = total && Math.abs(amount) < 0.005 ? settledMoney(currency) : (sign && amount > 0.004 && !total ? '+' : amount < -0.004 ? '−' : '') + money(Math.abs(amount), currency);
   return (
     <View
       style={[

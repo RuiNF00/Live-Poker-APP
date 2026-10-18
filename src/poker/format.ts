@@ -1,5 +1,5 @@
 import { FORMAT, locale, type LocaleFormat } from '../i18n';
-import { moneyIn as sharedMoneyIn } from '../../packages/hand-format/src/money';
+import { decimalsOf, moneyIn as sharedMoneyIn } from '../../packages/hand-format/src/money';
 import { symbolOf } from '../store/currencies';
 
 import type { ActionKind, Hand } from './types';
@@ -63,6 +63,11 @@ export function money(n: number, currency = '€'): string {
 
 export function rawMoney(n: number, currency = '€'): string {
   return moneyIn(FORMAT, n, currency, numFmt);
+}
+
+/** A balance settled to the cent: "0,00€", so it reads as squared up rather than as a missing value (yen stays "0¥"). */
+export function settledMoney(currency = '€'): string {
+  return masked ? MASK : moneyIn(FORMAT, 0, currency, (d) => numFmt(d ?? (decimalsOf(currency) ? 2 : undefined)));
 }
 
 /** Money as one language writes it (shared with the web pages: packages/hand-format/src/money.ts). */
