@@ -37,7 +37,7 @@ export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'sha
   await clearOffers();
   // After a reinstall the only trace of the cloud copy may be the code in the keychain.
   const cloud = (await loadCloud()) ?? (await rememberedCode());
-  if (cloud) queueCloudDelete(cloud);
+  if (cloud) await queueCloudDelete(cloud).catch(() => {});
   // Also forgets the code kept in the keychain (it outlives reinstalling the app).
   await saveCloud(null).catch(() => {});
   await queueProfileDelete().catch(() => {});

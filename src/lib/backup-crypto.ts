@@ -3,6 +3,9 @@
 // apart) and an AES-256-GCM sealed blob it cannot read. Pure, so it can be tested.
 
 import { gcm } from '@noble/ciphers/aes';
+
+// Also the cipher of sealed links (sealed-link.ts), so both load in this one lazy chunk.
+export { gcm };
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
 import { Gunzip, Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';

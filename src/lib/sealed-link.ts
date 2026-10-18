@@ -1,10 +1,9 @@
 // A link whose page the server keeps but cannot read: sweatbook.poker/b#s=<id>.<key>.
 // The app seals the page with AES-256-GCM under a key that only rides in the URL
 // fragment (browsers never send it), and the page opens it in the browser
-// (web/src/lib/sealed.ts, WebCrypto). The id is bound in as associated data, so a
+// (web/src/lib/sealed.ts, WebCrypto). The cipher comes from backup-crypto, loaded on
+// the first seal: a module two lazy chunks share would land in the launch bundle. The id is bound in as associated data, so a
 // sealed page can't be moved under another link. Pure, so it can be tested.
-
-import { gcm } from '@noble/ciphers/aes';
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
@@ -66,13 +65,15 @@ export interface Sealed {
 const aad = (id: string) => enc(`sweatbook-b:${id}`);
 
 /** `key`: 32 bytes, base64url (43 chars). `nonce`: 12 fresh random bytes per seal. */
-export function seal(data: unknown, id: string, key: string, nonce: Uint8Array): Sealed {
+export async function seal(data: unknown, id: string, key: string, nonce: Uint8Array): Promise<Sealed> {
+  const { gcm } = await import('./backup-crypto');
   const c = gcm(fromB64url(key), nonce, aad(id)).encrypt(enc(JSON.stringify(data)));
   return { v: 1, n: b64url(nonce), c: b64url(c) };
 }
 
 /** The data, or null when the key, the id or the bytes don't match. */
-export function open(x: Sealed, id: string, key: string): unknown {
+export async function open(x: Sealed, id: string, key: string): Promise<unknown> {
+  const { gcm } = await import('./backup-crypto');
   try {
     return JSON.parse(dec(gcm(fromB64url(key), fromB64url(x.n), aad(id)).decrypt(fromB64url(x.c))));
   } catch {
