@@ -2440,6 +2440,7 @@ const en: Record<string, string> = {
   'sem lugares': 'no finishes',
   'top {p}': 'top {p}',
   'médio em {n}': 'average of {n}',
+  '1 cash': '1 cash',
   '{n} cashes': '{n} cashes',
   '{n} torneios · desde {date}': '{n} tournaments · since {date}',
   '{n} torneios · {e} entradas · {cur}': '{n} tournaments · {e} entries · {cur}',

@@ -23,7 +23,7 @@ import { track } from '@/lib/events';
 import { maybeAskForReview } from '@/lib/review';
 import { dropVoiceNote } from '@/lib/voice-note';
 import { shareDelay } from '@/lib/friction';
-import { shareRef } from '@/lib/referrals';
+import { markShared, readyRef } from '@/lib/referrals';
 import { lastShare, rememberShare } from '@/lib/share-last';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
@@ -212,9 +212,10 @@ export default function HandScreen() {
   const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
     tap('medium');
     const isNew = !hand.shareId;
-    const refP = shareRef();
+    const refP = readyRef();
     const shareId = await ensureId();
     if (!shareId) return;
+    void markShared();
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
     const ref = await refP;
     const channel = to ?? (quiz ? 'challenge' : 'link');
@@ -253,9 +254,10 @@ ${link}`;
     let link: string | undefined;
     if (withLink) {
       const isNew = !hand.shareId;
-      const refP = shareRef();
-    const shareId = await ensureId();
+      const refP = readyRef();
+      const shareId = await ensureId();
       if (!shareId) return;
+      void markShared();
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
       const ref = await refP;
       link = shareLink(shareId, 'text', { ref });
@@ -325,9 +327,10 @@ ${link}`;
 
   const copyLink = async () => {
     const isNew = !hand.shareId;
-    const refP = shareRef();
+    const refP = readyRef();
     const shareId = await ensureId();
     if (!shareId) return;
+    void markShared();
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
     const ref = await refP;
     await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));

@@ -13,10 +13,14 @@ export async function saveTextFile(name: string, text: string, mime: string): Pr
 }
 
 /** null when the user cancels. */
+// Read whole into memory: a video picked by mistake would freeze the page.
+const MAX_TEXT_BYTES = 20 * 1024 * 1024;
+
 export async function pickTextFile(): Promise<string | null> {
   const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: false });
   if (r.canceled || !r.assets?.[0]) return null;
   const a = r.assets[0];
+  if ((a.size ?? 0) > MAX_TEXT_BYTES) throw new Error('too_big');
   return a.file ? a.file.text() : (await fetch(a.uri)).text();
 }
 
@@ -25,6 +29,6 @@ export async function pickTextFileWithName(): Promise<{ text: string; name: stri
   const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: false });
   if (r.canceled || !r.assets?.[0]) return null;
   const a = r.assets[0];
-  const text = await (a.file ? a.file.text() : (await fetch(a.uri)).text()).catch(() => '');
+  const text = (a.size ?? 0) > MAX_TEXT_BYTES ? '' : await (a.file ? a.file.text() : (await fetch(a.uri)).text()).catch(() => '');
   return { text, name: a.name, uri: a.file ? URL.createObjectURL(a.file) : a.uri };
 }

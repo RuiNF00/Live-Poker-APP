@@ -2164,6 +2164,7 @@ const es: Record<string, string> = {
   'sem lugares': 'sin puestos',
   'top {p}': 'top {p}',
   'médio em {n}': 'media de {n}',
+  '1 cash': '1 cash',
   '{n} cashes': '{n} cashes',
   '{n} torneios · desde {date}': '{n} torneos · desde {date}',
   '{n} torneios · {e} entradas · {cur}': '{n} torneos · {e} entradas · {cur}',

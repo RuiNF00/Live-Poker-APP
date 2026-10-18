@@ -194,6 +194,11 @@ export async function inviteStatus(): Promise<InviteStatus | null> {
 /** The code to put in a link we're about to share: registered first, so claims on it count. */
 export async function shareRef(): Promise<string> {
   void markShared();
+  return readyRef();
+}
+
+/** The code for a link, without counting it as sent: for shares that can still fail (mark them once they go out). */
+export async function readyRef(): Promise<string> {
   // Never hold up a share on a slow network: registration is retried next time.
   await Promise.race([ensureRegistered(), new Promise((r) => setTimeout(r, 2500))]);
   return refCode();
