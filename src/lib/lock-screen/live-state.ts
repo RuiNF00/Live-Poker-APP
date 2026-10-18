@@ -42,7 +42,10 @@ export interface LiveProps {
   breakAt: string;
   /** A tournament's chip-count story ("Partilhar stack"), one tap from the lock screen; '' for cash. */
   shareUrl: string;
-  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string };
+  /** Pause or resume, and a rebuy (cash) or re-entry (tournament), one tap from the lock screen: see lockAction. */
+  pauseUrl: string;
+  rebuyUrl: string;
+  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -154,6 +157,8 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     nextBlinds: `${chips(after.sb)}/${chips(after.bb)}`,
     breakAt: breakLabel(breakOf(s, now), now),
     shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
+    pauseUrl: `sweatbook://session?do=${paused ? 'resume' : 'pause'}&id=${encodeURIComponent(s.id)}`,
+    rebuyUrl: `sweatbook://session?do=rebuy&id=${encodeURIComponent(s.id)}`,
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
@@ -162,8 +167,26 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
       levelUp: t('Subir nível'),
       newHand: t('Nova mão'),
       shareStack: t('Partilhar stack'),
+      pause: paused ? t('Retomar') : t('Pausa'),
+      rebuy: mtt ? 'Re-entry' : 'Rebuy',
     },
   };
+}
+
+export type LockAction = 'pause' | 'resume' | 'rebuy';
+
+/**
+ * The action a lock-screen button asked for, if it still applies: same session (not one the
+ * lock screen showed before), and a pause only when running, a resume only when paused, so a
+ * tap on an out-of-date banner never does the opposite. The session screen runs it only once
+ * the app lock (if any) is open.
+ */
+export function lockAction(what: string | undefined, id: string | undefined, s: Session): LockAction | null {
+  if (!id || id !== s.id || s.endedAt) return null;
+  if (what === 'rebuy') return 'rebuy';
+  if (what === 'pause') return isPaused(s) ? null : 'pause';
+  if (what === 'resume') return isPaused(s) ? 'resume' : null;
+  return null;
 }
 
 /** Text of the level-up reminder. */

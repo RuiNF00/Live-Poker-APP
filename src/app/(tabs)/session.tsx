@@ -4,13 +4,14 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
+import { useLockScreenUp } from '@/components/AppLock';
 import { useAfterFirstFrame } from '@/components/Deferred';
 import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
@@ -29,7 +30,7 @@ import { AfterFestivalSession, Day2Remind } from '@/components/AfterFestivalSess
 import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useStartEvent';
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
-import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, lockAction, nextLevelAt } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
@@ -457,6 +458,20 @@ function Live({ s }: { s: Session }) {
       stackLog: [...s.stackLog, { t: Date.now(), stack, level: s.level }],
     });
   };
+
+  // Pause, resume or a rebuy tapped on the lock screen (Live Activity, widget): done here with the
+  // usual "Anular". Fails closed: nothing happens while the app lock is up or still being read.
+  const params = useLocalSearchParams<{ do?: string; id?: string }>();
+  const lockUp = useLockScreenUp();
+  const fromLock = lockAction(params.do, params.id, s);
+  useEffect(() => {
+    if (!params.do || lockUp) return;
+    router.setParams({ do: undefined, id: undefined });
+    if (fromLock === 'rebuy') rebuy();
+    else if (fromLock) togglePause();
+    // Only a new link or the lock opening runs it; the session changing under it doesn't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.do, params.id, lockUp]);
 
   const [bar, onBarLayout] = useBarHeight();
   // First live session: a three-step tour of what matters between hands.

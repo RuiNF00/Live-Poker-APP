@@ -4,9 +4,10 @@
 // (no theme import, no helpers from outside the function). Colours are the
 // "Noite" tokens from src/theme.ts, copied by value.
 
-import { HStack, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { activityBackgroundTint, background, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
+import { HStack, Image, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { accessibilityLabel, activityBackgroundTint, background, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity, type LiveActivity } from 'expo-widgets';
+import type { SFSymbol } from 'sf-symbols-typescript';
 
 import type { LiveProps } from './live-state';
 
@@ -39,20 +40,25 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     <ProgressView timerInterval={{ lower: new Date(p.levelFrom), upper: new Date(p.nextLevelAt) }} countsDown={false} modifiers={[tint(accent)]} />
   );
   const newHand = (
-    <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 10, bottom: 10 }), background(accent), cornerRadius(12)]}>
-      <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle('#1A0A04')]}>{'+ ' + p.labels.newHand}</Text>
+    <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 9, bottom: 9 }), background(accent), cornerRadius(12)]}>
+      <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
     </Link>
   );
-  // A tournament: its chip count as a story, without opening the session first.
-  const actions = p.shareUrl ? (
+  // Secondary actions, one tap each: they open the session screen, which does them with "Anular"
+  // (only once the app lock, if any, is open). Icons keep the row on one line in every language.
+  const small = (url: string, icon: SFSymbol, name: string) => (
+    <Link destination={url} modifiers={[padding({ top: 9, bottom: 9, leading: 13, trailing: 13 }), background(track), cornerRadius(12), accessibilityLabel(name)]}>
+      <Image systemName={icon} size={16} color={text} />
+    </Link>
+  );
+  const actions = (
     <HStack spacing={8}>
       {newHand}
-      <Link destination={p.shareUrl} modifiers={[padding({ top: 10, bottom: 10, leading: 14, trailing: 14 }), background(track), cornerRadius(12)]}>
-        <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(text)]}>{p.labels.shareStack}</Text>
-      </Link>
+      {small(p.pauseUrl, p.paused ? 'play.fill' : 'pause.fill', p.labels.pause)}
+      {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy)}
+      {/* A tournament: its chip count as a story, without opening the session first. */}
+      {p.shareUrl ? small(p.shareUrl, 'square.and.arrow.up', p.labels.shareStack) : null}
     </HStack>
-  ) : (
-    newHand
   );
   const stackCol = (size: number) => (
     <VStack alignment="leading" spacing={2}>
@@ -78,18 +84,24 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
   const head = (
     <HStack spacing={6}>
       <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(p.paused ? warn : good)]}>{'● ' + p.status.toUpperCase()}</Text>
-      <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{p.title}</Text>
+      {leveled ? clock(12, dim) : <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{p.title}</Text>}
       <Spacer />
-      <HStack spacing={0}>
-        <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(dim)]}>Sweat</Text>
-        <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(accent)]}>book</Text>
-      </HStack>
+      {p.breakAt ? (
+        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn), lineLimit(1)]}>{p.breakAt}</Text>
+      ) : (
+        <HStack spacing={0}>
+          <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(dim)]}>Sweat</Text>
+          <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(accent)]}>book</Text>
+        </HStack>
+      )}
     </HStack>
   );
   // Tournament with a level clock: the level countdown leads, a bar shows how much of the level is gone,
   // and the played time moves to the line below. Otherwise (cash, no level length): the played time leads.
+  // The lock screen gives a Live Activity about 160 pt: header, numbers, (level bar,) buttons.
+  const shell = [padding({ top: 14, bottom: 14, leading: 16, trailing: 16 }), activityBackgroundTint('#0C1311')];
   const banner = leveled ? (
-    <VStack alignment="leading" spacing={10} modifiers={[padding({ all: 16 }), activityBackgroundTint('#0C1311')]}>
+    <VStack alignment="leading" spacing={8} modifiers={shell}>
       {head}
       <HStack alignment="top" spacing={12}>
         <VStack alignment="leading" spacing={2}>
@@ -102,16 +114,10 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
         {blindsCol}
       </HStack>
       {levelBar}
-      <HStack spacing={6}>
-        {label(p.labels.time)}
-        {clock(12, dim)}
-        <Spacer />
-        {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn), lineLimit(1)]}>{p.breakAt}</Text> : null}
-      </HStack>
       {actions}
     </VStack>
   ) : (
-    <VStack alignment="leading" spacing={12} modifiers={[padding({ all: 16 }), activityBackgroundTint('#0C1311')]}>
+    <VStack alignment="leading" spacing={8} modifiers={shell}>
       {head}
       <HStack alignment="top" spacing={12}>
         <VStack alignment="leading" spacing={2}>
@@ -123,7 +129,6 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
         <Spacer />
         {blindsCol}
       </HStack>
-      {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
       {actions}
     </VStack>
   );
