@@ -157,6 +157,9 @@ function decodePlans(x: unknown): Record<string, FestivalPlan> {
       sessions: strMap(p.sessions, isStr),
       ...(isStr(p.name) ? { name: p.name.slice(0, 60) } : {}),
       ...(events.length ? { events } : {}),
+      // When each pick changed and the added tournaments deleted: so a second phone's copy doesn't undo them.
+      ...(isObj(p.picks) ? { picks: strMap(p.picks, (v): v is number => isNum(v) && v !== 0 && Math.abs(v) <= Date.now() + 86_400_000) } : {}),
+      ...(Array.isArray(p.removed) ? { removed: (p.removed as unknown[]).filter((x): x is string => isStr(x) && safeKey(x)).slice(0, 1000) } : {}),
     };
   }
   return out;
@@ -179,6 +182,7 @@ function decodeWeekly(x: unknown): WeeklyTournament[] {
       buyIn: w.buyIn as number,
       ...(isNum(w.stack) ? { stack: w.stack } : {}),
       ...(isNum(w.levelMinutes) ? { levelMinutes: w.levelMinutes } : {}),
+      ...(isNum(w.updatedAt) ? { updatedAt: w.updatedAt } : {}),
     }));
 }
 
@@ -201,6 +205,7 @@ function decodeOwnFestivals(x: unknown): Festival[] {
         events: [],
         dates: { from: dates.from, to: dates.to },
         own: true,
+        ...(isNum(f.updatedAt) ? { updatedAt: f.updatedAt } : {}),
       };
     });
 }

@@ -27,10 +27,9 @@ export function mergeBackups(local: BackupData, remote: BackupData): BackupData 
   const plans: Record<string, FestivalPlan> = { ...local.festivalPlans };
   for (const [id, p] of Object.entries(remote.festivalPlans ?? {})) plans[id] = mergePlan(plans[id], p);
   out.festivalPlans = plans;
-  const own: Festival[] = local.ownFestivals ?? [];
-  out.ownFestivals = [...own, ...(remote.ownFestivals ?? []).filter((f) => !own.some((x) => x.id === f.id))];
-  const weekly = local.weekly ?? [];
-  out.weekly = [...weekly, ...(remote.weekly ?? []).filter((w) => !weekly.some((x) => x.id === w.id))];
+  // The later save of each (with no save times, this phone's copy stays), less what was deleted after it.
+  out.ownFestivals = alive(mergeById<Festival>(local.ownFestivals ?? [], remote.ownFestivals ?? []).list, 'ownFestivals', deleted);
+  out.weekly = alive(mergeById(local.weekly ?? [], remote.weekly ?? []).list, 'weekly', deleted);
   const q = local.quarantine ?? [];
   const more = (remote.quarantine ?? []).filter(([k]) => !q.some(([have]) => have === k));
   if (q.length || more.length) out.quarantine = [...q, ...more];

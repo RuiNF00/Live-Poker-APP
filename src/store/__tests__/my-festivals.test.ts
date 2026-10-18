@@ -38,7 +38,8 @@ test('own festivals sit in the list by start date, are found by id, and go when 
   const f = ownFestival('fx_2', input);
   saveOwnFestival(f);
   const ids = allFestivals().map((x) => x.id);
-  assert.equal(festivalById('fx_2'), f);
+  assert.deepEqual(festivalById('fx_2'), { ...f, updatedAt: festivalById('fx_2')?.updatedAt });
+  assert.ok(festivalById('fx_2')?.updatedAt, 'saved with its time, so an edit after a delete elsewhere wins');
   // 5 Nov comes before the 2 Dec festival.
   assert.ok(ids.indexOf('fx_2') < ids.indexOf(BAHAMAS_DEC_2026.id));
   deleteOwnFestival('fx_2');
