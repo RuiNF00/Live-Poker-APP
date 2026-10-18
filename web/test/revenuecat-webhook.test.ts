@@ -6,6 +6,7 @@ import { installIdForRc, trialEndFrom } from '@/lib/rc-webhook';
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: () => {} }));
+vi.mock('@/lib/abuse', async (orig) => ({ ...(await orig<typeof import('@/lib/abuse')>()), limited: async () => false }));
 // The file-backed store, in a scratch folder: no database in tests.
 process.chdir(mkdtempSync(path.join(tmpdir(), 'rc-')));
 delete process.env.SUPABASE_URL;
@@ -14,6 +15,7 @@ delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const { getStore } = await import('@/lib/store');
 const { POST } = await import('../src/app/api/revenuecat/route');
+const events = await import('../src/app/api/events/route');
 
 const conversion = { type: 'RENEWAL', is_trial_conversion: true, period_type: 'NORMAL', environment: 'PRODUCTION', store: 'APP_STORE', product_id: 'sweatbook_pro_annual', app_user_id: '$RCAnonymousID:abc' };
 const post = (body: object, auth?: string) =>
@@ -68,5 +70,14 @@ describe('the webhook route', () => {
     expect((await post({ event: { ...conversion, type: 'CANCELLATION' } }, 'Bearer s3cret')).status).toBe(204);
     expect((await post({ event: { ...conversion, environment: 'SANDBOX' } }, 'Bearer s3cret')).status).toBe(204);
     expect(log).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the public events route', () => {
+  it('refuses trial_end, which only the webhook writes', async () => {
+    const send = (event: string) =>
+      events.POST(new Request('http://x/api/events', { method: 'POST', body: JSON.stringify({ event, installId: '67cd51ed-e23f-4c8e-84a5-41a61637b53a', platform: 'ios', props: { result: 'paid' } }) }));
+    expect((await send('trial_end')).status).toBe(422);
+    expect((await send('trial_start')).status).toBe(204);
   });
 });

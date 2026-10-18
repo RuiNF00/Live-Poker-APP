@@ -115,6 +115,8 @@ export const APP_EVENTS = [
   'trial_end',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
+/** Written only by our own server (webhooks): /api/events refuses them, so a client can't fake the trial outcome. */
+export const SERVER_EVENTS: readonly AppEventName[] = ['trial_end'];
 
 export interface AppEvent {
   event: AppEventName;
