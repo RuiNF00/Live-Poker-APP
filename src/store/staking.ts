@@ -8,7 +8,8 @@ import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
 /** To the cent: what the player and the backer see, and what they add up. */
-const cents = (n: number) => Math.round(n * 100) / 100;
+// Half cents always away from zero: 0.5 × 157.45 and 157.45 × 0.5 are not the same float.
+const cents = (n: number) => Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) / 100;
 
 /** The backer's money in one piece: action at markup, or their share of the buy-ins in a makeup deal. */
 export function stakeCost(s: Session, x: Stake): number {
