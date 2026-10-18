@@ -1666,6 +1666,13 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
+  // Native review: European forms that slipped past the checker.
+  'Vê se este downswing é azar ou sinal': 'Veja se este downswing é azar ou sinal',
+  'Seleciona mãos na lista (toque longo) ou abre uma pasta.': 'Selecione mãos na lista (toque longo) ou abra uma pasta.',
+  'Quantas horas até saberes': 'Quantas horas até você saber',
+  'O GTO Wizard só lê mãos completas. Acaba a mão primeiro.': 'O GTO Wizard só lê mãos completas. Termine a mão primeiro.',
+  'Agora cancela a subscrição na {store}, para não pagares mais.': 'Agora cancele a assinatura na {store} para não pagar mais.',
+  'Quando abrires na app uma mão que um amigo te mandou, ela fica aqui para voltares à conversa.': 'Quando você abrir no app uma mão que um amigo mandou, ela fica aqui para você voltar à conversa.',
 };
 
 export default ptBR;
