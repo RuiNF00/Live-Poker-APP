@@ -434,7 +434,7 @@ function BackerScreen() {
           const was = packages.find((q) => q.id === p.id);
           const next = was?.closedAt && !p.closedAt ? carriedTo(was, packages) : undefined;
           if (next && ((pk.states.get(next.id)?.sessions ?? 0) > 0 || next.closedAt)) {
-            Alert.alert(t('Não dá para reabrir este pacote'), t('O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.', { name: next.name }));
+            notice(t('Não dá para reabrir este pacote'), t('O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.', { name: next.name }));
             return;
           }
           if (next) deletePackage(next.id);
