@@ -13,6 +13,7 @@ import { decimal, money, shortDate } from '@/poker/format';
 import type { Score, Summary } from '@/store/tourney-stats';
 import { MIN_SAMPLE } from '@/store/tourney-stats';
 import { C, F, ff } from '@/theme';
+import { ordinal } from '@/share/festival-card';
 
 import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './StoryCard';
 
@@ -76,7 +77,7 @@ export function TourneyCard({ name, sum, scores: all, currency, since, hideMoney
           {scores.length ? (
             scores.map((s, i) => (
               <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: i === 0 ? 'rgba(255,106,61,0.14)' : 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: i === 0 ? 'rgba(255,106,61,0.35)' : 'rgba(255,255,255,0.06)' }}>
-                <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 20, color: i === 0 ? C.accent : C.text, minWidth: 54 }}>{s.finish ? `${s.finish}º` : '—'}</Text>
+                <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 20, color: i === 0 ? C.accent : C.text, minWidth: 54 }}>{s.finish ? ordinal(s.finish) : '—'}</Text>
                 <View style={{ flex: 1 }}>
                   <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 14, color: C.text }} numberOfLines={1}>
                     {s.name || t('Torneio')}

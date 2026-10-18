@@ -295,7 +295,7 @@ const ptBR: Record<string, string> = {
   'Completa o flop (ou tira o turn e o river).': 'Complete o flop (ou tire o turn e o river).',
   'Escolhe as duas cartas do vilão.': 'Escolha as duas cartas do vilão.',
   'Prémios ({currency})': 'Prêmios ({currency})',
-  'Preenche todos os stacks e pelo menos o 1º prémio.': 'Preencha todos os stacks e pelo menos o 1º prêmio.',
+  'Preenche todos os stacks e pelo menos o 1.º prémio.': 'Preencha todos os stacks e pelo menos o 1º prêmio.',
   'Para dividir o prémio na mesa final': 'Para dividir o prêmio na mesa final',
   'Não deu para carregar os teus convites. Tenta outra vez mais tarde.': 'Não foi possível carregar seus convites. Tente de novo mais tarde.',
   'Um amigo guardou a primeira mão': 'Um amigo salvou a primeira mão',
@@ -1644,6 +1644,13 @@ const ptBR: Record<string, string> = {
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'Não conseguimos ler este backup. Nada foi alterado neste celular.',
   'Guardar uma cópia dos dados': 'Salvar uma cópia dos dados',
   'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mão tem dados que a página não aceita. Encurte nomes ou notas e tente de novo.',
+  // Ordinals: pt-BR writes 1º, pt-PT 1.º.
+  '{n}.º de {field}': '{n}º de {field}',
+  '{n}.º lugar': '{n}º lugar',
+  '{n}.º': '{n}º',
+  '{place}.º de {field}': '{place}º de {field}',
+  '{p}.º de {n}': '{p}º de {n}',
+  '{rank}.º de {n} meses com sessões, do melhor para o pior.': '{rank}º de {n} meses com sessões, do melhor para o pior.',
 };
 
 export default ptBR;

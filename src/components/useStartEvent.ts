@@ -10,7 +10,7 @@ import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { kindOn } from '@/lib/notify-policy';
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { getOffers, stakesFor } from '@/store/action-offer';
-import { eventAction, getPlan, levelStart, updatePlan } from '@/store/festival-plan';
+import { eventAction, getPlan, lateRegOf, levelStart, updatePlan } from '@/store/festival-plan';
 import { reenterFlight, resumeDay } from '@/store/multi-day';
 import { useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
@@ -39,7 +39,7 @@ export function sessionFromEvent(f: Festival, e: FestivalEvent, tableSize: numbe
     stack: e.stack ?? base.stack,
     levelMinutes: e.levelMinutes,
     // Started before the clock does (the reminder comes 30 min early): level 1 runs from the published start.
-    levelStartedAt: levelStart(f, e),
+    levelStartedAt: levelStart(f, e, now, lateRegOf(getPlan(f.id), e)),
     tourney: e.stack ? { startStack: e.stack } : undefined,
     startedAt: now,
     stackLog: [{ t: now, stack: e.stack ?? base.stack, level: base.level }],
@@ -64,15 +64,17 @@ export function useStartEvent() {
     tap('medium');
     // The bankroll in the festival's currency, if there is one.
     const bankroll = bankrolls.find((b) => b.currency === f.currency) ?? defaultBankroll;
+    const now = Date.now();
     const s =
       a.kind === 'resume'
-        ? resumeDay(a.session, Date.now(), venueTime(f, e.start))
+        ? resumeDay(a.session, now, venueTime(f, e.start))
         : a.kind === 'reenter'
           ? reenterFlight(a.session, sessionName(e))
           : sessionFromEvent(f, e, settings.defaultTableSize, bankroll.currency === f.currency ? bankroll.id : undefined);
     saveSession(s);
-    // Played after the trip's dates: the festival's trip grows to take it.
-    const trip = tripToCover(trips, f.id, s.startedAt);
+    // Played after the trip's dates: the festival's trip grows to take it. Today, not the
+    // session's start: a Day 2 resumed keeps its Day 1 start.
+    const trip = tripToCover(trips, f.id, now);
     if (trip) saveTrip(trip);
     updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(e.id) ? p.picked : [...p.picked, e.id], sessions: { ...p.sessions, [e.id]: s.id } }));
     // Already in: its "registo fecha" reminder goes.

@@ -11,6 +11,7 @@ import { EXPENSE_KINDS } from '@/store/trip-math';
 import { isBagged } from '@/store/multi-day';
 import type { ExpenseKind, Session } from '@/store/types';
 import type { TaxReport } from '@/tax/tax-math';
+import { placeLabel } from '@/share/festival-card';
 
 import type { CurrencyReport, Report } from './report';
 
@@ -24,7 +25,7 @@ const cls = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
 /** Place, the day a multi-day tournament reached, and "no saco" while it waits for the next day. */
 function mttTag(s: Session): string {
   if (s.kind !== 'mtt') return '';
-  const bits = [s.finish ? `${s.finish}º${s.field ? '/' + s.field : ''}` : '', s.day && s.day > 1 ? t('Dia {n}', { n: s.day }) : '', isBagged(s) ? t('no saco') : ''].filter(Boolean);
+  const bits = [s.finish ? placeLabel(s.finish, s.field) : '', s.day && s.day > 1 ? t('Dia {n}', { n: s.day }) : '', isBagged(s) ? t('no saco') : ''].filter(Boolean);
   return bits.length ? ` <span class="muted">· ${esc(bits.join(' · '))}</span>` : '';
 }
 

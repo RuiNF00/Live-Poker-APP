@@ -23,6 +23,7 @@ import { useStore } from '@/store/store';
 import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
+import { ordinal } from '@/share/festival-card';
 
 const TEMPLATE_NAME: Record<string, string> = { turbo: 'Turbo', standard: 'Normal', deep: 'Deep', highroller: 'High roller' };
 
@@ -407,7 +408,7 @@ function PayCard({ pay, payouts, left, currency }: { pay: ReturnType<typeof payS
             ) : null}
             <Row style={{ paddingHorizontal: S.lg, paddingVertical: 10, backgroundColor: here ? C.accentSoft : undefined }}>
               <T v="monoS" color={here ? C.accent : C.muted} style={{ width: 44 }}>
-                {place}º
+                {ordinal(place)}
               </T>
               <T v="mono" color={here ? C.accent : C.text} style={{ flex: 1, textAlign: 'right' }}>
                 {money(p, currency)}

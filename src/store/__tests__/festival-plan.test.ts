@@ -7,7 +7,7 @@ import { eventDay, FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime,
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
 import { nextLevelAt } from '../../lib/lock-screen/live-state';
 import { bagDay, resumeDay } from '../multi-day';
-import { afterSession, buyInCaps, buyInsLeft, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -442,4 +442,31 @@ test('late reg: the level clock is the floor\'s, from the published start; Day 2
   assert.equal(nextLevelAt(r, d2 + 15 * 60_000), d2 + 30 * 60_000);
   // No start given: as before, from the tap.
   assert.equal(resumeDay(bagged, d2).levelStartedAt, d2);
+});
+
+test('a row from an earlier day starts its level clock now, not hundreds of levels in', () => {
+  const e = TORRELODONES_NOV_2026.events.find((x) => x.id === '1-1C')!;
+  const start = venueTime(TORRELODONES_NOV_2026, e.start);
+  // In late reg: the floor's clock.
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 60 * 60_000, 120), start);
+  // Past it, or past LATE_DEFAULT_MIN with none given: from now.
+  const later = start + 12 * 86_400_000;
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, later, 120), later);
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 5 * 3_600_000), start + 5 * 3_600_000);
+});
+
+test('a stored plan of the wrong shape is dropped, the good ones are kept', () => {
+  const good = { picked: ['1-A'], lateReg: { '1-A': 120 }, sessions: { '1-A': 's1' } };
+  const out = cleanPlans({
+    'las-vegas-dez-2026': 'str',
+    'prague-dez-2026': { picked: 'abc' },
+    'bahamas-dez-2026': { picked: ['1-A'], sessions: null },
+    'punta-cana-jan-2027': { picked: ['x'], events: [{ id: 'o1' }] },
+    'lisboa-nov-2026': good,
+    // An older plan without lateReg or sessions: they start empty.
+    'espinho-dez-2026': { picked: ['2'] },
+  });
+  assert.deepEqual(Object.keys(out).sort(), ['espinho-dez-2026', 'lisboa-nov-2026']);
+  assert.deepEqual(out['lisboa-nov-2026'], good);
+  assert.deepEqual(out['espinho-dez-2026'], { picked: ['2'], lateReg: {}, sessions: {} });
 });
