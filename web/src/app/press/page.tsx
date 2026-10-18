@@ -21,7 +21,7 @@ const FACTS: [string, string][] = [
   ['Product', `${brand.name}, a hand log and replayer for live poker players`],
   ['Platforms', 'iPhone and Android'],
   ['Launch', LAUNCH],
-  ['Languages', 'English and Portuguese (Portugal). Brazilian Portuguese and Spanish coming in early 2027'],
+  ['Languages', 'English, European Portuguese, Brazilian Portuguese and Spanish from day one; dedicated launches in Brazil and Spanish-speaking markets in early 2027'],
   ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan'],
   ['Founder', 'Rui, a live tournament player'],
   ['Based in', 'Portugal'],
