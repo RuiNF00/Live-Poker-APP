@@ -320,6 +320,9 @@ function emit() {
   for (const l of listeners) l();
 }
 
+// A venue time as the planner reads it: anything else breaks venueTime on every open.
+const START = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const isOwnEvent = (e: unknown) => isRecord(e) && typeof e.id === 'string' && typeof e.name === 'string' && typeof e.start === 'string' && START.test(e.start) && typeof e.buyIn === 'number' && Number.isFinite(e.buyIn);
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isNumbers = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'number');
 const isStrings = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'string');
@@ -333,7 +336,7 @@ export function cleanPlans(saved: Record<string, unknown>): Plans {
     if (!Array.isArray(picked) || !picked.every((x) => typeof x === 'string')) continue;
     if (!isNumbers(lateReg) || !isStrings(sessions)) continue;
     if (name !== undefined && typeof name !== 'string') continue;
-    if (events !== undefined && !(Array.isArray(events) && events.every((e) => isRecord(e) && typeof e.id === 'string' && typeof e.start === 'string' && typeof e.name === 'string'))) continue;
+    if (events !== undefined && !(Array.isArray(events) && events.every(isOwnEvent))) continue;
     out[id] = { ...(p as unknown as FestivalPlan), picked, lateReg: lateReg as FestivalPlan['lateReg'], sessions: sessions as FestivalPlan['sessions'] };
   }
   return out;
