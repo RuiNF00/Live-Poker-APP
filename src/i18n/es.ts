@@ -985,7 +985,7 @@ const es: Record<string, string> = {
   '1 depósito ou levantamento igual a um que já tens.': '1 depósito o retiro igual a uno que ya tienes.',
   '{n} depósitos ou levantamentos iguais a outros que já tens.': '{n} depósitos o retiros iguales a otros que ya tienes.',
   'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Sesión todavía en curso: termínala en la otra app y exporta otra vez',
-  'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este archivo tiene más de 20 MB. Exporta solo las sesiones, o un año cada vez, y vuelve a intentarlo.',
+  'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este archivo tiene más de 20 MB. Exporta solo las sesiones, o un año a la vez, y vuelve a intentarlo.',
   'Importar também as que parecem repetidas': 'Importar también las que parecen repetidas',
   '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 sesión tiene el mismo día y resultado que una que ya tienes.',
   '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sesiones tienen el mismo día y resultado que otras que ya tienes.',
