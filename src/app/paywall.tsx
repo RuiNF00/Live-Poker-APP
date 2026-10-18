@@ -26,6 +26,10 @@ export default function Paywall() {
   const win = useWindowDimensions();
   // Short screens and large text both: the plans stay above the fold.
   const compact = win.height < 760 || win.fontScale > 1.3;
+  // Very short screens (320×568): the fixed footer keeps only the billed price and
+  // the button; the renewal terms, Terms/Privacy, Restore and the other ways out
+  // move to the end of the scroll, just under the plans, so both plans show.
+  const short = win.height < 640;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -133,6 +137,45 @@ export default function Paywall() {
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
   const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[plan].period) }) : '';
 
+  const finePrint = (
+    <>
+      {compact ? null : (
+        <Row gap={6} style={{ justifyContent: 'center' }}>
+          <Ionicons name="shield-checkmark" size={14} color={C.good} />
+          <T v="small" color={C.text}>
+            {Platform.OS === 'android' ? t('Cancela quando quiseres na Google Play, em Pagamentos e subscrições.') : t('Cancela quando quiseres na {store}.', { store })}
+          </T>
+        </Row>
+      )}
+      {/* Same terms on both stores: renews by itself, cancelled in the store's settings at least 24 h before (App Store 3.1.2, Google Play). */}
+      {chosen ? (
+        <T v="tiny" style={{ textAlign: 'center' }}>
+          {trial
+            ? t('Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.', { price: after, date: trialEnd(trial), store })
+            : t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
+        </T>
+      ) : null}
+      <LegalLinks>
+        <LegalLink role="button" onPress={onRestore} disabled={!!busy} color={busy === 'restore' ? C.accent : C.textDim} title={busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')} />
+      </LegalLinks>
+      {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
+        <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
+          <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="gift-outline" size={14} color={C.accent} />
+            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+              {t('Convidar um amigo')}
+            </T>
+          </Pressable>
+          <Pressable onPress={dismiss} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+            <T v="small" color={C.muted}>
+              {t('Agora não')}
+            </T>
+          </Pressable>
+        </Row>
+      ) : null}
+    </>
+  );
+
   if (isPro && wasPro) return <AlreadyPro onDone={close} />;
 
   return (
@@ -217,6 +260,7 @@ export default function Paywall() {
             {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
+        {short ? <View style={{ gap: S.sm }}>{finePrint}</View> : null}
       </ScrollView>
 
       <View style={{ paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + S.sm, gap: S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
@@ -243,40 +287,7 @@ export default function Paywall() {
             </T>
           </Pressable>
         ) : null}
-        {compact ? null : (
-          <Row gap={6} style={{ justifyContent: 'center' }}>
-            <Ionicons name="shield-checkmark" size={14} color={C.good} />
-            <T v="small" color={C.text}>
-              {Platform.OS === 'android' ? t('Cancela quando quiseres na Google Play, em Pagamentos e subscrições.') : t('Cancela quando quiseres na {store}.', { store })}
-            </T>
-          </Row>
-        )}
-        {/* Same terms on both stores: renews by itself, cancelled in the store's settings at least 24 h before (App Store 3.1.2, Google Play). */}
-        {chosen ? (
-          <T v="tiny" style={{ textAlign: 'center' }}>
-            {trial
-              ? t('Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.', { price: after, date: trialEnd(trial), store })
-              : t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
-          </T>
-        ) : null}
-        <LegalLinks>
-          <LegalLink role="button" onPress={onRestore} disabled={!!busy} color={busy === 'restore' ? C.accent : C.textDim} title={busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')} />
-        </LegalLinks>
-        {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
-          <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
-            <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="gift-outline" size={14} color={C.accent} />
-              <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
-                {t('Convidar um amigo')}
-              </T>
-            </Pressable>
-            <Pressable onPress={dismiss} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-              <T v="small" color={C.muted}>
-                {t('Agora não')}
-              </T>
-            </Pressable>
-          </Row>
-        ) : null}
+        {short ? null : finePrint}
       </View>
       {sheet}
     </View>
@@ -327,7 +338,7 @@ function PlanCard({
         <Row gap={S.sm}>
           <Radio active={active} />
           <View style={{ flex: 1, gap: 1 }}>
-            <Row gap={6}>
+            <Row gap={6} style={{ flexWrap: 'wrap' }}>
               <T v="h3">{title}</T>
               {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
