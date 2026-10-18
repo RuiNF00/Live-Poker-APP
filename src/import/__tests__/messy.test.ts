@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import { profit } from '../../store/session-math';
 import { prepare, toSessions } from '../convert';
+import { autoMap } from '../mapping';
 
 const run = (text: string) => {
   const p = prepare(text);
@@ -135,4 +136,12 @@ test('a quote that never closes is read as text and no row after it is lost', ()
   const r = run(['Date,Venue,Buy-in,Cash-out,Notes', '2025-02-03,Estoril,100,250,"bad note', '2025-02-04,Estoril,100,50,ok', '2025-02-05,Estoril,100,80,ok'].join('\n'));
   assert.equal(r.sessions.length, 3);
   assert.equal(r.sessions[2].notes, 'ok');
+});
+
+test('German Einsatz, Auszahlung and Gewinn: the payout is the cash-out and Gewinn the profit', () => {
+  assert.deepEqual(autoMap(['Datum', 'Einsatz', 'Auszahlung', 'Gewinn']), { start: 0, buyIn: 1, cashOut: 2, profit: 3 });
+  const r = run(['Datum;Einsatz;Auszahlung;Gewinn', '03.02.2025;100;300;200'].join('\n'));
+  assert.equal(profit(r.sessions[0]), 200);
+  // A file with only Gewinn reads it as before.
+  assert.deepEqual(autoMap(['Datum', 'Einsatz', 'Gewinn']), { start: 0, buyIn: 1, cashOut: 2 });
 });
