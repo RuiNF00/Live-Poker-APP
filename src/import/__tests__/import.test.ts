@@ -171,9 +171,11 @@ test('the file decides the decimal mark: a bare "10.000" is never read as 10', (
   // Decimal points elsewhere: commas are thousands, "1.500" is one and a half.
   assert.deepEqual(profits('date,venue,profit\n2024-03-01,A,"1,500"\n2024-03-02,B,12.50\n'), [1500, 12.5]);
   // Nothing says which: a bare "10.000" fails the row instead of a silent guess; with a symbol it is clear.
-  const r = run('date,venue,profit\n2024-03-01,A,10.000\n2024-03-02,B,10.000 €\n2024-03-03,C,250\n');
+  const r = run('date,venue,profit\n2024-03-01,A,10.000\n2024-03-02,B,10.000 €\n2024-03-03,C,250\n2024-03-04,D,"1,500"\n');
   assert.deepEqual(r.sessions.map((x) => profit(x)), [10000, 250]);
-  assert.equal(r.unreadable, 1);
+  assert.equal(r.unreadable, 2);
+  // Hands dealt follow the file's mark too.
+  assert.equal(run('date;venue;profit;hands\n2024-03-01;A;12,50;1.200\n').sessions[0].handsDealt, 1200);
 });
 
 test('numbers and dates', () => {

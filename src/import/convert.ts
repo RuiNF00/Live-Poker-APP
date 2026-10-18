@@ -304,7 +304,7 @@ const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn
 /**
  * Amounts read with the file's own decimal mark: "12,50" anywhere (or semicolons and no "12.50")
  * makes "10.000" ten thousand; "12.50" anywhere makes "1,500" fifteen hundred. A file that says
- * neither leaves a bare "10.000" unread (the row fails) rather than guess 10 or 10 000.
+ * neither leaves a bare "10.000" or "1,500" unread (the row fails) rather than guess.
  */
 function moneyReader(table: Table, get: (r: string[], f: Field) => string): (v: string) => number | null {
   const cells = table.rows.flatMap((r) => MONEY_FIELDS.map((f) => get(r, f))).filter(Boolean);
@@ -312,7 +312,7 @@ function moneyReader(table: Table, get: (r: string[], f: Field) => string): (v: 
   const point = cells.some((v) => /\d\.\d{1,2}\D*$/.test(v));
   const mark: DecimalMark | undefined = comma && !point ? 'comma' : point && !comma ? 'point' : !comma && !point && table.sep === ';' ? 'comma' : undefined;
   return (v) => {
-    if (!mark && /^\(?[-−]?\d{1,3}(\.\d{3})+\)?$/.test(v.trim())) return null;
+    if (!mark && /^\(?[-−]?\d{1,3}([.,]\d{3})+\)?$/.test(v.trim())) return null;
     return parseNum(v, mark);
   };
 }
@@ -421,7 +421,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     const net = money(get(r, 'profit'));
     const srcExp = Math.abs(money(get(r, 'expenses')) ?? 0);
     const tips = Math.abs(money(get(r, 'tips')) ?? 0);
-    const handsDealt = parseNum(get(r, 'handsDealt'));
+    const handsDealt = money(get(r, 'handsDealt'));
     // Sweatbook's own CSV: the makeup cut is inside profit; kept apart so cash_out stays as entered.
     const cut = opt.source === 'sweatbook' ? (money(get(r, 'makeupCut')) ?? 0) : 0;
     // "cem" or "?" where an amount goes: reading it as 0 would change the result without a word.
