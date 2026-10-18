@@ -26,15 +26,14 @@ No live não há histórico de mãos. Ou escreves num papel, ou esqueces. {{APP_
 
 REGISTA EM SEGUNDOS
 • Posições, stacks e ações com o mínimo de toques
-• Cartas escolhidas num teclado pensado para uma mão só
+• Teclado de cartas para usar com uma mão só
 • O torneio, o nível e a mesa ficam guardados: não voltas a escrever o mesmo
-• Tags para encontrares depois as mãos que interessam (bluff, hero call, cooler…)
+• Tags para encontrares depois as mãos que interessam
 • Notas rápidas sobre os jogadores da tua mesa
 
 REVÊ COM O REPLAYER
 • Repete a mão rua a rua, com pote e stacks atualizados
 • Mostra em fichas ou em big blinds
-• Ideal para estudar no intervalo ou em casa
 
 PARTILHA E PEDE OPINIÃO
 • Envia a mão com um link: quem recebe vê o replayer no browser, sem instalar nada
@@ -46,8 +45,8 @@ PARA QUEM JOGA LIVE
 • A sessão em curso no ecrã bloqueado: tempo de jogo, stack e nível
 • Widget no ecrã principal com a sessão a decorrer ou o resultado da semana
 • Bankroll e resultados por sala, com depósitos, levantamentos e despesas
-• Swaps por escrito: confirmados pelos dois, com as contas de quem deve a quem
-• Staking: regista a ação que vendes, os backers, pacotes e makeup, e vê o que deves a cada um
+• Swaps por escrito: confirmados pelos dois, com os resultados registados (quem deve a quem com Pro)
+• Staking: regista a ação que vendes, os backers, pacotes e makeup, e vê o que deves a cada um (Pro)
 • Um link em direto para os teus backers seguirem o stack e o nível durante a sessão
 • Importa as tuas sessões de outras apps de póquer ou de qualquer CSV
 • Calculadora de deal para a mesa final (ICM e chip chop)
@@ -60,9 +59,9 @@ PARA QUEM JOGA LIVE
 • Em português (de Portugal e do Brasil), inglês e espanhol
 
 SWEATBOOK PRO
-Grátis: até 3 mãos guardadas por dia, partilha sem limite, exportar uma mão para o solver, importar e exportar sessões em CSV, calculadora de odds, ICM, planeador de festivais com os horários, criar swaps e registar resultados, partilhar a contagem de fichas e bloqueio da app. Com o Sweatbook Pro tens mãos ilimitadas, gestão de staking (backers, makeup e acertos), acerto de swaps, relatório anual de impostos, resultados de várias moedas num só total, vários bankrolls, todos os filtros de bankroll (30 dias, 90 dias, 1 ano, por stake), onde ganhas e perdes, win rate por jogo, stake e sala, comparação de meses, a leitura da tua variância nos downswings, o plano para subir de stake, a range do vilão numa grelha 13×13 no replayer, viagens ilimitadas, relatórios em PDF e CSV por período, exportação de várias mãos de uma vez para o solver, links ilimitados para o coach e Stories com a tua voz ou a tua cara e sem marca de água. A página de quem te banca e confirmar um swap por link são sempre grátis. Subscrição mensal ou anual; o plano anual começa com 3 dias grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
+Grátis: até 3 mãos guardadas por dia, partilha sem limite, exportar uma mão para o solver, importar e exportar sessões em CSV, calculadora de odds, ICM, planeador de festivais com os horários, criar swaps e registar resultados, partilhar a contagem de fichas e bloqueio da app. Com o Sweatbook Pro tens mãos ilimitadas, gestão de staking (backers, makeup e acertos), acerto de swaps, relatório anual de impostos, resultados de várias moedas num só total, vários bankrolls, todos os filtros de bankroll, onde ganhas e perdes, win rate por jogo, stake e sala, comparação de meses, risco de ruína, ROI e ITM dos torneios por buy-in e por festival, a variância com os teus números, a leitura da tua variância nos downswings, o plano para subir de stake, a range do vilão numa grelha 13×13 no replayer, viagens ilimitadas, relatórios em PDF e CSV por período, exportação de várias mãos de uma vez para o solver, links ilimitados para o coach, todos os cartões do ano sem marca e Stories com a tua voz ou a tua cara e sem marca de água. A página de quem te banca e confirmar um swap por link são sempre grátis. Subscrição mensal ou anual; o plano anual começa com 3 dias grátis para novos subscritores. O pagamento é cobrado na tua conta Apple quando confirmas a compra. A subscrição renova-se automaticamente, a não ser que a canceles pelo menos 24 horas antes do fim do período, nas definições da tua conta.
 
-{{APP_NAME}} é uma ferramenta de registo e estudo: registo e contas apenas. Nenhum dinheiro passa pela app. Não tem jogo a dinheiro real. Para maiores de 18 anos.
+{{APP_NAME}} é uma ferramenta de registo e estudo: registo e contas apenas. Nenhum dinheiro passa pela app. Não se joga póquer na app. Para maiores de 18 anos.
 
 Suporte: {{SUPPORT_EMAIL}}
 Privacidade: https://{{WEB_DOMAIN}}/privacy

@@ -46,8 +46,8 @@ BUILT FOR LIVE PLAYERS
 • Your live session on the lock screen: time played, stack and level
 • Home screen widget with your running session or this week's result
 • Bankroll and results by venue, with deposits, withdrawals and expenses
-• Written swaps: confirmed by both players, with who owes whom
-• Staking records: log the action you sold, your backers, packages and makeup, and see what you owe each one
+• Written swaps: confirmed by both players, with each result recorded (who owes whom with Pro)
+• Staking records: log the action you sold, your backers, packages and makeup, and see what you owe each one (Pro)
 • A live link for your backers to follow your stack and level during the session
 • Import your sessions from other poker apps or any CSV
 • Final-table deal calculator (ICM and chip chop)
@@ -61,9 +61,9 @@ BUILT FOR LIVE PLAYERS
 • In English, Portuguese (Portugal and Brazil) and Spanish
 
 SWEATBOOK PRO
-Free: up to 3 saved hands per day, unlimited sharing, single-hand solver export, importing and exporting sessions as CSV, the odds calculator, ICM, the festival planner with schedules, creating swaps and recording results, chip-count sharing and app lock. Sweatbook Pro unlocks unlimited hands, staking management (backers, makeup, settling up), swap settlement, the yearly tax report, results across currencies in one total, multiple bankrolls, every bankroll filter (30 days, 90 days, 1 year, by stake), where you win and lose, win rate by game, stake and venue, month-by-month comparison, the read on your downswings, a plan for moving up in stakes, villain's range on a 13×13 grid in the replayer, unlimited trips, PDF and CSV reports by period, exporting many hands at once to your solver, unlimited coaching links and voice-over or face-cam Instagram Stories without the watermark. A backer's page and confirming a swap by link are always free. Monthly or yearly subscription; the yearly plan starts with a 3-day free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
+Free: up to 3 saved hands per day, unlimited sharing, single-hand solver export, importing and exporting sessions as CSV, the odds calculator, ICM, the festival planner with schedules, creating swaps and recording results, chip-count sharing and app lock. Sweatbook Pro unlocks unlimited hands, staking management (backers, makeup, settling up), swap settlement, the yearly tax report, results across currencies in one total, multiple bankrolls, every bankroll filter, where you win and lose, win rate by game, stake and venue, month-by-month comparison, risk of ruin, tournament ROI and ITM by buy-in and festival, variance with your own numbers, the read on your downswings, a plan for moving up in stakes, villain's range on a 13×13 grid in the replayer, unlimited trips, PDF and CSV reports by period, exporting many hands at once to your solver, unlimited coaching links, every year card without the brand, and voice-over or face-cam Instagram Stories without the watermark. A backer's page and confirming a swap by link are always free. Monthly or yearly subscription; the yearly plan starts with a 3-day free trial for new subscribers. Payment is charged to your Apple account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period in your account settings.
 
-{{APP_NAME}} is a logging and study tool: records and accounts only. No money moves through the app. It offers no real-money gaming of any kind. For adults 18+.
+{{APP_NAME}} is a logging and study tool: records and accounts only. No money moves through the app. You don't play poker in the app. For adults 18+.
 
 Support: {{SUPPORT_EMAIL}}
 Privacy: https://{{WEB_DOMAIN}}/privacy
