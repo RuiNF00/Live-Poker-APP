@@ -284,7 +284,7 @@ export const ES: Record<string, ArticleText> = {
     title: 'Restaurar compras',
     summary: '¿Pagaste el Pro y la app no lo reconoce?',
     body: [
-      'Ajustes → Cuenta → Restaurar compras (también está al final de la pantalla del Pro). Usa la misma cuenta de Apple o Google con la que pagaste.',
+      'Ajustes → Suscripción → Restaurar compras (también está al final de la pantalla del Pro). Usa la misma cuenta de Apple o Google con la que pagaste.',
       'En un teléfono nuevo, restaura primero las compras y luego tus manos con el código de recuperación (ver Copia de seguridad).',
     ],
   },
@@ -295,7 +295,7 @@ export const ES: Record<string, ArticleText> = {
     body: [
       {
         steps: [
-          'Ajustes → Cuenta → Tu suscripción.',
+          'Ajustes → Suscripción → Gestionar suscripción.',
           'Toca Cancelar en la App Store (o en Google Play). Se abre la página de suscripciones de la tienda.',
           'Cancela allí. El Pro sigue activo hasta el final del periodo pagado.',
         ],
@@ -318,7 +318,7 @@ export const ES: Record<string, ArticleText> = {
       'No está en la pantalla del Pro. Aparece cuando cancelas y eliges «No quiero una suscripción»:',
       {
         steps: [
-          'Ajustes → Cuenta → Tu suscripción.',
+          'Ajustes → Suscripción → Gestionar suscripción.',
           'En «¿Por qué quieres cancelar?», elige No quiero una suscripción.',
           'Toca Comprar una vez.',
           'Después cancela la suscripción en la App Store o en Google Play, para no pagar las dos cosas.',
@@ -346,6 +346,23 @@ export const ES: Record<string, ArticleText> = {
       'Si es un problema, dinos el modelo de tu teléfono, la versión de la app (abajo en Ajustes) y qué estabas haciendo. Una captura de pantalla ayuda mucho.',
       'Las ideas también son bienvenidas: muchas de las novedades de la app vinieron de pedidos de jugadores.',
       { note: 'Sweatbook es para mayores de 18 años. Es una app de registro: no tiene juego con dinero y ningún dinero pasa por ella.' },
+    ],
+  },
+  'android-beta': {
+    slug: 'probar-en-android',
+    title: 'Probar Sweatbook en Android',
+    summary: 'Tres pasos para entrar en la prueba y quedarte 14 días.',
+    body: [
+      {
+        steps: [
+          'Abre el link de acceso que te enviamos, con la cuenta de Google de la Play Store (la misma que nos diste).',
+          'Toca Convertirme en tester.',
+          'Instala Sweatbook desde la Play Store con ese link y ábrela.',
+        ],
+      },
+      'Google solo aprueba la app si todos seguimos inscritos 14 días seguidos. No salgas de la prueba ni desinstales la app antes de la fecha que te dimos, aunque un día no juegues. Abrir la app y registrar una mano es suficiente.',
+      'Durante la prueba tienes Pro y no pagas nada: tu cuenta está en la lista de prueba de la tienda. Si la Play Store te pide un pago real, no sigas y escríbenos.',
+      '¿Encontraste un error? Una captura y una frase en el grupo de testers, o a support@sweatbook.poker.',
     ],
   },
 };
