@@ -32,8 +32,9 @@ export interface Article {
 /**
  * Features whose articles wait for the store build. Both are in the integration branch now
  * (swaps #90, the cancel-flow lifetime plan #106); set one to false to hide its article.
+ * closedTest: the Google Play closed test before launch (launch/plano-android.md); false once Android is public.
  */
-export const LIVE_FEATURES = { swaps: true, lifetime: true };
+export const LIVE_FEATURES = { swaps: true, lifetime: true, closedTest: true };
 
 export const CATEGORIES: Record<CategoryId, Record<HelpLocale, string>> = {
   start: { pt: 'Começar', en: 'Getting started', es: 'Empezar', br: 'Começar' },
@@ -731,7 +732,7 @@ const ARTICLES: Article[] = [
       title: 'Restaurar compras',
       summary: 'Pagaste o Pro e a app não o reconhece?',
       body: [
-        'Definições → Conta → Restaurar compras (também está no fundo do ecrã do Pro). Usa a mesma conta Apple ou Google com que pagaste.',
+        'Definições → Subscrição → Restaurar compras (também está no fundo do ecrã do Pro). Usa a mesma conta Apple ou Google com que pagaste.',
         'Num telemóvel novo, restaura primeiro as compras e depois as tuas mãos com o código de recuperação (ver Cópia de segurança).',
       ],
     },
@@ -740,7 +741,7 @@ const ARTICLES: Article[] = [
       title: 'Restore purchases',
       summary: "Paid for Pro and the app doesn't see it?",
       body: [
-        'Settings → Account → Restore purchases (also at the bottom of the Pro screen). Use the same Apple or Google account you paid with.',
+        'Settings → Subscription → Restore purchases (also at the bottom of the Pro screen). Use the same Apple or Google account you paid with.',
         'On a new phone, restore purchases first and then your hands with your recovery code (see Backup).',
       ],
     },
@@ -755,7 +756,7 @@ const ARTICLES: Article[] = [
       body: [
         {
           steps: [
-            'Definições → Conta → A tua subscrição.',
+            'Definições → Subscrição → Gerir subscrição.',
             'Toca em Cancelar na App Store / Google Play. Abre a página de subscrições da loja.',
             'Cancela lá. O Pro fica ativo até ao fim do período pago.',
           ],
@@ -770,7 +771,7 @@ const ARTICLES: Article[] = [
       body: [
         {
           steps: [
-            'Settings → Account → Your subscription.',
+            'Settings → Subscription → Manage subscription.',
             "Tap Cancel in the App Store (or Google Play). It opens the store's subscriptions page.",
             'Cancel there. Pro stays on until the end of the period you paid for.',
           ],
@@ -815,7 +816,7 @@ const ARTICLES: Article[] = [
         'Não está no ecrã do Pro. Aparece quando cancelas e escolhes «Não quero uma subscrição»:',
         {
           steps: [
-            'Definições → Conta → A tua subscrição.',
+            'Definições → Subscrição → Gerir subscrição.',
             'Em «Porque queres cancelar?», escolhe Não quero uma subscrição.',
             'Toca em Comprar uma vez.',
             'Depois cancela a subscrição na App Store ou no Google Play, para não pagares as duas coisas.',
@@ -833,7 +834,7 @@ const ARTICLES: Article[] = [
         "It isn't on the Pro screen. It shows when you cancel and pick “I don't want a subscription”:",
         {
           steps: [
-            'Settings → Account → Your subscription.',
+            'Settings → Subscription → Manage subscription.',
             "Under “Why do you want to cancel?”, pick I don't want a subscription.",
             'Tap Buy once.',
             "Then cancel the subscription in the App Store or Google Play, so you don't pay for both.",
@@ -864,6 +865,45 @@ const ARTICLES: Article[] = [
         'Settings → Tools → Invite friends → Share invite.',
         'When your friend installs and saves a first hand within 7 days, you both get 50% off your first month of Pro, to use within the next 72 hours. On iPhone the discount is an App Store code the app opens for you. It counts for up to 10 friends a year.',
         'Got a code instead of a link? In Settings, tap I have an invite code, then Use (only in the first 7 days after installing).',
+      ],
+    },
+  },
+  {
+    id: 'android-beta',
+    cat: 'start',
+    feature: 'closedTest',
+    pt: {
+      slug: 'testar-no-android',
+      title: 'Testar a Sweatbook no Android',
+      summary: 'Três passos para entrar no teste e ficar 14 dias.',
+      body: [
+        {
+          steps: [
+            'Abre o link de adesão que te enviámos, com a conta Google da Play Store (a mesma que nos deste).',
+            'Toca em Tornar-me testador.',
+            'Instala a Sweatbook na Play Store a partir desse link e abre-a.',
+          ],
+        },
+        'A Google só aprova a app se todos ficarmos inscritos durante 14 dias seguidos. Não saias do teste nem desinstales a app até à data que te demos, mesmo nos dias em que não jogas. Abrir a app e registar uma mão chega.',
+        'Durante o teste tens o Pro e não pagas nada: a tua conta está na lista de teste da loja. Se a Play Store te pedir um pagamento real, não continues e escreve-nos.',
+        `Encontraste um erro? Uma captura de ecrã e uma frase no grupo dos testers, ou para ${SUPPORT_EMAIL}.`,
+      ],
+    },
+    en: {
+      slug: 'test-on-android',
+      title: 'Testing Sweatbook on Android',
+      summary: 'Three steps to join the test and stay for 14 days.',
+      body: [
+        {
+          steps: [
+            'Open the opt-in link we sent you, signed in with your Play Store Google account (the one you gave us).',
+            'Tap Become a tester.',
+            'Install Sweatbook from the Play Store through that link and open it.',
+          ],
+        },
+        "Google only approves the app if we all stay enrolled for 14 days in a row. Please don't leave the test or uninstall the app before the date we gave you, even on days you don't play. Opening the app and logging a hand is enough.",
+        "During the test you have Pro and pay nothing: your account is on the store's test list. If the Play Store ever asks for a real payment, stop and write to us.",
+        `Found a bug? A screenshot and one line in the testers' group, or to ${SUPPORT_EMAIL}.`,
       ],
     },
   },
