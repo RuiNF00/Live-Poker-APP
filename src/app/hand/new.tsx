@@ -267,15 +267,17 @@ export default function NewHand() {
   };
   const run2Board = [...hand.board.slice(0, r.runoutFrom ?? 0), ...(hand.board2 ?? [])];
 
-  // Set once the hand is saved: a second tap before the screen closes must not count it again
-  // (one hand would spend two of the day's free ones) or add its stack to the session twice.
+  // Set once the hand is saved. A second save before the screen closes (a double tap, or the voice
+  // note landing after «Guardar») only updates the hand: counting it again would spend two of the
+  // day's free hands on one, and the session would get its stack twice.
   const saved = useRef(false);
   const save = async (over?: Partial<Hand>) => {
-    if (saved.current) return;
-    tap('medium');
+    const again = saved.current;
+    const asNew = !isEdit && !again;
+    if (!again) tap('medium');
     const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
-    if (!isEdit && !pro.canSaveHand()) {
+    if (asNew && !pro.canSaveHand()) {
       if (over) update(hand);
       if (activeSession) void noteBlocked(activeSession.id, hand.id);
       pro.paywall(activeSession ? 'handsLive' : 'hands');
@@ -295,12 +297,13 @@ export default function NewHand() {
     const before = isEdit ? store.hands.find((h) => h.id === final.id) : undefined;
     const justFinished = !!before && !isComplete(before) && isComplete(final);
     store.saveHand(final);
+    if (again) return;
     tap('success');
     // Keep the session's live table state in sync, so the next hand is pre-filled. Only while it's
     // live: a draft kept from a session that has since ended (the free limit held it back) must not
     // change that session's stack, blinds or stack chart.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
-    if (sess && !sess.endedAt && !isEdit) {
+    if (sess && !sess.endedAt && asNew) {
       // A hand saved before its end keeps hero's starting stack (the pot isn't decided), not the chips already put in.
       const heroEnd = endStacks(final)[final.hero];
       store.saveSession({
@@ -319,7 +322,7 @@ export default function NewHand() {
       });
     }
     if (!settings.onboarded) store.setSettings({ onboarded: true });
-    if (!isEdit) {
+    if (asNew) {
       store.setDraft(null);
       pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0 });
     }
