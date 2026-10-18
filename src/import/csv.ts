@@ -8,6 +8,8 @@ export interface Table {
   rows: string[][];
   /** Line in the file of each row (1 = first line), so a row that can't be read can be pointed at. */
   lines?: number[];
+  /** The separator the file used: with semicolons, decimals take a comma. */
+  sep?: string;
 }
 
 /**
@@ -66,6 +68,8 @@ export function parseCsv(text: string, sep = detectSeparator(text)): string[][] 
     row.push(last.trim());
     rows.push(row);
   }
+  // Text our own export kept from running as a formula ('=…, '-…): back to what was typed.
+  for (const r of rows) for (let c = 0; c < r.length; c++) if (r[c].charCodeAt(0) === 39 && /^'[=+\-@\t\r]/.test(r[c])) r[c] = r[c].slice(1);
   return rows;
 }
 
@@ -126,7 +130,8 @@ export function norm(s: string): string {
  * names rather than data; `known` scores rows by how many cells it recognises.
  */
 export function readTable(text: string, known: (h: string) => boolean): Table {
-  const parsed = parseCsv(text);
+  const sep = detectSeparator(text);
+  const parsed = parseCsv(text, sep);
   // Record number in the file; quoted line breaks inside a cell are rare enough to ignore.
   const lineOf: number[] = [];
   const all = parsed.filter((r, i) => r.some((c) => c !== '') && lineOf.push(i + 1) > 0);
@@ -153,5 +158,5 @@ export function readTable(text: string, known: (h: string) => boolean): Table {
       rows.push(all[i]);
       lines.push(lineOf[i]);
     }
-  return { headers, rows, lines };
+  return { headers, rows, lines, sep };
 }

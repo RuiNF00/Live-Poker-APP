@@ -41,6 +41,8 @@ export interface Festival {
   currency: string;
   /** Venue offset from UTC on the festival dates, in minutes (Nassau in December: EST, -300). */
   utcOffset: number;
+  /** The venue's time zone ('Europe/Dublin'): wins over utcOffset, so a summer-time change inside the festival is right. */
+  tz?: string;
   /** No link in the app: organisers' sites also run real-money gaming (App Review). The URL stays in a comment by the data. */
   source: { label: string; checked: string };
   /** What the organiser hasn't published, shown under the schedule. */
@@ -74,6 +76,7 @@ export const BAHAMAS_DEC_2026: Festival = {
   city: 'Bahamas',
   currency: '$',
   utcOffset: -300,
+  tz: 'America/Nassau',
   // https://www.wsop.com/tournaments/2026-wsop-paradise/
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [
@@ -234,6 +237,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
   city: 'EUA',
   currency: '$',
   utcOffset: -480,
+  tz: 'America/Los_Angeles',
   // https://www.worldpokertour.com/event/main-tour-wpt-world-championship-at-wynn-las-vegas-season-2026/schedule
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [
@@ -380,6 +384,7 @@ export const BAHIA_JAN_2027: Festival = {
   city: 'Brasil',
   currency: 'R$',
   utcOffset: -180,
+  tz: 'America/Bahia',
   // https://bsop.com.br/proximas-etapas/
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
@@ -399,6 +404,7 @@ export const BARCELONA_MAR_2027: Festival = {
   city: 'Espanha',
   currency: '€',
   utcOffset: 60,
+  tz: 'Europe/Madrid',
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.'],
   month: '2027-03',
@@ -417,6 +423,7 @@ export const LOS_ANGELES_JAN_2027: Festival = {
   city: 'EUA',
   currency: '$',
   utcOffset: -480,
+  tz: 'America/Los_Angeles',
   // https://www.bonus.com/news/wpt-la-poker-classic-returns-2027/ (organiser announcement, September 2026)
   source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
   notes: ['Evento principal de 26 de fevereiro a 3 de março.'],
@@ -436,6 +443,7 @@ export const DUBLIN_MAR_2027: Festival = {
   city: 'Irlanda',
   currency: '€',
   utcOffset: 0,
+  tz: 'Europe/Dublin',
   // https://irishpokeropen.com/blog/2026/10/15/every-days-st-paddys-day-dates-announced-for-2027-irish-open/
   source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
   notes: ['Evento principal de 21 a 26 de março.'],
@@ -454,6 +462,7 @@ export const MELBOURNE_APR_2027: Festival = {
   city: 'Austrália',
   currency: 'A$',
   utcOffset: 600,
+  tz: 'Australia/Melbourne',
   // https://asgam.com/2026/08/24/crown-melbourne-announces-april-dates-for-2027-aussie-millions/
   source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
   notes: [],
@@ -471,6 +480,7 @@ export const PARIS_FEB_2027: Festival = {
   city: 'França',
   currency: '€',
   utcOffset: 60,
+  tz: 'Europe/Paris',
   // https://www.pokernews.com/news/2025/08/pokerstars-confirms-european-poker-tour-paris-returns-49393.htm
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.'],
@@ -488,6 +498,7 @@ export const PRAGUE_APR_2027: Festival = {
   city: 'Chéquia',
   currency: '€',
   utcOffset: 120,
+  tz: 'Europe/Prague',
   // https://www.pokernews.com/news/2025/12/2026-wsop-europe-schedule-released-new-home-new-dates-50239.htm
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.'],
@@ -505,6 +516,7 @@ export const GOIAS_MAY_2027: Festival = {
   city: 'Brasil',
   currency: 'R$',
   utcOffset: -180,
+  tz: 'America/Sao_Paulo',
   // https://pokerfuse.com/live-poker/bsop/
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e o início de maio.'],
@@ -522,6 +534,7 @@ export const MONACO_MAY_2027: Festival = {
   city: 'Mónaco',
   currency: '€',
   utcOffset: 120,
+  tz: 'Europe/Monaco',
   // https://www.pokernews.com/news/2026/04/2026-ept-monte-carlo-series-preview-51053.htm
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e meados de maio.'],
@@ -539,6 +552,7 @@ export const ESTORIL_MAY_2027: Festival = {
   city: 'Portugal',
   currency: '€',
   utcOffset: 60,
+  tz: 'Europe/Lisbon',
   // https://www.pokernews.com/news/2026/04/estoril-poker-fest-2026-500-main-event-full-schedule-51135.htm
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em meados de maio.'],
@@ -557,6 +571,7 @@ export const LAS_VEGAS_SUMMER_2027: Festival = {
   city: 'EUA',
   currency: '$',
   utcOffset: -420,
+  tz: 'America/Los_Angeles',
   // https://pokerfuse.com/live-poker/wsop/wsop-2027/
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ir da última semana de maio a meados de julho, com o evento principal em julho.'],
@@ -589,12 +604,38 @@ export const FESTIVALS: Festival[] = [
   PUNTA_CANA_JAN_2027,
 ];
 
+const zoneFmt = new Map<string, Intl.DateTimeFormat>();
+
+/** Minutes the venue is ahead of UTC at `ms`: its time zone's rule when known, else the fixed offset. */
+export function offsetAt(f: Pick<Festival, 'utcOffset' | 'tz'>, ms: number): number {
+  if (!f.tz) return f.utcOffset;
+  try {
+    let fmt = zoneFmt.get(f.tz);
+    if (!fmt) zoneFmt.set(f.tz, (fmt = new Intl.DateTimeFormat('en-US', { timeZone: f.tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })));
+    const p: Record<string, string> = {};
+    for (const x of fmt.formatToParts(new Date(ms))) p[x.type] = x.value;
+    const wall = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour) % 24, Number(p.minute));
+    const off = Math.round((wall - Math.floor(ms / 60_000) * 60_000) / 60_000);
+    // An engine without time zones gives the phone's own or nonsense: keep the fixed offset then.
+    if (Number.isFinite(off) && Math.abs(off - f.utcOffset) <= 120) return off;
+  } catch {}
+  return f.utcOffset;
+}
+
 /** Epoch ms of a local venue time ('YYYY-MM-DDTHH:MM'). */
-export function venueTime(f: Pick<Festival, 'utcOffset'>, local: string): number {
+export function venueTime(f: Pick<Festival, 'utcOffset' | 'tz'>, local: string): number {
   const [d, hm] = local.split('T');
   const [y, mo, da] = d.split('-').map(Number);
   const [h, mi] = hm.split(':').map(Number);
-  return Date.UTC(y, mo - 1, da, h, mi) - f.utcOffset * 60_000;
+  const wall = Date.UTC(y, mo - 1, da, h, mi);
+  // The offset at that instant, found from a first guess (twice covers the hour around a change).
+  const first = wall - offsetAt(f, wall - f.utcOffset * 60_000) * 60_000;
+  return wall - offsetAt(f, first) * 60_000;
+}
+
+/** Venue wall-clock date and time of an instant, as a UTC Date to read with getUTC*. */
+export function venueClock(f: Pick<Festival, 'utcOffset' | 'tz'>, ms: number): Date {
+  return new Date(ms + offsetAt(f, ms) * 60_000);
 }
 
 /** "Event #12 · Flight A" style label. */

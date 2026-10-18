@@ -15,6 +15,7 @@ import { dayKey } from './fx-math';
 import { isBagged } from './multi-day';
 import { validSwapId, validSwapToken, type Swap } from './swaps';
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip, Expense } from './types';
+import { csvCell, type CsvSep } from '../export/csv';
 
 export interface BackupData {
   app: 'sweatbook';
@@ -184,6 +185,7 @@ function decodeOwnFestivals(x: unknown): Festival[] {
         city: isStr(f.city) ? f.city.slice(0, 80) : '',
         currency: f.currency as string,
         utcOffset: isNum(f.utcOffset) ? f.utcOffset : 0,
+        ...(isStr(f.tz) && /^[A-Za-z_]+\/[\w/+-]{1,40}$/.test(f.tz) ? { tz: f.tz } : {}),
         source: { label: '', checked: isObj(f.source) && isStr(f.source.checked) ? f.source.checked : '' },
         notes: [],
         events: [],
@@ -197,7 +199,7 @@ function decodeOwnFestivals(x: unknown): Festival[] {
 export function parseBackup(text: string): BackupData {
   let j: unknown;
   try {
-    j = JSON.parse(text);
+    j = JSON.parse(text.replace(/^\uFEFF/, ''));
   } catch {
     throw new Error('invalid');
   }
@@ -299,10 +301,6 @@ export function mergeById<T extends { id: string; updatedAt?: number }>(local: T
   return { list: [...byId.values()], added };
 }
 
-function cell(v: string | number | undefined): string {
-  const s = v === undefined ? '' : String(v);
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 /** Sessions, then deposits and withdrawals, then trip expenses, as CSV for spreadsheets and accountants. */
 /** Local 'HH:MM': the date and time the player saw, not UTC (a 20:00 session in Nassau is not the next day). */
@@ -316,7 +314,8 @@ function stampOf(ts: number): string {
   return `${dayKey(ts)} ${clockOf(ts)}:${String(new Date(ts).getSeconds()).padStart(2, '0')}`;
 }
 
-export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = []): string {
+export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = [], sep: CsvSep = ','): string {
+  const cell = (v: string | number | undefined) => csvCell(v, sep);
   const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'makeup_cut', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id'];
   const rows = list
     .filter((s) => s.endedAt)
@@ -331,12 +330,12 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         s.name,
         s.venue,
         s.currency,
-        (playedMs(s) / 3600000).toFixed(2),
+        Math.round(playedMs(s) / 36000) / 100,
         s.handsDealt ?? '',
         s.buyIn,
         s.entries,
         s.addOn || 0,
-        cost(s),
+        Math.round(cost(s) * 100) / 100,
         s.cashOut || 0,
         stakingSummary(stakesOf(s))?.sold ?? 0,
         stakingSummary(stakesOf(s))?.markup ?? '',
@@ -364,7 +363,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         s.id,
       ]
         .map(cell)
-        .join(','),
+        .join(sep),
     );
   // Same columns: the type says what the row is, the amount is in profit.
   const moves = [...transfers]
@@ -380,7 +379,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
       row[head.indexOf('notes')] = x.note;
       row[head.indexOf('started_at')] = stampOf(x.at);
       row[head.indexOf('id')] = x.id;
-      return row.map(cell).join(',');
+      return row.map(cell).join(sep);
     });
   // Type "expense", the kind in notes before the player's note, the trip as the game.
   const spent = [...expenses]
@@ -394,9 +393,9 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
       row[head.indexOf('currency')] = x.currency;
       row[head.indexOf('profit')] = -Math.abs(x.amount);
       row[head.indexOf('notes')] = [x.kind, x.note].filter(Boolean).join(': ');
-      return row.map(cell).join(',');
+      return row.map(cell).join(sep);
     });
-  return [head.join(','), ...rows, ...moves, ...spent].join('\n') + '\n';
+  return [head.join(sep), ...rows, ...moves, ...spent].join('\n') + '\n';
 }
 
 /** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */

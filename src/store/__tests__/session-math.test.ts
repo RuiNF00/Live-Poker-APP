@@ -58,6 +58,14 @@ test('parseDay reads dd/mm[/yyyy] and refuses the future', () => {
   assert.equal(parseDay('ontem', now), null);
 });
 
+test('parseDay with future: a past day without a year is next year', () => {
+  const now = new Date(2026, 9, 17, 12).getTime();
+  assert.equal(parseDay('3/1', now, true), new Date(2027, 0, 3).getTime());
+  assert.equal(parseDay('20/12', now, true), new Date(2026, 11, 20).getTime());
+  assert.equal(parseDay('17/10', now, true), new Date(2026, 9, 17).getTime());
+  assert.equal(parseDay('3/1/2026', now, true), new Date(2026, 0, 3).getTime());
+});
+
 test('money shows cents with two digits in pt-PT', async () => {
   const { money } = await import('../../poker/format');
   assert.equal(money(370.5, '€'), '370,50€');
@@ -122,4 +130,12 @@ test('lastPlayed: a new past session starts as the last one played in that curre
   assert.equal(lastPlayed('€', all, 'mtt').stack, 40000);
   assert.equal(lastPlayed('€', all, 'mtt').name, 'Deepstack');
   assert.deepEqual(lastPlayed('£', all), {});
+});
+
+test("parseDay 'near': a trip day without a year is the closest one, before or after today", () => {
+  const now = new Date(2026, 9, 18).getTime();
+  assert.equal(parseDay('15/9', now, 'near'), new Date(2026, 8, 15).getTime(), 'last month, logged after the trip');
+  assert.equal(parseDay('20/11', now, 'near'), new Date(2026, 10, 20).getTime(), 'next month, planned');
+  assert.equal(parseDay('10/1', now, 'near'), new Date(2027, 0, 10).getTime(), 'January is closer next year');
+  assert.equal(parseDay('15/9', now, true), new Date(2027, 8, 15).getTime(), 'a festival plan stays in the future');
 });

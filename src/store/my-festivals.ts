@@ -28,7 +28,21 @@ export function ownFestivalOk(x: OwnFestivalInput): boolean {
   return !!x.name.trim() && /^\d{4}-\d{2}-\d{2}$/.test(x.from) && /^\d{4}-\d{2}-\d{2}$/.test(x.to) && x.to >= x.from;
 }
 
-/** The festival record. Times are the phone's: the player is where the festival is. */
+/** The phone's time zone ('Europe/Lisbon'), when the engine knows it. */
+function phoneZone(): string | undefined {
+  try {
+    const z = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return z && /^[A-Za-z_]+\/[\w/+-]+$/.test(z) ? z : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The festival record. Times are the phone's: the player is where the festival is.
+ * The offset is the phone's on the festival's first day, not on the day it was
+ * added, so reminders stay right across a summer-time change.
+ */
 export function ownFestival(id: string, x: OwnFestivalInput, now = Date.now()): Festival {
   const city = x.city.trim();
   return {
@@ -37,7 +51,8 @@ export function ownFestival(id: string, x: OwnFestivalInput, now = Date.now()): 
     venue: city,
     city: '',
     currency: x.currency,
-    utcOffset: -new Date(now).getTimezoneOffset(),
+    utcOffset: -new Date(x.from + 'T12:00:00').getTimezoneOffset(),
+    ...(phoneZone() ? { tz: phoneZone() } : {}),
     source: { label: '', checked: dayKey(now) },
     notes: [],
     events: [],

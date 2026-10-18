@@ -115,6 +115,25 @@ test('Sweatbook CSV comes back as the same sessions', () => {
   assert.equal(new Date(r.sessions[0].startedAt).getHours(), 20, 'start time comes back too');
 });
 
+test('Sweatbook CSV in the Portuguese layout (semicolons, decimal commas, a BOM) imports back the same', () => {
+  const base: Session = {
+    id: 'pt', kind: 'cash', name: 'NLH 1/2', venue: 'Póvoa', currency: '€', startedAt: new Date(2026, 8, 3, 20).getTime(), endedAt: new Date(2026, 8, 3, 22, 30).getTime(),
+    breaks: [], buyIn: 33.3, entries: 3, addOn: 0, cashOut: 150.45, tips: 2.5, sb: 1, bb: 2, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '-bad beat',
+  };
+  const text = '\uFEFF' + sessionsCsv([base], [], [], [], ';');
+  const r = run(text);
+  assert.equal(r.source, 'sweatbook');
+  assert.equal(r.sessions.length, 1);
+  const s = r.sessions[0];
+  const c = (n: number) => Math.round(n * 100);
+  assert.equal(c(profit(s)), c(profit(base)));
+  assert.equal(s.cashOut, 150.45);
+  assert.equal(s.tips, 2.5);
+  assert.equal(s.venue, 'Póvoa');
+  assert.equal(s.notes, '-bad beat');
+  assert.equal(playedMs(s), 2.5 * 3600000);
+});
+
 test('Sweatbook CSV keeps tips and hands apart from expenses', () => {
   const base: Session = {
     id: 'y', kind: 'cash', name: 'NLH 2/5', venue: 'Bellagio', currency: '$', startedAt: new Date(2026, 8, 2, 19).getTime(), endedAt: new Date(2026, 8, 2, 23).getTime(),
@@ -131,6 +150,32 @@ test('rows without a date or money are counted, not imported', () => {
   const r = run('Date,Location,Profit\nnope,X,10\n2025-01-01,Y,\n2025-01-02,Z,5\n');
   assert.equal(r.sessions.length, 1);
   assert.equal(r.unreadable, 2);
+});
+
+test('dot thousands, the currency written in the amount, and unreadable amounts', () => {
+  assert.equal(parseNum('R$ 1.235'), 1235);
+  assert.equal(parseNum('10.000 €'), 10000);
+  assert.equal(parseNum('1.000.000'), 1000000);
+  assert.equal(parseNum('1.250'), 1.25, 'a bare number keeps its decimal point');
+  const r = run('date,venue,profit\n2024-03-01,A,$120\n2024-03-02,B,80 €\n2024-03-03,C,R$ 1.235\n2024-03-04,D,12.5.3\n');
+  assert.deepEqual(r.sessions.map((s) => s.currency), ['$', '€', 'R$']);
+  assert.equal(r.unreadable, 1, '"12.5.3" is not read as 0');
+});
+
+test('the file decides the decimal mark: a bare "10.000" is never read as 10', () => {
+  const profits = (text: string) => run(text).sessions.map((x) => profit(x));
+  // Decimal commas elsewhere in the file: dots are thousands.
+  assert.deepEqual(profits('date,venue,profit\n2024-03-01,A,"10.000"\n2024-03-02,B,"12,50"\n2024-03-03,C,"-1.235"\n2024-03-04,D,(1.235)\n'), [10000, 12.5, -1235, -1235]);
+  // Semicolons and no decimals at all: the same.
+  assert.deepEqual(profits('date;venue;profit\n2024-03-01;A;100.000\n2024-03-02;B;1.500\n'), [100000, 1500]);
+  // Decimal points elsewhere: commas are thousands, "1.500" is one and a half.
+  assert.deepEqual(profits('date,venue,profit\n2024-03-01,A,"1,500"\n2024-03-02,B,12.50\n'), [1500, 12.5]);
+  // Nothing says which: a bare "10.000" fails the row instead of a silent guess; with a symbol it is clear.
+  const r = run('date,venue,profit\n2024-03-01,A,10.000\n2024-03-02,B,10.000 €\n2024-03-03,C,250\n2024-03-04,D,"1,500"\n');
+  assert.deepEqual(r.sessions.map((x) => profit(x)), [10000, 250]);
+  assert.equal(r.unreadable, 2);
+  // Hands dealt follow the file's mark too.
+  assert.equal(run('date;venue;profit;hands\n2024-03-01;A;12,50;1.200\n').sessions[0].handsDealt, 1200);
 });
 
 test('numbers and dates', () => {

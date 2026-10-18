@@ -393,7 +393,7 @@ export default function NewHand() {
   // Two ways out at any point of the hand: a voice note (saved when it stops) or just save.
   const quickSave = (
     <Row gap={14}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={voice.start} hitSlop={10}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={voice.start} hitSlop={{ top: 13, bottom: 13, left: 7, right: 7 }}>
         <Row gap={4}>
           <Ionicons name="mic" size={15} color={C.accent} />
           <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
@@ -401,7 +401,7 @@ export default function NewHand() {
           </T>
         </Row>
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Guardar mão')} onPress={() => save()} hitSlop={10}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Guardar mão')} onPress={() => save()} hitSlop={{ top: 13, bottom: 13, left: 7, right: 7 }}>
         <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
           {t('Guardar já')}
         </T>
@@ -496,7 +496,7 @@ export default function NewHand() {
               <Row gap={10}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={8}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
                   <T v="small">
                     {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
                   </T>

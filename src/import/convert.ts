@@ -3,10 +3,11 @@
 // session is built to land on exactly that number. Pure, so it can be tested.
 
 import { t } from '@/i18n';
+import { storedCurrency } from '@/store/currencies';
 import type { Session } from '@/store/types';
 
 import { readTable, type Table } from './csv';
-import { NO_VALUE, parseNum } from './num';
+import { type DecimalMark, NO_VALUE, parseNum } from './num';
 import { detectSource, FIELDS, knownHeader, mappingFor, type Field, type Mapping, type SourceId } from './mapping';
 
 export type DateOrder = 'dmy' | 'mdy';
@@ -92,7 +93,16 @@ const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL:
 export function currencyOf(raw: string, fallback: string): string {
   const c = raw.trim();
   if (!c) return fallback;
-  return CURRENCY[c.toUpperCase()] ?? CURRENCY[c] ?? c.slice(0, 4);
+  return CURRENCY[c.toUpperCase()] ?? CURRENCY[c] ?? storedCurrency(c) ?? c.slice(0, 4);
+}
+
+/** The currency written in an amount cell ("$120", "80 €", "R$ 1.235"), when the file has no currency column. */
+export function currencyInAmount(cells: string[]): string | undefined {
+  for (const v of cells) {
+    const m = /R\$|US\$|HK\$|A\$|[€$£¥]|\b(EUR|USD|GBP|BRL|CHF|JPY)\b/i.exec(v);
+    if (m) return currencyOf(m[0], '') || undefined;
+  }
+  return undefined;
 }
 
 export { parseNum };
@@ -271,10 +281,10 @@ export function formatOf(raw: string): 'live' | 'online' | null {
 const WITHDRAW = /withdraw|payout|cash ?out|levant|retirad|saque|retrait|auszahl/i;
 
 /** A bankroll row as a deposit or withdrawal: the sign of the amount, or the words on the row. */
-function moveOf(r: string[], get: (r: string[], f: Field) => string, at: number, opt: ImportOptions): ImportedMove | null {
-  const net = parseNum(get(r, 'profit'));
-  const out = parseNum(get(r, 'cashOut'));
-  const inn = parseNum(get(r, 'buyIn'));
+function moveOf(r: string[], get: (r: string[], f: Field) => string, at: number, opt: ImportOptions, money: (v: string) => number | null): ImportedMove | null {
+  const net = money(get(r, 'profit'));
+  const out = money(get(r, 'cashOut'));
+  const inn = money(get(r, 'buyIn'));
   const v = net ?? (out !== null || inn !== null ? (out ?? 0) - (inn ?? 0) : null);
   if (v === null || Math.abs(v) < 0.005) return null;
   const words = [get(r, 'kind'), get(r, 'game'), get(r, 'name'), get(r, 'notes')].join(' ');
@@ -288,6 +298,24 @@ function moveOf(r: string[], get: (r: string[], f: Field) => string, at: number,
 }
 
 const TRANSFER_IN = /deposit|dep[oó]sito|cash ?in\b|top ?up|carregamento|einzahl|d[eé]p[oô]t/i;
+
+const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn', 'expenses', 'tips'];
+
+/**
+ * Amounts read with the file's own decimal mark: "12,50" anywhere (or semicolons and no "12.50")
+ * makes "10.000" ten thousand; "12.50" anywhere makes "1,500" fifteen hundred. A file that says
+ * neither leaves a bare "10.000" or "1,500" unread (the row fails) rather than guess.
+ */
+function moneyReader(table: Table, get: (r: string[], f: Field) => string): (v: string) => number | null {
+  const cells = table.rows.flatMap((r) => MONEY_FIELDS.map((f) => get(r, f))).filter(Boolean);
+  const comma = cells.some((v) => /\d,\d{1,2}\D*$/.test(v));
+  const point = cells.some((v) => /\d\.\d{1,2}\D*$/.test(v));
+  const mark: DecimalMark | undefined = comma && !point ? 'comma' : point && !comma ? 'point' : !comma && !point && table.sep === ';' ? 'comma' : undefined;
+  return (v) => {
+    if (!mark && /^\(?[-−]?\d{1,3}([.,]\d{3})+\)?$/.test(v.trim())) return null;
+    return parseNum(v, mark);
+  };
+}
 
 // ─── Rows → sessions ─────────────────────────────────────────────────────────
 
@@ -344,6 +372,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const failed: FailedRow[] = [];
   const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
   const bankrollNames: Record<string, string> = {};
+  const money = moneyReader(table, get);
 
   for (let ri = 0; ri < table.rows.length; ri++) {
     if (ri && ri % CHUNK === 0) yield ri;
@@ -358,7 +387,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
     const startP = parseDate(get(r, 'start'), order);
     if (isMove) {
-      const m = startP && moveOf(r, get, startP.t, opt);
+      const m = startP && moveOf(r, get, startP.t, opt, money);
       if (m) {
         const dup = seen.get(m.id) ?? 0;
         seen.set(m.id, dup + 1);
@@ -385,18 +414,18 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       start = d.getTime();
     }
 
-    const buyIn = parseNum(get(r, 'buyIn'));
-    const rebuy = parseNum(get(r, 'rebuyCost')) ?? 0;
-    const addOn = parseNum(get(r, 'addOn')) ?? 0;
-    const cashOut = parseNum(get(r, 'cashOut'));
-    const net = parseNum(get(r, 'profit'));
-    const srcExp = Math.abs(parseNum(get(r, 'expenses')) ?? 0);
-    const tips = Math.abs(parseNum(get(r, 'tips')) ?? 0);
-    const handsDealt = parseNum(get(r, 'handsDealt'));
+    const buyIn = money(get(r, 'buyIn'));
+    const rebuy = money(get(r, 'rebuyCost')) ?? 0;
+    const addOn = money(get(r, 'addOn')) ?? 0;
+    const cashOut = money(get(r, 'cashOut'));
+    const net = money(get(r, 'profit'));
+    const srcExp = Math.abs(money(get(r, 'expenses')) ?? 0);
+    const tips = Math.abs(money(get(r, 'tips')) ?? 0);
+    const handsDealt = money(get(r, 'handsDealt'));
     // Sweatbook's own CSV: the makeup cut is inside profit; kept apart so cash_out stays as entered.
-    const cut = opt.source === 'sweatbook' ? (parseNum(get(r, 'makeupCut')) ?? 0) : 0;
+    const cut = opt.source === 'sweatbook' ? (money(get(r, 'makeupCut')) ?? 0) : 0;
     // "cem" or "?" where an amount goes: reading it as 0 would change the result without a word.
-    const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && /\p{L}|\?/u.test(v) && !NO_VALUE.test(v.trim()) && parseNum(v) === null);
+    const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && !NO_VALUE.test(v.trim()) && money(v) === null);
     if (bad) {
       unreadable++;
       failed.push({ line, reason: 'badMoney', value: bad });
@@ -487,7 +516,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       kind,
       name,
       venue,
-      currency: currencyOf(get(r, 'currency'), opt.currency),
+      currency: currencyOf(get(r, 'currency'), currencyInAmount([get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')]) ?? opt.currency),
       startedAt: start,
       endedAt: end,
       breaks,

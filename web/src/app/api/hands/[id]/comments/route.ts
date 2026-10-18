@@ -42,7 +42,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const street = STREETS.includes(body?.street as Street) ? (body!.street as Street) : null;
   const authorId = typeof body?.authorId === 'string' && AUTHOR_ID_RE.test(body.authorId) ? body.authorId : null;
   const authorKey = authorId ? commentAuthorKey(authorId) : null;
-  if (!name || name.length > 40 || !text || text.length > 1000) {
+  // No author, no block check: a comment without one could dodge the owner's block.
+  if (!authorKey || !name || name.length > 40 || !text || text.length > 1000) {
     return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: cors });
   }
   if (isOffensive(name) || isOffensive(text)) {

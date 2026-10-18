@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useMemo } from 'react';
 
 import { t } from '@/i18n';
-import { eventDay, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, venueClock, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { shortDay } from '@/share/festival-plan';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
@@ -31,7 +31,7 @@ export function nextLine(f: Festival, e: FestivalEvent, now = Date.now()): strin
 }
 
 function venueDay(f: Festival, ms: number): string {
-  return new Date(ms + f.utcOffset * 60_000).toISOString().slice(0, 10);
+  return venueClock(f, ms).toISOString().slice(0, 10);
 }
 
 export function AfterFestivalSession({ s, after, prize, onReenter, onNext }: { s: Session; after: AfterSession; prize: number; onReenter: () => void; onNext: (e: FestivalEvent) => void }) {

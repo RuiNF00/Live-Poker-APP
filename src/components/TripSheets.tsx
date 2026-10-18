@@ -60,7 +60,8 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
 
   const setDay = (which: 'from' | 'to', v: string) => {
     (which === 'from' ? setFromText : setToText)(v);
-    const d = parseDay(v, Date.now(), true);
+    // A trip may be logged after it or planned ahead: a day without a year is the nearest one.
+    const d = parseDay(v, Date.now(), 'near');
     if (d !== null) set(which === 'from' ? { from: startOfDay(d) } : { to: endOfDay(d) });
   };
 

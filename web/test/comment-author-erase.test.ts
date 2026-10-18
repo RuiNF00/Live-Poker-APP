@@ -31,12 +31,13 @@ describe('erasing my comments', () => {
     await comments.POST(req('POST', { name: 'Ana', text: 'Fold.', authorId: me }), ctx(a.id));
     await comments.POST(req('POST', { name: 'Ana', text: 'Call.', authorId: me }), ctx(b.id));
     await comments.POST(req('POST', { name: 'Rui', text: 'Shove.', authorId: 'someone-else-99' }), ctx(a.id));
-    await comments.POST(req('POST', { name: 'Zé', text: 'Sem id.' }), ctx(a.id));
+    // No author id, no way to block it: refused.
+    expect((await comments.POST(req('POST', { name: 'Zé', text: 'Sem id.' }), ctx(a.id))).status).toBe(422);
 
     const res = await mine.DELETE(req('DELETE', { authorId: me }));
     expect(res.status).toBe(200);
     expect((await res.json()).deleted).toBe(2);
-    expect((await list(a.id)).map((c) => c.name).sort()).toEqual(['Rui', 'Zé']);
+    expect((await list(a.id)).map((c) => c.name).sort()).toEqual(['Rui']);
     expect(await list(b.id)).toEqual([]);
     // Sent again from the outbox: nothing left, still fine.
     expect((await (await mine.DELETE(req('DELETE', { authorId: me }))).json()).deleted).toBe(0);

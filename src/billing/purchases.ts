@@ -332,18 +332,23 @@ export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResul
 /** 'slow': the store is still answering (an Apple ID sign-in can take a while); Pro turns on by itself if it finds the purchase. 'busy': one is already running. */
 export type RestoreResult = 'ok' | 'none' | 'error' | 'slow' | 'busy';
 
-let restoring = false;
+// Held until the store answers, also after we stop waiting: a second restore never runs alongside the first
+// (a call that never answers stops holding it after a few minutes, as with purchases).
+let restoring = 0;
 
 export async function restore(): Promise<RestoreResult> {
   if (!LIVE) return 'none';
-  if (restoring) return 'busy';
-  restoring = true;
+  if (restoring && Date.now() - restoring < BUYING_STALE_MS) return 'busy';
+  const mine = (restoring = Date.now());
+  const run = (async () => (await rc()).restorePurchases())();
+  run.then(
+    () => void (restoring === mine && (restoring = 0)),
+    () => void (restoring === mine && (restoring = 0)),
+  );
   try {
-    return hasPro(await withTimeout((await rc()).restorePurchases(), RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
+    return hasPro(await withTimeout(run, RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
   } catch (e) {
     return (e as Error)?.message === 'timeout' ? 'slow' : 'error';
-  } finally {
-    restoring = false;
   }
 }
 

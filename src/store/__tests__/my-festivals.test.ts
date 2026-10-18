@@ -21,6 +21,11 @@ test('own festival: trimmed name, the city as venue, dates, no schedule or sourc
   assert.deepEqual(festivalSpan(f), f.dates);
 });
 
+test("own festival: the offset is the phone's on its first day, not on the day it was added", () => {
+  const f = ownFestival('fx_1', input, new Date(2026, 6, 1).getTime());
+  assert.equal(f.utcOffset, -new Date(2026, 10, 5, 12).getTimezoneOffset());
+});
+
 test('the form needs a name and an end on or after the start', () => {
   assert.equal(ownFestivalOk(input), true);
   assert.equal(ownFestivalOk({ ...input, name: ' ' }), false);

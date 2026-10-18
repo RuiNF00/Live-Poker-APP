@@ -7,7 +7,7 @@ import { cache } from 'react';
 import { handTitle } from '@livepoker/hand-format';
 import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
-import { ogLocale, pickLocale, previewLocale, t } from '@/lib/i18n';
+import { ogLocale, pageLocale, previewLocale, t } from '@/lib/i18n';
 import { previewCopy } from '@/lib/preview-copy';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
 import { ShareView } from '@/components/ShareView';
@@ -54,12 +54,14 @@ export async function generateMetadata({ params, searchParams }: Params & Search
 
 export default async function SharePage({ params, searchParams }: Params & SearchParams) {
   const { id } = await params;
-  const { q, r, utm_source, utm_medium } = await searchParams;
+  const { q, r, utm_source, utm_medium, lang } = await searchParams;
   const param = (v: unknown) => (typeof v === 'string' && /^[\w.-]{1,40}$/.test(v) ? v : null);
   // Invite code of the player who shared (the app appends ?r=<code> to its share links).
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   const share = await loadShare(id);
-  const locale = pickLocale((await headers()).get('accept-language'));
+  // The reader's language when the phone asks for one of ours, else the sharer's (?lang=); proxy.ts
+  // makes the same choice for <html lang>.
+  const locale = pageLocale(lang, (await headers()).get('accept-language'));
   if (!share) {
     const c = previewCopy(locale);
     return (

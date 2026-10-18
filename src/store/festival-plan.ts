@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { t } from '@/i18n';
-import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 
 import { isBagged } from './multi-day';
 import type { Session } from './types';
@@ -56,6 +56,11 @@ export interface OwnEventInput {
 /** A tournament the player adds; its own number, so it never joins a schedule event's flights. */
 export function ownEvent(id: string, x: OwnEventInput, n: number): FestivalEvent {
   return { id, number: 100_000 + n, name: x.name.trim(), unnumbered: true, game: x.game, buyIn: x.buyIn, guarantee: 0, start: x.start, stack: x.stack || undefined, levelMinutes: x.levelMinutes || undefined, own: true };
+}
+
+/** The number for the next added tournament: one past the highest, so a deleted one's number is never reused (it would link sessions). */
+export function nextOwnNumber(p: FestivalPlan): number {
+  return Math.max(0, ...(p.events ?? []).map((e) => e.number - 100_000)) + 1;
 }
 
 /** Takes an added tournament out of the plan, with its reminders' late reg; a session already played keeps its data. */
@@ -148,7 +153,7 @@ export type EventAction =
   | { kind: 'resume'; session: Session }
   | { kind: 'reenter'; session: Session };
 
-export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[], e: FestivalEvent): EventAction | null {
+export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[], e: FestivalEvent, now = Date.now()): EventAction | null {
   const byId = new Map(sessions.map((s) => [s.id, s]));
   const own = byId.get(plan.sessions[e.id] ?? '');
   if (own && !own.endedAt) return { kind: 'view', session: own };
@@ -159,6 +164,8 @@ export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[]
     .filter((s): s is Session => !!s)
     .sort((a, b) => b.startedAt - a.startedAt)[0];
   if (linked && !linked.endedAt) return { kind: 'view', session: linked };
+  // Nothing new starts before the tournament's own day at the venue: weeks ahead, a stray tap would open a session dated now.
+  if (venueClock(f, now).toISOString().slice(0, 10) < eventDay(e)) return null;
   if (e.day2) return linked && isBagged(linked) && day2Takes(f, plan, e, linked) ? { kind: 'resume', session: linked } : null;
   if (own) return null;
   if (linked && !isBagged(linked) && !linked.cashOut) return { kind: 'reenter', session: linked };
@@ -177,7 +184,8 @@ export function plannedNow(f: Festival, plan: FestivalPlan, sessions: Session[],
   for (const e of planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))) {
     const start = venueTime(f, e.start);
     if (now < start - 2 * 3_600_000 || now > start + (lateRegOf(plan, e) || LATE_DEFAULT_MIN) * 60_000) continue;
-    const action = eventAction(f, plan, sessions, e);
+    // Its own window decides the timing (it can open late the evening before a 01:00 start).
+    const action = eventAction(f, plan, sessions, e, Math.max(now, start));
     if (action && action.kind !== 'view') return { e, start, action };
   }
   return null;
@@ -228,7 +236,7 @@ export function afterSession(festivals: Festival[], plans: Record<string, Festiv
     for (const x of planned(f, plan).sort((a, b) => venueTime(f, a.start) - venueTime(f, b.start))) {
       const at = venueTime(f, x.start);
       if (x.id === e.id || now > at + (lateRegOf(plan, x) || LATE_DEFAULT_MIN) * 60_000) continue;
-      const a = eventAction(f, plan, ended, x);
+      const a = eventAction(f, plan, ended, x, Math.max(now, at));
       if (!a || a.kind === 'view') continue;
       out.next = { e: x, start: at, now: now >= at - 2 * 3_600_000 };
       break;
@@ -249,7 +257,7 @@ export interface PlanReminder {
 
 /** Venue wall-clock HH:MM of an instant. */
 export function venueHm(f: Festival, ms: number): string {
-  const x = new Date(ms + f.utcOffset * 60_000);
+  const x = venueClock(f, ms);
   return `${String(x.getUTCHours()).padStart(2, '0')}:${String(x.getUTCMinutes()).padStart(2, '0')}`;
 }
 

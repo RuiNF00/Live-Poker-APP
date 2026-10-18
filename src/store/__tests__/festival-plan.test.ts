@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
-import { FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
+import { eventDay, FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -77,33 +77,43 @@ test('ships without an event brand; the player can name the festival', () => {
   assert.equal(festivalName(F, { ...EMPTY_PLAN, name: '   ' }), 'Bahamas, dezembro 2026');
 });
 
+// After every event in the test festivals: the buttons are live.
+const LATE = Date.UTC(2028, 0, 1);
+
+test('nothing starts before the tournament day at the venue; from that day on it does', () => {
+  const e = F.events.find((x) => !x.day2)!;
+  const [y, m, d] = eventDay(e).split('-').map(Number);
+  assert.equal(eventAction(F, EMPTY_PLAN, [], e, Date.UTC(y, m - 1, d) - 3 * 86_400_000), null, 'days before');
+  assert.deepEqual(eventAction(F, EMPTY_PLAN, [], e, venueTime(F, eventDay(e) + 'T00:30')), { kind: 'start' }, 'that day, venue time');
+});
+
 test('one tournament across flights and days: start, re-enter a later flight, resume Day 2', () => {
   const base = { id: 'x', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, breaks: [], buyIn: 26000, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 60000, stackLog: [], roster: [], notes: '' };
   const ev = (id: string) => F.events.find((e) => e.id === id)!;
-  assert.deepEqual(eventAction(F, EMPTY_PLAN, [], ev('12-A')), { kind: 'start' });
-  assert.equal(eventAction(F, EMPTY_PLAN, [], ev('12-2A')), null);
+  assert.deepEqual(eventAction(F, EMPTY_PLAN, [], ev('12-A'), LATE), { kind: 'start' });
+  assert.equal(eventAction(F, EMPTY_PLAN, [], ev('12-2A'), LATE), null);
 
   const plan = { ...EMPTY_PLAN, sessions: { '12-A': 'x' } };
   // Playing Flight A: every row of #12 points at that session.
-  assert.equal(eventAction(F, plan, [base], ev('12-B'))!.kind, 'view');
+  assert.equal(eventAction(F, plan, [base], ev('12-B'), LATE)!.kind, 'view');
   // Busted in A: Flight B is a re-entry, A itself has nothing left to do.
   const busted = { ...base, endedAt: 2 };
-  assert.equal(eventAction(F, plan, [busted], ev('12-B'))!.kind, 'reenter');
-  assert.equal(eventAction(F, plan, [busted], ev('12-A')), null);
-  assert.equal(eventAction(F, plan, [busted], ev('12-2A')), null);
+  assert.equal(eventAction(F, plan, [busted], ev('12-B'), LATE)!.kind, 'reenter');
+  assert.equal(eventAction(F, plan, [busted], ev('12-A'), LATE), null);
+  assert.equal(eventAction(F, plan, [busted], ev('12-2A'), LATE), null);
   // Bagged in A: Day 2 picks it up; no new flight while chips are in the bag.
   const bagged = { ...base, endedAt: 2, bag: { stack: 185000, at: 2 } };
-  assert.equal(eventAction(F, plan, [bagged], ev('12-2A'))!.kind, 'resume');
+  assert.equal(eventAction(F, plan, [bagged], ev('12-2A'), LATE)!.kind, 'resume');
   // Bagged in Flight A: the 2BC restart isn't yours.
-  assert.equal(eventAction(F, plan, [bagged], ev('12-2BC')), null);
-  assert.equal(eventAction(F, { ...EMPTY_PLAN, sessions: { '12-C': 'x' } }, [bagged], ev('12-2BC'))!.kind, 'resume');
-  assert.equal(eventAction(F, plan, [bagged], ev('12-B')), null);
+  assert.equal(eventAction(F, plan, [bagged], ev('12-2BC'), LATE), null);
+  assert.equal(eventAction(F, { ...EMPTY_PLAN, sessions: { '12-C': 'x' } }, [bagged], ev('12-2BC'), LATE)!.kind, 'resume');
+  assert.equal(eventAction(F, plan, [bagged], ev('12-B'), LATE), null);
   // Busted in A, re-entered in B and bagged there: only the Day 2 that takes B.
   const both = { ...EMPTY_PLAN, sessions: { '12-A': 'x', '12-B': 'x' } };
-  assert.equal(eventAction(F, both, [bagged], ev('12-2A')), null);
-  assert.equal(eventAction(F, both, [bagged], ev('12-2BC'))!.kind, 'resume');
+  assert.equal(eventAction(F, both, [bagged], ev('12-2A'), LATE), null);
+  assert.equal(eventAction(F, both, [bagged], ev('12-2BC'), LATE)!.kind, 'resume');
   // Other events are untouched.
-  assert.deepEqual(eventAction(F, plan, [bagged], ev('13')), { kind: 'start' });
+  assert.deepEqual(eventAction(F, plan, [bagged], ev('13'), LATE), { kind: 'start' });
 });
 
 test('Las Vegas schedule: matches the organiser page, no event numbers shown, Day 2 resumes a bagged flight', () => {
@@ -126,7 +136,7 @@ test('Las Vegas schedule: matches the organiser page, no event numbers shown, Da
   assert.equal(new Date(venueTime(LV, '2026-12-13T11:00')).toISOString(), '2026-12-13T19:00:00.000Z');
   const bagged = { id: 'w', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, endedAt: 2, bag: { stack: 120000, at: 2 }, breaks: [], buyIn: 10400, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 120000, stackLog: [], roster: [], notes: '' };
   const day2 = LV.events.find((e) => e.name === 'Main Event' && e.day2)!;
-  assert.equal(eventAction(LV, { ...EMPTY_PLAN, sessions: { [wc[1].id]: 'w' } }, [bagged], day2)!.kind, 'resume');
+  assert.equal(eventAction(LV, { ...EMPTY_PLAN, sessions: { [wc[1].id]: 'w' } }, [bagged], day2, LATE)!.kind, 'resume');
 });
 
 test('plannedNow: the planned event from 2 h before its start until late reg closes', () => {
@@ -339,8 +349,8 @@ test('after bagging: the Day 2 that takes this flight', () => {
   assert.equal(afterSession(FESTIVALS, { [tr.id]: { ...EMPTY_PLAN, sessions: { '6-1E': 't1' } } }, [t1], t1, at)!.day2!.e.id, '6-2B');
   // And Day 2B resumes a session bagged in 1E (the planner's "Começar Dia 2").
   const plan = { ...EMPTY_PLAN, sessions: { '6-1E': 't1' } };
-  assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2B')!)?.kind, 'resume');
-  assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2A')!), null);
+  assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2B')!, LATE)?.kind, 'resume');
+  assert.equal(eventAction(tr, plan, [t1], tr.events.find((e) => e.id === '6-2A')!, LATE), null);
 });
 
 test('São Paulo: official late reg per flight, past midnight included', () => {
@@ -380,8 +390,8 @@ test('Day 2 resumes a session bagged in a flight named "1A"', () => {
   const ev = (id: string) => pc.events.find((e) => e.id === id)!;
   const bagged = { id: 'x', kind: 'mtt' as const, name: '', venue: '', currency: '$', startedAt: 1, endedAt: 2, bag: { stack: 120000, at: 2 }, breaks: [], buyIn: 3500, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb' as const, tableSize: 8, stack: 50000, stackLog: [], roster: [], notes: '' };
   const plan = { ...EMPTY_PLAN, sessions: { '11-1A': 'x' } };
-  assert.equal(eventAction(pc, plan, [bagged], ev('11-2A'))!.kind, 'resume');
-  assert.equal(eventAction(pc, plan, [bagged], ev('11-2B')), null);
+  assert.equal(eventAction(pc, plan, [bagged], ev('11-2A'), LATE)!.kind, 'resume');
+  assert.equal(eventAction(pc, plan, [bagged], ev('11-2B'), LATE), null);
 });
 
 test('no "registo fecha" reminder for an event the player is already in', () => {
@@ -390,4 +400,12 @@ test('no "registo fecha" reminder for an event the player is already in', () => 
   const lates = (p: typeof pick) => planReminders(LISBOA_NOV_2026, p, at).filter((r) => r.id.endsWith(':late'));
   assert.equal(lates(pick).length, 1);
   assert.equal(lates({ ...pick, sessions: { '5': 's1' } }).length, 0);
+});
+
+test('an added tournament never reuses a deleted one\'s number', () => {
+  const ev = (id: string, n: number) => ownEvent(id, { name: id, start: '2026-11-02T18:00', game: 'NLH', buyIn: 100 }, n);
+  assert.equal(nextOwnNumber(EMPTY_PLAN), 1);
+  const p = { ...EMPTY_PLAN, events: [ev('a', 1), ev('b', 2)] };
+  const after = removeOwnEvent(p, 'a');
+  assert.equal(nextOwnNumber(after), 3);
 });

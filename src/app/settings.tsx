@@ -24,6 +24,7 @@ import { saveTextFile } from '@/lib/files';
 import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
+import { csvSep } from '@/export/csv';
 import { buildBackup, sessionsCsv } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
@@ -107,7 +108,7 @@ export default function SettingsScreen() {
   const exportCsv = async () => {
     tap();
     try {
-      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(store.sessions, store.bankrolls, store.transfers), 'text/csv');
+      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(store.sessions, store.bankrolls, store.transfers, store.trips.flatMap((trip) => trip.expenses.map((x) => ({ trip, x }))), csvSep()), 'text/csv');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }

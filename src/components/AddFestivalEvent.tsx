@@ -2,13 +2,13 @@
 // doesn't have (or a festival with none yet). It joins the plan like any
 // other: reminders, one-tap start, the stack and levels if the player knows them.
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
 import { LEVEL_LENGTHS } from '@/lib/lock-screen/live-state';
 import { festivalSpan, type Festival, type FestivalEvent } from '@/poker/festivals';
-import { ownEvent, updatePlan } from '@/store/festival-plan';
+import { nextOwnNumber, ownEvent, updatePlan } from '@/store/festival-plan';
 import { dayKey } from '@/store/my-festivals';
 import { parseClock, parseDay } from '@/store/session-math';
 import { uid } from '@/store/store';
@@ -33,7 +33,8 @@ function chipDay(day: string) {
 
 export function AddFestivalEvent({ f }: { f: Festival }) {
   const [open, setOpen] = useState(false);
-  const [days] = useState(() => daysOf(f));
+  // Follows the festival: editing its dates changes the chips.
+  const days = useMemo(() => daysOf(f), [f]);
   const [today] = useState(() => dayKey(Date.now()));
   const [day, setDay] = useState(() => (days.includes(today) ? today : (days[0] ?? '')));
   const [dayText, setDayText] = useState('');
@@ -55,7 +56,7 @@ export function AddFestivalEvent({ f }: { f: Festival }) {
     const id = uid('fe_');
     updatePlan(f.id, (p) => ({
       ...p,
-      events: [...(p.events ?? []), ownEvent(id, { name, start, game, buyIn, stack, levelMinutes }, (p.events?.length ?? 0) + 1)],
+      events: [...(p.events ?? []), ownEvent(id, { name, start, game, buyIn, stack, levelMinutes }, nextOwnNumber(p))],
       // Added to play it: planned straight away (reminders, one-tap start).
       picked: [...p.picked, id],
     }));
