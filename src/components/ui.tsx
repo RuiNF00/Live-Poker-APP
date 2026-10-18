@@ -625,6 +625,7 @@ export function Button({
   haptic,
   sub,
   lines = 1,
+  hint,
 }: {
   title: string;
   kind?: BtnKind;
@@ -642,6 +643,8 @@ export function Button({
   sub?: string;
   /** Lines the title may take in a narrow slot. Web can't shrink text, and 200% may not fit in one line even shrunk. */
   lines?: 1 | 2;
+  /** Read after the title: why it is off, say. */
+  hint?: string;
 }) {
   const sz: BtnSize = size ?? (small ? 'sm' : 'lg');
   const h = sz === 'lg' ? 54 : sz === 'md' ? 44 : 36;
@@ -654,6 +657,7 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityHint={hint}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       hitSlop={sz === 'sm' ? 4 : 0}

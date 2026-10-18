@@ -3362,6 +3362,8 @@ const es: Record<string, string> = {
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}». Se sigue recuperando allí.',
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Pagaste una vez: no hay suscripción que cancelar ni renovaciones.',
+  'Toca para atualizar': 'Toca para actualizar',
+  '{what}. Podes anular.': '{what}. Puedes deshacerlo.',
 };
 
 export default es;

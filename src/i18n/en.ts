@@ -3368,6 +3368,8 @@ const en: Record<string, string> = {
   'Não dá para reabrir este pacote': "Can't reopen this package",
   'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': "This package's makeup already moved to «{name}». It keeps being recovered there.",
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'You paid once: there is no subscription to cancel and nothing renews.',
+  'Toca para atualizar': 'Tap to update',
+  '{what}. Podes anular.': '{what}. You can undo it.',
 };
 
 export default en;

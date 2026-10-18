@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -48,6 +48,7 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { reduceMotion, useSheetAnimation } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
+import { useScreenReader } from '@/lib/screen-reader';
 
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
@@ -437,16 +438,19 @@ function Live({ s }: { s: Session }) {
 
   // No "Are you sure?": it happens at once with "Anular" for a few seconds, which is quicker at the table and as safe.
   const [undo, setUndo] = useState<{ title: string; prev: Partial<Session> } | null>(null);
+  const reader = useScreenReader();
   useEffect(() => {
-    if (!undo) return;
+    if (!undo || reader) return;
     const timer = setTimeout(() => setUndo(null), 6000);
     return () => clearTimeout(timer);
-  }, [undo]);
+  }, [undo, reader]);
   const undoable = (title: string, next: Partial<Session>) => {
     tap('success');
     const prev = Object.fromEntries(Object.keys(next).map((k) => [k, s[k as keyof Session]])) as Partial<Session>;
     setUndo({ title, prev });
     save(next);
+    // Six seconds is too short to find «Anular» with VoiceOver or TalkBack: it is said, and stays until closed (below).
+    AccessibilityInfo.announceForAccessibility(t('{what}. Podes anular.', { what: title }));
   };
   // The new chips go on the stack too (cash: the buy-in; tournament: a fresh starting stack), so nobody has to type it.
   const rebuy = () => {
@@ -493,7 +497,11 @@ function Live({ s }: { s: Session }) {
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
           {/* The card opens the stack pad; the share icon sits on top of it, not inside, so the two taps aren't a button in a button. */}
           <Card style={{ flex: 1 }}>
-            <Pressable onPress={() => setPad('stack')} accessibilityRole="button" accessibilityLabel={t('Atualizar stack')} style={({ pressed }) => ({ flex: 1, gap: 4, opacity: pressed ? 0.7 : 1 })}>
+            <Pressable onPress={() => setPad('stack')} accessibilityRole="button"
+              // What the card shows is read too, not only what a tap does.
+              accessibilityLabel={['Stack ' + chips(s.stack), bbs(s.stack, s.bb), delta ? (delta > 0 ? '+' : '') + chips(delta) : null].filter(Boolean).join(', ')}
+              accessibilityHint={t('Toca para atualizar')}
+              style={({ pressed }) => ({ flex: 1, gap: 4, opacity: pressed ? 0.7 : 1 })}>
               <Row>
                 <T v="label" style={{ flex: 1 }}>
                   Stack
@@ -731,6 +739,8 @@ function Live({ s }: { s: Session }) {
               save(undo.prev);
               setUndo(null);
             }}
+            // With a screen reader it stays until closed.
+            onDismiss={reader ? () => setUndo(null) : undefined}
           />
         </View>
       ) : null}

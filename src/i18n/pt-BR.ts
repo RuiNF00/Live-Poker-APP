@@ -1698,6 +1698,8 @@ const ptBR: Record<string, string> = {
   'Incluir as minhas notas da mão': 'Incluir minhas notas da mão',
   'Pro para sempre': 'Pro para sempre',
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Você pagou uma vez: não há assinatura para cancelar nem renovações.',
+  'Toca para atualizar': 'Toque para atualizar',
+  '{what}. Podes anular.': '{what}. Você pode desfazer.',
 };
 
 export default ptBR;
