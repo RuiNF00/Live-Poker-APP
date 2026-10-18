@@ -32,7 +32,7 @@ const ERR: Record<string, string> = {
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
   quota: 'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.',
-  disabled: 'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.',
+  disabled: 'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.',
   would_shrink: 'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.',
   // Decrypted but not a copy this version can read (parseBackup): nothing was imported.
   newer: 'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.',

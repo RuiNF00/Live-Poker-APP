@@ -158,7 +158,7 @@ export default function ProfileScreen() {
   }
 
   const handleHint =
-    check === 'checking' ? t('A confirmar…') : check === 'ok' ? t('Disponível') : check ? t(HANDLE_COPY[check]) : link ? t('Mudar o nome muda o link: o antigo deixa de funcionar.') : undefined;
+    check === 'checking' ? t('A confirmar…') : check === 'ok' ? t('Livre') : check ? t(HANDLE_COPY[check]) : link ? t('Mudar o nome muda o link: o antigo deixa de funcionar.') : undefined;
 
   return (
     <>
