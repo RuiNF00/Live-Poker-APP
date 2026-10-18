@@ -164,6 +164,22 @@ describe('edge cases', () => {
     expect(won).toEqual({ 1: 150, 2: 140 });
   });
 
+  it('a stale picked winner loses to the cards once every hand in the pot is known, like the app', () => {
+    const h = base({
+      players: [
+        { seat: 1, stack: 100, cards: ['As', 'Ks'], isHero: true },
+        { seat: 2, stack: 100, cards: ['9h', '9d'] },
+      ],
+      board: { flop: ['Kc', '7h', '2d'], turn: '9s', river: '3c' },
+      actions: { preflop: [{ seat: 1, type: 'allin', amount: 100 }, { seat: 2, type: 'call' }], flop: [], turn: [], river: [] },
+      winnerSeats: [1],
+    });
+    expect(buildReplay(h).at(-1)!.winners).toEqual([{ seat: 2, amount: 200, handLabel: expect.any(String) }]);
+    // Seat 2's cards unknown: the pick decides.
+    const unknown = buildReplay({ ...h, players: [h.players[0], { seat: 2, stack: 100 }] }).at(-1)!;
+    expect(unknown.winners!.map((w) => [w.seat, w.amount])).toEqual([[1, 200]]);
+  });
+
   it('showdown with the villain unknown and no winner picked: the pot stays unresolved', () => {
     const h = base({
       players: [

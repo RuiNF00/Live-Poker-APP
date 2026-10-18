@@ -373,3 +373,22 @@ test('chop with a folded small blind at 0.25/0.50: €2.50 is 1.25 each on both 
   assert.equal(won(o, 3, 'BB'), 1.25);
   assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
 });
+
+test('winner picked, then the villain\'s cards added: the cards decide on both pages, not the stale pick', () => {
+  const seats = [
+    { pos: 'BTN', stack: 19800, cards: ['As', 'Ks'], name: 'Hero' },
+    { pos: 'SB', stack: 30000 },
+    { pos: 'BB', stack: 30000, cards: ['9h', '9d'] },
+  ];
+  const h = mk({ kind: 'mtt', name: 'Main', sb: 100, bb: 200, ante: 200, anteType: 'bb' }, seats,
+    [['BTN', 'raise', 19800], ['SB', 'fold'], ['BB', 'call']], ['Kc', '7h', '2d', '9s', '3c'], { winners: [0] });
+  const o = run(h);
+  assert.equal(o.res.won[2], 39900, 'BB wins with trips');
+  assert.equal(o.res.net[0], -19800);
+  assert.ok(near(o.appStacks, o.webStacks), `stacks app ${o.appStacks} web ${o.webStacks}`);
+  assert.ok(near(o.res.won, o.webWon), `won app ${o.res.won} web ${o.webWon}`);
+  // Without BB's cards the pick stands, on both pages.
+  const u = run({ ...h, players: h.players.map((p, i) => (i === 2 ? { ...p, cards: undefined } : p)) });
+  assert.equal(u.res.won[0], 39900);
+  assert.ok(near(u.res.won, u.webWon), `won app ${u.res.won} web ${u.webWon}`);
+});
