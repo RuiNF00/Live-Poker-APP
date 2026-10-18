@@ -10,7 +10,7 @@ import { ScrollView, View } from 'react-native';
 import { usePro } from '@/billing/pro';
 import { Button, Card, Chip, ChipRow, Divider, NumField, Row, Section, Segmented, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { decimal, money } from '@/poker/format';
+import { decimal, money, plus } from '@/poker/format';
 import { cashStats, mttStats, project } from '@/store/results-math';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -50,7 +50,7 @@ export default function VarianceScreen() {
   const p = mode === 'cash' ? project(hourly, sdHour, hours) : project((roi / 100) * buyIn, sdBi * buyIn, count);
   const n = mode === 'cash' ? hours : count;
   const unit = (k: number) => (mode === 'cash' ? t('{n} h', { n: k.toLocaleString(locale) }) : k === 1 ? t('1 torneio') : t('{n} torneios', { n: k.toLocaleString(locale) }));
-  const signed = (v: number) => (v > 0 ? '+' : '') + money(Math.round(v), cur);
+  const signed = (v: number) => plus(v) + money(Math.round(v), cur);
   const pct = (x: number) => `${(x * 100).toLocaleString(locale, { maximumFractionDigits: x < 0.1 ? 1 : 0 })}%`;
 
   return (

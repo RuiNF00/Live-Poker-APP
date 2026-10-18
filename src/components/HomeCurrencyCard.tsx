@@ -8,7 +8,7 @@ import { usePro } from '@/billing/pro';
 import { useLocked } from '@/components/ProGate';
 import { locale, t } from '@/i18n';
 import { useRates } from '@/lib/fx';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { homeTotals, latestDay, type HomeTotals } from '@/store/fx-math';
 import { useStore } from '@/store/store';
@@ -53,7 +53,7 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
     );
 
   const latest = latestDay(rates);
-  const show = (n: number, signed = false) => (hidden ? '•••' : (signed && n > 0 ? '+' : '') + money(Math.round(n), home));
+  const show = (n: number, signed = false) => (hidden ? '•••' : (signed ? plus(n) : '') + money(Math.round(n), home));
   const noRates = !latest && !Object.keys(manual).length;
   // Currencies the ECB doesn't cover, in use here: the player types their rate.
   const typed = [...currencies].filter((c) => CURRENCY_INFO[c] && !CURRENCY_INFO[c].ecb);

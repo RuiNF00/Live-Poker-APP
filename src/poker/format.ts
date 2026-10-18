@@ -55,6 +55,9 @@ export function setMoneyMasked(v: boolean) {
 }
 export const moneyMasked = () => masked;
 export const MASK = '•••';
+/** The sign before a screen amount: none in privacy mode, so ••• never tells a win from a loss. */
+export const plus = (n: number, neg = false) => (masked ? '' : n > 0 ? '+' : neg && n < 0 ? '−' : '');
+export const minus = () => (masked ? '' : '−');
 
 /** An amount for the screen: ••• in privacy mode. Files, reports and share images use rawMoney. */
 export function money(n: number, currency = '€'): string {

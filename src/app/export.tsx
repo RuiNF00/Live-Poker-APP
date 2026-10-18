@@ -14,7 +14,7 @@ import { buildReport, handsCsv } from '@/export/report';
 import { reportHtml } from '@/export/report-html';
 import { saveTextFile } from '@/lib/files';
 import { sharePdf } from '@/lib/pdf';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { endOfDay, inRange, scopeIds, scopeOptions, sameScope, type DateRange, type Scope } from '@/store/bankroll-math';
 import { buildBackup, sessionsCsv } from '@/store/backup';
 import { parseDay } from '@/store/session-math';
@@ -140,7 +140,7 @@ export default function ExportScreen() {
 
         <Section title={t('No relatório')} hint={report.currencies.length > 1 ? report.currencies.length === 2 ? t('Mais 1 moeda, com o seu resumo.') : t('Mais {n} moedas, cada uma com o seu resumo.', { n: report.currencies.length - 1 }) : undefined}>
           <StatGrid cols={3}>
-            <Stat label={t('Resultado')} value={main ? (main.totals.profit > 0 ? '+' : '') + money(main.totals.profit, main.currency) : '—'} tone={main ? (main.totals.profit >= 0 ? 'good' : 'bad') : undefined} />
+            <Stat label={t('Resultado')} value={main ? plus(main.totals.profit) + money(main.totals.profit, main.currency) : '—'} tone={main ? (main.totals.profit >= 0 ? 'good' : 'bad') : undefined} />
             <Stat label={t('Sessões')} value={String(main?.totals.sessions ?? 0)} />
             <Stat label={t('Mãos')} value={String(handsIn)} />
           </StatGrid>

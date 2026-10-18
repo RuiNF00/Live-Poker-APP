@@ -7,14 +7,14 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { locale, t } from '@/i18n';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { SMALL, type WinRate } from '@/store/winrate-math';
 import { C, R, S } from '@/theme';
 
 import { SmallSample } from './SmallSample';
 import { Card, Row, T } from './ui';
 
-export const signed = (n: number, fmt: (n: number) => string) => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n));
+export const signed = (n: number, fmt: (n: number) => string) => plus(n, true) + fmt(Math.abs(n));
 const bb = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1, minimumFractionDigits: Math.abs(n) < 10 ? 1 : 0 });
 
 /** The headline: rate, 95% range, BB/h and the sample behind it. */

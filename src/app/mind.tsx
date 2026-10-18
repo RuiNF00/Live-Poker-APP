@@ -12,7 +12,7 @@ import { Insights } from '@/components/Insights';
 import { MindAfter, MindBefore, mindLine } from '@/components/MindCheckIn';
 import { Card, ListGroup, ListItem, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { MindCheck, Session } from '@/store/types';
@@ -71,7 +71,7 @@ export default function MindScreen() {
                     key={s.id}
                     title={`${new Date(s.startedAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' })} · ${s.venue || s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}`}
                     subtitle={[mindLine(s.mind!), s.mind!.note ? `“${s.mind!.note}”` : ''].filter(Boolean).join('\n')}
-                    value={hidden ? '•••' : (p > 0 ? '+' : '') + money(Math.round(p), cur)}
+                    value={hidden ? '•••' : plus(p) + money(Math.round(p), cur)}
                     valueColor={p >= 0 ? C.good : C.bad}
                     onPress={() => setEditing(s)}
                   />

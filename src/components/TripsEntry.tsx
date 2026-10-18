@@ -3,7 +3,7 @@ import React from 'react';
 
 import { ListGroup, ListItem } from '@/components/ui';
 import { t } from '@/i18n';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { currentTrip, tripSummary } from '@/store/trip-math';
 import { C } from '@/theme';
@@ -14,7 +14,7 @@ export function TripsEntry() {
   const on = currentTrip(trips);
   const x = on ?? trips[0];
   const s = x ? tripSummary(x, sessions) : null;
-  const net = s && (s.sessions || s.expenses) ? (settings.hideAmounts ? '•••' : (s.net > 0 ? '+' : '') + money(s.net, s.currency)) : '';
+  const net = s && (s.sessions || s.expenses) ? (settings.hideAmounts ? '•••' : plus(s.net) + money(s.net, s.currency)) : '';
   const sub = !x ? t('Festivais, voos, hotel e o que sobra no fim') : net ? t('{name}: {amount} depois das despesas', { name: x.name, amount: net }) : x.name;
   return (
     <ListGroup>
