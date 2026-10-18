@@ -818,7 +818,7 @@ const ARTICLES: Article[] = [
           steps: [
             'Definições → Subscrição → Gerir subscrição.',
             'Em «Porque queres cancelar?», escolhe Não quero uma subscrição.',
-            'Toca em Comprar uma vez.',
+            'Toca em Pagar uma vez.',
             'Depois cancela a subscrição na App Store ou no Google Play, para não pagares as duas coisas.',
           ],
         },
@@ -836,7 +836,7 @@ const ARTICLES: Article[] = [
           steps: [
             'Settings → Subscription → Manage subscription.',
             "Under “Why do you want to cancel?”, pick I don't want a subscription.",
-            'Tap Buy once.',
+            'Tap Pay once.',
             "Then cancel the subscription in the App Store or Google Play, so you don't pay for both.",
           ],
         },
