@@ -164,6 +164,14 @@ export function VoiceHandSheet({
   const boardFor = (st: Street) => (st === 'flop' ? [0, 1, 2] : st === 'turn' ? [3] : st === 'river' ? [4] : []).filter((i) => i < hand.board.length);
   const shown = hand.players.map((p, seat) => ({ p, seat })).filter(({ p, seat }) => seat !== hand.hero && p.cards?.length);
   const heroCards = hand.players[hand.hero].cards ?? [];
+  // The suits note goes once every guessed card was looked at and fixed.
+  const slots: Slot[] = [
+    ...heroCards.map((_, i) => ({ k: 'hero' as const, i })),
+    ...hand.board.map((_, i) => ({ k: 'board' as const, i })),
+    ...shown.flatMap(({ p, seat }) => p.cards!.map((_, i) => ({ k: 'seat' as const, seat, i }))),
+  ];
+  const guessLeft = slots.some(guessed);
+  const notes = result.notes.filter((n) => n.code !== 'suits' || guessLeft);
   const pickUsed = picking ? usedCards(hand, [cardAt(hand, picking) ?? '']) : new Set<string>();
   // Folds the app filled in are left out of the chips: only what was said (and the checks) shows.
   const said = (c: { fold: boolean; hero: boolean }) => !c.fold || c.hero;
@@ -262,9 +270,9 @@ export function VoiceHandSheet({
                       {picker((x) => x.k === 'seat' && x.seat === seat)}
                     </View>
                   ))}
-                  {result.notes.length > 0 && (
+                  {notes.length > 0 && (
                     <View style={{ gap: 6 }}>
-                      {[...new Map(result.notes.map((n) => [noteText(n, hand), n])).keys()].map((line) => (
+                      {[...new Map(notes.map((n) => [noteText(n, hand), n])).keys()].map((line) => (
                         <Row key={line} gap={8} style={{ alignItems: 'flex-start' }}>
                           <Ionicons name="alert-circle" size={14} color={C.warn} style={{ marginTop: 2 }} />
                           <T v="tiny" color={C.textDim} style={{ flex: 1 }}>
@@ -277,6 +285,11 @@ export function VoiceHandSheet({
                 </View>
               )}
 
+              {result.empty && heard.trim().length > 12 && (
+                <T v="small" color={C.textDim} accessibilityLiveRegion="polite">
+                  {t('Ainda não percebemos a mão. Diz a tua posição, as tuas cartas ou quem abriu.')}
+                </T>
+              )}
               <Button title={t('Pôr na mesa')} icon="checkmark" disabled={result.empty} onPress={done} />
               {!result.empty && (
                 <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>

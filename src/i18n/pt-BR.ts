@@ -1713,6 +1713,8 @@ const ptBR: Record<string, string> = {
   'Estou no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago…': 'Tô no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago…',
   'O que percebemos': 'O que entendemos',
   'Escolhe a carta certa': 'Escolha a carta certa',
+  'Cartas por escolher': 'Cartas a escolher',
+  'Ainda não percebemos a mão. Diz a tua posição, as tuas cartas ou quem abriu.': 'Ainda não entendemos a mão. Diga sua posição, suas cartas ou quem abriu.',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Depois você corrige o que faltar com toques, como numa mão normal.',
   'Pôr na mesa': 'Colocar na mesa',
 };
