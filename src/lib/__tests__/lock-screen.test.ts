@@ -149,3 +149,15 @@ test('a tournament started before its published start keeps level 1 until the fl
   // A new session without a start still runs from now.
   assert.equal(withLevelClock(undefined, mk({ levelMinutes: 30 }), 35 * MIN).levelStartedAt, 35 * MIN);
 });
+
+test('lock-screen level bar: the level starts one length before it ends, breaks taken out', () => {
+  const s = mk({ levelMinutes: 30, levelStartedAt: 60 * MIN, breaks: [{ start: 65 * MIN, end: 75 * MIN }] });
+  const p = liveProps(s, 80 * MIN);
+  assert.equal(p.nextLevelAt, 100 * MIN);
+  assert.equal(p.levelFrom, 70 * MIN);
+  // Paused mid-level: the bar freezes at the pause, a third of the way through.
+  const paused = liveProps(mk({ levelMinutes: 30, levelStartedAt: 60 * MIN, breaks: [{ start: 70 * MIN }] }), 70 * MIN);
+  assert.equal((paused.pausedAt - paused.levelFrom) / (paused.nextLevelAt - paused.levelFrom), 1 / 3);
+  // No level clock (cash, or no length): no bar.
+  assert.equal(liveProps(mk({ kind: 'cash' }), 80 * MIN).levelFrom, 0);
+});

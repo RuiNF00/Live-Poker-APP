@@ -35,12 +35,14 @@ export interface LiveProps {
   blinds: string;
   /** 0 when no level length is set. */
   nextLevelAt: number;
+  /** When the current level began, breaks taken out (so it pairs with nextLevelAt for the level bar); 0 with no level clock. */
+  levelFrom: number;
   nextBlinds: string;
   /** "Intervalo às 21:40 · 15 min" from the structure, '' when none is known. */
   breakAt: string;
   /** A tournament's chip-count story ("Partilhar stack"), one tap from the lock screen; '' for cash. */
   shareUrl: string;
-  labels: { time: string; stack: string; next: string; levelUp: string; newHand: string; shareStack: string };
+  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -148,12 +150,14 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     level: s.level ? t('Nível {n}', { n: s.level }) : 'Blinds',
     blinds: `${chips(s.sb)}/${chips(s.bb)}`,
     nextLevelAt: next ?? 0,
+    levelFrom: next && s.levelMinutes ? next - s.levelMinutes * 60_000 : 0,
     nextBlinds: `${chips(after.sb)}/${chips(after.bb)}`,
     breakAt: breakLabel(breakOf(s, now), now),
     shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
+      blinds: 'Blinds',
       next: t('Sobe em'),
       levelUp: t('Subir nível'),
       newHand: t('Nova mão'),
