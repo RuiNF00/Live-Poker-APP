@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { usePro } from '@/billing/pro';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { Button, confirmAction, Empty, IconButton, Row, T, Wordmark } from '@/components/ui';
@@ -44,6 +45,7 @@ export default function SharedHand() {
   const [reported, setReported] = useState(false);
   const { hands, settings, setSettings } = useStore();
   const mine = !!id && hands.some((h) => h.shareId === id);
+  const { isPro } = usePro();
   const { friends } = useSharedHands();
   const listed = !!id && friends.some((f) => f.id === id);
 
@@ -124,6 +126,8 @@ export default function SharedHand() {
                 .catch(() => {})
             }
           />
+          {/* Not on the player's own hand, nor for Pro: there is nothing to try. */}
+          {mine || isPro ? null : (
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>
             <T v="h2">{t('Regista as tuas mãos live em segundos')}</T>
             <T v="small">
@@ -133,6 +137,7 @@ export default function SharedHand() {
               <Button title={t('Experimentar grátis')} />
             </Link>
           </View>
+          )}
           <T v="h2">{t('Comentários')}</T>
           <React.Suspense fallback={null}>
           <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block}

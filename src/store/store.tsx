@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { useLockScreenUp } from '@/components/AppLock';
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
 import { useRates } from '@/lib/fx';
@@ -25,7 +26,7 @@ import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } f
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
-import { alive, DELETED_LISTS, joinDeleted, keyOf, type Deleted, type DeletedList } from './deleted-math';
+import { alive, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
 import { keepCuts, withCuts } from './staking';
@@ -130,7 +131,6 @@ const loadAll = () => readAll(kv);
 
 /** Damaged values were set aside at launch: say so once, so nothing vanishes silently. */
 function quarantined(n: number) {
-  console.warn('[store] values moved to quarantine', n);
   notice(
     t('Alguns dados estavam danificados'),
     (n === 1 ? t('1 registo não pôde ser lido. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.') : t('{n} registos não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n: n })),
@@ -181,6 +181,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [backing, setBacking] = useState<BackedPlayer[]>([]);
   const [quarantine, setQuarantine] = useState<[string, string][]>([]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  // What the launch found set aside or brought back, said once the app lock is down: a native alert would sit on top of it.
+  const bootNews = useRef<{ quarantined: number; recovered: number } | null>(null);
+  const [newsAt, setNewsAt] = useState(0);
+  const lockUp = useLockScreenUp();
+  useEffect(() => {
+    const n = bootNews.current;
+    if (lockUp || !n) return;
+    bootNews.current = null;
+    if (n.quarantined) quarantined(n.quarantined);
+    else if (n.recovered) notice(t('Dados recuperados'), (n.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: n.recovered })));
+  }, [lockUp, newsAt]);
   // What screens see: each session with its makeup package cut and what swaps add or take
   // (derived, never stored; swaps can be turned off).
   const { swaps } = useSwaps();
@@ -233,8 +244,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       boot = null;
       sideBoot = null;
       if (!alive) return;
-      if (d.quarantined) quarantined(d.quarantined);
-      else if (d.recovered) notice(t('Dados recuperados'), (d.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: d.recovered })));
+      if (d.quarantined) console.warn('[store] values moved to quarantine', d.quarantined);
+      if (d.quarantined || d.recovered) {
+        bootNews.current = { quarantined: d.quarantined, recovered: d.recovered };
+        setNewsAt(Date.now());
+      }
       if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
       if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
       const w = {
@@ -440,7 +454,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return l.map((s) => {
         const stakes = kept.get(s.id) ?? s.stakes;
         return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
-          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) } : x)), updatedAt: now }
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.cutPct !== undefined ? { cutPct: x.cutPct, cumBefore: x.cumBefore } : {}) } : x)), updatedAt: now }
           : s;
       });
     });
@@ -493,26 +507,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const importData = useCallback(
-    (b: BackupData, opts?: { sync?: boolean }) => {
-      // Counted against what's loaded now (for the summary). The lists themselves are merged
-      // into whatever they hold when React applies the update: a cloud copy can land while the
-      // player is saving a hand or moving a live stack, and that change must not be written over.
-      const h = mergeById(hands, b.hands);
-      const incomingSessions = b.sessions.map(bare);
-      const s = mergeById(rawSessions, incomingSessions);
-      const p = mergeById(players, b.players);
-      const tx = mergeById(transfers, b.transfers ?? []);
-      const bk = mergeById(backers, b.backers ?? []);
-      const tr = mergeById(trips, b.trips ?? []);
-      const pk = mergeById(packages, b.packages ?? []);
-      const pay = mergeById(payments, b.payments ?? []);
-      const bc = mergeById(backing, b.backing ?? []);
+    (backup: BackupData, opts?: { sync?: boolean }) => {
       // What the other phone deleted goes here too, unless it was edited here after (deleted-math.ts).
-      // A restore (a file, «Recuperar com código») brings back what it holds, even if it was deleted here.
-      const revived = opts?.sync ? [] : DELETED_LISTS.flatMap((k) => ((b[k] ?? []) as { id: string }[]).map((x) => keyOf(k, x.id)));
+      // A restore (a file, «Recuperar com código») brings back what it holds, even if it was deleted
+      // here: those come back with a fresh edit time, so another phone's older delete can't drop them again.
+      const deletedHere = currentDeleted();
+      const { backup: b, revived } = opts?.sync ? { backup, revived: [] } : revive(backup, deletedHere, Date.now());
       forgetDeleted(revived);
-      const del: Deleted = joinDeleted(currentDeleted(), b.deleted);
+      const del: Deleted = joinDeleted(opts?.sync ? deletedHere : currentDeleted(), b.deleted);
       importDeleted(b.deleted);
+      // Counted against what's loaded now (for the summary), without what is deleted. The lists themselves
+      // are merged into whatever they hold when React applies the update: a cloud copy can land while the
+      // player is saving a hand or moving a live stack, and that change must not be written over.
+      const count = <T extends { id: string; updatedAt?: number }>(cur: T[], incoming: T[], list: DeletedList) => mergeById(cur, alive(incoming, list, del));
+      const h = count(hands, b.hands, 'hands');
+      const incomingSessions = b.sessions.map(bare);
+      const s = count(rawSessions, incomingSessions, 'sessions');
+      const p = count(players, b.players, 'players');
+      const tx = count(transfers, b.transfers ?? [], 'transfers');
+      const bk = count(backers, b.backers ?? [], 'backers');
+      const tr = count(trips, b.trips ?? [], 'trips');
+      const pk = count(packages, b.packages ?? [], 'packages');
+      const pay = count(payments, b.payments ?? [], 'payments');
+      const bc = count(backing, b.backing ?? [], 'backing');
       const gone = <T extends { id: string; updatedAt?: number }>(cur: T[], list: DeletedList) => cur.length - alive(cur, list, del).length;
       const removed = gone(hands, 'hands') + gone(rawSessions, 'sessions') + gone(players, 'players') + gone(transfers, 'transfers') + gone(backers, 'backers') + gone(trips, 'trips') + gone(packages, 'packages') + gone(payments, 'payments') + gone(backing, 'backing');
       const into = <T extends { id: string; updatedAt?: number }>(incoming: T[], list: DeletedList) => (cur: T[]) => alive(incoming.length ? mergeById(cur, incoming).list : cur, list, del);

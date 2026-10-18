@@ -206,7 +206,9 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   // Trial and come-back notifications follow the data: re-planned when it
   // changes and each time the app comes back to the front.
-  const { hands, sessions, activeSession } = useStore();
+  const { hands, sessions, activeSession, settings } = useStore();
+  // «Lembretes» switched off or on in Settings: the come-back reminder already planned follows it.
+  const tipsOn = settings.notify?.tips !== false;
   useEffect(() => setLiveSession(!!activeSession), [activeSession]);
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
@@ -242,7 +244,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       void syncNudges({ now: Date.now(), isPro, annualPrice, hands, sessions, sessionActive: !!activeSession });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession]);
+  }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession, tipsOn]);
 
   const value = useMemo(
     () => ({ isPro, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),

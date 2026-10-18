@@ -8,7 +8,7 @@ export const GLOSSARY = {
   SPR: { name: 'Stack-to-pot ratio', line: 'Stack efetivo a dividir pelo pote. Quanto mais baixo, mais perto do all-in está a mão.' },
   M: { name: 'M de Harrington', line: 'Quantas voltas aguentas só a pagar blinds e antes. Abaixo de 10 é hora de jogar push or fold.' },
   ICM: { name: 'Independent Chip Model', line: 'Converte fichas em dinheiro tendo em conta os prémios que faltam: duplicar o stack não duplica o valor.' },
-  ROI: { name: 'Return on investment', line: 'Lucro a dividir pelo que pagaste em buy-ins. 20% quer dizer 20 cêntimos por cada euro.' },
+  ROI: { name: 'Lucro ÷ buy-ins', line: 'Lucro a dividir pelo total gasto em buy-ins. 20% quer dizer 20 cêntimos de lucro por cada euro de buy-in.' },
   ITM: { name: 'In the money', line: 'Percentagem de torneios em que acabaste nos prémios.' },
 } as const;
 

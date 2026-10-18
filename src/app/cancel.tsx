@@ -101,9 +101,14 @@ export default function Cancel() {
     } else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
     else buyNotice(res as BuyResult, Platform.OS === 'android' ? 'Google Play' : 'App Store');
   };
+  // The store can take a while to answer: said on the link, as in Settings and the paywall, so a second tap isn't lost.
+  const [restoring, setRestoring] = useState(false);
   const onRestore = async () => {
     track('cancel_flow', { step: 'restore' });
-    restoreNotice(await restore(), Platform.OS === 'android' ? 'Google Play' : 'App Store');
+    setRestoring(true);
+    const res = await restore();
+    setRestoring(false);
+    restoreNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store');
   };
   const send = () => {
     track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: scrubNote(note) });
@@ -246,7 +251,7 @@ export default function Cancel() {
           {/* Charged twice, or Pro missing after a reinstall: the fixes are here too, not only in Settings. */}
           {/* The offers above are purchases too: Terms (EULA) and Privacy sit next to them (App Store 3.1.2). */}
           <LegalLinks>
-            <LegalLink role="button" title={t('Restaurar compras')} onPress={onRestore} />
+            <LegalLink role="button" title={restoring ? t('A restaurar…') : t('Restaurar compras')} disabled={restoring} color={restoring ? C.accent : undefined} onPress={onRestore} />
             <LegalLink title={t('Ajuda e contacto')} onPress={() => void WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
           </LegalLinks>
         </View>

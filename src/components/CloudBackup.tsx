@@ -84,9 +84,9 @@ type ImportData = (b: BackupData, opts?: { sync?: boolean }) => Parameters<typeo
  * For upload(): another phone with this code copied things this one doesn't
  * have. They come here too, and the player is told (never joined in silence).
  */
-const joinRemote = (importData: ImportData) => (remote: BackupData) => {
+const joinRemote = (importData: ImportData, say: (title: string, body: string) => void = note) => (remote: BackupData) => {
   const n = importData(remote, { sync: true });
-  if (Object.values(n).some((v) => v > 0)) note(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
+  if (Object.values(n).some((v) => v > 0)) say(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
 };
 
 function confirmTurnOn(onYes: () => void) {
@@ -302,8 +302,23 @@ export function AutoCloudBackup() {
   const empty = ready && store.hands.length === 0 && store.sessions.length === 0;
   // The offer is a native alert: it waits for the app lock to open (it would sit on top of it).
   const lockUp = useLockScreenUp();
+  // A copy made while the lock is up (the launch one) says what it joined in once the lock opens.
+  const lockRef = useRef(lockUp);
+  const joined = useRef<[string, string] | null>(null);
+  const sayJoined = useCallback((title: string, body: string) => {
+    if (lockRef.current) joined.current = [title, body];
+    else note(title, body);
+  }, []);
+  useEffect(() => {
+    lockRef.current = lockUp;
+    if (lockUp || !joined.current) return;
+    note(...joined.current);
+    joined.current = null;
+  }, [lockUp]);
   // The notice a month before the server deletes an unused copy, moved on after every copy.
   // Off the launch path, and only for players with a copy (it loads the notifications module).
+  // Under «Lembretes»: switched off in Settings, the notice already planned goes too (and comes back when on).
+  const tipsOn = store.settings.notify?.tips !== false;
   useEffect(() => {
     const id = setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), 8000);
     const off = onCloudChange((c) => void syncCloudExpiry(c));
@@ -311,7 +326,7 @@ export function AutoCloudBackup() {
       clearTimeout(id);
       off();
     };
-  }, []);
+  }, [tipsOn]);
   useEffect(() => {
     // App deleted and installed again: the keychain still has the code. Offer
     // the copy back once, before the player starts over on an empty app.
@@ -345,11 +360,11 @@ export function AutoCloudBackup() {
       const data = buildBackup(latest.current);
       // Never replaces a cloud copy with an empty or smaller phone (see cloud-guard).
       // Due, or asked for while there was no signal.
-      if (c && (copyWaiting() || autoBackup(c, countsOf(data), Date.now()) === 'upload')) upload(c, data, { onRemote: joinRemote(latest.current.importData) }).catch(() => {});
+      if (c && (copyWaiting() || autoBackup(c, countsOf(data), Date.now()) === 'upload')) upload(c, data, { onRemote: joinRemote(latest.current.importData, sayJoined) }).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
     // On launch and on reconnect only (the store is read through the ref).
-  }, [ready, online]);
+  }, [ready, online, sayJoined]);
   // And after a hand is saved or a session closed: once things settle, at most every 10 minutes.
   const closed = useMemo(() => store.sessions.reduce((n, s) => n + (s.endedAt ? 1 : 0), 0), [store.sessions]);
   const changes = useRef(0);
@@ -364,14 +379,14 @@ export function AutoCloudBackup() {
       id = setTimeout(async () => {
         const now = await loadCloud();
         const data = buildBackup(latest.current);
-        if (now && !uploadBlock(countsOf(data), now)) upload(now, data, { onRemote: joinRemote(latest.current.importData) }).catch(() => {});
+        if (now && !uploadBlock(countsOf(data), now)) upload(now, data, { onRemote: joinRemote(latest.current.importData, sayJoined) }).catch(() => {});
       }, ms);
     });
     return () => {
       live = false;
       clearTimeout(id);
     };
-  }, [ready, online, store.hands, closed]);
+  }, [ready, online, store.hands, closed, sayJoined]);
   return null;
 }
 
