@@ -6,7 +6,7 @@ import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { addDays, atClock, lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
@@ -139,10 +139,10 @@ export function SessionForm({
       if (initial.endedAt && day === initDay && mins === initMins && timeText === initTime)
         return onSubmit({ ...s, startedAt: initial.startedAt, endedAt: initial.endedAt, breaks: initial.breaks });
       let start: number;
-      if (startMin !== null) start = day + startMin * 60000;
+      if (startMin !== null) start = atClock(day, startMin);
       else {
         // No start time: it ended now (today) or late that evening.
-        const end = day >= dayStart(Date.now()) ? Date.now() : day + 23 * 3600000;
+        const end = day >= dayStart(Date.now()) ? Date.now() : atClock(day, 23 * 60);
         start = end - mins * 60000;
       }
       onSubmit({ ...s, startedAt: start, endedAt: start + mins * 60000, breaks: [], stackLog: [] });
@@ -259,7 +259,7 @@ export function SessionForm({
           <Section title={t('Quando')}>
             <ChipRow>
               {[0, 1, 2, 3, 4, 5, 6].map((k) => {
-                const d = dayStart(Date.now()) - k * 86400000;
+                const d = addDays(dayStart(Date.now()), -k);
                 return (
                   <Chip
                     key={k}
@@ -283,7 +283,7 @@ export function SessionForm({
               placeholder={t('Outra data: dd/mm/aaaa')}
               keyboardType="numbers-and-punctuation"
             />
-            {day < dayStart(Date.now()) - 6 * 86400000 ? <T v="tiny">{fullDay(day)}</T> : null}
+            {day < addDays(dayStart(Date.now()), -6) ? <T v="tiny">{fullDay(day)}</T> : null}
           </Section>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
             <Field

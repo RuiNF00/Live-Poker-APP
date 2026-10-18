@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { breakdown, lastPlayed, lastTimeAt, owedToBackers, parseDay, profit, totals } from '../session-math';
+import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, owedToBackers, parseDay, profit, totals } from '../session-math';
 import type { Session } from '../types';
 
 function mk(over: Partial<Session> = {}): Session {
@@ -138,4 +138,26 @@ test("parseDay 'near': a trip day without a year is the closest one, before or a
   assert.equal(parseDay('20/11', now, 'near'), new Date(2026, 10, 20).getTime(), 'next month, planned');
   assert.equal(parseDay('10/1', now, 'near'), new Date(2027, 0, 10).getTime(), 'January is closer next year');
   assert.equal(parseDay('15/9', now, true), new Date(2027, 8, 15).getTime(), 'a festival plan stays in the future');
+});
+
+// Meaningful in any time zone; around DST it bites in Europe/Lisbon or America/Los_Angeles
+// (checked by hand with TZ=Europe/Lisbon npm test, and TZ=America/Los_Angeles).
+test('atClock keeps the typed time on the days the clocks change', () => {
+  for (const [y, m, d] of [[2026, 9, 25], [2026, 10, 1], [2026, 2, 29], [2026, 2, 8], [2026, 5, 15]]) {
+    const at = new Date(atClock(new Date(y, m, d).getTime(), 20 * 60 + 30));
+    assert.deepEqual([at.getFullYear(), at.getMonth(), at.getDate(), at.getHours(), at.getMinutes()], [y, m, d, 20, 30]);
+  }
+  const late = new Date(atClock(new Date(2026, 9, 25).getTime(), 23 * 60));
+  assert.deepEqual([late.getDate(), late.getHours()], [25, 23]);
+});
+
+test('addDays steps calendar days, not 24-hour blocks', () => {
+  // Clock at 26 Oct: the chip two days back is Saturday the 24th, its midnight.
+  const sat = new Date(addDays(new Date(2026, 9, 26).getTime(), -2));
+  assert.deepEqual([sat.getDate(), sat.getHours()], [24, 0]);
+  // A week back from 31 Mar shows every day, Sunday the 29th too.
+  const days = [0, 1, 2, 3, 4, 5, 6].map((k) => new Date(addDays(new Date(2026, 2, 31).getTime(), -k)).getDate());
+  assert.deepEqual(days, [31, 30, 29, 28, 27, 26, 25]);
+  const evening = new Date(addDays(new Date(2026, 2, 28, 21).getTime(), 1));
+  assert.deepEqual([evening.getDate(), evening.getHours()], [29, 21]);
 });
