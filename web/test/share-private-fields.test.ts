@@ -31,13 +31,14 @@ const PRIVATE = {
 describe('a shared hand keeps the player’s private fields off the server', () => {
   it('strips them before storing, and keeps the notes the player chose to share', async () => {
     const res = await hands.POST(
-      new Request('http://x/api/hands', { method: 'POST', body: JSON.stringify({ hand: { ...SAMPLE_TOURNAMENT_HAND, ...PRIVATE, notes: 'Hero call?' } }) }),
+      new Request('http://x/api/hands', { method: 'POST', body: JSON.stringify({ hand: { ...SAMPLE_TOURNAMENT_HAND, ...PRIVATE, notes: 'Hero call?', players: SAMPLE_TOURNAMENT_HAND.players.map((p, i) => (i ? { ...p, playerId: 'p_secret' } : p)) } }) }),
     );
     expect(res.status).toBe(201);
     const { id } = await res.json();
     const stored = (await (await one.GET(new Request('http://x'), ctx(id))).json()).hand as Record<string, unknown>;
     for (const key of Object.keys(PRIVATE)) expect(stored).not.toHaveProperty(key);
     expect(stored.notes).toBe('Hero call?');
+    expect(JSON.stringify(stored.players)).not.toContain('playerId');
   });
 });
 

@@ -27,6 +27,7 @@ async function fullHand(id: string) {
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (new URL(req.url).searchParams.get('reveal') === '1') {
+    if (await limited(req, 'reveal', 300, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
     const hand = await fullHand(id);
     if (!hand) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: cors });
     return NextResponse.json({ hand }, { headers: cors });
