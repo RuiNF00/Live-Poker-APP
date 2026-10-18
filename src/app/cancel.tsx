@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
+import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerTaken, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
 import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
@@ -62,14 +62,13 @@ export default function Cancel() {
       if (!s.includes('lifetime')) lifetimeOffer().then(setLifetime);
     });
   }, []);
+  // The −40% is on the monthly plan: someone on the yearly one isn't offered it.
   useEffect(() => {
-    if (seen && !seen.includes('discount')) retentionOffer(plans, product).then(setOffer);
-  }, [seen, plans, product]);
-  const discountShown = !!offer;
-  useEffect(() => {
-    if (reason === 'bankroll' && discountShown) void markOfferSeen('discount');
-    if (reason === 'noSubscription' && lifetime) void markOfferSeen('lifetime');
-  }, [reason, discountShown, lifetime]);
+    if (seen && !seen.includes('discount') && plan === 'monthly') retentionOffer(plans, product).then(setOffer);
+  }, [seen, plans, plan, product]);
+  // An offer is used up only once it is taken or turned down with a tap («Continuar a cancelar»):
+  // going back, or a purchase that fails, leaves it there for the next visit (App Store 2.1).
+  const shownOffer = offerOnScreen(reason, { discount: !!offer, lifetime: !!lifetime });
 
   // Lifetime is judged on long-term revenue: who saw it, from which plan, and
   // whether the subscription was still set to renew (i.e. they were about to cancel).
@@ -87,10 +86,12 @@ export default function Cancel() {
   };
   const toStore = () => {
     track('cancel_flow', { step: 'store', reason: reason ?? '' });
+    if (shownOffer) void markOfferSeen(shownOffer);
     void manageSubscription();
   };
   const result = (res: string, what: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: what, result: res });
+    if (offerTaken(res) && what === 'discount') void markOfferSeen('discount');
     // The store's own sheet already confirmed it: straight back, no extra alert.
     if (res === 'ok') router.back();
     else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
@@ -99,6 +100,7 @@ export default function Cancel() {
   // Pro for good, but the subscription is still running: send them to the store to stop it.
   const lifetimeResult = (res: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: 'lifetime', result: res });
+    if (offerTaken(res)) void markOfferSeen('lifetime');
     if (res === 'ok') {
       track('lifetime_purchased', lifetimeProps());
       setForGood(true);
