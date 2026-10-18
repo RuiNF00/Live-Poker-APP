@@ -187,12 +187,12 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
   }
 }
 
-/** True when the player already bought Pro for good (lifetime): there is nothing left to cancel or offer. */
-export async function ownsLifetime(): Promise<boolean> {
+/** Pro paid once («Pagar uma vez»): nothing renews, so there is no subscription to manage. */
+export async function hasLifetime(): Promise<boolean> {
   if (!LIVE) return false;
   try {
-    const info = await (await rc()).getCustomerInfo();
-    return info.nonSubscriptionTransactions.some((x) => x.productIdentifier === LIFETIME.product) || info.entitlements.active[ENTITLEMENT]?.productIdentifier === LIFETIME.product;
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    return !!e && (e.productIdentifier === LIFETIME.product || !e.expirationDateMillis);
   } catch {
     return false;
   }

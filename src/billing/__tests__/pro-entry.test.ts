@@ -51,6 +51,6 @@ test('buying from a bankroll lock carries on with what was tapped', () => {
 
 test('a lifetime owner is never told they will lose Pro in the cancel flow', () => {
   const c = src.find(([f]) => f === path.join('app', 'cancel.tsx'))![1];
-  assert.match(c, /ownsLifetime\(\)\.then\(setForGood\)/);
+  assert.match(c, /hasLifetime\(\)\.then\(setForGood\)/);
   assert.match(c, /forGood \? null : <T v="small">\{t\('Fica tudo guardado\. Sem Pro/);
 });

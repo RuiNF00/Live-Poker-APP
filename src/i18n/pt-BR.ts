@@ -1670,6 +1670,7 @@ const ptBR: Record<string, string> = {
   'Abrir a {store}': 'Abrir a {store}',
   'Tens o Pro para sempre': 'Você tem o Pro para sempre',
   'A abrir a {store}…': 'Abrindo a {store}…',
+  'Pro para sempre': 'Pro para sempre',
 };
 
 export default ptBR;

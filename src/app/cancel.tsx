@@ -9,7 +9,7 @@ import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerT
 import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
-import { getSubscription, lifetimeOffer, manageSubscription, ownsLifetime, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
+import { getSubscription, hasLifetime, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -55,7 +55,7 @@ export default function Cancel() {
       setWillRenew(s?.willRenew ?? null);
       setProduct(s?.product ?? null);
     });
-    ownsLifetime().then(setForGood);
+    hasLifetime().then(setForGood);
     // Each offer shows once ever: on a later visit only the plain way out is left.
     offersSeen().then((s) => {
       setSeen(s);
