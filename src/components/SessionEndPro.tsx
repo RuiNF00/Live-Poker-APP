@@ -11,18 +11,21 @@ import { blockedIn, sessionEndCard } from '@/billing/session-limit';
 import { T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
+import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
 export function SessionEndPro({ sessionId, profit, hours, game, currency, hideMoney }: { sessionId: string; profit: number; hours: number; game: 'mtt' | 'cash'; currency: string; hideMoney: boolean }) {
   const { isPro, paywall } = usePro();
+  const { hands } = useStore();
   const [blocked, setBlocked] = useState<number | null>(null);
   useEffect(() => {
     let live = true;
-    blockedIn(sessionId).then((n) => live && setBlocked(n));
+    const saved = new Set(hands.map((h) => h.id));
+    blockedIn(sessionId, (id) => saved.has(id)).then((n) => live && setBlocked(n));
     return () => {
       live = false;
     };
-  }, [sessionId]);
+  }, [sessionId, hands]);
   if (blocked === null) return null;
   const card = sessionEndCard({ isPro, profit, blocked, hours, game });
   if (!card) return null;
