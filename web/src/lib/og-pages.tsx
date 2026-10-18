@@ -5,7 +5,7 @@ import { brand } from '@/config/brand';
 import { numberTag, type Locale } from '@/lib/i18n';
 import { liveCopy } from '@/components/live/copy';
 import { previewCopy } from '@/lib/preview-copy';
-import { MARK_LINES, MARK_PATH } from '@/components/Brand';
+import { MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX } from '@/components/Brand';
 import { SUIT_PATHS } from '@/components/PlayingCard';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
 import type { ProfilePayload } from '@/lib/profile-data';
@@ -84,9 +84,10 @@ function Logo() {
   const m = /^(.*?)(book)$/i.exec(brand.name);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <svg width="52" height="52" viewBox="0 2 64 64">
-        <path d={MARK_PATH} fill={K.accent} />
-        <path d={MARK_LINES} stroke={K.bg} strokeWidth="3.2" strokeLinecap="round" />
+      <svg width="52" height="52" viewBox={MARK_VIEWBOX}>
+        <path d={MARK_ARROW} fill={K.accent} />
+        <path d={MARK_CLUB} fill="#EDE6D8" />
+        <path d={MARK_PLAY} fill={K.accent} />
       </svg>
       <div style={{ display: 'flex', fontSize: 40, fontWeight: 800, letterSpacing: -1 }}>
         {m ? m[1] : brand.name}

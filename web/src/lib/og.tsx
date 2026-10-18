@@ -8,7 +8,7 @@ import { numberTag, type Locale } from '@/lib/i18n';
 import { previewCopy } from '@/lib/preview-copy';
 import type { QuizSpot, SharedHand } from '@/lib/types';
 import { SUIT_COLORS, SUIT_PATHS } from '@/components/PlayingCard';
-import { MARK_LINES, MARK_PATH } from '@/components/Brand';
+import { MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX } from '@/components/Brand';
 
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -158,9 +158,10 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean, 
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <svg width={56} height={56} viewBox="0 2 64 64">
-              <path d={MARK_PATH} fill={brand.colors.accent} />
-              <path d={MARK_LINES} stroke={brand.colors.bg} strokeWidth="3.2" strokeLinecap="round" />
+            <svg width={56} height={56} viewBox={MARK_VIEWBOX}>
+              <path d={MARK_ARROW} fill={brand.colors.accent} />
+              <path d={MARK_CLUB} fill="#EDE6D8" />
+              <path d={MARK_PLAY} fill={brand.colors.accent} />
             </svg>
             <div style={{ fontSize: 36, fontWeight: 700, display: 'flex' }}>
               {wordmark ? (
