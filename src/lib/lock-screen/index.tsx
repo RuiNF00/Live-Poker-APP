@@ -15,7 +15,7 @@ import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 
-import { liveProps } from './live-state';
+import { caughtUp, liveProps } from './live-state';
 import { onNotificationsAllowed, onReminderTap, syncLevelReminder } from './reminder';
 
 type Native = typeof import('./activity');
@@ -42,7 +42,8 @@ function lockScreen(): Native | null {
 
 async function show(s: Session, hideAmounts: boolean) {
   try {
-    await lockScreen()?.showSession(liveProps(s, Date.now(), hideAmounts));
+    const now = Date.now();
+    await lockScreen()?.showSession(liveProps(caughtUp(s, now), now, hideAmounts));
   } catch (e) {
     // Live Activities switched off in Settings, notifications denied: the app works as before.
     console.warn('[lock-screen] show', e);
@@ -67,6 +68,12 @@ export function SessionLockScreen() {
   // found no permission then goes out now, not only after the next change.
   const [allowed, setAllowed] = useState(0);
   useEffect(() => onNotificationsAllowed(() => setAllowed((n) => n + 1)), []);
+  // Back after a while: the levels that came due meanwhile, on the lock screen and in the next reminder.
+  const [resumed, setResumed] = useState(0);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && setResumed((n) => n + 1));
+    return () => sub.remove();
+  }, []);
   // The trial's notice before a charge too.
   const { refreshNudges } = usePro();
   useEffect(() => {
@@ -84,9 +91,9 @@ export function SessionLockScreen() {
       // No system prompt here: the session screen asks with its own primer
       // first. Without permission Android simply shows no notification.
       await show(s, hide);
-      await syncLevelReminder(levelsOn ? s : null);
+      await syncLevelReminder(levelsOn ? caughtUp(s) : null);
     })();
-  }, [activeSession, hide, levelsOn, allowed]);
+  }, [activeSession, hide, levelsOn, allowed, resumed]);
 
   // "Torneios planeados" switched off in Settings: what was planned goes too. On (at launch, after a
   // restore brought plans in, back on in Settings), every plan still ahead gets its reminders, in the
