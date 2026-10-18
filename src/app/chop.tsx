@@ -55,7 +55,7 @@ export default function ChopScreen() {
             {st.map((_, i) => (
               <Row key={i} gap={S.sm} style={{ alignItems: 'flex-end' }}>
                 <NumField label={name(i)} value={stacks[i]} onChange={(v) => setAt(stacks, setStacks, i, v)} />
-                <NumField money label={t('{n}º lugar', { n: i + 1 })} value={pays[i]} onChange={(v) => setAt(pays, setPays, i, v)} />
+                <NumField money label={t('{n}.º lugar', { n: i + 1 })} value={pays[i]} onChange={(v) => setAt(pays, setPays, i, v)} />
               </Row>
             ))}
           </Card>
@@ -101,7 +101,7 @@ export default function ChopScreen() {
           <Card tone="inset" style={{ alignItems: 'center', gap: 6 }}>
             <Ionicons name="calculator-outline" size={22} color={C.muted} />
             <T v="small" style={{ textAlign: 'center' }}>
-              {t('Preenche todos os stacks e pelo menos o 1º prémio.')}
+              {t('Preenche todos os stacks e pelo menos o 1.º prémio.')}
             </T>
           </Card>
         )}

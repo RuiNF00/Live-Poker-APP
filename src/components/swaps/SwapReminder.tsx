@@ -136,7 +136,7 @@ export function SwapReminder() {
               <T v="title">{s.name || t('Torneio')}</T>
               <T v="body" color={C.textDim}>
                 {prize > 0
-                  ? t('Cobraste {amount}{place}.', { amount: money(prize, s.currency), place: s.finish ? ' · ' + t('{n}º lugar', { n: s.finish }) : '' })
+                  ? t('Cobraste {amount}{place}.', { amount: money(prize, s.currency), place: s.finish ? ' · ' + t('{n}.º lugar', { n: s.finish }) : '' })
                   : t('Não cobraste.')}
               </T>
             </View>

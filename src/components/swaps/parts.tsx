@@ -153,7 +153,7 @@ export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: Sw
           : t('{name} pagou-te', { name: names[e.side] });
   const sub =
     e.kind === 'result'
-      ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}º lugar', { n: e.finish }) : '']
+      ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}.º lugar', { n: e.finish }) : '']
           .filter(Boolean)
           .join(' · ')
       : shortDate(e.at);

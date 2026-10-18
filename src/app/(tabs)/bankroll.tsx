@@ -850,7 +850,7 @@ function SessionRow({ s, bankroll, onEdit }: { s: Session; bankroll?: string; on
       icon={mtt ? 'trophy-outline' : 'cash-outline'}
       iconColor={mtt ? C.warn : C.info}
       title={s.name || (mtt ? t('Torneio') : 'Cash')}
-      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
       right={
         <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
           {(p > 0 ? '+' : '') + fmt(p, s.currency)}

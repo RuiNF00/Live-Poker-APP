@@ -281,7 +281,7 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
         ? t('O melhor mês dos últimos {n} com sessões.', { n: c.of })
         : c.rank === c.of
           ? t('O mês mais fraco dos últimos {n} com sessões.', { n: c.of })
-          : t('{rank}º de {n} meses com sessões, do melhor para o pior.', { rank: c.rank, n: c.of });
+          : t('{rank}.º de {n} meses com sessões, do melhor para o pior.', { rank: c.rank, n: c.of });
   return (
     <Card style={{ gap: S.md }}>
       <T v="h3">{verdict}</T>
