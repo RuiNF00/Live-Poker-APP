@@ -57,3 +57,13 @@ export const DELETE_KINDS = [
   'swap-group-leave',
   'invite-erase',
 ];
+
+/**
+ * The cloud code is forgotten only once the copy's delete is in the outbox. If
+ * queueing fails (the cipher's chunk didn't load), the error goes up and the
+ * code stays, or the copy would sit on the server with no key left to delete it.
+ */
+export async function dropCloud<C>(cloud: C | null, queueDelete: (c: C) => Promise<void>, forget: () => Promise<void>): Promise<void> {
+  if (cloud) await queueDelete(cloud);
+  await forget();
+}

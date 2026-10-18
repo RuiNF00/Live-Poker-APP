@@ -12,7 +12,7 @@ import type { Backer, Session } from '@/store/types';
 import { lockSupported, saveLock } from './app-lock';
 import { loadCloud, queueCloudDelete, rememberedCode, saveCloud } from './cloud-backup';
 import { dropAllDocs } from './docs';
-import { keysToErase } from './erase-core';
+import { dropCloud, keysToErase } from './erase-core';
 import { runErasers } from './erase-hooks';
 import { queueBackerPageDelete } from './backer-page';
 import { queueLiveDelete } from './live-cleanup';
@@ -37,9 +37,8 @@ export async function eraseRemote(d: { hands: Pick<Hand, 'id' | 'shareId' | 'sha
   await clearOffers();
   // After a reinstall the only trace of the cloud copy may be the code in the keychain.
   const cloud = (await loadCloud()) ?? (await rememberedCode());
-  if (cloud) await queueCloudDelete(cloud).catch(() => {});
-  // Also forgets the code kept in the keychain (it outlives reinstalling the app).
-  await saveCloud(null).catch(() => {});
+  // Also forgets the code kept in the keychain (it outlives reinstalling the app), but only once the delete is queued.
+  await dropCloud(cloud, queueCloudDelete, () => saveCloud(null).catch(() => {}));
   await queueProfileDelete().catch(() => {});
   await runErasers();
 }

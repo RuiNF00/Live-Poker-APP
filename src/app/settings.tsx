@@ -130,6 +130,9 @@ export default function SettingsScreen() {
           lockChanged();
           router.replace('/');
           note(t('Dados apagados'), t('A app está como nova.'));
+        } catch {
+          // Before anything left the phone (the server deletes couldn't be queued): safe to try again.
+          note(t('Não deu para apagar'), t('Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.'));
         } finally {
           setBusy(false);
         }

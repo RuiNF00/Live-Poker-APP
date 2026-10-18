@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { APP_PREFIXES, DELETE_KINDS, KEEP_KEYS, keysToErase } from '../erase-core';
+import { APP_PREFIXES, DELETE_KINDS, dropCloud, KEEP_KEYS, keysToErase } from '../erase-core';
 
 test('erasing removes every hand, session, setting and cloud code, and keeps the pending deletes and the free-plan log', () => {
   const all = ['rl.hands.v2', 'rl.hand.v2.a', 'rl.session.v2.b', 'rl.settings.v1', 'rl.cloud.v1', 'rl.draft.v1', 'rl.festivalPlans.v1', 'sweatbook.replayer.tips.v1', ...KEEP_KEYS, 'expo.other'];
@@ -51,4 +51,18 @@ test('every delete the app queues is one the outbox never gives up on', async ()
   assert.deepEqual(deletes.filter((k) => !DELETE_KINDS.includes(k)), []);
   // And no listed kind is a typo: each one has a sender.
   assert.deepEqual(DELETE_KINDS.filter((k) => !kinds.has(k)), []);
+});
+
+test('o código da cópia na nuvem só é esquecido depois de o apagar entrar na fila', async () => {
+  const log: string[] = [];
+  await dropCloud('c', async () => void log.push('queued'), async () => void log.push('forgot'));
+  assert.deepEqual(log, ['queued', 'forgot']);
+  // The cipher didn't load: the delete isn't queued, so the code stays and the erase fails.
+  const kept: string[] = [];
+  await assert.rejects(dropCloud('c', async () => Promise.reject(new Error('chunk')), async () => void kept.push('forgot')), /chunk/);
+  assert.deepEqual(kept, []);
+  // No cloud copy: just forget.
+  const none: string[] = [];
+  await dropCloud(null, async () => void none.push('queued'), async () => void none.push('forgot'));
+  assert.deepEqual(none, ['forgot']);
 });
