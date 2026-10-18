@@ -31,6 +31,9 @@ export function stakingSummary(stakes: Stake[]): Session['staking'] {
 }
 
 /** Share sold to backers, 0–1. */
+/** To the cent, per backer: the same rounding as the backer's own ledger (staking.ts). */
+const c2 = (n: number) => Math.round(n * 100) / 100;
+
 export function soldShare(s: Session): number {
   const sold = stakesOf(s).reduce((a, x) => a + x.share, 0);
   return Math.min(1, Math.max(0, sold / 100));
@@ -49,12 +52,12 @@ export function gross(s: Session): number {
 
 /** What the backers paid you for their share (markup included). */
 export function stakeIn(s: Session): number {
-  return stakesOf(s).reduce((a, x) => a + pieceOf(s, x) * cost(s) * (x.markup || 1), 0);
+  return c2(stakesOf(s).reduce((a, x) => a + c2(pieceOf(s, x) * cost(s) * (x.markup || 1)), 0));
 }
 
 /** What you owe the backers from the prize. */
 export function owedToBackers(s: Session): number {
-  return soldShare(s) * (s.cashOut || 0);
+  return c2(stakesOf(s).reduce((a, x) => a + c2(pieceOf(s, x) * (s.cashOut || 0)), 0));
 }
 
 /** Your own money in play. */
