@@ -62,17 +62,20 @@ function StakingScreen() {
                       key={b.id}
                       left={<Avatar name={b.name} />}
                       title={b.name}
-                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? parts(l, cur) : ''].filter(Boolean).join(', ')}
+                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? parts(l, cur).join(' · ') : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
                           <T v="small" numberOfLines={2}>
                             {[n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l?.makeup ? t('makeup {amount}', { amount: money(l.makeup, cur) }) : ''].filter(Boolean).join(' · ')}
                           </T>
-                          {l && parts(l, cur) ? (
-                            <T v="tiny" numberOfLines={2}>
-                              {parts(l, cur)}
-                            </T>
-                          ) : null}
+                          {/* One line per amount, never cut: what is still owed must always show. */}
+                          {l
+                            ? parts(l, cur).map((p) => (
+                                <T key={p} v="tiny">
+                                  {p}
+                                </T>
+                              ))
+                            : null}
                         </View>
                       }
                       right={
@@ -146,16 +149,16 @@ function StakingScreen() {
 }
 
 /**
- * What a backer's balance is made of, in one line: "o backer recebe 400€ · ação por pagar 120€".
+ * What a backer's balance is made of, one part per line: "o backer recebe 400€", "ação por pagar 120€".
  * Only when it's more than one thing: a single part is the balance itself, said again.
  */
-function parts(l: BackerLedger, cur: string): string {
+function parts(l: BackerLedger, cur: string): string[] {
   const list = [
     l.owed ? t('o backer recebe {amount}', { amount: money(l.owed, cur) }) : '',
     l.unpaid ? t('ação por pagar {amount}', { amount: money(l.unpaid, cur) }) : '',
     Math.abs(l.paid) >= 0.01 ? (l.paid > 0 ? t('pagaste {amount}', { amount: money(l.paid, cur) }) : t('recebeste {amount}', { amount: money(-l.paid, cur) })) : '',
   ].filter(Boolean);
-  return list.length > 1 ? list.join(' · ') : '';
+  return list.length > 1 ? list : [];
 }
 
 /** One coloured number and a sentence, Splitwise style: where you stand with all your backers. */

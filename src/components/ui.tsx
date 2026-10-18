@@ -1117,8 +1117,9 @@ export function PressRow({ children, style, ...rest }: PressableProps & { childr
 export function Wordmark({ size = 30 }: { size?: number }) {
   const st: TextStyle = { fontSize: size, fontFamily: ff(800), fontWeight: '800', letterSpacing: -0.035 * size };
   return (
-    <RNText numberOfLines={1} allowFontScaling={false} style={[st, { color: C.text }]}>
+    // Shrinks rather than cutting to "Sweat…" when header buttons leave little room (320-wide phones).
+    <FitText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false} style={[st, { color: C.text }]}>
       Sweat<RNText style={{ color: C.accent }}>book</RNText>
-    </RNText>
+    </FitText>
   );
 }
