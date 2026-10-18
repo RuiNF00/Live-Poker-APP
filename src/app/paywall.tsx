@@ -1,13 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { chargeNoticeAt } from '@/billing/nudges';
-import { restoreNotice, usePro } from '@/billing/pro';
+import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
@@ -79,10 +79,21 @@ export default function Paywall() {
     if (then) setTimeout(then, 350);
   };
 
+  // Pro turning on while the paywall is open but not from a tap here (a restore that outlasted its wait,
+  // Ask to Buy approved, a code redeemed): back to what was tapped, same as a purchase.
+  const acting = useRef(false);
+  useEffect(() => {
+    if (isPro && !wasPro && !acting.current) unlocked();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPro]);
+
   const onBuy = async () => {
+    if (acting.current) return;
+    acting.current = true;
     setBusy('buy');
     const res = await purchase(plan, reason);
     setBusy(null);
+    if (res !== 'ok') acting.current = false;
     if (res === 'ok') {
       // A trial just started: the day-5 reminder the timeline promised, asked once, over this screen.
       if (trial >= 3) {
@@ -102,13 +113,16 @@ export default function Paywall() {
       takeResume();
       close();
     } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
-    else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    else buyNotice(res, store);
   };
 
   const onRestore = async () => {
+    if (acting.current) return;
+    acting.current = true;
     setBusy('restore');
     const res = await restore();
     setBusy(null);
+    if (res !== 'ok') acting.current = false;
     if (res === 'ok') return unlocked();
     restoreNotice(res, store);
   };

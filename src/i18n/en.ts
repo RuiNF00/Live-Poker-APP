@@ -3307,6 +3307,18 @@ const en: Record<string, string> = {
   'Valor recebido ({cur})': 'Amount received ({cur})',
   '{name} deve-te {amount} neste momento. Regista o que recebeste e o swap fica acertado dos dois lados.': '{name} owes you {amount} right now. Record what you got and the swap is settled on both sides.',
   'Regista o que {name} te pagou.': 'Record what {name} paid you.',
+  'Sem resposta da {store}': 'No answer from {store}',
+  'Se a {store} confirmou o pagamento, o Pro liga-se sozinho. Se não, tenta outra vez.': 'If {store} confirmed the payment, Pro turns on by itself. If not, try again.',
+  'Compras desligadas': 'Purchases turned off',
+  'Este telemóvel não deixa fazer compras (Tempo de ecrã ou controlo parental).': 'This phone doesn\'t allow purchases (Screen Time or parental controls).',
+  'Já tens esta compra': 'You already have this',
+  'Toca em Restaurar compras para ligar o Pro neste telemóvel.': 'Tap Restore purchases to turn Pro on on this phone.',
+  'A {store} ainda está a responder': '{store} is still answering',
+  'Se encontrar a compra, o Pro liga-se sozinho.': 'If it finds the purchase, Pro turns on by itself.',
+  'Câmara desligada': 'Camera off',
+  'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Turn on the camera for Sweatbook in your phone\'s settings.',
+  'Não deu para gravar': 'Couldn\'t record',
+  'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'The microphone is busy. Try again in a moment.',
 };
 
 export default en;

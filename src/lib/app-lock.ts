@@ -2,6 +2,7 @@
 // PIN on a phone with no lock of its own. The setting lives in the keychain, not
 // in the store, so backups never carry it to another phone.
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
@@ -15,6 +16,9 @@ export * from './app-lock-core';
 
 const KEY = 'sweatbook.app-lock.v1';
 const FAILS = 'sweatbook.app-lock.fails.v1';
+// The keychain outlives the app on iOS; this marker in the app's own storage doesn't. A lock found
+// without it belongs to a deleted install (nothing left to protect) and would only lock the player out.
+const INSTALLED = 'sweatbook.app-lock.installed.v1';
 
 /** No keychain on the web: the lock isn't offered there. */
 export const lockSupported = Platform.OS === 'ios' || Platform.OS === 'android';
@@ -23,15 +27,22 @@ export async function loadLock(): Promise<LockConfig | null> {
   if (!lockSupported) return null;
   try {
     const raw = await SecureStore.getItemAsync(KEY);
-    return raw ? (JSON.parse(raw) as LockConfig) : null;
+    if (!raw) return null;
+    if (!(await AsyncStorage.getItem(INSTALLED))) {
+      await saveLock(null);
+      return null;
+    }
+    return JSON.parse(raw) as LockConfig;
   } catch {
     return null;
   }
 }
 
 export async function saveLock(cfg: LockConfig | null): Promise<void> {
-  if (cfg) await SecureStore.setItemAsync(KEY, JSON.stringify(cfg));
-  else {
+  if (cfg) {
+    await SecureStore.setItemAsync(KEY, JSON.stringify(cfg));
+    await AsyncStorage.setItem(INSTALLED, '1').catch(() => {});
+  } else {
     await SecureStore.deleteItemAsync(KEY);
     await SecureStore.deleteItemAsync(FAILS).catch(() => {});
   }
@@ -49,11 +60,18 @@ export async function deviceLockAvailable(): Promise<boolean> {
 
 /** Face ID, Touch ID or fingerprint, else the phone's code. */
 export async function askDevice(): Promise<boolean> {
+  return (await askDeviceResult()) === 'ok';
+}
+
+/** Like askDevice, and says when the phone no longer has a lock at all (code or biometrics removed in its settings). */
+export async function askDeviceResult(): Promise<'ok' | 'no' | 'gone'> {
   try {
     const r = await LocalAuthentication.authenticateAsync({ promptMessage: t('Desbloquear o Sweatbook'), cancelLabel: t('Cancelar') });
-    return r.success;
+    if (r.success) return 'ok';
+    if (r.error === 'passcode_not_set' || r.error === 'not_enrolled' || r.error === 'not_available') return (await deviceLockAvailable()) ? 'no' : 'gone';
+    return 'no';
   } catch {
-    return false;
+    return 'no';
   }
 }
 

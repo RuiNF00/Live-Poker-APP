@@ -3301,6 +3301,18 @@ const es: Record<string, string> = {
   'Valor recebido ({cur})': 'Importe recibido ({cur})',
   '{name} deve-te {amount} neste momento. Regista o que recebeste e o swap fica acertado dos dois lados.': '{name} te debe {amount} ahora mismo. Registra lo que recibiste y el swap queda saldado para los dos.',
   'Regista o que {name} te pagou.': 'Registra lo que {name} te pagó.',
+  'Sem resposta da {store}': 'Sin respuesta de {store}',
+  'Se a {store} confirmou o pagamento, o Pro liga-se sozinho. Se não, tenta outra vez.': 'Si {store} confirmó el pago, Pro se activa solo. Si no, inténtalo de nuevo.',
+  'Compras desligadas': 'Compras desactivadas',
+  'Este telemóvel não deixa fazer compras (Tempo de ecrã ou controlo parental).': 'Este teléfono no permite compras (Tiempo de uso o control parental).',
+  'Já tens esta compra': 'Ya tienes esta compra',
+  'Toca em Restaurar compras para ligar o Pro neste telemóvel.': 'Toca Restaurar compras para activar Pro en este teléfono.',
+  'A {store} ainda está a responder': '{store} todavía está respondiendo',
+  'Se encontrar a compra, o Pro liga-se sozinho.': 'Si encuentra la compra, Pro se activa solo.',
+  'Câmara desligada': 'Cámara desactivada',
+  'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Activa la cámara para Sweatbook en los ajustes del teléfono.',
+  'Não deu para gravar': 'No se pudo grabar',
+  'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'El micrófono está ocupado. Inténtalo de nuevo en un momento.',
 };
 
 export default es;

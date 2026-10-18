@@ -17,6 +17,7 @@ import { Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
+import { permissionOff } from '@/lib/permission-off';
 import { C, F, R } from '@/theme';
 
 import { Row, T, tap } from './ui';
@@ -64,14 +65,19 @@ export function VoiceRecorder({
     if (locked) return onLocked();
     const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) {
-      notice(t('Microfone desligado'), t('Ativa o microfone para o Sweatbook nas definições do telemóvel.'));
+      permissionOff('microphone');
       return;
     }
     tap('medium');
     if (playing.playing) player.pause();
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record({ forDuration: MAX_VOICE_S });
+    try {
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record({ forDuration: MAX_VOICE_S });
+    } catch {
+      // A phone call or another app holding the microphone.
+      notice(t('Não deu para gravar'), t('O microfone está ocupado. Tenta outra vez daqui a pouco.'));
+    }
   };
 
   const stop = async () => {

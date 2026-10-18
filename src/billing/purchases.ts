@@ -87,7 +87,8 @@ function fallbackPlans(): StorePlan[] {
 }
 
 const PLANS_TIMEOUT_MS = 8_000;
-const RESTORE_TIMEOUT_MS = 20_000;
+// Restoring can ask for the Apple ID password (and a 2FA code): give the player time to type it.
+const RESTORE_TIMEOUT_MS = 60_000;
 
 /** A card room's network can leave a store call hanging: give up so the screen can say so. */
 function withTimeout<T>(run: Promise<T>, ms: number): Promise<T> {
@@ -120,8 +121,9 @@ async function loadPlans(): Promise<StorePlan[] | null> {
   }
   if (Platform.OS === 'ios' && plans.length) {
     // iOS lists the intro offer even to players who already used it, so ask.
+    // If that check fails or is slow, the plans still show, without a trial we can't promise.
     const { default: Purchases, INTRO_ELIGIBILITY_STATUS } = await rcModule();
-    const elig = await Purchases.checkTrialOrIntroductoryPriceEligibility(plans.map((p) => p.pkg!.product.identifier));
+    const elig = await withTimeout(Purchases.checkTrialOrIntroductoryPriceEligibility(plans.map((p) => p.pkg!.product.identifier)), 4000).catch(() => ({}) as Awaited<ReturnType<typeof Purchases.checkTrialOrIntroductoryPriceEligibility>>);
     for (const p of plans) {
       if (elig[p.pkg!.product.identifier]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) p.trialDays = 0;
     }
@@ -246,12 +248,20 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
   }
 }
 
+// One store sheet at a time: the sheet takes a moment to appear, and a second tap meanwhile
+// would start a second purchase (paywall, cancel offers, invite, lifetime all come through here).
+let buying = false;
+
 async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
+  if (buying) return 'busy';
+  buying = true;
   try {
     // The store finished the purchase but Pro isn't on yet (RevenueCat still syncing): never say nothing was charged.
     return hasPro((await run()).customerInfo) ? 'ok' : 'pending';
   } catch (e) {
     return buyError(e);
+  } finally {
+    buying = false;
   }
 }
 
@@ -315,14 +325,21 @@ export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResul
 }
 
 /** 'none': the store answered and this account has no subscription; 'error': it didn't answer. */
-export type RestoreResult = 'ok' | 'none' | 'error';
+/** 'slow': the store is still answering (an Apple ID sign-in can take a while); Pro turns on by itself if it finds the purchase. 'busy': one is already running. */
+export type RestoreResult = 'ok' | 'none' | 'error' | 'slow' | 'busy';
+
+let restoring = false;
 
 export async function restore(): Promise<RestoreResult> {
   if (!LIVE) return 'none';
+  if (restoring) return 'busy';
+  restoring = true;
   try {
     return hasPro(await withTimeout((await rc()).restorePurchases(), RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
-  } catch {
-    return 'error';
+  } catch (e) {
+    return (e as Error)?.message === 'timeout' ? 'slow' : 'error';
+  } finally {
+    restoring = false;
   }
 }
 

@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { ocrStructureText } from '@/import/structure-ocr';
 
+import { permissionOff } from './permission-off';
 import { canReadReceipts, readReceiptText } from './receipt-ocr';
 
 export const canReadStructure = canReadReceipts;
@@ -13,7 +14,10 @@ export const canReadStructure = canReadReceipts;
 /** null when cancelled (or no camera); '' when the photo had no levels to read. */
 export async function photoStructure(source: 'camera' | 'photos' = 'camera'): Promise<string | null> {
   if (!canReadStructure) return null;
-  if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
+  if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+    permissionOff('camera');
+    return null;
+  }
   const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8 };
   const r = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
   if (r.canceled || !r.assets?.[0]) return null;

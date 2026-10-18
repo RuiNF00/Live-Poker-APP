@@ -92,6 +92,7 @@ export default function SettingsScreen() {
   }, [pro.isPro]);
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const stamp = new Date().toISOString().slice(0, 10);
 
   const exportAll = async () => {
@@ -240,10 +241,17 @@ export default function SettingsScreen() {
             <ListItem
               icon="refresh-outline"
               title={t('Restaurar compras')}
-              subtitle={t('Já pagaste noutro telemóvel')}
-              onPress={async () => {
-                restoreNotice(await pro.restore(), Platform.OS === 'android' ? 'Google Play' : 'App Store');
-              }}
+              subtitle={restoring ? t('A restaurar…') : t('Já pagaste noutro telemóvel')}
+              onPress={
+                restoring
+                  ? undefined
+                  : async () => {
+                      setRestoring(true);
+                      const res = await pro.restore();
+                      setRestoring(false);
+                      restoreNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store');
+                    }
+              }
             />
             <ListItem icon="ticket-outline" title={t('Resgatar código')} subtitle={t('Um código de oferta da {store}', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })} onPress={() => void redeemCode()} />
           </ListGroup>
