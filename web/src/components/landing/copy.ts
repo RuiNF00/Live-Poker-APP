@@ -35,7 +35,7 @@ export function landingCopy(locale: Locale) {
     getOnPlay: 'Disponível no',
     tryDemo: 'Ver uma mão partilhada',
     heroNote: `Grátis · ${PRICES.freeHandsPerDay} mãos por dia · Sem conta`,
-    mock: { session: 'Torneio · 1.000/2.000', street: 'Turn', pot: 'Pote 41.000', you: 'Tu', fold: 'Fold', call: 'Call 18.500' },
+    mock: { session: 'Torneio · 1.000/2.000', street: 'Turn', pot: 'Pote 41.000', you: 'Tu', fold: 'Fold', call: 'Call 18.500', dec: ',' },
     proof: [
       ['Sem conta', 'Abres e jogas'],
       ['No teu telemóvel', 'As mãos são tuas'],
@@ -138,7 +138,7 @@ export function landingCopy(locale: Locale) {
       getOnPlay: 'Get it on',
       tryDemo: 'See a shared hand',
       heroNote: `Free · ${PRICES.freeHandsPerDay} hands a day · No account`,
-      mock: { session: 'Tournament · 1,000/2,000', street: 'Turn', pot: 'Pot 41,000', you: 'You', fold: 'Fold', call: 'Call 18,500' },
+      mock: { session: 'Tournament · 1,000/2,000', street: 'Turn', pot: 'Pot 41,000', you: 'You', fold: 'Fold', call: 'Call 18,500', dec: '.' },
       proof: [
         ['No account', 'Open and play'],
         ['On your phone', 'Your hands stay yours'],
@@ -242,7 +242,7 @@ export function landingCopy(locale: Locale) {
       getOnPlay: 'Disponível no',
       tryDemo: 'Ver uma mão compartilhada',
       heroNote: `Grátis · ${PRICES.freeHandsPerDay} mãos por dia · Sem conta`,
-      mock: { session: 'Torneio · 1.000/2.000', street: 'Turn', pot: 'Pote 41.000', you: 'Você', fold: 'Fold', call: 'Call 18.500' },
+      mock: { session: 'Torneio · 1.000/2.000', street: 'Turn', pot: 'Pote 41.000', you: 'Você', fold: 'Fold', call: 'Call 18.500', dec: ',' },
       proof: [
         ['Sem conta', 'Abra e jogue'],
         ['No seu celular', 'Suas mãos são suas'],
@@ -346,7 +346,7 @@ export function landingCopy(locale: Locale) {
       getOnPlay: 'Disponible en',
       tryDemo: 'Ver una mano compartida',
       heroNote: `Gratis · ${PRICES.freeHandsPerDay} manos al día · Sin cuenta`,
-      mock: { session: 'Torneo · 1.000/2.000', street: 'Turn', pot: 'Bote 41.000', you: 'Tú', fold: 'Fold', call: 'Call 18.500' },
+      mock: { session: 'Torneo · 1.000/2.000', street: 'Turn', pot: 'Bote 41.000', you: 'Tú', fold: 'Fold', call: 'Call 18.500', dec: ',' },
       proof: [
         ['Sin cuenta', 'Abres y juegas'],
         ['En tu teléfono', 'Tus manos son tuyas'],
