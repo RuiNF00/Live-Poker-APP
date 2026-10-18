@@ -10,7 +10,7 @@ import { withPro } from '@/components/ProGate';
 import { Avatar } from '@/components/Avatar';
 import { Card, Empty, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { HALF_CENT } from '@/store/swap-groups';
 import { useStore } from '@/store/store';
 import { MIN_PRIZES, MIN_SESSIONS, swapHistory, type HistoryLine } from '@/store/swap-history';
@@ -18,7 +18,7 @@ import { useGroups } from '@/store/swap-groups-store';
 import { useSwaps } from '@/store/swaps-store';
 import { C, R, S } from '@/theme';
 
-const signed = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), cur);
+const signed = (n: number, cur: string) => plus(n, true) + money(Math.abs(n), cur);
 
 function SwapHistoryScreen() {
   const { swaps } = useSwaps();

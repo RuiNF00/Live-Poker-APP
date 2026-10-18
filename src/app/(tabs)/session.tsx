@@ -30,7 +30,7 @@ import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useSt
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
-import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
+import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
@@ -638,7 +638,7 @@ function Live({ s }: { s: Session }) {
                       <Row style={{ justifyContent: 'space-between' }}>
                         <T v="h3">{s.stakes?.length || s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
                         <T v="monoL" color={p >= 0 ? C.good : C.bad}>
-                          {(p > 0 ? '+' : '') + money(p, s.currency)}
+                          {plus(p) + money(p, s.currency)}
                         </T>
                       </Row>
                     </View>

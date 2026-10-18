@@ -11,7 +11,7 @@ import { Sheet } from '@/components/BankrollSheets';
 import { TripForm, tripDates } from '@/components/TripSheets';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { festivalName, getPlan, useFestivalPlan } from '@/store/festival-plan';
 import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore, uid } from '@/store/store';
@@ -40,7 +40,7 @@ export default function TripsScreen() {
     saveTrip(x);
     router.push(`/trips/${x.id}`);
   };
-  const signed = (n: number, cur: string) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(n, cur));
+  const signed = (n: number, cur: string) => (hidden ? '•••' : plus(n) + money(n, cur));
 
   return (
     <>

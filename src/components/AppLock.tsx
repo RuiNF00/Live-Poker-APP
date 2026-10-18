@@ -57,6 +57,10 @@ export function AppLock() {
     };
   }, [reload]);
 
+  // Stable, so the lock screen asks for Face ID once when it opens, not again on every re-render
+  // (the app going inactive and active around a cancelled prompt would bring it straight back).
+  const unlock = useCallback(() => setLocked(false), []);
+
   // Until we know whether there's a lock, show nothing of the app.
   if (cfg === undefined) return <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bg }]} />;
   if (!cfg) return null;
@@ -64,7 +68,7 @@ export function AppLock() {
   return (
     <Modal visible={locked || cover} animationType="none" presentationStyle="fullScreen" statusBarTranslucent onRequestClose={() => {}}>
       {locked ? (
-        <LockScreen cfg={cfg} onUnlock={() => setLocked(false)} />
+        <LockScreen cfg={cfg} onUnlock={unlock} />
       ) : (
         <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
           <Wordmark size={28} />

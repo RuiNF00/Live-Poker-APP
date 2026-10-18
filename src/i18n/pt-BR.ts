@@ -314,7 +314,7 @@ const ptBR: Record<string, string> = {
   'Já tens um convite ativo.': 'Você já tem um convite ativo.',
   'Esse é o teu próprio código.': 'Esse é o seu próprio código.',
   'Não encontrámos esse código.': 'Não encontramos esse código.',
-  'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.': 'O backup na nuvem ainda não está disponível. Por enquanto, exporte para um arquivo.',
+  'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.': 'O backup na nuvem ainda não funciona. Por enquanto, exporte para um arquivo.',
   'A cópia atualiza-se sozinha quando abres a app. Usa o código num telemóvel de cada vez: o último a copiar substitui a cópia.': 'O backup se atualiza sozinho quando você abre o app. Use o código em um celular por vez: o último a fazer backup substitui a cópia.',
   'Nas mãos que partilhas': 'Nas mãos que você compartilha',
   'Desligado: aparecem como posições (BTN, CO…). As alcunhas das tuas notas nunca saem do telemóvel.': 'Desativado: aparecem como posições (BTN, CO…). Os apelidos das suas notas nunca saem do celular.',
@@ -1651,6 +1651,8 @@ const ptBR: Record<string, string> = {
   '{place}.º de {field}': '{place}º de {field}',
   '{p}.º de {n}': '{p}º de {n}',
   '{rank}.º de {n} meses com sessões, do melhor para o pior.': '{rank}º de {n} meses com sessões, do melhor para o pior.',
+  'Nada para importar': 'Nada para importar',
+  'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'Nenhuma linha pôde ser lida. Corrija o arquivo e importe de novo.',
 };
 
 export default ptBR;

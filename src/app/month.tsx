@@ -24,7 +24,7 @@ import { recapHidden } from '@/lib/month-recap';
 import { notice } from '@/lib/notice';
 import { maybeAskForReview } from '@/lib/review';
 import { shareRef } from '@/lib/referrals';
-import { duration, money, shortDate } from '@/poker/format';
+import { duration, money, plus, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
 import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
 import { breakdown, playedMs, rateShown } from '@/store/session-math';
@@ -81,7 +81,7 @@ export default function MonthScreen() {
   }
 
   const fmt = (n: number) => (hidden ? '•••' : money(n, r.currency));
-  const signed = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), r.currency));
+  const signed = (n: number) => (hidden ? '•••' : plus(n, true) + money(Math.abs(n), r.currency));
   const on = settings.monthRecap !== false;
 
   const post = async () => {

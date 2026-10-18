@@ -662,7 +662,7 @@ const en: Record<string, string> = {
   'Os convites só contam nos 7 dias depois de instalar.': 'Invites only count within 7 days of installing.',
   'Não encontrámos esse código.': "We couldn't find that code.",
   'Os convites ainda não estão disponíveis.': "Invites aren't available yet.",
-  'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.': "Cloud backup isn't available yet. For now, export to a file.",
+  'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.': "Cloud backup isn't working yet. For now, export to a file.",
   'Editar sessão': 'Edit session',
   'Ver todas ({n}) · Pro': 'See all ({n}) · Pro',
   'Editar': 'Edit',
@@ -1749,7 +1749,7 @@ const en: Record<string, string> = {
   'A página sai do ar e o link deixa de funcionar. As mãos partilhadas continuam nos seus links.': 'The page goes offline and the link stops working. Shared hands stay on their own links.',
   'Não deu para apagar': 'Could not delete',
   'A confirmar…': 'Checking…',
-  'Disponível': 'Available',
+  'Livre': 'Available',
   'Mudar o nome muda o link: o antigo deixa de funcionar.': 'Changing the username changes the link: the old one stops working.',
   'Perfil público': 'Public profile',
   'O teu perfil está público': 'Your profile is public',
@@ -2468,7 +2468,7 @@ const en: Record<string, string> = {
   'A tua maior queda e se é normal': 'Your biggest drop and whether it\'s normal',
   'Afiado': 'Sharp',
   'Agora': 'Now',
-  'Agora: {now} · maior: −{max}': 'Now: {now} · biggest: −{max}',
+  'Agora: {now} · maior: {max}': 'Now: {now} · biggest: {max}',
   'Ainda não': 'Not yet',
   'Antes de começar: sono, energia, foco e humor. Ao terminar: tilt e uma linha. Tudo com toques e tudo opcional.': 'Before you start: sleep, energy, focus and mood. When you finish: tilt and one line. All taps, all optional.',
   'Após tilt 4+': 'After tilt 4+',
@@ -3343,6 +3343,8 @@ const en: Record<string, string> = {
   'Guardar uma cópia dos dados': 'Save a copy of my data',
   'Não deu para criar o link': 'Couldn\'t create the link',
   'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'This hand has data the page doesn\'t accept. Shorten names or notes and try again.',
+  'Nada para importar': 'Nothing to import',
+  'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'No row could be read. Fix the file and import it again.',
 };
 
 export default en;

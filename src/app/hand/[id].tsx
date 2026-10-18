@@ -361,14 +361,12 @@ ${link}`;
       // The public link goes with the hand (the store queues it until there's signal).
       dropVoiceNote(hand.voiceNote);
       deleteHand(hand.id);
-      router.back();
+      // Opened straight from a link there is nothing to go back to.
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
     };
-    if (Platform.OS === 'web') doIt();
-    else
-      Alert.alert(t('Apagar mão?'), t('Não dá para desfazer.'), [
-        { text: t('Cancelar'), style: 'cancel' },
-        { text: t('Apagar'), style: 'destructive', onPress: doIt },
-      ]);
+    // Asks on the web too, like deleting the share.
+    confirmAction(t('Apagar mão?'), t('Não dá para desfazer.'), t('Apagar'), doIt);
   };
 
   // The destinations the sheet lists first; the one used last is also the button on the screen.

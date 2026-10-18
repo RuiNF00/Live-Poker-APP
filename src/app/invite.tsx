@@ -8,7 +8,7 @@ import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-nat
 
 import { INVITE } from '@/billing/plans';
 import { buyNotice, usePro } from '@/billing/pro';
-import { pctOff } from '@/billing/disclosure';
+import { invitePct } from '@/billing/disclosure';
 import { inviteOfferPrice, LIVE, redeemInviteOffer } from '@/billing/purchases';
 import { LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
@@ -27,7 +27,7 @@ export default function InviteScreen() {
   // On Google Play the discount is the store's own offer: its % comes from the store, and without it
   // nothing is claimed (the App Store's code sheet shows Apple's own price).
   const playOffer = Platform.OS === 'android' && LIVE;
-  const offerPct = playOffer ? (offerPrice && monthly ? pctOff(monthly.price, offerPrice.price) : null) : INVITE.pct;
+  const offerPct = invitePct(playOffer, monthly?.price, offerPrice?.price, INVITE.pct);
   const [busy, setBusy] = useState(false);
   const [s, setS] = useState<InviteStatus | null | undefined>(undefined);
   const load = () => {

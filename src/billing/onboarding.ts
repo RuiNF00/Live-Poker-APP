@@ -103,6 +103,14 @@ export function startSteps(plays: string | null | undefined): { key: StartStep; 
   ];
 }
 
+/**
+ * Tournaments picked across every festival plan. The step's button opens the festival that
+ * starts first (an own one, or the soonest shipped), so picks on any festival count.
+ */
+export function festivalPicks(plans: Record<string, { picked?: string[] } | undefined>): number {
+  return Object.values(plans).reduce((n, p) => n + (p?.picked?.length ?? 0), 0);
+}
+
 export function startProgress(s: { hands: { shareId?: string }[]; sessions: number; deposits: number; festivalPicks?: number }): Record<StartStep, boolean> {
   return {
     hand: s.hands.length >= 3,

@@ -5,8 +5,10 @@ import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { invitePct } from '@/billing/disclosure';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
+import { inviteOfferPrice, LIVE } from '@/billing/purchases';
 import { deferTrial } from '@/billing/trial-moments';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -52,6 +54,8 @@ export default function Paywall() {
 
   // An invite discount still open: one line to where it's used, so it isn't missed here.
   const [inviteOffer, setInviteOffer] = useState<InviteOffer | null>(null);
+  // On Google Play the % is the store offer's own (as on the invite screen); without it no figure is claimed.
+  const invitePctShown = invitePct(Platform.OS === 'android' && LIVE, monthly?.price, inviteOfferPrice(plans)?.price, INVITE.pct);
   useEffect(() => {
     savedInviteOffer().then(setInviteOffer);
   }, []);
@@ -244,7 +248,7 @@ export default function Paywall() {
                 style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.md, borderRadius: R.md, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, opacity: pressed ? 0.7 : 1 })}>
                 <Ionicons name="gift" size={18} color={C.accent} />
                 <T v="small" color={C.text} style={{ flex: 1 }}>
-                  {t('Tens {pct}% no primeiro mês pelo convite', { pct: INVITE.pct })}
+                  {invitePctShown !== null ? t('Tens {pct}% no primeiro mês pelo convite', { pct: invitePctShown }) : t('Tens um desconto no primeiro mês do Pro')}
                 </T>
                 <T v="small" color={C.accent}>
                   {t('Usar')}

@@ -297,10 +297,9 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
       if (v) labels.set(s.seat, handName(v.score, opts.locale));
       if (v && label) s.handLabel = labels.get(s.seat);
     }
-    // Manually picked winners outrank any evaluated hand.
-    if (manual?.length)
-      for (const s of contenders) if (manual.includes(s.seat)) values.set(s.seat, { score: Number.MAX_SAFE_INTEGER, category: 'high_card', cards: [] });
-    return { values, labels };
+    // Picked winners («Quem ganhou?») only count in a pot where a hand is unknown, like the app:
+    // once every hand in a pot is known, the cards decide it.
+    return { values, labels, manual };
   };
   const first = evaluateOn(board, hand.winnerSeats, true);
 
@@ -310,7 +309,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     winners = hand.winners.map((w) => ({ ...w, handLabel: seatState(w.seat).handLabel }));
   } else if (second) {
     const two = evaluateOn(second, hand.winnerSeats2, false);
-    const halves = awardRuns(seats, [first.values, two.values], pot, centBlinds);
+    const halves = awardRuns(seats, [first.values, two.values], pot, centBlinds, [first.manual, two.manual]);
     const named = (list: { seat: number; amount: number }[], labels: Map<number, string>) =>
       list.map((w) => ({ ...w, handLabel: labels.get(w.seat) }));
     runs = [
@@ -321,7 +320,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     for (const run of halves) for (const w of run) total.set(w.seat, (total.get(w.seat) ?? 0) + w.amount);
     winners = [...total].map(([seat, amount]) => ({ seat, amount, handLabel: seatState(seat).handLabel }));
   } else {
-    winners = awardPots(seats, first.values, pot, centBlinds);
+    winners = awardPots(seats, first.values, pot, centBlinds, first.manual);
   }
   for (const w of winners) {
     const s = seatState(w.seat);
@@ -351,15 +350,21 @@ function splitChips(amount: number, k: number, cents = false): number[] {
 }
 
 /** Splits the pot into main/side pots by investment and awards each to the best eligible hand. */
-export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number, cents = false) {
-  return awardRuns(seats, [values], totalPot, cents)[0];
+export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number, cents = false, picked?: number[]) {
+  return awardRuns(seats, [values], totalPot, cents, [picked])[0];
 }
 
 /**
  * Same, once per run: each pot is split evenly between the runs (the odd chip goes with
  * the first, like the app) and each run's share goes to the best hand on that run's board.
  */
-export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null>[], totalPot: number, cents = false) {
+export function awardRuns(
+  seats: SeatState[],
+  runs: Map<number, HandValue | null>[],
+  totalPot: number,
+  cents = false,
+  picked: (number[] | undefined)[] = [],
+) {
   // Pots break only where a player still in is all-in, like the app: a folded blind's chips join
   // the pot they fell in, so a chop or a run-it-twice half isn't split (and rounded) once per level.
   const levels = [...new Set(seats.filter((s) => !s.folded).map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
@@ -380,17 +385,20 @@ export function awardRuns(seats: SeatState[], runs: Map<number, HandValue | null
     const parts = splitChips(amount, runs.length, cents);
     runs.forEach((values, k) => {
       const runAmount = parts[k];
-      const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
-      const top = Math.max(...scored.map((x) => x.score));
-      // No picked winner and a hand in this pot unknown: nobody won it yet, like the app (an
-      // unresolved pot), rather than handing it to the only hand we can see.
-      if (top !== Number.MAX_SAFE_INTEGER && eligible.length > 1 && eligible.some((s) => !values.get(s.seat))) return;
-      let best = scored.filter((x) => x.score === top);
-      // Picked winners (no cards) name who won something, not which pot: one all-in for exactly
-      // this level can only have won here, so it takes this pot; a deeper picked winner won a side pot.
-      if (top === Number.MAX_SAFE_INTEGER && best.length > 1) {
-        const last = best.filter((b) => eligible.find((e) => e.seat === b.seat)!.invested === level);
-        if (last.length) best = last;
+      let best: { seat: number }[];
+      if (eligible.length === 1 || eligible.every((s) => values.get(s.seat))) {
+        const scored = eligible.map((s) => ({ seat: s.seat, score: values.get(s.seat)?.score ?? -1 }));
+        const top = Math.max(...scored.map((x) => x.score));
+        best = scored.filter((x) => x.score === top);
+      } else {
+        // A hand in this pot is unknown: the picked winners decide it, like the app. They name who
+        // won something, not which pot: the shortest picked winner here beat every deeper one (it
+        // won its own last pot against them), so it takes this pot; picked winners all-in for the
+        // same amount chop. No picked winner here: nobody won it yet (an unresolved pot).
+        const w = eligible.filter((s) => picked[k]?.includes(s.seat));
+        if (!w.length) return;
+        const short = Math.min(...w.map((s) => s.invested));
+        best = w.filter((s) => s.invested === short);
       }
       const shares = splitChips(runAmount, best.length, cents);
       best.forEach((b, i) => won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + shares[i]));

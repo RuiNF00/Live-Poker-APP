@@ -164,6 +164,50 @@ describe('edge cases', () => {
     expect(won).toEqual({ 1: 150, 2: 140 });
   });
 
+  it('picked winners both deeper than the main pot: the shorter one takes the main pot too, not a chop', () => {
+    const h = base({
+      players: [
+        { seat: 1, stack: 40 },
+        { seat: 2, stack: 80 },
+        { seat: 3, stack: 120 },
+        { seat: 4, stack: 200, cards: ['As', 'Ad'], isHero: true },
+      ],
+      buttonSeat: 4,
+      board: { flop: ['Kc', '7h', '2d'], turn: '9s', river: '3c' },
+      actions: {
+        preflop: [
+          { seat: 4, type: 'allin', amount: 200 },
+          { seat: 1, type: 'allin', amount: 40 },
+          { seat: 2, type: 'allin', amount: 80 },
+          { seat: 3, type: 'allin', amount: 120 },
+        ],
+        flop: [], turn: [], river: [],
+      },
+      winnerSeats: [2, 4],
+    });
+    const won = Object.fromEntries(buildReplay(h).at(-1)!.winners!.map((w) => [w.seat, w.amount]));
+    // Main 4×40 and side 1 3×40 → seat 2; side 2 2×40 → seat 4 (its uncalled 80 just go back).
+    expect(won[2]).toBe(280);
+    expect(won[4]).toBe(80);
+    expect(won[1]).toBeUndefined();
+  });
+
+  it('a stale picked winner loses to the cards once every hand in the pot is known, like the app', () => {
+    const h = base({
+      players: [
+        { seat: 1, stack: 100, cards: ['As', 'Ks'], isHero: true },
+        { seat: 2, stack: 100, cards: ['9h', '9d'] },
+      ],
+      board: { flop: ['Kc', '7h', '2d'], turn: '9s', river: '3c' },
+      actions: { preflop: [{ seat: 1, type: 'allin', amount: 100 }, { seat: 2, type: 'call' }], flop: [], turn: [], river: [] },
+      winnerSeats: [1],
+    });
+    expect(buildReplay(h).at(-1)!.winners).toEqual([{ seat: 2, amount: 200, handLabel: expect.any(String) }]);
+    // Seat 2's cards unknown: the pick decides.
+    const unknown = buildReplay({ ...h, players: [h.players[0], { seat: 2, stack: 100 }] }).at(-1)!;
+    expect(unknown.winners!.map((w) => [w.seat, w.amount])).toEqual([[1, 200]]);
+  });
+
   it('showdown with the villain unknown and no winner picked: the pot stays unresolved', () => {
     const h = base({
       players: [

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { parsePaywallConfig } from '../experiments';
-import { addBlocked, sessionEndCard } from '../session-limit';
+import { addBlocked, sessionEndCard, stillBlocked } from '../session-limit';
 import { billingNotice, ENDED_DAYS, inQuietHours, proEndNotice, sessionStartOffer, trialNotice } from '../trial-moments';
 
 const DAY = 86_400_000;
@@ -41,6 +41,15 @@ test('blocked hands are counted once per hand and only the latest sessions are k
   assert.equal(Object.keys(all).length, 20);
   assert.equal(all.s1, undefined);
   assert.deepEqual(addBlocked(all, 'x25', 'h9').x25, ['h', 'h9']);
+});
+
+test('a held-back hand saved later (past midnight, same session) no longer counts as left out', () => {
+  let all = addBlocked({}, 's1', 'h1');
+  all = addBlocked(all, 's1', 'h2');
+  assert.equal(stillBlocked(all, 's1', () => false), 2);
+  assert.equal(stillBlocked(all, 's1', (id) => id === 'h1'), 1);
+  assert.equal(stillBlocked(all, 's1', () => true), 0);
+  assert.equal(stillBlocked(all, 'other', () => false), 0);
 });
 
 test('the session-end card: blocked hands first, hourly rate for cash, never after a loss or for Pro', () => {

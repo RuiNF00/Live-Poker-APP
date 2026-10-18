@@ -20,7 +20,7 @@ import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
 import { pickTextFileWithName } from '@/lib/files';
 import { useSheetAnimation } from '@/lib/motion';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { importSummary, parseBackup } from '@/store/backup';
 import { profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
@@ -421,7 +421,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
 
         {r.sessions.length ? (
           <StatGrid cols={tight ? 1 : 3}>
-            <Stat label={t('Lucro')} value={(total > 0 ? '+' : '') + money(Math.round(total), cur)} tone={total >= 0 ? 'good' : 'bad'} />
+            <Stat label={t('Lucro')} value={plus(total) + money(Math.round(total), cur)} tone={total >= 0 ? 'good' : 'bad'} />
             <Stat label="Cash" value={String(r.sessions.length - mtts)} />
             <Stat label={t('Torneios')} value={String(mtts)} />
           </StatGrid>
@@ -557,7 +557,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
           <Button kind="secondary" title={t('Voltar')} onPress={onBack} style={{ paddingHorizontal: 18 }} />
           <Button
             style={tight ? undefined : { flex: 1 }}
-            title={importing ? t('A importar…') : pending ? t('A atualizar…') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
+            title={importing ? t('A importar…') : pending ? t('A atualizar…') : r.sessions.length + r.moves.length === 0 ? t('Nada para importar') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
             disabled={importing || stale || fresh + freshMoves === 0}
             onPress={async () => {
               // Thousands of sessions take a moment to add: say so first.
@@ -629,7 +629,7 @@ function FailedRows({ file, picked, failed, read }: { file: Prepared; picked: { 
   const [send, setSend] = useState(false);
   const shown = all ? failed.slice(0, 100) : failed.slice(0, 4);
   return (
-    <Section title={t('Linhas que ficam de fora')} hint={t('O resto entra na mesma. Podes corrigir no ficheiro e importar outra vez: o que já entrou não se repete.')}>
+    <Section title={t('Linhas que ficam de fora')} hint={read ? t('O resto entra na mesma. Podes corrigir no ficheiro e importar outra vez: o que já entrou não se repete.') : t('Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.')}>
       <ListGroup>
         {shown.map((f) => (
           <ListItem key={f.line} icon="alert-circle-outline" iconColor={C.warn} title={t('Linha {n}', { n: f.line })} subtitle={`${FAIL_TEXT[f.reason]}${f.value ? ' · ' + f.value : ''}`} chevron={false} />

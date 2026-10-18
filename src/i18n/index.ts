@@ -79,6 +79,17 @@ export { localeFormat, type LocaleFormat };
 export const FORMAT: LocaleFormat = localeFormat(variant, detected.tag);
 export const { locale, decimalComma, currencyAfter } = FORMAT;
 
+/**
+ * The device's languages now ask for another language or number format than the one this
+ * launch picked. Android changes the app's language without restarting it (expo-localization's
+ * dynamic locale changes), and every string, amount and date here was fixed at launch.
+ */
+export function languageChanged(locales: readonly DeviceLocale[]): boolean {
+  if (picked()) return false;
+  const now = resolve(locales);
+  return now.variant !== variant || localeFormat(now.variant, now.tag).locale !== locale;
+}
+
 // Phones evaluate only the active language's table; the web downloads only it (tables.web.ts).
 const table = getTable;
 

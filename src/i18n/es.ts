@@ -633,7 +633,7 @@ const es: Record<string, string> = {
   'Os convites só contam nos 7 dias depois de instalar.': 'Las invitaciones solo cuentan en los 7 días tras instalar.',
   'Não encontrámos esse código.': 'No encontramos ese código.',
   'Os convites ainda não estão disponíveis.': 'Las invitaciones aún no están disponibles.',
-  'A cópia na nuvem ainda não está disponível. Por agora, exporta para ficheiro.': 'La copia en la nube aún no está disponible. Por ahora, exporta a un archivo.',
+  'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.': 'La copia en la nube aún no funciona. Por ahora, exporta a un archivo.',
   'Editar sessão': 'Editar sesión',
   'Ver todas ({n}) · Pro': 'Ver todas ({n}) · Pro',
   'Editar': 'Editar',
@@ -1640,7 +1640,7 @@ const es: Record<string, string> = {
   'A página sai do ar e o link deixa de funcionar. As mãos partilhadas continuam nos seus links.': 'La página sale del aire y el link deja de funcionar. Las manos compartidas siguen en sus links.',
   'Não deu para apagar': 'No se pudo eliminar',
   'A confirmar…': 'Comprobando…',
-  'Disponível': 'Disponible',
+  'Livre': 'Libre',
   'Mudar o nome muda o link: o antigo deixa de funcionar.': 'Cambiar el nombre cambia el link: el anterior deja de funcionar.',
   'Perfil público': 'Perfil público',
   'O teu perfil está público': 'Tu perfil es público',
@@ -2191,7 +2191,7 @@ const es: Record<string, string> = {
   'A tua maior queda e se é normal': 'Tu mayor caída y si es normal',
   'Afiado': 'Afilado',
   'Agora': 'Ahora',
-  'Agora: {now} · maior: −{max}': 'Ahora: {now} · mayor: −{max}',
+  'Agora: {now} · maior: {max}': 'Ahora: {now} · mayor: {max}',
   'Ainda não': 'Todavía no',
   'Antes de começar: sono, energia, foco e humor. Ao terminar: tilt e uma linha. Tudo com toques e tudo opcional.': 'Antes de empezar: sueño, energía, foco y ánimo. Al terminar: tilt y una línea. Todo con toques y todo opcional.',
   'Após tilt 4+': 'Tras tilt 4+',
@@ -3337,6 +3337,8 @@ const es: Record<string, string> = {
   'Guardar uma cópia dos dados': 'Guardar una copia de los datos',
   'Não deu para criar o link': 'No se pudo crear el enlace',
   'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mano tiene datos que la página no acepta. Acorta nombres o notas e inténtalo de nuevo.',
+  'Nada para importar': 'Nada que importar',
+  'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'No se lee ninguna fila. Corrige el archivo e impórtalo otra vez.',
 };
 
 export default es;

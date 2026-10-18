@@ -33,8 +33,16 @@ export async function noteBlocked(sessionId: string, handId: string): Promise<vo
   await AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
 }
 
-export async function blockedIn(sessionId: string): Promise<number> {
-  return (await load())[sessionId]?.length ?? 0;
+/**
+ * Hands of the session the limit held back that are still not saved (pure, tested). A session
+ * past midnight frees the day's hands again, and the draft saved then no longer counts.
+ */
+export function stillBlocked(all: Blocked, sessionId: string, saved: (handId: string) => boolean): number {
+  return (all[sessionId] ?? []).filter((id) => !saved(id)).length;
+}
+
+export async function blockedIn(sessionId: string, saved: (handId: string) => boolean): Promise<number> {
+  return stillBlocked(await load(), sessionId, saved);
 }
 
 export type SessionEndCard = { kind: 'blocked'; n: number } | { kind: 'rate' };

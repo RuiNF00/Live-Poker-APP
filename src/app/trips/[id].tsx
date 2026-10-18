@@ -11,7 +11,7 @@ import { Button, Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, Lis
 import { decimalComma, locale, t } from '@/i18n';
 import { spanLabel } from '@/components/FestivalItem';
 import { festivalSpan } from '@/poker/festivals';
-import { money } from '@/poker/format';
+import { minus, money, plus } from '@/poker/format';
 import { planTotals, useFestivalPlan } from '@/store/festival-plan';
 import { useFestivals } from '@/store/my-festivals';
 import { playedMs, profit } from '@/store/session-math';
@@ -53,7 +53,7 @@ export default function TripScreen() {
   const hidden = !!settings.hideAmounts;
   const cur = trip.currency;
   const fmt = (n: number, c = cur) => (hidden ? '•••' : money(n, c));
-  const signed = (n: number, c = cur) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(n, c));
+  const signed = (n: number, c = cur) => (hidden ? '•••' : plus(n) + money(n, c));
   const s = tripSummary(trip, sessions);
   const list = tripSessions(trip, sessions).reverse();
   const expenses = [...trip.expenses].sort((a, b) => b.at - a.at);
@@ -129,7 +129,7 @@ export default function TripScreen() {
                     iconColor={KIND[x.kind]?.color}
                     title={x.note || KIND[x.kind]?.label || x.kind}
                     subtitle={[x.note ? KIND[x.kind]?.label : '', day(x.at), x.currency !== cur && inTrip !== null ? `≈ ${fmt(inTrip)}` : ''].filter(Boolean).join(' · ')}
-                    value={hidden ? '•••' : '−' + money(x.amount, x.currency)}
+                    value={hidden ? '•••' : minus() + money(x.amount, x.currency)}
                     onPress={() => setSheet({ type: 'expense', x, isNew: false })}
                   />
                 );
@@ -249,12 +249,12 @@ function PokerVsCosts({
           {signed(poker)}
         </T>
       </Row>
-      <Row accessible accessibilityLabel={`${t('Despesas')}: ${expenses ? '−' + fmt(expenses) : fmt(0)}`}>
+      <Row accessible accessibilityLabel={`${t('Despesas')}: ${expenses ? minus() + fmt(expenses) : fmt(0)}`}>
         <T v="small" style={{ flex: 1 }}>
           {t('Despesas')}
         </T>
         <T v="mono" color={expenses ? C.text : C.muted}>
-          {expenses ? '−' + fmt(expenses) : fmt(0)}
+          {expenses ? minus() + fmt(expenses) : fmt(0)}
         </T>
       </Row>
       {kinds.length ? (
