@@ -320,7 +320,7 @@ export const ES: Record<string, ArticleText> = {
         steps: [
           'Ajustes → Suscripción → Gestionar suscripción.',
           'En «¿Por qué quieres cancelar?», elige No quiero una suscripción.',
-          'Toca Comprar una vez.',
+          'Toca Pagar una vez.',
           'Después cancela la suscripción en la App Store o en Google Play, para no pagar las dos cosas.',
         ],
       },

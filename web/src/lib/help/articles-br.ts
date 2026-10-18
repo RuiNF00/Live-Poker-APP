@@ -316,7 +316,7 @@ export const BR: Record<string, ArticleText> = {
         steps: [
           'Configurações → Assinatura → Gerenciar assinatura.',
           'Em «Por que você quer cancelar?», escolha Não quero uma assinatura.',
-          'Toque em Comprar uma vez.',
+          'Toque em Pagar uma vez.',
           'Depois cancele a assinatura na App Store ou no Google Play, para não pagar as duas coisas.',
         ],
       },
