@@ -1,7 +1,7 @@
 // Public replay page for a shared hand. On web this is what friends open from
 // the link (no app needed); in the app, the same link opens here too.
 
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,11 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommentsList } from '@/components/Comments';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
-import { Button, confirmAction, Empty, Row, T, Wordmark } from '@/components/ui';
+import { Button, confirmAction, Empty, IconButton, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
-import { streetOfNew } from '@/lib/friend-hands-core';
+import { handLoadError, streetOfNew } from '@/lib/friend-hands-core';
 import { blockCommenter, forgetFriendHand, hideFriendHand, markCommentsSeen, rememberFriendHand, useBlocked, useSharedHands } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
 import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
@@ -36,7 +36,8 @@ export default function SharedHand() {
   }, [id, r, utm_source, utm_medium]);
   const [hand, setHand] = useState<Hand | null>(null);
   const blocked = useBlocked();
-  const [err, setErr] = useState(false);
+  const [err, setErr] = useState<'gone' | 'offline' | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [reported, setReported] = useState(false);
   const { hands, settings, setSettings } = useStore();
@@ -46,9 +47,12 @@ export default function SharedHand() {
 
   useEffect(() => {
     if (!id) return;
-    fetchHand(id).then(setHand).catch(() => setErr(true));
+    // No signal is not a deleted hand: that one gets a retry, not «já não existe».
+    fetchHand(id).then(setHand).catch((e) => setErr(handLoadError(e)));
     fetchComments(id).then(setComments).catch(() => setComments([]));
-  }, [id]);
+  }, [id, attempt]);
+  // Opened from a link, the app has no header here: a way out on the phone (the web page is the whole site).
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   // A friend's hand goes on "Mãos partilhadas", to come back to the conversation; yours is there already.
   // On the web build too, so the PC test link behaves like the phone.
   useEffect(() => {
@@ -83,13 +87,16 @@ export default function SharedHand() {
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 60, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
       <Row style={{ justifyContent: 'space-between', paddingTop: Platform.OS === 'web' ? 4 : Platform.OS === 'android' ? insets.top + 4 : 44 }}>
         <Row gap={8}>
+          {Platform.OS === 'web' ? null : <IconButton name="chevron-back" label={t('Voltar')} onPress={close} size={32} />}
           <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: C.accent }} />
           <Wordmark size={20} />
         </Row>
         <T v="tiny">{BRAND.tagline}</T>
       </Row>
-      {err ? (
+      {err === 'gone' ? (
         <Empty title={t('Esta mão já não existe')} body={t('O link pode estar errado ou a mão foi apagada.')} />
+      ) : err === 'offline' ? (
+        <Empty title={t('Sem ligação')} body={t('Sem ligação. Tenta outra vez quando tiveres rede.')} action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setErr(null), setAttempt((n) => n + 1))} />} />
       ) : !hand ? (
         <T v="small">{t('A carregar a mão…')}</T>
       ) : (

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { MAX_FRIEND_HANDS, newsTarget, parseFriendHands, parseSeen, remember, streetOfNew, total, unseen } from '../friend-hands-core';
+import { handLoadError, MAX_FRIEND_HANDS, newsTarget, parseFriendHands, parseSeen, remember, streetOfNew, total, unseen } from '../friend-hands-core';
 
 test('a hand opened again moves to the top, once', () => {
   const a = remember([], { id: 'aaaa1', title: 'AKs' }, 1);
@@ -55,4 +55,13 @@ test('the home card goes straight to the one hand with news', () => {
   assert.deepEqual(newsTarget({ abcd1: 2 }, mine), { kind: 'mine', id: 'local1', n: 2 });
   assert.deepEqual(newsTarget({ zzzz9: 1 }, mine), { kind: 'friend', id: 'zzzz9', n: 1 });
   assert.equal(newsTarget({ abcd1: 1, zzzz9: 1 }, mine), null);
+});
+
+test('a shared hand is "gone" only when the server says so; no signal is not a deleted hand', () => {
+  assert.equal(handLoadError(new Error('fetch 404')), 'gone');
+  assert.equal(handLoadError(new Error('fetch 410')), 'gone');
+  assert.equal(handLoadError(new Error('fetch 500')), 'offline');
+  assert.equal(handLoadError(new TypeError('Network request failed')), 'offline');
+  assert.equal(handLoadError(new Error('Aborted')), 'offline');
+  assert.equal(handLoadError(undefined), 'offline');
 });
