@@ -22,7 +22,7 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
  */
 const NAME_KEY = 'rl.commentName.v1';
 // Challenge votes made in the app are posted as "🗳️ Fold" comments: counted in the tally, not listed (as on the web page).
-const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|bet|raise|all-?in)\b/i;
+const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|c-?bet|[3-9]-?bet|bet|raise|open|all-?in)\b/i;
 
 export function CommentsList({
   shareId,

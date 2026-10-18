@@ -4,14 +4,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
+import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { t } from '@/i18n';
 import { copyWaiting, download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, onCopyWaiting, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
 import { syncCloudExpiry } from '@/lib/cloud-expiry';
+import { offerStep, restoreOffer } from '@/lib/restore-offer';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
 import { buildBackup, importSummary, type BackupData } from '@/store/backup';
@@ -29,6 +31,7 @@ function note(title: string, body?: string) {
 const ERR: Record<string, string> = {
   network: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   offline: 'Sem ligação. Tenta outra vez quando tiveres rede.',
+  rate_limited: 'Demasiados pedidos. Tenta daqui a pouco.',
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
@@ -49,13 +52,14 @@ function useCopyWaiting(): boolean {
 const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
 
 /** Yes/no before something the player should read first. */
-function ask(title: string, body: string, yes: string, onYes: () => void, no = t('Cancelar')) {
+function ask(title: string, body: string, yes: string, onYes: () => void, no = t('Cancelar'), onNo?: () => void) {
   if (Platform.OS === 'web') {
     if (window.confirm(`${title}\n\n${body}`)) onYes();
+    else onNo?.();
     return;
   }
   Alert.alert(title, body, [
-    { text: no, style: 'cancel' },
+    { text: no, style: 'cancel', onPress: onNo },
     { text: yes, onPress: onYes },
   ]);
 }
@@ -302,6 +306,10 @@ export function AutoCloudBackup() {
   const empty = ready && store.hands.length === 0 && store.sessions.length === 0;
   // The offer is a native alert: it waits for the app lock to open (it would sit on top of it).
   const lockUp = useLockScreenUp();
+  // Nor over the welcome flow: the offer goes first, the welcome waits for it (restore-offer).
+  const welcomeUp = usePathname() === '/welcome';
+  // On screen until answered: a check run meanwhile (the lock, the signal) neither asks again nor lets the welcome open.
+  const asking = useRef(false);
   // A copy made while the lock is up (the launch one) says what it joined in once the lock opens.
   const lockRef = useRef(lockUp);
   const joined = useRef<[string, string] | null>(null);
@@ -329,30 +337,49 @@ export function AutoCloudBackup() {
   }, [tipsOn]);
   useEffect(() => {
     // App deleted and installed again: the keychain still has the code. Offer
-    // the copy back once, before the player starts over on an empty app.
-    if (!empty || !online || lockUp) return;
+    // the copy back once, before the player starts over on an empty app (and
+    // before the welcome flow, which waits for the answer: restore-offer).
+    if (!ready || asking.current) return;
+    if (!empty) {
+      restoreOffer.set('none');
+      return;
+    }
     let live = true;
     (async () => {
       const c = await rememberedCode();
-      if (!live || !c || (await AsyncStorage.getItem(OFFER_KEY).catch(() => null))) return;
+      const due = !!c && !(await AsyncStorage.getItem(OFFER_KEY).catch(() => null));
+      if (!live || asking.current) return;
+      const step = offerStep({ due, online, lockUp, welcomeUp });
+      restoreOffer.set(step === 'ask' || step === 'wait' ? 'due' : 'none');
+      if (step !== 'ask' || !c) return;
+      asking.current = true;
       await AsyncStorage.setItem(OFFER_KEY, '1').catch(() => {});
       ask(
         t('Encontrámos a tua cópia na nuvem'),
         t('Este telemóvel guardou o código da tua cópia. Recuperar as mãos, sessões e notas?'),
         t('Recuperar'),
-        () =>
+        () => {
+          asking.current = false;
+          // The history comes back: no welcome flow, done as if «Saltar» (and no paywall either way).
+          restoreOffer.set('accepted');
+          AsyncStorage.setItem(ONBOARDING_KEY, '{}').catch(() => {});
           restoreFrom(c, latest.current.importData).catch((e) => {
             // Offered again next launch: the code is only in the keychain, the player may not have it written down.
             AsyncStorage.removeItem(OFFER_KEY).catch(() => {});
             note(t('Não deu para recuperar'), errText(e));
-          }),
+          });
+        },
         t('Agora não'),
+        () => {
+          asking.current = false;
+          restoreOffer.set('declined');
+        },
       );
     })();
     return () => {
       live = false;
     };
-  }, [empty, online, lockUp]);
+  }, [ready, empty, online, lockUp, welcomeUp]);
   useEffect(() => {
     if (!ready || !online) return;
     const id = setTimeout(async () => {

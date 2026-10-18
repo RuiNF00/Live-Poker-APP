@@ -6,11 +6,11 @@
 // Off with Settings › Notificações › Swaps e staking; never in the quiet hours.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { t } from '@/i18n';
-import { notifications, setup } from '@/lib/lock-screen/reminder';
+import { notifications, onNotificationsAllowed, setup } from '@/lib/lock-screen/reminder';
 import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { FESTIVALS } from '@/poker/festivals';
 import { getOffers, settleReminders, useOffers } from '@/store/action-offer';
@@ -67,6 +67,9 @@ export function SettleReminder() {
   const on = settings.notify?.money !== false;
   const key = backers.map((b) => `${b.id}:${b.name}`).join('|');
   const playing = sessions.some((s) => !s.endedAt && !isPaused(s));
+  // Allowed after a package was planned (the ask came later, or turned on in the phone's settings): planned now.
+  const [allowed, setAllowed] = useState(0);
+  useEffect(() => onNotificationsAllowed(() => setAllowed((n) => n + 1)), []);
   useEffect(() => {
     const names = new Map(backers.map((b) => [b.id, b.name]));
     void sync(names, playing);
@@ -75,8 +78,8 @@ export function SettleReminder() {
       if (s === 'active') void sync(names, playing);
     });
     return () => sub.remove();
-    // Re-sync when packages, sessions (and so the plan's links), backer names, playing or the switch change.
+    // Re-sync when packages, sessions (and so the plan's links), backer names, playing, the switch or the permission change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offers, sessions, key, playing, on]);
+  }, [offers, sessions, key, playing, on, allowed]);
   return null;
 }

@@ -73,7 +73,7 @@ const ptBR: typeof pt = {
   confirmedHint: 'O jogador vê sua confirmação no app. Se ele mudar os termos, pediremos que você confirme de novo.',
   error: 'Não foi possível confirmar. Tente de novo.',
   rateLimited: 'Muitas tentativas seguidas. Tente mais tarde.',
-  footer: 'Registro do acordo entre você e seus backers. Nenhum dinheiro passa pela Sweatbook.',
+  footer: 'Registro do acordo entre você e seus backers. Nenhum dinheiro passa pelo Sweatbook.',
   ctaTitle: 'Acompanhe todos os jogadores que você banca',
   ctaBody: 'Na Sweatbook você vê suas partes, o que devem a você, o makeup e as sessões ao vivo de cada jogador, num só lugar.',
   notFound: 'Este acordo não existe mais.',

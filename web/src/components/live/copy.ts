@@ -142,7 +142,7 @@ const ptBR: typeof pt = {
   chart: 'Stack ao longo da sessão',
   ctaTitle: 'Você também joga live?',
   ctaBody: 'Registre sessões e mãos em segundos, registre a ação vendida e dê aos seus backers um link como este.',
-  noMoney: 'Apenas registro e contas. Nenhum dinheiro passa pela Sweatbook.',
+  noMoney: 'Apenas registro e contas. Nenhum dinheiro passa pelo Sweatbook.',
   notFound: 'Link não encontrado',
   metaTitle: (player: string, name: string) => (player ? `${player} ao vivo · ${name}` : `Ao vivo · ${name}`),
   metaDescription: 'Acompanhe a sessão ao vivo: stack, nível e resultado.',

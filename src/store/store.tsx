@@ -21,7 +21,7 @@ import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
-import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, sortBankrolls } from './bankroll-math';
+import { bankrollOf, bankrollsBack, dropUnusedAuto, ensureBankrolls, separateBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } from './festival-plan';
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
@@ -68,6 +68,8 @@ interface StoreValue {
   savePlayer: (p: PlayerNote) => void;
   deletePlayer: (id: string) => void;
   saveBankroll: (b: Bankroll) => void;
+  /** The onboarding's currency pick: the first-launch bankroll, still empty, is made again in that currency (a bankroll's currency never changes). */
+  firstBankrollIn: (currency: string) => void;
   /**
    * Deletes a bankroll; its sessions and transfers move to another bankroll
    * in the same currency. False (nothing changed) when there is none to take
@@ -407,6 +409,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setPlayers((l) => l.filter((x) => x.id !== id));
   }, []);
   const saveBankroll = useCallback((b: Bankroll) => setBankrolls((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
+  const firstBankrollIn = useCallback((c: string) => {
+    const b = bankrolls[0];
+    if (rawSessions.length || transfers.length || bankrolls.length !== 1 || b.currency === c || b.rules || b.shot) return;
+    const next = ensureBankrolls([], [], c);
+    setBankrolls(next);
+    setSettingsState((st) => (st.bankrollId === b.id ? { ...st, bankrollId: next[0].id } : st));
+  }, [bankrolls, rawSessions, transfers]);
   const saveTransfer = useCallback((x: Transfer) => setTransfers((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
   const deleteTransfer = useCallback((id: string) => {
     markDeleted('transfers', [id]);
@@ -512,7 +521,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // A restore (a file, «Recuperar com código») brings back what it holds, even if it was deleted
       // here: those come back with a fresh edit time, so another phone's older delete can't drop them again.
       const deletedHere = currentDeleted();
-      const { backup: b, revived } = opts?.sync ? { backup, revived: [] } : revive(backup, deletedHere, Date.now());
+      // A bankroll id held here in another currency never writes over this phone's (bankroll-math.ts).
+      const apart = separateBankrolls(bankrolls, backup);
+      const { backup: b, revived } = opts?.sync ? { backup: apart, revived: [] } : revive(apart, deletedHere, Date.now());
       forgetDeleted(revived);
       const del: Deleted = joinDeleted(opts?.sync ? deletedHere : currentDeleted(), b.deleted);
       importDeleted(b.deleted);
@@ -656,6 +667,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       savePlayer,
       deletePlayer,
       saveBankroll,
+      firstBankrollIn,
       deleteBankroll,
       saveTransfer,
       deleteTransfer,
@@ -697,7 +709,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, firstBankrollIn, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
   );
 
   // A launch that couldn't read the data goes to the root crash screen (see the launch effect).

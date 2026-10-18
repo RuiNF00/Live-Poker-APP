@@ -384,15 +384,16 @@ function EventRow({
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           {/* Capped: at 320 and 200% "Crazy Pineapple" broke mid-word. */}
-          <T v="h3" maxFontSizeMultiplier={1.6}>
+          <T v="h3" maxFontSizeMultiplier={1.4}>
             {eventTitle(e)}
           </T>
-          <T v="small">
+          <T v="small" maxFontSizeMultiplier={1.6}>
             {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? chips(e.stack) : null, e.stack && e.levelMinutes ? `${e.levelMinutes}\u00a0min` : null].filter(Boolean).join(' · ')}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
-          <T v="mono" color={e.day2 ? C.muted : C.text}>
+          {/* Capped too: "200 €" took 72 px at 200% and "Crazy Pineapple" broke again in es and pt-BR. */}
+          <T v="mono" color={e.day2 ? C.muted : C.text} maxFontSizeMultiplier={1.3}>
             {e.day2 ? '—' : money(e.buyIn, f.currency)}
           </T>
           <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />

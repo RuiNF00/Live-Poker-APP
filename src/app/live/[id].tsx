@@ -13,6 +13,7 @@ import { Amount, Button, Card, Empty, IconButton, Pill, Row, Stat, StatGrid, T, 
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { fetchLive, type LiveSnapshot } from '@/lib/live-link';
+import { isRateLimited } from '@/lib/net';
 import { claimInvite } from '@/lib/referrals';
 import { chips, duration, money, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
@@ -30,8 +31,8 @@ export default function BackerLive() {
   const own = sessions.find((s) => s.live?.id === id);
   const [data, setData] = useState<{ snapshot: LiveSnapshot; updatedAt: number } | null>(null);
   const [gone, setGone] = useState(false);
-  // No signal before the first answer: said, with a retry, instead of «A carregar…» for good.
-  const [offline, setOffline] = useState(false);
+  // No signal before the first answer: said, with a retry, instead of «A carregar…» for good. A 429 is said as itself.
+  const [offline, setOffline] = useState<false | 'offline' | 'rate_limited'>(false);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
 
@@ -57,7 +58,7 @@ export default function BackerLive() {
           if (d) setData(d);
           else setGone(true);
         })
-        .catch(() => alive && setOffline(true));
+        .catch((e) => alive && setOffline(isRateLimited(e) ? 'rate_limited' : 'offline'));
     load();
     const poll = setInterval(() => AppState.currentState === 'active' && load(), POLL_MS);
     const sub = AppState.addEventListener('change', (st) => st === 'active' && load());
@@ -85,8 +86,8 @@ export default function BackerLive() {
       ) : (!s || !data) && offline ? (
         <Empty
           icon="cloud-offline-outline"
-          title={t('Sem ligação')}
-          body={t('Tenta outra vez quando tiveres rede.')}
+          title={offline === 'rate_limited' ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Sem ligação')}
+          body={offline === 'rate_limited' ? undefined : t('Tenta outra vez quando tiveres rede.')}
           action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setOffline(false), setAttempt((n) => n + 1))} />}
         />
       ) : !s || !data ? (
