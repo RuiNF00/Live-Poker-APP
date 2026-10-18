@@ -309,6 +309,12 @@ test('end-of-session sheet with a makeup package shows what the store will save'
   // The same numbers once saved and recomputed.
   const saved = withCuts([mk1, { ...mk2, cashOut: 2000, endedAt: mk2.startedAt + 500 }], [pkg()])[1];
   assert.equal(profit(saved), 500);
+  // A loss after a cut was taken gives part of it back (a negative cut): the backer gets it.
+  const s1 = mk({ buyIn: 500, cashOut: 2000, stakes: [stake] });
+  const s2 = mk({ buyIn: 500, cashOut: 0, endedAt: undefined, stakes: [stake] });
+  const after = withCuts([s1, s2], [pkg()]);
+  assert.deepEqual(endPreview({ ...after[1], cashOut: 0 }, after, [pkg()]), { owed: 250, profit: -250 });
+  assert.deepEqual(endPreview({ ...after[1], cashOut: 1000 }, after, [pkg()]), { owed: 750, profit: 250 });
   // Without a package nothing changes: the whole prize share goes to the backer.
   assert.deepEqual(endPreview(mk({ buyIn: 500, cashOut: 2000, stakes: [{ share: 50, markup: 1 }] }), [], []), { owed: 1000, profit: 750 });
 });
