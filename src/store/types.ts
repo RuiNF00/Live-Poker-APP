@@ -40,7 +40,7 @@ export interface Session {
   /** Public live link for backers (sweatbook.poker/live/<id>); token lets this phone update or remove it. */
   /** Backer live link. The venue is only on the page when the player turns it on (where they are is their business). */
   live?: { id: string; token: string; showVenue?: boolean };
-  /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages (withCuts). */
+  /** Your cut of a makeup package credited to this session. Derived: the store fills it in from the packages and the cuts kept on stakes (withCuts). */
   makeupCut?: number;
   /** That cut as a Sweatbook CSV gave it, for a session imported where no package works it out. makeupCut wins when there is one. */
   fileCut?: number;
@@ -219,6 +219,8 @@ export interface Stake {
   markup: number;
   /** The backer hasn't paid for this piece yet: it counts against their balance. */
   unpaid?: boolean;
+  /** Your makeup cut out of this piece, kept when its package (or backer) was deleted: no package works it out any more. */
+  cut?: number;
 }
 
 export interface Backer {

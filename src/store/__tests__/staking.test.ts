@@ -4,8 +4,10 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, closePackage, endPreview, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { sessionsCsv } from '../backup';
+import { backerLedger, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
+import { fixSession } from '../validate';
 
 let n = 0;
 function mk(over: Partial<Session> = {}): Session {
@@ -317,4 +319,41 @@ test('end-of-session sheet with a makeup package shows what the store will save'
   assert.deepEqual(endPreview({ ...after[1], cashOut: 1000 }, after, [pkg()]), { owed: 750, profit: 250 });
   // Without a package nothing changes: the whole prize share goes to the backer.
   assert.deepEqual(endPreview(mk({ buyIn: 500, cashOut: 2000, stakes: [{ share: 50, markup: 1 }] }), [], []), { owed: 1000, profit: 750 });
+});
+
+test('deleting a package or its backer keeps the makeup cut on past results', () => {
+  // Makeup 50% of the action, 50% cut: 1000 buy-in, 5000 prize. Backer +2000, my cut 1000, profit 3000.
+  const p = pkg({ share: 50 });
+  const s = mk({ buyIn: 1000, cashOut: 5000, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
+  const before = withCuts([s], [p])[0];
+  assert.equal(profit(before), 3000);
+  // «Apagar pacote»: the piece stays with the backer as a plain sale, with the cut it gave.
+  const stakes = keepCuts([s], [p], new Set(['p1'])).get(s.id)!;
+  assert.deepEqual(stakes, [{ backerId: 'b1', share: 50, markup: 1, cut: 1000 }]);
+  const after = withCuts([{ ...s, stakes }], [])[0];
+  assert.equal(after.makeupCut, 1000);
+  assert.equal(profit(after), 3000);
+  // The backer still gets back what they got before: prize share less the cut.
+  const l = backerLedger('b1', [after], [], []);
+  assert.equal(l.cut, 1000);
+  assert.equal(l.owed, 1500);
+  // «Apagar backer»: an unnamed piece, same cut (the store drops the name the same way).
+  const anon = withCuts([{ ...s, stakes: [{ share: 50, markup: 1, cut: 1000 }] }], [])[0];
+  assert.equal(profit(anon), 3000);
+  // Kept through a restore and in the CSV's makeup_cut column.
+  assert.deepEqual(fixSession(JSON.parse(JSON.stringify({ ...s, stakes })))?.stakes, stakes);
+  const csv = sessionsCsv([after]).split('\n');
+  const col = csv[0].split(',').indexOf('makeup_cut');
+  assert.equal(csv[1].split(',')[col], '1000');
+  // A cut that isn't a number doesn't reach the result.
+  assert.equal(fixSession({ ...s, stakes: [{ share: 50, markup: 1, cut: 'x' }] })?.stakes?.[0].cut, undefined);
+  // Another package on the same session keeps working it out, on top of the kept cut.
+  const q = pkg({ id: 'p2', backerId: 'b2', share: 10 });
+  const two = mk({ buyIn: 1000, cashOut: 5000, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }, { backerId: 'b2', packageId: 'p2', share: 10, markup: 1 }] });
+  const both = withCuts([two], [p, q])[0].makeupCut;
+  const left = withCuts([{ ...two, stakes: keepCuts([two], [p, q], new Set(['p1'])).get(two.id)! }], [q])[0];
+  assert.equal(left.makeupCut, both);
+  // Running sessions have no cut yet: nothing kept.
+  const live = mk({ endedAt: undefined, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
+  assert.deepEqual(keepCuts([live], [p], new Set(['p1'])).get(live.id), [{ backerId: 'b1', share: 50, markup: 1 }]);
 });

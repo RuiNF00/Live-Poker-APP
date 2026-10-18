@@ -28,7 +28,7 @@ import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { alive, DELETED_LISTS, joinDeleted, keyOf, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
-import { withCuts } from './staking';
+import { keepCuts, withCuts } from './staking';
 import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
 import type { SwapGroup } from './swap-groups';
@@ -433,28 +433,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return l.filter((x) => x.backerId !== id);
     });
     const now = Date.now();
-    setSessions((l) =>
-      l.map((s) =>
-        s.stakes?.some((x) => x.backerId === id)
-          ? { ...s, stakes: s.stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup } : x)), updatedAt: now }
-          : s,
-      ),
-    );
-  }, [backers]);
+    // Their pieces stay as unnamed sales, each with the makeup cut its package gave you.
+    const gone = new Set(packages.filter((p) => p.backerId === id).map((p) => p.id));
+    setSessions((l) => {
+      const kept = keepCuts(l, packages, gone, { table: rates, manual: settings.fxManual });
+      return l.map((s) => {
+        const stakes = kept.get(s.id) ?? s.stakes;
+        return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) } : x)), updatedAt: now }
+          : s;
+      });
+    });
+  }, [backers, packages, rates, settings.fxManual]);
   const savePackage = useCallback((p: StakePackage) => setPackages((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
   const deletePackage = useCallback((id: string) => {
     markDeleted('packages', [id]);
     setPackages((l) => l.filter((x) => x.id !== id));
     const now = Date.now();
-    // Its sessions keep the stake, as a plain sale to the same backer.
-    setSessions((l) =>
-      l.map((s) =>
-        s.stakes?.some((x) => x.packageId === id)
-          ? { ...s, stakes: s.stakes.map((x) => (x.packageId === id ? { ...x, packageId: undefined } : x)), updatedAt: now }
-          : s,
-      ),
-    );
-  }, []);
+    // Its sessions keep the stake, as a plain sale to the same backer, with the makeup cut it gave you.
+    setSessions((l) => {
+      const kept = keepCuts(l, packages, new Set([id]), { table: rates, manual: settings.fxManual });
+      return kept.size ? l.map((s) => (kept.has(s.id) ? { ...s, stakes: kept.get(s.id), updatedAt: now } : s)) : l;
+    });
+  }, [packages, rates, settings.fxManual]);
   const savePayment = useCallback((p: BackerPayment) => setPayments((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
   const deletePayment = useCallback((id: string) => {
     markDeleted('payments', [id]);
