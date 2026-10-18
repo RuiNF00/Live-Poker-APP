@@ -205,7 +205,8 @@ function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
   const cur = s.terms.currency;
   const square = settled(l);
   const right = !s.confirmedAt ? (
-    <Pill label={s.gone ? t('Apagado') : t('Por confirmar')} color={s.gone ? C.muted : C.warn} />
+    // Capped like the amount: at 320 and large text the name went one letter per line.
+    <Pill label={s.gone ? t('Apagado') : t('Por confirmar')} color={s.gone ? C.muted : C.warn} style={{ maxWidth: 120, flexShrink: 1 }} />
   ) : locked ? (
     <Ionicons name="lock-closed-outline" size={16} color={C.muted} />
   ) : (

@@ -12,9 +12,11 @@ import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
 import { shouldOfferWelcome } from './offers';
 import { cachedPro, canUse, proCache, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
+import { invitePct } from './disclosure';
 import { FREE, INVITE, type PaywallReason, type PlanId } from './plans';
 import { deferState, markProEnded, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
+import { useLockScreenUp } from '@/components/AppLock';
 import { setLiveSession } from '@/lib/attribution';
 import { track } from '@/lib/events';
 import { t } from '@/i18n';
@@ -26,16 +28,22 @@ import { useStore } from '@/store/store';
 
 /**
  * An invite discount, said once with the way to use it: received, never won. Nothing for a
- * player already on Pro (there's no first month left to discount).
+ * player already on Pro (there's no first month left to discount). On Google Play the % is the
+ * store offer's own, as on the paywall and the invite screen; without it no figure is claimed.
  */
-function announceInviteOffer(offer: InviteOffer, side: 'friend' | 'inviter') {
-  track('invite_rewarded', { side, pct: INVITE.pct });
-  const vars = { pct: INVITE.pct, date: shortDate(Date.parse(offer.until)) };
-  const title = side === 'friend' ? t('{pct}% no primeiro mês do Pro', vars) : t('Um amigo guardou a primeira mão');
+function announceInviteOffer(offer: InviteOffer, side: 'friend' | 'inviter', plans: store.StorePlan[]) {
+  const pct = invitePct(Platform.OS === 'android' && store.LIVE, plans.find((p) => p.id === 'monthly')?.price, store.inviteOfferPrice(plans)?.price, INVITE.pct);
+  track('invite_rewarded', { side, pct: pct ?? INVITE.pct });
+  const vars = { pct: pct ?? 0, date: shortDate(Date.parse(offer.until)) };
+  const title = side === 'friend' ? (pct !== null ? t('{pct}% no primeiro mês do Pro', vars) : t('Desconto no primeiro mês do Pro')) : t('Um amigo guardou a primeira mão');
   const body =
     side === 'friend'
-      ? t('Guardaste a primeira mão: tu e quem te convidou recebem {pct}% no primeiro mês do Pro. Dá para usar até {date}.', vars)
-      : t('Recebem os dois {pct}% no primeiro mês do Pro. Dá para usar até {date}.', vars);
+      ? pct !== null
+        ? t('Guardaste a primeira mão: tu e quem te convidou recebem {pct}% no primeiro mês do Pro. Dá para usar até {date}.', vars)
+        : t('Guardaste a primeira mão: tu e quem te convidou recebem um desconto no primeiro mês do Pro. Dá para usar até {date}.', vars)
+      : pct !== null
+        ? t('Recebem os dois {pct}% no primeiro mês do Pro. Dá para usar até {date}.', vars)
+        : t('Recebem os dois um desconto no primeiro mês do Pro. Dá para usar até {date}.', vars);
   if (Platform.OS === 'web') notice(title, body);
   else Alert.alert(title, body, [{ text: t('Agora não'), style: 'cancel' }, { text: t('Ver desconto'), onPress: () => router.push('/invite') }]);
 }
@@ -84,6 +92,11 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
   const [plansFailed, setPlansFailed] = useState(false);
+  // The invite notice reads the store's prices as they are when it shows.
+  const plansRef = useRef(plans);
+  useEffect(() => {
+    plansRef.current = plans;
+  }, [plans]);
   const [billingIssue, setBillingIssue] = useState(false);
   const checkBilling = useCallback(() => void store.getBillingIssue().then((b) => setBillingIssue(!!b)), []);
   const reloadPlans = useCallback(() => {
@@ -136,7 +149,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       activateInvite().then(async (granted) => {
         if (!granted || isProRef.current) return;
         const offer = await newInviteOffer({ force: true });
-        if (offer) announceInviteOffer(offer, 'friend');
+        if (offer) announceInviteOffer(offer, 'friend', plansRef.current);
       });
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
@@ -198,18 +211,28 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
   // The inviter hears about a friend's first hand on the next open, not only in Definições.
+  // Not over the app lock (the alert would sit on top of it): the news waits for the unlock.
+  const lockUp = useLockScreenUp();
+  const lockRef = useRef(lockUp);
+  useEffect(() => {
+    lockRef.current = lockUp;
+  }, [lockUp]);
   const inviteNews = useCallback(() => {
+    if (lockRef.current) return;
     newInviteOffer().then((offer) => {
-      if (offer && !isProRef.current) announceInviteOffer(offer, 'inviter');
+      if (offer && !isProRef.current) announceInviteOffer(offer, 'inviter', plansRef.current);
     });
   }, []);
   useEffect(() => {
-    inviteNews();
+    if (!lockUp) inviteNews();
+  }, [lockUp, inviteNews]);
+  useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st !== 'active') return;
       refreshNudges();
       checkBilling();
-      inviteNews();
+      // After the lock has had its turn to come up on resume.
+      setTimeout(inviteNews, 1000);
     });
     return () => sub.remove();
   }, [refreshNudges, inviteNews, checkBilling]);
@@ -268,9 +291,11 @@ export function useWelcomeOffer(handsSaved: number) {
   const { isPro, trialDays, paywall } = usePro();
   // At the table the offer waits: a live session gets it once it is closed (TrialFollowUp).
   const atTable = !!useStore().activeSession;
+  // Never over the app lock: the paywall would sit on top of it (as in TrialFollowUp). It waits for the unlock.
+  const lockUp = useLockScreenUp();
   useFocusEffect(
     useCallback(() => {
-      if (isPro || atTable || handsSaved < 1 || trialDays < 1) return;
+      if (isPro || atTable || lockUp || handsSaved < 1 || trialDays < 1) return;
       let live = true;
       // Let the screen settle after coming back before sliding the offer up.
       const timer = setTimeout(async () => {
@@ -284,7 +309,7 @@ export function useWelcomeOffer(handsSaved: number) {
         live = false;
         clearTimeout(timer);
       };
-    }, [isPro, atTable, handsSaved, trialDays, paywall]),
+    }, [isPro, atTable, lockUp, handsSaved, trialDays, paywall]),
   );
 }
 

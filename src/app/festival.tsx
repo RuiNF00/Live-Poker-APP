@@ -307,14 +307,14 @@ function Summary({
   const tone = share == null ? C.textDim : share > 1 ? C.bad : share > 0.5 ? C.warn : C.good;
   return (
     <Card tone="raised" style={{ gap: S.md }}>
-      <Row style={{ alignItems: 'flex-end' }}>
-        <View style={{ flex: 1, gap: 2 }}>
-          {/* Beside the bankroll column: at 200% the caption broke mid-word ("PLANEAD OS"). */}
+      {/* At 320 and large text the bankroll column goes under, instead of words breaking mid-word ("PLANEAD OS"). */}
+      <Row style={{ alignItems: 'flex-end', flexWrap: 'wrap', rowGap: S.sm }}>
+        <View style={{ flex: 1, minWidth: 150, gap: 2 }}>
           <T v="label" maxFontSizeMultiplier={1.3}>{t('Buy-ins planeados')}</T>
           <T v="monoL">{money(tot.buyIns, f.currency)}</T>
           <T v="small">{tot.entries === 1 ? t('1 entrada') : t('{n} entradas', { n: tot.entries })}</T>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 2 }}>
+        <View style={{ alignItems: 'flex-end', gap: 2, marginLeft: 'auto' }}>
           <T v="label">{bankrollName}</T>
           <T v="mono">{money(balance, bankrollCurrency)}</T>
           {share != null ? (
@@ -383,7 +383,8 @@ function EventRow({
           <T v="tiny">{e.game}</T>
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3">
+          {/* Capped: at 320 and 200% "Crazy Pineapple" broke mid-word. */}
+          <T v="h3" maxFontSizeMultiplier={1.6}>
             {eventTitle(e)}
           </T>
           <T v="small">

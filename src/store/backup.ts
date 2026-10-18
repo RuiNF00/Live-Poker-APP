@@ -295,13 +295,18 @@ export function parseBackup(text: string): BackupData {
  * the backup's preferences come back: currency, default bankroll, privacy mode and the
  * rest. On a phone already in use, its own choices stay and only an empty nickname is filled.
  */
-export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean): Settings {
+export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean, now = Date.now()): Settings {
   if (!incoming) return cur;
   // Rates typed for currencies the ECB doesn't publish: without them sessions in those currencies lose their value at home.
   const rates = fxRates(incoming.fxManual);
+  // The year notice that already went out on the other phone doesn't go out again here.
+  const sentYear = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x > 2000 && x < 3000 ? x : 0);
+  const firedAt = typeof incoming.yearRecapAt === 'number' && incoming.yearRecapAt <= now ? new Date(incoming.yearRecapAt).getFullYear() : 0;
+  const year = Math.max(sentYear(cur.yearRecapSent), sentYear(incoming.yearRecapSent), sentYear(firedAt));
+  const yearMark = year ? { yearRecapSent: year } : {};
   if (!fresh) {
     const fx = { ...rates, ...cur.fxManual };
-    return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : ''), ...(Object.keys(fx).length ? { fxManual: fx } : {}) };
+    return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : ''), ...(Object.keys(fx).length ? { fxManual: fx } : {}), ...yearMark };
   }
   const pick = <K extends keyof Settings>(k: K, ok: (v: unknown) => boolean): Partial<Settings> => (ok(incoming[k]) ? { [k]: incoming[k] } : {});
   const isStr = (v: unknown) => typeof v === 'string';
@@ -327,6 +332,7 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('streakPauses', (v) => Array.isArray(v) && v.every((p) => isObj(p) && isNum(p.from) && (p.to === undefined || isNum(p.to)))),
     ...pick('notify', (v) => isObj(v) && Object.entries(v).every(([k, x]) => /^[a-z]{1,20}$/.test(k) && isBool(x))),
     ...(Object.keys(rates).length ? { fxManual: rates } : {}),
+    ...yearMark,
     // Onboarding stays done: the restore itself happens after it.
     onboarded: cur.onboarded || incoming.onboarded === true,
   };

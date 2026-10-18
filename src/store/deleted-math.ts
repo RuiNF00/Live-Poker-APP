@@ -22,11 +22,14 @@ function capped(d: Deleted): Deleted {
   return Object.fromEntries(keys.sort((a, b) => d[b] - d[a]).slice(0, MAX).map((k) => [k, d[k]]));
 }
 
-/** Only well-formed keys with a real time: a hand-made file can't drop anything else. */
-export function cleanDeleted(x: unknown): Deleted {
+/**
+ * Only well-formed keys with a real time: a hand-made file can't drop anything else. A time
+ * more than a day ahead is left out, or it would keep beating every later edit.
+ */
+export function cleanDeleted(x: unknown, now = Date.now()): Deleted {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return {};
   const out: Deleted = {};
-  for (const [k, v] of Object.entries(x)) if (KEY_RE.test(k) && typeof v === 'number' && Number.isFinite(v) && v > 0) out[k] = v;
+  for (const [k, v] of Object.entries(x)) if (KEY_RE.test(k) && typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= now + 86_400_000) out[k] = v;
   return capped(out);
 }
 

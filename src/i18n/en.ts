@@ -2013,6 +2013,7 @@ const en: Record<string, string> = {
   'Filtros por sala, jogo e stake, e CSV': 'Filters by room, game and stake, plus CSV',
   'Uma bankroll por moeda ou por backer': 'A bankroll per currency or per backer',
   'Várias mãos de uma vez para o solver': 'Many hands at once to the solver',
+  'Stories com voz, sem marca de água': 'Stories with voice, no watermark',
   'Regista um torneio': 'Log a tournament',
   'Escolhe os torneios do próximo festival': 'Pick your events at the next festival',
   'Pro para sempre': 'Pro for good',
@@ -3296,6 +3297,9 @@ const en: Record<string, string> = {
   'Tens {pct}% no primeiro mês pelo convite': 'You have {pct}% off the first month from an invite',
   '{pct}% no primeiro mês do Pro': '{pct}% off your first month of Pro',
   'Guardaste a primeira mão: tu e quem te convidou recebem {pct}% no primeiro mês do Pro. Dá para usar até {date}.': 'You saved your first hand: you and the friend who invited you get {pct}% off your first month of Pro. Use it by {date}.',
+  'Desconto no primeiro mês do Pro': 'A discount on your first month of Pro',
+  'Guardaste a primeira mão: tu e quem te convidou recebem um desconto no primeiro mês do Pro. Dá para usar até {date}.': 'You saved your first hand: you and the friend who invited you each get a discount on the first month of Pro. Use it by {date}.',
+  'Recebem os dois um desconto no primeiro mês do Pro. Dá para usar até {date}.': 'You both get a discount on the first month of Pro. Use it by {date}.',
   'Recebem os dois {pct}% no primeiro mês do Pro. Dá para usar até {date}.': 'You both get {pct}% off your first month of Pro. Use it by {date}.',
   'Ver desconto': 'See discount',
   'Cola o link do convite: tu e o teu amigo recebem 50% no primeiro mês do Pro com a tua primeira mão.': 'Paste the invite link: you and your friend get 50% off the first month of Pro with your first hand.',
@@ -3357,7 +3361,7 @@ const en: Record<string, string> = {
   'Partilhar viagem': 'Share trip',
   'Carrossel da viagem': 'Trip carousel',
   'Não dá para reabrir este pacote': "Can't reopen this package",
-  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
+  'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': "This package's makeup already moved to «{name}». It keeps being recovered there.",
 };
 
 export default en;
