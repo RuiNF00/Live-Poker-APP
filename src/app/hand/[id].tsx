@@ -6,7 +6,6 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 're
 
 import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
-import { CommentsList, PrivateStreetNotes } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
@@ -42,6 +41,10 @@ import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
 import { reduceMotion } from '@/lib/motion';
+
+// Loaded when the hand opens, not at launch (the comments code is only used here and in /h).
+const CommentsList = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.CommentsList })));
+const PrivateStreetNotes = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.PrivateStreetNotes })));
 
 /** How long "Desfazer" stays on a removed comment before it really goes. */
 const UNDO_MS = 5000;
@@ -455,6 +458,7 @@ ${link}`;
           <View onLayout={(e) => onCommentsLayout(e.nativeEvent.layout.y)}>
           <Section title={t('Comentários')} action={t('Atualizar')} onAction={loadComments}>
             <VoteTally votes={votes} />
+            <React.Suspense fallback={null}>
             <CommentsList
               shareId={hand.shareId}
               comments={comments}
@@ -477,13 +481,16 @@ ${link}`;
               ownerToken={hand.shareToken}
               onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: !reduceMotion() }), 350)}
             />
+            </React.Suspense>
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>
           </View>
         ) : (
           <>
             <Section title={t('As tuas notas')} hint={t('Uma nota por rua, só tu vês. Nunca sai do telemóvel.')}>
-              <PrivateStreetNotes streets={streets} street={street} onJumpStreet={jumpStreet} notes={hand.streetNotes} onNote={saveNote} />
+              <React.Suspense fallback={null}>
+                <PrivateStreetNotes streets={streets} street={street} onJumpStreet={jumpStreet} notes={hand.streetNotes} onNote={saveNote} />
+              </React.Suspense>
             </Section>
             <T v="small" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
               {t('Os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}

@@ -1,10 +1,12 @@
 // Two phones with the same cloud code: before one replaces the server copy, it
 // joins in what the other wrote there. Same rule as a restore: the newer copy
-// of each item wins and nothing is dropped. Pure, so it can be tested.
+// of each item wins, and what either phone deleted stays deleted unless it was
+// edited after. Pure, so it can be tested.
 
 import type { Festival } from '@/poker/festivals';
 
 import { mergeById, type BackupData } from './backup';
+import { alive, joinDeleted } from './deleted-math';
 import { mergePlan, type FestivalPlan } from './festival-plan';
 import { mergeGroups } from './swap-groups';
 import { mergeSwaps } from './swaps';
@@ -14,7 +16,9 @@ const LISTS = ['hands', 'sessions', 'players', 'backers', 'packages', 'payments'
 /** What goes up: this phone's backup with the server copy's items joined in. This phone's settings stay. */
 export function mergeBackups(local: BackupData, remote: BackupData): BackupData {
   const out: BackupData = { ...local };
-  for (const k of LISTS) (out as unknown as Record<string, unknown[]>)[k] = mergeById((local[k] ?? []) as { id: string }[], (remote[k] ?? []) as { id: string }[]).list;
+  const deleted = joinDeleted(local.deleted, remote.deleted);
+  out.deleted = deleted;
+  for (const k of LISTS) (out as unknown as Record<string, unknown[]>)[k] = alive(mergeById((local[k] ?? []) as { id: string }[], (remote[k] ?? []) as { id: string }[]).list, k, deleted);
   out.swaps = mergeSwaps(local.swaps ?? [], remote.swaps ?? []).list;
   out.swapGroups = mergeGroups(local.swapGroups ?? [], remote.swapGroups ?? []).list;
   const plans: Record<string, FestivalPlan> = { ...local.festivalPlans };

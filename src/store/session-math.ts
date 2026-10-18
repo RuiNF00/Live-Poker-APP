@@ -205,6 +205,19 @@ export function curve(list: Session[], currency?: string): { t: number; v: numbe
   return [{ t: done[0]?.startedAt ?? Date.now(), v: 0 }, ...done.map((s) => ({ t: s.endedAt!, v: (acc += profit(s)) }))];
 }
 
+/** `n` calendar days after `ts` (before, if negative) at the same clock time: across a DST change a day is 23 or 25 hours. */
+export function addDays(ts: number, n: number): number {
+  const d = new Date(ts);
+  d.setDate(d.getDate() + n);
+  return d.getTime();
+}
+
+/** `min` minutes on the clock of `day`'s local calendar day (20:00 is 20:00 even on a 23- or 25-hour day). */
+export function atClock(day: number, min: number): number {
+  const d = new Date(day);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(min / 60), min % 60).getTime();
+}
+
 /**
  * dd/mm or dd/mm/yyyy (also with - or .), not in the future unless `future` (a trip being planned).
  * With `future`, a day typed without a year that has already gone by is next year's. With 'near'

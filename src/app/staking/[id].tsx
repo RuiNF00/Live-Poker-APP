@@ -26,7 +26,7 @@ import { money, num, shortDate } from '@/poker/format';
 import { useOffers } from '@/store/action-offer';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -428,6 +428,16 @@ function BackerScreen() {
         makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.01 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {
+          // Reopening a package whose makeup went to a new one: that one goes, or the makeup counts
+          // twice. Once it has sessions (or was closed itself, maybe carried on to a «(3)») the makeup
+          // is being won back there, so it stays closed.
+          const was = packages.find((q) => q.id === p.id);
+          const next = was?.closedAt && !p.closedAt ? carriedTo(was, packages) : undefined;
+          if (next && ((pk.states.get(next.id)?.sessions ?? 0) > 0 || next.closedAt)) {
+            Alert.alert(t('Não dá para reabrir este pacote'), t('O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.', { name: next.name }));
+            return;
+          }
+          if (next) deletePackage(next.id);
           if (carry) {
             const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
             savePackage(closed);

@@ -649,6 +649,9 @@ const es: Record<string, string> = {
   'Desligado: aparecem como posições (BTN, CO…). As alcunhas das tuas notas nunca saem do telemóvel.': 'Desactivado: aparecen como posiciones (BTN, CO…). Los apodos de tus notas nunca salen del teléfono.',
   'Incluir as minhas notas da mão': 'Incluir mis notas de la mano',
   'Vale para links novos. Uma mão já partilhada fica como estava.': 'Vale para links nuevos. Una mano ya compartida queda como estaba.',
+  'Novos: {list}.': 'Nuevos: {list}.',
+  '1 registo apagado no outro telemóvel saiu também deste.': '1 registro borrado en el otro móvil también salió de este.',
+  '{n} registos apagados no outro telemóvel saíram também deste.': '{n} registros borrados en el otro móvil también salieron de este.',
   'Novos: {list}. O que já tinhas ficou.': 'Nuevos: {list}. Lo que ya tenías sigue ahí.',
   'Blinds e antes': 'Ciegas y antes',
   'ganha': 'gana',
@@ -3347,6 +3350,8 @@ const es: Record<string, string> = {
   'RESUMO DA VIAGEM': 'RESUMEN DEL VIAJE',
   'Partilhar viagem': 'Compartir viaje',
   'Carrossel da viagem': 'Carrusel del viaje',
+  'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
+  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
 };
 
 export default es;

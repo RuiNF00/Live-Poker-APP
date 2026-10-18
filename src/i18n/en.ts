@@ -678,6 +678,9 @@ const en: Record<string, string> = {
   'Desligado: aparecem como posições (BTN, CO…). As alcunhas das tuas notas nunca saem do telemóvel.': 'Off: they show as positions (BTN, CO…). Nicknames from your notes never leave your phone.',
   'Incluir as minhas notas da mão': 'Include my notes on the hand',
   'Vale para links novos. Uma mão já partilhada fica como estava.': 'Applies to new links. A hand already shared stays as it was.',
+  'Novos: {list}.': 'New: {list}.',
+  '1 registo apagado no outro telemóvel saiu também deste.': '1 item deleted on the other phone is gone from this one too.',
+  '{n} registos apagados no outro telemóvel saíram também deste.': '{n} items deleted on the other phone are gone from this one too.',
   'Novos: {list}. O que já tinhas ficou.': 'New: {list}. Everything you had is still there.',
   'Blinds e antes': 'Blinds and antes',
   'ganha': 'wins',
@@ -3353,6 +3356,8 @@ const en: Record<string, string> = {
   'RESUMO DA VIAGEM': 'TRIP RECAP',
   'Partilhar viagem': 'Share trip',
   'Carrossel da viagem': 'Trip carousel',
+  'Não dá para reabrir este pacote': "Can't reopen this package",
+  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
 };
 
 export default en;

@@ -18,6 +18,7 @@ import { buildBackup, importSummary, type BackupData } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { C, F, R, S } from '@/theme';
 
+import { useLockScreenUp } from './AppLock';
 import { Banner, Button, Card, Field, Row, T, tap } from './ui';
 
 function note(title: string, body?: string) {
@@ -60,8 +61,9 @@ function ask(title: string, body: string, yes: string, onYes: () => void, no = t
 }
 
 /**
- * Brings the cloud copy in (newer copy of each item wins, nothing local is
- * deleted) and makes this phone keep it up to date from now on.
+ * Brings the cloud copy in (newer copy of each item wins; only what another
+ * phone with this code deleted goes) and makes this phone keep it up to date
+ * from now on.
  */
 async function restoreFrom(c: CloudState, importData: ImportData): Promise<CloudState> {
   const remote = await download(c);
@@ -76,14 +78,14 @@ async function restoreFrom(c: CloudState, importData: ImportData): Promise<Cloud
   return next;
 }
 
-type ImportData = (b: BackupData) => Parameters<typeof importSummary>[0];
+type ImportData = (b: BackupData, opts?: { sync?: boolean }) => Parameters<typeof importSummary>[0];
 
 /**
  * For upload(): another phone with this code copied things this one doesn't
  * have. They come here too, and the player is told (never joined in silence).
  */
 const joinRemote = (importData: ImportData) => (remote: BackupData) => {
-  const n = importData(remote);
+  const n = importData(remote, { sync: true });
   if (Object.values(n).some((v) => v > 0)) note(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
 };
 
@@ -298,6 +300,8 @@ export function AutoCloudBackup() {
   // Also when the signal comes back: a backup due while offline goes out then.
   const online = useOnline();
   const empty = ready && store.hands.length === 0 && store.sessions.length === 0;
+  // The offer is a native alert: it waits for the app lock to open (it would sit on top of it).
+  const lockUp = useLockScreenUp();
   // The notice a month before the server deletes an unused copy, moved on after every copy.
   // Off the launch path, and only for players with a copy (it loads the notifications module).
   useEffect(() => {
@@ -311,7 +315,7 @@ export function AutoCloudBackup() {
   useEffect(() => {
     // App deleted and installed again: the keychain still has the code. Offer
     // the copy back once, before the player starts over on an empty app.
-    if (!empty || !online) return;
+    if (!empty || !online || lockUp) return;
     let live = true;
     (async () => {
       const c = await rememberedCode();
@@ -333,7 +337,7 @@ export function AutoCloudBackup() {
     return () => {
       live = false;
     };
-  }, [empty, online]);
+  }, [empty, online, lockUp]);
   useEffect(() => {
     if (!ready || !online) return;
     const id = setTimeout(async () => {

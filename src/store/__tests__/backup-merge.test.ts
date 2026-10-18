@@ -43,3 +43,24 @@ test('a restore merges into the list as it is when applied: a hand saved during 
   state = update(state);
   assert.deepEqual(state.map((x) => x.id).sort(), ['local', 'remote', 'saved-meanwhile']);
 });
+
+test('two phones: a session deleted on one stays deleted after the other uploads an edit (QA ronda 5)', () => {
+  const s = (id: string, updatedAt: number) => ({ id, updatedAt }) as unknown as PlayerNote;
+  const copy = (players: PlayerNote[], deleted: Record<string, number> | undefined, at: number) => buildBackup({ hands: [], sessions: [], players, settings: DEFAULT_SETTINGS, deleted }, at);
+  // B deleted Alpha at 20 and copied: the server holds Bravo and Charlie and the delete.
+  const server = copy([s('bravo', 1), s('charlie', 1)], { 'players:alpha': 20 }, 30);
+  // A still has Alpha, edits Bravo and copies: Alpha doesn't come back.
+  const a = mergeBackups(copy([s('alpha', 1), s('bravo', 40), s('charlie', 1)], {}, 50), server);
+  assert.deepEqual(a.players.map((p) => p.id).sort(), ['bravo', 'charlie']);
+  assert.deepEqual(a.deleted, { 'players:alpha': 20 });
+  // B copies again: still two, with A's edit.
+  const b = mergeBackups(copy([s('bravo', 1), s('charlie', 1)], { 'players:alpha': 20 }, 60), a);
+  assert.deepEqual(b.players.map((p) => [p.id, p.updatedAt]).sort(), [['bravo', 40], ['charlie', 1]]);
+});
+
+test('two phones: an item edited after the other phone deleted it is kept (the edit wins)', () => {
+  const s = (id: string, updatedAt: number) => ({ id, updatedAt }) as unknown as PlayerNote;
+  const a = buildBackup({ hands: [], sessions: [], players: [s('alpha', 25)], settings: DEFAULT_SETTINGS }, 50);
+  const b = buildBackup({ hands: [], sessions: [], players: [], settings: DEFAULT_SETTINGS, deleted: { 'players:alpha': 20 } }, 30);
+  assert.deepEqual(mergeBackups(a, b).players.map((p) => p.id), ['alpha']);
+});

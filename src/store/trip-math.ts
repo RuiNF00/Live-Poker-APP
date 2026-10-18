@@ -10,7 +10,7 @@ import { eventDay, type Festival } from '@/poker/festivals';
 
 import { endOfDay, inRange, startOfDay, type DateRange } from './bankroll-math';
 import type { FestivalPlan } from './festival-plan';
-import { playedMs, profit } from './session-math';
+import { addDays, playedMs, profit } from './session-math';
 import type { Expense, ExpenseKind, Session, Trip } from './types';
 
 const DAY = 86400000;
@@ -39,8 +39,8 @@ export function changeTripCurrency(trip: Pick<Trip, 'currency' | 'fx'>, fxCur: s
   if (next === fxCur) {
     if (!(rate > 0)) return { currency: next, fx: trip.fx ? { currency: trip.currency, rate: 0 } : undefined };
     const inv = 1 / rate;
-    // 4 decimals, like the ECB rate offered in the form; 4 significant digits for small rates (¥).
-    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(4)) } };
+    // 4 decimals, like the ECB rate offered in the form; 6 significant digits below 1, so going back and forth stays exact.
+    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(6)) } };
   }
   return { currency: next, fx: trip.fx && trip.fx.currency !== next ? { currency: trip.fx.currency, rate: 0 } : undefined };
 }
@@ -128,7 +128,7 @@ export function tripToCover(trips: Trip[], festivalId: string, at: number): Trip
 }
 
 export function blankTrip(id: string, currency: string, now = Date.now()): Trip {
-  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(now + 4 * DAY), expenses: [], createdAt: now };
+  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(addDays(now, 4)), expenses: [], createdAt: now };
 }
 
 export function blankExpense(id: string, kind: ExpenseKind, currency: string, now = Date.now()): Expense {
@@ -157,8 +157,8 @@ export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx
     name: f.own ? f.name : t(f.name),
     venue: [f.venue, f.city.split(',')[0]].filter(Boolean).join(', '),
     currency: f.currency,
-    from: startOfDay(localDay(days[0]) - DAY),
-    to: endOfDay(localDay(days[days.length - 1]) + DAY),
+    from: startOfDay(addDays(localDay(days[0]), -1)),
+    to: endOfDay(addDays(localDay(days[days.length - 1]), 1)),
     fx,
     festivalId: f.id,
     expenses: [],

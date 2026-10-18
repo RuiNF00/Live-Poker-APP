@@ -15,10 +15,14 @@ import { notice } from '@/lib/notice';
 import { claimState } from '@/lib/referrals';
 import { useStore } from '@/store/store';
 
+import { useLockScreenUp } from './AppLock';
+
 export function TrialFollowUp() {
   const { isPro, trialDays, paywall } = usePro();
   const { ready, activeSession, sessions } = useStore();
   const sessionId = activeSession?.id ?? null;
+  // Never over the app lock: a native alert or the paywall would sit on top of it. They wait for the unlock.
+  const lockUp = useLockScreenUp();
 
   // The session that was live a moment ago. When it closes (saved with an end, not deleted),
   // the offer slides over its summary: the hands and the result are in, nothing is being typed.
@@ -30,7 +34,7 @@ export function TrialFollowUp() {
   }
   const closedId = ended && sessions.some((s) => s.id === ended && s.endedAt) ? ended : null;
   useEffect(() => {
-    if (!closedId || isPro || trialDays < 1) return;
+    if (!closedId || isPro || trialDays < 1 || lockUp) return;
     let live = true;
     const timer = setTimeout(async () => {
       const [s, claim] = await Promise.all([deferState(), claimState()]);
@@ -44,7 +48,7 @@ export function TrialFollowUp() {
       live = false;
       clearTimeout(timer);
     };
-  }, [closedId, isPro, trialDays, paywall]);
+  }, [closedId, isPro, trialDays, paywall, lockUp]);
 
   // Checked on launch and each time the app comes back (a trial is cancelled in the phone's settings).
   const [tick, setTick] = useState(0);
@@ -54,7 +58,7 @@ export function TrialFollowUp() {
   }, []);
   useEffect(() => {
     // Not at the table, and not in the quiet hours: the screen waits for the next open after them.
-    if (!ready || sessionId || inQuietHours(new Date().getHours())) return;
+    if (!ready || sessionId || lockUp || inQuietHours(new Date().getHours())) return;
     let live = true;
     const timer = setTimeout(async () => {
       const now = Date.now();
@@ -86,7 +90,7 @@ export function TrialFollowUp() {
       live = false;
       clearTimeout(timer);
     };
-  }, [ready, isPro, tick, sessionId]);
+  }, [ready, isPro, tick, sessionId, lockUp]);
 
   return null;
 }

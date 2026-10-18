@@ -89,6 +89,9 @@ export const fixSession: Fix<Session> = (x) => {
   // A receipt's file is a bare name inside the documents folder; one from a hand-edited backup
   // that climbs out of it ("../", "..") is dropped, so opening or deleting it can't reach anything else.
   if (Array.isArray(s.docs) && !(s.docs as Obj[]).every((d) => okDocFile(d.file))) patch.docs = (s.docs as Obj[]).filter((d) => okDocFile(d.file));
+  // A kept makeup cut (Stake.cut) goes straight into the result: one that isn't a number is dropped.
+  if (Array.isArray(s.stakes) && (s.stakes as Obj[]).some((x) => x.cut !== undefined && !isNum(x.cut)))
+    patch.stakes = (s.stakes as Obj[]).map((x) => (x.cut !== undefined && !isNum(x.cut) ? { ...x, cut: undefined } : x));
   return (Object.keys(patch).length ? { ...s, ...patch } : s) as unknown as Session;
 };
 

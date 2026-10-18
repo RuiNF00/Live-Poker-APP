@@ -25,8 +25,10 @@ import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } f
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
+import { alive, DELETED_LISTS, joinDeleted, keyOf, type Deleted, type DeletedList } from './deleted-math';
+import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
-import { withCuts } from './staking';
+import { keepCuts, withCuts } from './staking';
 import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
 import type { SwapGroup } from './swap-groups';
@@ -88,7 +90,6 @@ interface StoreValue {
   setSettings: (patch: Partial<Settings>) => void;
   draft: Hand | null;
   setDraft: (h: Hand | null) => void;
-  /** Merge a backup in: newer copy of each item wins, nothing local is deleted. */
   /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
   readonly swaps: Swap[];
   readonly swapGroups: SwapGroup[];
@@ -96,7 +97,11 @@ interface StoreValue {
   readonly festivalPlans: Record<string, FestivalPlan>;
   readonly ownFestivals: Festival[];
   readonly weekly: WeeklyTournament[];
-  importData: (b: BackupData) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number };
+  /** What was deleted (deleted.ts), so a second phone's copy doesn't bring it back. */
+  readonly deleted: Deleted;
+  /** Merge a backup in: newer copy of each item wins; what the backup deleted goes here too unless edited here since. */
+  /** sync: another phone's copy joined in before an upload (its deletes apply here); otherwise a restore. */
+  importData: (b: BackupData, opts?: { sync?: boolean }) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number; removed: number };
   /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
   eraseAll: () => Promise<void>;
 }
@@ -137,7 +142,7 @@ function quarantined(n: number) {
 let boot: ReturnType<typeof loadAll> | null = loadAll();
 // The stores kept outside this one (festival plans, own festivals, weekly tournaments, swaps)
 // load lazily; launch waits for them too, so a backup or a restore merge never sees them empty.
-const loadSideStores = () => Promise.all([loadPlans(), loadOwnFestivals(), loadWeekly(), getAllSwaps(), getAllGroups()]).catch(() => {});
+const loadSideStores = () => Promise.all([loadPlans(), loadOwnFestivals(), loadWeekly(), loadDeleted(), getAllSwaps(), getAllGroups()]).catch(() => {});
 let sideBoot: Promise<unknown> | null = loadSideStores();
 
 /** 0 none, 1 empty draft, 2 a draft with something in it (what the hands list shows). */
@@ -356,6 +361,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setHands((l) => {
         const h = l.find((x) => x.id === id);
         if (h) forgetHandShare(h).catch(() => {});
+        markDeleted('hands', [id]);
         return l.filter((x) => x.id !== id);
       }),
     [],
@@ -373,6 +379,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSessions((l) => {
         const s = l.find((x) => x.id === id);
         if (s?.live) queueLiveDelete(s.live);
+        markDeleted('sessions', [id]);
         return l.filter((x) => x.id !== id);
       }),
     [],
@@ -381,10 +388,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),
     [],
   );
-  const deletePlayer = useCallback((id: string) => setPlayers((l) => l.filter((x) => x.id !== id)), []);
+  const deletePlayer = useCallback((id: string) => {
+    markDeleted('players', [id]);
+    setPlayers((l) => l.filter((x) => x.id !== id));
+  }, []);
   const saveBankroll = useCallback((b: Bankroll) => setBankrolls((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
   const saveTransfer = useCallback((x: Transfer) => setTransfers((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
-  const deleteTransfer = useCallback((id: string) => setTransfers((l) => l.filter((x) => x.id !== id)), []);
+  const deleteTransfer = useCallback((id: string) => {
+    markDeleted('transfers', [id]);
+    setTransfers((l) => l.filter((x) => x.id !== id));
+  }, []);
   const deleteBankroll = useCallback(
     (id: string) => {
       const gone = bankrolls.find((b) => b.id === id);
@@ -397,6 +410,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setSessions((l) => l.map((s) => (s.bankrollId === id ? { ...s, bankrollId: to.id, updatedAt: now } : s)));
         setTransfers((l) => l.map((x) => (x.bankrollId === id ? { ...x, bankrollId: to.id, updatedAt: now } : x)));
       }
+      markDeleted('bankrolls', [id]);
       setBankrolls((l) => l.filter((b) => b.id !== id));
       setSettingsState((st) => (st.bankrollId === id ? { ...st, bankrollId: to?.id } : st));
       return true;
@@ -408,35 +422,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // Their fixed link goes too: the page stops opening for them.
     const page = backers.find((x) => x.id === id)?.page;
     if (page) queueBackerPageDelete(page);
+    markDeleted('backers', [id]);
     setBackers((l) => l.filter((x) => x.id !== id));
-    setPackages((l) => l.filter((x) => x.backerId !== id));
-    setPayments((l) => l.filter((x) => x.backerId !== id));
+    setPackages((l) => {
+      markDeleted('packages', l.filter((x) => x.backerId === id).map((x) => x.id));
+      return l.filter((x) => x.backerId !== id);
+    });
+    setPayments((l) => {
+      markDeleted('payments', l.filter((x) => x.backerId === id).map((x) => x.id));
+      return l.filter((x) => x.backerId !== id);
+    });
     const now = Date.now();
-    setSessions((l) =>
-      l.map((s) =>
-        s.stakes?.some((x) => x.backerId === id)
-          ? { ...s, stakes: s.stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup } : x)), updatedAt: now }
-          : s,
-      ),
-    );
-  }, [backers]);
+    // Their pieces stay as unnamed sales, each with the makeup cut its package gave you.
+    const gone = new Set(packages.filter((p) => p.backerId === id).map((p) => p.id));
+    setSessions((l) => {
+      const kept = keepCuts(l, packages, gone, { table: rates, manual: settings.fxManual });
+      return l.map((s) => {
+        const stakes = kept.get(s.id) ?? s.stakes;
+        return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) } : x)), updatedAt: now }
+          : s;
+      });
+    });
+  }, [backers, packages, rates, settings.fxManual]);
   const savePackage = useCallback((p: StakePackage) => setPackages((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
   const deletePackage = useCallback((id: string) => {
+    markDeleted('packages', [id]);
     setPackages((l) => l.filter((x) => x.id !== id));
     const now = Date.now();
-    // Its sessions keep the stake, as a plain sale to the same backer.
-    setSessions((l) =>
-      l.map((s) =>
-        s.stakes?.some((x) => x.packageId === id)
-          ? { ...s, stakes: s.stakes.map((x) => (x.packageId === id ? { ...x, packageId: undefined } : x)), updatedAt: now }
-          : s,
-      ),
-    );
-  }, []);
+    // Its sessions keep the stake, as a plain sale to the same backer, with the makeup cut it gave you.
+    setSessions((l) => {
+      const kept = keepCuts(l, packages, new Set([id]), { table: rates, manual: settings.fxManual });
+      return kept.size ? l.map((s) => (kept.has(s.id) ? { ...s, stakes: kept.get(s.id), updatedAt: now } : s)) : l;
+    });
+  }, [packages, rates, settings.fxManual]);
   const savePayment = useCallback((p: BackerPayment) => setPayments((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
-  const deletePayment = useCallback((id: string) => setPayments((l) => l.filter((x) => x.id !== id)), []);
+  const deletePayment = useCallback((id: string) => {
+    markDeleted('payments', [id]);
+    setPayments((l) => l.filter((x) => x.id !== id));
+  }, []);
   const saveTrip = useCallback((x: Trip) => setTrips((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
-  const deleteTrip = useCallback((id: string) => setTrips((l) => l.filter((x) => x.id !== id)), []);
+  const deleteTrip = useCallback((id: string) => {
+    markDeleted('trips', [id]);
+    setTrips((l) => l.filter((x) => x.id !== id));
+  }, []);
   const backingRef = useRef(backing);
   useEffect(() => {
     backingRef.current = backing;
@@ -448,7 +477,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBacking((l) => upsert(l, { id: st.id, statement: st, createdAt: cur?.createdAt ?? now, updatedAt: now }));
     return cur ? ('updated' as const) : ('new' as const);
   }, []);
-  const deleteBacked = useCallback((id: string) => setBacking((l) => l.filter((x) => x.id !== id)), []);
+  const deleteBacked = useCallback((id: string) => {
+    markDeleted('backing', [id]);
+    setBacking((l) => l.filter((x) => x.id !== id));
+  }, []);
   const setSettings = useCallback((patch: Partial<Settings>) => setSettingsState((s) => ({ ...s, ...patch })), []);
   const setDraft = useCallback(
     (h: Hand | null) => {
@@ -461,7 +493,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const importData = useCallback(
-    (b: BackupData) => {
+    (b: BackupData, opts?: { sync?: boolean }) => {
       // Counted against what's loaded now (for the summary). The lists themselves are merged
       // into whatever they hold when React applies the update: a cloud copy can land while the
       // player is saving a hand or moving a live stack, and that change must not be written over.
@@ -475,8 +507,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const pk = mergeById(packages, b.packages ?? []);
       const pay = mergeById(payments, b.payments ?? []);
       const bc = mergeById(backing, b.backing ?? []);
-      const into = <T extends { id: string; updatedAt?: number }>(incoming: T[]) => (cur: T[]) => (incoming.length ? mergeById(cur, incoming).list : cur);
-      setHands(into(b.hands));
+      // What the other phone deleted goes here too, unless it was edited here after (deleted-math.ts).
+      // A restore (a file, «Recuperar com código») brings back what it holds, even if it was deleted here.
+      const revived = opts?.sync ? [] : DELETED_LISTS.flatMap((k) => ((b[k] ?? []) as { id: string }[]).map((x) => keyOf(k, x.id)));
+      forgetDeleted(revived);
+      const del: Deleted = joinDeleted(currentDeleted(), b.deleted);
+      importDeleted(b.deleted);
+      const gone = <T extends { id: string; updatedAt?: number }>(cur: T[], list: DeletedList) => cur.length - alive(cur, list, del).length;
+      const removed = gone(hands, 'hands') + gone(rawSessions, 'sessions') + gone(players, 'players') + gone(transfers, 'transfers') + gone(backers, 'backers') + gone(trips, 'trips') + gone(packages, 'packages') + gone(payments, 'payments') + gone(backing, 'backing');
+      const into = <T extends { id: string; updatedAt?: number }>(incoming: T[], list: DeletedList) => (cur: T[]) => alive(incoming.length ? mergeById(cur, incoming).list : cur, list, del);
+      setHands(into(b.hands, 'hands'));
       // A backup made before «Apagar tudo» brings back links that the erase deleted: they stop showing as shared.
       // Only links this phone doesn't already have are checked (a second phone's copy joined in on every upload).
       const mine = new Map(hands.map((x) => [x.id, x.shareId]));
@@ -485,19 +525,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         void restoredGoneShares(linked)
           .then((gone) => gone.size && setHands((l) => l.map((x) => (x.shareId && gone.get(x.id) === x.shareId ? unshared(x) : x))))
           .catch(() => {});
-      setSessions(into(incomingSessions));
-      setPlayers(into(b.players));
+      setSessions(into(incomingSessions, 'sessions'));
+      setPlayers(into(b.players, 'players'));
       setBankrolls((cur) => {
-        const merged = mergeById(cur, b.bankrolls ?? []).list;
+        const merged = alive(mergeById(cur, b.bankrolls ?? []).list, 'bankrolls', del);
         // What comes in counts as use too: imported € rows land in "Principal", which must stay.
         return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: [...rawSessions, ...incomingSessions], transfers: [...transfers, ...(b.transfers ?? [])] });
       });
-      setTransfers(into(b.transfers ?? []));
-      setBackers(into(b.backers ?? []));
-      setPackages(into(b.packages ?? []));
-      setPayments(into(b.payments ?? []));
-      setTrips(into(b.trips ?? []));
-      setBacking(into(b.backing ?? []));
+      setTransfers(into(b.transfers ?? [], 'transfers'));
+      setBackers(into(b.backers ?? [], 'backers'));
+      setPackages(into(b.packages ?? [], 'packages'));
+      setPayments(into(b.payments ?? [], 'payments'));
+      setTrips(into(b.trips ?? [], 'trips'));
+      setBacking(into(b.backing ?? [], 'backing'));
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
       // Counted against what's loaded now; importSwaps merges the same way.
@@ -513,7 +553,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.multiSet(q).catch(storageFailed);
         setQuarantine((cur) => [...cur, ...q]);
       }
-      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw };
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw, removed };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine],
   );
@@ -544,6 +584,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     clearPlans();
     clearOwnFestivals();
     clearWeekly();
+    clearDeleted();
     setHands([]);
     setSessions([]);
     setPlayers([]);
@@ -632,6 +673,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       get weekly() {
         return currentWeekly();
+      },
+      get deleted() {
+        return currentDeleted();
       },
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.

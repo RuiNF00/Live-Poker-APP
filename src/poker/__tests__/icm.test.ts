@@ -80,7 +80,7 @@ test('table paid places from players left of the field', () => {
   assert.equal(tablePaidPlaces(9, 100, 50, 8), 8);
 });
 
-test('a deal to the cent adds up to the prizes, the odd cent to the first player', () => {
+test('a deal to the cent adds up to the prizes, the odd cent to the largest remainder', () => {
   const pool = [5000, 3000, 2000];
   const even = [1e6, 1e6, 1e6];
   assert.deepEqual(toCents(icm(even, pool)), [3333.34, 3333.33, 3333.33]);
@@ -88,4 +88,10 @@ test('a deal to the cent adds up to the prizes, the odd cent to the first player
   const odd = toCents(icm([1_234_567, 765_433, 321_000], [12_345.67, 7_000, 3_500]));
   assert.equal(Math.round(odd.reduce((a, b) => a + b, 0) * 100), 2_284_567);
   assert.deepEqual(toCents([333.3333, 333.3333, 333.3333], 0), [334, 333, 333]);
+  // The leftover cent goes to the largest remainder, not to the first row.
+  const lopsided = [1, 999_999_999_999];
+  assert.deepEqual(toCents(icm(lopsided, [1_000_000, 1])), [1, 1_000_000]);
+  assert.deepEqual(toCents(chipChop(lopsided, [1_000_000, 1])), [1, 1_000_000]);
+  assert.deepEqual(toCents([0.333, 0.667, 0], 2), [0.33, 0.67, 0]);
+  assert.deepEqual(toCents([0.004, 0.006, 0.005, 0.005], 2), [0, 0.01, 0.01, 0]);
 });
