@@ -12,7 +12,7 @@ import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { t } from '@/i18n';
 import { copyWaiting, download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, onCopyWaiting, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
-import { syncCloudExpiry } from '@/lib/cloud-expiry';
+import { cancelCloudExpiry, syncCloudExpiry } from '@/lib/cloud-expiry';
 import { offerStep, restoreOffer } from '@/lib/restore-offer';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
@@ -327,8 +327,14 @@ export function AutoCloudBackup() {
   // Off the launch path, and only for players with a copy (it loads the notifications module).
   // Under «Lembretes»: switched off in Settings, the notice already planned goes too (and comes back when on).
   const tipsOn = store.settings.notify?.tips !== false;
+  const tipsWas = useRef(tipsOn);
   useEffect(() => {
-    const id = setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), 8000);
+    // The 8 s are for launch only. A switch flipped in Settings acts now: off cancels straight away
+    // (the app may close before any timer), on schedules on the next tick, once NotifyPolicySync has the new settings.
+    const flipped = tipsWas.current !== tipsOn;
+    tipsWas.current = tipsOn;
+    if (flipped && !tipsOn) void cancelCloudExpiry();
+    const id = flipped && !tipsOn ? undefined : setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), flipped ? 0 : 8000);
     const off = onCloudChange((c) => void syncCloudExpiry(c));
     return () => {
       clearTimeout(id);
