@@ -43,7 +43,8 @@
         "image": "latest"
       },
       "env": {
-        "SENTRY_ALLOW_FAILURE": "true"
+        "SENTRY_ALLOW_FAILURE": "true",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_fWjswlOHLcGxlLzDaBThnQZuMKz"
       },
       "environment": "production"
     },

@@ -12,8 +12,14 @@ import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
+// RevenueCat's public iOS SDK key, meant to ship inside the app. Release builds
+// fall back to it so a local Xcode build matches EAS; dev and local-Pro test
+// builds (dev-pro.ts) keep the demo store.
+const IOS_PUBLIC_KEY = 'appl_fWjswlOHLcGxlLzDaBThnQZuMKz';
+const DEMO_STORE = __DEV__ || process.env.EXPO_PUBLIC_LOCAL_PRO === '1';
+
 const KEY = Platform.select({
-  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || (DEMO_STORE ? undefined : IOS_PUBLIC_KEY),
   android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
   default: undefined,
 });
