@@ -52,13 +52,16 @@ export function heroLastSpot(r: ResolvedHand, payload: unknown): QuizSpot | null
   return null;
 }
 
-/** The app records challenge votes as comments like "🗳️ Fold". */
-export const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|bet|raise|all-?in)\b/i;
+/** The app records challenge votes as comments like "🗳️ Fold", with the button's name: "Open", "3-Bet" and "C-bet" too. */
+export const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|c-?bet|[3-9]-?bet|bet|raise|open|all-?in)\b/i;
 
 export function voteFromComment(text: string): VoteChoice | null {
   const m = VOTE_COMMENT.exec(text.trim());
   if (!m) return null;
   const c = m[1].toLowerCase().replace('-', '');
+  // An open or a 3-bet is a raise, a c-bet a bet: the tally has one bar for each.
+  if (c === 'open' || /^\dbet$/.test(c)) return 'raise';
+  if (c === 'cbet') return 'bet';
   return c as VoteChoice;
 }
 
