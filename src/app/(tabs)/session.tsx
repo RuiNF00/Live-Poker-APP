@@ -41,6 +41,7 @@ import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { uid, useStore } from '@/store/store';
+import { tripToCover } from '@/store/trip-math';
 import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -114,7 +115,7 @@ function stackQuick(s: Session): { label: string; value: number }[] {
 
 export default function SessionScreen() {
   crashProbe('session');
-  const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
+  const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll, trips, saveTrip } = useStore();
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
@@ -157,6 +158,9 @@ export default function SessionScreen() {
     // Started from a today chip: the festival plan knows, for re-entries and Day 2.
     const hit = todays.find(({ e }) => sessionName(e) === s.name && e.buyIn === s.buyIn);
     if (hit) updatePlan(hit.f.id, (p) => ({ ...p, picked: p.picked.includes(hit.e.id) ? p.picked : [...p.picked, hit.e.id], sessions: { ...p.sessions, [hit.e.id]: s.id } }));
+    // Played after the festival trip's dates: the trip grows to take it.
+    const trip = hit && tripToCover(trips, hit.f.id, s.startedAt);
+    if (trip) saveTrip(trip);
     track('session_started', { kind: s.kind });
     // The next session goes to the same bankroll.
     if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });

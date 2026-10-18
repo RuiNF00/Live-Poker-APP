@@ -100,6 +100,17 @@ export function currentTrip(trips: Trip[], now = Date.now()): Trip | null {
   return trips.filter((x) => inRange(now, { from: x.from, to: x.to })).sort((a, b) => b.from - a.from)[0] ?? null;
 }
 
+/**
+ * A festival's trip widened to take a session started at `at` for one of its
+ * events (played after the dates it was made with), or null when it already
+ * does or the festival has no trip.
+ */
+export function tripToCover(trips: Trip[], festivalId: string, at: number): Trip | null {
+  const x = trips.find((tr) => tr.festivalId === festivalId);
+  if (!x || inRange(at, { from: x.from, to: x.to })) return null;
+  return { ...x, from: Math.min(x.from, startOfDay(at)), to: Math.max(x.to, endOfDay(at)) };
+}
+
 export function blankTrip(id: string, currency: string, now = Date.now()): Trip {
   return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(now + 4 * DAY), expenses: [], createdAt: now };
 }
