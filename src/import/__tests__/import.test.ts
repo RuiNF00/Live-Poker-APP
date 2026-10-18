@@ -102,6 +102,40 @@ test('US dates with AM/PM, separate end time past midnight, money with symbols',
   assert.equal(playedMs(s) / 60000, 285);
 });
 
+test('Date, Start and End with only times in Start and End: the date column wins, times go on its day', () => {
+  const csv = 'Date,Start,End,Game,Buy In,Cash Out\n17/10/2026,20:00,23:30,NLH,100,250\n18/10/2026,22:00,02:15,NLH,100,50\n';
+  const r = run(csv);
+  assert.equal(r.failed.length, 0);
+  assert.equal(r.mapping.start, 0);
+  assert.equal(r.mapping.time, 1);
+  assert.equal(r.mapping.end, 2);
+  const [a, b] = r.sessions;
+  assert.equal(a.startedAt, new Date(2026, 9, 17, 20, 0).getTime());
+  assert.equal(playedMs(a) / 60000, 210);
+  // End earlier than the start: past midnight.
+  assert.equal(b.endedAt, new Date(2026, 9, 19, 2, 15).getTime());
+  assert.equal(playedMs(b) / 60000, 255);
+});
+
+test('a column of only times is never taken as the date, whatever its name', () => {
+  const r = run('Start,Data,Fim,Lucro\n20h00,17/10/2026,8:30 PM,50\n');
+  assert.equal(r.mapping.start, 1);
+  assert.equal(r.mapping.time, 0);
+  assert.equal(playedMs(r.sessions[0]) / 60000, 30);
+  // Mapped by hand onto the date anyway, every row still fails as an unreadable date.
+  const p = prepare('Start,End,Profit\n20:00,23:30,50\n');
+  assert.equal(p.mapping.start, undefined);
+  const hand = toSessions(p.table, { ...p.mapping, start: 0 }, { ...opt, source: p.source });
+  assert.deepEqual(hand.failed.map((f) => f.reason), ['badDate']);
+});
+
+test('an end time no clock shows fails the row instead of being guessed', () => {
+  const r = run('Date,Start,End,Profit\n17/10/2026,20:00,25:10,50\n17/10/2026,20:00,13:00 PM,50\n17/10/2026,20:00,21:00,50\n');
+  assert.deepEqual(r.failed.map((f) => [f.line, f.reason, f.value]), [[2, 'badDate', '25:10'], [3, 'badDate', '13:00 PM']]);
+  assert.equal(r.sessions.length, 1);
+  assert.equal(playedMs(r.sessions[0]) / 60000, 60);
+});
+
 test('Sweatbook CSV comes back as the same sessions', () => {
   const base: Session = {
     id: 'x', kind: 'mtt', name: 'Estoril €150', venue: 'Estoril', currency: '€', startedAt: new Date(2026, 8, 1, 20).getTime(), endedAt: new Date(2026, 8, 1, 23).getTime(),

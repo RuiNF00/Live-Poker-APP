@@ -8,7 +8,7 @@ import type { Session } from '@/store/types';
 
 import { readTable, type Table } from './csv';
 import { type DecimalMark, NO_VALUE, parseNum } from './num';
-import { detectSource, FIELDS, knownHeader, mappingFor, type Field, type Mapping, type SourceId } from './mapping';
+import { detectSource, FIELDS, knownHeader, mappingFor, TIME_ONLY, type Field, type Mapping, type SourceId } from './mapping';
 
 export type DateOrder = 'dmy' | 'mdy';
 
@@ -75,7 +75,7 @@ export interface Prepared {
 export function prepare(text: string): Prepared {
   const table = readTable(text, knownHeader);
   const source = detectSource(text, table);
-  return { text, table, source, mapping: byValues(table, mappingFor(source, table.headers)) };
+  return { text, table, source, mapping: byValues(table, mappingFor(source, table.headers, table.rows)) };
 }
 
 /** "Lugar" is the finishing place in Portuguese and the venue in Spanish: the column's values decide. */
@@ -133,6 +133,14 @@ function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: bo
   if (m[4] && h === 12) h = 0;
   if (pm) h += 12;
   return { h, mi: Number(m[2]), sec: Number(m[3] ?? 0), hasTime: true };
+}
+
+/** A cell holding only a clock time → that time on the day of `day`; null when it isn't one, NaN when no clock shows it ("25:00", "13:00 PM"). */
+function clockOn(raw: string, day: number): number | null {
+  if (!TIME_ONLY.test(raw)) return null;
+  const { h, mi, sec } = timeOf(raw);
+  if (h > 23 || mi > 59 || sec > 59) return NaN;
+  return new Date(day).setHours(h, mi, sec, 0);
 }
 
 // The same cell is split up to four times (order guess, start, ambiguity check),
@@ -407,11 +415,20 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     }
     let start = startP.t;
     if (!startP.hasTime) {
+      const clock = clockOn(get(r, 'time'), start);
       const tm = get(r, 'time').match(/(\d{1,2}):(\d{2})/);
       const d = new Date(start);
-      if (tm) d.setHours(Number(tm[1]), Number(tm[2]), 0, 0);
+      if (clock !== null) d.setTime(clock);
+      else if (tm) d.setHours(Number(tm[1]), Number(tm[2]), 0, 0);
       else d.setHours(18, 0, 0, 0);
       start = d.getTime();
+    }
+    // An end that is only a time ("23:30") is on the row's date; earlier than the start, past midnight (below).
+    const endClock = clockOn(get(r, 'end'), start);
+    if (Number.isNaN(start) || Number.isNaN(endClock)) {
+      unreadable++;
+      failed.push({ line, reason: 'badDate', value: Number.isNaN(start) ? get(r, 'time') : get(r, 'end') });
+      continue;
     }
 
     const buyIn = money(get(r, 'buyIn'));
@@ -463,7 +480,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     }
 
     // Time at the table.
-    const endP = parseDate(get(r, 'end'), order);
+    const endP = endClock === null ? parseDate(get(r, 'end'), order) : { t: endClock, hasTime: true };
     let end: number;
     if (endP) {
       end = endP.hasTime ? endP.t : start;
