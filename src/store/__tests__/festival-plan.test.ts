@@ -466,15 +466,25 @@ test('a stored plan of the wrong shape is dropped, the good ones are kept', () =
     // An older plan without lateReg or sessions: they start empty.
     'espinho-dez-2026': { picked: ['2'] },
   });
-  assert.deepEqual(Object.keys(out).sort(), ['espinho-dez-2026', 'lisboa-nov-2026']);
+  assert.deepEqual(Object.keys(out).sort(), ['espinho-dez-2026', 'lisboa-nov-2026', 'punta-cana-jan-2027']);
+  // Its unreadable added tournament goes, the plan stays.
+  assert.deepEqual(out['punta-cana-jan-2027'].events, []);
   assert.deepEqual(out['lisboa-nov-2026'], good);
   assert.deepEqual(out['espinho-dez-2026'], { picked: ['2'], lateReg: {}, sessions: {} });
 });
 
-test('an added tournament with a start the planner cannot read, or no buy-in, drops its plan', () => {
+test('an added tournament with a start the planner cannot read, or no buy-in, is dropped alone', () => {
   const ev = (over: object) => ({ 'las-vegas-dez-2026': { picked: ['o1'], events: [{ id: 'o1', number: 1, name: 'X', buyIn: 100, start: '2026-12-03T18:00', game: 'NLH', ...over }] } });
-  assert.equal(Object.keys(cleanPlans(ev({}))).length, 1);
-  assert.equal(Object.keys(cleanPlans(ev({ start: '2026-12-03' }))).length, 0);
-  assert.equal(Object.keys(cleanPlans(ev({ start: 'garbage' }))).length, 0);
-  assert.equal(Object.keys(cleanPlans(ev({ buyIn: undefined }))).length, 0);
+  const ok = { any: false };
+  assert.equal(cleanPlans(ev({}), ok)['las-vegas-dez-2026'].events?.length, 1);
+  assert.equal(ok.any, false);
+  for (const bad of [{ start: '2026-12-03' }, { start: 'garbage' }, { buyIn: undefined }]) {
+    const dropped = { any: false };
+    // The tournament goes, the plan and its other picks stay.
+    const out = cleanPlans({ ...ev(bad), 'lisboa-nov-2026': { picked: ['2-1A'] } }, dropped);
+    assert.deepEqual(out['las-vegas-dez-2026'].events, []);
+    assert.deepEqual(out['las-vegas-dez-2026'].picked, ['o1']);
+    assert.ok(out['lisboa-nov-2026']);
+    assert.equal(dropped.any, true);
+  }
 });
