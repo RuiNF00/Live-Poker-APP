@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { check } from '../../../scripts/i18n-missing';
-import { resolve, translate } from '..';
+import { languageChanged, resolve, translate } from '..';
 
 // The full list, file by file: npm run i18n:missing
 const report = check();
@@ -32,6 +32,15 @@ test('the device language picks the variant', () => {
   assert.equal(resolve([{ languageCode: 'fr' }, { languageCode: 'es' }]).variant, 'es');
   assert.equal(resolve([{ languageCode: 'fr' }]).variant, 'en');
   assert.equal(resolve([]).variant, 'pt-PT');
+});
+
+test('a language changed while the app ran (Android) is noticed; the same one is not', () => {
+  // The tests run in pt-PT.
+  assert.equal(languageChanged([{ languageCode: 'pt', regionCode: 'PT', languageTag: 'pt-PT' }]), false);
+  assert.equal(languageChanged([]), false);
+  assert.equal(languageChanged([{ languageCode: 'pt', regionCode: 'BR', languageTag: 'pt-BR' }]), true);
+  assert.equal(languageChanged([{ languageCode: 'es', regionCode: 'ES', languageTag: 'es-ES' }]), true);
+  assert.equal(languageChanged([{ languageCode: 'en', regionCode: 'US', languageTag: 'en-US' }]), true);
 });
 
 test('missing text falls back to the closest language', () => {
