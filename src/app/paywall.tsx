@@ -146,8 +146,9 @@ export default function Paywall() {
     setBusy('restore');
     const res = await restore();
     setBusy(null);
-    if (res !== 'ok') acting.current = false;
-    if (res === 'ok') return unlocked();
+    const found = res === 'ok' || res === 'lifetime';
+    if (!found) acting.current = false;
+    if (found) return unlocked();
     restoreNotice(res, store);
   };
 

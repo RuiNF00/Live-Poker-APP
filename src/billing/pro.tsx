@@ -199,7 +199,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   const restore = useCallback(async () => {
     const res = await store.restore();
-    if (res === 'ok') setPro(true);
+    if (res === 'ok' || res === 'lifetime') setPro(true);
     return res;
   }, [setPro]);
 
@@ -336,7 +336,9 @@ export function buyNotice(res: store.BuyResult, storeName: string) {
 
 export function restoreNotice(res: store.RestoreResult, storeName: string) {
   if (res === 'ok') notice(t('Compras restauradas'), t('O teu Pro está ativo nesta conta da loja.'));
-  else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+  // The one-time Pro is no subscription: said as what it is.
+  else if (res === 'lifetime') notice(t('Compras restauradas'), t('O teu Pro para sempre está ativo nesta conta da loja.'));
+  else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma compra do Pro nesta conta da loja.'));
   else if (res === 'busy') return;
   else if (res === 'slow') notice(t('A {store} ainda está a responder', { store: storeName }), t('Se encontrar a compra, o Pro liga-se sozinho.'));
   else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Verifica a rede e tenta outra vez daqui a pouco.'));
