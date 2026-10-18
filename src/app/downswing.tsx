@@ -45,7 +45,7 @@ export default function DownswingScreen() {
           {cu ? (
             <>
               <T v="monoXL" color={C.bad} numberOfLines={1} adjustsFontSizeToFit>
-                −{fmt(cu.depth)}
+                {minus() + fmt(cu.depth)}
               </T>
               <T v="small">
                 {[inBi(cu.depth), cu.sessions === 1 ? t('1 sessão desde o pico') : t('{n} sessões desde o pico', { n: cu.sessions }), t('pico a {date}', { date: date(cu.from) })].filter(Boolean).join(' · ')}
@@ -63,8 +63,8 @@ export default function DownswingScreen() {
             <View style={{ marginTop: S.sm }}>
               <Underwater values={d.underwater} label={
                   cu
-                    ? t('Gráfico das quedas: agora −{now} abaixo do pico, no máximo −{max}.', { now: fmt(cu.depth), max: fmt(big?.depth ?? 0) })
-                    : t('Gráfico das quedas: agora no pico, no máximo −{max}.', { max: fmt(big?.depth ?? 0) })
+                    ? t('Gráfico das quedas: agora {now} abaixo do pico, no máximo {max}.', { now: minus() + fmt(cu.depth), max: minus() + fmt(big?.depth ?? 0) })
+                    : t('Gráfico das quedas: agora no pico, no máximo {max}.', { max: minus() + fmt(big?.depth ?? 0) })
                 } />
               <T v="tiny">{t('Quanto estavas abaixo do teu melhor resultado acumulado, sessão a sessão. Zero é um pico.')}</T>
             </View>
@@ -135,8 +135,8 @@ function Read({ odds, big, cu, fmt, cur }: { odds: NonNullable<ReturnType<typeof
         <Mini label={t('Queda típica')} value={minus() + fmt(Math.round(odds.typical))} />
         <Mini label={t('1 vez em 20')} value={minus() + fmt(Math.round(odds.bad))} />
       </Row>
-      {big ? line(t('O teu maior: −{amount}', { amount: fmt(big.depth) }), big.depth) : null}
-      {cu && cu !== big && cu.depth !== big?.depth ? line(t('O atual: −{amount}', { amount: fmt(cu.depth) }), cu.depth) : null}
+      {big ? line(t('O teu maior: {amount}', { amount: minus() + fmt(big.depth) }), big.depth) : null}
+      {cu && cu !== big && cu.depth !== big?.depth ? line(t('O atual: {amount}', { amount: minus() + fmt(cu.depth) }), cu.depth) : null}
       <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'flex-start' }}>
         <Ionicons name="information-circle-outline" size={16} color={C.muted} style={{ marginTop: 2 }} />
         <T v="tiny" style={{ flex: 1 }}>

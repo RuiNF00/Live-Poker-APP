@@ -1045,7 +1045,7 @@ const ptBR: Record<string, string> = {
   'Faz o primeiro ao começar a próxima sessão, ou junta-o a uma sessão passada no Bankroll.': 'Faça o primeiro ao começar a próxima sessão, ou adicione a uma sessão passada no Bankroll.',
   'Marcadas por ti': 'Marcadas por você',
   'Mostramos como o sono, a energia, o foco e o tilt mexem no teu resultado quando houver pelo menos {n} sessões de cada lado.': 'Mostramos como o sono, a energia, o foco e o tilt mexem no seu resultado quando houver pelo menos {n} sessões de cada lado.',
-  'O teu maior: −{amount}': 'Seu maior: −{amount}',
+  'O teu maior: {amount}': 'Seu maior: {amount}',
   'O teu resultado acumulado está no ponto mais alto.': 'Seu resultado acumulado está no ponto mais alto.',
   'Opcional · só tu vês': 'Opcional · só você vê',
   'Quando dormes menos de 6 h': 'Quando você dorme menos de 6 h',
