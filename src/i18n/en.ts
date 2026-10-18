@@ -2439,7 +2439,8 @@ const en: Record<string, string> = {
   '{n} cashes': '{n} cashes',
   '{n} torneios · desde {date}': '{n} tournaments · since {date}',
   '{n} torneios · {e} entradas · {cur}': '{n} tournaments · {e} entries · {cur}',
-  '{p}º de {n}': '{p} of {n}',
+  '{n} torneios · {e} entradas': '{n} tournaments · {e} entries',
+  '{p}º de {n}': '#{p} of {n}',
   '{x} por torneio': '{x} per tournament',
   // Mental game journal and downswings
   'Vê se este downswing é azar ou sinal': 'See whether this downswing is bad luck or a signal',

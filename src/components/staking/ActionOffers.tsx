@@ -1,20 +1,29 @@
 // On the festival screen: the action the player has sold for this festival
 // (logged per backer), and a button to log it from the events they planned.
 
-import { router } from 'expo-router';
-import React from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback } from 'react';
 import { View } from 'react-native';
 
 import { Button, ListGroup, ListItem, Pill } from '@/components/ui';
 import { t } from '@/i18n';
 import type { Festival } from '@/poker/festivals';
 import { money } from '@/poker/format';
-import { newOffer, offerTotals, saveOffer, useOffers } from '@/store/action-offer';
+import { deleteOffer, getOffers, newOffer, offerTotals, saveOffer, useOffers } from '@/store/action-offer';
 import { uid } from '@/store/store';
 import { C, S } from '@/theme';
 
 export function ActionOffers({ f, picked }: { f: Festival; picked: string[] }) {
-  const offers = useOffers().filter((o) => o.festivalId === f.id);
+  // A package left without backers (opened, then back) is nothing sold: hidden, and gone once the player is back here.
+  const offers = useOffers().filter((o) => o.festivalId === f.id && o.lines.length > 0);
+  // Only when the screen comes back into focus: the package just opened by «Registar» must survive until then.
+  useFocusEffect(
+    useCallback(() => {
+      getOffers()
+        .filter((o) => o.festivalId === f.id && o.lines.length === 0)
+        .forEach((o) => deleteOffer(o.id));
+    }, [f.id]),
+  );
   const start = () => {
     const o = newOffer(f, picked, uid('o'));
     saveOffer(o);

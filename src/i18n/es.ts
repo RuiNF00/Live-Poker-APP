@@ -2163,6 +2163,7 @@ const es: Record<string, string> = {
   '{n} cashes': '{n} cashes',
   '{n} torneios · desde {date}': '{n} torneos · desde {date}',
   '{n} torneios · {e} entradas · {cur}': '{n} torneos · {e} entradas · {cur}',
+  '{n} torneios · {e} entradas': '{n} torneos · {e} entradas',
   '{p}º de {n}': '{p}º de {n}',
   '{x} por torneio': '{x} por torneo',
   'Vê se este downswing é azar ou sinal': 'Mira si este downswing es mala suerte o una señal',

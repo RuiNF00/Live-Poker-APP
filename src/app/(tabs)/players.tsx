@@ -2,7 +2,7 @@
 // recorded against them.
 
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, ScrollView, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
@@ -31,6 +31,17 @@ export default function PlayersScreen() {
   const { players, savePlayer, deletePlayer, hands } = useStore();
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<PlayerNote | null>(null);
+  // Closing the sheet (X, swipe, back) keeps what was typed: notes are written at the table, in a hurry.
+  const draft = useRef<PlayerNote | null>(null);
+  const setDraft = useCallback((d: PlayerNote) => {
+    draft.current = d;
+  }, []);
+  const closeEditor = () => {
+    const d = draft.current;
+    draft.current = null;
+    if (d && edit && d !== edit && d.name.trim()) savePlayer(d);
+    setEdit(null);
+  };
   const rows = useMemo(() => {
     const qq = q.trim().toLowerCase();
     return [...players]
@@ -113,12 +124,13 @@ export default function PlayersScreen() {
           );
         }}
       />
-      <Modal visible={!!edit} animationType={sheetAnim} presentationStyle="pageSheet" onRequestClose={() => setEdit(null)}>
+      <Modal visible={!!edit} animationType={sheetAnim} presentationStyle="pageSheet" onRequestClose={closeEditor}>
         {edit && (
           <PlayerEditor
             p={edit}
             hands={handsWith(hands, edit)}
-            onClose={() => setEdit(null)}
+            onDraft={setDraft}
+            onClose={closeEditor}
             onSave={(p) => {
               savePlayer(p);
               setEdit(null);
@@ -136,8 +148,9 @@ export default function PlayersScreen() {
   );
 }
 
-function PlayerEditor({ p, hands, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
+function PlayerEditor({ p, hands, onDraft, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onDraft: (p: PlayerNote) => void; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
   const [x, setX] = useState(p);
+  useEffect(() => onDraft(x), [x, onDraft]);
   const toggle = (tg: string) => setX((v) => ({ ...v, tags: v.tags.includes(tg) ? v.tags.filter((k) => k !== tg) : [...v.tags, tg] }));
   const { shown, more } = usePaged(hands);
   return (

@@ -398,11 +398,12 @@ function EventRow({
               </T>
             </Row>
           ) : null}
-          <Row gap={S.sm}>
+          {/* Wraps at 320 so «Hora do late reg» is never cut next to the button. */}
+          <Row gap={S.sm} style={{ flexWrap: 'wrap', rowGap: S.sm }}>
             {e.day2 ? <View style={{ flex: 1 }} /> : <Pressable
               onPress={onLate}
               accessibilityRole="button"
-              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+              style={{ flex: 1, minWidth: 150, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
               <Ionicons name="alarm-outline" size={15} color={late ? C.text : C.accent} />
               <T v="small" color={late ? C.text : C.accent} numberOfLines={1} style={{ flexShrink: 1 }}>
                 {lateLabel}

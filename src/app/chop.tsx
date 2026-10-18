@@ -63,33 +63,33 @@ export default function ChopScreen() {
         {ready ? (
           <Section title={t('Quanto recebe cada um')} hint={t('ICM protege os stacks curtos; chip chop favorece o chip leader. Um deal justo costuma ficar entre os dois.')}>
             <Card padded={false}>
-              <Row style={{ paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.sm }}>
-                <T v="label" style={{ flex: 1.3 }}>
+              <Row gap={S.sm} style={{ paddingHorizontal: S.lg, paddingTop: S.md, paddingBottom: S.sm }}>
+                <T v="label" style={{ flex: 1 }}>
                   {t('Jogador')}
                 </T>
-                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                <View style={{ flex: 1.2, alignItems: 'flex-end' }}>
                   <Term k="ICM" />
                 </View>
-                <T v="label" style={{ flex: 1, textAlign: 'right' }}>
+                <T v="label" style={{ flex: 1.2, textAlign: 'right' }}>
                   {t('Chip chop')}
                 </T>
               </Row>
               {st.map((s, i) => (
                 <View key={i}>
                   <Divider inset={S.lg} />
-                  <Row style={{ paddingHorizontal: S.lg, paddingVertical: 12, backgroundColor: i === 0 ? C.accentSoft : undefined }}>
-                    <View style={{ flex: 1.3 }}>
-                      <T v="h3" color={i === 0 ? C.accent : C.text}>
+                  <Row gap={S.sm} style={{ paddingHorizontal: S.lg, paddingVertical: 12, backgroundColor: i === 0 ? C.accentSoft : undefined }}>
+                    <View style={{ flex: 1 }}>
+                      <T v="h3" numberOfLines={1} color={i === 0 ? C.accent : C.text}>
                         {name(i)}
                       </T>
-                      <T v="monoS">
+                      <T v="monoS" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                         {chips(s)} · {((s / total) * 100).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                       </T>
                     </View>
-                    <T v="mono" style={{ flex: 1, textAlign: 'right' }}>
+                    <T v="mono" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flex: 1.2, textAlign: 'right' }}>
                       {money(e[i], cur)}
                     </T>
-                    <T v="mono" color={C.textDim} style={{ flex: 1, textAlign: 'right' }}>
+                    <T v="mono" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={C.textDim} style={{ flex: 1.2, textAlign: 'right' }}>
                       {money(c[i], cur)}
                     </T>
                   </Row>

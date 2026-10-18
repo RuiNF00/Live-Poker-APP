@@ -87,7 +87,7 @@ export default function TournamentStatsScreen() {
           </T>
           {verdict ? <T v="body">{verdict}</T> : <SmallSample n={sum.count} min={MIN_SAMPLE} variant="note" unit={t('torneios')} />}
           <T v="small">
-            {t('{n} torneios · {e} entradas · {cur}', { n: sum.count, e: sum.entries, cur: currency })}
+            {currencies.length > 1 ? t('{n} torneios · {e} entradas · {cur}', { n: sum.count, e: sum.entries, cur: currency }) : t('{n} torneios · {e} entradas', { n: sum.count, e: sum.entries })}
             {view === 'mine' ? ' · ' + t('depois de staking, swaps e despesas') : ' · ' + t('antes de staking e swaps')}
           </T>
         </Card>
