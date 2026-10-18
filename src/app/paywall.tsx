@@ -31,9 +31,9 @@ export default function Paywall() {
   // Very short screens (320×568): the fixed footer keeps the billed price, the button and
   // the disclosures; Restore and the other ways out move to the end of the scroll.
   const short = win.height < 640;
-  // Short screen and text at 160%+: the fixed footer took ~3/4 of the screen and left the plans a sliver.
-  // It scrolls after the plans instead, the button still with the terms and links right under it.
-  const inline = short && win.fontScale >= 1.6;
+  // Short screen (iPhone SE's 667 too) and text at 160%+: the fixed footer took ~2/3 of the screen and
+  // left no plan in sight. It scrolls after the plans instead, the button still with the terms and links right under it.
+  const inline = win.height < 700 && win.fontScale >= 1.6;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
