@@ -1,0 +1,115 @@
+/* Festival action agreement (/o/<id>): built on the live page (live.css) and the backer
+   statement (backing.css) styles. Phone first, 16px gutters from .live. */
+.of .of-muted {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.of .of-small {
+  font-size: 13px;
+}
+
+.of .of-center {
+  text-align: center;
+}
+
+.of-events {
+  padding-bottom: 6px;
+}
+
+.of-cols,
+.of-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px 96px;
+  align-items: center;
+  gap: 10px;
+}
+
+.of-cols {
+  padding-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.of-event {
+  padding: 12px 0;
+  border-top: 1px solid rgba(238, 242, 239, 0.06);
+}
+
+.of-pct {
+  text-align: right;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+}
+
+.of-cost {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.of-total {
+  gap: 8px;
+}
+
+.of-total-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.of-big {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: clamp(40px, 12vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.of-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.of-button {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+}
+
+.of-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.of-error {
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+}
+
+.of-done {
+  gap: 8px;
+  border-color: rgba(74, 222, 128, 0.35);
+  background: linear-gradient(160deg, rgba(74, 222, 128, 0.14), var(--surface) 65%);
+}
+
+.of-done-title {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--win);
+}
+
+.of-event .bk-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

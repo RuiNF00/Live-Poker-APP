@@ -1,0 +1,461 @@
+// Festival planner: the published schedule of a live festival, the events the
+// player plans to play, what they add up to against the bankroll, reminders
+// before each start and before late reg closes, and one tap from a planned
+// event to a running session.
+
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
+
+import { AddFestivalEvent } from '@/components/AddFestivalEvent';
+import { useAfterFirstFrame } from '@/components/Deferred';
+import { spanLabel } from '@/components/FestivalItem';
+import { SharePlan } from '@/components/SharePlan';
+import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { useStartEvent } from '@/components/useStartEvent';
+import { usePro } from '@/billing/pro';
+import { FREE } from '@/billing/plans';
+import { ActionOffers } from '@/components/staking/ActionOffers';
+import { Button, Card, Chip, ChipRow, IconButton, Row, Section, T, tap } from '@/components/ui';
+import { locale, t } from '@/i18n';
+import { syncFestivalReminders } from '@/lib/festival-reminders';
+import { kindOn } from '@/lib/notify-policy';
+import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { chips, money, rawCompactMoney } from '@/poker/format';
+import { balanceOf } from '@/store/bankroll-math';
+import { bankrollShare, buyInCaps, buyInsLeft, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
+import { dayOf } from '@/store/multi-day';
+import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
+import { uid, useStore } from '@/store/store';
+import { tripFromFestival } from '@/store/trip-math';
+import { C, R, S } from '@/theme';
+import { reduceMotion } from '@/lib/motion';
+
+type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix' | EventKind;
+const LATE_REG_HOURS = [2, 3, 4, 5, 6, 8];
+
+function dayLabel(day: string) {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+}
+
+export default function FestivalScreen() {
+  // `event`: from a reminder, scroll to that event's row (its "Começar sessão").
+  const { id, event } = useLocalSearchParams<{ id?: string; event?: string }>();
+  const festivals = useFestivals();
+  const ready = useFestivalsReady();
+  // An own festival's id before the list is read: wait, so nothing (a trip) attaches to another festival.
+  const f = festivals.find((x) => x.id === id) ?? (!id ? festivals[0] : undefined);
+  // Read and still not there (deleted, or an old reminder): the list, not some other festival.
+  const gone = !!id && ready && !f;
+  useEffect(() => {
+    if (gone) router.replace('/festivals');
+  }, [gone]);
+  return f ? <FestivalView key={f.id} f={f} focus={event} /> : null;
+}
+
+function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
+  const plan = useFestivalPlan(base.id);
+  // The schedule plus the tournaments the player added.
+  const f = useMemo(() => withPlanEvents(base, plan), [base, plan]);
+  const { sessions, transfers, bankrolls, defaultBankroll, settings } = useStore();
+  const [filter, setFilter] = useState<Filter>('all');
+  const [cap, setCap] = useState<number | null>(null);
+  const [lateFor, setLateFor] = useState<string | null>(null);
+  const [softAsk, askNotify] = useNotifySoftAsk();
+
+  // The bankroll in the festival's currency, if there is one; otherwise the default (no % then).
+  const bankroll = bankrolls.find((b) => b.currency === f.currency) ?? defaultBankroll;
+  const sameCurrency = bankroll.currency === f.currency;
+  const balance = balanceOf({ bankrollId: bankroll.id }, sessions, transfers, bankrolls).balance;
+  const tot = planTotals(f, plan);
+  // What is still to pay: a buy-in already played is out of the balance.
+  const share = sameCurrency ? bankrollShare(buyInsLeft(f, plan, sessions), balance) : null;
+
+  const remindersOn = kindOn(settings, 'festival');
+  useEffect(() => {
+    void syncFestivalReminders(f, plan, remindersOn);
+  }, [f, plan, remindersOn]);
+
+  const days = useMemo(() => {
+    const shown = (e: FestivalEvent) =>
+      filter === 'all' ? true : filter === 'mine' ? plan.picked.includes(e.id) : filter === 'NLH' || filter === 'PLO' || filter === 'Mix' ? e.game === filter : isKind(e, filter);
+    const list = f.events.filter((e) => shown(e) && (cap === null || entryBuyIn(f, e) <= cap));
+    const by = new Map<string, FestivalEvent[]>();
+    for (const e of list) by.set(eventDay(e), [...(by.get(eventDay(e)) ?? []), e]);
+    return [...by.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [f, filter, cap, plan.picked]);
+  const caps = useMemo(() => buyInCaps(f), [f]);
+  const clash = useMemo(() => clashes(f, plan), [f, plan]);
+
+  const toggle = (e: FestivalEvent) => {
+    tap('select');
+    if (!plan.picked.length)
+      void askNotify({
+        where: 'festival',
+        title: t('Avisamos-te antes de cada torneio que escolheres'),
+        preview: { title: t('Começa daqui a {n} min', { n: REMIND_BEFORE_MIN }), body: eventTitle(e) },
+      });
+    updatePlan(f.id, (p) => togglePicked(p, e.id));
+  };
+
+  const start = useStartEvent();
+  // The summary on the first frame; the schedule (dozens of events) right after.
+  const full = useAfterFirstFrame();
+  // Opened from a reminder: scroll once to that event, whose card shows "Começar sessão".
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const focusAt = useRef({ day: -1, row: -1, done: !focus });
+  const scrollToFocus = (p: Partial<{ day: number; row: number }>) => {
+    const y = Object.assign(focusAt.current, p);
+    if (y.done || y.day < 0 || y.row < 0) return;
+    y.done = true;
+    scroll.current?.scrollTo({ y: y.day + y.row, animated: !reduceMotion() });
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title: t('Festival') }} />
+      {softAsk}
+      <ScrollView ref={scroll} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }}>
+        <View style={{ gap: 4 }}>
+          {f.own ? (
+            <Row gap={8}>
+              <T v="h1" style={{ flex: 1, minWidth: 0, fontSize: 24 }}>
+                {f.name}
+              </T>
+              <IconButton name="pencil" label={t('Editar festival')} onPress={() => router.push({ pathname: '/festival-new', params: { id: f.id } })} />
+            </Row>
+          ) : (
+            <Row gap={8}>
+              <TextInput
+                value={plan.name ?? t(f.name)}
+                onChangeText={(name) => updatePlan(f.id, (p) => ({ ...p, name }))}
+                onBlur={() => updatePlan(f.id, (p) => ({ ...p, name: p.name?.trim() || undefined }))}
+                placeholder={t(f.name)}
+                placeholderTextColor={C.textDim}
+                accessibilityLabel={t('Nome do festival')}
+                returnKeyType="done"
+                maxLength={60}
+                // Wraps instead of cutting a long name at 360 px or large text; Enter still just closes the keyboard.
+                // Grows like the other titles (130%): at 200% "Torrelodones," broke mid-word.
+                maxFontSizeMultiplier={1.3}
+                multiline
+                scrollEnabled={false}
+                submitBehavior="blurAndSubmit"
+                style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
+              />
+              <Ionicons name="pencil" size={16} color={C.textDim} />
+            </Row>
+          )}
+          {f.events.length ? (
+            <T v="label">{[f.own ? f.venue : t(f.venue), f.city && t(f.city)].filter(Boolean).join(' · ')}</T>
+          ) : (
+            // No schedule: where and when is all there is, in one line under the name.
+            <T v="body" color={C.textDim}>
+              {[f.own ? f.venue : t(f.venue), f.city && t(f.city), f.dates ? `${spanLabel(f.dates.from, f.dates.to)} ${f.dates.to.slice(0, 4)}` : t('Datas a confirmar')].filter(Boolean).join(' · ')}
+            </T>
+          )}
+          {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
+        </View>
+
+        {f.events.length ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
+        {f.events.length || f.dates ? <TripLink f={f} plan={plan} /> : null}
+        {tot.events ? <SharePlan f={f} plan={plan} /> : null}
+
+        {f.events.length ? <ActionOffers f={f} picked={plan.picked} /> : null}
+
+        {!f.events.length ? (
+          <T v="small">{f.own ? t('As sessões que jogares nestes dias entram na viagem sozinhas, com as despesas e o resultado.') : f.dates ? t('O programa ainda não saiu. Os torneios aparecem aqui quando o organizador o publicar; já podes criar a viagem.') : t('O organizador ainda não publicou as datas. Os torneios aparecem aqui quando sair o programa.')}</T>
+        ) : (
+          <View style={{ gap: S.sm }}>
+            <ChipRow>
+              {(
+                [
+                  ['all', t('Todos')],
+                  ['mine', t('Os meus ({n})', { n: tot.events })],
+                  ['sat', t('Satélites')],
+                  ['turbo', 'Turbo'],
+                  ['deep', 'Deepstack'],
+                  ['NLH', 'NLH'],
+                  ['PLO', 'PLO'],
+                  ['Mix', 'Mix'],
+                ] as [Filter, string][]
+              )
+                // A kind chip only where the schedule has one.
+                .filter(([k]) => (k !== 'sat' && k !== 'turbo' && k !== 'deep') || f.events.some((e) => isKind(e, k)))
+                .map(([k, label]) => (
+                  <Chip key={k} label={label} active={filter === k} onPress={() => setFilter(k)} />
+                ))}
+            </ChipRow>
+            {caps.length ? (
+              <ChipRow>
+                {caps.map((c) => (
+                  <Chip key={c} label={t('Até {amount}', { amount: money(c, f.currency) })} active={cap === c} onPress={() => setCap(cap === c ? null : c)} />
+                ))}
+              </ChipRow>
+            ) : null}
+          </View>
+        )}
+
+        {days.length === 0 && f.events.length ? (
+          <Card tone="inset">
+            <T v="small">{filter === 'mine' && cap === null ? t('Ainda não marcaste nenhum evento. Toca no círculo à direita de um evento para o adicionar.') : t('Nenhum torneio com estes filtros.')}</T>
+          </Card>
+        ) : null}
+
+        {!full ? (
+          <View style={{ height: 800 }} />
+        ) : (
+          days.map(([day, list]) => (
+            <View key={day} onLayout={list.some((e) => e.id === focus) ? (ev) => scrollToFocus({ day: ev.nativeEvent.layout.y }) : undefined}>
+            <Section title={dayLabel(day)}>
+              <View style={{ gap: S.sm }}>
+                {list.map((e) => (
+                  <View key={e.id} onLayout={e.id === focus ? (ev) => scrollToFocus({ row: ev.nativeEvent.layout.y }) : undefined}>
+                  <EventRow
+                    f={f}
+                    e={e}
+                    plan={plan}
+                    action={eventAction(f, plan, sessions, e)}
+                    clash={clash.get(e.id)}
+                    lateOpen={lateFor === e.id}
+                    remind={remindersOn}
+                    onToggle={() => toggle(e)}
+                    onLate={() => setLateFor(lateFor === e.id ? null : e.id)}
+                    onSetLate={(min) => {
+                      tap('select');
+                      updatePlan(f.id, (p) => {
+                        const lateReg = { ...p.lateReg };
+                        if (min) lateReg[e.id] = min;
+                        else delete lateReg[e.id];
+                        return { ...p, lateReg };
+                      });
+                      setLateFor(null);
+                    }}
+                    onStart={() => start(f, e)}
+                  />
+                  </View>
+                ))}
+              </View>
+            </Section>
+            </View>
+          ))
+        )}
+
+        <AddFestivalEvent f={base} />
+
+        {f.own ? null : (
+          <View style={{ gap: 6, paddingHorizontal: 4 }}>
+            <T v="tiny" color={C.textDim}>
+              {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+            </T>
+            {f.notes.map((n) => (
+              <T key={n} v="tiny">
+                {t(n)}
+              </T>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </>
+  );
+}
+
+/** The trip for this festival: open it, or make it from the plan (dates from the planned events). */
+function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {
+  const { trips, settings, saveTrip } = useStore();
+  const { isPro, paywall } = usePro();
+  const trip = trips.find((x) => x.festivalId === f.id);
+  const open = () => {
+    if (trip) return router.push(`/trips/${trip.id}`);
+    if (!isPro && FREE.trips !== null && trips.length >= FREE.trips) return paywall('trips');
+    tap('medium');
+    const x = tripFromFestival(uid('tr_'), f, plan, f.currency !== settings.currency ? { currency: settings.currency, rate: 0 } : undefined);
+    saveTrip(x);
+    router.push(`/trips/${x.id}`);
+  };
+  return (
+    <Button
+      size="md"
+      kind="secondary"
+      icon="airplane-outline"
+      title={trip ? t('Ver viagem e despesas') : t('Criar viagem')}
+      sub={trip ? undefined : t('Voos, hotel e resultado líquido')}
+      onPress={open}
+    />
+  );
+}
+
+function Summary({
+  f,
+  tot,
+  balance,
+  share,
+  bankrollName,
+  bankrollCurrency,
+  sameCurrency,
+}: {
+  f: Festival;
+  tot: ReturnType<typeof planTotals>;
+  balance: number;
+  share: number | null;
+  bankrollName: string;
+  bankrollCurrency: string;
+  sameCurrency: boolean;
+}) {
+  const tone = share == null ? C.textDim : share > 1 ? C.bad : share > 0.5 ? C.warn : C.good;
+  return (
+    <Card tone="raised" style={{ gap: S.md }}>
+      <Row style={{ alignItems: 'flex-end' }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          {/* Beside the bankroll column: at 200% the caption broke mid-word ("PLANEAD OS"). */}
+          <T v="label" maxFontSizeMultiplier={1.3}>{t('Buy-ins planeados')}</T>
+          <T v="monoL">{money(tot.buyIns, f.currency)}</T>
+          <T v="small">{tot.entries === 1 ? t('1 entrada') : t('{n} entradas', { n: tot.entries })}</T>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 2 }}>
+          <T v="label">{bankrollName}</T>
+          <T v="mono">{money(balance, bankrollCurrency)}</T>
+          {share != null ? (
+            <T v="monoS" color={tone}>
+              {t('{pct}% da banca', { pct: Math.round(share * 100) })}
+            </T>
+          ) : null}
+        </View>
+      </Row>
+      {share != null ? (
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: C.surface3, overflow: 'hidden' }}>
+          <View style={{ width: `${Math.min(100, Math.round(share * 100))}%`, height: 6, backgroundColor: tone }} />
+        </View>
+      ) : null}
+      {sameCurrency && balance <= 0 ? (
+        <T v="tiny">{t('Regista os teus depósitos no Bankroll para veres quanto da banca o plano usa.')}</T>
+      ) : !sameCurrency ? (
+        <T v="tiny">{t('A tua banca está em {cur} e o festival em {fcur}: cria uma banca em {fcur} para veres a percentagem.', { cur: bankrollCurrency, fcur: f.currency })}</T>
+      ) : share != null && share > 1 ? (
+        <T v="tiny" color={C.bad}>
+          {t('O plano custa mais do que tens na banca.')}
+        </T>
+      ) : null}
+    </Card>
+  );
+}
+
+function EventRow({
+  f,
+  e,
+  plan,
+  action,
+  lateOpen,
+  remind,
+  clash,
+  onToggle,
+  onLate,
+  onSetLate,
+  onStart,
+}: {
+  f: Festival;
+  e: FestivalEvent;
+  plan: FestivalPlan;
+  action: EventAction | null;
+  /** Another planned event this one overlaps. */
+  clash?: FestivalEvent;
+  lateOpen: boolean;
+  /** Planned-tournament reminders are on: picking a late reg time also sets its reminder. */
+  remind: boolean;
+  onToggle: () => void;
+  onLate: () => void;
+  onSetLate: (min: number | null) => void;
+  onStart: () => void;
+}) {
+  const on = plan.picked.includes(e.id);
+  const late = lateRegOf(plan, e);
+  const start = venueTime(f, e.start);
+  const lateLabel = late
+    ? t('Late reg até {time}', { time: hm(new Date(start + late * 60_000), f) })
+    : t('Hora do late reg');
+  return (
+    <Card tone={on ? 'accent' : 'default'} padded={false}>
+      <Pressable onPress={onToggle} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md }}>
+        <View style={{ minWidth: 48 }}>
+          <T v="mono">{e.start.slice(11)}</T>
+          <T v="tiny">{e.game}</T>
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <T v="h3">
+            {eventTitle(e)}
+          </T>
+          <T v="small">
+            {[e.flight ? (e.day2 ? (e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight })) : `Flight ${e.flight}`) : null, e.guarantee ? `${rawCompactMoney(e.guarantee, f.currency)} GTD` : null, e.stack ? chips(e.stack) : null, e.stack && e.levelMinutes ? `${e.levelMinutes}\u00a0min` : null].filter(Boolean).join(' · ')}
+          </T>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 6 }}>
+          <T v="mono" color={e.day2 ? C.muted : C.text}>
+            {e.day2 ? '—' : money(e.buyIn, f.currency)}
+          </T>
+          <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />
+        </View>
+      </Pressable>
+      {on || action?.kind === 'resume' ? (
+        <View style={{ paddingHorizontal: S.md, paddingBottom: S.md, gap: S.sm }}>
+          {on && clash ? (
+            <Row gap={6}>
+              <Ionicons name="warning-outline" size={14} color={C.warn} />
+              <T v="small" color={C.warn} style={{ flex: 1 }}>
+                {t('Coincide com {name} às {time}', { name: eventTitle(clash) + (clash.flight ? ` · ${clash.day2 ? t('Dia 2') : 'Flight ' + clash.flight}` : ''), time: clash.start.slice(11) })}
+              </T>
+            </Row>
+          ) : null}
+          {/* Wraps at 320 so «Hora do late reg» is never cut next to the button. */}
+          <Row gap={S.sm} style={{ flexWrap: 'wrap', rowGap: S.sm }}>
+            {e.day2 ? <View style={{ flex: 1 }} /> : <Pressable
+              onPress={onLate}
+              accessibilityRole="button"
+              style={{ flex: 1, minWidth: 150, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+              <Ionicons name="alarm-outline" size={15} color={late ? C.text : C.accent} />
+              <T v="small" color={late ? C.text : C.accent} numberOfLines={1} style={{ flexShrink: 1 }}>
+                {lateLabel}
+              </T>
+            </Pressable>}
+            {action ? (
+              <Button
+                size="sm"
+                title={
+                  action.kind === 'view'
+                    ? t('Ver sessão')
+                    : action.kind === 'resume'
+                      ? t('Começar Dia {n}', { n: dayOf(action.session) + 1 })
+                      : action.kind === 'reenter'
+                        ? t('Re-entrar ({flight})', { flight: e.flight ? 'Flight ' + e.flight : eventTitle(e) })
+                        : t('Começar sessão')
+                }
+                icon={action.kind === 'view' ? 'open-outline' : 'play'}
+                onPress={onStart}
+              />
+            ) : null}
+          </Row>
+          {lateOpen ? (
+            <View style={{ gap: 6 }}>
+              <T v="tiny">{t('Quando fecha o late reg? (horas depois do início)')}</T>
+              <ChipRow>
+                {LATE_REG_HOURS.map((h) => (
+                  <Chip key={h} label={`+${h}h · ${hm(new Date(start + h * 3_600_000), f)}`} active={late === h * 60} onPress={() => onSetLate(h * 60)} />
+                ))}
+                {plan.lateReg[e.id] ? <Chip label={e.lateRegMin ? t('Hora oficial') : t('Limpar')} onPress={() => onSetLate(null)} /> : null}
+              </ChipRow>
+              {remind ? <T v="tiny">{t('Avisamos-te {n} min antes de fechar.', { n: LATE_REMIND_BEFORE_MIN })}</T> : null}
+            </View>
+          ) : null}
+          {e.own ? <Button kind="plain" size="sm" title={t('Apagar torneio')} onPress={() => updatePlan(f.id, (p) => removeOwnEvent(p, e.id))} /> : null}
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+/** Venue wall-clock HH:MM of an instant. */
+function hm(d: Date, f: Festival) {
+  const x = venueClock(f, d.getTime());
+  return `${String(x.getUTCHours()).padStart(2, '0')}:${String(x.getUTCMinutes()).padStart(2, '0')}`;
+}
