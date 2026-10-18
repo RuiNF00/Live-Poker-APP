@@ -159,8 +159,9 @@
     "android": {
       "package": "com.ruinf.sweatbook",
       "adaptiveIcon": {
-        "backgroundColor": "#0C1311",
-        "foregroundImage": "./assets/images/adaptive-icon.png"
+        "backgroundColor": "#F45A27",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundImage": "./assets/images/adaptive-icon-background.png"
       },
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM"

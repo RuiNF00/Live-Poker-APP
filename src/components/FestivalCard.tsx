@@ -23,7 +23,7 @@ import type { CardStyle } from "@/share/session-card";
 import { C, F, R, ff, posColor } from "@/theme";
 
 import { PlayingCard } from "./PlayingCard";
-import { linkHost, Mark, STORY_H, STORY_W } from "./StoryCard";
+import { linkHost, Mark, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, STORY_H, STORY_W } from "./StoryCard";
 
 export type FestivalLook = Exclude<CardStyle, "sticker">;
 export const FESTIVAL_LOOKS: FestivalLook[] = ["noite", "brasa"];
@@ -60,17 +60,10 @@ export function Logo({ ink }: { ink: boolean }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
       {ink ? (
-        <Svg width={18} height={18} viewBox="0 2 64 64">
-          <Path
-            d="M32 12.5 L44.73 25.27 A18 18 0 1 1 19.27 25.27 Z"
-            fill={INK}
-          />
-          <Path
-            d="M24 36 H40 M24 42 H40 M24 48 H34"
-            stroke={C.accent}
-            strokeWidth={3.2}
-            strokeLinecap="round"
-          />
+        <Svg width={18} height={18} viewBox={MARK_VIEWBOX}>
+          <Path d={MARK_ARROW} fill={INK} />
+          <Path d={MARK_CLUB} fill={INK} />
+          <Path d={MARK_PLAY} fill={C.accent} />
         </Svg>
       ) : (
         <Mark size={18} />

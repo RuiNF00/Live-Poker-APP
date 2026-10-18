@@ -15,7 +15,7 @@ import type { CardStat, CardStyle, Milestone } from '@/share/session-card';
 import type { Session } from '@/store/types';
 import { C, F, R, ff } from '@/theme';
 
-import { linkHost, POST_H, STORY_H, STORY_W } from './StoryCard';
+import { linkHost, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, POST_H, STORY_H, STORY_W } from './StoryCard';
 
 /** The sticker is captured on its own, at this size in points. */
 export const STICKER_W = 320;
@@ -26,9 +26,10 @@ const INK = C.accentInk;
 export function Logo({ size, color, cut }: { size: number; color: string; cut: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-      <Svg width={size + 4} height={size + 4} viewBox="0 2 64 64">
-        <Path d="M32 12.5 L44.73 25.27 A18 18 0 1 1 19.27 25.27 Z" fill={color} />
-        <Path d="M24 36 H40 M24 42 H40 M24 48 H34" stroke={cut} strokeWidth={3.2} strokeLinecap="round" />
+      <Svg width={size + 4} height={size + 4} viewBox={MARK_VIEWBOX}>
+        <Path d={MARK_ARROW} fill={color} />
+        <Path d={MARK_CLUB} fill={color} />
+        <Path d={MARK_PLAY} fill={cut} />
       </Svg>
       <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: size, color: color === C.accent ? C.text : color, letterSpacing: -0.3 }}>
         Sweat<Text allowFontScaling={false} style={{ color }}>book</Text>
