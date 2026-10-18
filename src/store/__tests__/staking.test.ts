@@ -291,3 +291,9 @@ test('last stake terms skip package pieces and other backers', () => {
   assert.deepEqual(lastStakeTerms('b1', list), { share: 30, markup: 1, unpaid: true });
   assert.equal(lastStakeTerms('b3', list), null);
 });
+
+test('the player owes the backers exactly what their rows add up to', () => {
+  const s = { cashOut: 222.22, stakes: [{ backerId: 'a', share: 15 }, { backerId: 'b', share: 15 }] } as unknown as Session;
+  // 15% of 222,22 is 33,333 each: 33,33 + 33,33, never 66,67.
+  assert.equal(owedToBackers(s), 66.66);
+});

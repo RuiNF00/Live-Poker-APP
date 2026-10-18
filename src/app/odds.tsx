@@ -120,7 +120,8 @@ export default function OddsScreen() {
       <Stack.Screen options={{ title: t('Calculadora de odds') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 60 }}>
         <Card style={{ gap: S.md }}>
-          <Row style={{ alignItems: 'flex-start', gap: S.lg }}>
+          {/* Wraps on narrow phones: two hole cards and five board cards don't fit one row at 320. */}
+          <Row style={{ alignItems: 'flex-start', gap: S.lg, flexWrap: 'wrap', rowGap: S.sm }}>
             <SlotGroup label={t('Tu')} ids={HERO} slots={slots} active={active} onSlot={onSlot} />
             <SlotGroup label="Board" ids={BOARD} slots={slots} active={active} onSlot={onSlot} />
           </Row>

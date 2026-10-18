@@ -462,7 +462,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
         </>
       ) : (
         <>
-          <Text numberOfLines={view.board2 ? 2 : 1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
+          <Text numberOfLines={view.board2 || view.end ? 2 : 1} style={{ flexShrink: 1, color: view.end ? C.good : C.text, fontFamily: ff(700), fontSize: 13 }}>
             {view.narration}
           </Text>
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>

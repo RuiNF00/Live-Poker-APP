@@ -1,6 +1,6 @@
 import type { Session } from '@/store/types';
 
-import { isComplete, replay } from './engine';
+import { heroFolded, isPlayedOut, replay } from './engine';
 import type { GameInfo, Hand, Player } from './types';
 
 export const MTT_LEVELS: [number, number][] = [
@@ -51,8 +51,12 @@ export function sameTable(last: Hand | null | undefined, session?: Session | nul
  * chips from its pot go missing.
  */
 export function endStacks(hand: Hand): number[] {
-  if (!isComplete(hand)) return hand.players.map((p) => p.stack);
   const r = replay(hand);
+  if (!isPlayedOut(hand, r)) {
+    // Hero folded and the rest wasn't entered: hero's stack is known, the others keep theirs.
+    if (heroFolded(hand, r)) return hand.players.map((p, i) => (i === hand.hero ? r.final.stacks[i] : p.stack));
+    return hand.players.map((p) => p.stack);
+  }
   const s = r.final;
   return hand.players.map((_, i) => s.stacks[i] + (r.result ? r.result.won[i] : s.bets[i]));
 }

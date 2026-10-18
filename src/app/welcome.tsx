@@ -12,7 +12,7 @@ import { Replayer } from '@/components/Replayer';
 import { Button, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { money } from '@/poker/format';
+import { chips, money } from '@/poker/format';
 import { sampleHand } from '@/poker/sample';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -310,7 +310,7 @@ function Preview({ mtt, currency }: { mtt: boolean; currency: string }) {
     ? [
         [t('Buy-in'), money(1100, currency)],
         [t('Dia'), '2'],
-        [t('Stack'), '184.000'],
+        [t('Stack'), chips(184000)],
       ]
     : [
         [t('Stakes'), '5/10'],

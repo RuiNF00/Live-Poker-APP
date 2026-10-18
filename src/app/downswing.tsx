@@ -27,7 +27,7 @@ export default function DownswingScreen() {
   const params = useLocalSearchParams<{ currency?: string }>();
   const cur = params.currency || defaultBankroll.currency;
   const hidden = !!settings.hideAmounts;
-  const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), cur));
+  const fmt = (n: number) => (hidden ? '•••' : money(n, cur));
   const done = useMemo(() => sessions.filter((s) => s.endedAt && s.currency === cur).sort((a, b) => a.endedAt! - b.endedAt!), [sessions, cur]);
   const d = useMemo(() => downswings(done, cur), [done, cur]);
   const odds = useMemo(() => downswingOdds(done.map(profit)), [done]);
@@ -132,8 +132,8 @@ function Read({ odds, big, cu, fmt, cur }: { odds: NonNullable<ReturnType<typeof
         {t('Baralhámos as tuas {n} sessões 1000 vezes, com o resultado médio que tens tido ({amount} por sessão), e medimos a maior queda de cada vez.', { n: odds.sessions, amount: fmt(odds.mean) })}
       </T>
       <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
-        <Mini label={t('Queda típica')} value={'−' + fmt(odds.typical)} />
-        <Mini label={t('1 vez em 20')} value={'−' + fmt(odds.bad)} />
+        <Mini label={t('Queda típica')} value={'−' + fmt(Math.round(odds.typical))} />
+        <Mini label={t('1 vez em 20')} value={'−' + fmt(Math.round(odds.bad))} />
       </Row>
       {big ? line(t('O teu maior: −{amount}', { amount: fmt(big.depth) }), big.depth) : null}
       {cu && cu !== big && cu.depth !== big?.depth ? line(t('O atual: −{amount}', { amount: fmt(cu.depth) }), cu.depth) : null}

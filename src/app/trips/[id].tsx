@@ -52,8 +52,8 @@ export default function TripScreen() {
   }
   const hidden = !!settings.hideAmounts;
   const cur = trip.currency;
-  const fmt = (n: number, c = cur) => (hidden ? '•••' : money(Math.round(n), c));
-  const signed = (n: number, c = cur) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(Math.round(n), c));
+  const fmt = (n: number, c = cur) => (hidden ? '•••' : money(n, c));
+  const signed = (n: number, c = cur) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(n, c));
   const s = tripSummary(trip, sessions);
   const list = tripSessions(trip, sessions).reverse();
   const expenses = [...trip.expenses].sort((a, b) => b.at - a.at);

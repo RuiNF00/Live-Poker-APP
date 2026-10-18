@@ -137,7 +137,7 @@ export function compareMonths(sessions: Session[], key: string, currency: string
 }
 
 const oneDec = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 });
-const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + rawMoney(Math.abs(Math.round(n)), cur);
+const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + rawMoney(Math.abs(n), cur);
 
 /**
  * What the notification on the 1st says. It shows on a locked phone, so it

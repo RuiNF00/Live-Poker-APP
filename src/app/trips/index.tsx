@@ -40,7 +40,7 @@ export default function TripsScreen() {
     saveTrip(x);
     router.push(`/trips/${x.id}`);
   };
-  const signed = (n: number, cur: string) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(Math.round(n), cur));
+  const signed = (n: number, cur: string) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(n, cur));
 
   return (
     <>

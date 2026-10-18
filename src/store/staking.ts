@@ -7,6 +7,8 @@ import { cost, pieceOf, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
+/** To the cent: what the player and the backer see, and what they add up. */
+const cents = (n: number) => Math.round(n * 100) / 100;
 
 /** The backer's money in one piece: action at markup, or their share of the buy-ins in a makeup deal. */
 export function stakeCost(s: Session, x: Stake): number {
@@ -207,9 +209,10 @@ export function backerLedger(
     for (const x of stakesOf(s)) {
       if (x.backerId !== backerId) continue;
       const pkg = x.packageId ? pkgOf.get(x.packageId) : undefined;
-      const prize = s.endedAt ? stakePrize(s, x) : 0;
+      // To the cent per row, so the backer's total is the sum of the rows shown.
+      const prize = s.endedAt ? cents(stakePrize(s, x)) : 0;
       // In a makeup deal your cut comes out of what they get back.
-      const cut = s.endedAt && pkg?.kind === 'makeup' ? (pk.byPackage.get(`${pkg.id}:${s.id}`) ?? 0) * (pieceOf(s, x) / packagePiece(s, pkg.id)) : 0;
+      const cut = s.endedAt && pkg?.kind === 'makeup' ? cents((pk.byPackage.get(`${pkg.id}:${s.id}`) ?? 0) * (pieceOf(s, x) / packagePiece(s, pkg.id))) : 0;
       rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut });
     }
   rows.sort((a, b) => byEnd(b.session, a.session));
@@ -224,12 +227,12 @@ export function backerLedger(
     return x ?? 1;
   };
   const done = rows.filter((r) => r.session.endedAt);
-  const invested = rows.reduce((a, r) => a + r.cost * k(r), 0);
-  const prizes = done.reduce((a, r) => a + r.prize * k(r), 0);
-  const cut = done.reduce((a, r) => a + r.cut * k(r), 0);
-  const owed = prizes - cut;
-  const unpaid = rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + r.cost * k(r), 0);
-  const paid = payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0);
+  const invested = cents(rows.reduce((a, r) => a + cents(r.cost * k(r)), 0));
+  const prizes = cents(done.reduce((a, r) => a + cents(r.prize * k(r)), 0));
+  const cut = cents(done.reduce((a, r) => a + cents(r.cut * k(r)), 0));
+  const owed = cents(prizes - cut);
+  const unpaid = cents(rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + cents(r.cost * k(r)), 0));
+  const paid = cents(payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0));
   // Each package's makeup is in its own currency: converted to the deal's at today's rate.
   const makeup = packages
     .filter((p) => p.backerId === backerId && !p.closedAt)
@@ -246,13 +249,13 @@ export function backerLedger(
     currency,
     missing: [...missing],
     invested,
-    result: owed - done.reduce((a, r) => a + r.cost * k(r), 0),
+    result: cents(owed - done.reduce((a, r) => a + cents(r.cost * k(r)), 0)),
     prizes,
     cut,
     owed,
     unpaid,
     paid,
-    balance: owed - unpaid - paid,
+    balance: cents(owed - unpaid - paid),
     makeup,
     live: rows.length - done.length,
   };

@@ -576,7 +576,7 @@ function Live({ s }: { s: Session }) {
                 onPress={rebuy}
               />
               {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={money(s.buyIn, s.currency)} onPress={() => undoable(`Add-on · ${money(s.buyIn, s.currency)}`, { addOn: (s.addOn || 0) + s.buyIn })} /> : null}
-              {mtt ? <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} onPress={() => router.push('/chop')} /> : null}
+              {mtt ? <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} onPress={() => toChop(s)} /> : null}
               {mtt ? <SwapLiveRow s={s} /> : null}
             </ListGroup>
           </Section>
@@ -706,10 +706,13 @@ function Live({ s }: { s: Session }) {
           onClose={() => setPad(null)}
           onDone={(v) => {
             setPad(null);
+            // A newer stack is not part of what "Anular" would put back.
+            setUndo(null);
             save({ stack: v, stackLog: [...s.stackLog, { t: Date.now(), stack: v, level: s.level }] });
           }}
         />
-        <SinceStart s={s} />
+        {/* While ending, the result is the one being typed above, not the live stack. */}
+        {ending ? null : <SinceStart s={s} />}
       </Screen>
       {undo ? (
         <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: bar + S.sm }}>
@@ -856,4 +859,10 @@ function clock(ms: number) {
   const m = Math.floor((secs % 3600) / 60);
   const sec = secs % 60;
   return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+/** The deal calculator with the players left, the live stack and the payouts already filled in (as from the tournament screen). */
+function toChop(s: Session) {
+  const n = Math.min(9, Math.max(2, s.tourney?.left ?? 3));
+  router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (s.tourney?.payouts ?? []).slice(0, n).join(',') } });
 }

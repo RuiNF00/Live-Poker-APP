@@ -323,7 +323,7 @@ function PlanCard({
               <T v="h3">{title}</T>
               {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
-            <T v="tiny" numberOfLines={1}>
+            <T v="tiny" numberOfLines={2}>
               {line}
             </T>
           </View>
@@ -418,7 +418,7 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
   const end = now + days * 86_400_000;
   const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   const steps: { icon: IconName; when: string; what: string }[] = [
-    { icon: 'lock-open', when: t('Hoje'), what: t('Tudo desbloqueado. 0 a pagar.') },
+    { icon: 'lock-open', when: t('Hoje'), what: t('Tudo desbloqueado. Nada a pagar.') },
     // The charge notice (nudges.ts, or the home card without notifications) keeps this promise.
     days >= 3
       ? { icon: 'notifications-outline', when: day(chargeNoticeAt(end)), what: t('Avisamos-te antes de cobrar.') }

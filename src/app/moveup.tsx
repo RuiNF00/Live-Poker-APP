@@ -34,7 +34,7 @@ export default function MoveUpScreen() {
   const b: Bankroll = bankrolls.find((x) => x.id === params.bankroll) ?? defaultBankroll;
   const cur = b.currency;
   const hidden = !!settings.hideAmounts;
-  const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), cur));
+  const fmt = (n: number) => (hidden ? '•••' : money(n, cur));
   const list = useMemo(() => sessionsIn({ bankrollId: b.id }, sessions, bankrolls), [b.id, sessions, bankrolls]);
   const balance = useMemo(() => balanceOf({ bankrollId: b.id }, sessions, transfers, bankrolls).balance, [b.id, sessions, transfers, bankrolls]);
   const stake = useMemo(() => currentStake(list), [list]);

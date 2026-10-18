@@ -589,7 +589,11 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
 
 /** What poker players call the next bet/raise here: Open, 3-Bet, C-bet… */
 export function raiseName(s: TableState): string {
-  if (s.street === 'preflop') return s.raises === 0 ? 'Open' : `${s.raises + 2}-Bet`;
+  if (s.street === 'preflop') {
+    // Raising over limpers is a raise (an iso), not an open: only the blinds have put money in for an open.
+    if (s.raises === 0) return s.acted.some((a, i) => a && s.bets[i] > 0) ? 'Raise' : 'Open';
+    return `${s.raises + 2}-Bet`;
+  }
   if (s.raises === 0) return s.street === 'flop' && s.toAct !== null && s.toAct === s.pfAggressor ? 'C-bet' : 'Bet';
   return s.raises === 1 ? 'Raise' : `${s.raises + 1}-Bet`;
 }
@@ -640,6 +644,17 @@ export function totalPot(s: TableState): number {
 
 /** False while the hand still waits for an action, a board card or hero's cards. */
 export function isComplete(hand: Hand, r: Replay = replay(hand)): boolean {
+  // Hero folded: the hand is over for hero, whatever the others did next (nobody types that in).
+  return isPlayedOut(hand, r) || heroFolded(hand, r);
+}
+
+/** Every action, card and winner is in: what a solver or the next hand's stacks need. */
+export function isPlayedOut(hand: Hand, r: Replay = replay(hand)): boolean {
   const s = r.final;
   return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && !r.needsBoard2 && s.toAct === null && (!r.result || r.result.resolved);
+}
+
+/** Hero has folded with both cards entered. */
+export function heroFolded(hand: Hand, r: Replay = replay(hand)): boolean {
+  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !!r.final.folded[hand.hero];
 }

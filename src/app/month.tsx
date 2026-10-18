@@ -80,8 +80,8 @@ export default function MonthScreen() {
     );
   }
 
-  const fmt = (n: number) => (hidden ? '•••' : money(Math.round(n), r.currency));
-  const signed = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(Math.round(n)), r.currency));
+  const fmt = (n: number) => (hidden ? '•••' : money(n, r.currency));
+  const signed = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), r.currency));
   const on = settings.monthRecap !== false;
 
   const post = async () => {
@@ -173,7 +173,7 @@ export default function MonthScreen() {
             {[
               t('{h} h', { h: r.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
               r.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: r.sessions }),
-              r.hours >= 0.25 ? t('{amount}/h', { amount: signed(r.hourly) }) : '',
+              r.hours >= 0.25 ? t('{amount}/h', { amount: signed(Math.round(r.hourly)) }) : '',
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -312,7 +312,7 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
           label={c.avg.months === 1 ? t('Este mês / o mês anterior com sessões') : t('Este mês / média dos {n} meses anteriores', { n: c.avg.months })}
           rows={[
             [t('Resultado'), `${fmt(r.profit)} / ${fmt(c.avg.profit)}`, r.profit - c.avg.profit],
-            [t('Por hora'), `${fmt(r.hourly)} / ${fmt(c.avg.hourly)}`, r.hourly - c.avg.hourly],
+            [t('Por hora'), `${fmt(Math.round(r.hourly))} / ${fmt(Math.round(c.avg.hourly))}`, r.hourly - c.avg.hourly],
             [t('Horas'), `${Math.round(r.hours)} / ${Math.round(c.avg.hours)}`, 0],
           ]}
         />

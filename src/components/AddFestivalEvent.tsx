@@ -43,7 +43,8 @@ export function AddFestivalEvent({ f }: { f: Festival }) {
   const [buyIn, setBuyIn] = useState(0);
   const [stack, setStack] = useState(0);
   const [levelMinutes, setLevelMinutes] = useState<number | undefined>();
-  const mins = parseClock(time);
+  // Left empty, the time is the 12:00 the field shows.
+  const mins = parseClock(time || '12:00');
   const ok = !!name.trim() && !!day && mins !== null;
 
   if (!open) return <Button title={t('Adicionar torneio')} icon="add" kind="secondary" size="md" lines={2} onPress={() => setOpen(true)} />;
