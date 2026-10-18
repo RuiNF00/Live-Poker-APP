@@ -11,7 +11,7 @@ import { AppState, Platform } from 'react-native';
 
 import { Banner } from '@/components/ui';
 import { t } from '@/i18n';
-import { notifications, setup } from '@/lib/lock-screen/reminder';
+import { notifications, onNotificationsAllowed, setup } from '@/lib/lock-screen/reminder';
 import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { isPaused } from '@/store/session-math';
 import { useStore } from '@/store/store';
@@ -89,6 +89,9 @@ export function SwapSettleReminder() {
   const on = settings.notify?.money !== false;
   const playing = sessions.some((s) => !s.endedAt && !isPaused(s));
   const key = list.map((x) => `${x.id}:${x.closedAt}:${x.pay}`).join('|');
+  // Allowed after a swap closed (the ask came later, or turned on in the phone's settings): planned now.
+  const [allowed, setAllowed] = useState(0);
+  useEffect(() => onNotificationsAllowed(() => setAllowed((n) => n + 1)), []);
   useEffect(() => {
     void sync(list, playing);
     const sub = AppState.addEventListener('change', (s) => {
@@ -97,7 +100,7 @@ export function SwapSettleReminder() {
     return () => sub.remove();
     // The list changes identity on every store write; its key only when a swap closes or settles.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, playing, on]);
+  }, [key, playing, on, allowed]);
   return null;
 }
 

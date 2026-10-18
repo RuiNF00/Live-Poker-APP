@@ -1009,10 +1009,21 @@
 .lp-store b {
   font-size: 17px;
 }
-.lp-store.soon {
-  background: var(--surface, #141d1a);
+/* Before launch: one line of text, no store logo (Apple and Google don't allow a "coming soon" badge). */
+.lp-stores-soon {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text, #f1f4f2);
-  border: 1px solid rgba(238, 242, 239, 0.16);
+  opacity: 0.85;
+}
+/* The stores' official artwork, as published. */
+.lp-badge {
+  display: inline-flex;
+}
+.lp-badge img {
+  height: 52px;
+  width: auto;
 }
 
 /* ---------- Final + footer ---------- */

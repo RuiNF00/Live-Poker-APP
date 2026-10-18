@@ -9,24 +9,26 @@
 //  - "só X paga" / "todos fold" / "todos check" close a street in one tap,
 //  - context (tournament, blinds, table) carries over from the session,
 //  - no time at the table: "Voz" records a note and saves the hand as it is,
-//    to be completed after the session.
+//    to be completed after the session,
+//  - or the whole hand told in words ("Contar a mão"), put on the felt to fix with taps.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
+import { PRO_ONLY } from '@/billing/plans';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
-import { TapCountProvider } from '@/components/TapCount';
+import { TapCountProvider, TapCounted } from '@/components/TapCount';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
-import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
+import { VoiceCapture, VoiceNotePlayer } from '@/components/audio';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
@@ -57,6 +59,9 @@ interface Draft {
   /** "Check até ao fim": from this action on, each street checks around once its card is in. */
   checkDownFrom?: number;
 }
+
+// Loaded the first time the player opens it: the parser and the sheet stay out of the launch bundle.
+const VoiceHandSheet = React.lazy(() => import('@/components/entry/VoiceHandSheet').then((m) => ({ default: m.VoiceHandSheet })));
 
 export default function NewHand() {
   crashProbe('hand');
@@ -92,6 +97,10 @@ export default function NewHand() {
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
   // Facing a bet that a call would close, the next card replaces the raise sizes; «Raise» brings them back for that spot.
   const [raiseAt, setRaiseAt] = useState<string | null>(null);
+  const [telling, setTelling] = useState(false);
+  const [toldOpened, setToldOpened] = useState(false);
+  // Set once a hand came from "Contar a mão": the hand_saved event says so.
+  const toldRef = useRef(false);
 
   const hand = draft.hand;
   const n = hand.players.length;
@@ -341,7 +350,7 @@ export default function NewHand() {
     if (!settings.onboarded) store.setSettings({ onboarded: true });
     if (asNew) {
       store.setDraft(null);
-      pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0 });
+      pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0, ...(toldRef.current ? { voice: true } : {}) });
     }
     // Finishing a half-saved hand: the detail screen offers the next one.
     const to = { pathname: '/hand/[id]' as const, params: justFinished ? { id: final.id, f: '1' } : { id: final.id } };
@@ -350,10 +359,21 @@ export default function NewHand() {
     else router.replace(to);
   };
 
-  const voice = useVoiceCapture(async (recording) => {
+  const [capturing, setCapturing] = useState(false);
+  const onRecorded = async (recording: string) => {
     const voiceNote = await keepVoiceNote(recording, hand.id).catch(() => recording);
     save({ voiceNote });
-  });
+  };
+
+  // "Contar a mão": the told hand replaces this one (same id, session and voice note). What it
+  // already has is kept as entered: no automatic folds on top of it, like a reopened draft.
+  const fromWords = (told: Hand, posKnown: boolean) => {
+    setTelling(false);
+    const next = { ...told, id: hand.id, createdAt: hand.createdAt, sessionId: hand.sessionId, voiceNote: hand.voiceNote, tags: hand.tags, notes: hand.notes };
+    autoDone.current = new Set(Array.from({ length: next.actions.length + 1 }, (_, k) => stateKey(next, k)));
+    toldRef.current = true;
+    update(next, posKnown || next.actions.length > 0 || draft.posChosen);
+  };
 
   const discard = () => {
     store.setDraft(null);
@@ -425,7 +445,7 @@ export default function NewHand() {
   // Two ways out at any point of the hand: a voice note (saved when it stops) or just save.
   const quickSave = (
     <Row gap={14}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={voice.start} hitSlop={{ top: 13, bottom: 13, left: 7, right: 7 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={() => setCapturing(true)} hitSlop={{ top: 13, bottom: 13, left: 7, right: 7 }}>
         <Row gap={4}>
           <Ionicons name="mic" size={15} color={C.accent} />
           <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
@@ -486,7 +506,11 @@ export default function NewHand() {
             BB
           </T>
         </Pressable>
-        {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} compact /> : null}
+        {hand.voiceNote ? (
+          <Suspense fallback={null}>
+            <VoiceNotePlayer uri={hand.voiceNote} compact />
+          </Suspense>
+        ) : null}
         <View style={{ opacity: canUndo ? 1 : 0.35 }} pointerEvents={canUndo ? 'auto' : 'none'}>
           <IconButton name="arrow-undo" label={t('Desfazer')} onPress={undo} />
         </View>
@@ -520,8 +544,12 @@ export default function NewHand() {
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
       <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
-        {voice.recording && <RecordingBar ms={voice.ms} onStop={voice.stop} onCancel={voice.cancel} />}
-        {!voice.recording && phase === 'hero' && (
+        {capturing && (
+          <Suspense fallback={null}>
+            <VoiceCapture onDone={onRecorded} onEnd={() => setCapturing(false)} />
+          </Suspense>
+        )}
+        {!capturing && phase === 'hero' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
@@ -569,6 +597,25 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
+            {!hand.actions.length && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('Contar a mão por voz')}
+                onPress={() => {
+                  tap();
+                  // Pro: telling the hand. Entering it with taps stays free.
+                  if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+                  setToldOpened(true);
+                  setTelling(true);
+                }}
+                style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
+                <Ionicons name="mic" size={16} color={C.accent} />
+                <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
+                  {t('Contar a mão por voz')}
+                </T>
+                {!pro.isPro && PRO_ONLY.voiceHand ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
+              </Pressable>
+            )}
             {!settings.onboarded && !isEdit ? (
               <T v="tiny" style={{ textAlign: 'center' }}>
                 {t('Posição e duas cartas. Os folds até ti são automáticos.')}
@@ -578,7 +625,7 @@ export default function NewHand() {
         )}
 
         {/* What was entered, newest first: a tap on any action takes the hand back to just before it. */}
-        {!voice.recording && (phase === 'action' || phase === 'board') && line.length > 0 && (
+        {!capturing && (phase === 'action' || phase === 'board') && line.length > 0 && (
           <ChipRow>
             <T v="tiny" color={C.textDim} style={{ alignSelf: 'center' }}>
               {t('Corrigir:')}
@@ -598,7 +645,7 @@ export default function NewHand() {
             ))}
           </ChipRow>
         )}
-        {!voice.recording && phase === 'action' && l && (
+        {!capturing && phase === 'action' && l && (
           <>
             {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
             <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
@@ -715,7 +762,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && phase === 'board' && (
+        {!capturing && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
@@ -734,7 +781,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && phase === 'board2' && (
+        {!capturing && phase === 'board2' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
@@ -746,7 +793,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && (phase === 'showdown' || phase === 'done') && (
+        {!capturing && (phase === 'showdown' || phase === 'done') && (
           <>
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
               {phase === 'showdown' && (
@@ -839,6 +886,12 @@ export default function NewHand() {
           </>
         )}
       </View>
+
+      {toldOpened ? (
+        <Suspense fallback={null}>
+          <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} Counted={TapCounted} />
+        </Suspense>
+      ) : null}
 
       <ContextSheet
         visible={ctxOpen}

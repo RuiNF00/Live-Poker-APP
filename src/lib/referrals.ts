@@ -173,15 +173,16 @@ export async function savedInviteOffer(): Promise<InviteOffer | null> {
 }
 
 /** null when invites are switched off on the server. */
-export async function inviteStatus(): Promise<InviteStatus | null> {
+/** Null when the server couldn't be reached; 'rate_limited' when it answered 429. */
+export async function inviteStatus(): Promise<InviteStatus | 'rate_limited' | null> {
   try {
     await ensureRegistered();
     const s = await post<InviteStatus>('status', { myCode: await refCode() });
     if (s?.code && s.code !== (await refCode())) await setRefCode(s.code);
     if (s?.offer) await AsyncStorage.setItem(K.offer, JSON.stringify(s.offer)).catch(() => {});
     return s;
-  } catch {
-    return null;
+  } catch (e) {
+    return (e as Error)?.message === '429' ? 'rate_limited' : null;
   }
 }
 
@@ -218,7 +219,8 @@ export async function newInviteOffer(o: { force?: boolean; now?: number } = {}):
     await AsyncStorage.setItem(K.checked, JSON.stringify(now)).catch(() => {});
   }
   const before = await getJSON<InviteOffer>(K.offer);
-  const offer = openOffer((await inviteStatus())?.offer, now);
+  const st = await inviteStatus();
+  const offer = openOffer(st === 'rate_limited' ? undefined : st?.offer, now);
   return offer && offer.until !== before?.until ? offer : null;
 }
 

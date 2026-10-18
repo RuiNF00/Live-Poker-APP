@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,9 +10,10 @@ import { CardShareSheet } from '@/components/CardShareSheet';
 import { useLocked } from '@/components/ProGate';
 import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { VoiceRecorder } from '@/components/audio';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { isRateLimited } from '@/lib/net';
 import { notice } from '@/lib/notice';
 import { shareDelay } from '@/lib/friction';
 import { shareRef } from '@/lib/referrals';
@@ -150,9 +151,10 @@ export default function StoryScreen() {
     setBusy(true);
     try {
       // The link is made on the server while the frames are captured, not before.
+      let idErr: unknown;
       const idP = ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes }).then(
         (id) => id,
-        () => null,
+        (e: unknown) => ((idErr = e), null),
       );
       const refP = shareRef();
       refP.catch(() => {});
@@ -172,7 +174,8 @@ export default function StoryScreen() {
       setFaceView('preview');
       const shareId = await idP;
       if (!shareId) {
-        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        if (isRateLimited(idErr)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+        else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -215,8 +218,9 @@ export default function StoryScreen() {
       let shareId: string;
       try {
         shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
-      } catch {
-        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+      } catch (e) {
+        if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+        else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -269,8 +273,9 @@ export default function StoryScreen() {
     let shareId: string;
     try {
       shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
-    } catch {
-      notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+    } catch (e) {
+      if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+      else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
       return null;
     }
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -393,7 +398,11 @@ export default function StoryScreen() {
               {face ? <ListItem icon="trash-outline" title={t('Tirar a cara')} destructive chevron={false} onPress={() => setFaceClip(null)} /> : null}
             </ListGroup>
           ) : null}
-          {canShareStory && !withFace ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
+          {canShareStory && !withFace ? (
+            <Suspense fallback={null}>
+              <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} />
+            </Suspense>
+          ) : null}
 
           <View style={{ gap: S.sm }}>
             <Field label={t('O teu comentário')} value={comment} onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))} placeholder={t('Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?')} multiline inputStyle={{ minHeight: 72 }} />
