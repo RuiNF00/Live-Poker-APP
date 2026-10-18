@@ -16,7 +16,6 @@ import { getSubscription, manageSubscription, redeemCode } from '@/billing/purch
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
-import { CloudBackup } from '@/components/CloudBackup';
 import { Badge, Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { LANG_KEY, locale, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
 import { useSharedHands } from '@/lib/friend-hands';
@@ -33,6 +32,9 @@ import { BRAND, C, F, S } from '@/theme';
 import { DataRecovery } from '@/components/DataRecovery';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { CrashReportsToggle } from '@/components/CrashReportsToggle';
+
+// Every use of CloudBackup.tsx is lazy, so it stays one chunk off the first frame.
+const CloudBackup = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.CloudBackup })));
 
 
 function note(title: string, body?: string) {
@@ -199,7 +201,9 @@ export default function SettingsScreen() {
         <NotificationSettings />
 
         <Section title={t('Cópia de segurança')} hint={t('Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.')}>
-          <CloudBackup onExport={exportAll} />
+          <React.Suspense fallback={null}>
+            <CloudBackup onExport={exportAll} />
+          </React.Suspense>
           <DataRecovery />
           <ListGroup>
             <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
