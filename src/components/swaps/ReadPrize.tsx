@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 
 import { Button, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { parsePrizeReceipt, type PrizeGuess } from '@/import/prize-receipt';
+import type { PrizeGuess } from '@/import/prize-receipt';
 import { docUri, dropDoc, pickDoc } from '@/lib/docs';
 import { notice } from '@/lib/notice';
 import { canReadReceipts, readReceiptText } from '@/lib/receipt-ocr';
@@ -25,7 +25,8 @@ export function ReadPrizeButton({ currency, onRead }: { currency: string; onRead
     setBusy(true);
     try {
       const lines = await readReceiptText(docUri(got.file));
-      const g = lines ? parsePrizeReceipt(lines) : {};
+      // Loaded on tap: the receipt parser stays out of the launch bundle.
+      const g: PrizeGuess = lines ? (await import('@/import/prize-receipt')).parsePrizeReceipt(lines) : {};
       if (g.amount === undefined) notice(t('Não conseguimos ler o recibo'), t('Escreve o prémio à mão.'));
       else if (g.currency && g.currency !== currency) notice(t('O recibo está em {a}', { a: g.currency }), t('Este swap é em {b}. Escreve o prémio à mão.', { b: currency }));
       else {
