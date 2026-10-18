@@ -83,3 +83,11 @@ test('«Apagar tudo» keeps only the swaps’ marks', () => {
   const d: Deleted = { [keyOf('hands', 'h1')]: 1, [keyOf('sessions', 's1')]: 1, [keyOf('swaps', 's1')]: 2, [keyOf('swapGroups', 'g1')]: 2, [keyOf('swapEntries', 'x:a1')]: 2 };
   assert.deepEqual(Object.keys(swapMarks(d)).sort(), ['swapEntries:x:a1', 'swapGroups:g1', 'swaps:s1']);
 });
+
+test('deleting many hands never pushes a swap mark out', () => {
+  const d: Deleted = { [keyOf('swaps', 'old')]: 1 };
+  for (let i = 0; i < 6000; i++) d[keyOf('hands', `h${i}`)] = 100 + i;
+  const c = cleanDeleted(d);
+  assert.equal(c[keyOf('swaps', 'old')], 1);
+  assert.equal(Object.keys(c).length, 5001);
+});

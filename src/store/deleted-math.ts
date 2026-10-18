@@ -18,8 +18,10 @@ export type DeletedList = (typeof DELETED_LISTS)[number] | (typeof SWAP_DELETED_
 /** 'sessions:<id>' → when it was deleted. */
 export type Deleted = Record<string, number>;
 
-/** The newest ones kept: about 150 KB of a 2 MB backup at most. */
+/** The newest ones kept: about 150 KB of a 2 MB backup at most (plus the swaps', below). */
 const MAX = 5000;
+/** The swaps' marks are capped apart, so deleting many hands never pushes one out. */
+const MAX_SWAP = 2000;
 const KEY_RE = new RegExp(`^(${[...DELETED_LISTS, ...SWAP_DELETED_LISTS].join('|')}):[^\\n]{1,100}$`);
 
 export const keyOf = (list: DeletedList, id: string) => `${list}:${id}`;
@@ -41,10 +43,16 @@ function keysOf(list: DeletedList, x: { id: string; currency?: unknown }): strin
   return keys;
 }
 
+const isSwapMark = (k: string) => SWAP_DELETED_LISTS.some((l) => k.startsWith(l + ':'));
+
 function capped(d: Deleted): Deleted {
   const keys = Object.keys(d);
   if (keys.length <= MAX) return d;
-  return Object.fromEntries(keys.sort((a, b) => d[b] - d[a]).slice(0, MAX).map((k) => [k, d[k]]));
+  const newest = (ks: string[], n: number) => ks.sort((a, b) => d[b] - d[a]).slice(0, n);
+  const swaps = keys.filter(isSwapMark);
+  const rest = keys.filter((k) => !isSwapMark(k));
+  if (rest.length <= MAX && swaps.length <= MAX_SWAP) return d;
+  return Object.fromEntries([...newest(rest, MAX), ...newest(swaps, MAX_SWAP)].map((k) => [k, d[k]]));
 }
 
 /**
@@ -119,4 +127,4 @@ export function liveSwaps<T extends { id: string; entries: { cid: string; pendin
 }
 
 /** What «Apagar tudo» keeps: only the swaps' marks (see deleted.ts). */
-export const swapMarks = (d: Deleted): Deleted => Object.fromEntries(Object.entries(d).filter(([k]) => SWAP_DELETED_LISTS.some((l) => k.startsWith(l + ':'))));
+export const swapMarks = (d: Deleted): Deleted => Object.fromEntries(Object.entries(d).filter(([k]) => isSwapMark(k)));
