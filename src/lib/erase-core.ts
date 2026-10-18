@@ -59,11 +59,14 @@ export const DELETE_KINDS = [
 ];
 
 /**
- * The cloud code is forgotten only once the copy's delete is in the outbox. If
- * queueing fails (the cipher's chunk didn't load), the error goes up and the
- * code stays, or the copy would sit on the server with no key left to delete it.
+ * The order of "delete all my data" on the server side. The cloud copy's delete
+ * is queued first, before anything that can't be undone (share links forgotten,
+ * action packages cleared): if it fails (the cipher's chunk didn't load), the
+ * error goes up with nothing touched, so "Nada foi apagado" stays true and the
+ * code stays to try again. The code is forgotten only after everything else.
  */
-export async function dropCloud<C>(cloud: C | null, queueDelete: (c: C) => Promise<void>, forget: () => Promise<void>): Promise<void> {
-  if (cloud) await queueDelete(cloud);
-  await forget();
+export async function eraseInOrder<C>(cloud: C | null, queueCloudDelete: (c: C) => Promise<void>, rest: () => Promise<void>, forgetCloud: () => Promise<void>): Promise<void> {
+  if (cloud) await queueCloudDelete(cloud);
+  await rest();
+  await forgetCloud();
 }
