@@ -1642,6 +1642,7 @@ const ptBR: Record<string, string> = {
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Este backup foi feito numa versão mais recente do Sweatbook. Atualize o app e tente de novo; nada foi alterado.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'Não conseguimos ler este backup. Nada foi alterado neste celular.',
   'Guardar uma cópia dos dados': 'Salvar uma cópia dos dados',
+  'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mão tem dados que a página não aceita. Encurte nomes ou notas e tente de novo.',
 };
 
 export default ptBR;

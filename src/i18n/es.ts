@@ -3333,6 +3333,8 @@ const es: Record<string, string> = {
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Esta copia se hizo con una versión más reciente de Sweatbook. Actualiza la app e inténtalo de nuevo; no se cambió nada.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'No pudimos leer esta copia. No se cambió nada en este teléfono.',
   'Guardar uma cópia dos dados': 'Guardar una copia de los datos',
+  'Não deu para criar o link': 'No se pudo crear el enlace',
+  'Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.': 'Esta mano tiene datos que la página no acepta. Acorta nombres o notas e inténtalo de nuevo.',
 };
 
 export default es;
