@@ -25,8 +25,13 @@ function SettleScreen() {
   const [busy, setBusy] = useState(false);
   // The latest from the server first: both phones then settle the same balances, so a «Paguei» on
   // one and a «Recebi» on the other match and count once (see paidBySide).
+  // The button waits for it, at most 3 s (no signal: settle with what the phone has).
+  const [syncing, setSyncing] = useState(true);
   useEffect(() => {
-    syncAllSwaps().catch(() => {});
+    const done = () => setSyncing(false);
+    const id = setTimeout(done, 3000);
+    syncAllSwaps().catch(() => {}).finally(done);
+    return () => clearTimeout(id);
   }, []);
 
   if (!group)
@@ -100,7 +105,7 @@ function SettleScreen() {
             lines={2}
             title={even ? t('Acertar sem pagamentos') : net > 0 ? t('Recebi {amount} de {name}', { amount: money(net, c), name: group.name }) : t('Paguei {amount} a {name}', { amount: money(-net, c), name: group.name })}
             icon="checkmark-done-outline"
-            disabled={busy || !steps.length}
+            disabled={busy || syncing || !steps.length}
             onPress={settle}
           />
           <T v="tiny" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
