@@ -83,7 +83,7 @@ export type TV =
 // How far each style may grow with the iPhone's text size setting. Big titles and
 // numbers already read well and would break their rows; body text grows the most.
 // Reading text follows Larger Text to ~200%; big numbers and titles stop earlier so they never collide.
-const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.3, h1: 1.5, h2: 1.6, h3: 1.6, body: 2, callout: 2, small: 2, tiny: 1.6, label: 2, mono: 1.6, monoS: 1.6, monoL: 1.25, monoXL: 1.15 };
+const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.3, h1: 1.5, h2: 1.6, h3: 1.6, body: 2, callout: 2, small: 2, tiny: 2, label: 2, mono: 1.6, monoS: 1.6, monoL: 1.25, monoXL: 1.15 };
 /** Text inside buttons, chips and pills. */
 const CONTROL_SCALE = 1.6;
 
@@ -140,8 +140,11 @@ export function FitText({ style, onLayout, ...rest }: TextProps) {
   );
 }
 
+// Titles are headers so VoiceOver's rotor and TalkBack can jump between sections.
+const HEADER: Partial<Record<TV, true>> = { title: true, h1: true, h2: true };
+
 export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string }) {
-  return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
+  return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} accessibilityRole={HEADER[v] ? 'header' : undefined} {...rest} style={[ts[v], color ? { color } : null, style]} />;
 }
 
 const mono: TextStyle = { fontFamily: F.mono, fontVariant: ['tabular-nums'], color: C.text };

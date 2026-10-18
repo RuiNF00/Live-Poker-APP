@@ -31,9 +31,9 @@ export default function Paywall() {
   // Very short screens (320×568): the fixed footer keeps the billed price, the button and
   // the disclosures; Restore and the other ways out move to the end of the scroll.
   const short = win.height < 640;
-  // Short screen and text at 160%+: the fixed footer took ~3/4 of the screen and left the plans a sliver.
-  // It scrolls after the plans instead, the button still with the terms and links right under it.
-  const inline = short && win.fontScale >= 1.6;
+  // Text at 160%+ below the Pro Max sizes: the fixed footer took 2/3 to 3/4 of the screen and left the
+  // plans a sliver. It scrolls after the plans instead, the button still with the terms and links right under it.
+  const inline = win.height < 900 && win.fontScale >= 1.6;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -350,7 +350,7 @@ function PlanCard({
       style={({ pressed }) => ({
         borderRadius: R.lg,
         borderWidth: 2,
-        borderColor: active ? C.accent : C.border,
+        borderColor: active ? C.accent : C.fieldBorder,
         backgroundColor: active ? C.accentSoft : C.surface,
         paddingHorizontal: compact ? S.md : S.lg,
         paddingVertical: compact ? S.sm : S.lg,
@@ -450,7 +450,7 @@ function FreeVsPro() {
 
 function Radio({ active }: { active: boolean }) {
   return (
-    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.fieldBorder, alignItems: 'center', justifyContent: 'center' }}>
       {active ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent }} /> : null}
     </View>
   );
