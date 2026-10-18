@@ -124,10 +124,11 @@ export function SessionForm({
     }
     setS({ ...blank, id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
   };
-  // Another currency relabels the amounts 1:1 (1000 $ → 1000 €): ask first when there are amounts.
+  // Another currency relabels the amounts 1:1 (1000 $ → 1000 €): ask first when there are amounts
+  // (the buy-in counts once the session is saved, live or not; a new form only has the default).
   const pickBankroll = (b: Bankroll) => {
     const apply = () => set({ bankrollId: b.id, currency: b.currency });
-    const hasAmounts = s.cashOut > 0 || s.addOn > 0 || (s.tips ?? 0) > 0 || (s.expenses ?? 0) > 0 || (!!initial.endedAt && s.buyIn > 0);
+    const hasAmounts = s.cashOut > 0 || s.addOn > 0 || (s.tips ?? 0) > 0 || (s.expenses ?? 0) > 0 || ((!!initial.endedAt || sessions.some((x) => x.id === initial.id)) && s.buyIn > 0);
     if (b.currency === s.currency || !hasAmounts) return apply();
     confirmAction(t('Mudar para {name}?', { name: b.name }), t('Os valores ficam iguais e passam a {cur}.', { cur: b.currency }), t('Mudar'), apply, false);
   };
