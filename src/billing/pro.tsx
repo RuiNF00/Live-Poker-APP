@@ -211,18 +211,28 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
   // The inviter hears about a friend's first hand on the next open, not only in Definições.
+  // Not over the app lock (the alert would sit on top of it): the news waits for the unlock.
+  const lockUp = useLockScreenUp();
+  const lockRef = useRef(lockUp);
+  useEffect(() => {
+    lockRef.current = lockUp;
+  }, [lockUp]);
   const inviteNews = useCallback(() => {
+    if (lockRef.current) return;
     newInviteOffer().then((offer) => {
       if (offer && !isProRef.current) announceInviteOffer(offer, 'inviter', plansRef.current);
     });
   }, []);
   useEffect(() => {
-    inviteNews();
+    if (!lockUp) inviteNews();
+  }, [lockUp, inviteNews]);
+  useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st !== 'active') return;
       refreshNudges();
       checkBilling();
-      inviteNews();
+      // After the lock has had its turn to come up on resume.
+      setTimeout(inviteNews, 1000);
     });
     return () => sub.remove();
   }, [refreshNudges, inviteNews, checkBilling]);
