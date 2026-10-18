@@ -18,6 +18,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
   city: 'Brasil',
   currency: 'R$',
   utcOffset: -180,
+  tz: 'America/Sao_Paulo',
   // https://bsop.com.br/bsop-millions/ and the per-event structure PDFs linked from it
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
@@ -192,6 +193,7 @@ export const TORRELODONES_NOV_2026: Festival = {
   city: 'Espanha',
   currency: '€',
   utcOffset: 60,
+  tz: 'Europe/Madrid',
   // https://circuitonacionaldepoker.es/la-gran-final-ya-tiene-programa-12-dias-para-volver-a-hacer-historia/ (official poster)
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
@@ -238,6 +240,7 @@ export const LISBOA_NOV_2026: Festival = {
   city: 'Portugal',
   currency: '€',
   utcOffset: 0,
+  tz: 'Europe/Lisbon',
   // https://www.vamospokertour.com/es/festivals/lisboa-2026/ (official schedule image)
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
@@ -277,6 +280,7 @@ export const PUNTA_DEL_ESTE_DEC_2026: Festival = {
   city: 'Uruguai',
   currency: '$',
   utcOffset: -180,
+  tz: 'America/Montevideo',
   // https://enjoypuntadeleste.uy/wp-content/uploads/2026/09/Calendario-Poker-Diciembre-2026-V3.pdf
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
@@ -327,6 +331,7 @@ export const PERALADA_NOV_2026: Festival = {
   city: 'Espanha',
   currency: '€',
   utcOffset: 60,
+  tz: 'Europe/Madrid',
   // https://www.campeonatopoker.es/paradas/cep-perelada
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: [],
@@ -342,6 +347,7 @@ export const ESPINHO_DEC_2026: Festival = {
   city: 'Portugal',
   currency: '€',
   utcOffset: 0,
+  tz: 'Europe/Lisbon',
   // https://gruposolverde.pt/uploads/2026/04/09/REGULAMENTO-5.pdf
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: ['Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.'],
@@ -364,6 +370,7 @@ export const PRAGUE_DEC_2026: Festival = {
   city: 'Chéquia',
   currency: '€',
   utcOffset: 60,
+  tz: 'Europe/Prague',
   // https://www.pokerstarslive.com/ept/prague/schedule/
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: ['O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.'],
@@ -462,6 +469,7 @@ export const PUNTA_CANA_JAN_2027: Festival = {
   currency: '$',
   // The page gives no time zone: local time at the venue (UTC-4).
   utcOffset: -240,
+  tz: 'America/Santo_Domingo',
   // https://www.wsop.com/tournaments/wsop-super-circuit-latam/
   source: { label: 'programa oficial do organizador', checked: '2026-10-17' },
   notes: [],

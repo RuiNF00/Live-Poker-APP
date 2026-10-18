@@ -185,6 +185,7 @@ function decodeOwnFestivals(x: unknown): Festival[] {
         city: isStr(f.city) ? f.city.slice(0, 80) : '',
         currency: f.currency as string,
         utcOffset: isNum(f.utcOffset) ? f.utcOffset : 0,
+        ...(isStr(f.tz) && /^[A-Za-z_]+\/[\w/+-]{1,40}$/.test(f.tz) ? { tz: f.tz } : {}),
         source: { label: '', checked: isObj(f.source) && isStr(f.source.checked) ? f.source.checked : '' },
         notes: [],
         events: [],

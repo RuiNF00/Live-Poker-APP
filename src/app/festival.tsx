@@ -21,7 +21,7 @@ import { Button, Card, Chip, ChipRow, IconButton, Row, Section, T, tap } from '@
 import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { kindOn } from '@/lib/notify-policy';
-import { eventDay, eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, buyInCaps, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
@@ -369,7 +369,7 @@ function EventRow({
   const late = lateRegOf(plan, e);
   const start = venueTime(f, e.start);
   const lateLabel = late
-    ? t('Late reg até {time}', { time: hm(new Date(start + late * 60_000), f.utcOffset) })
+    ? t('Late reg até {time}', { time: hm(new Date(start + late * 60_000), f) })
     : t('Hora do late reg');
   return (
     <Card tone={on ? 'accent' : 'default'} padded={false}>
@@ -436,7 +436,7 @@ function EventRow({
               <T v="tiny">{t('Quando fecha o late reg? (horas depois do início)')}</T>
               <ChipRow>
                 {LATE_REG_HOURS.map((h) => (
-                  <Chip key={h} label={`+${h}h · ${hm(new Date(start + h * 3_600_000), f.utcOffset)}`} active={late === h * 60} onPress={() => onSetLate(h * 60)} />
+                  <Chip key={h} label={`+${h}h · ${hm(new Date(start + h * 3_600_000), f)}`} active={late === h * 60} onPress={() => onSetLate(h * 60)} />
                 ))}
                 {plan.lateReg[e.id] ? <Chip label={e.lateRegMin ? t('Hora oficial') : t('Limpar')} onPress={() => onSetLate(null)} /> : null}
               </ChipRow>
@@ -451,7 +451,7 @@ function EventRow({
 }
 
 /** Venue wall-clock HH:MM of an instant. */
-function hm(d: Date, utcOffset: number) {
-  const x = new Date(d.getTime() + utcOffset * 60_000);
+function hm(d: Date, f: Festival) {
+  const x = venueClock(f, d.getTime());
   return `${String(x.getUTCHours()).padStart(2, '0')}:${String(x.getUTCMinutes()).padStart(2, '0')}`;
 }

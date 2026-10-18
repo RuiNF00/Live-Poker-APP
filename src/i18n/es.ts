@@ -3039,6 +3039,7 @@ const es: Record<string, string> = {
   'Adicionar o meu festival': 'Añadir mi festival',
   'Apagar este festival?': '¿Borrar este festival?',
   'A viagem que criaste para ele fica, com as sessões e as despesas.': 'El viaje que creaste para él se queda, con las sesiones y los gastos.',
+  'Já tem entradas nesta moeda, por isso não muda.': 'Ya tiene entradas en esta moneda, así que no cambia.',
   'Editar festival': 'Editar festival',
   'Ex.: Malta, novembro 2026': 'Ej.: Malta, noviembre 2026',
   'Cidade': 'Ciudad',

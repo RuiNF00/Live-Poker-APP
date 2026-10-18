@@ -1422,6 +1422,7 @@ const ptBR: Record<string, string> = {
   'Adicionar o meu festival': 'Adicionar meu festival',
   'Apagar este festival?': 'Excluir este festival?',
   'A viagem que criaste para ele fica, com as sessões e as despesas.': 'A viagem que você criou para ele continua, com as sessões e as despesas.',
+  'Já tem entradas nesta moeda, por isso não muda.': 'Já tem lançamentos nesta moeda, por isso não muda.',
   'Ex.: Malta, novembro 2026': 'Ex.: Malta, novembro 2026',
   'O último dia tem de ser depois do primeiro.': 'O último dia precisa ser depois do primeiro.',
   'As sessões que jogares nestes dias entram na viagem do festival.': 'As sessões que você jogar nesses dias entram na viagem do festival.',
