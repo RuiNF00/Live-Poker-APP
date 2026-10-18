@@ -38,6 +38,9 @@ test('readLock fails closed: a read error or a damaged value locks with the phon
   });
   // Keychain error, storage error, damaged JSON, wrong shape: locked, asked with the phone's own lock.
   assert.deepEqual(await readLock(io({ read: async () => { throw new Error('keychain'); } })), UNKNOWN_LOCK);
+  // A keychain that fails on a phone that never turned the lock on (no marker): no lock screen at every launch.
+  assert.equal(await readLock(io({ read: async () => { throw new Error('keychain'); }, installKeys: async () => [['m', null]] })), null);
+  assert.deepEqual(await readLock(io({ read: async () => { throw new Error('keychain'); }, installKeys: async () => { throw new Error('x'); } })), UNKNOWN_LOCK);
   assert.deepEqual(await readLock(io({ installKeys: async () => { throw new Error('storage'); } })), UNKNOWN_LOCK);
   assert.deepEqual(await readLock(io({ read: async () => '{not json' })), UNKNOWN_LOCK);
   assert.deepEqual(await readLock(io({ read: async () => JSON.stringify({ mode: 'pin' }) })), UNKNOWN_LOCK);
@@ -58,4 +61,29 @@ test('a lock turned on before any data: the first-run answers say this install w
   assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', '{}']]), false);
   assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', 'not json']]), false);
   assert.equal(lockIsThisInstalls(null, [['rl.onboarding.v1', null]]), false);
+});
+
+test('lock screen up: while the lock is still being read, and while locked or covered when there is one', async () => {
+  const { lockScreenUp } = await import('../app-lock-core');
+  const cfg = { mode: 'pin' as const, salt: 's', pinHash: 'h' };
+  assert.equal(lockScreenUp(undefined, false, false), true);
+  assert.equal(lockScreenUp(null, true, true), false);
+  assert.equal(lockScreenUp(cfg, false, false), false);
+  assert.equal(lockScreenUp(cfg, true, false), true);
+  assert.equal(lockScreenUp(cfg, false, true), true);
+});
+
+test('lock-up state tells its listeners only when it changes', async () => {
+  const { createLockUpState } = await import('../app-lock-core');
+  const s = createLockUpState();
+  let calls = 0;
+  const off = s.subscribe(() => calls++);
+  s.set(true);
+  assert.equal(calls, 0);
+  s.set(false);
+  assert.equal(s.get(), false);
+  assert.equal(calls, 1);
+  off();
+  s.set(true);
+  assert.equal(calls, 1);
 });

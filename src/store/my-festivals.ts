@@ -8,6 +8,9 @@ import { useSyncExternalStore } from 'react';
 
 import { FESTIVALS, festivalSortKey, festivalSpan, type Festival } from '@/poker/festivals';
 
+import { parseOrQuarantine } from './boot';
+import type { KV } from './persist';
+
 export interface OwnFestivalInput {
   name: string;
   city: string;
@@ -80,8 +83,8 @@ function set(next: Festival[]) {
 
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
-    .then((raw) => {
-      const saved = raw ? (JSON.parse(raw) as Festival[]).filter((f) => f && f.own && f.dates) : [];
+    .then(async (raw) => {
+      const saved = ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates);
       ready = true;
       set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]);
     })
@@ -131,6 +134,9 @@ export function saveOwnFestival(f: Festival) {
   set([...mine.filter((x) => x.id !== f.id), f]);
   persist();
 }
+
+/** Reads the player's own festivals; the app waits for it at launch (see store.tsx). */
+export const loadOwnFestivals = (): Promise<void> => load();
 
 /** The player's own festivals, for the backup. */
 export function currentOwnFestivals(): Festival[] {

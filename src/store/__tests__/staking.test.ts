@@ -4,8 +4,10 @@ import { test } from 'node:test';
 
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
-import { backerLedger, closePackage, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { sessionsCsv } from '../backup';
+import { backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
+import { fixSession } from '../validate';
 
 let n = 0;
 function mk(over: Partial<Session> = {}): Session {
@@ -296,4 +298,145 @@ test('the player owes the backers exactly what their rows add up to', () => {
   const s = { cashOut: 222.22, stakes: [{ backerId: 'a', share: 15 }, { backerId: 'b', share: 15 }] } as unknown as Session;
   // 15% of 222,22 is 33,333 each: 33,33 + 33,33, never 66,67.
   assert.equal(owedToBackers(s), 66.66);
+});
+
+test('end-of-session sheet with a makeup package shows what the store will save', () => {
+  // Backer pays 100% of buy-ins, I keep 50% of profit: MK1 500 → 0, then MK2 500 → 2000.
+  const stake = { backerId: 'b1', packageId: 'p1', share: 100, markup: 1 };
+  const mk1 = mk({ buyIn: 500, cashOut: 0, stakes: [stake] });
+  const mk2 = mk({ buyIn: 500, cashOut: 0, endedAt: undefined, stakes: [stake] });
+  const sessions = withCuts([mk1, mk2], [pkg()]);
+  const pre = endPreview({ ...sessions[1], cashOut: 2000 }, sessions, [pkg()]);
+  assert.deepEqual(pre, { owed: 1500, profit: 500 });
+  // The same numbers once saved and recomputed.
+  const saved = withCuts([mk1, { ...mk2, cashOut: 2000, endedAt: mk2.startedAt + 500 }], [pkg()])[1];
+  assert.equal(profit(saved), 500);
+  // A loss after a cut was taken gives part of it back (a negative cut): the backer gets it.
+  const s1 = mk({ buyIn: 500, cashOut: 2000, stakes: [stake] });
+  const s2 = mk({ buyIn: 500, cashOut: 0, endedAt: undefined, stakes: [stake] });
+  const after = withCuts([s1, s2], [pkg()]);
+  assert.deepEqual(endPreview({ ...after[1], cashOut: 0 }, after, [pkg()]), { owed: 250, profit: -250 });
+  assert.deepEqual(endPreview({ ...after[1], cashOut: 1000 }, after, [pkg()]), { owed: 750, profit: 250 });
+  // Without a package nothing changes: the whole prize share goes to the backer.
+  assert.deepEqual(endPreview(mk({ buyIn: 500, cashOut: 2000, stakes: [{ share: 50, markup: 1 }] }), [], []), { owed: 1000, profit: 750 });
+});
+
+test('deleting a package or its backer keeps the makeup cut on past results', () => {
+  // Makeup 50% of the action, 50% cut: 1000 buy-in, 5000 prize. Backer +2000, my cut 1000, profit 3000.
+  const p = pkg({ share: 50 });
+  const s = mk({ buyIn: 1000, cashOut: 5000, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
+  const before = withCuts([s], [p])[0];
+  assert.equal(profit(before), 3000);
+  // «Apagar pacote»: the piece stays with the backer as a plain sale, with the cut it gave.
+  const stakes = keepCuts([s], [p], new Set(['p1'])).get(s.id)!;
+  assert.deepEqual(stakes, [{ backerId: 'b1', share: 50, markup: 1, cut: 1000 }]);
+  const after = withCuts([{ ...s, stakes }], [])[0];
+  assert.equal(after.makeupCut, 1000);
+  assert.equal(profit(after), 3000);
+  // The backer still gets back what they got before: prize share less the cut.
+  const l = backerLedger('b1', [after], [], []);
+  assert.equal(l.cut, 1000);
+  assert.equal(l.owed, 1500);
+  // «Apagar backer»: an unnamed piece, same cut (the store drops the name the same way).
+  const anon = withCuts([{ ...s, stakes: [{ share: 50, markup: 1, cut: 1000 }] }], [])[0];
+  assert.equal(profit(anon), 3000);
+  // Kept through a restore and in the CSV's makeup_cut column.
+  assert.deepEqual(fixSession(JSON.parse(JSON.stringify({ ...s, stakes })))?.stakes, stakes);
+  const csv = sessionsCsv([after]).split('\n');
+  const col = csv[0].split(',').indexOf('makeup_cut');
+  assert.equal(csv[1].split(',')[col], '1000');
+  // A cut that isn't a number doesn't reach the result.
+  assert.equal(fixSession({ ...s, stakes: [{ share: 50, markup: 1, cut: 'x' }] })?.stakes?.[0].cut, undefined);
+  // Another package on the same session keeps working it out, on top of the kept cut.
+  const q = pkg({ id: 'p2', backerId: 'b2', share: 10 });
+  const two = mk({ buyIn: 1000, cashOut: 5000, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }, { backerId: 'b2', packageId: 'p2', share: 10, markup: 1 }] });
+  const both = withCuts([two], [p, q])[0].makeupCut;
+  const left = withCuts([{ ...two, stakes: keepCuts([two], [p, q], new Set(['p1'])).get(two.id)! }], [q])[0];
+  assert.equal(left.makeupCut, both);
+  // Running sessions have no cut yet: nothing kept.
+  const live = mk({ endedAt: undefined, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
+  assert.deepEqual(keepCuts([live], [p], new Set(['p1'])).get(live.id), [{ backerId: 'b1', share: 50, markup: 1 }]);
+});
+
+test('deleting a package with makeup to win back, or with cut taken back, changes no result', () => {
+  const stake = { backerId: 'b1', packageId: 'p1', share: 100, markup: 1 };
+  const pays: BackerPayment[] = [{ id: 'y', backerId: 'b1', amount: 300, at: 1, note: '', createdAt: 1 }];
+  // Carried in 1000 of makeup, then +3000: cut 1000. Then +2000 (cut 1000) and −1000 (cut −500 back).
+  const cases = [
+    { p: pkg({ makeupIn: 1000 }), list: [mk({ buyIn: 1000, cashOut: 4000, stakes: [stake] })] },
+    { p: pkg(), list: [mk({ buyIn: 1000, cashOut: 3000, stakes: [stake] }), mk({ buyIn: 1000, cashOut: 0, stakes: [{ ...stake, unpaid: true }] })] },
+  ];
+  for (const { p, list } of cases) {
+    const before = withCuts(list, [p]);
+    const lb = backerLedger('b1', before, [p], pays);
+    const kept = keepCuts(list, [p], new Set(['p1']));
+    const gone = list.map((s) => ({ ...s, stakes: kept.get(s.id)! }));
+    const after = withCuts(gone, []);
+    assert.deepEqual(after.map(profit), before.map(profit));
+    const la = backerLedger('b1', after, [], pays);
+    assert.deepEqual([la.cut, la.owed, la.balance], [lb.cut, lb.owed, lb.balance]);
+    // The backer deleted: unnamed pieces, the player's results the same.
+    const anon = withCuts(gone.map((s) => ({ ...s, stakes: s.stakes!.map((x) => ({ share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) })) })), []);
+    assert.deepEqual(anon.map(profit), before.map(profit));
+  }
+  assert.deepEqual(withCuts(cases[1].list, [pkg()]).map((s) => s.makeupCut), [1000, -500]);
+});
+
+test('reopening a closed package finds the one its makeup was carried to', () => {
+  // «Outubro» closed with 100 of makeup, carried to «Outubro (2)».
+  const p = pkg({ name: 'Outubro', createdAt: 1 });
+  const s = mk({ cashOut: 0, stakes: [{ backerId: 'b1', packageId: 'p1', share: 100, markup: 1 }] });
+  const { closed, next } = closePackage(p, 100, true, 'p2', 5000);
+  assert.equal(next!.name, 'Outubro (2)');
+  const other = pkg({ id: 'p3', makeupIn: 200, createdAt: 9000 });
+  const list = [closed, next!, other, pkg({ id: 'p4', backerId: 'b2', makeupIn: 100, createdAt: 5000 })];
+  assert.equal(carriedTo(closed, list)?.id, 'p2');
+  // Forgiven (no new package), or still open: nothing to undo.
+  assert.equal(carriedTo(closePackage(p, 100, false, 'p9', 5000).closed, [p]), undefined);
+  assert.equal(carriedTo(p, list), undefined);
+  // Reopened and the «(2)» kept: the same 100 twice (the bug).
+  const reopened = { ...closed, closedAt: undefined };
+  assert.equal(backerLedger('b1', [s], [reopened, next!], []).makeup, 200);
+  // With the empty «(2)» deleted, the old package shows its open makeup again, once,
+  // and nothing was carried on from the «(2)» (no «(3)» pointing at it).
+  const after = [reopened, other];
+  assert.equal(packageStates([s], after).states.get('p1')!.makeup, 100);
+  assert.equal(backerLedger('b1', [s], [reopened], []).makeup, 100);
+  assert.equal(carriedTo(next!, list), undefined);
+  // A «(2)» closed and carried on to a «(3)» points at it: the screen keeps the old one closed then.
+  const third = closePackage(next!, 100, true, 'p5', 7000);
+  assert.equal(carriedTo(third.closed, [closed, third.closed, third.next!])?.id, 'p5');
+  // Once the «(2)» has sessions the screen keeps the old one closed: the makeup is won back there.
+  const t = mk({ stakes: [{ backerId: 'b1', packageId: 'p2', share: 100, markup: 1 }] });
+  assert.equal(packageStates([s, t], list).states.get('p2')!.sessions, 1);
+});
+
+test("a session's makeup cut is the sum of the backers' rounded lines", () => {
+  // Three backers at 1%, each in a 50% cut package: 100 buy-in, 1001 prize. Each line 4,505 → rounded on its own.
+  const pk3 = ['b1', 'b2', 'b3'].map((b, i) => pkg({ id: 'p' + i, backerId: b, share: 1 }));
+  const s = mk({ buyIn: 100, cashOut: 1001, stakes: pk3.map((p) => ({ backerId: p.backerId, packageId: p.id, share: 1, markup: 1 })) });
+  const [cut] = withCuts([s], pk3);
+  const pk = packageStates([s], pk3);
+  const lines = pk3.map((p) => backerLedger(p.backerId, [s], pk3, [], pk).cut);
+  const sum = Math.round(lines.reduce((a, x) => a + x, 0) * 100) / 100;
+  assert.equal(cut.makeupCut, sum);
+  assert.equal(Math.round(pk3.reduce((a, p) => a + pk.states.get(p.id)!.cut, 0) * 100) / 100, sum);
+  // The end-of-session sheet says the same: backers get their rows, the player the rest.
+  const pre = endPreview({ ...s, endedAt: undefined }, [{ ...s, endedAt: undefined }], pk3, s.endedAt);
+  assert.equal(pre.profit, profit(cut));
+  assert.equal(pre.owed, Math.round(pk3.reduce((a, p) => a + backerLedger(p.backerId, [s], pk3, [], pk).owed, 0) * 100) / 100);
+
+  // Three backers with a third each, makeup to win back first: what is left is the makeup less their rows.
+  const thirds = ['b1', 'b2', 'b3'].map((b, i) => pkg({ id: 'q' + i, backerId: b, share: 100 / 3, makeupIn: 10 }));
+  const loss = mk({ buyIn: 100, cashOut: 33.34, stakes: thirds.map((p) => ({ backerId: p.backerId, packageId: p.id, share: 100 / 3, markup: 1 })) });
+  const win = mk({ buyIn: 100, cashOut: 1000.01, stakes: thirds.map((p) => ({ backerId: p.backerId, packageId: p.id, share: 100 / 3, markup: 1 })) });
+  const r1 = packageStates([loss], thirds);
+  for (const p of thirds) {
+    const row = backerLedger(p.backerId, [loss], thirds, [], r1).rows[0];
+    assert.equal(r1.states.get(p.id)!.makeup, Math.round((10 - (row.owed - row.cost)) * 100) / 100);
+  }
+  const both = withCuts([loss, win], thirds);
+  const r2 = packageStates([loss, win], thirds);
+  const rows = thirds.map((p) => backerLedger(p.backerId, [loss, win], thirds, [], r2).rows.find((x) => x.session.id === win.id)!.cut);
+  assert.equal(both[1].makeupCut, Math.round(rows.reduce((a, x) => a + x, 0) * 100) / 100);
 });

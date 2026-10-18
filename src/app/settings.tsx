@@ -121,7 +121,7 @@ export default function SettingsScreen() {
     const swapsLine = open ? ' ' + (open === 1 ? t('Tens 1 swap por acertar. A outra pessoa fica com a cópia dela.') : t('Tens {n} swaps por acertar. A outra pessoa fica com a cópia dela.', { n: open })) : '';
     confirmAction(
       t('Apagar todos os teus dados?'),
-      t('Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.') + swapsLine,
+      t('Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na {store}.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }) + swapsLine,
       t('Apagar tudo'),
       async () => {
         setBusy(true);
@@ -299,7 +299,7 @@ const CLAIM_COPY: Partial<Record<ClaimResult, string>> = {
   self: 'Esse é o teu próprio código.',
   too_late: 'Os convites só contam nos 7 dias depois de instalar.',
   unknown_code: 'Não encontrámos esse código.',
-  disabled: 'Os convites ainda não estão disponíveis.',
+  disabled: 'Os convites ainda não funcionam.',
 };
 
 /** Shown only in the first 7 days, until a code is accepted. */

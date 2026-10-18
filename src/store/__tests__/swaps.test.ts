@@ -6,7 +6,7 @@ import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
 import { profit } from '../session-math';
 import type { Session } from '../types';
-import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, settleGroups, settleNet, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, settleGroups, settleNet, seenTag, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -274,4 +274,67 @@ test('settle-up leaves out swaps that are read-only, unconfirmed, archived or wa
     swap({ id: '6', entries: owed, gone: true }),
   ];
   assert.equal(settleGroups(list).length, 0);
+});
+
+test('a payment both players record («Paguei» and «Recebi») counts once, in any order', () => {
+  const t75: SwapTerms = { ...terms, a: { name: 'Ana', pct: 7.5 }, b: { name: 'Eva', pct: 7.5 } };
+  const win = e('a', 'result', 1234.5);
+  const both = [win, e('a', 'payment', 92.59), e('b', 'received', 92.59)];
+  for (const entries of [both, [both[0], both[2], both[1]]]) {
+    const ana = swapLedger(swap({ terms: t75, side: 'a', entries }));
+    const eva = swapLedger(swap({ terms: t75, side: 'b', entries }));
+    assert.equal(ana.iPaid, 92.59);
+    assert.equal(eva.theyPaid, 92.59);
+    assert.equal(ana.balance, 0);
+    assert.equal(eva.balance, 0);
+  }
+  // Two different payments still add up, and the same payment tapped twice by its payer is two.
+  assert.equal(swapLedger(swap({ terms: t75, entries: [win, e('a', 'payment', 50), e('b', 'received', 42.59)] })).balance, 0);
+  assert.equal(swapLedger(swap({ terms: t75, entries: [win, e('a', 'payment', 46.3), e('a', 'payment', 46.3), e('b', 'received', 46.3)] })).iPaid, 92.6);
+});
+
+test('both players settling up before either syncs still leaves every swap at 0,00', () => {
+  const s1 = swap({ id: 's1', entries: [e('a', 'result', 1000), e('b', 'result', 300)] });
+  const s2 = swap({ id: 's2', entries: [e('b', 'result', 2000)] });
+  const mine = settleSteps([s1, s2]);
+  const theirs = settleSteps([s1, s2].map((s) => ({ ...s, side: 'b' as const })));
+  for (const s of [s1, s2]) {
+    const add = [...mine.filter((x) => x.id === s.id).map((x) => e('a', x.kind, x.amount)), ...theirs.filter((x) => x.id === s.id).map((x) => e('b', x.kind, x.amount))];
+    const entries = [...s.entries, ...add];
+    assert.equal(swapLedger({ ...s, entries }).balance, 0);
+    assert.equal(swapLedger({ ...s, side: 'b', entries }).balance, 0);
+  }
+});
+
+test('settling up after the other side paid the same amount keeps both payments (cid «~k»)', () => {
+  // Bahamas: Ana (b) wins 50 000 at 5%, owes 2 500, and pays 1 000 then 500 by link.
+  // Vegas: Rui (a) wins 30 000, owes 1 500. Rui settles up: «Recebi 1000» in Bahamas, «Paguei 1500» in Vegas.
+  const rui = { name: 'Rui', pct: 5 };
+  const ana = { name: 'Ana', pct: 5 };
+  const t5: SwapTerms = { ...terms, a: rui, b: ana };
+  const bahamas = swap({ id: 'bh', terms: t5, entries: [e('b', 'result', 50000), e('b', 'payment', 1000), e('b', 'payment', 500)] });
+  const vegas = swap({ id: 'vg', terms: t5, entries: [e('a', 'result', 30000)] });
+  const steps = settleSteps([bahamas, vegas]);
+  for (const s of [bahamas, vegas]) {
+    const add = steps.filter((x) => x.id === s.id).map((x) => e('a', x.kind, x.amount, { cid: `n${++n}` + seenTag(s.entries, 'a', x.kind, x.amount) }));
+    const entries = [...s.entries, ...add];
+    assert.equal(swapLedger({ ...s, entries }).balance, 0);
+    assert.equal(swapLedger({ ...s, side: 'b', entries }).balance, 0);
+  }
+});
+
+test('«Paguei» and «Recebi» merge only when neither phone had seen the other', () => {
+  const t75: SwapTerms = { ...terms, a: { name: 'Ana', pct: 7.5 }, b: { name: 'Eva', pct: 7.5 } };
+  const win = e('a', 'result', 1234.5);
+  // Both tap 92,59 at the table before syncing: one payment.
+  const atTable = [win, e('a', 'payment', 92.59, { cid: 'p~0' }), e('b', 'received', 92.59, { cid: 'r~0' })];
+  assert.equal(swapLedger(swap({ terms: t75, entries: atTable })).iPaid, 92.59);
+  // Then Eva, synced, records a new 92,59 she got: two payments.
+  const later = [...atTable, e('b', 'received', 92.59, { cid: 'r2~1' })];
+  assert.equal(swapLedger(swap({ terms: t75, entries: later })).iPaid, 185.18);
+  // And in reverse: Ana pays again after seeing Eva's «Recebi».
+  const again = [...atTable, e('a', 'payment', 92.59, { cid: 'p2~1' })];
+  assert.equal(swapLedger(swap({ terms: t75, entries: again })).iPaid, 185.18);
+  assert.equal(seenTag(atTable, 'b', 'received', 92.59), '~1');
+  assert.equal(seenTag(atTable, 'a', 'result', 10), '');
 });

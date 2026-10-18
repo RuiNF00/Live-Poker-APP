@@ -485,7 +485,8 @@ function HomeSummary({ sessions, streak, handsLeft, cta, onPro }: { sessions: Se
         onPress={() => router.navigate('/bankroll')}
         hitSlop={6}
         style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
-        <T v="label" numberOfLines={1}>
+        {/* Three cells in a row: at large text the caption stops at 130% and shrinks, or it read "ESTE M…". */}
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3}>
           {t('Este mês')}
         </T>
         {month.length ? <Amount value={net} text={money(net, cur)} v="mono" fit /> : <T v="mono" color={C.muted}>—</T>}
@@ -508,7 +509,7 @@ function HomeSummary({ sessions, streak, handsLeft, cta, onPro }: { sessions: Se
         onPress={onPro}
         hitSlop={6}
         style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
-        <T v="label" numberOfLines={1} color={handsLeft === 0 ? C.accent : undefined}>
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3} color={handsLeft === 0 ? C.accent : undefined}>
           {t('Grátis hoje')}
         </T>
         {handsLeft === 0 ? (

@@ -84,6 +84,10 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode, l: 
         return `${s.name} ${WINS[l]} ${formatAmount(w.amount, bb, mode, l)}${w.handLabel ? ` (${w.handLabel})` : ''}`;
       })
       .join(' · ');
-  if (step.runs) return step.runs.map((r, k) => `${BOARD[l]} ${k + 1}: ${paid(r.winners)}`).join(' · ');
-  return paid(step.winners ?? []);
+  // No winner picked and a hand unknown: the pot is unresolved, so say only "Showdown", like the app.
+  if (step.runs) {
+    const runs = step.runs.map((r, k) => (r.winners.length ? `${BOARD[l]} ${k + 1}: ${paid(r.winners)}` : '')).filter(Boolean);
+    return runs.length ? runs.join(' · ') : 'Showdown';
+  }
+  return step.winners?.length ? paid(step.winners) : 'Showdown';
 }

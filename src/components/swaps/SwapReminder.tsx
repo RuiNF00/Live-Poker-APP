@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { useLockScreenUp } from '@/components/AppLock';
 import { useLocked } from '@/components/ProGate';
 import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Row, T, tap } from '@/components/ui';
@@ -45,6 +46,8 @@ export function SwapReminder() {
   const [asked, setAsked] = useState<string[] | null>(null);
   const [step, setStep] = useState<'ask' | 'done'>('ask');
   const [busy, setBusy] = useState(false);
+  // Never over the app lock: the sheet waits until the player has unlocked.
+  const lockUp = useLockScreenUp();
 
   useEffect(() => {
     AsyncStorage.getItem(ASKED)
@@ -78,7 +81,7 @@ export function SwapReminder() {
   // moment later, so the end-of-session screen lands first.
   const [shown, setShown] = useState<{ session: Session; swaps: Swap[]; groups: SwapGroup[]; auto?: boolean } | null>(null);
   useEffect(() => {
-    if (shown || !ready || !gReady || !asked || !live) return;
+    if (shown || lockUp || !ready || !gReady || !asked || !live) return;
     const now = Date.now();
     for (const s of sessions) {
       if (!s.endedAt || now - s.endedAt > RECENT || asked.includes(s.id)) continue;
@@ -104,7 +107,7 @@ export function SwapReminder() {
       }, 900);
       return () => clearTimeout(id);
     }
-  }, [shown, ready, gReady, asked, live, sessions, swaps, groups]);
+  }, [shown, lockUp, ready, gReady, asked, live, sessions, swaps, groups]);
 
   function close() {
     if (shown) {
@@ -136,7 +139,7 @@ export function SwapReminder() {
               <T v="title">{s.name || t('Torneio')}</T>
               <T v="body" color={C.textDim}>
                 {prize > 0
-                  ? t('Cobraste {amount}{place}.', { amount: money(prize, s.currency), place: s.finish ? ' · ' + t('{n}º lugar', { n: s.finish }) : '' })
+                  ? t('Cobraste {amount}{place}.', { amount: money(prize, s.currency), place: s.finish ? ' · ' + t('{n}.º lugar', { n: s.finish }) : '' })
                   : t('Não cobraste.')}
               </T>
             </View>

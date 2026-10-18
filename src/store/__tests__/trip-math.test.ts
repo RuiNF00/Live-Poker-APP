@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festivals';
-import { EMPTY_PLAN } from '../festival-plan';
-import { currentTrip, toTripCurrency, tripFromFestival, tripSessions, tripsIn, tripSummary } from '../trip-math';
+import { SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals-nov-2026';
+import { EMPTY_PLAN, togglePicked } from '../festival-plan';
+import { blankTrip, changeTripCurrency, currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
 import type { Session, Trip } from '../types';
 
 const H = 3600000;
@@ -97,4 +98,53 @@ test('tripFromFestival with no schedule yet uses the official dates', () => {
   assert.equal(new Date(x.from).getDate(), 21);
   assert.equal(new Date(x.from).getMonth(), 0);
   assert.equal(new Date(x.to).getDate(), 31);
+});
+
+test('a festival session played after the trip\'s dates widens the trip, so it counts', () => {
+  // Made from 1A only (13 Nov): 12–14 Nov.
+  const made = tripFromFestival('tr', SP, togglePicked(EMPTY_PLAN, '1-1A'), undefined, 0);
+  const on17 = new Date(2026, 10, 17, 14).getTime();
+  const s = mk({ id: 'main', currency: 'R$', startedAt: on17, endedAt: on17 + 6 * H, buyIn: 5000 });
+  assert.equal(tripSummary(made, [s]).sessions, 0);
+  const wide = tripToCover([made], SP.id, on17)!;
+  assert.equal(wide.from, made.from);
+  assert.equal(wide.to, new Date(2026, 10, 17, 23, 59, 59, 999).getTime());
+  assert.equal(tripSummary(wide, [s]).sessions, 1);
+  assert.equal(tripSummary(wide, [s]).poker, -5000);
+  // Already inside, another festival, or no trip: nothing to change.
+  assert.equal(tripToCover([wide], SP.id, on17 + H), null);
+  assert.equal(tripToCover([wide], 'other', on17 + 3 * DAY), null);
+  assert.equal(tripToCover([], SP.id, on17), null);
+  // Before the start too.
+  assert.equal(tripToCover([made], SP.id, new Date(2026, 10, 10, 20).getTime())!.from, new Date(2026, 10, 10).getTime());
+});
+
+test('changing the trip currency flips the rate to the other currency, or drops it', () => {
+  const trip = { currency: '$', fx: { currency: '€', rate: 0.92 } };
+  const eur = changeTripCurrency(trip, '€', 0.92, '€');
+  assert.deepEqual(eur, { currency: '€', fx: { currency: '$', rate: 1.087 } });
+  // The 500 $ hotel is still about 460 €, not 543 €.
+  assert.ok(Math.abs(toTripCurrency(500, '$', eur)! - 460) < 0.1);
+  // And back: 1 $ = 0,92 € again, to 6 digits.
+  assert.deepEqual(changeTripCurrency(eur, '$', 1.087, '$'), { currency: '$', fx: { currency: '€', rate: 0.919963 } });
+  // Below 1 the rate keeps 6 digits: 7,4601 kr → 0,134046 → 7,4601 kr (4 digits gave 7,4627).
+  const kr = changeTripCurrency({ currency: '€', fx: { currency: 'kr', rate: 7.4601 } }, 'kr', 7.4601, 'kr');
+  assert.equal(kr.fx!.rate, 0.134046);
+  assert.equal(changeTripCurrency(kr, '€', kr.fx!.rate, '€').fx!.rate, 7.4601);
+  // Small rates keep their digits: 1 € = 160 ¥ → 1 ¥ = 0,006250 €.
+  assert.equal(changeTripCurrency({ currency: '€', fx: { currency: '¥', rate: 160 } }, '¥', 160, '¥').fx!.rate, 0.00625);
+  // An unrelated currency: the rate no longer means anything.
+  assert.deepEqual(changeTripCurrency(trip, '€', 0.92, '£'), { currency: '£', fx: { currency: '€', rate: 0 } });
+  // No rate typed: nothing to flip, nothing made up.
+  assert.deepEqual(changeTripCurrency({ currency: '$' }, '€', 0, '€'), { currency: '€', fx: undefined });
+  // Same currency: unchanged.
+  assert.equal(changeTripCurrency(trip, '€', 0.92, '$'), trip);
+});
+
+// Meaningful in any time zone; checked by hand with TZ=Europe/Lisbon and TZ=America/Los_Angeles.
+test('a new trip lasts five calendar days across a DST change', () => {
+  const x = blankTrip('t', '€', new Date(2026, 9, 22, 0, 30).getTime());
+  assert.equal(x.to, new Date(2026, 9, 26, 23, 59, 59, 999).getTime());
+  const y = blankTrip('t', '€', new Date(2026, 2, 26, 23, 30).getTime());
+  assert.equal(y.to, new Date(2026, 2, 30, 23, 59, 59, 999).getTime());
 });

@@ -4,11 +4,10 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
+import { festivalPicks, ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
-import { FESTIVALS } from '@/poker/festivals';
-import { useFestivalPlan } from '@/store/festival-plan';
+import { useFestivalPlans } from '@/store/festival-plan';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 
@@ -27,7 +26,7 @@ export function useStartChecklist() {
   const [now] = useState(() => Date.now());
   // What they told us on first run: tournament players get a festival step.
   const [plays, setPlays] = useState<string | null>(null);
-  const fest = useFestivalPlan(FESTIVALS[0]?.id ?? '');
+  const plans = useFestivalPlans();
   useEffect(() => {
     AsyncStorage.multiGet([HIDDEN, ONBOARDING_KEY])
       .then(([[, v], [, o]]) => {
@@ -37,7 +36,7 @@ export function useStartChecklist() {
       .catch(() => setHidden(false));
   }, []);
   const START_STEPS = startSteps(plays);
-  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: fest.picked.length });
+  const done = startProgress({ hands, sessions: sessions.length, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: festivalPicks(plans) });
   const count = START_STEPS.filter((s) => done[s.key]).length;
   // First week means it: players whose first hand is older than two weeks don't need it.
   const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;

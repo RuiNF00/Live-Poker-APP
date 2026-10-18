@@ -7,8 +7,10 @@ import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { cancelFestivalReminders } from '@/lib/festival-reminders';
+import { cancelFestivalReminders, syncFestivalReminders } from '@/lib/festival-reminders';
 import { kindOn } from '@/lib/notify-policy';
+import { useFestivalPlans } from '@/store/festival-plan';
+import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 
@@ -76,10 +78,22 @@ export function SessionLockScreen() {
     })();
   }, [activeSession, hide, levelsOn]);
 
-  // "Torneios planeados" switched off in Settings: what was planned goes too (the planner reschedules when it's back on).
+  // "Torneios planeados" switched off in Settings: what was planned goes too. On (at launch, after a
+  // restore brought plans in, back on in Settings), every plan still ahead gets its reminders, in the
+  // language the app speaks now, not only the festival whose screen was last opened.
+  const plans = useFestivalPlans();
+  const festivals = useFestivals();
   useEffect(() => {
-    if (!festivalOn) void cancelFestivalReminders();
-  }, [festivalOn]);
+    if (!festivalOn) {
+      void cancelFestivalReminders();
+      return;
+    }
+    const today = dayKey(Date.now());
+    for (const [id, plan] of Object.entries(plans)) {
+      const f = plan.picked.length ? festivals.find((x) => x.id === id) : undefined;
+      if (f && notOver(f, today)) void syncFestivalReminders(f, plan);
+    }
+  }, [festivalOn, plans, festivals]);
 
   // Android can't run a clock in the notification: refresh the played time
   // every minute while the app is open, and once more on the way out.

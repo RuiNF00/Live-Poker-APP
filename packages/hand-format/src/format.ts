@@ -100,8 +100,12 @@ export function describeStep(step: ReplayStep, bb: number, mode: AmountMode = 'c
       })
       .join(' · ');
   // Run it twice: what each board paid.
-  if (step.runs) return step.runs.map((r, k) => `${BOARD[locale] ?? BOARD.en} ${k + 1}: ${paid(r.winners)}`).join(' · ');
-  return paid(step.winners ?? []);
+  // No winner picked and a hand unknown: the pot is unresolved, so only "Showdown", like the app.
+  if (step.runs) {
+    const runs = step.runs.map((r, k) => (r.winners.length ? `${BOARD[locale] ?? BOARD.en} ${k + 1}: ${paid(r.winners)}` : '')).filter(Boolean);
+    return runs.length ? runs.join(' · ') : 'Showdown';
+  }
+  return step.winners?.length ? paid(step.winners) : 'Showdown';
 }
 
 /** "1k/2k", plus the ante, button ante or bomb pot: "1/2 · ante BTN 2", "1/2 · bomb pot 5". */

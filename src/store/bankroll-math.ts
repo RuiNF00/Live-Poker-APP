@@ -8,10 +8,8 @@ import { t } from '@/i18n';
 import { decimal, rawMoney } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 
-import { byCurrency, profit } from './session-math';
+import { addDays, byCurrency, profit } from './session-math';
 import type { Bankroll, GameFormat, Session, Transfer } from './types';
-
-const DAY = 86400000;
 
 /** Stable id for the bankroll made automatically for a currency, so two phones (or a backup) agree on it. */
 export function autoBankrollId(currency: string): string {
@@ -250,8 +248,11 @@ export function startOfDay(ts: number): number {
   return d.getTime();
 }
 
+/** The last millisecond of `ts`'s local day (a DST day is 23 or 25 hours, not 24). */
 export function endOfDay(ts: number): number {
-  return startOfDay(ts) + DAY - 1;
+  const d = new Date(ts);
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
 }
 
 export function presetRange(p: Exclude<RangePreset, 'custom'>, now = Date.now()): DateRange {
@@ -260,9 +261,9 @@ export function presetRange(p: Exclude<RangePreset, 'custom'>, now = Date.now())
     case 'all':
       return {};
     case '30d':
-      return { from: startOfDay(now - 29 * DAY), to: endOfDay(now) };
+      return { from: startOfDay(addDays(now, -29)), to: endOfDay(now) };
     case '90d':
-      return { from: startOfDay(now - 89 * DAY), to: endOfDay(now) };
+      return { from: startOfDay(addDays(now, -89)), to: endOfDay(now) };
     case 'month':
       return { from: new Date(d.getFullYear(), d.getMonth(), 1).getTime(), to: endOfDay(now) };
     case 'lastMonth':

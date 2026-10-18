@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { cashStats, drawdown, mttStats, normCdf, project } from '../results-math';
-import { breakdown } from '../session-math';
+import { breakdown, MIN_RATE_HOURS, rateShown } from '../session-math';
 import type { Session } from '../types';
 
 const H = 3600000;
@@ -42,6 +42,17 @@ test('cash stats: per-hour win rate and SD', () => {
   // Σ(r − 80)² / 12 = (14400 + 40000 + 6400) / 12
   assert.ok(Math.abs(s.sdHour - Math.sqrt(60800 / 12)) < 1e-9);
   assert.equal(cashStats(list.slice(0, 2)), null);
+  // Three 3-minute sessions: 9 minutes is under MIN_RATE_HOURS, so no rate for the variance calculator.
+  const blips = [200, -50, 100].map((r, i) => mk({ id: 'b' + i, kind: 'cash', buyIn: 200, cashOut: 200 + r, endedAt: 0.05 * H }));
+  assert.equal(cashStats(blips), null);
+});
+
+test('rateShown: a per-hour rate needs 15 minutes of play', () => {
+  assert.equal(MIN_RATE_HOURS, 0.25);
+  assert.equal(rateShown(0.05), false, '3 minutes');
+  assert.equal(rateShown(0.249), false);
+  assert.equal(rateShown(0.25), true);
+  assert.equal(rateShown(4), true);
 });
 
 test('tournament stats: ROI and SD in buy-ins', () => {

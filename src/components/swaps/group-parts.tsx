@@ -84,7 +84,7 @@ export function GroupEntryRow({ g, e, onLongPress, hideOwed }: { g: SwapGroup; e
   const title = e.kind === 'result' ? e.event || g.terms.title : t('{from} pagou a {to}', { from: who, to: e.to === undefined ? '?' : seatLabel(g, e.to) });
   const sub =
     e.kind === 'result'
-      ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}º lugar', { n: e.finish }) : '']
+      ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}.º lugar', { n: e.finish }) : '']
           .filter(Boolean)
           .join(' · ')
       : shortDate(e.at);

@@ -29,6 +29,8 @@ export interface BestHand {
 
 export interface FestivalRecap {
   title: string;
+  /** A festival's trip; false for a trip the player made by hand (trip wording on the card). */
+  festival: boolean;
   from: number;
   to: number;
   days: number;
@@ -106,6 +108,7 @@ export function festivalRecap(trip: Trip, sessions: Session[], hands: Hand[]): F
   const played = daysPlayed(list);
   return {
     title: trip.name || t('Festival'),
+    festival: !!trip.festivalId,
     from: trip.from,
     to: trip.to,
     days: played.size,

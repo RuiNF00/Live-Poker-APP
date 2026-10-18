@@ -76,7 +76,18 @@ export async function readLock(io: LockIO): Promise<LockConfig | null> {
   let keys: readonly (readonly [string, string | null])[];
   try {
     raw = await io.read();
-    if (!raw) return null;
+  } catch {
+    // The keychain can't be read. Only a phone where the lock was turned on (the marker, kept in
+    // the app's own storage) stays locked; everyone else isn't asked for Face ID at every launch.
+    try {
+      const [[, marker] = ['', null]] = await io.installKeys();
+      return marker ? UNKNOWN_LOCK : null;
+    } catch {
+      return UNKNOWN_LOCK;
+    }
+  }
+  if (!raw) return null;
+  try {
     keys = await io.installKeys();
   } catch {
     return UNKNOWN_LOCK;
@@ -94,4 +105,34 @@ export async function readLock(io: LockIO): Promise<LockConfig | null> {
     if (cfg && cfg.mode === 'pin' && typeof cfg.salt === 'string' && typeof cfg.pinHash === 'string') return { mode: 'pin', salt: cfg.salt, pinHash: cfg.pinHash };
   } catch {}
   return UNKNOWN_LOCK;
+}
+
+/**
+ * Whether the lock screen (or the app-switcher cover) is up, or may be about to come up (the lock
+ * is still being read). A sheet that opens by itself waits while this is true: a Modal shown later
+ * sits on top of the lock's own Modal, on Android and iOS alike, and would show over it.
+ */
+export function lockScreenUp(cfg: LockConfig | null | undefined, locked: boolean, cover: boolean): boolean {
+  if (cfg === undefined) return true;
+  return !!cfg && (locked || cover);
+}
+
+/** The lock screen's state for code outside AppLock, with listeners (one AppLock per app). */
+export function createLockUpState(initial = true) {
+  let up = initial;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => up,
+    set(v: boolean) {
+      if (v === up) return;
+      up = v;
+      for (const l of [...listeners]) l();
+    },
+    subscribe(l: () => void) {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+  };
 }

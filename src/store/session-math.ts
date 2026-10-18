@@ -1,5 +1,17 @@
 import type { Session, Stake } from './types';
 
+/**
+ * Fewest hours of play behind any per-hour rate (money/h, BB/h): 15 minutes. Under that a
+ * rate is noise blown up (a 3-minute +200 reads as +4000/h), so it shows as "—" or not at all.
+ * The session still counts in every total, its money and its time.
+ */
+export const MIN_RATE_HOURS = 0.25;
+
+/** Whether `hours` of play are enough to show a per-hour rate. */
+export function rateShown(hours: number): boolean {
+  return hours >= MIN_RATE_HOURS;
+}
+
 /** Time actually at the table: wall time minus breaks. */
 export function playedMs(s: Session, now = Date.now()): number {
   const end = s.endedAt ?? now;
@@ -191,6 +203,19 @@ export function curve(list: Session[], currency?: string): { t: number; v: numbe
   const done = inCurrency(ended, currency ?? mainCurrency(ended)).sort((a, b) => a.endedAt! - b.endedAt!);
   let acc = 0;
   return [{ t: done[0]?.startedAt ?? Date.now(), v: 0 }, ...done.map((s) => ({ t: s.endedAt!, v: (acc += profit(s)) }))];
+}
+
+/** `n` calendar days after `ts` (before, if negative) at the same clock time: across a DST change a day is 23 or 25 hours. */
+export function addDays(ts: number, n: number): number {
+  const d = new Date(ts);
+  d.setDate(d.getDate() + n);
+  return d.getTime();
+}
+
+/** `min` minutes on the clock of `day`'s local calendar day (20:00 is 20:00 even on a 23- or 25-hour day). */
+export function atClock(day: number, min: number): number {
+  const d = new Date(day);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(min / 60), min % 60).getTime();
 }
 
 /**

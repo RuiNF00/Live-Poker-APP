@@ -26,16 +26,21 @@ function trim(n: number, digits: number) {
   return FORMAT.decimalComma ? s.replace('.', ',') : s;
 }
 
-/** 950 → "950", 12500 → "12.5k", 1250000 → "1.25M". */
+/** 950 → "950", 12500 → "12.5k", 1250000 → "1.25M", 3e9 → "3B". */
 const hasCents = (a: number) => Math.abs(a - Math.round(a)) > 1e-9;
+const UNITS = ['k', 'M', 'B', 'T'];
 
 export function chips(n: number): string {
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
   // Cent games (0,25/0,50): a chop of 1,25 pays 0,63 and 0,62, not "1" and "1".
   if (a < 10000) return sign + (hasCents(a) ? numFmt(2).format(a) : numFmt().format(Math.round(a))).replace(/\s/g, ' ');
-  if (a < 1e6) return sign + trim(a / 1000, a < 100000 ? 1 : 0) + 'k';
-  return sign + trim(a / 1e6, 2) + 'M';
+  let v = a / 1000;
+  for (let u = 0; ; u++, v /= 1000) {
+    const digits = u > 0 ? 2 : v < 100 ? 1 : 0;
+    // What would round to "1000k" or "1000M" reads "1M" or "1B".
+    if (u === UNITS.length - 1 || Number(v.toFixed(digits)) < 1000) return sign + trim(v, digits) + UNITS[u];
+  }
 }
 
 export function bbs(n: number, bb: number): string {
@@ -55,6 +60,9 @@ export function setMoneyMasked(v: boolean) {
 }
 export const moneyMasked = () => masked;
 export const MASK = '•••';
+/** The sign before a screen amount: none in privacy mode, so ••• never tells a win from a loss. */
+export const plus = (n: number, neg = false) => (masked ? '' : n > 0 ? '+' : neg && n < 0 ? '−' : '');
+export const minus = () => (masked ? '' : '−');
 
 /** An amount for the screen: ••• in privacy mode. Files, reports and share images use rawMoney. */
 export function money(n: number, currency = '€'): string {

@@ -48,6 +48,7 @@ import {
 } from '@/store/action-offer';
 import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
 import { uid, useStore } from '@/store/store';
+import { tripToCover } from '@/store/trip-math';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
@@ -59,7 +60,7 @@ export default function ActionPackageScreen() {
   const o = offers.find((x) => x.id === id);
   const f = FESTIVALS.find((x) => x.id === o?.festivalId);
   const plan = useFestivalPlan(o?.festivalId ?? '');
-  const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession } = useStore();
+  const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession, trips, saveTrip } = useStore();
   const pro = usePro();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +129,8 @@ export default function ActionPackageScreen() {
   const logPlayed = (s: Session) => {
     if (!logging) return;
     saveSession(s);
+    const trip = tripToCover(trips, f.id, s.startedAt);
+    if (trip) saveTrip(trip);
     updatePlan(f.id, (p) => ({ ...p, picked: p.picked.includes(logging.id) ? p.picked : [...p.picked, logging.id], sessions: { ...p.sessions, [logging.id]: s.id } }));
     setLogging(null);
   };

@@ -17,6 +17,17 @@ test('counts, net result and the earliest date', () => {
   assert.deepEqual(l, { sessions: 2, hands: 2, profit: 0, currency: '€', since: 500 });
 });
 
+test('the session count matches the amount: finished sessions in the main currency only', () => {
+  const usd = { ...s(4_000, 1_000, 0), currency: '$' } as Session;
+  const live = { ...s(5_000, 100, 0), endedAt: undefined } as Session;
+  const l = logged([], [s(1_000, 200, 500), s(3_000, 300, 180), usd, live]);
+  assert.equal(l?.sessions, 2);
+  assert.equal(l?.profit, 180);
+  assert.equal(l?.currency, '€');
+  // Only a session still running: nothing to show yet.
+  assert.equal(logged([], [live]), null);
+});
+
 test('one reason each, no "Outro"', () => {
   assert.equal(CANCEL_REASONS.length, 5);
   assert.ok(!CANCEL_REASONS.some((r) => /outro/i.test(r.label)));

@@ -8,7 +8,7 @@
 import { t } from '@/i18n';
 
 import { stakeKey, stakeLabel } from './bankroll-math';
-import { playedMs, profit } from './session-math';
+import { playedMs, profit, rateShown } from './session-math';
 import type { Session } from './types';
 
 const H = 3600000;
@@ -40,10 +40,11 @@ export function cashDone(list: Session[], currency: string): Session[] {
   return list.filter((s) => s.endedAt && s.kind === 'cash' && s.currency === currency && playedMs(s) > 0);
 }
 
-/** Null with fewer than `min` sessions (the spread needs a few). */
+/** Null with fewer than `min` sessions (the spread needs a few) or under MIN_RATE_HOURS of play. */
 export function winRate(cash: Session[], min = 3): WinRate | null {
   if (cash.length < min) return null;
   const hrs = cash.map((s) => playedMs(s) / H);
+  if (!rateShown(hrs.reduce((a, b) => a + b, 0))) return null;
   const res = cash.map(profit);
   const bbs = cash.map((s, i) => (s.bb > 0 ? res[i] / s.bb : 0));
   const hours = hrs.reduce((a, b) => a + b, 0);

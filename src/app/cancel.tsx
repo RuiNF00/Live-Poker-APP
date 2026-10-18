@@ -16,7 +16,7 @@ import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { noteReviewBlocker } from '@/lib/review';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { BRAND, C, S } from '@/theme';
 
@@ -123,7 +123,7 @@ export default function Cancel() {
               <T v="label">{t('No teu caderno')}</T>
               {mine.sessions > 0 ? (
                 <T v="monoL" color={mine.profit >= 0 ? C.good : C.bad}>
-                  {(mine.profit > 0 ? '+' : '') + money(mine.profit, mine.currency)}
+                  {plus(mine.profit) + money(mine.profit, mine.currency)}
                 </T>
               ) : null}
               <T v="callout">
@@ -188,8 +188,8 @@ export default function Cancel() {
                       title={t('Anual: {price} por ano', { price: annual.priceString })}
                       body={
                         monthly && annualSavingPct(monthly.price, annual.price) > 0
-                          ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
-                          : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })
+                          ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
+                          : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })
                       }>
                       <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual', undefined, product ?? undefined), 'annual')} />
                     </OfferCard>

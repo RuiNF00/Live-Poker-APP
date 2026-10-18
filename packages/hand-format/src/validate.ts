@@ -6,6 +6,11 @@ const ACTION_TYPES = new Set([
   'post_sb', 'post_bb', 'post_ante', 'post_straddle', 'fold', 'check', 'call', 'bet', 'raise', 'allin',
 ]);
 
+/** Longest player name the share page accepts. */
+export const MAX_NAME_LENGTH = 40;
+/** Longest notes the share page accepts. */
+export const MAX_NOTES_LENGTH = 2000;
+
 const isAmount = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && n >= 0;
 
 /** Returns a list of problems; empty means the record is safe to replay. */
@@ -27,7 +32,7 @@ export function validateHand(input: unknown): string[] {
     if (!Number.isInteger(p.seat) || p.seat < 1 || p.seat > 10 || seats.has(p.seat)) errors.push(`seat ${p.seat}`);
     seats.add(p.seat);
     if (!isAmount(p.stack)) errors.push(`stack seat ${p.seat}`);
-    if (p.name !== undefined && (typeof p.name !== 'string' || p.name.length > 40)) errors.push(`name seat ${p.seat}`);
+    if (p.name !== undefined && (typeof p.name !== 'string' || p.name.length > MAX_NAME_LENGTH)) errors.push(`name seat ${p.seat}`);
     if (p.cards) {
       if (!Array.isArray(p.cards) || p.cards.length !== holeCount || !p.cards.every(isValidCard)) errors.push(`cards seat ${p.seat}`);
       else for (const c of p.cards) seen.has(c) ? errors.push(`duplicate card ${c}`) : seen.add(c);
@@ -68,6 +73,6 @@ export function validateHand(input: unknown): string[] {
     errors.push('tags');
   if (h.winnerSeats !== undefined && (!Array.isArray(h.winnerSeats) || h.winnerSeats.some((s) => !seats.has(s)))) errors.push('winnerSeats');
   if (h.winnerSeats2 !== undefined && (!Array.isArray(h.winnerSeats2) || h.winnerSeats2.some((s) => !seats.has(s)))) errors.push('winnerSeats2');
-  if (h.notes !== undefined && (typeof h.notes !== 'string' || h.notes.length > 2000)) errors.push('notes');
+  if (h.notes !== undefined && (typeof h.notes !== 'string' || h.notes.length > MAX_NOTES_LENGTH)) errors.push('notes');
   return errors;
 }

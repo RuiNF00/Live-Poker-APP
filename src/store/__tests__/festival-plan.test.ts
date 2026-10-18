@@ -5,7 +5,9 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { eventDay, FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
-import { afterSession, buyInCaps, clashes, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { nextLevelAt } from '../../lib/lock-screen/live-state';
+import { bagDay, resumeDay } from '../multi-day';
+import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -263,8 +265,7 @@ test('sharing the plan: by day in start order, days/times/names only, buy-ins on
 test('a session for a planned event runs its level clock from the published start, never before', () => {
   const e = TORRELODONES_NOV_2026.events.find((x) => x.id === '1-1C')!;
   const start = venueTime(TORRELODONES_NOV_2026, e.start); // 17:00 in Madrid
-  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start - 25 * 60_000), start);
-  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 10 * 60_000), start + 10 * 60_000);
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e), start);
   // The festival runs to the 23rd although its last row is the 22nd.
   assert.deepEqual(festivalSpan(TORRELODONES_NOV_2026), { from: '2026-11-12', to: '2026-11-23' });
 });
@@ -408,4 +409,82 @@ test('an added tournament never reuses a deleted one\'s number', () => {
   const p = { ...EMPTY_PLAN, events: [ev('a', 1), ev('b', 2)] };
   const after = removeOwnEvent(p, 'a');
   assert.equal(nextOwnNumber(after), 3);
+});
+
+test('% da banca counts only buy-ins still to pay: a flight played (busted or bagged) is already out of the bankroll', () => {
+  const f = SAO_PAULO_NOV_2026;
+  let p = EMPTY_PLAN;
+  for (const id of ['1-1A', '1-1B']) p = togglePicked(p, id);
+  assert.equal(buyInsLeft(f, p, []), 3000);
+  // 1A busted, then 1B on the same session (a re-entry), bagged: nothing left to pay.
+  const s = mtt('s', 1, { buyIn: 1500, entries: 2, endedAt: 2, bag: { stack: 90000, at: 2 } });
+  p = { ...p, sessions: { '1-1A': 's', '1-1B': 's' } };
+  assert.equal(buyInsLeft(f, p, [s]), 0);
+  assert.equal(planTotals(f, p).buyIns, 3000);
+  // Still running: its buy-in isn't out of the balance yet.
+  assert.equal(buyInsLeft(f, p, [{ ...s, endedAt: undefined, bag: undefined }]), 3000);
+  // A link to a session since deleted counts as not played.
+  assert.equal(buyInsLeft(f, p, []), 3000);
+});
+
+test('late reg: the level clock is the floor\'s, from the published start; Day 2 from its own start', () => {
+  const f = TORRELODONES_NOV_2026;
+  const e = f.events.find((x) => x.id === '1-1C')!;
+  const start = venueTime(f, e.start);
+  // Joined 10 minutes in: level 1 goes up 20 minutes later, not 30.
+  const joined = mtt('j', start + 10 * 60_000, { levelMinutes: 30, levelStartedAt: levelStart(f, e) });
+  assert.equal(nextLevelAt(joined, start + 10 * 60_000)! - (start + 10 * 60_000), 20 * 60_000);
+  // Day 2 resumed 15 minutes after it started: the clock runs from the day's start, the night ends there.
+  const d2 = start + 24 * 3_600_000;
+  const bagged = bagDay(mtt('b', start, { levelMinutes: 30, levelStartedAt: start, level: 9 }), 90000, start + 10 * 3_600_000);
+  const r = resumeDay(bagged, d2 + 15 * 60_000, d2);
+  assert.equal(r.levelStartedAt, d2);
+  assert.equal(nextLevelAt(r, d2 + 15 * 60_000), d2 + 30 * 60_000);
+  // No start given: as before, from the tap.
+  assert.equal(resumeDay(bagged, d2).levelStartedAt, d2);
+});
+
+test('a row from an earlier day starts its level clock now, not hundreds of levels in', () => {
+  const e = TORRELODONES_NOV_2026.events.find((x) => x.id === '1-1C')!;
+  const start = venueTime(TORRELODONES_NOV_2026, e.start);
+  // In late reg: the floor's clock.
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 60 * 60_000, 120), start);
+  // Past it, or past LATE_DEFAULT_MIN with none given: from now.
+  const later = start + 12 * 86_400_000;
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, later, 120), later);
+  assert.equal(levelStart(TORRELODONES_NOV_2026, e, start + 5 * 3_600_000), start + 5 * 3_600_000);
+});
+
+test('a stored plan of the wrong shape is dropped, the good ones are kept', () => {
+  const good = { picked: ['1-A'], lateReg: { '1-A': 120 }, sessions: { '1-A': 's1' } };
+  const out = cleanPlans({
+    'las-vegas-dez-2026': 'str',
+    'prague-dez-2026': { picked: 'abc' },
+    'bahamas-dez-2026': { picked: ['1-A'], sessions: null },
+    'punta-cana-jan-2027': { picked: ['x'], events: [{ id: 'o1' }] },
+    'lisboa-nov-2026': good,
+    // An older plan without lateReg or sessions: they start empty.
+    'espinho-dez-2026': { picked: ['2'] },
+  });
+  assert.deepEqual(Object.keys(out).sort(), ['espinho-dez-2026', 'lisboa-nov-2026', 'punta-cana-jan-2027']);
+  // Its unreadable added tournament goes, the plan stays.
+  assert.deepEqual(out['punta-cana-jan-2027'].events, []);
+  assert.deepEqual(out['lisboa-nov-2026'], good);
+  assert.deepEqual(out['espinho-dez-2026'], { picked: ['2'], lateReg: {}, sessions: {} });
+});
+
+test('an added tournament with a start the planner cannot read, or no buy-in, is dropped alone', () => {
+  const ev = (over: object) => ({ 'las-vegas-dez-2026': { picked: ['o1'], events: [{ id: 'o1', number: 1, name: 'X', buyIn: 100, start: '2026-12-03T18:00', game: 'NLH', ...over }] } });
+  const ok = { any: false };
+  assert.equal(cleanPlans(ev({}), ok)['las-vegas-dez-2026'].events?.length, 1);
+  assert.equal(ok.any, false);
+  for (const bad of [{ start: '2026-12-03' }, { start: 'garbage' }, { buyIn: undefined }]) {
+    const dropped = { any: false };
+    // The tournament goes, the plan and its other picks stay.
+    const out = cleanPlans({ ...ev(bad), 'lisboa-nov-2026': { picked: ['2-1A'] } }, dropped);
+    assert.deepEqual(out['las-vegas-dez-2026'].events, []);
+    assert.deepEqual(out['las-vegas-dez-2026'].picked, ['o1']);
+    assert.ok(out['lisboa-nov-2026']);
+    assert.equal(dropped.any, true);
+  }
 });

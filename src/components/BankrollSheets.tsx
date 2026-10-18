@@ -9,7 +9,7 @@ import { locale, t } from '@/i18n';
 import type { Keep } from '@/store/moveup-math';
 import { endOfDay, presetRange, startOfDay, type DateRange, type RangePreset, type StakeOption } from '@/store/bankroll-math';
 import { CURRENCIES } from '@/store/currencies';
-import { parseDay } from '@/store/session-math';
+import { addDays, parseDay } from '@/store/session-math';
 import { uid } from '@/store/store';
 import type { Bankroll, Transfer } from '@/store/types';
 import { C, S } from '@/theme';
@@ -47,8 +47,6 @@ export function Sheet({ visible, title, onClose, children, footer }: { visible: 
   );
 }
 
-const DAY = 86400000;
-
 function shortDay(ts: number): string {
   return new Date(ts).toLocaleDateString(locale, { weekday: 'short', day: 'numeric' });
 }
@@ -65,7 +63,7 @@ export function DayPicker({ value, onChange }: { value: number; onChange: (day: 
     <View style={{ gap: S.sm }}>
       <ChipRow>
         {[0, 1, 2, 3, 4, 5, 6].map((k) => {
-          const d = today - k * DAY;
+          const d = addDays(today, -k);
           return (
             <Chip
               key={k}
@@ -89,7 +87,7 @@ export function DayPicker({ value, onChange }: { value: number; onChange: (day: 
         placeholder={t('Outra data: dd/mm/aaaa')}
         keyboardType="numbers-and-punctuation"
       />
-      {startOfDay(value) < today - 6 * DAY ? <T v="tiny">{fullDay(value)}</T> : null}
+      {startOfDay(value) < addDays(today, -6) ? <T v="tiny">{fullDay(value)}</T> : null}
     </View>
   );
 }

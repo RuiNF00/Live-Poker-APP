@@ -66,8 +66,8 @@ test('run it twice: both boards at the end, each winner tagged with their board'
   assert.equal(end.seats[2].handName2, 'Trio de Reis');
   // A screen reader hears both boards and each player's hand on each one.
   const said = spokenTable(end);
-  assert.match(said, /Mesa 1: 2 de paus, 7 de ouros, 9 de espadas, Valete de copas, 3 de paus/);
-  assert.match(said, /Mesa 2: Rei de espadas, 4 de copas, 8 de ouros, Dama de paus, 5 de espadas/);
+  assert.match(said, /Mesa 1: Dois de paus, Sete de ouros, Nove de espadas, Valete de copas, Três de paus/);
+  assert.match(said, /Mesa 2: Rei de espadas, Quatro de copas, Oito de ouros, Dama de paus, Cinco de espadas/);
   assert.match(said, /Mesa 1 Par de Ases, Mesa 2 Par de Ases/);
   // Before the end only the first board shows.
   assert.equal(viewAt(hand, r, r.steps.length - 1, opts).board2, null);

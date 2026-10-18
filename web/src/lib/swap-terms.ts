@@ -127,21 +127,73 @@ export interface SwapBalance {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * What each side has paid the other. The payer's «Paguei» and the receiver's «Recebi» for the
+ * same money are one payment, often both tapped at the table before either phone syncs. Each
+ * one's cid ends in «~k»: how many entries of the other kind, for the same payer and amount, its
+ * phone had already seen. Two entries only merge when neither had seen the other, so two real
+ * payments of the same amount, one recorded by each side, both count. Entries from before the
+ * tag (no «~k») count as having seen none. The same on every phone and the web, whatever order
+ * the entries arrive in.
+ */
+export function paidBySide(entries: Paid[]): { a: number; b: number } {
+  const by = new Map<string, { payer: Side; cents: number; p: Paid[]; r: Paid[] }>();
+  for (const e of entries) {
+    if (e.kind === 'result') continue;
+    const payer: Side = e.kind === 'payment' ? e.side : (e.side === 'a' ? 'b' : 'a');
+    const cents = Math.round(e.amount * 100);
+    const x = by.get(payer + cents) ?? { payer, cents, p: [], r: [] };
+    (e.kind === 'payment' ? x.p : x.r).push(e);
+    by.set(payer + cents, x);
+  }
+  const out = { a: 0, b: 0 };
+  for (const x of by.values()) {
+    const p = x.p.sort(byAt);
+    const r = x.r.sort(byAt);
+    const used = new Set<number>();
+    let matches = 0;
+    r.forEach((re, j) => {
+      const i = p.findIndex((pe, i) => !used.has(i) && i >= seenOf(re.cid) && j >= seenOf(pe.cid));
+      if (i >= 0) {
+        used.add(i);
+        matches++;
+      }
+    });
+    out[x.payer] += x.cents * (p.length + r.length - matches);
+  }
+  return { a: out.a / 100, b: out.b / 100 };
+}
+
+type Paid = Pick<SwapEntry, 'side' | 'kind' | 'amount'> & Partial<Pick<SwapEntry, 'cid' | 'at'>>;
+const byAt = (u: Paid, v: Paid) => (u.at ?? 0) - (v.at ?? 0) || ((u.cid ?? '') < (v.cid ?? '') ? -1 : (u.cid ?? '') > (v.cid ?? '') ? 1 : 0);
+const seenOf = (cid = '') => {
+  const m = /~(\d+)$/.exec(cid);
+  return m ? Number(m[1]) : 0;
+};
+
+/**
+ * The «~k» for a new «Paguei» or «Recebi» by `me`: how many entries of the other kind, for the
+ * same payer and amount, this phone already has from the other side (see paidBySide).
+ */
+export function seenTag(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[], me: Side, kind: string, amount: number): string {
+  if (kind !== 'payment' && kind !== 'received') return '';
+  const cents = Math.round(amount * 100);
+  const want = kind === 'payment' ? 'received' : 'payment';
+  return '~' + entries.filter((e) => e.side !== me && e.kind === want && Math.round(e.amount * 100) === cents).length;
+}
+
 /** Who owes whom: each side's percentage of the other's prizes, less what each already paid. */
-export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[]): SwapBalance {
+export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Paid[]): SwapBalance {
   let aOwes = 0;
   let bOwes = 0;
-  let aPaid = 0;
-  let bPaid = 0;
   for (const e of entries) {
     if (e.kind === 'result') {
       // Each prize's share to the cent, as the app does: the two never differ by a cent.
       if (e.side === 'a') aOwes += r2((terms.a.pct / 100) * e.amount);
       else bOwes += r2((terms.b.pct / 100) * e.amount);
-    } else if ((e.side === 'a') === (e.kind === 'payment')) aPaid += e.amount;
-    // A payment by b, or a's own note that b paid them.
-    else bPaid += e.amount;
+    }
   }
+  const { a: aPaid, b: bPaid } = paidBySide(entries);
   return { aOwes: r2(aOwes), bOwes: r2(bOwes), aPaid: r2(aPaid), bPaid: r2(bPaid), net: r2(bOwes - bPaid - (aOwes - aPaid)) };
 }
 

@@ -6,7 +6,7 @@ import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { addDays, atClock, lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
@@ -16,7 +16,7 @@ import { S } from '@/theme';
 import { MindAfter, MindBefore } from './MindCheckIn';
 import { StakeFields } from './StakeFields';
 import { TaxFields } from './TaxFields';
-import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
+import { Button, Card, Chip, ChipRow, confirmAction, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
@@ -124,6 +124,14 @@ export function SessionForm({
     }
     setS({ ...blank, id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
   };
+  // Another currency relabels the amounts 1:1 (1000 $ → 1000 €): ask first when there are amounts
+  // (the buy-in counts once the session is saved, live or not; a new form only has the default).
+  const pickBankroll = (b: Bankroll) => {
+    const apply = () => set({ bankrollId: b.id, currency: b.currency });
+    const hasAmounts = s.cashOut > 0 || s.addOn > 0 || (s.tips ?? 0) > 0 || (s.expenses ?? 0) > 0 || ((!!initial.endedAt || sessions.some((x) => x.id === initial.id)) && s.buyIn > 0);
+    if (b.currency === s.currency || !hasAmounts) return apply();
+    confirmAction(t('Mudar para {name}?', { name: b.name }), t('Os valores ficam iguais e passam a {cur}.', { cur: b.currency }), t('Mudar'), apply, false);
+  };
   const online = s.format === 'online';
   const submit = () => {
     if (past) {
@@ -131,10 +139,10 @@ export function SessionForm({
       if (initial.endedAt && day === initDay && mins === initMins && timeText === initTime)
         return onSubmit({ ...s, startedAt: initial.startedAt, endedAt: initial.endedAt, breaks: initial.breaks });
       let start: number;
-      if (startMin !== null) start = day + startMin * 60000;
+      if (startMin !== null) start = atClock(day, startMin);
       else {
         // No start time: it ended now (today) or late that evening.
-        const end = day >= dayStart(Date.now()) ? Date.now() : day + 23 * 3600000;
+        const end = day >= dayStart(Date.now()) ? Date.now() : atClock(day, 23 * 60);
         start = end - mins * 60000;
       }
       onSubmit({ ...s, startedAt: start, endedAt: start + mins * 60000, breaks: [], stackLog: [] });
@@ -175,7 +183,7 @@ export function SessionForm({
                 key={b.id}
                 label={`${b.name} · ${b.currency}`}
                 active={(s.bankrollId ? s.bankrollId === b.id : b.currency === s.currency && bankrolls.find((x) => x.currency === s.currency)?.id === b.id)}
-                onPress={() => set({ bankrollId: b.id, currency: b.currency })}
+                onPress={() => pickBankroll(b)}
               />
             ))}
           </ChipRow>
@@ -251,7 +259,7 @@ export function SessionForm({
           <Section title={t('Quando')}>
             <ChipRow>
               {[0, 1, 2, 3, 4, 5, 6].map((k) => {
-                const d = dayStart(Date.now()) - k * 86400000;
+                const d = addDays(dayStart(Date.now()), -k);
                 return (
                   <Chip
                     key={k}
@@ -275,7 +283,7 @@ export function SessionForm({
               placeholder={t('Outra data: dd/mm/aaaa')}
               keyboardType="numbers-and-punctuation"
             />
-            {day < dayStart(Date.now()) - 6 * 86400000 ? <T v="tiny">{fullDay(day)}</T> : null}
+            {day < addDays(dayStart(Date.now()), -6) ? <T v="tiny">{fullDay(day)}</T> : null}
           </Section>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
             <Field

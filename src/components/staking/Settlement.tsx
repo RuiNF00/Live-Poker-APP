@@ -47,7 +47,7 @@ export function SettlementCard({ l, name, currency }: { l: BackerLedger; name: s
         amount={l.prizes}
         currency={currency}
       />
-      {l.cut >= 0.005 ? <Step label={t('A tua parte no makeup')} detail={t('Só sobre o lucro acima do makeup')} amount={-l.cut} currency={currency} /> : null}
+      {Math.abs(l.cut) >= 0.005 ? <Step label={t('A tua parte no makeup')} detail={l.cut > 0 ? t('Só sobre o lucro acima do makeup') : t('Devolvida: o pacote voltou a descer')} amount={-l.cut} currency={currency} /> : null}
       {l.unpaid >= 0.005 ? (
         <Step
           label={t('Partes por pagar')}
@@ -121,7 +121,7 @@ function PieceSteps({ row, name, pkgName, currency, onTogglePaid }: { row: Backe
         {ended ? (
           <>
             <Step label={t('Parte de {name} no prémio', { name })} detail={`${pct(x.piece)} × ${m(x.prizeTotal)}`} amount={x.prize} currency={currency} />
-            {x.cut >= 0.005 ? <Step label={t('A tua parte no makeup')} detail={t('Pacote com makeup')} amount={-x.cut} currency={currency} /> : null}
+            {Math.abs(x.cut) >= 0.005 ? <Step label={t('A tua parte no makeup')} detail={x.cut > 0 ? t('Pacote com makeup') : t('Devolvida: o pacote voltou a descer')} amount={-x.cut} currency={currency} /> : null}
             <Step
               label={x.net >= 0 ? t('{name} ganha', { name }) : t('{name} perde', { name })}
               detail={t('Recebe {amount}', { amount: m(x.owed) })}

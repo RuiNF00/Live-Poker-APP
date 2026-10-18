@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,6 +38,13 @@ export default function Welcome() {
   const [skipped, setSkipped] = useState(false);
   // One event per screen reached, so the funnel shows where people stop.
   useEffect(() => track('onboarding_step', { step: at, index: step }), [at, step]);
+  // Closed any other way (Android's back button): the answers so far are saved too, so the
+  // install counts as used (app-lock-core lockIsThisInstalls) and nothing typed is lost.
+  const answers = useRef(a);
+  useEffect(() => {
+    answers.current = a;
+  }, [a]);
+  useEffect(() => () => void AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(answers.current)).catch(() => {}), []);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const finish = () => {

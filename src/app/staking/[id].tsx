@@ -3,7 +3,7 @@
 
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -19,13 +19,14 @@ import { backerPageUrl, queueBackerPageDelete } from '@/lib/backer-page';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
 import { shareRef } from '@/lib/referrals';
+import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
 import { useOffers } from '@/store/action-offer';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -46,6 +47,8 @@ function BackerScreen() {
   const [paying, setPaying] = useState(false);
   const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
   const [year, setYear] = useState<number | null>(null);
+  // «Enviar contas» one at a time: on one bar of signal the page can take a while, and a second tap would open a second share.
+  const sending = useRef(false);
   // After Pro ended: everything shows, and each change goes through "Ver com Pro".
   const { readOnly, gate } = useProReadOnly('staking');
   const backer = backers.find((b) => b.id === id);
@@ -101,6 +104,15 @@ function BackerScreen() {
     );
 
   const shareSummary = async (withYear = false) => {
+    if (sending.current) return;
+    sending.current = true;
+    try {
+      await sendSummary(withYear);
+    } finally {
+      sending.current = false;
+    }
+  };
+  const sendSummary = async (withYear: boolean) => {
     tap('medium');
     const lines = withYear && yr ? [
       t('{year} com {name}', { year: yr.year, name: backer.name }),
@@ -131,7 +143,8 @@ function BackerScreen() {
     let next: Backer = { ...backer, shareKey: key };
     let url = '';
     // Their fixed link: sent once, it keeps itself current (BackerPage). The year summary stays a one-off.
-    if (!withYear)
+    // Known to be offline: straight to the one-off link, without waiting on requests that can't go out.
+    if (!withYear && isOnline())
       try {
         const b = await ensureBackerPage(next, saveBacker);
         next = b;
@@ -415,6 +428,16 @@ function BackerScreen() {
         makeup={pkg && (pk.states.get(pkg.id)?.makeup ?? 0) >= 0.01 ? money(pk.states.get(pkg.id)!.makeup, pk.states.get(pkg.id)!.currency || cur) : null}
         onClose={() => setPkg(null)}
         onSave={(p, carry) => {
+          // Reopening a package whose makeup went to a new one: that one goes, or the makeup counts
+          // twice. Once it has sessions (or was closed itself, maybe carried on to a «(3)») the makeup
+          // is being won back there, so it stays closed.
+          const was = packages.find((q) => q.id === p.id);
+          const next = was?.closedAt && !p.closedAt ? carriedTo(was, packages) : undefined;
+          if (next && ((pk.states.get(next.id)?.sessions ?? 0) > 0 || next.closedAt)) {
+            Alert.alert(t('Não dá para reabrir este pacote'), t('O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.', { name: next.name }));
+            return;
+          }
+          if (next) deletePackage(next.id);
           if (carry) {
             const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
             savePackage(closed);

@@ -32,8 +32,8 @@ export function bagDay(s: Session, stack: number, now = Date.now()): Session {
   };
 }
 
-/** Start the next day with the bagged stack. */
-export function resumeDay(s: Session, now = Date.now()): Session {
+/** Start the next day with the bagged stack; `levelFrom`: the level clock runs from the day's published start (the floor's clock). */
+export function resumeDay(s: Session, now = Date.now(), levelFrom = now): Session {
   if (!s.bag) return s;
   const { bag, ...rest } = s;
   return {
@@ -42,8 +42,9 @@ export function resumeDay(s: Session, now = Date.now()): Session {
     day: dayOf(s) + 1,
     stack: bag.stack,
     stackLog: [...s.stackLog, { t: now, stack: bag.stack, level: s.level }],
-    breaks: [...(s.breaks ?? []), { start: bag.at, end: now }],
-    levelStartedAt: s.levelMinutes ? now : undefined,
+    // Joined after the day started: the night ends there, so the clock doesn't count the minutes missed as a pause.
+    breaks: [...(s.breaks ?? []), { start: bag.at, end: Math.max(bag.at, Math.min(now, levelFrom)) }],
+    levelStartedAt: s.levelMinutes ? levelFrom : undefined,
   };
 }
 

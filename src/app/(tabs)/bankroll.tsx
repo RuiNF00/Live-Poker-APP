@@ -22,7 +22,7 @@ import { WinRateCard } from '@/components/WinRate';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { chips, duration, money, shortDate } from '@/poker/format';
+import { chips, duration, minus, money, plus, shortDate } from '@/poker/format';
 import {
   activeFilters,
   applyFilter,
@@ -47,7 +47,7 @@ import {
 } from '@/store/bankroll-math';
 import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
-import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, totals } from '@/store/session-math';
+import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, rateShown, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
@@ -178,7 +178,7 @@ function BankrollTab() {
   const single = 'bankrollId' in scope ? bankrolls.find((b) => b.id === scope.bankrollId) : undefined;
   const scopeName = single?.name ?? t('Todas {currency}', { currency: cur });
   const pct = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}%`;
-  const signedMoney = (n: number) => (hidden ? '•••' : (n > 0 ? '+' : '') + fmt(n, cur));
+  const signedMoney = (n: number) => (hidden ? '•••' : plus(n) + fmt(n, cur));
   const pastBankroll = single ?? scopeBankrolls[0] ?? defaultBankroll;
   const saveRef = useRef<(() => void) | null>(null);
   const newPast = (): Session => {
@@ -257,7 +257,7 @@ function BankrollTab() {
           <Empty
             compact
             title={t('Ainda sem sessões')}
-            body={t('O lucro e o €/hora aparecem aqui.')}
+            body={t('O lucro e o resultado por hora aparecem aqui.')}
             action={
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
                 <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />
@@ -338,7 +338,7 @@ function BankrollTab() {
                   {[
                     tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions }),
                     t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
-                    tot.hours >= 0.25 ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
+                    rateShown(tot.hours) ? t('{amount}/h', { amount: fmt(Math.round(tot.hourly), cur) }) : '',
                     first ? t('desde {date}', { date: shortDate(first) }) : '',
                   ]
                     .filter(Boolean)
@@ -349,18 +349,18 @@ function BankrollTab() {
                     values={pts}
                     height={120}
                     peaks={dd.peaks}
-                    label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)), drop: dd.max ? (hidden ? '•••' : '−' + fmt(dd.max, cur)) : '—' })}
+                    label={t('Gráfico do resultado acumulado: {now} em {n} sessões, máximo {max}, maior queda {drop}.', { now: signedMoney(pts[pts.length - 1] ?? 0), n: tot.sessions, max: signedMoney(Math.max(0, ...pts)), drop: dd.max ? (hidden ? '•••' : minus() + fmt(dd.max, cur)) : '—' })}
                   />
                 </View>
                 <Row gap={S.sm}>
                   <Mini label={t('Pico')} value={fmt(dd.peak, cur)} />
-                  <Mini label={t('Maior queda')} value={dd.max ? '−' + fmt(dd.max, cur) : '—'} color={dd.max ? C.bad : undefined} />
-                  <Mini label={t('Abaixo do pico')} value={dd.current ? '−' + fmt(dd.current, cur) : t('No pico')} color={dd.current ? C.bad : C.good} />
+                  <Mini label={t('Maior queda')} value={dd.max ? minus() + fmt(dd.max, cur) : '—'} color={dd.max ? C.bad : undefined} />
+                  <Mini label={t('Abaixo do pico')} value={dd.current ? minus() + fmt(dd.current, cur) : t('No pico')} color={dd.current ? C.bad : C.good} />
                 </Row>
                 <T v="tiny">{t('Pico: o teu melhor resultado acumulado. Maior queda: o máximo que já desceste a partir de um pico.')}</T>
               </Card>
               <StatGrid cols={2}>
-                <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={tot.hours >= 0.25 ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
+                <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={rateShown(tot.hours) ? fmt(Math.round(tot.hourly), cur) : '—'} tone={tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
                 {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
                 {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
                 <Stat label={t('Buy-ins')} sub={t('O teu dinheiro em jogo')} value={fmt(tot.invested, cur)} />
@@ -411,7 +411,7 @@ function BankrollTab() {
                   icon="trending-down"
                   iconColor={C.bad}
                   title={t('Downswings')}
-                  subtitle={dd.max ? t('Agora: {now} · maior: −{max}', { now: dd.current ? '−' + fmt(dd.current, cur) : t('no pico'), max: fmt(dd.max, cur) }) : t('A tua maior queda e se é normal')}
+                  subtitle={dd.max ? t('Agora: {now} · maior: {max}', { now: dd.current ? minus() + fmt(dd.current, cur) : t('no pico'), max: minus() + fmt(dd.max, cur) }) : t('A tua maior queda e se é normal')}
                   onPress={() => router.push({ pathname: '/downswing', params: { currency: cur } })}
                 />
                 <ListItem
@@ -807,9 +807,9 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
               accessibilityLabel={[
                 b.key,
                 b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions }),
-                b.hours >= 0.25 && b.mtts < b.sessions ? t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : '',
+                rateShown(b.hours) && b.mtts < b.sessions ? t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : '',
                 b.roi !== null ? 'ROI ' + pctOf(b.roi) : '',
-                (b.profit > 0 ? '+' : '') + fmt(b.profit, cur),
+                plus(b.profit) + fmt(b.profit, cur),
               ]
                 .filter(Boolean)
                 .join(', ')}>
@@ -820,12 +820,12 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
                   </T>
                   <T v="tiny">
                     {b.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: b.sessions })}
-                    {b.hours >= 0.25 && b.mtts < b.sessions ? ' · ' + t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : ''}
+                    {rateShown(b.hours) && b.mtts < b.sessions ? ' · ' + t('{amount}/h', { amount: fmt(Math.round(b.hourly), cur) }) : ''}
                     {b.roi !== null ? ' · ROI ' + pctOf(b.roi) : ''}
                   </T>
                 </View>
                 <T v="mono" color={b.profit >= 0 ? C.good : C.bad}>
-                  {(b.profit > 0 ? '+' : '') + fmt(b.profit, cur)}
+                  {plus(b.profit) + fmt(b.profit, cur)}
                 </T>
               </Row>
               <View style={{ height: 4, borderRadius: 2, backgroundColor: C.surface3 }}>
@@ -850,10 +850,10 @@ function SessionRow({ s, bankroll, onEdit }: { s: Session; bankroll?: string; on
       icon={mtt ? 'trophy-outline' : 'cash-outline'}
       iconColor={mtt ? C.warn : C.info}
       title={s.name || (mtt ? t('Torneio') : 'Cash')}
-      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
       right={
         <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
-          {(p > 0 ? '+' : '') + fmt(p, s.currency)}
+          {plus(p) + fmt(p, s.currency)}
         </T>
       }
       chevron={false}

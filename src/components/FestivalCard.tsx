@@ -222,7 +222,7 @@ export function FestivalCard({
               color: ink ? INK : C.text,
             }}
           >
-            {t("RESUMO DO FESTIVAL")}
+            {r.festival ? t("RESUMO DO FESTIVAL") : t('RESUMO DA VIAGEM')}
           </Text>
         </View>
       </View>

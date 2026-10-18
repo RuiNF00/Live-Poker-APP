@@ -4,7 +4,7 @@
 
 import { t } from '@/i18n';
 
-import { cost, mainCurrency, playedMs, profit } from './session-math';
+import { cost, mainCurrency, playedMs, profit, rateShown } from './session-math';
 import type { Session } from './types';
 
 export interface Drawdown {
@@ -50,6 +50,7 @@ export function cashStats(list: Session[], currency = mainCurrency(list)): CashS
   const hrs = done.map((s) => playedMs(s) / 3600000);
   const res = done.map(profit);
   const hours = hrs.reduce((a, b) => a + b, 0);
+  if (!rateShown(hours)) return null;
   const hourly = res.reduce((a, b) => a + b, 0) / hours;
   const varHour = res.reduce((a, r, i) => a + (r - hourly * hrs[i]) ** 2, 0) / hours;
   return { hours, sessions: done.length, hourly, sdHour: Math.sqrt(varHour) };

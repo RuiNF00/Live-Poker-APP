@@ -5,8 +5,10 @@ import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { invitePct } from '@/billing/disclosure';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
+import { inviteOfferPrice, LIVE } from '@/billing/purchases';
 import { deferTrial } from '@/billing/trial-moments';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -26,6 +28,12 @@ export default function Paywall() {
   const win = useWindowDimensions();
   // Short screens and large text both: the plans stay above the fold.
   const compact = win.height < 760 || win.fontScale > 1.3;
+  // Very short screens (320×568): the fixed footer keeps the billed price, the button and
+  // the disclosures; Restore and the other ways out move to the end of the scroll.
+  const short = win.height < 640;
+  // Short screen and text at 160%+: the fixed footer took ~3/4 of the screen and left the plans a sliver.
+  // It scrolls after the plans instead, the button still with the terms and links right under it.
+  const inline = short && win.fontScale >= 1.6;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -49,6 +57,8 @@ export default function Paywall() {
 
   // An invite discount still open: one line to where it's used, so it isn't missed here.
   const [inviteOffer, setInviteOffer] = useState<InviteOffer | null>(null);
+  // On Google Play the % is the store offer's own (as on the invite screen); without it no figure is claimed.
+  const invitePctShown = invitePct(Platform.OS === 'android' && LIVE, monthly?.price, inviteOfferPrice(plans)?.price, INVITE.pct);
   useEffect(() => {
     savedInviteOffer().then(setInviteOffer);
   }, []);
@@ -133,14 +143,92 @@ export default function Paywall() {
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
   const after = chosen ? t('{price} por {period}', { price: chosen.priceString, period: t(PLANS[plan].period) }) : '';
 
+  const restoreLink = (
+    <LegalLink role="button" onPress={onRestore} disabled={!!busy} color={busy === 'restore' ? C.accent : C.textDim} title={busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')} />
+  );
+  // The renewal/trial terms and Terms + Privacy are disclosures: always in the footer next to the
+  // button, on short screens too (App Store 3.1.2, Google Play). The rest can scroll on short screens.
+  const disclosure = (
+    <>
+      {/* Same terms on both stores: renews by itself, cancelled in the store's settings at least 24 h before (App Store 3.1.2, Google Play). */}
+      {chosen ? (
+        <T v="tiny" style={{ textAlign: 'center' }}>
+          {trial
+            ? t('Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.', { price: after, date: trialEnd(trial), store })
+            : t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
+        </T>
+      ) : null}
+      {short ? <LegalLinks /> : <LegalLinks>{restoreLink}</LegalLinks>}
+    </>
+  );
+  const shieldLine = compact ? null : (
+    <Row gap={6} style={{ justifyContent: 'center' }}>
+      <Ionicons name="shield-checkmark" size={14} color={C.good} />
+      <T v="small" color={C.text}>
+        {Platform.OS === 'android' ? t('Cancela quando quiseres na Google Play, em Pagamentos e subscrições.') : t('Cancela quando quiseres na {store}.', { store })}
+      </T>
+    </Row>
+  );
+  const extras = (
+    <>
+      {short ? <Row style={{ justifyContent: 'center' }}>{restoreLink}</Row> : null}
+      {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
+        <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
+          <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="gift-outline" size={14} color={C.accent} />
+            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+              {t('Convidar um amigo')}
+            </T>
+          </Pressable>
+          <Pressable onPress={dismiss} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+            <T v="small" color={C.muted}>
+              {t('Agora não')}
+            </T>
+          </Pressable>
+        </Row>
+      ) : null}
+    </>
+  );
+
+  const footer = (
+    <View style={inline ? { gap: S.xs } : { paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
+      {busy === 'buy' ? (
+        <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={C.accent} />
+        </View>
+      ) : (
+        <>
+          {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}
+          {after ? (
+            <T v="small" style={{ textAlign: 'center' }}>
+              <T v="h3">{after}</T>
+              {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
+            </T>
+          ) : null}
+          <Button title={trial ? t('Continuar') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
+        </>
+      )}
+      {deferable && trial ? (
+        <Pressable onPress={later} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+            {t('Prefiro começar na próxima sessão')}
+          </T>
+        </Pressable>
+      ) : null}
+      {short ? null : shieldLine}
+      {disclosure}
+      {short ? null : extras}
+    </View>
+  );
+
   if (isPro && wasPro) return <AlreadyPro onDone={close} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: compact ? S.lg : S.xl }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: short ? S.sm : compact ? S.lg : S.xl }}>
         <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
-        <View style={{ gap: S.md }}>
+        <View style={{ gap: short ? S.sm : S.md }}>
           {compact ? null : (
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
               <Ionicons name="flash" size={28} color={C.accentInk} />
@@ -184,7 +272,7 @@ export default function Paywall() {
             <T v="small">{t('A carregar os preços da {store}…', { store })}</T>
           </Row>
         ) : (
-          <View style={{ gap: S.sm + 2 }}>
+          <View style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">Sweatbook Pro</T>
             {inviteOffer ? (
@@ -194,7 +282,7 @@ export default function Paywall() {
                 style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.md, borderRadius: R.md, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, opacity: pressed ? 0.7 : 1 })}>
                 <Ionicons name="gift" size={18} color={C.accent} />
                 <T v="small" color={C.text} style={{ flex: 1 }}>
-                  {t('Tens {pct}% no primeiro mês pelo convite', { pct: INVITE.pct })}
+                  {invitePctShown !== null ? t('Tens {pct}% no primeiro mês pelo convite', { pct: invitePctShown }) : t('Tens um desconto no primeiro mês do Pro')}
                 </T>
                 <T v="small" color={C.accent}>
                   {t('Usar')}
@@ -208,7 +296,7 @@ export default function Paywall() {
                 title={t('Anual')}
                 big={annual.priceString}
                 unit={t('/ano')}
-                line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
+                line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })}
                 tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, saving !== null && saving > 0 ? '−' + saving + '%' : null]}
                 compact={compact}
               />
@@ -217,67 +305,11 @@ export default function Paywall() {
             {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
+        {inline ? footer : null}
+        {short ? <View style={{ gap: S.sm }}>{extras}</View> : null}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + S.sm, gap: S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
-        {busy === 'buy' ? (
-          <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color={C.accent} />
-          </View>
-        ) : (
-          <>
-            {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}
-            {after ? (
-              <T v="small" style={{ textAlign: 'center' }}>
-                <T v="h3">{after}</T>
-                {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
-              </T>
-            ) : null}
-            <Button title={trial ? t('Continuar') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
-          </>
-        )}
-        {deferable && trial ? (
-          <Pressable onPress={later} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
-              {t('Prefiro começar na próxima sessão')}
-            </T>
-          </Pressable>
-        ) : null}
-        {compact ? null : (
-          <Row gap={6} style={{ justifyContent: 'center' }}>
-            <Ionicons name="shield-checkmark" size={14} color={C.good} />
-            <T v="small" color={C.text}>
-              {Platform.OS === 'android' ? t('Cancela quando quiseres na Google Play, em Pagamentos e subscrições.') : t('Cancela quando quiseres na {store}.', { store })}
-            </T>
-          </Row>
-        )}
-        {/* Same terms on both stores: renews by itself, cancelled in the store's settings at least 24 h before (App Store 3.1.2, Google Play). */}
-        {chosen ? (
-          <T v="tiny" style={{ textAlign: 'center' }}>
-            {trial
-              ? t('Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.', { price: after, date: trialEnd(trial), store })
-              : t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
-          </T>
-        ) : null}
-        <LegalLinks>
-          <LegalLink role="button" onPress={onRestore} disabled={!!busy} color={busy === 'restore' ? C.accent : C.textDim} title={busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')} />
-        </LegalLinks>
-        {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
-          <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
-            <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="gift-outline" size={14} color={C.accent} />
-              <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
-                {t('Convidar um amigo')}
-              </T>
-            </Pressable>
-            <Pressable onPress={dismiss} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-              <T v="small" color={C.muted}>
-                {t('Agora não')}
-              </T>
-            </Pressable>
-          </Row>
-        ) : null}
-      </View>
+      {inline ? null : footer}
       {sheet}
     </View>
   );
@@ -305,6 +337,7 @@ function PlanCard({
   /** One row: radio, name and line on the left, price on the right. */
   compact?: boolean;
 }) {
+  const bigText = useWindowDimensions().fontScale >= 1.6;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -319,26 +352,30 @@ function PlanCard({
         borderWidth: 2,
         borderColor: active ? C.accent : C.border,
         backgroundColor: active ? C.accentSoft : C.surface,
-        padding: compact ? S.md : S.lg,
+        paddingHorizontal: compact ? S.md : S.lg,
+        paddingVertical: compact ? S.sm : S.lg,
         gap: S.sm,
         opacity: pressed ? 0.9 : 1,
       })}>
       {compact ? (
-        <Row gap={S.sm}>
+        // Text at 160%+: the price goes under the name, or it squeezed the line to "16, 6…".
+        <Row gap={S.sm} style={bigText ? { flexWrap: 'wrap' } : null}>
           <Radio active={active} />
           <View style={{ flex: 1, gap: 1 }}>
-            <Row gap={6}>
+            <Row gap={6} style={{ flexWrap: 'wrap' }}>
               <T v="h3">{title}</T>
               {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
-            <T v="tiny" numberOfLines={2}>
+            <T v="tiny" numberOfLines={bigText ? undefined : 2}>
               {line}
             </T>
           </View>
-          <T v="mono" numberOfLines={1}>
-            {big}
-          </T>
-          <T v="tiny">{unit}</T>
+          <Row gap={S.sm} style={bigText ? { width: '100%', paddingLeft: 30 } : null}>
+            <T v="mono" numberOfLines={1}>
+              {big}
+            </T>
+            <T v="tiny">{unit}</T>
+          </Row>
         </Row>
       ) : (
         <>

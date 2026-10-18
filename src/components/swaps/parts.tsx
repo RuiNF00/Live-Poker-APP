@@ -11,7 +11,7 @@ import { ReadPrizeButton } from '@/components/swaps/ReadPrize';
 import { Button, Card, Chip, ChipRow, Field, PressRow, Row, Section, Segmented, T } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
 import { maybeAskForReview } from '@/lib/review';
-import { money, shortDate, timeOf } from '@/poker/format';
+import { money, plus, shortDate, timeOf } from '@/poker/format';
 import { HALF_CENT } from '@/store/swap-groups';
 import { useStore } from '@/store/store';
 import { CURRENCIES } from '@/store/currencies';
@@ -19,7 +19,7 @@ import { other, owedOn, settled, swapNames, type Swap, type SwapEntry, type Swap
 import { C, R, S } from '@/theme';
 
 /** An amount with its sign, so the direction never depends on colour alone: +1230$ / −1230$. */
-export const signed = (n: number, cur: string) => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), cur);
+export const signed = (n: number, cur: string) => plus(n, true) + money(Math.abs(n), cur);
 
 export const pctLabel = (n: number) => `${decimalComma ? String(n).replace('.', ',') : n}%`;
 
@@ -153,7 +153,7 @@ export function EntryRow({ swap, e, onLongPress, hideOwed }: { swap: Swap; e: Sw
           : t('{name} pagou-te', { name: names[e.side] });
   const sub =
     e.kind === 'result'
-      ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}º lugar', { n: e.finish }) : '']
+      ? [mine ? t('Cobraste {amount}', { amount: money(e.amount, cur) }) : t('{name} cobrou {amount}', { name: who, amount: money(e.amount, cur) }), e.finish ? t('{n}.º lugar', { n: e.finish }) : '']
           .filter(Boolean)
           .join(' · ')
       : shortDate(e.at);

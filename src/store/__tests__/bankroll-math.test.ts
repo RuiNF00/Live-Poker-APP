@@ -11,6 +11,7 @@ import {
   balanceCurve,
   balanceOf,
   bankrollOf,
+  endOfDay,
   ensureBankrolls,
   NO_FILTER,
   presetRange,
@@ -168,4 +169,13 @@ test('stakeLabel: blinds with cents read as money, whole blinds stay plain', () 
   const sep = decimalComma ? ',' : '.';
   assert.equal(stakeLabel(stakeKey({ kind: 'cash', sb: 0.25, bb: 0.5, buyIn: 50 }), '€'), `0${sep}25/0${sep}50`);
   assert.equal(stakeLabel(stakeKey({ kind: 'cash', sb: 1, bb: 2, buyIn: 200 }), '€'), '1/2');
+});
+
+// Meaningful in any time zone; checked by hand with TZ=Europe/Lisbon and TZ=America/Los_Angeles.
+test('endOfDay and the 30-day range follow the calendar across DST changes', () => {
+  for (const [y, m, d] of [[2026, 9, 25], [2026, 10, 1], [2026, 2, 29], [2026, 2, 8]]) {
+    assert.equal(endOfDay(new Date(y, m, d, 12).getTime()), new Date(y, m, d, 23, 59, 59, 999).getTime());
+  }
+  assert.equal(presetRange('30d', new Date(2026, 9, 26, 0, 30).getTime()).from, new Date(2026, 8, 27).getTime());
+  assert.equal(presetRange('30d', new Date(2026, 2, 29, 23, 30).getTime()).from, new Date(2026, 1, 28).getTime());
 });

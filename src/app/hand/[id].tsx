@@ -6,7 +6,6 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 're
 
 import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
-import { CommentsList, PrivateStreetNotes } from '@/components/Comments';
 import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
 import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
@@ -42,6 +41,10 @@ import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import type { Hand, Street } from '@/poker/types';
 import { reduceMotion } from '@/lib/motion';
+
+// Loaded when the hand opens, not at launch (the comments code is only used here and in /h).
+const CommentsList = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.CommentsList })));
+const PrivateStreetNotes = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.PrivateStreetNotes })));
 
 /** How long "Desfazer" stays on a removed comment before it really goes. */
 const UNDO_MS = 5000;
@@ -202,7 +205,8 @@ export default function HandScreen() {
         const opts = { names: settings.shareNames, notes: settings.shareNotes };
         queueShare({ ...hand, ask: ask.trim().slice(0, 140) || undefined }, opts);
         notice(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
-      } else notice(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
+      } else if ((e as Error)?.message === 'upload 422') notice(t('Não deu para criar o link'), t('Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.'));
+      else notice(t('Sem ligação'), t('Não deu para criar o link agora. Podes partilhar o texto da mão.'));
       return null;
     } finally {
       setBusy(false);
@@ -360,14 +364,12 @@ ${link}`;
       // The public link goes with the hand (the store queues it until there's signal).
       dropVoiceNote(hand.voiceNote);
       deleteHand(hand.id);
-      router.back();
+      // Opened straight from a link there is nothing to go back to.
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
     };
-    if (Platform.OS === 'web') doIt();
-    else
-      Alert.alert(t('Apagar mão?'), t('Não dá para desfazer.'), [
-        { text: t('Cancelar'), style: 'cancel' },
-        { text: t('Apagar'), style: 'destructive', onPress: doIt },
-      ]);
+    // Asks on the web too, like deleting the share.
+    confirmAction(t('Apagar mão?'), t('Não dá para desfazer.'), t('Apagar'), doIt);
   };
 
   // The destinations the sheet lists first; the one used last is also the button on the screen.
@@ -456,6 +458,7 @@ ${link}`;
           <View onLayout={(e) => onCommentsLayout(e.nativeEvent.layout.y)}>
           <Section title={t('Comentários')} action={t('Atualizar')} onAction={loadComments}>
             <VoteTally votes={votes} />
+            <React.Suspense fallback={null}>
             <CommentsList
               shareId={hand.shareId}
               comments={comments}
@@ -478,13 +481,16 @@ ${link}`;
               ownerToken={hand.shareToken}
               onCompose={() => setTimeout(() => scroller.current?.scrollToEnd({ animated: !reduceMotion() }), 350)}
             />
+            </React.Suspense>
             {hand.shareToken ? <Button kind="plain" size="sm" title={t('Apagar partilha')} style={{ alignSelf: 'center' }} onPress={unshare} /> : null}
           </Section>
           </View>
         ) : (
           <>
             <Section title={t('As tuas notas')} hint={t('Uma nota por rua, só tu vês. Nunca sai do telemóvel.')}>
-              <PrivateStreetNotes streets={streets} street={street} onJumpStreet={jumpStreet} notes={hand.streetNotes} onNote={saveNote} />
+              <React.Suspense fallback={null}>
+                <PrivateStreetNotes streets={streets} street={street} onJumpStreet={jumpStreet} notes={hand.streetNotes} onNote={saveNote} />
+              </React.Suspense>
             </Section>
             <T v="small" style={{ textAlign: 'center', paddingHorizontal: S.lg }}>
               {t('Os teus amigos veem o replay no browser e comentam, mesmo sem a app.')}

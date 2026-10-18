@@ -14,7 +14,7 @@ import { buildReport, handsCsv } from '@/export/report';
 import { reportHtml } from '@/export/report-html';
 import { saveTextFile } from '@/lib/files';
 import { sharePdf } from '@/lib/pdf';
-import { money } from '@/poker/format';
+import { money, plus } from '@/poker/format';
 import { endOfDay, inRange, scopeIds, scopeOptions, sameScope, type DateRange, type Scope } from '@/store/bankroll-math';
 import { buildBackup, sessionsCsv } from '@/store/backup';
 import { parseDay } from '@/store/session-math';
@@ -140,7 +140,7 @@ export default function ExportScreen() {
 
         <Section title={t('No relatório')} hint={report.currencies.length > 1 ? report.currencies.length === 2 ? t('Mais 1 moeda, com o seu resumo.') : t('Mais {n} moedas, cada uma com o seu resumo.', { n: report.currencies.length - 1 }) : undefined}>
           <StatGrid cols={3}>
-            <Stat label={t('Resultado')} value={main ? (main.totals.profit > 0 ? '+' : '') + money(main.totals.profit, main.currency) : '—'} tone={main ? (main.totals.profit >= 0 ? 'good' : 'bad') : undefined} />
+            <Stat label={t('Resultado')} value={main ? plus(main.totals.profit) + money(main.totals.profit, main.currency) : '—'} tone={main ? (main.totals.profit >= 0 ? 'good' : 'bad') : undefined} />
             <Stat label={t('Sessões')} value={String(main?.totals.sessions ?? 0)} />
             <Stat label={t('Mãos')} value={String(handsIn)} />
           </StatGrid>
@@ -153,10 +153,10 @@ export default function ExportScreen() {
 
         <Section title={t('Exportar')}>
           <ListGroup>
-            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')} right={lock} onPress={pdf} />
-            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
-            <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={t('Posição, cartas, board, resultado, tags e notas')} right={lock} onPress={handsFile} />
-            <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')} onPress={backup} />
+            <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={<T v="small">{t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')}</T>} right={lock} onPress={pdf} />
+            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={<T v="small">{t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')}</T>} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
+            <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={<T v="small">{t('Posição, cartas, board, resultado, tags e notas')}</T>} right={lock} onPress={handsFile} />
+            <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={<T v="small">{t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')}</T>} onPress={backup} />
           </ListGroup>
         </Section>
       </ScrollView>

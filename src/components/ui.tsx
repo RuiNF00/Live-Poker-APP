@@ -241,9 +241,12 @@ export function Screen({
 
 /** Large title row used at the top of tab screens. */
 export function ScreenHeader({ title, eyebrow, right, style }: { title: React.ReactNode; eyebrow?: string; right?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  // At 160%+ a text title keeps at least 60% of the row; the actions go under it when they don't fit
+  // beside it (the live session read "EPT B…" next to Terminar, its venue broken mid-word).
+  const wrap = useWindowDimensions().fontScale >= 1.6 && typeof title === 'string' && !!right;
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: S.md, minHeight: 52 }, style]}>
-      <View style={{ flex: 1, gap: 2 }}>
+    <View style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: S.md, minHeight: 52 }, wrap ? { flexWrap: 'wrap' } : null, style]}>
+      <View style={[{ gap: 2 }, wrap ? { flexGrow: 1, flexShrink: 1, flexBasis: '60%' } : { flex: 1 }]}>
         {eyebrow ? <T v="label">{eyebrow}</T> : null}
         {typeof title === 'string' ? (
           <T v="title" numberOfLines={1}>
@@ -445,7 +448,8 @@ export function ListItem({
       ) : null}
       <View style={{ flex: 1, gap: 2 }}>
         {typeof title === 'string' ? (
-          <T v="body" numberOfLines={numberOfLines} color={destructive ? C.danger : undefined} style={{ fontFamily: F.medium }}>
+          // At 160%+ rows wrap instead of cutting what a setting does; they have a minHeight, not a height.
+          <T v="body" numberOfLines={bigText ? undefined : numberOfLines} color={destructive ? C.danger : undefined} style={{ fontFamily: F.medium }}>
             {title}
           </T>
         ) : (
@@ -453,7 +457,7 @@ export function ListItem({
         )}
         {subtitle ? (
           typeof subtitle === 'string' ? (
-            <T v="small" numberOfLines={3}>
+            <T v="small" numberOfLines={bigText ? undefined : 3}>
               {subtitle}
             </T>
           ) : (
@@ -837,9 +841,10 @@ export function Segmented<K extends string | number>({
               backgroundColor: on ? C.surface3 : 'transparent',
               ...(on ? SHADOW : null),
             }}>
-            <RNText numberOfLines={1} maxFontSizeMultiplier={CONTROL_SCALE} style={{ color: on ? C.text : C.muted, fontFamily: ff(700), fontWeight: '700', fontSize: size === 'md' ? 14 : 13 }}>
+            {/* Equal-width segments: at large text a long label ("Live e online") shrinks instead of being cut. */}
+            <FitText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ flexShrink: 1, color: on ? C.text : C.muted, fontFamily: ff(700), fontWeight: '700', fontSize: size === 'md' ? 14 : 13 }}>
               {o.label}
-            </RNText>
+            </FitText>
             {o.locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
           </Pressable>
         );
@@ -1117,8 +1122,9 @@ export function PressRow({ children, style, ...rest }: PressableProps & { childr
 export function Wordmark({ size = 30 }: { size?: number }) {
   const st: TextStyle = { fontSize: size, fontFamily: ff(800), fontWeight: '800', letterSpacing: -0.035 * size };
   return (
-    <RNText numberOfLines={1} allowFontScaling={false} style={[st, { color: C.text }]}>
+    // Shrinks rather than cutting to "Sweat…" when header buttons leave little room (320-wide phones).
+    <FitText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} allowFontScaling={false} style={[st, { color: C.text }]}>
       Sweat<RNText style={{ color: C.accent }}>book</RNText>
-    </RNText>
+    </FitText>
   );
 }

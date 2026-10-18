@@ -19,6 +19,7 @@ import { shareRef } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { C, F, S } from '@/theme';
+import { ordinal } from '@/share/festival-card';
 
 const HANDLE_COPY: Record<Exclude<HandleCheck, 'ok'>, string> = {
   taken: 'Esse nome já está ocupado.',
@@ -157,7 +158,7 @@ export default function ProfileScreen() {
   }
 
   const handleHint =
-    check === 'checking' ? t('A confirmar…') : check === 'ok' ? t('Disponível') : check ? t(HANDLE_COPY[check]) : link ? t('Mudar o nome muda o link: o antigo deixa de funcionar.') : undefined;
+    check === 'checking' ? t('A confirmar…') : check === 'ok' ? t('Livre') : check ? t(HANDLE_COPY[check]) : link ? t('Mudar o nome muda o link: o antigo deixa de funcionar.') : undefined;
 
   return (
     <>
@@ -252,7 +253,7 @@ export default function ProfileScreen() {
                     key={s.id}
                     icon={s.kind === 'mtt' ? 'trophy-outline' : 'cash-outline'}
                     title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
-                    subtitle={[s.venue, shortDate(s.startedAt), s.finish ? `${s.finish}º` : null].filter(Boolean).join(' · ')}
+                    subtitle={[s.venue, shortDate(s.startedAt), s.finish ? ordinal(s.finish) : null].filter(Boolean).join(' · ')}
                     right={<Check on={draft.sessions.includes(s.id)} />}
                     chevron={false}
                     onPress={() => toggle('sessions', s.id)}

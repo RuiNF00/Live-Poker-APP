@@ -10,7 +10,7 @@ import { Banner, Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, replay } from '@/poker/engine';
-import { bbs, duration, money } from '@/poker/format';
+import { bbs, duration, money, plus } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 import { unfinished } from '@/poker/unfinished';
 import { playedMs, profit } from '@/store/session-math';
@@ -58,9 +58,9 @@ export default function SessionSummary() {
       <Card tone="raised" style={{ alignItems: 'center', gap: S.sm, paddingVertical: S.xl }}>
         <T v="label">{s.name || t('Sessão')}</T>
         <T v="monoXL" color={hideMoney ? C.text : col} accessibilityLabel={hideMoney ? t('Resultado escondido') : undefined}>
-          {hideMoney ? '•••' : (p > 0 ? '+' : '') + money(p, s.currency)}
+          {hideMoney ? '•••' : plus(p) + money(p, s.currency)}
         </T>
-        <T v="small">{[s.venue, s.finish ? t('{place}º de {field}', { place: s.finish, field: s.field || '?' }) : ''].filter(Boolean).join(' · ') || ' '}</T>
+        <T v="small">{[s.venue, s.finish ? t('{place}.º de {field}', { place: s.finish, field: s.field || '?' }) : ''].filter(Boolean).join(' · ') || ' '}</T>
         {s.tags?.length ? (
           <Row gap={6} style={{ flexWrap: 'wrap', justifyContent: 'center', marginTop: S.xs }}>
             {s.tags.map((tg) => (

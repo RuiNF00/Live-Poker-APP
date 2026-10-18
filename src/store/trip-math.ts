@@ -10,7 +10,7 @@ import { eventDay, type Festival } from '@/poker/festivals';
 
 import { endOfDay, inRange, startOfDay, type DateRange } from './bankroll-math';
 import type { FestivalPlan } from './festival-plan';
-import { playedMs, profit } from './session-math';
+import { addDays, playedMs, profit } from './session-math';
 import type { Expense, ExpenseKind, Session, Trip } from './types';
 
 const DAY = 86400000;
@@ -27,6 +27,22 @@ export function toTripCurrency(amount: number, currency: string, trip: Pick<Trip
   if (currency === trip.currency) return amount;
   if (trip.fx && trip.fx.rate > 0 && currency === trip.fx.currency) return amount / trip.fx.rate;
   return null;
+}
+
+/**
+ * The trip's currency changes. Moving to the rate's other currency flips the
+ * rate (1 $ = 0,92 € becomes 1 € = 1,087 $), so amounts keep their value;
+ * any other currency drops the rate, which no longer means anything.
+ */
+export function changeTripCurrency(trip: Pick<Trip, 'currency' | 'fx'>, fxCur: string, rate: number, next: string): Pick<Trip, 'currency' | 'fx'> {
+  if (next === trip.currency) return trip;
+  if (next === fxCur) {
+    if (!(rate > 0)) return { currency: next, fx: trip.fx ? { currency: trip.currency, rate: 0 } : undefined };
+    const inv = 1 / rate;
+    // 4 decimals, like the ECB rate offered in the form; 6 significant digits below 1, so going back and forth stays exact.
+    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(6)) } };
+  }
+  return { currency: next, fx: trip.fx && trip.fx.currency !== next ? { currency: trip.fx.currency, rate: 0 } : undefined };
 }
 
 export interface TripSummary {
@@ -100,8 +116,19 @@ export function currentTrip(trips: Trip[], now = Date.now()): Trip | null {
   return trips.filter((x) => inRange(now, { from: x.from, to: x.to })).sort((a, b) => b.from - a.from)[0] ?? null;
 }
 
+/**
+ * A festival's trip widened to take a session started at `at` for one of its
+ * events (played after the dates it was made with), or null when it already
+ * does or the festival has no trip.
+ */
+export function tripToCover(trips: Trip[], festivalId: string, at: number): Trip | null {
+  const x = trips.find((tr) => tr.festivalId === festivalId);
+  if (!x || inRange(at, { from: x.from, to: x.to })) return null;
+  return { ...x, from: Math.min(x.from, startOfDay(at)), to: Math.max(x.to, endOfDay(at)) };
+}
+
 export function blankTrip(id: string, currency: string, now = Date.now()): Trip {
-  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(now + 4 * DAY), expenses: [], createdAt: now };
+  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(addDays(now, 4)), expenses: [], createdAt: now };
 }
 
 export function blankExpense(id: string, kind: ExpenseKind, currency: string, now = Date.now()): Expense {
@@ -130,8 +157,8 @@ export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx
     name: f.own ? f.name : t(f.name),
     venue: [f.venue, f.city.split(',')[0]].filter(Boolean).join(', '),
     currency: f.currency,
-    from: startOfDay(localDay(days[0]) - DAY),
-    to: endOfDay(localDay(days[days.length - 1]) + DAY),
+    from: startOfDay(addDays(localDay(days[0]), -1)),
+    to: endOfDay(addDays(localDay(days[days.length - 1]), 1)),
     fx,
     festivalId: f.id,
     expenses: [],

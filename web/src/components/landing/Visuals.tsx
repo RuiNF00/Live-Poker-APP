@@ -51,7 +51,7 @@ const SEATS: Seat[] = [
 ];
 
 /** The app's hand-entry screen at the turn decision, inside a phone frame. */
-export function PhoneMock({ m }: { m: { session: string; street: string; pot: string; you: string; fold: string; call: string } }) {
+export function PhoneMock({ m }: { m: { session: string; street: string; pot: string; you: string; fold: string; call: string; dec: string } }) {
   return (
     <div className="lp-phone" aria-hidden>
       <div className="lp-phone-screen">
@@ -93,7 +93,8 @@ export function PhoneMock({ m }: { m: { session: string; street: string; pot: st
               <span className="lp-seat-pos" style={{ ['--pc' as string]: POS[s.pos] }}>
                 {s.hero ? m.you : s.pos}
               </span>
-              <span className="lp-seat-stack">{s.stack}</span>
+              {/* 18.5k reads 18,5k where the comma is the decimal mark. */}
+              <span className="lp-seat-stack">{s.stack.replace('.', m.dec)}</span>
               {s.bet && <span className="lp-seat-bet">{s.bet}</span>}
             </div>
           ))}

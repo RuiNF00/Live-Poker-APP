@@ -174,6 +174,22 @@ export async function quarantine(kv: KV, bad: [string, string][], now = Date.now
   return unique.length;
 }
 
+/**
+ * A stored value that no longer parses, for the stores outside the main load (festival plans,
+ * own festivals, weekly): set aside in quarantine, not left to be written over. Null when bad.
+ */
+export async function parseOrQuarantine<T>(kv: KV, key: string, raw: string, ok: (v: unknown) => boolean = () => true): Promise<T | null> {
+  let v: unknown;
+  try {
+    v = JSON.parse(raw);
+  } catch {
+    v = undefined;
+  }
+  if (v !== undefined && ok(v)) return v as T;
+  await quarantine(kv, [[key, raw]]);
+  return null;
+}
+
 export async function loadAll(kv: KV, now = Date.now()): Promise<Boot> {
   const t0 = Date.now();
   const [hands, sessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, rawSettings, rawDraft] = await Promise.all([

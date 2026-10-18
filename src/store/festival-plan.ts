@@ -8,6 +8,8 @@ import { useSyncExternalStore } from 'react';
 import { t } from '@/i18n';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 
+import { parseOrQuarantine, quarantine } from './boot';
+import type { KV } from './persist';
 import { isBagged } from './multi-day';
 import type { Session } from './types';
 
@@ -75,9 +77,15 @@ export function planned(f: Festival, plan: FestivalPlan): FestivalEvent[] {
   return withPlanEvents(f, plan).events.filter((e) => set.has(e.id));
 }
 
-/** When a session started for this event runs its level clock from: the published start, or now when that's past. */
-export function levelStart(f: Festival, e: FestivalEvent, now = Date.now()): number | undefined {
-  return e.levelMinutes ? Math.max(now, venueTime(f, e.start)) : undefined;
+/**
+ * When a session started for this event runs its level clock from: the published start, also when
+ * joining in late reg (the floor's clock). Past late reg (or LATE_DEFAULT_MIN when none is given), as
+ * when starting a row from an earlier day, the published start says nothing: the clock runs from now.
+ */
+export function levelStart(f: Festival, e: FestivalEvent, now = Date.now(), lateMin = e.lateRegMin): number | undefined {
+  if (!e.levelMinutes) return undefined;
+  const start = venueTime(f, e.start);
+  return now > start + (lateMin || LATE_DEFAULT_MIN) * 60_000 ? now : start;
 }
 
 /** Schedule filters beyond the game: satellites, fast and deep structures, by the event's name or flight. */
@@ -135,6 +143,14 @@ export function planTotals(f: Festival, plan: FestivalPlan) {
   const list = planned(f, plan);
   const buys = list.filter((e) => !e.day2);
   return { events: list.length, entries: buys.length, buyIns: buys.reduce((a, e) => a + e.buyIn, 0) };
+}
+
+/** Planned buy-ins still to pay: an entry whose session has ended (busted, cashed or bagged) is already out of the bankroll. */
+export function buyInsLeft(f: Festival, plan: FestivalPlan, sessions: Session[]): number {
+  const ended = new Set(sessions.filter((s) => s.endedAt).map((s) => s.id));
+  return planned(f, plan)
+    .filter((e) => !e.day2 && !ended.has(plan.sessions[e.id] ?? ''))
+    .reduce((a, e) => a + e.buyIn, 0);
 }
 
 /** Planned buy-ins as a share of the bankroll: null with no (or a negative) bankroll. */
@@ -304,11 +320,52 @@ function emit() {
   for (const l of listeners) l();
 }
 
+// A venue time as the planner reads it: anything else breaks venueTime on every open.
+const START = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const isOwnEvent = (e: unknown) => isRecord(e) && typeof e.id === 'string' && typeof e.name === 'string' && typeof e.start === 'string' && START.test(e.start) && typeof e.buyIn === 'number' && Number.isFinite(e.buyIn);
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const isNumbers = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'number');
+const isStrings = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'string');
+
+/**
+ * The stored plans that have the right shape (fields left out take their empty value); the rest are
+ * dropped. An added tournament the planner can't read goes alone, the plan's other picks stay.
+ * `dropped` says whether anything was left out.
+ */
+export function cleanPlans(saved: Record<string, unknown>, dropped = { any: false }): Plans {
+  const out: Plans = {};
+  for (const [id, p] of Object.entries(saved)) {
+    // Set back below when the plan is kept whole.
+    const before = dropped.any;
+    dropped.any = true;
+    if (!isRecord(p)) continue;
+    const { picked = [], lateReg = {}, sessions = {}, name, events } = p;
+    if (!Array.isArray(picked) || !picked.every((x) => typeof x === 'string')) continue;
+    if (!isNumbers(lateReg) || !isStrings(sessions)) continue;
+    if (name !== undefined && typeof name !== 'string') continue;
+    if (events !== undefined && !Array.isArray(events)) continue;
+    const okEvents = events?.filter(isOwnEvent);
+    dropped.any = before || okEvents?.length !== events?.length;
+    out[id] = { ...(p as unknown as FestivalPlan), picked, lateReg: lateReg as FestivalPlan['lateReg'], sessions: sessions as FestivalPlan['sessions'], ...(okEvents ? { events: okEvents as unknown as FestivalEvent[] } : {}) };
+  }
+  return out;
+}
+
 function load(): Promise<void> {
   loaded ??= AsyncStorage.getItem(KEY)
-    .then((raw) => {
-      if (!raw) return;
-      plans = { ...JSON.parse(raw), ...plans };
+    .then(async (raw) => {
+      const kv = AsyncStorage as unknown as KV;
+      const saved = raw ? await parseOrQuarantine<Record<string, unknown>>(kv, KEY, raw, isRecord) : null;
+      if (!saved) return;
+      const dropped = { any: false };
+      const good = cleanPlans(saved, dropped);
+      // One plan of the wrong shape would break the festival screen on every open: the stored
+      // value goes to quarantine as it was, and the good plans are kept.
+      if (dropped.any) {
+        await quarantine(kv, [[KEY, raw!]]);
+        await AsyncStorage.setItem(KEY, JSON.stringify(good)).catch(() => {});
+      }
+      plans = { ...good, ...plans };
       emit();
     })
     .catch(() => {});
@@ -326,6 +383,9 @@ export function clearPlans() {
   plans = {};
   emit();
 }
+
+/** Reads the phone's plans; the app waits for it at launch so a backup never goes out without them. */
+export const loadPlans = (): Promise<void> => load();
 
 /** Every plan, for the backup. Starts reading the phone's copy if nothing has yet. */
 export function currentPlans(): Plans {
@@ -354,7 +414,9 @@ export function mergePlan(local: FestivalPlan | undefined, incoming: FestivalPla
 }
 
 /** Brings a backup's plans in (see mergePlan), after the phone's own are read so none is written over. */
-export async function importPlans(incoming: Plans): Promise<void> {
+export async function importPlans(raw: Plans): Promise<void> {
+  // A backup is outside data too: a plan of the wrong shape stays out.
+  const incoming = isRecord(raw) ? cleanPlans(raw) : {};
   const ids = Object.keys(incoming);
   if (!ids.length) return;
   await load();

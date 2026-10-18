@@ -8,6 +8,7 @@ import type { Hand } from '@/poker/types';
 
 import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
+import { cleanDeleted, type Deleted } from './deleted-math';
 import type { FestivalPlan } from './festival-plan';
 import type { WeeklyTournament } from './weekly';
 import type { SwapGroup } from './swap-groups';
@@ -48,11 +49,13 @@ export interface BackupData {
   settings?: Partial<Settings>;
   /** Values set aside at launch because they couldn't be read ([quarantine key, raw value]), so a restore onto a fixed version can bring them back. */
   quarantine?: [string, string][];
+  /** What was deleted, so a second phone's copy doesn't bring it back (absent before deletes were kept). */
+  deleted?: Deleted;
 }
 
 /** Same prefix and item keys as boot.ts (kept here so backups don't import the store's loader; a test checks they match). */
 export const QUARANTINE = 'rl.quarantine.v1.';
-export const ITEM_PREFIX = { hands: 'rl.hand.v2.', sessions: 'rl.session.v2.', players: 'rl.player.v2.', trips: 'rl.trip.v1.' };
+export const ITEM_PREFIX = { hands: 'rl.hand.v2.', sessions: 'rl.session.v2.', players: 'rl.player.v2.', trips: 'rl.trip.v1.', swaps: 'rl.swap.v1.', swapGroups: 'rl.swapgroup.v1.' };
 
 export function buildBackup(
   d: {
@@ -73,6 +76,7 @@ export function buildBackup(
     weekly?: WeeklyTournament[];
     settings: Settings;
     quarantine?: [string, string][];
+    deleted?: Deleted;
   },
   now = Date.now(),
 ): BackupData {
@@ -95,6 +99,7 @@ export function buildBackup(
     festivalPlans: d.festivalPlans ?? {},
     ownFestivals: d.ownFestivals ?? [],
     weekly: d.weekly ?? [],
+    deleted: d.deleted ?? {},
     settings: d.settings,
     ...(d.quarantine?.length ? { quarantine: d.quarantine } : {}),
   };
@@ -105,11 +110,13 @@ const withId = (x: unknown) => isObj(x) && typeof x.id === 'string' && x.id.leng
 const isStr = (x: unknown): x is string => typeof x === 'string';
 const isNum = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** A venue time as the planner reads it ('YYYY-MM-DDTHH:MM'): anything else breaks venueTime. */
+const START = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 /** Keys from a file: never one that would reach the object's prototype. */
 const safeKey = (k: string) => k.length > 0 && k.length <= 100 && k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
 
 function okEvent(e: unknown): e is Record<string, unknown> {
-  return withId(e) && isObj(e) && isStr(e.name) && isNum(e.number) && isNum(e.buyIn) && isStr(e.start) && (e.game === 'NLH' || e.game === 'PLO' || e.game === 'Mix');
+  return withId(e) && isObj(e) && isStr(e.name) && isNum(e.number) && isNum(e.buyIn) && isStr(e.start) && START.test(e.start) && (e.game === 'NLH' || e.game === 'PLO' || e.game === 'Mix');
 }
 
 /** Only the fields the planner knows; nothing else from the file is kept. */
@@ -249,8 +256,9 @@ export function parseBackup(text: string): BackupData {
       return { ...x, expenses: ex };
     }) as unknown as Trip[];
   // Same checks as at launch (swap-validate.ts): a swap a screen would crash on never reaches one.
-  const swaps = arr('swaps').map(fixSwap).filter((x): x is Swap => !!x);
-  const swapGroups = arr('swapGroups').map(fixSwapGroup).filter((x): x is SwapGroup => !!x);
+  // One that fails goes to quarantine like the others (the keys swaps-store and swap-groups-store use).
+  const swaps = fixed(arr('swaps'), fixSwap, ITEM_PREFIX.swaps);
+  const swapGroups = fixed(arr('swapGroups'), fixSwapGroup, ITEM_PREFIX.swapGroups);
   return {
     app: 'sweatbook',
     v: 1,
@@ -270,6 +278,7 @@ export function parseBackup(text: string): BackupData {
     festivalPlans: decodePlans(j.festivalPlans),
     ownFestivals: decodeOwnFestivals(j.ownFestivals),
     weekly: decodeWeekly(j.weekly),
+    deleted: cleanDeleted(j.deleted),
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
     // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
     quarantine: [
@@ -452,6 +461,8 @@ export function importSummary(n: {
   payments?: number;
   backing?: number;
   swaps?: number;
+  /** Deleted on the other phone, so gone from this one too. */
+  removed?: number;
 }): string {
   const parts = [
     n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
@@ -467,6 +478,7 @@ export function importSummary(n: {
   if (n.payments) parts.push(n.payments === 1 ? t('1 pagamento a backers') : t('{n} pagamentos a backers', { n: n.payments }));
   if (n.backing) parts.push(n.backing === 1 ? t('1 jogador que apoias') : t('{n} jogadores que apoias', { n: n.backing }));
   if (n.swaps) parts.push(n.swaps === 1 ? t('1 swap') : t('{n} swaps', { n: n.swaps }));
+  if (n.removed) return `${t('Novos: {list}.', { list: parts.join(' · ') })} ${n.removed === 1 ? t('1 registo apagado no outro telemóvel saiu também deste.') : t('{n} registos apagados no outro telemóvel saíram também deste.', { n: n.removed })}`;
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

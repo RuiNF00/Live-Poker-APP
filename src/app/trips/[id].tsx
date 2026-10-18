@@ -11,7 +11,7 @@ import { Button, Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, Lis
 import { decimalComma, locale, t } from '@/i18n';
 import { spanLabel } from '@/components/FestivalItem';
 import { festivalSpan } from '@/poker/festivals';
-import { money } from '@/poker/format';
+import { minus, money, plus } from '@/poker/format';
 import { planTotals, useFestivalPlan } from '@/store/festival-plan';
 import { useFestivals } from '@/store/my-festivals';
 import { playedMs, profit } from '@/store/session-math';
@@ -53,7 +53,7 @@ export default function TripScreen() {
   const hidden = !!settings.hideAmounts;
   const cur = trip.currency;
   const fmt = (n: number, c = cur) => (hidden ? '•••' : money(n, c));
-  const signed = (n: number, c = cur) => (hidden ? '•••' : (n > 0 ? '+' : '') + money(n, c));
+  const signed = (n: number, c = cur) => (hidden ? '•••' : plus(n) + money(n, c));
   const s = tripSummary(trip, sessions);
   const list = tripSessions(trip, sessions).reverse();
   const expenses = [...trip.expenses].sort((a, b) => b.at - a.at);
@@ -129,7 +129,7 @@ export default function TripScreen() {
                     iconColor={KIND[x.kind]?.color}
                     title={x.note || KIND[x.kind]?.label || x.kind}
                     subtitle={[x.note ? KIND[x.kind]?.label : '', day(x.at), x.currency !== cur && inTrip !== null ? `≈ ${fmt(inTrip)}` : ''].filter(Boolean).join(' · ')}
-                    value={hidden ? '•••' : '−' + money(x.amount, x.currency)}
+                    value={hidden ? '•••' : minus() + money(x.amount, x.currency)}
                     onPress={() => setSheet({ type: 'expense', x, isNew: false })}
                   />
                 );
@@ -211,15 +211,15 @@ function ShareRecap({ trip }: { trip: Trip }) {
   if (!over) {
     return (
       <ListGroup>
-        <ListItem icon="logo-instagram" title={t('Partilhar resumo do festival')} subtitle={t('Uma story com os dias, eventos e a melhor mão')} onPress={open} />
+        <ListItem icon="logo-instagram" title={trip.festivalId ? t('Partilhar resumo do festival') : t('Partilhar resumo da viagem')} subtitle={t('Uma story com os dias, eventos e a melhor mão')} onPress={open} />
       </ListGroup>
     );
   }
   return (
     <Card tone="accent" style={{ gap: S.sm }}>
-      <T v="h3">{t('O festival acabou')}</T>
+      <T v="h3">{trip.festivalId ? t('O festival acabou') : t('A viagem acabou')}</T>
       <T v="small">{t('Fica com uma story dos dias, dos eventos e da melhor mão. Sem valores, a não ser que os queiras mostrar.')}</T>
-      <Button title={t('Criar story do festival')} icon="logo-instagram" onPress={open} />
+      <Button title={trip.festivalId ? t('Criar story do festival') : t('Criar story da viagem')} icon="logo-instagram" onPress={open} />
     </Card>
   );
 }
@@ -249,12 +249,12 @@ function PokerVsCosts({
           {signed(poker)}
         </T>
       </Row>
-      <Row accessible accessibilityLabel={`${t('Despesas')}: ${expenses ? '−' + fmt(expenses) : fmt(0)}`}>
+      <Row accessible accessibilityLabel={`${t('Despesas')}: ${expenses ? minus() + fmt(expenses) : fmt(0)}`}>
         <T v="small" style={{ flex: 1 }}>
           {t('Despesas')}
         </T>
         <T v="mono" color={expenses ? C.text : C.muted}>
-          {expenses ? '−' + fmt(expenses) : fmt(0)}
+          {expenses ? minus() + fmt(expenses) : fmt(0)}
         </T>
       </Row>
       {kinds.length ? (
@@ -303,7 +303,7 @@ function FestivalPlanCard({ trip, fmt }: { trip: Trip; fmt: (n: number) => strin
             ? spanLabel(span.from, span.to)
             : t('Datas a confirmar')
           : tot.events
-          ? t('{n} eventos marcados · {amount} em buy-ins', { n: tot.events, amount: f.currency === trip.currency ? fmt(tot.buyIns) : money(tot.buyIns, f.currency) })
+          ? t(tot.events === 1 ? '1 evento marcado · {amount} em buy-ins' : '{n} eventos marcados · {amount} em buy-ins', { n: tot.events, amount: f.currency === trip.currency ? fmt(tot.buyIns) : money(tot.buyIns, f.currency) })
           : t('Ainda não marcaste eventos. Marca-os no plano para veres os buy-ins aqui.')}
       </T>
     </Card>

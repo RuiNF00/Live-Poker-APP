@@ -2,12 +2,12 @@
 // blanks the app in the app switcher so a glance at the phone shows nothing.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/i18n';
-import { askDeviceResult, checkPin, deviceLockAvailable, loadFails, loadLock, lockoutMs, needsUnlock, PIN_LENGTH, saveFails, saveLock, type LockConfig } from '@/lib/app-lock';
+import { askDeviceResult, checkPin, createLockUpState, deviceLockAvailable, loadFails, loadLock, lockoutMs, lockScreenUp, needsUnlock, PIN_LENGTH, saveFails, saveLock, type LockConfig } from '@/lib/app-lock';
 import { C, S } from '@/theme';
 
 import { Button, T, tap, Wordmark } from './ui';
@@ -16,6 +16,15 @@ const listeners = new Set<() => void>();
 /** Settings calls this after turning the lock on or off. */
 export function lockChanged() {
   for (const l of listeners) l();
+}
+
+const lockUp = createLockUpState();
+/**
+ * True while the lock screen is up (or still deciding). Sheets that open by themselves wait for
+ * it: a Modal opened later would sit on top of the lock and show the app's data over it.
+ */
+export function useLockScreenUp(): boolean {
+  return useSyncExternalStore(lockUp.subscribe, lockUp.get);
 }
 
 export function AppLock() {
@@ -57,6 +66,11 @@ export function AppLock() {
     };
   }, [reload]);
 
+  // Stable, so the lock screen asks for Face ID once when it opens, not again on every re-render
+  // (the app going inactive and active around a cancelled prompt would bring it straight back).
+  const unlock = useCallback(() => setLocked(false), []);
+  useEffect(() => lockUp.set(lockScreenUp(cfg, locked, cover)), [cfg, locked, cover]);
+
   // Until we know whether there's a lock, show nothing of the app.
   if (cfg === undefined) return <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bg }]} />;
   if (!cfg) return null;
@@ -64,7 +78,7 @@ export function AppLock() {
   return (
     <Modal visible={locked || cover} animationType="none" presentationStyle="fullScreen" statusBarTranslucent onRequestClose={() => {}}>
       {locked ? (
-        <LockScreen cfg={cfg} onUnlock={() => setLocked(false)} />
+        <LockScreen cfg={cfg} onUnlock={unlock} />
       ) : (
         <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
           <Wordmark size={28} />

@@ -56,14 +56,17 @@ export function chipChop(stacks: number[], payouts: number[]): number[] {
 
 /**
  * A deal as money: each share cut to the cent (`digits` 0 for yen and the like), the cents
- * left over to the first players in order, like a chopped pot. Adds up to the pool exactly.
+ * left over to the largest remainders (ties: the first players in order, like a chopped pot).
+ * Adds up to the pool exactly.
  */
 export function toCents(shares: number[], digits = 2): number[] {
   const k = 10 ** digits;
   const pool = Math.round(shares.reduce((a, b) => a + b, 0) * k);
   const units = shares.map((x) => Math.floor(x * k + 1e-6));
   let left = pool - units.reduce((a, b) => a + b, 0);
-  for (let i = 0; left > 0 && units.length; i = (i + 1) % units.length, left--) units[i]++;
+  // 1,000001 and 999 999,999999: the cent goes to the one nearly there, not to the first row.
+  const order = shares.map((x, i) => i).sort((i, j) => shares[j] * k - units[j] - (shares[i] * k - units[i]) || i - j);
+  for (let i = 0; left > 0 && units.length; i = (i + 1) % units.length, left--) units[order[i]]++;
   // Float noise the other way: the extra cent comes off the last player.
   for (let i = units.length - 1; left < 0 && i >= 0; i--, left++) units[i]--;
   return units.map((u) => u / k);

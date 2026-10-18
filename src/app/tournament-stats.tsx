@@ -12,17 +12,18 @@ import { ProBlur } from '@/components/ProGate';
 import { SmallSample } from '@/components/SmallSample';
 import { Button, Card, Chip, ChipRow, Divider, Empty, ListGroup, ListItem, Row, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
-import { chips, compactMoney, decimal, money, shortDate } from '@/poker/format';
+import { chips, compactMoney, decimal, money, plus, shortDate } from '@/poker/format';
 import { byCurrency } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { BANDS, bandOf, biggestScores, finishedTourneys, gameOf, groupBy, MIN_GROUP, MIN_SAMPLE, summarize, tripOf, type Group, type StatsView } from '@/store/tourney-stats';
 import { C, S } from '@/theme';
+import { ordinal } from '@/share/festival-card';
 
 const pct = (n: number | null, digits = 0) => (n === null ? '—' : `${n.toLocaleString(locale, { maximumFractionDigits: digits })}%`);
 const signedPct = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString(locale) + '%';
-const signedMoney = (n: number, cur: string) => (n > 0 ? '+' : '') + money(n, cur);
+const signedMoney = (n: number, cur: string) => plus(n) + money(n, cur);
 /** "+23.1k€" / "+$23.1k" in a tile: a full amount doesn't fit a third of the screen. */
-const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(n, cur)) : (sign && n > 0 ? '+' : '') + compactMoney(n, cur));
+const compact = (n: number, cur: string, sign = true) => (Math.abs(n) < 10000 ? (sign ? signedMoney(n, cur) : money(n, cur)) : (sign ? plus(n) : '') + compactMoney(n, cur));
 
 export default function TournamentStatsScreen() {
   const { sessions, trips, settings } = useStore();
@@ -105,7 +106,7 @@ export default function TournamentStatsScreen() {
           {scores.length ? (
             <ListGroup>
               {scores.map((s) => (
-                <ListItem key={s.id} icon="trophy-outline" iconColor={C.accent} title={s.name || t('Torneio')} subtitle={[s.finish ? (s.field ? t('{p}º de {n}', { p: s.finish, n: s.field.toLocaleString(locale) }) : `${s.finish}º`) : null, shortDate(s.at), `${s.multiple >= 10 ? Math.round(s.multiple) : decimal(s.multiple)}× ${t('o buy-in')}`].filter(Boolean).join(' · ')} value={hidden ? '•••' : money(s.prize, currency)} valueColor={C.good} onPress={() => router.push({ pathname: '/summary/[id]', params: { id: s.id } })} />
+                <ListItem key={s.id} icon="trophy-outline" iconColor={C.accent} title={s.name || t('Torneio')} subtitle={[s.finish ? (s.field ? t('{p}.º de {n}', { p: s.finish, n: s.field.toLocaleString(locale) }) : ordinal(s.finish)) : null, shortDate(s.at), `${s.multiple >= 10 ? Math.round(s.multiple) : decimal(s.multiple)}× ${t('o buy-in')}`].filter(Boolean).join(' · ')} value={hidden ? '•••' : money(s.prize, currency)} valueColor={C.good} onPress={() => router.push({ pathname: '/summary/[id]', params: { id: s.id } })} />
               ))}
             </ListGroup>
           ) : (

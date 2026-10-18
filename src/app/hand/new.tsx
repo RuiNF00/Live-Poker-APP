@@ -42,6 +42,7 @@ import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, posit
 import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
+import { MAX_NOTES_LENGTH } from '@/poker/privacy';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
 import { opponentStats, sessionsSeen } from '@/store/queries';
@@ -272,22 +273,34 @@ export default function NewHand() {
   };
   const run2Board = [...hand.board.slice(0, r.runoutFrom ?? 0), ...(hand.board2 ?? [])];
 
+  // Set once the hand is saved. A second save before the screen closes (a double tap, or the voice
+  // note landing after «Guardar») only updates the hand: counting it again would spend two of the
+  // day's free hands on one, and the session would get its stack twice.
+  const saved = useRef(false);
+  // Player notes made by the first save: a repeat save (store not re-rendered yet) reuses them.
+  const madePlayers = useRef(new Map<string, string>());
   const save = async (over?: Partial<Hand>) => {
-    tap('medium');
+    const again = saved.current;
+    const asNew = !isEdit && !again;
+    if (!again) tap('medium');
     const hand = over ? { ...draft.hand, ...over } : draft.hand;
     // Free plan: past the daily limit the hand stays as a draft and the paywall opens.
-    if (!isEdit && !pro.canSaveHand()) {
+    if (asNew && !pro.canSaveHand()) {
       if (over) update(hand);
       if (activeSession) void noteBlocked(activeSession.id, hand.id);
       pro.paywall(activeSession ? 'handsLive' : 'hands');
       return;
     }
+    saved.current = true;
     // Named villains go into the player notes, so the next time they are one tap away.
+    // A link to a note that was deleted (carried over from the last hand) counts as no link.
     const players = hand.players.map((p, i) => {
-      if (i === hand.hero || !p.name.trim() || p.playerId) return p;
-      const existing = store.players.find((k) => k.name.trim().toLowerCase() === p.name.trim().toLowerCase());
-      if (existing) return { ...p, playerId: existing.id };
+      if (i === hand.hero || !p.name.trim() || (p.playerId && store.players.some((k) => k.id === p.playerId))) return p;
+      const key = p.name.trim().toLowerCase();
+      const existing = store.players.find((k) => k.name.trim().toLowerCase() === key)?.id ?? madePlayers.current.get(key);
+      if (existing) return { ...p, playerId: existing };
       const note = { id: uid('p_'), name: p.name.trim(), look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() };
+      madePlayers.current.set(key, note.id);
       store.savePlayer(note);
       return { ...p, playerId: note.id };
     });
@@ -295,10 +308,13 @@ export default function NewHand() {
     const before = isEdit ? store.hands.find((h) => h.id === final.id) : undefined;
     const justFinished = !!before && !isComplete(before) && isComplete(final);
     store.saveHand(final);
+    if (again) return;
     tap('success');
-    // Keep the session's live table state in sync, so the next hand is pre-filled.
+    // Keep the session's live table state in sync, so the next hand is pre-filled. Only while it's
+    // live: a draft kept from a session that has since ended (the free limit held it back) must not
+    // change that session's stack, blinds or stack chart.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
-    if (sess && !isEdit) {
+    if (sess && !sess.endedAt && asNew) {
       // A hand saved before its end keeps hero's starting stack (the pot isn't decided), not the chips already put in.
       const heroEnd = endStacks(final)[final.hero];
       store.saveSession({
@@ -317,7 +333,7 @@ export default function NewHand() {
       });
     }
     if (!settings.onboarded) store.setSettings({ onboarded: true });
-    if (!isEdit) {
+    if (asNew) {
       store.setDraft(null);
       pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0, ...(toldRef.current ? { voice: true } : {}) });
     }
@@ -581,8 +597,9 @@ export default function NewHand() {
 
         {!voice.recording && phase === 'action' && l && (
           <>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2" numberOfLines={2} style={{ flex: 1 }}>
+            {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
+            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <T v="h2" numberOfLines={2} style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
@@ -644,7 +661,8 @@ export default function NewHand() {
                         borderColor: p.allIn ? C.danger : p.last ? C.warn : C.warn + '66',
                         opacity: pressed ? 0.7 : 1,
                       })}>
-                      <T v="body" numberOfLines={1} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
+                      {/* Four to a row: at large text "All-in" shrinks to fit instead of reading "Al…". */}
+                      <T v="body" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.6} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
                         {p.label}
                       </T>
                       <T v="monoS" numberOfLines={1}>
@@ -678,7 +696,8 @@ export default function NewHand() {
               {l.canCheck ? (
                 <BigAction label="Check" kind="check" onPress={() => act('check')} />
               ) : (
-                <BigAction label={`${callName(s)} ${amount(l.toCall, hand, inBB)}`} kind="call" onPress={() => act('call')} />
+                // Calling with the whole stack (a 1 bb stack facing the big blind) is an all-in, not a limp.
+                <BigAction label={`${l.toCall >= s.stacks[l.p] ? 'All-in' : callName(s)} ${amount(l.toCall, hand, inBB)}`} kind="call" onPress={() => act('call')} />
               )}
             </Row>
           </>
@@ -938,7 +957,7 @@ function FinishPanel({ hand, onChange }: { hand: Hand; onChange: (h: Hand) => vo
           <Chip key={tg} label={t(tg)} active={hand.tags.includes(tg)} onPress={() => toggle(tg)} />
         ))}
       </ChipRow>
-      <Field value={hand.notes} onChangeText={(notes) => onChange({ ...hand, notes })} placeholder={t('Notas (o que pensaste, reads, dúvidas…)')} multiline inputStyle={{ minHeight: 70 }} />
+      <Field value={hand.notes} onChangeText={(notes) => onChange({ ...hand, notes })} placeholder={t('Notas (o que pensaste, reads, dúvidas…)')} multiline maxLength={MAX_NOTES_LENGTH} inputStyle={{ minHeight: 70 }} />
     </View>
   );
 }

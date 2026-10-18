@@ -30,17 +30,19 @@ import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useSt
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
-import { bbs, chips, duration, money, shortDate, timeOf } from '@/poker/format';
+import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
-import { cost, isPaused, owedToBackers, playedMs, profit } from '@/store/session-math';
+import { cost, isPaused, playedMs, profit } from '@/store/session-math';
+import { endPreview } from '@/store/staking';
 import { eventDay } from '@/poker/festivals';
 import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { uid, useStore } from '@/store/store';
+import { tripToCover } from '@/store/trip-math';
 import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -114,7 +116,7 @@ function stackQuick(s: Session): { label: string; value: number }[] {
 
 export default function SessionScreen() {
   crashProbe('session');
-  const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll } = useStore();
+  const { activeSession, sessions, saveSession, settings, setSettings, bankrolls, defaultBankroll, trips, saveTrip } = useStore();
   const recentNames = useMemo(() => [...new Set(sessions.map((s) => s.name).filter(Boolean))].slice(0, 8), [sessions]);
   const recentVenues = useMemo(() => [...new Set(sessions.map((s) => s.venue).filter(Boolean))].slice(0, 8), [sessions]);
   const bagged = useMemo(() => sessions.filter(isBagged), [sessions]);
@@ -157,6 +159,9 @@ export default function SessionScreen() {
     // Started from a today chip: the festival plan knows, for re-entries and Day 2.
     const hit = todays.find(({ e }) => sessionName(e) === s.name && e.buyIn === s.buyIn);
     if (hit) updatePlan(hit.f.id, (p) => ({ ...p, picked: p.picked.includes(hit.e.id) ? p.picked : [...p.picked, hit.e.id], sessions: { ...p.sessions, [hit.e.id]: s.id } }));
+    // Played after the festival trip's dates: the trip grows to take it.
+    const trip = hit && tripToCover(trips, hit.f.id, s.startedAt);
+    if (trip) saveTrip(trip);
     track('session_started', { kind: s.kind });
     // The next session goes to the same bankroll.
     if (s.bankrollId && s.bankrollId !== settings.bankrollId) setSettings({ bankrollId: s.bankrollId });
@@ -333,7 +338,7 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
-  const { saveSession, hands, settings, sessions } = useStore();
+  const { saveSession, hands, settings, sessions, packages } = useStore();
   const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   // Android back while closing the session works like «Voltar»: the form closes, the session stays.
@@ -621,9 +626,7 @@ function Live({ s }: { s: Session }) {
                   </View>
                 </View>
                 {(() => {
-                  const end = { ...s, cashOut: finish.cashOut, tips: finish.tips || undefined };
-                  const owed = owedToBackers(end);
-                  const p = profit(end);
+                  const { owed, profit: p } = endPreview({ ...s, cashOut: finish.cashOut, tips: finish.tips || undefined }, sessions, packages);
                   return (
                     <View style={{ gap: 6, paddingTop: S.xs }}>
                       {owed > 0 ? (
@@ -635,7 +638,7 @@ function Live({ s }: { s: Session }) {
                       <Row style={{ justifyContent: 'space-between' }}>
                         <T v="h3">{s.stakes?.length || s.staking?.sold || s.expenses ? t('O teu resultado') : t('Resultado')}</T>
                         <T v="monoL" color={p >= 0 ? C.good : C.bad}>
-                          {(p > 0 ? '+' : '') + money(p, s.currency)}
+                          {plus(p) + money(p, s.currency)}
                         </T>
                       </Row>
                     </View>
@@ -867,5 +870,5 @@ function clock(ms: number) {
 /** The deal calculator with the players left, the live stack and the payouts already filled in (as from the tournament screen). */
 function toChop(s: Session) {
   const n = Math.min(9, Math.max(2, s.tourney?.left ?? 3));
-  router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (s.tourney?.payouts ?? []).slice(0, n).join(',') } });
+  router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (s.tourney?.payouts ?? []).slice(0, 9).join(',') } });
 }
