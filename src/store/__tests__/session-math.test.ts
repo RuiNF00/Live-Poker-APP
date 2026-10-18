@@ -131,3 +131,11 @@ test('lastPlayed: a new past session starts as the last one played in that curre
   assert.equal(lastPlayed('€', all, 'mtt').name, 'Deepstack');
   assert.deepEqual(lastPlayed('£', all), {});
 });
+
+test("parseDay 'near': a trip day without a year is the closest one, before or after today", () => {
+  const now = new Date(2026, 9, 18).getTime();
+  assert.equal(parseDay('15/9', now, 'near'), new Date(2026, 8, 15).getTime(), 'last month, logged after the trip');
+  assert.equal(parseDay('20/11', now, 'near'), new Date(2026, 10, 20).getTime(), 'next month, planned');
+  assert.equal(parseDay('10/1', now, 'near'), new Date(2027, 0, 10).getTime(), 'January is closer next year');
+  assert.equal(parseDay('15/9', now, true), new Date(2027, 8, 15).getTime(), 'a festival plan stays in the future');
+});
