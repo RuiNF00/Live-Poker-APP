@@ -1630,6 +1630,8 @@ const ptBR: Record<string, string> = {
   'Câmara desligada': 'Câmera desativada',
   'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Ative a câmera para o Sweatbook nas configurações do celular.',
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'O microfone está ocupado. Tente de novo daqui a pouco.',
+  'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Este backup foi feito numa versão mais recente do Sweatbook. Atualize o app e tente de novo; nada foi alterado.',
+  'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'Não conseguimos ler este backup. Nada foi alterado neste celular.',
 };
 
 export default ptBR;

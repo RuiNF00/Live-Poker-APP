@@ -3325,6 +3325,8 @@ const en: Record<string, string> = {
   'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Turn on the camera for Sweatbook in your phone\'s settings.',
   'Não deu para gravar': 'Couldn\'t record',
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'The microphone is busy. Try again in a moment.',
+  'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'The backup was made with a newer version of Sweatbook. Update the app and try again; nothing was changed.',
+  'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'We couldn’t read this backup. Nothing on this phone was changed.',
 };
 
 export default en;
