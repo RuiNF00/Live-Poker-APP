@@ -1084,8 +1084,8 @@ const en: Record<string, string> = {
   'Atualizar': 'Refresh',
   'Os teus amigos veem o replay no browser e comentam, mesmo sem a app.': 'Friends watch the replay in their browser and comment, no app needed.',
   // Bankroll
-  'Várias bankrolls, filtros, salas e jogos.': 'Multiple bankrolls, filters, venues and games.',
-  'Várias bankrolls e filtros': 'Multiple bankrolls and filters',
+  'Vários bankrolls, filtros, salas e jogos.': 'Multiple bankrolls, filters, venues and games.',
+  'Vários bankrolls e filtros': 'Multiple bankrolls and filters',
   'Apagar este movimento?': 'Delete this transaction?',
   'As sessões e os movimentos passam para {name}.': 'Its sessions and transactions move to {name}.',
   'Depositar': 'Deposit',

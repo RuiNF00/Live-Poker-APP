@@ -187,7 +187,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   stats: {
     title: t('Conhece o teu bankroll'),
-    body: t('Várias bankrolls, filtros, salas e jogos.'),
+    body: t('Vários bankrolls, filtros, salas e jogos.'),
   },
   trips: {
     title: t('Todas as tuas viagens'),
@@ -224,7 +224,7 @@ export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mtt
 /** The first three are the generic rows; the rest lead only when they triggered the paywall. */
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
   { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Sem limite diário') },
-  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Várias bankrolls e filtros') },
+  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Vários bankrolls e filtros') },
   { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
   { key: 'solver', icon: 'analytics', title: t('Mãos para o solver'), body: t('Várias de uma vez') },
   { key: 'coach', icon: 'school', title: t('Revisão com coach'), body: t('Pastas e mãos sem limite') },

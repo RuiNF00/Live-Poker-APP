@@ -85,10 +85,10 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 export const groupReady = (g: Pick<SwapGroup, 'seats'>) => g.seats.length >= GROUP_MIN && g.seats.every((s) => !!s.confirmedAt);
 export const seatName = (g: Pick<SwapGroup, 'seats'>, seat: number) => g.seats.find((s) => s.seat === seat)?.name || '?';
 
-/** What one prize costs its winner in total: x% to each of the others. */
-export const groupOwedOn = (g: Pick<SwapGroup, 'terms' | 'seats'>, amount: number) => r2((g.terms.pct / 100) * amount * (g.seats.length - 1));
 /** What each other player gets from one prize. */
 export const groupShareOf = (g: Pick<SwapGroup, 'terms'>, amount: number) => r2((g.terms.pct / 100) * amount);
+/** What one prize costs its winner in total: each share, rounded, times the others. */
+export const groupOwedOn = (g: Pick<SwapGroup, 'terms' | 'seats'>, amount: number) => r2(groupShareOf(g, amount) * (g.seats.length - 1));
 
 /** Per seat: positive, the others owe them; negative, they owe. Payments already count. */
 export function groupNet(g: Pick<SwapGroup, 'terms' | 'seats' | 'entries'>): Map<number, number> {
