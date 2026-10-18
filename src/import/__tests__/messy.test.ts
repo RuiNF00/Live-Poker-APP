@@ -161,3 +161,9 @@ test('Poker Ledger: every field quoted, cash or tournament in the format, a runn
   assert.deepEqual([mtt.kind, mtt.finish, mtt.field, profit(mtt)], ['mtt', 12, 45, -100]);
   assert.deepEqual(r.failed, [{ line: 4, reason: 'running', value: '2018-03-06 20:00' }]);
 });
+
+test('no type column, but a game column that says Torneio or Cash gives the type', () => {
+  const r = run(['Data;Local;Jogo;Buy-in;Cash-out', '03/02/2025;São Paulo;Torneio;100;300', '04/02/2025;Lisboa;Cash;200;100'].join('\n'));
+  assert.deepEqual(r.sessions.map((s) => s.kind), ['mtt', 'cash']);
+  assert.equal(r.kindKnown, true);
+});

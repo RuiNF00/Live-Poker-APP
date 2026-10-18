@@ -1670,6 +1670,10 @@ const ptBR: Record<string, string> = {
   '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 sessão tem o mesmo dia e resultado de uma que você já tem.',
   '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sessões têm o mesmo dia e resultado de outras que você já tem.',
   'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Sessão ainda em andamento: termine-a no outro app e exporte de novo',
+  '1 depósito ou levantamento igual a um que já tens.': '1 depósito ou saque igual a um que você já tem.',
+  '{n} depósitos ou levantamentos iguais a outros que já tens.': '{n} depósitos ou saques iguais a outros que você já tem.',
+  '1 parecida com uma sessão que já tinhas ficou de fora.': '1 parecida com uma sessão que você já tinha ficou de fora.',
+  '{n} parecidas com sessões que já tinhas ficaram de fora.': '{n} parecidas com sessões que você já tinha ficaram de fora.',
 };
 
 export default ptBR;

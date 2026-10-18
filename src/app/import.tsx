@@ -14,7 +14,7 @@ import { ImportSupport } from '@/components/ImportSupport';
 import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T, ToggleItem } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
-import { likelyDuplicates } from '@/import/duplicates';
+import { likelyDuplicateMoves, likelyDuplicates } from '@/import/duplicates';
 import { prepare, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
@@ -110,7 +110,7 @@ function useTight() {
   return width / Math.max(1, fontScale) < 320;
 }
 
-type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
+type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; skipped?: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
 
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -263,7 +263,7 @@ export default function ImportScreen() {
           initial={step.first}
           bottom={insets.bottom}
           onBack={() => setStep({ at: 'pick' })}
-          onImport={(r, placement) => {
+          onImport={(r, placement, skipped) => {
             const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls, names: r.bankrollNames });
             const before = new Set(store.transfers.map((x) => x.id));
             const had = new Set(store.sessions.map((s) => s.id));
@@ -272,7 +272,7 @@ export default function ImportScreen() {
             const fresh = p.sessions.filter((s) => !had.has(s.id));
             const recap = importRecap(fresh, [...store.sessions, ...fresh]);
             track('import_done', { source: step.file.source, sessions: n.sessions, hours: Math.round(recap.hours) });
-            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, moves, recap, source: step.file.source });
+            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, skipped, moves, recap, source: step.file.source });
           }}
         />
       ) : (
@@ -286,7 +286,12 @@ export default function ImportScreen() {
 function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; bottom: number; onAgain: () => void }) {
   const tight = useTight();
   const r = step.recap;
-  const sub =
+  const skipped = step.skipped
+    ? step.skipped === 1
+      ? t('1 parecida com uma sessão que já tinhas ficou de fora.')
+      : t('{n} parecidas com sessões que já tinhas ficaram de fora.', { n: step.skipped })
+    : null;
+  const before =
     step.summary ??
     (step.moves
       ? step.moves === 1
@@ -297,6 +302,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
           ? t('1 já estava no Sweatbook e ficou como estava.')
           : t('{n} já estavam no Sweatbook e ficaram como estavam.', { n: step.total - step.added })
         : null);
+  const sub = [before, skipped].filter(Boolean).join(' ') || null;
   const span = r.from === null ? null : r.from === r.to ? t('Em {year}', { year: r.from }) : t('De {from} a {to}', { from: r.from, to: r.to! });
   const best = r.best;
   return (
@@ -351,7 +357,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
   );
 }
 
-function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
+function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement, skipped: number) => void }) {
   const tight = useTight();
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
@@ -385,10 +391,11 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
   const have = useMemo(() => new Set([...local.map((s) => s.id), ...localTx.map((x) => x.id)]), [local, localTx]);
   // The same night from another app, or typed by hand: left out unless the player says otherwise.
   const dups = useMemo(() => likelyDuplicates(r.sessions, local), [r.sessions, local]);
+  const dupMoves = useMemo(() => likelyDuplicateMoves(r.moves, localTx, bankrolls), [r.moves, localTx, bankrolls]);
   const [keepDups, setKeepDups] = useState(false);
-  const skip = keepDups ? null : dups;
-  const fresh = r.sessions.filter((s) => !have.has(s.id) && !skip?.has(s.id)).length;
-  const freshMoves = r.moves.filter((m) => !have.has(m.id)).length;
+  const skip = keepDups ? new Set<string>() : new Set([...dups, ...dupMoves]);
+  const fresh = r.sessions.filter((s) => !have.has(s.id) && !skip.has(s.id)).length;
+  const freshMoves = r.moves.filter((m) => !have.has(m.id) && !skip.has(m.id)).length;
   const deposits = r.moves.filter((m) => m.kind === 'deposit').length;
   const fileCurrencies = currenciesOf(r.sessions, r.moves, settings.currency);
   const [placement, setPlacement] = useState<Placement>(() => defaultPlacement(fileCurrencies, bankrolls, defaultBankroll));
@@ -460,17 +467,37 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
           </Card>
         ) : null}
 
-        {dups.size ? (
-          <ListGroup>
-            <ToggleItem
-              icon="copy-outline"
-              title={t('Importar também as que parecem repetidas')}
-              subtitle={dups.size === 1 ? t('1 sessão tem o mesmo dia e resultado de uma que já tens.') : t('{n} sessões têm o mesmo dia e resultado de outras que já tens.', { n: dups.size })}
-              value={keepDups}
-              onChange={setKeepDups}
-              lines={3}
-            />
-          </ListGroup>
+        {dups.size + dupMoves.size ? (
+          <View style={{ gap: S.sm }}>
+            <ListGroup>
+              <ToggleItem
+                icon="copy-outline"
+                title={t('Importar também as que parecem repetidas')}
+                subtitle={[
+                  dups.size === 0 ? '' : dups.size === 1 ? t('1 sessão tem o mesmo dia e resultado de uma que já tens.') : t('{n} sessões têm o mesmo dia e resultado de outras que já tens.', { n: dups.size }),
+                  dupMoves.size === 0 ? '' : dupMoves.size === 1 ? t('1 depósito ou levantamento igual a um que já tens.') : t('{n} depósitos ou levantamentos iguais a outros que já tens.', { n: dupMoves.size }),
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                value={keepDups}
+                onChange={setKeepDups}
+                lines={3}
+              />
+              {/* Which ones, so two €100 tournaments lost on the same day can be told apart from a real repeat. */}
+              {list
+                .filter((s) => dups.has(s.id))
+                .slice(0, 20)
+                .map((s) => (
+                  <ListItem
+                    key={s.id}
+                    title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
+                    subtitle={[fullDate(s.startedAt), s.kind === 'mtt' ? t('Torneio') : 'Cash', s.venue].filter(Boolean).join(' · ')}
+                    right={<Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />}
+                  />
+                ))}
+            </ListGroup>
+            {dups.size > 20 ? <T v="small">{t('E mais {n}.', { n: dups.size - 20 })}</T> : null}
+          </View>
         ) : null}
 
         {r.failed.length ? <FailedRows file={file} picked={picked} failed={r.failed} read={r.sessions.length} /> : null}
@@ -585,7 +612,8 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
               setImporting(true);
               await paint();
               try {
-                onImport(skip?.size ? { ...r, sessions: r.sessions.filter((s) => !skip.has(s.id)) } : r, placed);
+                const sessions = r.sessions.filter((s) => !skip.has(s.id));
+                onImport(skip.size ? { ...r, sessions, moves: r.moves.filter((m) => !skip.has(m.id)) } : r, placed, r.sessions.length - sessions.length);
               } finally {
                 setImporting(false);
               }

@@ -382,6 +382,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const order = opt.order ?? guessOrder(table.rows.flatMap((r) => [get(r, 'start'), get(r, 'end')]));
   // A "type" column that holds Casino/Club, not cash or tournament, says nothing about the kind.
   const kindUseful = mapping.kind !== undefined && table.rows.some((r) => kindOf(get(r, 'kind')) !== null);
+  // No type column, but a "Jogo" column that says Torneio or Cash: that's the type.
+  const gameKind = (r: string[]) => {
+    const x = kindOf(get(r, 'game'));
+    return x === 'mtt' || x === 'cash' ? x : null;
+  };
+  const gameAsKind = !kindUseful && mapping.game !== undefined && table.rows.some((r) => gameKind(r) !== null);
   const sessions: Session[] = [];
   const seen = new Map<string, number>();
   let transfers = 0;
@@ -400,7 +406,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     if (opt.source === 'sweatbook' && /^expense$/i.test(get(r, 'kind'))) continue;
     // Sweatbook's own id: importing the same file again merges instead of doubling.
     const own = opt.source === 'sweatbook' && /^[\w.-]{1,80}$/.test(get(r, 'id')) ? get(r, 'id') : '';
-    const k = kindUseful ? kindOf(get(r, 'kind')) : null;
+    const k = kindUseful ? kindOf(get(r, 'kind')) : gameAsKind ? gameKind(r) : null;
     const nameRaw = get(r, 'name');
     const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
     const startP = parseDate(get(r, 'start'), order);
@@ -578,7 +584,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
-  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful || gameAsKind, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */
