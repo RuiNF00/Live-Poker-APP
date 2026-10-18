@@ -776,7 +776,7 @@ interface Setup {
 }
 
 /** Atoms into events: who did what, in the order it was said. */
-export function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
+function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
   const setup: Setup = { stacks: [] };
   const events: Event[] = [];
   const used = new Set<number>();
