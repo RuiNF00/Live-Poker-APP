@@ -3,7 +3,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 
 import { devPro, localProFrom } from './dev-pro';
@@ -18,6 +18,7 @@ import { deferState, markProEnded, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { useLockScreenUp } from '@/components/AppLock';
 import { setLiveSession } from '@/lib/attribution';
+import { OFFER_WAIT_MS, restoreOffer, welcomeStep } from '@/lib/restore-offer';
 import { track } from '@/lib/events';
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
@@ -261,14 +262,23 @@ export function usePro(): ProValue {
 
 /**
  * First run: a brand-new install (nothing logged, never onboarded) opens the
- * welcome flow once, over the hands list.
+ * welcome flow once, over the hands list. On a reinstall with a cloud copy the
+ * offer to restore it comes first: accepted, no welcome (restore-offer).
  */
 export function useOnboarding() {
   const { ready, hands, sessions } = useStore();
   const fresh = ready && hands.length === 0 && sessions.length === 0;
+  const offer = useSyncExternalStore(restoreOffer.subscribe, restoreOffer.get);
+  const [waitedOut, setWaitedOut] = useState(false);
+  useEffect(() => {
+    if (!fresh || offer !== 'unknown') return;
+    const id = setTimeout(() => setWaitedOut(true), OFFER_WAIT_MS);
+    return () => clearTimeout(id);
+  }, [fresh, offer]);
+  const open = welcomeStep(offer, waitedOut) === 'open';
   useFocusEffect(
     useCallback(() => {
-      if (!fresh) return;
+      if (!fresh || !open) return;
       let live = true;
       AsyncStorage.getItem(ONBOARDING_KEY)
         .then((seen) => {
@@ -280,7 +290,7 @@ export function useOnboarding() {
       return () => {
         live = false;
       };
-    }, [fresh]),
+    }, [fresh, open]),
   );
 }
 
