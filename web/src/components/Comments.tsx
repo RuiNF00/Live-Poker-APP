@@ -45,12 +45,26 @@ export function Comments({ shareId, comments: all, onAdded, steps, currentStep, 
   const [reported, setReported] = useState<Set<string>>(new Set());
 
   const report = async (commentId: string) => {
+    // Shown at once, kept only if the report went through.
     setReported((r) => new Set(r).add(commentId));
-    await fetch(`/api/hands/${shareId}/comments/${commentId}/report`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ reporterId: voterId() }),
-    }).catch(() => {});
+    const undo = () =>
+      setReported((r) => {
+        const next = new Set(r);
+        next.delete(commentId);
+        return next;
+      });
+    try {
+      const res = await fetch(`/api/hands/${shareId}/comments/${commentId}/report`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reporterId: voterId() }),
+      });
+      if (res.ok) return;
+      undo();
+      if (res.status === 429) setState('limited');
+    } catch {
+      undo();
+    }
   };
 
   useEffect(() => setName(readLocal<string>('name') ?? ''), []);

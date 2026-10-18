@@ -17,8 +17,20 @@ async function counts(id: string) {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+/** The whole hand, as the vote sends it back. */
+async function fullHand(id: string) {
+  const share = await loadShare(id);
+  return share ? (resolveHand(share.payload)?.hand ?? null) : null;
+}
+
+/** GET -> { counts }. With ?reveal=1 -> { hand }: a friend who skipped the challenge (or whose vote didn't go through) still sees the real play. */
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (new URL(req.url).searchParams.get('reveal') === '1') {
+    const hand = await fullHand(id);
+    if (!hand) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: cors });
+    return NextResponse.json({ hand }, { headers: cors });
+  }
   return NextResponse.json({ counts: await counts(id) }, { headers: cors });
 }
 
@@ -34,7 +46,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // caps voters per IP per hand.
   await getStore().vote(id, voterUuid(voterId), choice, ipHash(req));
   // The challenge page only had the hand up to the decision: the vote unlocks the rest.
-  const share = await loadShare(id);
-  const hand = share ? (resolveHand(share.payload)?.hand ?? null) : null;
-  return NextResponse.json({ counts: await counts(id), hand }, { headers: cors });
+  return NextResponse.json({ counts: await counts(id), hand: await fullHand(id) }, { headers: cors });
 }

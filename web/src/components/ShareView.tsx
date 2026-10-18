@@ -76,7 +76,9 @@ export function ShareView(props: Props) {
   );
   const [quizState, setQuizState] = useState<'pending' | 'open' | 'done'>(quizStep > 0 ? 'open' : 'pending');
   // Until the friend has voted, nothing may give the answer away: notes, tags, later actions, comments.
-  const quizHidesSpoilers = quizStep > 0 && quizState !== 'done';
+  // Past the vote, the same until the whole hand is here: the teaser's last action is only a stand-in.
+  const quizHidesSpoilers = quizStep > 0 && (quizState !== 'done' || !revealed);
+  const [revealError, setRevealError] = useState(false);
   const canComment = props.allowComments && !quizHidesSpoilers;
   // Straight into the comment box, keyboard up, on the moment on screen: pause, then type and send.
   const commentNow = () => {
@@ -98,42 +100,60 @@ export function ShareView(props: Props) {
     if (voted) {
       setQuizState('done');
       setIndex(0);
+      if (props.teaser) return; // plays once the whole hand is here (below)
     } else if (quizStep > 0) return; // waiting on the friend's vote
     // Friends open the link from a chat: start playing right away.
     const id = setTimeout(() => setPlaying(true), 700);
     return () => clearTimeout(id);
-  }, [props.shareId, quizStep]);
+  }, [props.shareId, quizStep, props.teaser]);
 
-  // Back after voting on a challenge: the same vote again (the server keeps one per voter)
-  // brings the whole hand.
   const revealRef = useRef(reveal);
   revealRef.current = reveal;
-  useEffect(() => {
-    const choice = readLocal<string>(`quiz:${props.shareId}`);
-    if (!props.teaser || !choice) return;
-    fetch(`/api/hands/${props.shareId}/vote`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ voterId: voterId(), choice }),
-    })
-      .then((r) => r.json())
-      .then((j) => j.hand && revealRef.current(j.hand as HandRecord))
-      .catch(() => {});
-  }, [props.shareId, props.teaser]);
+  /** The whole hand without a vote (skipped, or the vote didn't go through). False when it can't be had. */
+  const fetchReveal = useCallback(async (): Promise<boolean> => {
+    setRevealError(false);
+    try {
+      const r = await fetch(`/api/hands/${props.shareId}/vote?reveal=1`);
+      const j = r.ok ? ((await r.json()) as { hand?: HandRecord }) : null;
+      if (!j?.hand) throw new Error('no hand');
+      revealRef.current(j.hand);
+      return true;
+    } catch {
+      setRevealError(true);
+      return false;
+    }
+  }, [props.shareId]);
 
-  /** Moves to a step, stopping at the quiz spot the first time it is reached. */
+  /** Plays the real hand from `from`, fetching it first when only the teaser is here; never the stand-in. */
+  const revealedRef = useRef(revealed);
+  revealedRef.current = revealed;
+  const playRevealed = useCallback(
+    async (from: number) => {
+      if (!revealedRef.current && !(await fetchReveal())) return;
+      setIndex(from);
+      setTimeout(() => setPlaying(true), 900);
+    },
+    [fetchReveal],
+  );
+
+  // Back after voting on a challenge: the page has only the teaser, so fetch the whole hand.
+  useEffect(() => {
+    if (props.teaser && readLocal<string>(`quiz:${props.shareId}`)) void playRevealed(0);
+  }, [props.shareId, props.teaser, playRevealed]);
+
+  /** Moves to a step, stopping at the quiz spot the first time it is reached (and while the real play isn't here). */
   const goTo = useCallback(
     (next: number) => {
       const target = Math.max(0, Math.min(steps.length - 1, next));
-      if (quizStep > 0 && quizState !== 'done' && target >= quizStep) {
+      if (quizStep > 0 && (quizState !== 'done' || !revealed) && target >= quizStep) {
         setIndex(quizStep - 1);
         setPlaying(false);
-        setQuizState('open');
+        if (quizState !== 'done') setQuizState('open');
         return;
       }
       setIndex(target);
     },
-    [steps.length, quizStep, quizState],
+    [steps.length, quizStep, quizState, revealed],
   );
 
   const indexRef = useRef(index);
@@ -221,8 +241,8 @@ export function ShareView(props: Props) {
     // The vote panel goes away: put the table back on screen for the reveal.
     replayer.current?.scrollIntoView({ behavior: scrollMode(), block: 'start' });
     setQuizState('done');
-    setIndex(quizStep);
-    setTimeout(() => setPlaying(true), 900);
+    // Skipped, or the vote failed (offline, rate limit): the real play is fetched before anything plays.
+    void playRevealed(quizStep);
   };
 
   return (
@@ -260,7 +280,18 @@ export function ShareView(props: Props) {
           />
         )}
 
-        {index === steps.length - 1 && !playing && quizState !== 'open' && (
+        {revealError && !revealed && quizState === 'done' && (
+          <div className="end-card" role="alert">
+            <div className="end-title">{d.revealError}</div>
+            <div className="end-actions">
+              <button className="btn btn-primary btn-sm" onClick={() => void playRevealed(quizStep)}>
+                {d.retry}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {index === steps.length - 1 && !playing && quizState !== 'open' && revealed && (
           <EndCard locale={locale} allowComments={props.allowComments} onComment={commentNow} />
         )}
 
@@ -454,52 +485,94 @@ function Header({ hand, title, ask, locale, viewCount, spoilers }: Props & { spo
 function ShareButtons({ url, locale, title }: { url: string; locale: Locale; title: string | null }) {
   const d = t(locale);
   const [copied, setCopied] = useState(false);
+  // In-app browsers (Instagram, WhatsApp) often block the clipboard: then the link to copy by hand.
+  const [manual, setManual] = useState(false);
   const [canShare, setCanShare] = useState(false);
   useEffect(() => setCanShare(typeof navigator !== 'undefined' && !!navigator.share), []);
+  const copy = async () => {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      ok = legacyCopy(url);
+    }
+    if (!ok) return setManual(true);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
   return (
-    <div className="share-row">
-      {canShare && (
-        <button className="btn btn-ghost" onClick={() => navigator.share({ url, title: title ?? undefined }).catch(() => {})}>
-          {d.shareNative}
+    <>
+      <div className="share-row">
+        {canShare && (
+          <button className="btn btn-ghost" onClick={() => navigator.share({ url, title: title ?? undefined }).catch(() => {})}>
+            {d.shareNative}
+          </button>
+        )}
+        <button className="btn btn-ghost" onClick={copy}>
+          {copied ? d.copied : d.copyLink}
         </button>
+      </div>
+      {manual && (
+        <label className="copy-manual">
+          {d.copyManual}
+          <input className="input" readOnly value={url} autoFocus onFocus={(e) => e.currentTarget.select()} />
+        </label>
       )}
-      <button
-        className="btn btn-ghost"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1800);
-          } catch {}
-        }}
-      >
-        {copied ? d.copied : d.copyLink}
-      </button>
-    </div>
+    </>
   );
+}
+
+/** The old way, for browsers without the async clipboard: select a hidden textarea and copy. */
+function legacyCopy(text: string): boolean {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function ReportHand({ shareId, locale }: { shareId: string; locale: Locale }) {
   const d = t(locale);
-  const [done, setDone] = useState(false);
+  const [state, setState] = useState<'idle' | 'done' | 'limited'>('idle');
   return (
     <div className="report-hand">
-      {done ? (
+      {state === 'done' ? (
         <span>{d.reported}</span>
       ) : (
-        <button
-          className="report"
-          onClick={() => {
-            setDone(true);
-            fetch(`/api/hands/${shareId}/report`, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ reporterId: voterId() }),
-            }).catch(() => {});
-          }}
-        >
-          {d.reportHand}
-        </button>
+        <>
+          <button
+            className="report"
+            onClick={async () => {
+              // Shown at once, kept only if the report went through.
+              setState('done');
+              try {
+                const res = await fetch(`/api/hands/${shareId}/report`, {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ reporterId: voterId() }),
+                });
+                if (!res.ok) setState(res.status === 429 ? 'limited' : 'idle');
+              } catch {
+                setState('idle');
+              }
+            }}
+          >
+            {d.reportHand}
+          </button>
+          {state === 'limited' && <span className="error"> {d.rateLimited}</span>}
+        </>
       )}
     </div>
   );

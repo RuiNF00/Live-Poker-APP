@@ -138,6 +138,15 @@ a {
   margin-top: 12px;
 }
 
+.copy-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* ---------- buttons ---------- */
 
 .btn {

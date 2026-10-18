@@ -38,13 +38,17 @@ describe('the owner notice follows the comment', () => {
     expect(await store.removeComment(comment.id, editToken, true)).toBe(true);
     notifyOwner.mockClear();
     expect((await post(id, { name: 'Troll', text: 'outra vez', authorId: 'troll-device-1' })).status).toBe(403);
-    expect((await post(id, { name: 'Zé', text: 'filho da puta' })).status).toBe(422);
+    expect((await post(id, { name: 'Zé', text: 'filho da puta', authorId: 'ze-device-01' })).status).toBe(422);
+    // Without an author id the block can't be checked: refused, so a blocked troll can't just drop it.
+    const anon = await post(id, { name: 'Troll', text: 'sem id' });
+    expect(anon.status).toBe(422);
+    expect(await anon.json()).toEqual({ error: 'invalid_comment' });
     await settled();
     expect(notifyOwner).not.toHaveBeenCalled();
-    expect((await post(id, { name: 'Autor da mão', text: '@Ana obrigado' }, editToken)).status).toBe(201);
+    expect((await post(id, { name: 'Autor da mão', text: '@Ana obrigado', authorId: 'owner-device-1' }, editToken)).status).toBe(201);
     await settled();
     expect(notifyOwner).not.toHaveBeenCalled();
-    expect((await post(id, { name: 'Ana', text: 'de nada' }, 'not-the-token')).status).toBe(201);
+    expect((await post(id, { name: 'Ana', text: 'de nada', authorId: 'ana-device-01' }, 'not-the-token')).status).toBe(201);
     await settled();
     expect(notifyOwner).toHaveBeenCalledOnce();
   });

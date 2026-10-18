@@ -6,6 +6,9 @@ import { parseQuiz, resolveHand } from '@/lib/hand';
 import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
 
+/** Fields of the app's hand that stay on the phone (the app strips them too). */
+const PRIVATE_FIELDS = ['streetNotes', 'reviewNote', 'voiceNote', 'folders', 'review', 'reviewedAt', 'shareToken', 'sessionId'] as const;
+
 export function OPTIONS() {
   return new NextResponse(null, { headers: cors });
 }
@@ -39,6 +42,9 @@ export async function POST(req: Request) {
   // than failing the share: the hand itself still goes up.
   const title = rawTitle.trim().slice(0, 120);
   const hand = { ...(body.hand as Record<string, unknown>) };
+  // The player's private fields never go public, even from an older app that still sends them.
+  // `notes` stays: the player can choose to share them.
+  for (const key of PRIVATE_FIELDS) delete hand[key];
   if (typeof hand.notes === 'string' && isOffensive(hand.notes)) hand.notes = '';
   if (typeof hand.title === 'string' && isOffensive(hand.title)) hand.title = '';
   // "O que queres saber?": one line at the top of the page, through the same filter.
