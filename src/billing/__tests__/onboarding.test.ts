@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
+import { festivalPicks, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
 
 test('plan follows what they play and want', () => {
   const p = planFor({ goals: ['results', 'backers'], plays: 'mtt3', volume: 'lots' });
@@ -32,4 +32,11 @@ test('tournament players get a festival step in the first week', () => {
   assert.deepEqual(startSteps('mtt2').map((s) => s.key), ['hand', 'session', 'festival', 'share']);
   assert.deepEqual(startSteps('cash1').map((s) => s.key), ['hand', 'session', 'bankroll', 'share']);
   assert.equal(startProgress({ hands: [], sessions: 0, deposits: 0, festivalPicks: 2 }).festival, true);
+});
+
+test('the festival step counts picks on any festival, not only the first one shipped', () => {
+  // The step opens the festival that starts first, which is not the first in the shipped list.
+  assert.equal(festivalPicks({}), 0);
+  assert.equal(festivalPicks({ 'lisboa-nov-2026': { picked: ['e1', 'e2'] }, 'bahamas-dez-2026': { picked: [] } }), 2);
+  assert.equal(festivalPicks({ a: { picked: ['x'] }, b: { picked: ['y'] }, c: undefined }), 2);
 });
