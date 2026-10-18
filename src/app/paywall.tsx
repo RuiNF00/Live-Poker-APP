@@ -31,6 +31,9 @@ export default function Paywall() {
   // Very short screens (320×568): the fixed footer keeps the billed price, the button and
   // the disclosures; Restore and the other ways out move to the end of the scroll.
   const short = win.height < 640;
+  // Short screen and text at 160%+: the fixed footer took ~3/4 of the screen and left the plans a sliver.
+  // It scrolls after the plans instead, the button still with the terms and links right under it.
+  const inline = short && win.fontScale >= 1.6;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -187,6 +190,37 @@ export default function Paywall() {
     </>
   );
 
+  const footer = (
+    <View style={inline ? { gap: S.xs } : { paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
+      {busy === 'buy' ? (
+        <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={C.accent} />
+        </View>
+      ) : (
+        <>
+          {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}
+          {after ? (
+            <T v="small" style={{ textAlign: 'center' }}>
+              <T v="h3">{after}</T>
+              {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
+            </T>
+          ) : null}
+          <Button title={trial ? t('Continuar') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
+        </>
+      )}
+      {deferable && trial ? (
+        <Pressable onPress={later} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+            {t('Prefiro começar na próxima sessão')}
+          </T>
+        </Pressable>
+      ) : null}
+      {short ? null : shieldLine}
+      {disclosure}
+      {short ? null : extras}
+    </View>
+  );
+
   if (isPro && wasPro) return <AlreadyPro onDone={close} />;
 
   return (
@@ -271,37 +305,11 @@ export default function Paywall() {
             {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
+        {inline ? footer : null}
         {short ? <View style={{ gap: S.sm }}>{extras}</View> : null}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
-        {busy === 'buy' ? (
-          <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color={C.accent} />
-          </View>
-        ) : (
-          <>
-            {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}
-            {after ? (
-              <T v="small" style={{ textAlign: 'center' }}>
-                <T v="h3">{after}</T>
-                {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
-              </T>
-            ) : null}
-            <Button title={trial ? t('Continuar') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
-          </>
-        )}
-        {deferable && trial ? (
-          <Pressable onPress={later} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
-              {t('Prefiro começar na próxima sessão')}
-            </T>
-          </Pressable>
-        ) : null}
-        {short ? null : shieldLine}
-        {disclosure}
-        {short ? null : extras}
-      </View>
+      {inline ? null : footer}
       {sheet}
     </View>
   );
@@ -329,6 +337,7 @@ function PlanCard({
   /** One row: radio, name and line on the left, price on the right. */
   compact?: boolean;
 }) {
+  const bigText = useWindowDimensions().fontScale >= 1.6;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -349,21 +358,24 @@ function PlanCard({
         opacity: pressed ? 0.9 : 1,
       })}>
       {compact ? (
-        <Row gap={S.sm}>
+        // Text at 160%+: the price goes under the name, or it squeezed the line to "16, 6…".
+        <Row gap={S.sm} style={bigText ? { flexWrap: 'wrap' } : null}>
           <Radio active={active} />
           <View style={{ flex: 1, gap: 1 }}>
             <Row gap={6} style={{ flexWrap: 'wrap' }}>
               <T v="h3">{title}</T>
               {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
-            <T v="tiny" numberOfLines={2}>
+            <T v="tiny" numberOfLines={bigText ? undefined : 2}>
               {line}
             </T>
           </View>
-          <T v="mono" numberOfLines={1}>
-            {big}
-          </T>
-          <T v="tiny">{unit}</T>
+          <Row gap={S.sm} style={bigText ? { width: '100%', paddingLeft: 30 } : null}>
+            <T v="mono" numberOfLines={1}>
+              {big}
+            </T>
+            <T v="tiny">{unit}</T>
+          </Row>
         </Row>
       ) : (
         <>
