@@ -11,9 +11,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { ImportSupport } from '@/components/ImportSupport';
-import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
+import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T, ToggleItem } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
+import { likelyDuplicates } from '@/import/duplicates';
 import { prepare, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
@@ -27,7 +28,8 @@ import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
-type Pick = Exclude<SourceId, 'generic'> | 'csv';
+// Poker Ledger has no tile: its file is recognised from the header when picked as CSV.
+type Pick = Exclude<SourceId, 'generic' | 'pokerledger'> | 'csv';
 
 const SOURCES: { id: Pick; name: string; sub: string; icon: React.ComponentProps<typeof Ionicons>['name']; color: string }[] = [
   { id: 'pbt', name: 'Poker Bankroll Tracker', sub: t('Sessões cash e torneios'), icon: 'stats-chart', color: '#5AA9FF' },
@@ -65,6 +67,7 @@ const SOURCE_NAME: Record<SourceId, string> = {
   pbt: 'Poker Bankroll Tracker',
   pokerbase: 'Pokerbase',
   pokeranalytics: 'Poker Analytics',
+  pokerledger: 'Poker Ledger',
   sweatbook: 'Sweatbook',
   generic: 'CSV',
 };
@@ -380,7 +383,11 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
   const pending = stale && file.table.rows.length > 250;
   const r = conv.r;
   const have = useMemo(() => new Set([...local.map((s) => s.id), ...localTx.map((x) => x.id)]), [local, localTx]);
-  const fresh = r.sessions.filter((s) => !have.has(s.id)).length;
+  // The same night from another app, or typed by hand: left out unless the player says otherwise.
+  const dups = useMemo(() => likelyDuplicates(r.sessions, local), [r.sessions, local]);
+  const [keepDups, setKeepDups] = useState(false);
+  const skip = keepDups ? null : dups;
+  const fresh = r.sessions.filter((s) => !have.has(s.id) && !skip?.has(s.id)).length;
   const freshMoves = r.moves.filter((m) => !have.has(m.id)).length;
   const deposits = r.moves.filter((m) => m.kind === 'deposit').length;
   const fileCurrencies = currenciesOf(r.sessions, r.moves, settings.currency);
@@ -451,6 +458,19 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
             {r.unreadable ? <Note icon="help-circle-outline" text={r.unreadable === 1 ? t('1 linha sem data ou sem valores fica de fora.') : t('{n} linhas sem data ou sem valores ficam de fora.', { n: r.unreadable })} /> : null}
             {currencies.size > 1 ? <Note icon="cash-outline" text={t('Há sessões em {n} moedas; cada uma fica na sua.', { n: currencies.size })} /> : null}
           </Card>
+        ) : null}
+
+        {dups.size ? (
+          <ListGroup>
+            <ToggleItem
+              icon="copy-outline"
+              title={t('Importar também as que parecem repetidas')}
+              subtitle={dups.size === 1 ? t('1 sessão tem o mesmo dia e resultado de uma que já tens.') : t('{n} sessões têm o mesmo dia e resultado de outras que já tens.', { n: dups.size })}
+              value={keepDups}
+              onChange={setKeepDups}
+              lines={3}
+            />
+          </ListGroup>
         ) : null}
 
         {r.failed.length ? <FailedRows file={file} picked={picked} failed={r.failed} read={r.sessions.length} /> : null}
@@ -565,7 +585,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
               setImporting(true);
               await paint();
               try {
-                onImport(r, placed);
+                onImport(skip?.size ? { ...r, sessions: r.sessions.filter((s) => !skip.has(s.id)) } : r, placed);
               } finally {
                 setImporting(false);
               }
@@ -622,6 +642,7 @@ const FAIL_TEXT: Record<FailReason, string> = {
   noMoney: t('Sem resultado, buy-in nem prémio'),
   badMoney: t('Valor que não é um número'),
   badMove: t('Depósito ou levantamento sem valor'),
+  running: t('Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez'),
 };
 
 /** Each row left out, with its line in the file and why, plus the choice to send the file to support. */

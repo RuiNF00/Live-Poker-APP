@@ -34,7 +34,7 @@ export interface ImportedMove {
 }
 
 /** Why a row of the file was left out. */
-export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove';
+export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove' | 'running';
 
 export interface FailedRow {
   /** Line in the file (1 = first line). */
@@ -456,6 +456,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     if (bad) {
       unreadable++;
       failed.push({ line, reason: 'badMoney', value: bad });
+      continue;
+    }
+    // Poker Ledger leaves the end and the cash-out empty while a session is still on: not a loss of the whole buy-in.
+    if (opt.source === 'pokerledger' && !get(r, 'end') && !get(r, 'cashOut')) {
+      unreadable++;
+      failed.push({ line, reason: 'running', value: get(r, 'start') });
       continue;
     }
     if (buyIn === null && cashOut === null && net === null) {

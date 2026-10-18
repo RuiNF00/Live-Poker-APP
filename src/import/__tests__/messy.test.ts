@@ -145,3 +145,19 @@ test('German Einsatz, Auszahlung and Gewinn: the payout is the cash-out and Gewi
   // A file with only Gewinn reads it as before.
   assert.deepEqual(autoMap(['Datum', 'Einsatz', 'Gewinn']), { start: 0, buyIn: 1, cashOut: 2 });
 });
+
+test('Poker Ledger: every field quoted, cash or tournament in the format, a running session fails with its reason', () => {
+  const r = run(
+    [
+      '"buy_in","cash_out","start_time","end_time","location","game","game_format","blinds","breaks","entrants","placed","state","note","filtered"',
+      '"200","450","2018-03-04 15:17","2018-03-04 21:02","Bellagio","No Limit Hold\'em","9-max Cash Game","1/2","0","0","0","NV","good","0"',
+      '"100","0","2018-03-05 12:00","2018-03-05 16:00","Aria","No Limit Hold\'em","Heads-Up Tournament","","0","45","12","NV","","0"',
+      '"300","","2018-03-06 20:00","","Wynn","PLO","6-max Cash Game","2/5","0","0","0","NV","","0"',
+    ].join('\n'),
+  );
+  assert.equal(prepare('"buy_in","cash_out","start_time","end_time","game_format","placed"\n').source, 'pokerledger');
+  const [cash, mtt] = r.sessions;
+  assert.deepEqual([cash.kind, cash.venue, cash.bb, profit(cash), cash.notes], ['cash', 'Bellagio', 2, 250, 'good']);
+  assert.deepEqual([mtt.kind, mtt.finish, mtt.field, profit(mtt)], ['mtt', 12, 45, -100]);
+  assert.deepEqual(r.failed, [{ line: 4, reason: 'running', value: '2018-03-06 20:00' }]);
+});

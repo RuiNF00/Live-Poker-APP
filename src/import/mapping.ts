@@ -47,7 +47,7 @@ export type Field = (typeof FIELDS)[number];
 /** Column index per field; missing fields are left out. */
 export type Mapping = Partial<Record<Field, number>>;
 
-export type SourceId = 'pbt' | 'pokerbase' | 'pokeranalytics' | 'sweatbook' | 'generic';
+export type SourceId = 'pbt' | 'pokerbase' | 'pokeranalytics' | 'pokerledger' | 'sweatbook' | 'generic';
 
 // Exact header names, after norm(). Order matters: the first match wins.
 const SYN: Record<Field, string[]> = {
@@ -152,6 +152,7 @@ export function detectSource(text: string, t: Table): SourceId {
   const h = new Set(t.headers.map(norm));
   if (/PBT Bankroll Export/i.test(text.slice(0, 400)) || (h.has('starttime') && h.has('netprofit') && h.has('variant'))) return 'pbt';
   if (h.has('buyin') && h.has('totalcost') && h.has('cashout') && h.has('profit') && h.has('type')) return 'sweatbook';
+  if (h.has('buyin') && h.has('cashout') && h.has('starttime') && h.has('gameformat') && h.has('placed')) return 'pokerledger';
   if (h.has('date') && h.has('location') && h.has('profit') && (h.has('expense') || h.has('expenses')) && !h.has('starttime')) return 'pokerbase';
   return 'generic';
 }
@@ -187,6 +188,22 @@ export function mappingFor(source: SourceId, headers: string[], rows: string[][]
       tableSize: idx(headers, 'tablesize'),
       notes: idx(headers, 'sessionnote'),
       tags: idx(headers, 'tags'),
+    });
+  if (source === 'pokerledger')
+    // pokerledger.com/help/documentation. "breaks" is left out: the docs don't say in what unit.
+    return strip({
+      start: idx(headers, 'starttime'),
+      end: idx(headers, 'endtime'),
+      // "6-max Cash Game", "Heads-Up Tournament".
+      kind: idx(headers, 'gameformat'),
+      game: idx(headers, 'game'),
+      stakes: idx(headers, 'blinds'),
+      venue: idx(headers, 'location'),
+      buyIn: idx(headers, 'buyin'),
+      cashOut: idx(headers, 'cashout'),
+      finish: idx(headers, 'placed'),
+      field: idx(headers, 'entrants'),
+      notes: idx(headers, 'note'),
     });
   if (source === 'sweatbook') {
     // Files from before started_at/ended_at have the date and the start time apart.

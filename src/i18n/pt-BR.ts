@@ -1667,6 +1667,9 @@ const ptBR: Record<string, string> = {
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
   'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este arquivo tem mais de 20 MB. Exporte só as sessões, ou um ano de cada vez, e tente de novo.',
+  '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 sessão tem o mesmo dia e resultado de uma que você já tem.',
+  '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sessões têm o mesmo dia e resultado de outras que você já tem.',
+  'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Sessão ainda em andamento: termine-a no outro app e exporte de novo',
 };
 
 export default ptBR;
