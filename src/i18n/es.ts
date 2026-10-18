@@ -82,6 +82,7 @@ const es: Record<string, string> = {
   'Fase': 'Fase',
   'Mais uma entrada?': '¿Otra entrada?',
   'Terminar sessão': 'Terminar sesión',
+  'Terminar': 'Terminar',
   'Prémio ({currency})': 'Premio ({currency})',
   'Lugar': 'Puesto',
   'Inscritos': 'Inscritos',

@@ -68,8 +68,9 @@ export async function askDeviceResult(): Promise<'ok' | 'no' | 'gone'> {
   try {
     const r = await LocalAuthentication.authenticateAsync({ promptMessage: t('Desbloquear o Sweatbook'), cancelLabel: t('Cancelar') });
     if (r.success) return 'ok';
-    if (r.error === 'passcode_not_set' || r.error === 'not_enrolled' || r.error === 'not_available') return (await deviceLockAvailable()) ? 'no' : 'gone';
-    return 'no';
+    if (r.error !== 'passcode_not_set' && r.error !== 'not_enrolled' && r.error !== 'not_available') return 'no';
+    // Only the phone saying plainly it has no lock opens the app: a failed check stays locked.
+    return (await LocalAuthentication.getEnrolledLevelAsync()) === LocalAuthentication.SecurityLevel.NONE ? 'gone' : 'no';
   } catch {
     return 'no';
   }

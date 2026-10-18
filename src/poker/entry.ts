@@ -49,7 +49,9 @@ export function sizeToRemember(hand: Hand, s: TableState, to: number): { spot: S
   if (!l || s.toAct !== hand.hero || to >= l.maxTo) return null;
   const { spot, base, extra } = sizeSpot(hand, s);
   const mult = Math.round(((to - extra) / base) * 100) / 100;
-  return mult > 0 ? { spot, mult } : null;
+  // A default rounded to the chip unit (½ pot of 13 is 7, so 0.54) is still that default: the chip keeps its name.
+  const snap = defaults(hand, spot).find((d) => Math.abs(d - mult) <= 0.05);
+  return mult > 0 ? { spot, mult: snap ?? mult } : null;
 }
 
 const FRACTIONS: [number, string][] = [[1 / 4, '¼'], [1 / 3, '⅓'], [1 / 2, '½'], [2 / 3, '⅔'], [3 / 4, '¾']];
@@ -89,9 +91,9 @@ export function sizePresets(hand: Hand, s: TableState, memory?: SizeMemory): Siz
     mults.forEach((m, i) => {
       if (Math.abs(m - remembered) < Math.abs(mults[near] - remembered)) near = i;
     });
-    if (Math.abs(mults[near] - remembered) > 0.04) mults[near] = remembered;
+    if (Math.abs(mults[near] - remembered) > 0.045) mults[near] = remembered;
     mults.sort((a, b) => a - b);
-    lastAt = mults.findIndex((m) => Math.abs(m - remembered) <= 0.04);
+    lastAt = mults.findIndex((m) => Math.abs(m - remembered) <= 0.045);
   }
   const out: SizePreset[] = [];
   mults.forEach((m, i) => {

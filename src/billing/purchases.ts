@@ -250,18 +250,22 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
 
 // One store sheet at a time: the sheet takes a moment to appear, and a second tap meanwhile
 // would start a second purchase (paywall, cancel offers, invite, lifetime all come through here).
-let buying = false;
+// A store call that never comes back stops guarding after a few minutes, so buying works again
+// without restarting the app (the sheet itself may stay open that long while the player decides).
+const BUYING_STALE_MS = 5 * 60_000;
+let buying = 0;
 
 async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
-  if (buying) return 'busy';
-  buying = true;
+  if (buying && Date.now() - buying < BUYING_STALE_MS) return 'busy';
+  const mine = (buying = Date.now());
   try {
     // The store finished the purchase but Pro isn't on yet (RevenueCat still syncing): never say nothing was charged.
     return hasPro((await run()).customerInfo) ? 'ok' : 'pending';
   } catch (e) {
     return buyError(e);
   } finally {
-    buying = false;
+    // A late answer from a stale call doesn't free a newer purchase's guard.
+    if (buying === mine) buying = 0;
   }
 }
 

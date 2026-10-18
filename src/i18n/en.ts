@@ -98,6 +98,7 @@ const en: Record<string, string> = {
   'Fase': 'Stage',
   'Mais uma entrada?': 'One more entry?',
   'Terminar sessão': 'End session',
+  'Terminar': 'End',
   'Prémio ({currency})': 'Prize ({currency})',
   'Lugar': 'Place',
   'Inscritos': 'Entrants',

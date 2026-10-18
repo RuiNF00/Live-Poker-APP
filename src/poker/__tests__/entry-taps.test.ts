@@ -503,6 +503,9 @@ test('size memory: spots are kept apart, all-in is never remembered, cash opens 
   p = { ...p, actions: [...p.actions, ...onlyCaller(p, replay(p).final, p.button)], board: ['2c', '3d', '4h'] };
   const ps = sizePresets(p, replay(p).final, { open: 2.2, bet: 0.75 });
   assert.deepEqual(ps.map((x) => x.label), ['⅓', '½', '¾', 'Pote', 'All-in']);
+  // ½ pot rounded to the chip unit is still ½: the chip keeps its name and the settings aren't rewritten.
+  const half = sizePresets(p, replay(p).final).find((x) => x.label === '½')!;
+  assert.deepEqual(sizeToRemember(p, replay(p).final, half.to + 50), { spot: 'bet', mult: 0.5 });
   assert.equal(ps.filter((x) => x.last).length, 1);
 });
 
