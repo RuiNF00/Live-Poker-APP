@@ -271,6 +271,8 @@ export default function NewHand() {
   // note landing after «Guardar») only updates the hand: counting it again would spend two of the
   // day's free hands on one, and the session would get its stack twice.
   const saved = useRef(false);
+  // Player notes made by the first save: a repeat save (store not re-rendered yet) reuses them.
+  const madePlayers = useRef(new Map<string, string>());
   const save = async (over?: Partial<Hand>) => {
     const again = saved.current;
     const asNew = !isEdit && !again;
@@ -287,9 +289,11 @@ export default function NewHand() {
     // Named villains go into the player notes, so the next time they are one tap away.
     const players = hand.players.map((p, i) => {
       if (i === hand.hero || !p.name.trim() || p.playerId) return p;
-      const existing = store.players.find((k) => k.name.trim().toLowerCase() === p.name.trim().toLowerCase());
-      if (existing) return { ...p, playerId: existing.id };
+      const key = p.name.trim().toLowerCase();
+      const existing = store.players.find((k) => k.name.trim().toLowerCase() === key)?.id ?? madePlayers.current.get(key);
+      if (existing) return { ...p, playerId: existing };
       const note = { id: uid('p_'), name: p.name.trim(), look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() };
+      madePlayers.current.set(key, note.id);
       store.savePlayer(note);
       return { ...p, playerId: note.id };
     });
