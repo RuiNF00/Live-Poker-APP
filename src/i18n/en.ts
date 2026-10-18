@@ -879,12 +879,10 @@ const en: Record<string, string> = {
   'Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o resultado por hora e o ROI aparecem aqui.': 'Finish a live session or add one you\'ve already played. Profit, hourly and ROI show up here.',
   'Juntar sessão passada': 'Add a past session',
   '{h} h a jogar': '{h} h played',
-  'Ver todas ({n}) com Pro': 'See all ({n}) with Pro',
   'Procurar': 'Search',
   'Sessão em curso · {time}': 'Session running · {time}',
   'Mão a meio': 'Unfinished hand',
   'Toca para continuar onde ficaste': 'Tap to pick up where you left off',
-  'Ver Pro': 'See Pro',
   'Torneio, jogador, AKs…': 'Tournament, player, AKs…',
   'Todas': 'All',
   'Tenta outro nome, torneio ou mão.': 'Try another name, tournament or hand.',
@@ -1428,7 +1426,6 @@ const en: Record<string, string> = {
   'Calendário': 'Calendar',
   'Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.': 'With Pro you see every venue, game and stake, filter by dates, and the variance calculator uses your own numbers.',
   'Mostrar valores': 'Show amounts',
-  'Experimentar Pro': 'Try Pro',
   'Lucro por hora à mesa': 'Profit per hour at the table',
   'Lucro por € em torneios': 'Profit per € in tournaments',
   'Melhor sessão': 'Best session',
@@ -2044,7 +2041,6 @@ const en: Record<string, string> = {
   'Pro': 'Pro',
   'Semanas seguidas a registar': 'Weeks in a row logging',
   'Ver a mão': 'Watch the hand',
-  'Ver o ano todo com o Pro': 'See the whole year with Pro',
   '{n} países': '{n} countries',
   '{n} semanas do ano a rever o teu jogo': '{n} weeks of the year reviewing your game',
   '{n} sessões · {h}h': '{n} sessions · {h}h',
@@ -2136,7 +2132,6 @@ const en: Record<string, string> = {
   'Resultados por país e imposto retido, em PDF.': 'Results by country and tax withheld, as a PDF.',
   'Tudo numa moeda': 'Everything in one currency',
   'Património e resultado do ano, ao câmbio de cada dia.': "Net worth and this year's result, at each day's rate.",
-  'Juntar as moedas com Pro': 'Combine currencies with Pro',
   'Total em todas as moedas': 'Total across currencies',
   // Coaching links
   'Boa linha': 'Good line',
@@ -3358,6 +3353,11 @@ const en: Record<string, string> = {
   'Carrossel da viagem': 'Trip carousel',
   'Não dá para reabrir este pacote': "Can't reopen this package",
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
+  'Tens o Pro para sempre': 'You have Pro for good',
+  'Não há nada para cancelar no Pro. Se a subscrição ainda renova, cancela-a na {store} e o Pro fica.': "There's nothing to cancel on Pro. If the subscription still renews, cancel it in the {store} and Pro stays.",
+  'Esgotadas hoje': 'Used up today',
+  'Pro ativo': 'Pro is on',
+  'A abrir a {store}…': 'Opening the {store}…',
 };
 
 export default en;

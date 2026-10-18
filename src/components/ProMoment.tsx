@@ -114,7 +114,7 @@ export function ProMoment({ state }: { state: NonNullable<ReturnType<typeof useP
           <T v="h3">{title}</T>
           <T v="small">{body}</T>
           <T v="small" color={C.accent} style={{ paddingTop: 4 }}>
-            {m.kind === 'review' ? t('Rever') : t('Ver Pro')} ›
+            {m.kind === 'review' ? t('Rever') : t('Ver com Pro')} ›
           </T>
         </Pressable>
         <Pressable onPress={dismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Esconder')}>

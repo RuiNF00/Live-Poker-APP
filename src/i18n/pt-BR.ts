@@ -1666,6 +1666,10 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
+  'Não há nada para cancelar no Pro. Se a subscrição ainda renova, cancela-a na {store} e o Pro fica.': 'Não há nada para cancelar no Pro. Se a assinatura ainda renova, cancele-a na {store} e o Pro continua.',
+  'Abrir a {store}': 'Abrir a {store}',
+  'Tens o Pro para sempre': 'Você tem o Pro para sempre',
+  'A abrir a {store}…': 'Abrindo a {store}…',
 };
 
 export default ptBR;

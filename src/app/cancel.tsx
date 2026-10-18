@@ -2,14 +2,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
 import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
-import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
+import { getSubscription, lifetimeOffer, manageSubscription, ownsLifetime, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -32,6 +32,8 @@ export default function Cancel() {
   const [product, setProduct] = useState<string | null>(null);
   const [storeOffer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
+  // Pro for good already: no reasons, no offers, nothing about losing Pro.
+  const [forGood, setForGood] = useState(false);
   const annual = plans.find((p) => p.id === 'annual');
   const monthly = plans.find((p) => p.id === 'monthly');
   // The discount shows only with the store's own numbers for every part of its line: price, % off, months and the price after.
@@ -53,6 +55,7 @@ export default function Cancel() {
       setWillRenew(s?.willRenew ?? null);
       setProduct(s?.product ?? null);
     });
+    ownsLifetime().then(setForGood);
     // Each offer shows once ever: on a later visit only the plain way out is left.
     offersSeen().then((s) => {
       setSeen(s);
@@ -75,6 +78,8 @@ export default function Cancel() {
     track('cancel_flow', { step: 'reason', reason: r });
     if (r === 'noSubscription' && lifetime) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
     setReason(r);
+    // The list turns into the answer for this reason: say which, so a screen reader isn't left on nothing.
+    AccessibilityInfo.announceForAccessibility(t(CANCEL_REASONS.find((x) => x.key === r)!.label));
   };
   const keep = () => {
     track('cancel_flow', { step: 'kept', reason: reason ?? '' });
@@ -96,6 +101,7 @@ export default function Cancel() {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: 'lifetime', result: res });
     if (res === 'ok') {
       track('lifetime_purchased', lifetimeProps());
+      setForGood(true);
       // The subscription keeps renewing until the player cancels it: straight to the store's page (payments audit §7).
       toStore();
     } else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
@@ -137,11 +143,15 @@ export default function Cancel() {
                   month: new Date(mine.since).toLocaleDateString(locale, { month: 'long', year: 'numeric' }),
                 })}
               </T>
-              <T v="small">{t('Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.')}</T>
+              {forGood ? null : <T v="small">{t('Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.')}</T>}
             </View>
           ) : null}
 
-          {reason === null ? (
+          {forGood ? (
+            <OfferCard icon="infinite" title={t('Tens o Pro para sempre')} body={t('Não há nada para cancelar no Pro. Se a subscrição ainda renova, cancela-a na {store} e o Pro fica.', { store })}>
+              <Button kind="secondary" title={t('Abrir a {store}', { store })} onPress={toStore} />
+            </OfferCard>
+          ) : reason === null ? (
             <View style={{ gap: S.sm }}>
               <T v="h2">{t('Porque queres cancelar?')}</T>
               <ListGroup>
@@ -153,7 +163,7 @@ export default function Cancel() {
           ) : (
             <View style={{ gap: S.md }}>
               <Row gap={S.sm}>
-                <T v="h2" style={{ flex: 1 }}>
+                <T v="h2" accessibilityRole="header" style={{ flex: 1 }}>
                   {t(CANCEL_REASONS.find((r) => r.key === reason)!.label)}
                 </T>
                 <Button kind="ghost" small title={t('Mudar')} onPress={() => {

@@ -187,6 +187,17 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
   }
 }
 
+/** True when the player already bought Pro for good (lifetime): there is nothing left to cancel or offer. */
+export async function ownsLifetime(): Promise<boolean> {
+  if (!LIVE) return false;
+  try {
+    const info = await (await rc()).getCustomerInfo();
+    return info.nonSubscriptionTransactions.some((x) => x.productIdentifier === LIFETIME.product) || info.entitlements.active[ENTITLEMENT]?.productIdentifier === LIFETIME.product;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * When the store couldn't charge a renewal: Pro stays on through the store's grace period
  * (App Store Billing Grace Period, Google Play grace) while it retries. Null when all is well.

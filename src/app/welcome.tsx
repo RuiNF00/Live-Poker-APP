@@ -242,10 +242,9 @@ export default function Welcome() {
             {/* One main action, the fastest to something useful: a live session (its start is also where the trial is offered). */}
             <Button title={t('Começar sessão')} icon="play" onPress={() => close('sessao')} />
             <Button kind="secondary" icon="flash-outline" title={t('Registar uma mão')} onPress={() => close('mesa')} />
-            <Row gap={S.xs}>
-              <Button kind="ghost" size="sm" title={t('Responder a 4 perguntas')} onPress={next} style={{ flex: 1 }} lines={2} />
-              <Button kind="ghost" size="sm" title={t('Vens de outra app?')} onPress={switchApp} style={{ flex: 1 }} lines={2} />
-            </Row>
+            {/* Stacked, full width: side by side they broke into two lines at 320 px and at large text. */}
+            <Button kind="ghost" size="sm" title={t('Responder a 4 perguntas')} onPress={next} lines={2} />
+            <Button kind="ghost" size="sm" title={t('Vens de outra app?')} onPress={switchApp} lines={2} />
           </View>
         ) : null}
         {at === 'goals' ? <Button title={t('Continuar')} disabled={!a.goals.length} onPress={next} /> : null}

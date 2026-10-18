@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
@@ -86,7 +86,9 @@ export default function Paywall() {
   useEffect(() => () => void takeResume(), [takeResume]);
 
   // Pro arrived: straight back to the screen that was tapped, now unlocked, and finish what was tapped there.
-  const unlocked = () => {
+  // Said out loud before closing, so a screen reader doesn't land back on the screen in silence.
+  const unlocked = (said = t('Pro ativo')) => {
+    AccessibilityInfo.announceForAccessibility(said);
     const then = takeResume();
     close();
     if (then) setTimeout(then, 350);
@@ -136,7 +138,7 @@ export default function Paywall() {
     const res = await restore();
     setBusy(null);
     if (res !== 'ok') acting.current = false;
-    if (res === 'ok') return unlocked();
+    if (res === 'ok') return unlocked(t('Compras restauradas'));
     restoreNotice(res, store);
   };
 
@@ -193,9 +195,8 @@ export default function Paywall() {
   const footer = (
     <View style={inline ? { gap: S.xs } : { paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
       {busy === 'buy' ? (
-        <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={C.accent} />
-        </View>
+        // The button stays, busy and saying what is happening, so the focus doesn't jump.
+        <Button title={t('A abrir a {store}…', { store })} disabled onPress={onBuy} />
       ) : (
         <>
           {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}

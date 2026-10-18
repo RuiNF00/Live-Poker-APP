@@ -218,7 +218,7 @@ export default function YearScreen() {
           />
         </Row>
         {locked ? (
-          <Button title={t('Ver o ano todo com o Pro')} icon="lock-open-outline" onPress={() => pro.paywall('stats')} />
+          <Button title={t('Ver com Pro')} icon="lock-closed" onPress={() => pro.paywall('stats')} />
         ) : (
           <Row gap={S.sm}>
             {kind === 'pot' && review.pot ? (
