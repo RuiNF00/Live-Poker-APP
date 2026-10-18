@@ -12,7 +12,7 @@ import { C } from '@/theme';
 
 import { Button, Empty } from './ui';
 
-export function CrashScreen({ onBack, onRetry }: { onBack?: () => void; onRetry: () => void }) {
+export function CrashScreen({ onBack, onRetry, onSettings, extra }: { onBack?: () => void; onRetry: () => void; onSettings?: () => void; extra?: React.ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center' }}>
       <Empty
@@ -23,6 +23,9 @@ export function CrashScreen({ onBack, onRetry }: { onBack?: () => void; onRetry:
           <View style={{ gap: 8 }}>
             {onBack ? <Button title={t('Voltar')} onPress={onBack} /> : null}
             <Button title={t('Tentar de novo')} kind={onBack ? 'ghost' : undefined} onPress={onRetry} />
+            {/* The screen that crashes can be the one Definições opens from (Início): export and erase stay reachable. */}
+            {onSettings ? <Button title={t('Definições')} kind="ghost" icon="settings-outline" onPress={onSettings} /> : null}
+            {extra}
           </View>
         }
       />
@@ -33,6 +36,7 @@ export function CrashScreen({ onBack, onRetry }: { onBack?: () => void; onRetry:
 interface Props {
   children: React.ReactNode;
   onBack: () => void;
+  onSettings?: () => void;
 }
 
 export class ScreenBoundary extends React.Component<Props, { error: Error | null }> {
@@ -56,6 +60,6 @@ export class ScreenBoundary extends React.Component<Props, { error: Error | null
 
   render() {
     if (!this.state.error) return this.props.children;
-    return <CrashScreen onBack={this.back} onRetry={this.retry} />;
+    return <CrashScreen onBack={this.back} onRetry={this.retry} onSettings={this.props.onSettings} />;
   }
 }

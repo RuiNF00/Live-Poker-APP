@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { legalUrl } from '@/billing/disclosure';
 import { INVITE } from '@/billing/plans';
 import { LOCAL_PRO, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, manageSubscription, redeemCode } from '@/billing/purchases';
@@ -265,8 +266,8 @@ export default function SettingsScreen() {
             <ListItem icon="book-outline" title={t('Ajuda')} subtitle={t('Respostas às dúvidas mais comuns')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/${HELP_PATH[variant]}`)} />
             <ListItem icon="help-buoy-outline" title={t('Falar com o suporte')} subtitle={t('Uma dúvida ou um pedido')} onPress={() => mailSupport('support')} />
             <ListItem icon="sparkles-outline" title={t('Novidades')} subtitle={t('O que mudou em cada versão')} onPress={() => router.push('/novidades')} />
-            <ListItem icon="shield-checkmark-outline" title={t('Privacidade')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/privacy`)} />
-            <ListItem icon="document-outline" title={t('Termos')} onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/terms`)} />
+            <ListItem icon="shield-checkmark-outline" title={t('Política de privacidade')} onPress={() => WebBrowser.openBrowserAsync(legalUrl('privacy', variant))} />
+            <ListItem icon="document-outline" title={t('Termos de utilização (EULA)')} onPress={() => WebBrowser.openBrowserAsync(legalUrl('terms', variant))} />
             {storeReviewUrl() ? (
               // The store's own page, never the in-app prompt: a button must always do something,
               // so it only shows once app.json has the store URL.

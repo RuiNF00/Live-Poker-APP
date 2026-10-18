@@ -355,6 +355,14 @@ const es: Record<string, string> = {
   'Subscrever Pro': 'Suscribirse a Pro',
   'Grátis durante {days} dias, depois {after}.': 'Gratis durante {days} días, luego {after}.',
   'Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.': 'Se renueva automáticamente hasta que canceles en los ajustes de {store}, al menos 24 horas antes del fin del periodo.',
+  'Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.': 'Si no cancelas, la prueba gratis pasa a {price} el {date} y se renueva automáticamente. Cancela cuando quieras en los ajustes de {store}, al menos 24 h antes.',
+  'Termos de utilização (EULA)': 'Términos de uso (EULA)',
+  'Política de privacidade': 'Política de privacidad',
+  'Anual: {price} por ano': 'Anual: {price} al año',
+  '{price} por mês, −{pct}% face ao mensal.': '{price} al mes, −{pct}% frente al mensual.',
+  '{price} no primeiro mês. Depois, {monthly} por mês, até cancelares.': '{price} el primer mes. Después, {monthly} al mes, hasta que canceles.',
+  '{pct}% no primeiro mês. Depois, {monthly} por mês, até cancelares.': '{pct}% de descuento el primer mes. Después, {monthly} al mes, hasta que canceles.',
+  'Depois, passa à subscrição anual. Para não pagar, cancela na {store} até 24 h antes.': 'Después, pasa a la suscripción anual. Para no pagar, cancela en {store} hasta 24 h antes.',
   'A restaurar…': 'Restaurando…',
   'Restaurar compras': 'Restaurar compras',
   'Termos': 'Términos',
@@ -3322,6 +3330,7 @@ const es: Record<string, string> = {
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'El micrófono está ocupado. Inténtalo de nuevo en un momento.',
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'Esta copia se hizo con una versión más reciente de Sweatbook. Actualiza la app e inténtalo de nuevo; no se cambió nada.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'No pudimos leer esta copia. No se cambió nada en este teléfono.',
+  'Guardar uma cópia dos dados': 'Guardar una copia de los datos',
 };
 
 export default es;

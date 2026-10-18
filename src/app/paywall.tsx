@@ -1,14 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
+import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -40,7 +40,8 @@ export default function Paywall() {
 
   const monthly = plans.find((p) => p.id === 'monthly');
   const annual = plans.find((p) => p.id === 'annual');
-  const saving = monthly && annual ? annualSavingPct(monthly.price, annual.price) : annualSavingPct(PLANS.monthly.price, PLANS.annual.price);
+  // Only from two store prices: never a saving against a price the store didn't give.
+  const saving = monthly && annual ? annualSavingPct(monthly.price, annual.price) : null;
   // An offering without one of the plans still buys in one tap: the other one is chosen.
   const chosen = sel === 'annual' ? (annual ?? monthly) : (monthly ?? annual);
   const plan: PlanId = chosen?.id ?? sel;
@@ -208,7 +209,7 @@ export default function Paywall() {
                 big={annual.priceString}
                 unit={t('/ano')}
                 line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
-                tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, '−' + saving + '%']}
+                tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, saving !== null && saving > 0 ? '−' + saving + '%' : null]}
                 compact={compact}
               />
             ) : null}
@@ -250,26 +251,17 @@ export default function Paywall() {
             </T>
           </Row>
         )}
-        <T v="tiny" style={{ textAlign: 'center' }}>
-          {Platform.OS === 'android' ? t('Renova automaticamente. Cancela na Google Play antes da data de renovação.') : t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
-        </T>
-        <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }} gap={S.lg}>
-          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
-            <T v="tiny" color={C.textDim}>
-              {t('Termos')}
-            </T>
-          </Pressable>
-          <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.privacy)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
-            <T v="tiny" color={C.textDim}>
-              {t('Privacidade')}
-            </T>
-          </Pressable>
-          <Pressable onPress={onRestore} disabled={!!busy} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
-            <T v="tiny" color={busy === 'restore' ? C.accent : C.textDim}>
-              {busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')}
-            </T>
-          </Pressable>
-        </Row>
+        {/* Same terms on both stores: renews by itself, cancelled in the store's settings at least 24 h before (App Store 3.1.2, Google Play). */}
+        {chosen ? (
+          <T v="tiny" style={{ textAlign: 'center' }}>
+            {trial
+              ? t('Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.', { price: after, date: trialEnd(trial), store })
+              : t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
+          </T>
+        ) : null}
+        <LegalLinks>
+          <LegalLink role="button" onPress={onRestore} disabled={!!busy} color={busy === 'restore' ? C.accent : C.textDim} title={busy === 'restore' ? t('A restaurar…') : t('Restaurar compras')} />
+        </LegalLinks>
         {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
           <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
             <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>

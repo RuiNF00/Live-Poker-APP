@@ -9,6 +9,7 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
 import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
+import { offerMonths } from './disclosure';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
 
@@ -223,11 +224,25 @@ export async function redeemCode(): Promise<void> {
   }
 }
 
-/** The cancel-flow discount on the monthly plan, when it exists in the store. */
-export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+/** A store offer with its price as the store writes it. */
+export interface StoreOffer {
+  priceString: string;
+  buy: () => Promise<BuyResult>;
+}
+
+/**
+ * The cancel-flow discount on the monthly plan, when it exists in the store. `price` and
+ * `months` are the store's own, so the screen's "−40% durante 3 meses" matches what is
+ * charged (`months` null: the store didn't say it in months).
+ */
+export async function retentionOffer(plans: StorePlan[]): Promise<(StoreOffer & { price: number; months: number | null }) | null> {
   const monthly = plans.find((p) => p.id === 'monthly');
   // Demo store (dev builds and web): same shape as the lifetime one, so the cancel flow can be walked end to end.
-  if (!LIVE) return __DEV__ && monthly ? { priceString: usd(Math.round(monthly.price * (100 - RETENTION.discount.pct)) / 100), buy: async () => 'ok' as const } : null;
+  if (!LIVE) {
+    if (!__DEV__ || !monthly) return null;
+    const price = Math.round(monthly.price * (100 - RETENTION.discount.pct)) / 100;
+    return { priceString: usd(price), price, months: RETENTION.discount.months, buy: async () => 'ok' as const };
+  }
   const pkg = monthly?.pkg;
   if (!pkg) return null;
   try {
@@ -237,15 +252,27 @@ export async function retentionOffer(plans: StorePlan[]): Promise<{ priceString:
       const Purchases = await rc();
       const offer = await Purchases.getPromotionalOffer(pkg.product, d);
       if (!offer) return null;
-      return { priceString: d.priceString, buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
+      return { priceString: d.priceString, price: d.price, months: offerMonths(d.periodUnit, d.periodNumberOfUnits, d.cycles), buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
     }
     const opt = pkg.product.subscriptionOptions?.find((o) => o.tags.includes(RETENTION.discount.android) || o.id.endsWith(`:${RETENTION.discount.android}`));
     const first = opt?.pricingPhases[0];
     if (!RETENTION.discount.android || !opt || !first) return null;
-    return { priceString: first.price.formatted, buy: () => attempt(async () => (await rc()).purchaseSubscriptionOption(opt)) };
+    return {
+      priceString: first.price.formatted,
+      price: first.price.amountMicros / 1e6,
+      months: offerMonths(first.billingPeriod.unit, first.billingPeriod.value, first.billingCycleCount),
+      buy: () => attempt(async () => (await rc()).purchaseSubscriptionOption(opt)),
+    };
   } catch {
     return null;
   }
+}
+
+/** The invite discount's first-month price on Google Play, as the store writes it. Null on the App Store (Apple's code sheet shows it) or when the offer isn't there. */
+export function inviteOfferPrice(plans: StorePlan[]): string | null {
+  if (!LIVE || Platform.OS !== 'android') return null;
+  const opt = plans.find((p) => p.id === 'monthly')?.pkg?.product.subscriptionOptions?.find((o) => o.tags.includes(INVITE.android) || o.id.endsWith(`:${INVITE.android}`));
+  return opt?.pricingPhases[0]?.price.formatted ?? null;
 }
 
 // One store sheet at a time: the sheet takes a moment to appear, and a second tap meanwhile
@@ -295,7 +322,7 @@ export async function redeemInviteOffer(plans: StorePlan[], iosCode: string | nu
 }
 
 /** One-time Pro for the cancel flow, when switched on in plans.ts and present in the current offering. */
-export async function lifetimeOffer(): Promise<{ priceString: string; buy: () => Promise<BuyResult> } | null> {
+export async function lifetimeOffer(): Promise<StoreOffer | null> {
   if (!LIFETIME.enabled) return null;
   // Expo Go / dev checkout (demo store): a stand-in so the cancel flow can be tried. Never in a store build.
   if (!LIVE) return __DEV__ ? { priceString: usd(LIFETIME.usd), buy: async () => 'ok' as const } : null;

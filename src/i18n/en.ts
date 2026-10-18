@@ -383,6 +383,14 @@ const en: Record<string, string> = {
   'Subscrever Pro': 'Subscribe to Pro',
   'Grátis durante {days} dias, depois {after}.': 'Free for {days} days, then {after}.',
   'Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.': 'Renews automatically until you cancel in your {store} settings, at least 24 hours before the end of the period.',
+  'Sem cancelar, o teste grátis passa a {price} a {date} e renova automaticamente. Cancela quando quiseres nas definições da {store}, pelo menos 24 h antes.': 'Unless you cancel, the free trial becomes {price} on {date} and renews automatically. Cancel any time in your {store} settings, at least 24 h before.',
+  'Termos de utilização (EULA)': 'Terms of Use (EULA)',
+  'Política de privacidade': 'Privacy Policy',
+  'Anual: {price} por ano': 'Annual: {price} a year',
+  '{price} por mês, −{pct}% face ao mensal.': '{price} a month, −{pct}% vs monthly.',
+  '{price} no primeiro mês. Depois, {monthly} por mês, até cancelares.': '{price} for the first month. Then {monthly} a month until you cancel.',
+  '{pct}% no primeiro mês. Depois, {monthly} por mês, até cancelares.': '{pct}% off the first month. Then {monthly} a month until you cancel.',
+  'Depois, passa à subscrição anual. Para não pagar, cancela na {store} até 24 h antes.': 'Then it becomes the annual subscription. To avoid the charge, cancel in the {store} at least 24 h before.',
   'A restaurar…': 'Restoring…',
   'Restaurar compras': 'Restore purchases',
   'Termos': 'Terms',
@@ -3328,6 +3336,7 @@ const en: Record<string, string> = {
   'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'The microphone is busy. Try again in a moment.',
   'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.': 'The backup was made with a newer version of Sweatbook. Update the app and try again; nothing was changed.',
   'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.': 'We couldn’t read this backup. Nothing on this phone was changed.',
+  'Guardar uma cópia dos dados': 'Save a copy of my data',
 };
 
 export default en;

@@ -57,8 +57,13 @@ export default function TabsLayout() {
   const bottom = Math.max(insets.bottom, 10);
   return (
     <Tabs
-      // A tab that throws shows «Algo correu mal» in place; Voltar goes to Início.
-      screenLayout={({ children, navigation }) => <ScreenBoundary onBack={() => navigation.navigate('index')}>{children}</ScreenBoundary>}
+      // A tab that throws shows «Algo correu mal» in place; Voltar goes to Início. Definições only opens from
+      // Início, so the crash screen links it too: if Início itself keeps crashing, export and erase are still there.
+      screenLayout={({ children, navigation }) => (
+        <ScreenBoundary onBack={() => navigation.navigate('index')} onSettings={() => router.push('/settings')}>
+          {children}
+        </ScreenBoundary>
+      )}
       tabBar={(props) => (
         <>
           <SessionMiniBar hidden={props.state.routes[props.state.index]?.name === 'session'} />

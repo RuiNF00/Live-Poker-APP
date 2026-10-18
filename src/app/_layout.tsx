@@ -43,6 +43,8 @@ import { C, ff } from '@/theme';
 
 // Reminders, syncs and the lock-screen and widget bridges draw nothing on the first frame: their code loads after it.
 const AfterStart = React.lazy(() => import('@/components/AfterStart'));
+// Only the root crash screen needs it: loaded then, not at launch.
+const RescueCopy = React.lazy(() => import('@/components/RescueCopy').then((m) => ({ default: m.RescueCopy })));
 
 // A link opened with the app closed (an invite, a shared hand, a swap) lands on that screen alone:
 // without the tabs under it, "Fechar" and back had nowhere to go. On the web the link page stands alone.
@@ -157,9 +159,11 @@ function HideSplash() {
 }
 
 /**
- * Last resort, for an error outside any screen (the layout itself). Screens
- * have their own boundary (ScreenBoundary). Hands are already on disk;
- * "Tentar de novo" re-renders.
+ * Last resort, for an error outside any screen (the layout itself, the store
+ * or Pro providers, a launch that couldn't read the data). Screens have their
+ * own boundary (ScreenBoundary). Hands are already on disk; "Tentar de novo"
+ * re-renders. If it keeps failing, Definições can't open either, so the
+ * player's records can still be saved to a file from here.
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   useEffect(() => {
@@ -167,5 +171,14 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     reportCaught(error);
     SplashScreen.hideAsync().catch(() => {});
   }, [error]);
-  return <CrashScreen onRetry={retry} />;
+  return (
+    <CrashScreen
+      onRetry={retry}
+      extra={
+        <Suspense fallback={null}>
+          <RescueCopy />
+        </Suspense>
+      }
+    />
+  );
 }

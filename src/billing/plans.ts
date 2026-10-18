@@ -330,8 +330,5 @@ export function annualSavingPct(monthly: number, annual: number): number {
   return Math.round((1 - annual / (monthly * 12)) * 100);
 }
 
-/** Apple and Google require these links next to the subscribe button. */
-export const LEGAL = {
-  terms: 'https://sweatbook.poker/terms.html',
-  privacy: 'https://sweatbook.poker/privacy.html',
-};
+/** Apple and Google require these links next to the subscribe button (disclosure.ts: legalUrl opens the player's language). */
+export { LEGAL } from './disclosure';

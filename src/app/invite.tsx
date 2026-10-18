@@ -8,7 +8,8 @@ import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-nat
 
 import { INVITE } from '@/billing/plans';
 import { buyNotice, usePro } from '@/billing/pro';
-import { redeemInviteOffer } from '@/billing/purchases';
+import { inviteOfferPrice, redeemInviteOffer } from '@/billing/purchases';
+import { LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
@@ -20,6 +21,8 @@ import { C, F, R, S } from '@/theme';
 
 export default function InviteScreen() {
   const pro = usePro();
+  const monthly = pro.plans.find((p) => p.id === 'monthly');
+  const offerPrice = inviteOfferPrice(pro.plans);
   const [busy, setBusy] = useState(false);
   const [s, setS] = useState<InviteStatus | null | undefined>(undefined);
   const load = () => {
@@ -94,7 +97,17 @@ export default function InviteScreen() {
                 {t('Código da App Store: {code}. Fica copiado para colares se a App Store o pedir.', { code: s.offer.iosCode })}
               </T>
             ) : null}
+            {/* A purchase on Google Play: what it costs, what it renews at, and the legal links (App Store 3.1.2, Play). Prices only from the store. */}
+            {monthly ? (
+              <T v="small" color={C.text}>
+                {offerPrice
+                  ? t('{price} no primeiro mês. Depois, {monthly} por mês, até cancelares.', { price: offerPrice, monthly: monthly.priceString })
+                  : t('{pct}% no primeiro mês. Depois, {monthly} por mês, até cancelares.', { pct: INVITE.pct, monthly: monthly.priceString })}
+              </T>
+            ) : null}
             <Button title={t('Usar o desconto')} icon="pricetag" disabled={busy} onPress={takeOffer} />
+            <T v="tiny">{t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })}</T>
+            <LegalLinks />
           </Card>
         ) : null}
 
