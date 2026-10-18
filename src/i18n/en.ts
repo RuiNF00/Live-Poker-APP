@@ -1934,8 +1934,8 @@ const en: Record<string, string> = {
   'Faltam {left} para o limite de {limit} {scope}.': '{left} left before your {limit} limit {scope}.',
   'Fechar aviso': 'Close warning',
   'Apagar todos os teus dados?': 'Delete all your data?',
-  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.':
-    "Hands, sessions, player notes, bankroll, staking and settings are removed from this phone. Your cloud copy, shared hands, backer pages and public profile are deleted too (with no signal, as soon as it's back). This can't be undone. Your Pro subscription stays: cancel it in the App Store or Google Play.",
+  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na {store}.':
+    "Hands, sessions, player notes, bankroll, staking and settings are removed from this phone. Your cloud copy, shared hands, backer pages and public profile are deleted too (with no signal, as soon as it's back). This can't be undone. Your Pro subscription stays: cancel it in {store}.",
   'Apagar tudo': 'Delete everything',
   'Dados apagados': 'Data deleted',
   'A app está como nova.': 'The app is as good as new.',

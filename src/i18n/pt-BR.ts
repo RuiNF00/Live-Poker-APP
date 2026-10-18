@@ -881,7 +881,7 @@ const ptBR: Record<string, string> = {
   'Estás perto do teu stop-loss': 'Você está perto do seu stop-loss',
   'Perdeste {lost} {scope}; o teu limite é {limit}. Pode ser boa altura para parar.': 'Você perdeu {lost} {scope}; seu limite é {limit}. Pode ser uma boa hora para parar.',
   'Apagar todos os teus dados?': 'Excluir todos os seus dados?',
-  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.': 'Mãos, sessões, notas de jogadores, bankroll, staking e configurações saem deste celular. O backup na nuvem, as mãos compartilhadas, as páginas para backers e seu perfil público também são excluídos (sem conexão, assim que houver sinal). Não dá para desfazer. A assinatura Pro continua: cancele na App Store ou no Google Play.',
+  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na {store}.': 'Mãos, sessões, notas de jogadores, bankroll, staking e configurações saem deste celular. O backup na nuvem, as mãos compartilhadas, as páginas para backers e seu perfil público também são excluídos (sem conexão, assim que houver sinal). Não dá para desfazer. A assinatura Pro continua: cancele na {store}.',
   'Apagar tudo': 'Excluir tudo',
   'Dados apagados': 'Dados excluídos',
   'A app está como nova.': 'O app está como novo.',

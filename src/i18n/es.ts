@@ -1820,7 +1820,7 @@ const es: Record<string, string> = {
   'Faltam {left} para o limite de {limit} {scope}.': 'Faltan {left} para el límite de {limit} {scope}.',
   'Fechar aviso': 'Cerrar aviso',
   'Apagar todos os teus dados?': '¿Eliminar todos tus datos?',
-  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.': 'Manos, sesiones, notas de jugadores, bankroll, staking y ajustes se borran de este teléfono. La copia en la nube, las manos compartidas, las páginas para backers y tu perfil público también se eliminan (sin conexión, en cuanto haya señal). No se puede deshacer. La suscripción Pro sigue: cancélala en la App Store o en Google Play.',
+  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na {store}.': 'Manos, sesiones, notas de jugadores, bankroll, staking y ajustes se borran de este teléfono. La copia en la nube, las manos compartidas, las páginas para backers y tu perfil público también se eliminan (sin conexión, en cuanto haya señal). No se puede deshacer. La suscripción Pro sigue: cancélala en {store}.',
   'Apagar tudo': 'Eliminar todo',
   'Dados apagados': 'Datos eliminados',
   'A app está como nova.': 'La app está como nueva.',
