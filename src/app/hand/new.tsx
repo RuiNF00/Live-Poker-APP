@@ -296,9 +296,11 @@ export default function NewHand() {
     const justFinished = !!before && !isComplete(before) && isComplete(final);
     store.saveHand(final);
     tap('success');
-    // Keep the session's live table state in sync, so the next hand is pre-filled.
+    // Keep the session's live table state in sync, so the next hand is pre-filled. Only while it's
+    // live: a draft kept from a session that has since ended (the free limit held it back) must not
+    // change that session's stack, blinds or stack chart.
     const sess = store.sessions.find((x) => x.id === final.sessionId);
-    if (sess && !isEdit) {
+    if (sess && !sess.endedAt && !isEdit) {
       // A hand saved before its end keeps hero's starting stack (the pot isn't decided), not the chips already put in.
       const heroEnd = endStacks(final)[final.hero];
       store.saveSession({
