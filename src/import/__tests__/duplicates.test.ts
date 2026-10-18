@@ -44,6 +44,8 @@ test('an app that rounds to whole units still matches; two decimals that differ 
   const have = [s('a', '2025-02-03T21:00', 100, 250.6)];
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 251)], have).size, 1);
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 250.4)], have).size, 0);
+  // +100 and +101 on the same day are two different nights.
+  assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 201)], [s('a', '2025-02-03T21:00', 100, 200)]).size, 0);
 });
 
 test('deposits and withdrawals: same bankroll currency, direction, amount and day', () => {

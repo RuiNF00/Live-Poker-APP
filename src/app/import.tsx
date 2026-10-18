@@ -110,7 +110,7 @@ function useTight() {
   return width / Math.max(1, fontScale) < 320;
 }
 
-type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; skipped?: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
+type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; skipped?: { sessions: number; moves: number }; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
 
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -286,11 +286,14 @@ export default function ImportScreen() {
 function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; bottom: number; onAgain: () => void }) {
   const tight = useTight();
   const r = step.recap;
-  const skipped = step.skipped
-    ? step.skipped === 1
-      ? t('1 parecida com uma sessão que já tinhas ficou de fora.')
-      : t('{n} parecidas com sessões que já tinhas ficaram de fora.', { n: step.skipped })
-    : null;
+  const n = step.skipped?.sessions ?? 0;
+  const m = step.skipped?.moves ?? 0;
+  const skipped = [
+    n === 0 ? '' : n === 1 ? t('1 parecida com uma sessão que já tinhas ficou de fora.') : t('{n} parecidas com sessões que já tinhas ficaram de fora.', { n }),
+    m === 0 ? '' : m === 1 ? t('1 depósito ou levantamento igual a um que já tinhas ficou de fora.') : t('{n} depósitos ou levantamentos iguais a outros que já tinhas ficaram de fora.', { n: m }),
+  ]
+    .filter(Boolean)
+    .join(' ');
   const before =
     step.summary ??
     (step.moves
@@ -357,7 +360,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
   );
 }
 
-function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement, skipped: number) => void }) {
+function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement, skipped: { sessions: number; moves: number }) => void }) {
   const tight = useTight();
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
@@ -613,7 +616,8 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
               await paint();
               try {
                 const sessions = r.sessions.filter((s) => !skip.has(s.id));
-                onImport(skip.size ? { ...r, sessions, moves: r.moves.filter((m) => !skip.has(m.id)) } : r, placed, r.sessions.length - sessions.length);
+                const moves = r.moves.filter((m) => !skip.has(m.id));
+                onImport(skip.size ? { ...r, sessions, moves } : r, placed, { sessions: r.sessions.length - sessions.length, moves: r.moves.length - moves.length });
               } finally {
                 setImporting(false);
               }

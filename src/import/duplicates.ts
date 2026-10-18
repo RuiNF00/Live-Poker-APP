@@ -17,10 +17,10 @@ const dayKey = (t: number) => {
 /** The whole action at the table: other apps have no stakes, swaps, makeup, tips or expenses. */
 const gross = (s: Session) => (s.cashOut || 0) - (s.buyIn || 0) * (s.entries || 1) - (s.addOn || 0);
 
-/** To the cent, or within 1 when either side is whole: some apps round. */
+/** To the cent, or under 1 apart when only one side is whole: that app rounded. Two whole amounts must be equal. */
 const sameAmount = (a: number, b: number) => {
   const d = Math.abs(Math.round(a * 100) - Math.round(b * 100));
-  return d === 0 || (d <= 100 && (Number.isInteger(a) || Number.isInteger(b)));
+  return d === 0 || (d < 100 && Number.isInteger(a) !== Number.isInteger(b));
 };
 
 const near = (a: number, b: number) => dayKey(a) === dayKey(b) || Math.abs(a - b) < THREE_HOURS;
