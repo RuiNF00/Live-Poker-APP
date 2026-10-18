@@ -20,6 +20,8 @@ test('deletes: the later time of each wins, and only what was not edited after g
 test('deletes from a file: only well-formed keys with a real time', () => {
   assert.deepEqual(cleanDeleted({ 'sessions:a': 3, 'quarantine:x': 4, 'hands:b': -1, 'hands:c': 'x', 'trips:': 2, 'hands:\nz': 1 }), { 'sessions:a': 3 });
   assert.deepEqual(cleanDeleted([1, 2]), {});
+  // A time far in the future would beat every later edit: left out.
+  assert.deepEqual(cleanDeleted({ 'sessions:a': 1000 + 86_400_000, 'sessions:b': 1000 + 86_400_001 }, 1000), { 'sessions:a': 1000 + 86_400_000 });
   const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, exportedAt: 1, hands: [], sessions: [], players: [], deleted: { 'sessions:a': 3, bad: 1 } }));
   assert.deepEqual(b.deleted, { 'sessions:a': 3 });
   // A copy made before deletes were kept reads as none.
