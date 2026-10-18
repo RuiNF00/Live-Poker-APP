@@ -28,6 +28,14 @@ export function parseFriendHands(x: unknown): FriendHand[] {
     .slice(0, MAX_FRIEND_HANDS);
 }
 
+/** Most hands kept as reported, and commenters as blocked. */
+export const MAX_HIDDEN = 200;
+
+/** rl.friendHandsHidden.v1 and rl.blocked.v1: lists of strings, each entry kept as saved. */
+export function parseIds(x: unknown): string[] {
+  return Array.isArray(x) ? x.filter((i): i is string => typeof i === 'string').slice(0, MAX_HIDDEN) : [];
+}
+
 export function parseSeen(x: unknown): Seen {
   if (!x || typeof x !== 'object') return {};
   return Object.fromEntries(Object.entries(x as Record<string, unknown>).filter(([k, v]) => ID.test(k) && Number.isInteger(v) && (v as number) >= 0)) as Seen;

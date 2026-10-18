@@ -12,12 +12,14 @@ import { BRAND } from '@/theme';
 
 import { onEraseAll } from './erase-hooks';
 import { installId, refCode, setRefCode, track } from './events';
-import { createInviteReward, type Activation, type ClaimState } from './invite-reward';
+import { createInviteReward, OFFER_KEY, openOffer, type Activation, type ClaimState, type InviteOffer } from './invite-reward';
 import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
 
+export type { InviteOffer } from './invite-reward';
+
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
-const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', shared: 'rl.ref.shared.v1', checked: 'rl.ref.checked.v1', offer: 'rl.ref.offer.v1' };
+const K = { first: 'rl.first.v1', registered: 'rl.ref.reg.v1', shared: 'rl.ref.shared.v1', checked: 'rl.ref.checked.v1', offer: OFFER_KEY };
 const WINDOW = 7 * 86400000;
 
 export type ClaimSource = 'share' | 'story' | 'link' | 'manual' | 'play_referrer';
@@ -164,14 +166,6 @@ export interface InviteStatus {
   discounts: number;
   offer: InviteOffer | null;
 }
-
-/** The invite discount usable now: until when, and the App Store code on iPhone. */
-export interface InviteOffer {
-  until: string;
-  iosCode: string | null;
-}
-
-const openOffer = (o: InviteOffer | null | undefined, now = Date.now()) => (o && Date.parse(o.until) > now ? o : null);
 
 /** The last invite discount the server reported, while it can still be used (for the paywall, offline too). */
 export async function savedInviteOffer(): Promise<InviteOffer | null> {

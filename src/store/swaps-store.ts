@@ -12,6 +12,7 @@ import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOw
 
 import { quarantine } from './boot';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
+import { fixSwap } from './swap-validate';
 import { mergeRemote, mergeSwaps, newFromOther, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
@@ -30,7 +31,7 @@ function emit(next: Swap[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<Swap>(kv, SPEC).then(async (d) => {
+  booting ??= loadCollection<Swap>(kv, SPEC, { fix: fixSwap }).then(async (d) => {
     // Records that no longer parse are kept aside (backup and support file), not dropped.
     await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swaps] write failed', e));

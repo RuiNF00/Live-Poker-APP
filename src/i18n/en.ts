@@ -2740,7 +2740,7 @@ const en: Record<string, string> = {
   'Melhor sessão: {amount}. Toca para veres o resumo do mês.': 'Best session: {amount}. Tap to see the month\'s recap.',
   'Toca para veres o resumo do mês.': 'Tap to see the month\'s recap.',
   'depois de {days} dias grátis': 'after {days} free days',
-  'Cancela quando quiseres na {store}.': 'Cancel any time in {store}.',
+  'Cancela quando quiseres na {store}.': 'Cancel any time in the {store}.',
   'Depois, {price} por ano. Para não pagar, cancela na Google Play antes dessa data.': 'Then {price} a year. To avoid paying, cancel in Google Play before that date.',
   '1 dia de viagem': '1 day away',
   '{n} dias de viagem': '{n} days away',

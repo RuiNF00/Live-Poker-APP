@@ -17,6 +17,11 @@ export interface CloudState {
   saved?: boolean;
 }
 
+/** rl.cloud.v1 as saved: every field kept as it is, whichever build wrote it. */
+export function parseCloud(raw: string | null): CloudState | null {
+  return raw ? (JSON.parse(raw) as CloudState) : null;
+}
+
 /** XXXXX-XXXXX-XXXXXXXXXXXXXXXX */
 export function formatCode(c: CloudState): string {
   return `${c.id.slice(0, 5)}-${c.id.slice(5)}-${c.secret}`;

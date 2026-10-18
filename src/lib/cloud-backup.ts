@@ -10,7 +10,7 @@ import { parseBackup } from '@/store/backup';
 import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
-import { ALPHA, type CloudState } from './cloud-code';
+import { ALPHA, parseCloud, type CloudState } from './cloud-code';
 import { countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 import { isOnline } from './online';
@@ -39,8 +39,7 @@ function randomB32(n: number): string {
 
 export async function loadCloud(): Promise<CloudState | null> {
   try {
-    const raw = await AsyncStorage.getItem(KEY);
-    const c = raw ? (JSON.parse(raw) as CloudState) : null;
+    const c = parseCloud(await AsyncStorage.getItem(KEY));
     // Codes made before the keychain copy existed get one on the first read.
     if (c) void keepCode(c).catch(() => {});
     return c;

@@ -9,14 +9,13 @@ import { AppState } from 'react-native';
 import { useStore } from '@/store/store';
 
 import { onEraseAll } from './erase-hooks';
-import { parseFriendHands, parseSeen, remember, total, unseen, type FriendHand, type Seen } from './friend-hands-core';
+import { MAX_HIDDEN, parseFriendHands, parseIds, parseSeen, remember, total, unseen, type FriendHand, type Seen } from './friend-hands-core';
 import { fetchCommentCounts } from './share-api';
 
 const HANDS_KEY = 'rl.friendHands.v1';
 const SEEN_KEY = 'rl.commentsSeen.v1';
 // Hands you reported: they leave the list and don't come back if the link is opened again.
 const HIDDEN_KEY = 'rl.friendHandsHidden.v1';
-const MAX_HIDDEN = 200;
 // Commenters blocked on this phone ("c:<id>", the id is per hand).
 const BLOCKED_KEY = 'rl.blocked.v1';
 const REFRESH_MS = 60_000;
@@ -46,16 +45,14 @@ function load(): Promise<void> {
         ...state,
         hands: parseFriendHands(h ? JSON.parse(h) : []),
         seen: parseSeen(s ? JSON.parse(s) : {}),
-        hidden: strings(hidden),
-        blocked: strings(blocked),
+        hidden: parseIds(hidden),
+        blocked: parseIds(blocked),
       };
       emit();
     })
     .catch(() => {});
   return loaded;
 }
-
-const strings = (x: unknown) => (Array.isArray(x) ? x.filter((i): i is string => typeof i === 'string').slice(0, MAX_HIDDEN) : []);
 
 function emit() {
   for (const l of listeners) l(state);

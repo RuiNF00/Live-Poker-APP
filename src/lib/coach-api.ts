@@ -17,6 +17,7 @@ import {
   eraseJobs,
   markHandSeen,
   mergeComments,
+  parseCoachState,
   parseComments,
   syncable,
   handsCommented,
@@ -44,12 +45,7 @@ async function load(): Promise<CoachState> {
   if (cache) return cache;
   try {
     const raw = await AsyncStorage.getItem(KEY);
-    const v = raw ? (JSON.parse(raw) as Partial<CoachState>) : {};
-    cache = {
-      links: Array.isArray(v.links) ? v.links : [],
-      comments: v.comments && typeof v.comments === 'object' ? v.comments : {},
-      seen: Array.isArray(v.seen) ? v.seen : [],
-    };
+    cache = parseCoachState(raw ? JSON.parse(raw) : {});
   } catch {
     cache = { ...EMPTY_COACH };
   }

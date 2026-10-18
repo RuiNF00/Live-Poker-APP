@@ -7,6 +7,7 @@ import { AppState, Platform } from 'react-native';
 
 import { attribution, profile } from './attribution';
 import { anonId } from './share-api';
+import { keptOrNew } from './stored-id';
 import { outcomeOf, queue, registerSender } from './sync';
 import { BRAND } from '@/theme';
 
@@ -79,14 +80,8 @@ let ref: Promise<string> | null = null;
  * install id, which never appears in a URL.
  */
 export function refCode(): Promise<string> {
-  ref ??= AsyncStorage.getItem(REF_KEY)
-    .then(async (v) => {
-      if (v) return v;
-      const code = anonId().replace(/-/g, '').slice(0, 10);
-      await AsyncStorage.setItem(REF_KEY, code);
-      return code;
-    })
-    .catch(() => anonId().replace(/-/g, '').slice(0, 10));
+  const make = () => anonId().replace(/-/g, '').slice(0, 10);
+  ref ??= keptOrNew(AsyncStorage, REF_KEY, make).catch(make);
   return ref;
 }
 

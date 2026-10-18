@@ -197,7 +197,7 @@ const ptBR: Record<string, string> = {
   'Lemos tudo o que nos mandam.': 'Lemos tudo o que você nos manda.',
   'Onde perdes mais tempo?': 'Onde você perde mais tempo?',
   'O que te falta?': 'O que está faltando?',
-  'Continuar a cancelar na {store}': 'Continuar o cancelamento em {store}',
+  'Continuar a cancelar na {store}': 'Continuar o cancelamento na {store}',
   'Avisamos-te antes de cobrar.': 'Avisamos você antes de cobrar.',
   'Avisamos-te antes de cobrar': 'Avisamos você antes de cobrar',
   'Vês as mãos que registaste e o dia em que o teste acaba.': 'Veja as mãos que você registrou e o dia em que o teste acaba.',

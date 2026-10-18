@@ -22,6 +22,17 @@ export type ActivatePost = () => Promise<{ booked?: boolean } | null>;
 export type Activation = 'granted' | 'not_yet' | 'none';
 
 export const CLAIM_KEY = 'rl.claim.v1';
+/** The last invite discount the server reported (InviteOffer). */
+export const OFFER_KEY = 'rl.ref.offer.v1';
+
+/** The invite discount usable now: until when, and the App Store code on iPhone. */
+export interface InviteOffer {
+  until: string;
+  iosCode: string | null;
+}
+
+/** The offer while it can still be used, else null. */
+export const openOffer = (o: InviteOffer | null | undefined, now = Date.now()) => (o && Date.parse(o.until) > now ? o : null);
 /** A hand was saved on this install (set even before any invite is known). */
 export const HAND_KEY = 'rl.firsthand.v1';
 
