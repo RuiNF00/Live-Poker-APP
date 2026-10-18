@@ -327,17 +327,26 @@ const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v =
 const isNumbers = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'number');
 const isStrings = (v: unknown) => isRecord(v) && Object.values(v).every((x) => typeof x === 'string');
 
-/** The stored plans that have the right shape (fields left out take their empty value); the rest are dropped. */
-export function cleanPlans(saved: Record<string, unknown>): Plans {
+/**
+ * The stored plans that have the right shape (fields left out take their empty value); the rest are
+ * dropped. An added tournament the planner can't read goes alone, the plan's other picks stay.
+ * `dropped` says whether anything was left out.
+ */
+export function cleanPlans(saved: Record<string, unknown>, dropped = { any: false }): Plans {
   const out: Plans = {};
   for (const [id, p] of Object.entries(saved)) {
+    // Set back below when the plan is kept whole.
+    const before = dropped.any;
+    dropped.any = true;
     if (!isRecord(p)) continue;
     const { picked = [], lateReg = {}, sessions = {}, name, events } = p;
     if (!Array.isArray(picked) || !picked.every((x) => typeof x === 'string')) continue;
     if (!isNumbers(lateReg) || !isStrings(sessions)) continue;
     if (name !== undefined && typeof name !== 'string') continue;
-    if (events !== undefined && !(Array.isArray(events) && events.every(isOwnEvent))) continue;
-    out[id] = { ...(p as unknown as FestivalPlan), picked, lateReg: lateReg as FestivalPlan['lateReg'], sessions: sessions as FestivalPlan['sessions'] };
+    if (events !== undefined && !Array.isArray(events)) continue;
+    const okEvents = events?.filter(isOwnEvent);
+    dropped.any = before || okEvents?.length !== events?.length;
+    out[id] = { ...(p as unknown as FestivalPlan), picked, lateReg: lateReg as FestivalPlan['lateReg'], sessions: sessions as FestivalPlan['sessions'], ...(okEvents ? { events: okEvents as unknown as FestivalEvent[] } : {}) };
   }
   return out;
 }
@@ -348,10 +357,11 @@ function load(): Promise<void> {
       const kv = AsyncStorage as unknown as KV;
       const saved = raw ? await parseOrQuarantine<Record<string, unknown>>(kv, KEY, raw, isRecord) : null;
       if (!saved) return;
-      const good = cleanPlans(saved);
+      const dropped = { any: false };
+      const good = cleanPlans(saved, dropped);
       // One plan of the wrong shape would break the festival screen on every open: the stored
       // value goes to quarantine as it was, and the good plans are kept.
-      if (Object.keys(good).length < Object.keys(saved).length) {
+      if (dropped.any) {
         await quarantine(kv, [[KEY, raw!]]);
         await AsyncStorage.setItem(KEY, JSON.stringify(good)).catch(() => {});
       }
