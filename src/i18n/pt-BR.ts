@@ -1696,6 +1696,8 @@ const ptBR: Record<string, string> = {
   'Criar o meu link para backers': 'Criar meu link para backers',
   'O meu currículo': 'Meu currículo',
   'Incluir as minhas notas da mão': 'Incluir minhas notas da mão',
+  'Pro para sempre': 'Pro para sempre',
+  'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Você pagou uma vez: não há assinatura para cancelar nem renovações.',
 };
 
 export default ptBR;

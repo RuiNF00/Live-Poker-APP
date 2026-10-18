@@ -187,6 +187,17 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
   }
 }
 
+/** Pro paid once («Pagar uma vez»): nothing renews, so there is no subscription to manage. */
+export async function hasLifetime(): Promise<boolean> {
+  if (!LIVE) return false;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    return !!e && (e.productIdentifier === LIFETIME.product || !e.expirationDateMillis);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * When the store couldn't charge a renewal: Pro stays on through the store's grace period
  * (App Store Billing Grace Period, Google Play grace) while it retries. Null when all is well.

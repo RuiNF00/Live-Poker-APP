@@ -3361,6 +3361,7 @@ const es: Record<string, string> = {
   'Carrossel da viagem': 'Carrusel del viaje',
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}». Se sigue recuperando allí.',
+  'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Pagaste una vez: no hay suscripción que cancelar ni renovaciones.',
 };
 
 export default es;
