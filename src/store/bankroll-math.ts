@@ -56,7 +56,11 @@ export function dropUnusedAuto(merged: Bankroll[], incoming: Bankroll[], local: 
   return out.length ? out : merged;
 }
 
-/** This phone's own "Principal", made on its own and never renamed or used. */
+/**
+ * This phone's own "Principal", made on its own and never renamed or used. The onboarding's
+ * currency pick moves it to that currency (a save, so it has an edit time): still the same
+ * untouched "Principal", known by its id no longer matching its currency.
+ */
 function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }) {
   const used = new Set<string>();
   for (const x of local.sessions) {
@@ -64,7 +68,8 @@ function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfe
     if (b) used.add(b.id);
   }
   for (const x of local.transfers) used.add(x.bankrollId);
-  return (b: Bankroll) => b.id.startsWith('br_auto_') && !((b.updatedAt ?? 0) > 0) && !used.has(b.id);
+  const untouched = (b: Bankroll) => !((b.updatedAt ?? 0) > 0) || (b.id !== autoBankrollId(b.currency) && b.name === t('Principal') && !b.rules && !b.shot);
+  return (b: Bankroll) => b.id.startsWith('br_auto_') && untouched(b) && !used.has(b.id);
 }
 
 /**

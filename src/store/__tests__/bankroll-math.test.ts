@@ -153,6 +153,19 @@ test('restoring on a fresh phone: its own empty "Principal" gives way to the bac
   assert.equal(dropUnusedAuto(fresh, [], { bankrolls: fresh, sessions: [], transfers: [] }), fresh);
 });
 
+test('restoring after the onboarding currency pick: one "Principal", not two (QA)', async () => {
+  const { autoBankrollId, dropUnusedAuto, ensureBankrolls } = await import('../bankroll-math');
+  const { mergeById } = await import('../backup');
+  // First launch makes a € Principal; the onboarding picks $ (saved: it has an edit time).
+  const picked = ensureBankrolls([], [], '€', 1).map((b) => ({ ...b, currency: '$', updatedAt: 7 }));
+  const backup: Bankroll[] = [{ id: autoBankrollId('$'), name: 'Principal', currency: '$', createdAt: 0, updatedAt: 0 }];
+  const merged = mergeById(picked, backup).list;
+  assert.deepEqual(dropUnusedAuto(merged, backup, { bankrolls: picked, sessions: [], transfers: [] }).map((b) => b.id), [autoBankrollId('$')]);
+  // Renamed or given rules after the pick: the player's own, it stays.
+  const renamed = picked.map((b) => ({ ...b, name: 'Casino' }));
+  assert.equal(dropUnusedAuto(mergeById(renamed, backup).list, backup, { bankrolls: renamed, sessions: [], transfers: [] }).length, 2);
+});
+
 test('bankrollsBack: a restore on a fresh phone counts the backup\'s Principal too', async () => {
   const { bankrollsBack, ensureBankrolls } = await import('../bankroll-math');
   const fresh = ensureBankrolls([], [], '€', 1);
