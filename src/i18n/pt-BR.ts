@@ -1632,6 +1632,7 @@ const ptBR: Record<string, string> = {
   'Bloqueio da app (Face ID, impressão digital ou código) e modo que esconde os valores em toda a app.': 'Bloqueio do app (Face ID, impressão digital ou código) e modo que esconde os valores em todo o app.',
   'O Pro junta': 'O Pro inclui',
   'Mãos sem limite: o grátis fica pelas 3 por dia': 'Mãos sem limite: o grátis tem 3 por dia',
+  'Stories com voz, sem marca de água': 'Stories com voz, sem marca d\'água',
   'Planeador de festivais, com lembretes de late reg': 'Planejador de festivais, com lembretes de late reg',
   'O resto chega quando paras ou acabas. Os níveis tocam sempre.': 'O resto chega quando você pausa ou termina. Os níveis tocam sempre.',
   'Encontrei outra app': 'Encontrei outro app',

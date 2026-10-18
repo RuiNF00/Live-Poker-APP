@@ -2013,6 +2013,7 @@ const en: Record<string, string> = {
   'Filtros por sala, jogo e stake, e CSV': 'Filters by room, game and stake, plus CSV',
   'Uma bankroll por moeda ou por backer': 'A bankroll per currency or per backer',
   'Várias mãos de uma vez para o solver': 'Many hands at once to the solver',
+  'Stories com voz, sem marca de água': 'Stories with voice, no watermark',
   'Regista um torneio': 'Log a tournament',
   'Escolhe os torneios do próximo festival': 'Pick your events at the next festival',
   'Pro para sempre': 'Pro for good',
