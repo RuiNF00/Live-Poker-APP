@@ -299,7 +299,7 @@ const CLAIM_COPY: Partial<Record<ClaimResult, string>> = {
   self: 'Esse é o teu próprio código.',
   too_late: 'Os convites só contam nos 7 dias depois de instalar.',
   unknown_code: 'Não encontrámos esse código.',
-  disabled: 'Os convites ainda não estão disponíveis.',
+  disabled: 'Os convites ainda não funcionam.',
 };
 
 /** Shown only in the first 7 days, until a code is accepted. */

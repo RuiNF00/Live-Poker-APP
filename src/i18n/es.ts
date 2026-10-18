@@ -632,7 +632,7 @@ const es: Record<string, string> = {
   'Esse é o teu próprio código.': 'Ese es tu propio código.',
   'Os convites só contam nos 7 dias depois de instalar.': 'Las invitaciones solo cuentan en los 7 días tras instalar.',
   'Não encontrámos esse código.': 'No encontramos ese código.',
-  'Os convites ainda não estão disponíveis.': 'Las invitaciones aún no están disponibles.',
+  'Os convites ainda não funcionam.': 'Las invitaciones aún no funcionan.',
   'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.': 'La copia en la nube aún no funciona. Por ahora, exporta a un archivo.',
   'Editar sessão': 'Editar sesión',
   'Ver todas ({n}) · Pro': 'Ver todas ({n}) · Pro',

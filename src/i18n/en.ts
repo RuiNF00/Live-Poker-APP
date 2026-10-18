@@ -661,7 +661,7 @@ const en: Record<string, string> = {
   'Esse é o teu próprio código.': "That's your own code.",
   'Os convites só contam nos 7 dias depois de instalar.': 'Invites only count within 7 days of installing.',
   'Não encontrámos esse código.': "We couldn't find that code.",
-  'Os convites ainda não estão disponíveis.': "Invites aren't available yet.",
+  'Os convites ainda não funcionam.': "Invites don't work yet.",
   'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.': "Cloud backup isn't working yet. For now, export to a file.",
   'Editar sessão': 'Edit session',
   'Ver todas ({n}) · Pro': 'See all ({n}) · Pro',
