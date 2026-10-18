@@ -235,7 +235,7 @@ export interface StoreOffer {
  * `months` are the store's own, so the screen's "−40% durante 3 meses" matches what is
  * charged (`months` null: the store didn't say it in months).
  */
-export async function retentionOffer(plans: StorePlan[]): Promise<(StoreOffer & { price: number; months: number | null }) | null> {
+export async function retentionOffer(plans: StorePlan[], replacing?: string | null): Promise<(StoreOffer & { price: number; months: number | null }) | null> {
   const monthly = plans.find((p) => p.id === 'monthly');
   // Demo store (dev builds and web): same shape as the lifetime one, so the cancel flow can be walked end to end.
   if (!LIVE) {
@@ -261,7 +261,13 @@ export async function retentionOffer(plans: StorePlan[]): Promise<(StoreOffer & 
       priceString: first.price.formatted,
       price: first.price.amountMicros / 1e6,
       months: offerMonths(first.billingPeriod.unit, first.billingPeriod.value, first.billingCycleCount),
-      buy: () => attempt(async () => (await rc()).purchaseSubscriptionOption(opt)),
+      // A monthly subscriber can't buy the same subscription again on Google Play: the offer
+      // replaces the running one, with the unused days credited.
+      buy: async () => {
+        const { PRORATION_MODE } = await rcModule();
+        const change = replacing ? { oldProductIdentifier: playSubscriptionId(replacing), prorationMode: PRORATION_MODE.IMMEDIATE_WITH_TIME_PRORATION } : null;
+        return attempt(async () => (await rc()).purchaseSubscriptionOption(opt, change));
+      },
     };
   } catch {
     return null;

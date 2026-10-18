@@ -60,8 +60,8 @@ export default function Cancel() {
     });
   }, []);
   useEffect(() => {
-    if (seen && !seen.includes('discount')) retentionOffer(plans).then(setOffer);
-  }, [seen, plans]);
+    if (seen && !seen.includes('discount')) retentionOffer(plans, product).then(setOffer);
+  }, [seen, plans, product]);
   const discountShown = !!offer;
   useEffect(() => {
     if (reason === 'bankroll' && discountShown) void markOfferSeen('discount');

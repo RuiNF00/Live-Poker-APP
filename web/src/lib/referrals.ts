@@ -50,6 +50,8 @@ interface ReferralBackend {
   markGranted(installId: string, until: string): Promise<void>;
   status(installId: string): Promise<ReferralStatus | null>;
   offer(installId: string, platform: 'ios' | 'android' | 'web'): Promise<InviteOffer | null>;
+  /** The install that last reported this RevenueCat user, or null. */
+  installFor(rcUserId: string): Promise<string | null>;
   /** "Delete all my data": this install's code, the invite it accepted and the ones it sent. */
   erase(installId: string): Promise<void>;
 }
@@ -96,6 +98,10 @@ class SupabaseReferrals implements ReferralBackend {
     );
     const r = rows?.[0];
     return r ? { code: r.code, invited: r.invited, activated: r.activated, daysEarned: r.days_earned, proUntil: r.pro_until, discounts: r.discounts ?? 0 } : null;
+  }
+  async installFor(rcUserId: string) {
+    const { data } = await this.db.from('referral_codes').select('install_id').eq('rc_user_id', rcUserId).order('last_seen_at', { ascending: false }).limit(1);
+    return (data?.[0] as { install_id?: string } | undefined)?.install_id ?? null;
   }
   async offer(installId: string, platform: 'ios' | 'android' | 'web') {
     const rows = await this.rpc<{ offer_until: string; ios_code: string | null }[]>('referral_offer', { p_install_id: installId, p_platform: platform });
@@ -214,6 +220,9 @@ class LocalBackend implements ReferralBackend {
       proUntil: rewards.map((w) => w.proUntil).sort().at(-1) ?? null,
       discounts: d.rewards.filter((w) => w.installId === installId && w.kind === 'discount').length,
     };
+  }
+  async installFor(rcUserId: string) {
+    return Object.entries((await this.read()).codes).find(([, c]) => c.rcUserId === rcUserId)?.[0] ?? null;
   }
   async offer(installId: string, platform: 'ios' | 'android' | 'web') {
     const d = await this.read();

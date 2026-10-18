@@ -111,6 +111,8 @@ export const APP_EVENTS = [
   'review_prompt',
   'receipt_read',
   'invite_rewarded',
+  // From RevenueCat's webhook, not the app: how a trial ended (result: paid / ended).
+  'trial_end',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 
