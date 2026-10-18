@@ -273,6 +273,7 @@ const ptBR: Record<string, string> = {
   'Recuperar': 'Restaurar',
   'Recuperar com código': 'Restaurar com código',
   'Sem ligação. Tenta outra vez quando tiveres rede.': 'Sem conexão. Tente de novo quando tiver sinal.',
+  'Tenta outra vez quando tiveres rede.': 'Tente de novo quando tiver sinal.',
   'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.': 'O servidor está cheio no momento. Suas mãos estão seguras neste celular; tentamos de novo mais tarde.',
   'Não encontrámos nenhuma cópia com esse código.': 'Não encontramos nenhum backup com esse código.',
   'Este código não dá acesso a esta cópia.': 'Este código não dá acesso a este backup.',
