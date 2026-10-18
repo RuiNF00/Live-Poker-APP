@@ -13,7 +13,8 @@ import { queueBackerPageDelete } from '@/lib/backer-page';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { notice } from '@/lib/notice';
-import { forgetHandShare } from '@/lib/share-queue';
+import { unshared } from '@/lib/gone-shares';
+import { forgetHandShare, restoredGoneShares } from '@/lib/share-queue';
 import type { Festival } from '@/poker/festivals';
 import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
@@ -476,6 +477,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const bc = mergeById(backing, b.backing ?? []);
       const into = <T extends { id: string; updatedAt?: number }>(incoming: T[]) => (cur: T[]) => (incoming.length ? mergeById(cur, incoming).list : cur);
       setHands(into(b.hands));
+      // A backup made before «Apagar tudo» brings back links that the erase deleted: they stop showing as shared.
+      // Only links this phone doesn't already have are checked (a second phone's copy joined in on every upload).
+      const mine = new Map(hands.map((x) => [x.id, x.shareId]));
+      const linked = b.hands.filter((x) => x.shareId && mine.get(x.id) !== x.shareId);
+      if (linked.length)
+        void restoredGoneShares(linked)
+          .then((gone) => gone.size && setHands((l) => l.map((x) => (x.shareId && gone.get(x.id) === x.shareId ? unshared(x) : x))))
+          .catch(() => {});
       setSessions(into(incomingSessions));
       setPlayers(into(b.players));
       setBankrolls((cur) => {

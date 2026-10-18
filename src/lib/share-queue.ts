@@ -9,9 +9,10 @@ import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 import { onEraseAll } from './erase-hooks';
-import { deleteMyComments, deleteShare, forgetAuthorId, storedAuthorId, uploadHand } from './share-api';
+import { goneShares } from './gone-shares';
+import { API, deleteMyComments, deleteShare, forgetAuthorId, storedAuthorId, uploadHand } from './share-api';
 import { takeSlot, type Slot } from './share-slot';
-import { outcomeOf, queue, registerSender, unqueue } from './sync';
+import { outcomeOf, queue, queued, registerSender, unqueue } from './sync';
 
 const KEY = 'sweatbook.share-queue.v1';
 type Ready = { shareId: string; shareToken: string };
@@ -136,6 +137,14 @@ registerSender('comment-erase', async (p) => {
     return m ? outcomeOf(Number(m[1])) : 'retry';
   }
 });
+
+/** Restored hands whose public link is gone (see gone-shares.ts): handId → shareId. */
+export function restoredGoneShares(hands: readonly Pick<Hand, 'id' | 'shareId'>[]): Promise<Map<string, string>> {
+  return goneShares(hands, {
+    deleteWaiting: (id) => queued('share-delete', id),
+    status: async (id) => (await fetch(`${API}/api/hands/${encodeURIComponent(id)}`)).status,
+  });
+}
 
 /**
  * The hand was deleted: its public link goes too, including one still waiting for
