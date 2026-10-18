@@ -421,7 +421,7 @@ export function endPreview(running: Session, sessions: Session[], packages: Stak
   // Ended as of now: only ended sessions count in a package.
   const ended = { ...running, endedAt: running.endedAt ?? now };
   const end = ended.stakes?.some((x) => x.packageId) ? (withCuts(sessions.map((x) => (x.id === ended.id ? ended : x)), packages).find((x) => x.id === ended.id) ?? ended) : ended;
-  return { owed: Math.round((owedToBackers(end) - Math.max(0, end.makeupCut ?? 0)) * 100) / 100, profit: profit(end) };
+  return { owed: Math.round((owedToBackers(end) - (end.makeupCut ?? 0)) * 100) / 100, profit: profit(end) };
 }
 
 /**

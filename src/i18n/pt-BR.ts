@@ -585,6 +585,7 @@ const ptBR: Record<string, string> = {
   '{n} sessões a decorrer': '{n} sessões em andamento',
   'Prémios de {name}': 'Prêmios de {name}',
   'A tua parte no makeup': 'Sua parte no makeup',
+  'Devolvida: o pacote voltou a descer': 'Devolvida: o pacote voltou a cair',
   'Partes por pagar': 'Partes a pagar',
   'Já lhe pagaste': 'Você já pagou',
   'Deves a {name}': 'Você deve a {name}',

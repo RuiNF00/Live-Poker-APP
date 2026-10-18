@@ -1204,6 +1204,7 @@ const es: Record<string, string> = {
   'Em 1 sessão terminada': 'En 1 sesión terminada',
   'Em {n} sessões terminadas': 'En {n} sesiones terminadas',
   'A tua parte no makeup': 'Tu parte en el makeup',
+  'Devolvida: o pacote voltou a descer': 'Devuelta: el paquete volvió a bajar',
   'Só sobre o lucro acima do makeup': 'Solo sobre la ganancia por encima del makeup',
   'Partes por pagar': 'Partes por pagar',
   'Ação que {name} ainda não te pagou': 'Acción que {name} aún no te pagó',
