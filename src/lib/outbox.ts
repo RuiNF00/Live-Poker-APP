@@ -32,6 +32,11 @@ export function backoff(tries: number): number {
   return Math.min(10 * 60000, 5000 * 2 ** Math.max(0, tries - 1));
 }
 
+/** A kept delete past MAX_TRIES: the server has been failing for hours, so every 6 h instead of every 10 min (a forced drain still tries at once). */
+export function keptBackoff(tries: number): number {
+  return tries > MAX_TRIES ? 6 * 3600_000 : backoff(tries);
+}
+
 /**
  * `quiet`: kinds that go out like the rest but are not the player's work (analytics), so size() and listeners leave them out.
  * `keep`: deletes the player was promised ("Delete all my data", a removed link): never given up on after
@@ -120,7 +125,7 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
           }
           const at = list.indexOf(job);
           if (out === 'retry') {
-            if (at >= 0) list[at] = { ...job, tries: job.tries + 1, nextAt: now() + backoff(job.tries + 1) };
+            if (at >= 0) list[at] = { ...job, tries: job.tries + 1, nextAt: now() + (keep.has(job.kind) ? keptBackoff : backoff)(job.tries + 1) };
             changed = true;
             break; // the network is probably down; don't hammer it with the rest
           }

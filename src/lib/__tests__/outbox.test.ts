@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { isOnline, observeFetch, onReconnect, probeWhileOffline, reportNetwork } from '../online';
-import { MAX_AGE_MS, MAX_JOBS, MAX_TRIES, backoff, createOutbox, type Outcome } from '../outbox';
+import { MAX_AGE_MS, MAX_JOBS, MAX_TRIES, backoff, createOutbox, keptBackoff, type Outcome } from '../outbox';
 
 function mem() {
   const m = new Map<string, string>();
@@ -186,4 +186,18 @@ test('a promised delete is never given up on: not after many tries, not after we
   await after.drain(true);
   assert.deepEqual(sent, [{ id: 'c' }, { id: 'o' }]);
   assert.equal(await after.has('cloud-delete', 'c'), false);
+});
+
+test('a promised delete past MAX_TRIES waits 6 h between tries, not 10 min, and is still kept', async () => {
+  assert.equal(keptBackoff(MAX_TRIES), backoff(MAX_TRIES));
+  assert.equal(keptBackoff(MAX_TRIES + 1), 6 * 3600_000);
+  const kv = mem();
+  let clock = 0;
+  const box = createOutbox(kv, { 'cloud-delete': async () => 'retry' as Outcome, x: async () => 'retry' as Outcome }, { now: () => clock, keep: ['cloud-delete'] });
+  await box.enqueue('cloud-delete', {}, 'c');
+  for (let i = 0; i < MAX_TRIES + 1; i++) await box.drain(true);
+  assert.equal(await box.nextDue(), 6 * 3600_000);
+  // Other kinds keep the 10-minute cap.
+  assert.equal(backoff(MAX_TRIES + 1), 600000);
+  assert.ok(await box.has('cloud-delete', 'c'));
 });

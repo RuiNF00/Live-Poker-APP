@@ -162,3 +162,27 @@ test('restoring the same copy twice, or onto a phone with some of it, adds nothi
   const m = mergeBackups(back, back);
   for (const k of ['hands', 'sessions', 'trips', 'weekly', 'ownFestivals'] as const) assert.equal((m[k] as unknown[]).length, 1, k);
 });
+
+test('an item that fails the launch checks goes to quarantine on restore, once, under the launch keys', async () => {
+  const { SPECS, QUARANTINE: BOOT_Q } = await import('../boot');
+  const { ITEM_PREFIX, QUARANTINE } = await import('../backup');
+  assert.equal(QUARANTINE, BOOT_Q);
+  for (const k of Object.keys(ITEM_PREFIX) as (keyof typeof ITEM_PREFIX)[]) assert.equal(ITEM_PREFIX[k], SPECS[k].prefix);
+  const bad = { ...session, id: 'sx', stakes: 'not a list' };
+  const text = JSON.stringify({ app: 'sweatbook', v: 1, sessions: [session, bad], quarantine: [[`${QUARANTINE}backup.rl.session.v2.sx`, '{}']] });
+  const b = parseBackup(text);
+  assert.deepEqual(b.sessions.map((s) => s.id), ['s1']);
+  assert.deepEqual(b.quarantine!.map(([k]) => k), [`${QUARANTINE}backup.rl.session.v2.sx`]);
+  const q = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, sessions: [bad] })).quarantine!;
+  assert.equal(JSON.parse(q[0][1]).stakes, 'not a list');
+});
+
+test('a receipt file name that climbs out of the documents folder is dropped, the session stays', () => {
+  const docs = [
+    { id: 'd1', name: 'Recibo', file: 'd1.jpg', kind: 'receipt', addedAt: T },
+    { id: 'd2', name: 'x', file: '../../Library/x', kind: 'receipt', addedAt: T },
+    { id: 'd3', name: 'y', file: '..', kind: 'other', addedAt: T },
+  ];
+  const b = parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, sessions: [{ ...session, docs }] }));
+  assert.deepEqual(b.sessions[0].docs!.map((d) => d.file), ['d1.jpg']);
+});

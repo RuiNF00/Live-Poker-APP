@@ -49,8 +49,9 @@ export interface BackupData {
   quarantine?: [string, string][];
 }
 
-/** Same prefix as boot.ts (kept here so backups don't import the store's loader). */
-const QUARANTINE = 'rl.quarantine.v1.';
+/** Same prefix and item keys as boot.ts (kept here so backups don't import the store's loader; a test checks they match). */
+export const QUARANTINE = 'rl.quarantine.v1.';
+export const ITEM_PREFIX = { hands: 'rl.hand.v2.', sessions: 'rl.session.v2.', players: 'rl.player.v2.', trips: 'rl.trip.v1.' };
 
 export function buildBackup(
   d: {
@@ -210,14 +211,26 @@ export function parseBackup(text: string): BackupData {
   const arr = (k: string) => (Array.isArray(j[k]) ? (j[k] as unknown[]).filter(withId) : []);
   // The launch checks (validate.ts): an older copy gets the fields added since, one a screen
   // would crash on (no players, a hero who isn't seated) is left out, as at launch.
-  const fixed = <T>(list: unknown[], fix: (x: unknown) => T | null) => list.map(fix).filter((x): x is T => x !== null);
-  const hands = fixed(arr('hands'), fixHand);
+  // What fails goes to the same quarantine as at launch (keyed by where it would live, so a second
+  // restore doesn't add it twice), not quietly away: a later version gets another go at it.
+  const setAside: [string, string][] = [];
+  const fixed = <T>(list: unknown[], fix: (x: unknown) => T | null, prefix: string) =>
+    list
+      .map((x) => {
+        const ok = fix(x);
+        const id = (x as { id: string }).id;
+        if (!ok && !id.includes('\n')) setAside.push([`${QUARANTINE}backup.${prefix}${id}`, JSON.stringify(x)]);
+        return ok;
+      })
+      .filter((x): x is T => x !== null);
+  const hands = fixed(arr('hands'), fixHand, ITEM_PREFIX.hands);
   // A foreign or hand-edited backup may have no usable `breaks`: an empty list rather than losing the session.
   const sessions = fixed(
     arr('sessions').map((s) => (isObj(s) && !Array.isArray(s.breaks) ? { ...s, breaks: [] } : s)),
     fixSession,
+    ITEM_PREFIX.sessions,
   );
-  const players = fixed(arr('players').filter((p) => isObj(p) && typeof p.name === 'string'), fixPlayer);
+  const players = fixed(arr('players'), (p) => (isObj(p) && typeof p.name === 'string' ? fixPlayer(p) : null), ITEM_PREFIX.players);
   const backers = arr('backers').filter((b) => isObj(b) && typeof b.name === 'string') as unknown as Backer[];
   const packages = arr('packages').filter((p) => isObj(p) && typeof p.backerId === 'string' && typeof p.share === 'number') as unknown as StakePackage[];
   const backing = arr('backing')
@@ -228,8 +241,8 @@ export function parseBackup(text: string): BackupData {
   const transfers = arr('transfers').filter(
     (x) => isObj(x) && typeof x.bankrollId === 'string' && (x.kind === 'deposit' || x.kind === 'withdrawal') && typeof x.amount === 'number' && Number.isFinite(x.amount) && typeof x.at === 'number',
   ) as unknown as Transfer[];
-  const trips = (fixed(arr('trips'), fixTrip) as unknown as Record<string, unknown>[])
-    .filter((x): x is Record<string, unknown> => isObj(x) && typeof x.name === 'string' && typeof x.currency === 'string' && typeof x.from === 'number' && typeof x.to === 'number')
+  const tripOk = (x: unknown) => (isObj(x) && typeof x.name === 'string' && typeof x.currency === 'string' && typeof x.from === 'number' && typeof x.to === 'number' ? fixTrip(x) : null);
+  const trips = (fixed(arr('trips'), tripOk, ITEM_PREFIX.trips) as unknown as Record<string, unknown>[])
     .map((x) => {
       const ex = Array.isArray(x.expenses) ? (x.expenses as unknown[]).filter((e) => withId(e) && isObj(e) && typeof e.amount === 'number' && Number.isFinite(e.amount) && typeof e.currency === 'string') : [];
       return { ...x, expenses: ex };
@@ -263,9 +276,12 @@ export function parseBackup(text: string): BackupData {
     weekly: decodeWeekly(j.weekly),
     settings: isObj(j.settings) ? (j.settings as Partial<Settings>) : undefined,
     // Only quarantine keys: a hand-made file must not be able to write any other key on restore.
-    quarantine: Array.isArray(j.quarantine)
-      ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
-      : [],
+    quarantine: [
+      ...(Array.isArray(j.quarantine)
+        ? (j.quarantine as unknown[]).filter((q): q is [string, string] => Array.isArray(q) && q.length === 2 && typeof q[0] === 'string' && q[0].startsWith(QUARANTINE) && !q[0].includes('\n') && typeof q[1] === 'string')
+        : []),
+      ...setAside,
+    ].filter(([k], i, all) => all.findIndex(([x]) => x === k) === i),
   };
 }
 
