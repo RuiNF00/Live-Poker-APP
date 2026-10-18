@@ -35,3 +35,25 @@ export const APP_PREFIXES = ['rl.', 'sweatbook.', 'pp.'];
 export function keysToErase(all: readonly string[]): string[] {
   return all.filter((k) => APP_PREFIXES.some((p) => k.startsWith(p)) && !KEEP_KEYS.includes(k));
 }
+
+/**
+ * Deletes the player was promised ("Apagar todos os meus dados", a link removed): they stay queued
+ * until the server answers (outbox `keep`), however long the phone is offline or the server is down, and later
+ * analytics never push them out of the queue.
+ */
+export const DELETE_KINDS = [
+  'cloud-delete',
+  'share-delete',
+  'comment-erase',
+  'live-delete',
+  'backer-page-delete',
+  'offer-delete',
+  'profile-delete',
+  'pack-delete',
+  'coach-erase',
+  'coach-revoke',
+  'swap-delete',
+  'swap-leave',
+  'swap-group-leave',
+  'invite-erase',
+];

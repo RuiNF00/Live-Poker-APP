@@ -9,13 +9,14 @@ import { AppState } from 'react-native';
 import { BRAND } from '@/theme';
 
 import { isOnline, observeFetch, onReconnect, probeWhileOffline, reportNetwork, subscribeOnline } from './online';
+import { DELETE_KINDS } from './erase-core';
 import { createOutbox, type Outcome, type Sender } from './outbox';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
 const senders: Record<string, Sender> = {};
 // Analytics go out with the rest but are not "por enviar" for the player.
-const outbox = createOutbox(AsyncStorage, senders, { quiet: ['event'] });
+const outbox = createOutbox(AsyncStorage, senders, { quiet: ['event'], keep: DELETE_KINDS });
 
 /** Each feature registers how to send its kind of job. */
 export function registerSender(kind: string, send: Sender) {
