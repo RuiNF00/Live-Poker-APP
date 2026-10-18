@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
@@ -123,6 +123,16 @@ function BankrollTab() {
   }, [gone, commitGone]);
   // Leaving the screen before it runs out: the delete goes through then.
   useEffect(() => commitGone, [commitGone]);
+  // Same when the app goes to the background: a closed app must not bring the session back.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active' && goneRef.current) {
+        commitGone();
+        setGone(null);
+      }
+    });
+    return () => sub.remove();
+  }, [commitGone]);
   const sessions = useMemo(() => (gone ? stored.filter((x) => x.id !== gone.id) : stored), [stored, gone]);
 
   // A deleted bankroll falls back to the default one.

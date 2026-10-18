@@ -706,10 +706,13 @@ function Live({ s }: { s: Session }) {
           onClose={() => setPad(null)}
           onDone={(v) => {
             setPad(null);
+            // A newer stack is not part of what "Anular" would put back.
+            setUndo(null);
             save({ stack: v, stackLog: [...s.stackLog, { t: Date.now(), stack: v, level: s.level }] });
           }}
         />
-        <SinceStart s={s} />
+        {/* While ending, the result is the one being typed above, not the live stack. */}
+        {ending ? null : <SinceStart s={s} />}
       </Screen>
       {undo ? (
         <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: bar + S.sm }}>

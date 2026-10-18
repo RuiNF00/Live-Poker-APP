@@ -2,7 +2,7 @@
 // covers the table and supports "k" for thousands and bb input.
 
 import React, { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { bbs, chips } from '@/poker/format';
@@ -54,12 +54,17 @@ export function AmountPad({
     if (k === '⌫') setTxt((t) => t.slice(0, -1));
     else if (k === 'k') setTxt((t) => (t && !/k$/i.test(t) ? t + 'k' : t));
     else if (k === ',') setTxt((t) => (t.includes(',') ? t : (t || '0') + ','));
-    else setTxt((t) => (/k$/i.test(t) ? t : t + k));
+    // A lone leading 0 is replaced, so 0 then 150 reads 150 and not 0150.
+    else setTxt((t) => (/k$/i.test(t) ? t : t === '0' ? k : t + k));
   };
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', inBB ? ',' : 'k', '0', '⌫'];
   const tooLow = min !== undefined && value < min;
   const capped = max !== undefined ? Math.min(value, max) : value;
   const sheetPad = useSheetPad(34);
+  // Short phones (iPhone SE) keep Confirmar on screen with shorter keys.
+  const win = useWindowDimensions();
+  const keyH = win.height < 700 ? 44 : 52;
+  const narrow = win.width < 360;
   return (
     <Modal visible={visible} transparent animationType={sheetAnim} onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={onClose} accessibilityLabel={t('Fechar')} />
@@ -105,35 +110,40 @@ export function AmountPad({
                   setInBB(false);
                   setTxt(q.value % 1000 === 0 ? `${q.value / 1000}k` : String(q.value));
                 }}
-                style={({ pressed }) => ({ flex: 1, minHeight: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? C.surface3 : C.accentSoft, borderWidth: 1, borderColor: C.accentLine })}
+                style={({ pressed }) => ({ flexGrow: 1, paddingHorizontal: narrow ? 6 : 8, minHeight: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? C.surface3 : C.accentSoft, borderWidth: 1, borderColor: C.accentLine })}
               >
-                <Text numberOfLines={1} style={{ color: C.accent, fontSize: 14, fontFamily: F.mono }}>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: C.accent, fontSize: narrow ? 13 : 14, fontFamily: F.mono }}>
                   {q.label}
                 </Text>
               </Pressable>
             ))}
           </View>
         ) : null}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {keys.map((k) => (
-            <Pressable
-              key={k}
-              accessibilityRole="button"
-              accessibilityLabel={k === '⌫' ? t('Apagar') : k}
-              onPress={() => press(k)}
-              style={({ pressed }) => ({
-                width: '31.8%',
-                height: 52,
-                borderRadius: R.md,
-                backgroundColor: pressed ? C.surface3 : C.surface2,
-                borderWidth: 1,
-                borderColor: C.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-              })}
-            >
-              <Text style={{ color: k === 'k' || k === ',' || k === '⌫' ? C.textDim : C.text, fontSize: 24, fontFamily: F.mono }}>{k}</Text>
-            </Pressable>
+        {/* Rows of 3 that share the width: a wrapping grid fell to 2 columns on narrow phones. */}
+        <View style={{ gap: 8 }}>
+          {[0, 3, 6, 9].map((r) => (
+            <View key={r} style={{ flexDirection: 'row', gap: 8 }}>
+              {keys.slice(r, r + 3).map((k) => (
+                <Pressable
+                  key={k}
+                  accessibilityRole="button"
+                  accessibilityLabel={k === '⌫' ? t('Apagar') : k}
+                  onPress={() => press(k)}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    height: keyH,
+                    borderRadius: R.md,
+                    backgroundColor: pressed ? C.surface3 : C.surface2,
+                    borderWidth: 1,
+                    borderColor: C.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  })}
+                >
+                  <Text style={{ color: k === 'k' || k === ',' || k === '⌫' ? C.textDim : C.text, fontSize: 24, fontFamily: F.mono }}>{k}</Text>
+                </Pressable>
+              ))}
+            </View>
           ))}
         </View>
         <Row gap={10}>

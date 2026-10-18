@@ -115,13 +115,21 @@ export function SessionForm({
   const levels = mtt ? MTT_LEVELS : CASH_LEVELS;
   // A new past session: switching kind brings the last game of that kind (it was the other kind's).
   const fresh = past && !initial.endedAt;
-  const switchKind = (k: GameKind) =>
-    setS({ ...blankSession(k, s.currency, s.tableSize), id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
+  const switchKind = (k: GameKind) => {
+    const blank = blankSession(k, s.currency, s.tableSize);
+    // Editing a played session only fixes its kind: times, result, staking and notes stay.
+    if (initial.endedAt) {
+      const { sb, bb, ante, anteType, level, stage, stack } = blank;
+      return setS({ ...s, kind: k, sb, bb, ante, anteType, level, stage, stack, tourney: undefined, ...(k === 'mtt' ? {} : { finish: undefined, field: undefined }) });
+    }
+    setS({ ...blank, id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
+  };
   const online = s.format === 'online';
   const submit = () => {
     if (past) {
       // Unchanged date, start and duration keep the original times (and breaks).
-      if (initial.endedAt && day === initDay && mins === initMins && timeText === initTime) return onSubmit(s);
+      if (initial.endedAt && day === initDay && mins === initMins && timeText === initTime)
+        return onSubmit({ ...s, startedAt: initial.startedAt, endedAt: initial.endedAt, breaks: initial.breaks });
       let start: number;
       if (startMin !== null) start = day + startMin * 60000;
       else {
@@ -184,6 +192,12 @@ export function SessionForm({
             <NumField money label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} selectOnFocus />
             <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} selectOnFocus />
           </Row>
+          {mtt && (
+            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+              <NumField label={t('Lugar')} value={s.finish ?? 0} onChange={(finish) => set({ finish: finish || undefined })} selectOnFocus />
+              <NumField label={t('Inscritos')} value={s.field ?? 0} onChange={(field) => set({ field: field || undefined })} selectOnFocus />
+            </Row>
+          )}
           <Row>
             <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
           </Row>
