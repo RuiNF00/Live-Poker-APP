@@ -271,6 +271,8 @@ export default function NewHand() {
   // note landing after «Guardar») only updates the hand: counting it again would spend two of the
   // day's free hands on one, and the session would get its stack twice.
   const saved = useRef(false);
+  // Player notes made by the first save: a repeat save (store not re-rendered yet) reuses them.
+  const madePlayers = useRef(new Map<string, string>());
   const save = async (over?: Partial<Hand>) => {
     const again = saved.current;
     const asNew = !isEdit && !again;
@@ -285,11 +287,14 @@ export default function NewHand() {
     }
     saved.current = true;
     // Named villains go into the player notes, so the next time they are one tap away.
+    // A link to a note that was deleted (carried over from the last hand) counts as no link.
     const players = hand.players.map((p, i) => {
-      if (i === hand.hero || !p.name.trim() || p.playerId) return p;
-      const existing = store.players.find((k) => k.name.trim().toLowerCase() === p.name.trim().toLowerCase());
-      if (existing) return { ...p, playerId: existing.id };
+      if (i === hand.hero || !p.name.trim() || (p.playerId && store.players.some((k) => k.id === p.playerId))) return p;
+      const key = p.name.trim().toLowerCase();
+      const existing = store.players.find((k) => k.name.trim().toLowerCase() === key)?.id ?? madePlayers.current.get(key);
+      if (existing) return { ...p, playerId: existing };
       const note = { id: uid('p_'), name: p.name.trim(), look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() };
+      madePlayers.current.set(key, note.id);
       store.savePlayer(note);
       return { ...p, playerId: note.id };
     });
@@ -558,8 +563,9 @@ export default function NewHand() {
 
         {!voice.recording && phase === 'action' && l && (
           <>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2" numberOfLines={2} style={{ flex: 1 }}>
+            {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
+            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <T v="h2" numberOfLines={2} style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
@@ -621,7 +627,8 @@ export default function NewHand() {
                         borderColor: p.allIn ? C.danger : p.last ? C.warn : C.warn + '66',
                         opacity: pressed ? 0.7 : 1,
                       })}>
-                      <T v="body" numberOfLines={1} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
+                      {/* Four to a row: at large text "All-in" shrinks to fit instead of reading "Al…". */}
+                      <T v="body" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.6} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
                         {p.label}
                       </T>
                       <T v="monoS" numberOfLines={1}>

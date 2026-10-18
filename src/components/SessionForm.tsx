@@ -16,7 +16,7 @@ import { S } from '@/theme';
 import { MindAfter, MindBefore } from './MindCheckIn';
 import { StakeFields } from './StakeFields';
 import { TaxFields } from './TaxFields';
-import { Button, Card, Chip, ChipRow, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
+import { Button, Card, Chip, ChipRow, confirmAction, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
@@ -124,6 +124,13 @@ export function SessionForm({
     }
     setS({ ...blank, id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
   };
+  // Another currency relabels the amounts 1:1 (1000 $ → 1000 €): ask first when there are amounts.
+  const pickBankroll = (b: Bankroll) => {
+    const apply = () => set({ bankrollId: b.id, currency: b.currency });
+    const hasAmounts = s.cashOut > 0 || s.addOn > 0 || (s.tips ?? 0) > 0 || (s.expenses ?? 0) > 0 || (!!initial.endedAt && s.buyIn > 0);
+    if (b.currency === s.currency || !hasAmounts) return apply();
+    confirmAction(t('Mudar para {name}?', { name: b.name }), t('Os valores ficam iguais e passam a {cur}.', { cur: b.currency }), t('Mudar'), apply, false);
+  };
   const online = s.format === 'online';
   const submit = () => {
     if (past) {
@@ -175,7 +182,7 @@ export function SessionForm({
                 key={b.id}
                 label={`${b.name} · ${b.currency}`}
                 active={(s.bankrollId ? s.bankrollId === b.id : b.currency === s.currency && bankrolls.find((x) => x.currency === s.currency)?.id === b.id)}
-                onPress={() => set({ bankrollId: b.id, currency: b.currency })}
+                onPress={() => pickBankroll(b)}
               />
             ))}
           </ChipRow>

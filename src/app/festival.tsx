@@ -138,6 +138,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
                 returnKeyType="done"
                 maxLength={60}
                 // Wraps instead of cutting a long name at 360 px or large text; Enter still just closes the keyboard.
+                // Grows like the other titles (130%): at 200% "Torrelodones," broke mid-word.
+                maxFontSizeMultiplier={1.3}
                 multiline
                 scrollEnabled={false}
                 submitBehavior="blurAndSubmit"
@@ -307,7 +309,8 @@ function Summary({
     <Card tone="raised" style={{ gap: S.md }}>
       <Row style={{ alignItems: 'flex-end' }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="label">{t('Buy-ins planeados')}</T>
+          {/* Beside the bankroll column: at 200% the caption broke mid-word ("PLANEAD OS"). */}
+          <T v="label" maxFontSizeMultiplier={1.3}>{t('Buy-ins planeados')}</T>
           <T v="monoL">{money(tot.buyIns, f.currency)}</T>
           <T v="small">{tot.entries === 1 ? t('1 entrada') : t('{n} entradas', { n: tot.entries })}</T>
         </View>

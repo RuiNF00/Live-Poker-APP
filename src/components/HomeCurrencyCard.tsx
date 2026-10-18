@@ -74,7 +74,7 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
               {show(h.netWorth)}
             </T>
             <T v="small">
-              {[t('Póquer em {year}: {amount}', { year, amount: show(h.profit, true) }), h.roi !== null ? t('ROI {pct}%', { pct: Math.round(h.roi) }) : ''].filter(Boolean).join(' · ')}
+              {[t('Póquer em {year}: {amount}', { year, amount: show(h.profit, true) }), h.roi !== null ? t('ROI {pct}%', { pct: String(Math.round(h.roi)).replace('-', '−') }) : ''].filter(Boolean).join(' · ')}
             </T>
             {h.parts.length > 1 ? <Parts parts={h.parts} home={home} hidden={hidden} /> : null}
             <T v="tiny">

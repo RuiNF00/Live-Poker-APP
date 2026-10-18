@@ -881,7 +881,7 @@ const ptBR: Record<string, string> = {
   'Estás perto do teu stop-loss': 'Você está perto do seu stop-loss',
   'Perdeste {lost} {scope}; o teu limite é {limit}. Pode ser boa altura para parar.': 'Você perdeu {lost} {scope}; seu limite é {limit}. Pode ser uma boa hora para parar.',
   'Apagar todos os teus dados?': 'Excluir todos os seus dados?',
-  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na App Store ou no Google Play.': 'Mãos, sessões, notas de jogadores, bankroll, staking e configurações saem deste celular. O backup na nuvem, as mãos compartilhadas, as páginas para backers e seu perfil público também são excluídos (sem conexão, assim que houver sinal). Não dá para desfazer. A assinatura Pro continua: cancele na App Store ou no Google Play.',
+  'Mãos, sessões, notas de jogadores, bankroll, staking e definições saem deste telemóvel. A cópia na nuvem, as mãos partilhadas, as páginas para backers e o teu perfil público também são apagados (sem rede, assim que houver sinal). Não dá para desfazer. A subscrição Pro continua: cancela-a na {store}.': 'Mãos, sessões, notas de jogadores, bankroll, staking e configurações saem deste celular. O backup na nuvem, as mãos compartilhadas, as páginas para backers e seu perfil público também são excluídos (sem conexão, assim que houver sinal). Não dá para desfazer. A assinatura Pro continua: cancele na {store}.',
   'Apagar tudo': 'Excluir tudo',
   'Dados apagados': 'Dados excluídos',
   'A app está como nova.': 'O app está como novo.',
@@ -1045,7 +1045,7 @@ const ptBR: Record<string, string> = {
   'Faz o primeiro ao começar a próxima sessão, ou junta-o a uma sessão passada no Bankroll.': 'Faça o primeiro ao começar a próxima sessão, ou adicione a uma sessão passada no Bankroll.',
   'Marcadas por ti': 'Marcadas por você',
   'Mostramos como o sono, a energia, o foco e o tilt mexem no teu resultado quando houver pelo menos {n} sessões de cada lado.': 'Mostramos como o sono, a energia, o foco e o tilt mexem no seu resultado quando houver pelo menos {n} sessões de cada lado.',
-  'O teu maior: −{amount}': 'Seu maior: −{amount}',
+  'O teu maior: {amount}': 'Seu maior: {amount}',
   'O teu resultado acumulado está no ponto mais alto.': 'Seu resultado acumulado está no ponto mais alto.',
   'Opcional · só tu vês': 'Opcional · só você vê',
   'Quando dormes menos de 6 h': 'Quando você dorme menos de 6 h',
@@ -1653,6 +1653,14 @@ const ptBR: Record<string, string> = {
   '{rank}.º de {n} meses com sessões, do melhor para o pior.': '{rank}º de {n} meses com sessões, do melhor para o pior.',
   'Nada para importar': 'Nada para importar',
   'Nenhuma linha se lê. Corrige o ficheiro e importa outra vez.': 'Nenhuma linha pôde ser lida. Corrija o arquivo e importe de novo.',
+  'Mudar para {name}?': 'Mudar para {name}?',
+  'Os valores ficam iguais e passam a {cur}.': 'Os valores continuam iguais e passam a {cur}.',
+  'Partilhar resumo da viagem': 'Compartilhar resumo da viagem',
+  'A viagem acabou': 'A viagem acabou',
+  'Criar story da viagem': 'Criar story da viagem',
+  'RESUMO DA VIAGEM': 'RESUMO DA VIAGEM',
+  'Partilhar viagem': 'Compartilhar viagem',
+  'Carrossel da viagem': 'Carrossel da viagem',
 };
 
 export default ptBR;

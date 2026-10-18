@@ -30,6 +30,9 @@ export default function BackerLive() {
   const own = sessions.find((s) => s.live?.id === id);
   const [data, setData] = useState<{ snapshot: LiveSnapshot; updatedAt: number } | null>(null);
   const [gone, setGone] = useState(false);
+  // No signal before the first answer: said, with a retry, instead of «A carregar…» for good.
+  const [offline, setOffline] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -50,10 +53,11 @@ export default function BackerLive() {
       fetchLive(String(id))
         .then((d) => {
           if (!alive) return;
+          setOffline(false);
           if (d) setData(d);
           else setGone(true);
         })
-        .catch(() => {});
+        .catch(() => alive && setOffline(true));
     load();
     const poll = setInterval(() => AppState.currentState === 'active' && load(), POLL_MS);
     const sub = AppState.addEventListener('change', (st) => st === 'active' && load());
@@ -64,7 +68,7 @@ export default function BackerLive() {
       clearInterval(tick);
       sub.remove();
     };
-  }, [id, gone]);
+  }, [id, gone, attempt]);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const s = data?.snapshot;
@@ -78,6 +82,13 @@ export default function BackerLive() {
       </Row>
       {gone ? (
         <Empty icon="radio-outline" title={t('Este link já não está ativo')} body={t('O jogador desligou-o, ou a sessão terminou há muito tempo.')} />
+      ) : (!s || !data) && offline ? (
+        <Empty
+          icon="cloud-offline-outline"
+          title={t('Sem ligação')}
+          body={t('Tenta outra vez quando tiveres rede.')}
+          action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setOffline(false), setAttempt((n) => n + 1))} />}
+        />
       ) : !s || !data ? (
         <T v="small" style={{ padding: S.gutter }}>
           {t('A carregar…')}

@@ -15,7 +15,8 @@ import { SmallSample } from './SmallSample';
 import { Card, Row, T } from './ui';
 
 export const signed = (n: number, fmt: (n: number) => string) => plus(n, true) + fmt(Math.abs(n));
-const bb = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1, minimumFractionDigits: Math.abs(n) < 10 ? 1 : 0 });
+// A rate, not an amount: the sign stays in privacy mode, as a real minus sign (−1,8, not -1,8).
+const bb = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1, minimumFractionDigits: Math.abs(n) < 10 ? 1 : 0 }).replace('-', '−');
 
 /** The headline: rate, 95% range, BB/h and the sample behind it. */
 export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: string; hidden: boolean; onPress?: () => void }) {

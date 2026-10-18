@@ -109,7 +109,7 @@ export default function FestivalCardScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('Partilhar festival') }} />
+      <Stack.Screen options={{ title: trip.festivalId ? t('Partilhar festival') : t('Partilhar viagem') }} />
       <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>
         <ScrollView
