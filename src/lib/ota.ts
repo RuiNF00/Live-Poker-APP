@@ -10,7 +10,7 @@
 // version still reads (new optional fields); anything else ships in a build.
 
 import Constants from 'expo-constants';
-import * as Updates from 'expo-updates';
+import { Updates } from './updates-info';
 
 /** "1.0.0" for the bundle inside the build, "1.0.0 · a1b2c3d4" once an update runs. For support and bug reports. */
 export function versionLabel(): string {

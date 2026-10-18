@@ -107,7 +107,7 @@ function buildInfo(): Record<string, string> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     version = (require('expo-constants') as typeof import('expo-constants')).default.expoConfig?.version ?? '';
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    if (!channel) channel = (require('expo-updates') as typeof import('expo-updates')).channel ?? '';
+    if (!channel) channel = (require('./updates-info') as typeof import('./updates-info')).Updates.channel ?? '';
   } catch {
     // Node tests and web: no native modules.
   }
