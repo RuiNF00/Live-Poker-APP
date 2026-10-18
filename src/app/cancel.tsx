@@ -2,13 +2,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
+import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
-import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult } from '@/billing/purchases';
+import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
+import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -28,8 +30,13 @@ export default function Cancel() {
   const [plan, setPlan] = useState<'monthly' | 'annual' | null>(null);
   const [willRenew, setWillRenew] = useState<boolean | null>(null);
   const [product, setProduct] = useState<string | null>(null);
-  const [offer, setOffer] = useState<Offer>(null);
-  const [lifetime, setLifetime] = useState<Offer>(null);
+  const [storeOffer, setOffer] = useState<Offer>(null);
+  const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
+  const annual = plans.find((p) => p.id === 'annual');
+  const monthly = plans.find((p) => p.id === 'monthly');
+  // The discount shows only with the store's own numbers for every part of its line: price, % off, months and the price after.
+  const discountPct = storeOffer && monthly ? pctOff(monthly.price, storeOffer.price) : null;
+  const offer = storeOffer && monthly && discountPct !== null && storeOffer.months !== null ? { ...storeOffer, pct: discountPct, months: storeOffer.months } : null;
   const [seen, setSeen] = useState<CancelOffer[] | null>(null);
   // The reason shows only when there's a one-time Pro in the store to offer for it.
   const CANCEL_REASONS = cancelReasons(!!lifetime);
@@ -55,10 +62,11 @@ export default function Cancel() {
   useEffect(() => {
     if (seen && !seen.includes('discount')) retentionOffer(plans).then(setOffer);
   }, [seen, plans]);
+  const discountShown = !!offer;
   useEffect(() => {
-    if (reason === 'bankroll' && offer) void markOfferSeen('discount');
+    if (reason === 'bankroll' && discountShown) void markOfferSeen('discount');
     if (reason === 'noSubscription' && lifetime) void markOfferSeen('lifetime');
-  }, [reason, offer, lifetime]);
+  }, [reason, discountShown, lifetime]);
 
   // Lifetime is judged on long-term revenue: who saw it, from which plan, and
   // whether the subscription was still set to renew (i.e. they were about to cancel).
@@ -102,8 +110,6 @@ export default function Cancel() {
     setSent(true);
   };
 
-  const annual = plans.find((p) => p.id === 'annual');
-  const monthly = plans.find((p) => p.id === 'monthly');
   // Inside one App Store group the switch is a plain purchase; on Google Play it replaces the monthly product (purchases.buy).
   const toAnnual = plan === 'monthly' && annual && (Platform.OS === 'ios' || !!product);
 
@@ -171,17 +177,27 @@ export default function Cancel() {
               {reason === 'bankroll' ? (
                 <>
                   {offer ? (
-                    <OfferCard icon="pricetag" title={t('−{pct}% durante {n} meses', { pct: RETENTION.discount.pct, n: RETENTION.discount.months })} body={monthly ? t('{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.', { price: offer.priceString, n: RETENTION.discount.months, monthly: monthly.priceString }) : t('{price} por mês. Depois, o preço normal.', { price: offer.priceString })}>
+                    <OfferCard icon="pricetag" title={t('−{pct}% durante {n} meses', { pct: offer.pct, n: offer.months })} body={t('{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.', { price: offer.priceString, n: offer.months, monthly: monthly!.priceString })}>
                       <Button kind="secondary" title={t('Aceitar a oferta')} onPress={async () => result(await offer.buy(), 'discount')} />
                     </OfferCard>
                   ) : null}
                   {toAnnual ? (
+                    // The billed amount (per year) leads; the per-month figure is the smaller line (App Store 3.1.2).
                     <OfferCard
                       icon="calendar"
-                      title={t('Anual: {price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })}
-                      body={t('{price} por ano, −{pct}% face ao mensal.', { price: annual.priceString, pct: monthly ? annualSavingPct(monthly.price, annual.price) : 0 })}>
+                      title={t('Anual: {price} por ano', { price: annual.priceString })}
+                      body={
+                        monthly && annualSavingPct(monthly.price, annual.price) > 0
+                          ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
+                          : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price), annual.currency, locale) })
+                      }>
                       <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual', undefined, product ?? undefined), 'annual')} />
                     </OfferCard>
+                  ) : null}
+                  {offer || toAnnual ? (
+                    <T v="tiny" style={{ textAlign: 'center' }}>
+                      {t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
+                    </T>
                   ) : null}
                   {!offer && !toAnnual ? <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} /> : null}
                 </>
@@ -228,18 +244,11 @@ export default function Cancel() {
           {/* Same weight as any offer above it (store rules: the way out is never the faint option). */}
           <Button kind="secondary" title={reason ? t('Continuar a cancelar na {store}', { store }) : t('Cancelar na {store}', { store })} onPress={toStore} lines={2} />
           {/* Charged twice, or Pro missing after a reinstall: the fixes are here too, not only in Settings. */}
-          <Row gap={S.lg} style={{ justifyContent: 'center', paddingTop: S.xs }}>
-            <Pressable onPress={onRestore} hitSlop={8} accessibilityRole="button">
-              <T v="tiny" color={C.textDim}>
-                {t('Restaurar compras')}
-              </T>
-            </Pressable>
-            <Pressable onPress={() => WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} hitSlop={8} accessibilityRole="link">
-              <T v="tiny" color={C.textDim}>
-                {t('Ajuda e contacto')}
-              </T>
-            </Pressable>
-          </Row>
+          {/* The offers above are purchases too: Terms (EULA) and Privacy sit next to them (App Store 3.1.2). */}
+          <LegalLinks>
+            <LegalLink role="button" title={t('Restaurar compras')} onPress={onRestore} />
+            <LegalLink title={t('Ajuda e contacto')} onPress={() => void WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
+          </LegalLinks>
         </View>
       </View>
     </>

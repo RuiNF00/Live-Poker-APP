@@ -48,7 +48,14 @@ export function ChargeNotice({ end }: { end: number }) {
       tone="info"
       icon="card-outline"
       title={t('O teste grátis acaba a {date}', { date })}
-      body={android ? t('Depois, {price} por ano. Para não pagar, cancela na Google Play antes dessa data.', { price }) : t('Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.', { price, store })}
+      body={
+        // Prices not loaded (offline): no empty "Depois,  por ano", and never a made-up price.
+        !price
+          ? t('Depois, passa à subscrição anual. Para não pagar, cancela na {store} até 24 h antes.', { store })
+          : android
+            ? t('Depois, {price} por ano. Para não pagar, cancela na Google Play antes dessa data.', { price })
+            : t('Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.', { price, store })
+      }
       action={t('Gerir')}
       onPress={() => void manageSubscription()}
     />
