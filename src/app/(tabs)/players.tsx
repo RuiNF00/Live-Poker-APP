@@ -47,7 +47,8 @@ export default function PlayersScreen() {
     const qq = q.trim().toLowerCase();
     return [...players]
       .sort((a, b) => b.updatedAt - a.updatedAt)
-      .filter((p) => !qq || [p.name, p.look, p.notes, ...p.tags].join(' ').toLowerCase().includes(qq));
+      // Tags are stored in pt-PT and shown translated: either matches ('Agressivo', 'Aggressive').
+      .filter((p) => !qq || [p.name, p.look, p.notes, ...p.tags, ...p.tags.map((x) => t(x))].join(' ').toLowerCase().includes(qq));
   }, [players, q]);
 
   const counts = useMemo(() => handCounts(hands, players), [hands, players]);
