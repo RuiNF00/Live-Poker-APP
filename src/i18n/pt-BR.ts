@@ -1678,6 +1678,17 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}». Continua sendo recuperado lá.',
+  // Fell back to pt-PT (QA first-day audit).
+  'Incluir as minhas notas': 'Incluir minhas notas',
+  'Usar os meus números': 'Usar meus números',
+  'Usar os meus números com Pro': 'Usar meus números com Pro',
+  'Rever as mãos de hoje': 'Revisar as mãos de hoje',
+  'Marcar para rever': 'Marcar para revisar',
+  'Revista': 'Revisada',
+  'Marcar como revista': 'Marcar como revisada',
+  'Voltar a rever': 'Revisar de novo',
+  '{n} gelos guardados': '{n} gelos salvos',
+  'Apagar nota de voz': 'Excluir nota de voz',
 };
 
 export default ptBR;
