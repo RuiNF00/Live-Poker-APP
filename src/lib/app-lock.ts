@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 
 import { t } from '@/i18n';
 
-import type { LockConfig } from './app-lock-core';
+import { lockIsThisInstalls, USED_INSTALL_KEYS, type LockConfig } from './app-lock-core';
 
 export * from './app-lock-core';
 
@@ -28,10 +28,13 @@ export async function loadLock(): Promise<LockConfig | null> {
   try {
     const raw = await SecureStore.getItemAsync(KEY);
     if (!raw) return null;
-    if (!(await AsyncStorage.getItem(INSTALLED))) {
+    const [[, marker], ...used] = await AsyncStorage.multiGet([INSTALLED, ...USED_INSTALL_KEYS]);
+    if (!lockIsThisInstalls(marker, used)) {
       await saveLock(null);
       return null;
     }
+    // Set by a build from before the marker: mark it now, so it's kept from here on.
+    if (!marker) await AsyncStorage.setItem(INSTALLED, '1').catch(() => {});
     return JSON.parse(raw) as LockConfig;
   } catch {
     return null;
