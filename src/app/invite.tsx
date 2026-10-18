@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { INVITE } from '@/billing/plans';
-import { usePro } from '@/billing/pro';
+import { buyNotice, usePro } from '@/billing/pro';
 import { redeemInviteOffer } from '@/billing/purchases';
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
@@ -58,6 +58,7 @@ export default function InviteScreen() {
     else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
     else if (res === 'unavailable') notice(t('Não deu para abrir o desconto'), t('Tenta outra vez daqui a pouco. O desconto continua guardado aqui.'));
     else if (res === 'error') notice(t('Não deu para concluir'), t('Tenta outra vez daqui a pouco. O desconto continua guardado aqui.'));
+    else if (res !== 'redeem') buyNotice(res, store);
   };
 
   const steps: [React.ComponentProps<typeof Ionicons>['name'], string][] = [

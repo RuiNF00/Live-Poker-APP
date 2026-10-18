@@ -1,13 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, LEGAL, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
 import { chargeNoticeAt } from '@/billing/nudges';
-import { restoreNotice, usePro } from '@/billing/pro';
+import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { deferTrial } from '@/billing/trial-moments';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
@@ -23,7 +23,9 @@ const trialEnd = (days: number) => new Date(Date.now() + days * 86_400_000).toLo
 export default function Paywall() {
   const insets = useSafeAreaInsets();
   // Small phones (SE, mini): drop the hero icon so the plans show without scrolling.
-  const compact = useWindowDimensions().height < 760;
+  const win = useWindowDimensions();
+  // Short screens and large text both: the plans stay above the fold.
+  const compact = win.height < 760 || win.fontScale > 1.3;
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -79,10 +81,21 @@ export default function Paywall() {
     if (then) setTimeout(then, 350);
   };
 
+  // Pro turning on while the paywall is open but not from a tap here (a restore that outlasted its wait,
+  // Ask to Buy approved, a code redeemed): back to what was tapped, same as a purchase.
+  const acting = useRef(false);
+  useEffect(() => {
+    if (isPro && !wasPro && !acting.current) unlocked();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPro]);
+
   const onBuy = async () => {
+    if (acting.current) return;
+    acting.current = true;
     setBusy('buy');
     const res = await purchase(plan, reason);
     setBusy(null);
+    if (res !== 'ok') acting.current = false;
     if (res === 'ok') {
       // A trial just started: the day-5 reminder the timeline promised, asked once, over this screen.
       if (trial >= 3) {
@@ -102,13 +115,16 @@ export default function Paywall() {
       takeResume();
       close();
     } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
-    else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+    else buyNotice(res, store);
   };
 
   const onRestore = async () => {
+    if (acting.current) return;
+    acting.current = true;
     setBusy('restore');
     const res = await restore();
     setBusy(null);
+    if (res !== 'ok') acting.current = false;
     if (res === 'ok') return unlocked();
     restoreNotice(res, store);
   };
@@ -237,7 +253,7 @@ export default function Paywall() {
         <T v="tiny" style={{ textAlign: 'center' }}>
           {Platform.OS === 'android' ? t('Renova automaticamente. Cancela na Google Play antes da data de renovação.') : t('Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.', { store })}
         </T>
-        <Row style={{ justifyContent: 'center' }} gap={S.lg}>
+        <Row style={{ justifyContent: 'center', flexWrap: 'wrap' }} gap={S.lg}>
           <Pressable onPress={() => WebBrowser.openBrowserAsync(LEGAL.terms)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
             <T v="tiny" color={C.textDim}>
               {t('Termos')}

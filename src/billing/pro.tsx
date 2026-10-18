@@ -105,18 +105,25 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Cached flag first so Pro works offline in the card room; the store corrects it.
+    let storeAnswered = false;
     AsyncStorage.multiGet([KEYS.pro, KEYS.usage])
       .then(([[, pro], [, u]]) => {
-        if (pro === '1') setIsPro(true);
+        // Only until the store has spoken: a late cache read must not turn an expired Pro back on.
+        if (pro === '1' && !storeAnswered) setIsPro(true);
         if (u) setUsage(pruneLog(JSON.parse(u) as UsageEvent[]));
       })
       .catch(() => {});
     const off = store.configure((v) => {
+      storeAnswered = true;
       setPro(v);
       checkBilling();
     });
     checkBilling();
-    store.getIsPro().then((v) => v !== null && setPro(v));
+    store.getIsPro().then((v) => {
+      if (v === null) return;
+      storeAnswered = true;
+      setPro(v);
+    });
     store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
     store.getPaywallConfig().then(setPaywallConfig);
     return off;
@@ -159,7 +166,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       const plan = plans.find((p) => p.id === id);
       if (!plan) return 'unavailable' as const;
       const res = await store.buy(plan, replacing);
-      if (res === 'error') noteVisibleError();
+      if (res === 'error' || res === 'network') noteVisibleError();
       if (res === 'ok') {
         setPro(true);
         void noteReviewBlocker('bought');
@@ -282,8 +289,18 @@ export function useWelcomeOffer(handsSaved: number) {
 }
 
 /** What a restore found, in the same words wherever it is tapped. Offline is not "no purchases". */
+/** What to say when a purchase didn't go through. Nothing for ok, cancelled, pending or a second tap; the caller says those. */
+export function buyNotice(res: store.BuyResult, storeName: string) {
+  if (res === 'network') notice(t('Sem resposta da {store}', { store: storeName }), t('Se a {store} confirmou o pagamento, o Pro liga-se sozinho. Se não, tenta outra vez.', { store: storeName }));
+  else if (res === 'blocked') notice(t('Compras desligadas'), t('Este telemóvel não deixa fazer compras (Tempo de ecrã ou controlo parental).'));
+  else if (res === 'owned') notice(t('Já tens esta compra'), t('Toca em Restaurar compras para ligar o Pro neste telemóvel.'));
+  else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
+}
+
 export function restoreNotice(res: store.RestoreResult, storeName: string) {
   if (res === 'ok') notice(t('Compras restauradas'), t('O teu Pro está ativo nesta conta da loja.'));
   else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma subscrição nesta conta da loja.'));
+  else if (res === 'busy') return;
+  else if (res === 'slow') notice(t('A {store} ainda está a responder', { store: storeName }), t('Se encontrar a compra, o Pro liga-se sozinho.'));
   else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Verifica a rede e tenta outra vez daqui a pouco.'));
 }

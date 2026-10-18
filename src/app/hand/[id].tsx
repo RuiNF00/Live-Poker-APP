@@ -212,10 +212,11 @@ export default function HandScreen() {
   const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
     tap('medium');
     const isNew = !hand.shareId;
+    const refP = shareRef();
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
-    const ref = await shareRef();
+    const ref = await refP;
     const channel = to ?? (quiz ? 'challenge' : 'link');
     const link = shareLink(shareId, channel, { quiz, ref });
     track('link_shared', { channel, share_id: shareId, ref });
@@ -252,10 +253,11 @@ ${link}`;
     let link: string | undefined;
     if (withLink) {
       const isNew = !hand.shareId;
-      const shareId = await ensureId();
+      const refP = shareRef();
+    const shareId = await ensureId();
       if (!shareId) return;
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
-      const ref = await shareRef();
+      const ref = await refP;
       link = shareLink(shareId, 'text', { ref });
       track('link_shared', { channel: 'text', share_id: shareId, ref });
     }
@@ -323,10 +325,11 @@ ${link}`;
 
   const copyLink = async () => {
     const isNew = !hand.shareId;
+    const refP = shareRef();
     const shareId = await ensureId();
     if (!shareId) return;
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
-    const ref = await shareRef();
+    const ref = await refP;
     await Clipboard.setStringAsync(shareLink(shareId, 'link', { ref }));
     track('link_shared', { channel: 'copy', share_id: shareId, ref });
     tap('success');
@@ -385,8 +388,8 @@ ${link}`;
 
   const edit = () => router.push({ pathname: '/hand/new', params: { edit: hand.id } });
   // Live, or the latest hand of a table still going: the next hand is one tap away.
-  // Only once the hand is finished: an unfinished pot would carry the wrong stacks over.
-  const nextHere = isComplete(hand) && ((!!activeSession && hand.sessionId === activeSession.id) || (hands[0]?.id === hand.id && sameTable(hand, null)));
+  // In a live session also after «Guardar já»: an unfinished hand carries its starting stacks over.
+  const nextHere = (!!activeSession && hand.sessionId === activeSession.id) || (isComplete(hand) && hands[0]?.id === hand.id && sameTable(hand, null));
   return (
     <>
       <Stack.Screen

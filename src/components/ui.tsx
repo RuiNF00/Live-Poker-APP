@@ -164,12 +164,12 @@ export const ts = StyleSheet.create<Record<TV, TextStyle>>({
 });
 
 /** A signed money or chip amount, green when up and red when down. */
-export function Amount({ value, text, v = 'mono', style, neutral }: { value: number; text: string; v?: TV; style?: StyleProp<TextStyle>; neutral?: boolean }) {
+export function Amount({ value, text, v = 'mono', style, neutral, fit }: { value: number; text: string; v?: TV; style?: StyleProp<TextStyle>; neutral?: boolean; fit?: boolean }) {
   // Privacy mode: not even the colour says whether it was a win.
   const hidden = moneyMasked();
   const col = hidden || neutral || value === 0 ? C.textDim : value > 0 ? C.good : C.bad;
   return (
-    <T v={v} color={col} style={style}>
+    <T v={v} color={col} style={style} {...(fit ? { numberOfLines: 1, adjustsFontSizeToFit: true } : null)}>
       {hidden ? MASK : value > 0 && !text.startsWith('+') ? '+' + text : text}
     </T>
   );
@@ -307,7 +307,7 @@ export function Section({
             {title}
           </T>
           {action ? (
-            <Pressable onPress={onAction} hitSlop={12}>
+            <Pressable onPress={onAction} hitSlop={12} accessibilityRole="button">
               <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
                 {action}
               </T>
@@ -987,6 +987,7 @@ export function SearchField({ value, onChange, placeholder, style, autoFocus }: 
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
+        accessibilityLabel={t('Procurar')}
         autoFocus={autoFocus}
         maxFontSizeMultiplier={CONTROL_SCALE}
         placeholderTextColor={C.muted}

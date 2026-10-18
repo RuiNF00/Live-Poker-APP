@@ -223,7 +223,7 @@ export function Table({
                     s.hero && styles.plateHero,
                     s.acting && styles.plateActing,
                     s.winner ? styles.plateWinner : null,
-                    s.folded && { opacity: 0.45 },
+                    s.folded && { opacity: 0.6 },
                   ]}>
                   <View style={styles.plateTop}>
                     <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.name, s.hero && { color: C.accent }]} numberOfLines={1}>

@@ -7,7 +7,7 @@ import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/i18n';
-import { askDevice, checkPin, deviceLockAvailable, loadFails, loadLock, lockoutMs, needsUnlock, PIN_LENGTH, saveFails, type LockConfig } from '@/lib/app-lock';
+import { askDeviceResult, checkPin, deviceLockAvailable, loadFails, loadLock, lockoutMs, needsUnlock, PIN_LENGTH, saveFails, saveLock, type LockConfig } from '@/lib/app-lock';
 import { C, S } from '@/theme';
 
 import { Button, T, tap, Wordmark } from './ui';
@@ -82,10 +82,15 @@ function LockScreen({ cfg, onUnlock }: { cfg: LockConfig; onUnlock: () => void }
   const tryDevice = useCallback(async () => {
     if (asking.current) return;
     asking.current = true;
-    const ok = await askDevice();
+    const r = await askDeviceResult();
     asking.current = false;
-    if (ok) onUnlock();
-  }, [onUnlock]);
+    if (r === 'ok') onUnlock();
+    // The phone's own lock was removed: this lock can't be answered any more, so it goes too.
+    else if (r === 'gone' && cfg.mode === 'device') {
+      await saveLock(null).catch(() => {});
+      onUnlock();
+    }
+  }, [onUnlock, cfg.mode]);
 
   useEffect(() => {
     if (cfg.mode === 'device') tryDevice();

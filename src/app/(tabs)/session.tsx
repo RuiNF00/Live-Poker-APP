@@ -347,7 +347,7 @@ function Live({ s }: { s: Session }) {
   // The clock and stack first; the chart, money and staking a frame later.
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
-  const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0 });
+  const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
   const swapEnd = useSwapEnd(s);
   const [more, setMore] = useState(false);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -358,10 +358,10 @@ function Live({ s }: { s: Session }) {
       const tr = s.tourney;
       const place = tr?.left || 0;
       const prize = (place && tr?.payouts?.[place - 1]) || 0;
-      setFinish({ cashOut: prize + (tr?.bounties || 0), place, field: tr?.entries || 0 });
+      setFinish({ cashOut: prize + (tr?.bounties || 0), place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
     } else {
       // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
-      setFinish((f) => ({ ...f, cashOut: s.stack }));
+      setFinish((f) => ({ ...f, cashOut: s.stack, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 }));
     }
     setEnding(true);
     // The form opens at the bottom of a long screen: bring it up once it's laid out.
@@ -382,6 +382,8 @@ function Live({ s }: { s: Session }) {
       cashOut: finish.cashOut,
       finish: finish.place || undefined,
       field: finish.field || undefined,
+      tips: finish.tips || undefined,
+      handsDealt: finish.handsDealt || undefined,
       endedAt: now,
       tags: moods.length ? moods : undefined,
       breaks: s.breaks.map((b) => (b.end ? b : { ...b, end: now })),
@@ -472,7 +474,8 @@ function Live({ s }: { s: Session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {softAsk}
-      <Screen scrollRef={scrollRef} title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} contentStyle={{ gap: S.lg, paddingBottom: bar + S.lg }}>
+      <Screen scrollRef={scrollRef} title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} right={ending ? null : <Button size="sm" kind="secondary" icon="flag-outline" title={t('Terminar')} onPress={startEnding} />}
+        contentStyle={{ gap: S.lg, paddingBottom: bar + S.lg }}>
         <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
           <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
           <PlayClock s={s} paused={paused} />
@@ -526,7 +529,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
-            <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Duração do nível')}>
+            <Pressable onPress={cycleLevelLength} hitSlop={8} accessibilityRole="button" accessibilityHint={t('Duração do nível')}>
               <LevelAlarm s={s} onDue={levelUp} />
             </Pressable>
           </Card>
@@ -618,7 +621,7 @@ function Live({ s }: { s: Session }) {
                   </View>
                 </View>
                 {(() => {
-                  const end = { ...s, cashOut: finish.cashOut };
+                  const end = { ...s, cashOut: finish.cashOut, tips: finish.tips || undefined };
                   const owed = owedToBackers(end);
                   const p = profit(end);
                   return (
@@ -670,8 +673,8 @@ function Live({ s }: { s: Session }) {
                 {more ? (
                   <View style={{ gap: S.md }}>
                     <Row gap={S.sm}>
-                      <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => save({ tips: tips || undefined })} />
-                      <NumField label={t('Mãos jogadas')} value={s.handsDealt ?? 0} onChange={(handsDealt) => save({ handsDealt: handsDealt || undefined })} />
+                      <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={finish.tips} onChange={(tips) => setFinish((f) => ({ ...f, tips }))} />
+                      <NumField label={t('Mãos jogadas')} value={finish.handsDealt} onChange={(handsDealt) => setFinish((f) => ({ ...f, handsDealt }))} />
                     </Row>
                     {settings.mindAsk === false ? null : <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />}
                     <StakeFields s={s} onChange={save} />

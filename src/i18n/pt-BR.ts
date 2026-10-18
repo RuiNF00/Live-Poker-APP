@@ -1619,6 +1619,16 @@ const ptBR: Record<string, string> = {
   'O resto chega quando paras ou acabas. Os níveis tocam sempre.': 'O resto chega quando você pausa ou termina. Os níveis tocam sempre.',
   'Encontrei outra app': 'Encontrei outro app',
   'Dados guardados à parte': 'Dados salvos à parte',
+  'Se a {store} confirmou o pagamento, o Pro liga-se sozinho. Se não, tenta outra vez.': 'Se a {store} confirmou o pagamento, o Pro é ativado sozinho. Se não, tente de novo.',
+  'Este telemóvel não deixa fazer compras (Tempo de ecrã ou controlo parental).': 'Este celular não permite compras (Tempo de Uso ou controle parental).',
+  'Toca em Restaurar compras para ligar o Pro neste telemóvel.': 'Toque em Restaurar compras para ativar o Pro neste celular.',
+  'Se encontrar a compra, o Pro liga-se sozinho.': 'Se encontrar a compra, o Pro é ativado sozinho.',
+  'Já tens esta compra': 'Você já tem esta compra',
+  'Compras desligadas': 'Compras desativadas',
+  'A {store} ainda está a responder': 'A {store} ainda está respondendo',
+  'Câmara desligada': 'Câmera desativada',
+  'Ativa a câmara para o Sweatbook nas definições do telemóvel.': 'Ative a câmera para o Sweatbook nas configurações do celular.',
+  'O microfone está ocupado. Tenta outra vez daqui a pouco.': 'O microfone está ocupado. Tente de novo daqui a pouco.',
 };
 
 export default ptBR;

@@ -7,6 +7,8 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 
+import { permissionOff } from './permission-off';
+
 export type DocSource = 'camera' | 'photos' | 'files';
 
 const dir = () => new Directory(Paths.document, 'docs');
@@ -26,7 +28,10 @@ export async function pickDoc(source: DocSource, id: string): Promise<{ file: st
     uri = r.assets[0].uri;
     name = r.assets[0].name;
   } else {
-    if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) return null;
+    if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+    permissionOff('camera');
+    return null;
+  }
     const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.6 };
     const r = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
     if (r.canceled || !r.assets?.[0]) return null;

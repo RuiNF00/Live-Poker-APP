@@ -232,7 +232,7 @@ function BankrollTab() {
           <T v="monoXL" color={bal.balance < 0 ? C.bad : C.text} numberOfLines={1} adjustsFontSizeToFit>
             {fmt(bal.balance, cur)}
           </T>
-          <T v="small" numberOfLines={2}>
+          <T v="small">
             {[
               t('Resultado {amount}', { amount: signedMoney(bal.results) }),
               bal.deposits ? t('Depósitos {amount}', { amount: fmt(bal.deposits, cur) }) : '',

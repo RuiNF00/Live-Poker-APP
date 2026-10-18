@@ -17,6 +17,7 @@ import { Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
+import { permissionOff } from '@/lib/permission-off';
 import { C, F, R } from '@/theme';
 
 import { Row, T, tap } from './ui';
@@ -64,14 +65,19 @@ export function VoiceRecorder({
     if (locked) return onLocked();
     const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) {
-      notice(t('Microfone desligado'), t('Ativa o microfone para o Sweatbook nas definições do telemóvel.'));
+      permissionOff('microphone');
       return;
     }
     tap('medium');
     if (playing.playing) player.pause();
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record({ forDuration: MAX_VOICE_S });
+    try {
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record({ forDuration: MAX_VOICE_S });
+    } catch {
+      // A phone call or another app holding the microphone.
+      notice(t('Não deu para gravar'), t('O microfone está ocupado. Tenta outra vez daqui a pouco.'));
+    }
   };
 
   const stop = async () => {
@@ -112,7 +118,7 @@ export function VoiceRecorder({
     return (
       <View style={box}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Pressable onPress={toggle} hitSlop={8}>
+          <Pressable onPress={toggle} hitSlop={8} accessibilityRole="button" accessibilityLabel={playing.playing ? t('Pausa') : t('Ouvir nota de voz')}>
             <Row gap={10}>
               <Ionicons name={playing.playing ? 'pause-circle' : 'play-circle'} size={30} color={C.accent} />
               <T v="h2">{t('A tua voz')}</T>
@@ -122,7 +128,7 @@ export function VoiceRecorder({
             </Row>
           </Pressable>
           <Row gap={16}>
-            <Pressable onPress={start} hitSlop={8}>
+            <Pressable onPress={start} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Gravar de novo')}>
               <Ionicons name="refresh" size={20} color={C.textDim} />
             </Pressable>
             <Pressable
@@ -130,7 +136,9 @@ export function VoiceRecorder({
                 if (playing.playing) player.pause();
                 onChange(null);
               }}
-              hitSlop={8}>
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('Apagar nota de voz')}>
               <Ionicons name="trash-outline" size={20} color={C.danger} />
             </Pressable>
           </Row>

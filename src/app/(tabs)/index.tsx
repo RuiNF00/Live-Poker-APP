@@ -430,8 +430,8 @@ export default function HandsScreen() {
       <HandFilterSheet visible={filtering} onClose={() => setFiltering(false)} value={filter} onChange={setFilter} hands={hands} />
       <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
       <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
-        <Pressable accessibilityLabel={t('Fechar')} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
+        <Pressable accessible={false} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={() => setTagging(false)} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={picked.size === 1 ? t('Tag para 1 mão') : t('Tag para {n} mãos', { n: picked.size })} onClose={() => setTagging(false)} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
               {DEFAULT_TAGS.map((tg) => {
@@ -488,7 +488,7 @@ function HomeSummary({ sessions, streak, handsLeft, cta, onPro }: { sessions: Se
         <T v="label" numberOfLines={1}>
           {t('Este mês')}
         </T>
-        {month.length ? <Amount value={net} text={money(net, cur)} v="mono" /> : <T v="mono" color={C.muted}>—</T>}
+        {month.length ? <Amount value={net} text={money(net, cur)} v="mono" fit /> : <T v="mono" color={C.muted}>—</T>}
       </Pressable>,
     );
   }
@@ -638,6 +638,9 @@ const HandRow = React.memo(function HandRow({ hand, inBB, picking, picked, onPic
       // An unfinished hand opens where it stopped: finishing it is why it's tapped.
       onPress={() => (picking ? onPick(hand.id) : done ? router.push({ pathname: '/hand/[id]', params: { id: hand.id } }) : router.push({ pathname: '/hand/new', params: { edit: hand.id } }))}
       onLongPress={() => onPick(hand.id)}
+      // The long press that starts picking, for VoiceOver and TalkBack too.
+      accessibilityActions={picking ? undefined : [{ name: 'longpress', label: t('Selecionar') }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && onPick(hand.id)}
       delayLongPress={350}
       style={({ pressed }) => (picked ? rowSt.picked : pressed ? rowSt.pressed : rowSt.row)}>
       <Row gap={12}>
@@ -721,8 +724,8 @@ function FolderSheet({ visible, onClose, folders, list, save }: { visible: boole
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <Pressable accessibilityLabel={t('Fechar')} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
+        <Pressable accessible={false} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={onClose} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={list.length === 1 ? t('Guardar 1 mão em') : t('Guardar {n} mãos em', { n: list.length })} onClose={onClose} />
             {folders.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>

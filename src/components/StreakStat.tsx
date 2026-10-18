@@ -64,8 +64,8 @@ export function StreakStat() {
         </Row>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable accessibilityLabel={t('Fechar')} onPress={() => setOpen(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-          <Pressable style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
+        <Pressable accessible={false} onPress={() => setOpen(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={() => setOpen(false)} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={t('Sequência de registo')} onClose={() => setOpen(false)} />
             <Row gap={S.sm}>
               <T v="h2" style={{ flex: 1 }}>

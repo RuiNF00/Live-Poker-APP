@@ -72,6 +72,46 @@ export interface OpponentStats {
 /** Below this many hands the numbers are a hint, not a read. */
 export const SMALL_SAMPLE = 20;
 
+interface PreflopReads {
+  acted: Set<number>;
+  vpip: Set<number>;
+  pfr: Set<number>;
+  tbOpp: Set<number>;
+  tb: Set<number>;
+}
+
+// Saved hands are replaced, never changed in place: each one is replayed once, not on every save.
+const preflopCache = new WeakMap<Hand, PreflopReads>();
+
+/** Per seat: what it did preflop, and whether it faced a single raise. */
+function preflopReads(h: Hand): PreflopReads {
+  const hit = preflopCache.get(h);
+  if (hit) return hit;
+  const acted = new Set<number>();
+  const vpip = new Set<number>();
+  const pfr = new Set<number>();
+  const tbOpp = new Set<number>();
+  const tb = new Set<number>();
+  let raises = 0;
+  for (const st of replay(h).steps) {
+    if (st.kind !== 'action' || st.actStreet !== 'preflop' || st.actionIndex === undefined) continue;
+    const a = h.actions[st.actionIndex];
+    const first = !acted.has(a.p);
+    acted.add(a.p);
+    if (raises === 1 && first) tbOpp.add(a.p);
+    if (a.kind === 'call') vpip.add(a.p);
+    if (a.kind === 'raise' || a.kind === 'bet') {
+      vpip.add(a.p);
+      pfr.add(a.p);
+      if (raises === 1 && tbOpp.has(a.p)) tb.add(a.p);
+      raises++;
+    }
+  }
+  const out = { acted, vpip, pfr, tbOpp, tb };
+  preflopCache.set(h, out);
+  return out;
+}
+
 export function opponentStats(hands: Hand[], players: PlayerNote[]): Map<string, OpponentStats> {
   const byName = nameIndex(players);
   const ids = new Set(players.map((p) => p.id));
@@ -79,27 +119,7 @@ export function opponentStats(hands: Hand[], players: PlayerNote[]): Map<string,
   for (const h of hands) {
     const seats = knownSeats(h, ids, byName);
     if (!seats.length) continue;
-    // Per seat: what it did preflop, and whether it faced a single raise.
-    const acted = new Set<number>();
-    const vpip = new Set<number>();
-    const pfr = new Set<number>();
-    const tbOpp = new Set<number>();
-    const tb = new Set<number>();
-    let raises = 0;
-    for (const st of replay(h).steps) {
-      if (st.kind !== 'action' || st.actStreet !== 'preflop' || st.actionIndex === undefined) continue;
-      const a = h.actions[st.actionIndex];
-      const first = !acted.has(a.p);
-      acted.add(a.p);
-      if (raises === 1 && first) tbOpp.add(a.p);
-      if (a.kind === 'call') vpip.add(a.p);
-      if (a.kind === 'raise' || a.kind === 'bet') {
-        vpip.add(a.p);
-        pfr.add(a.p);
-        if (raises === 1 && tbOpp.has(a.p)) tb.add(a.p);
-        raises++;
-      }
-    }
+    const { acted, vpip, pfr, tbOpp, tb } = preflopReads(h);
     const counted = new Set<string>();
     for (const [i, id] of seats) {
       if (!acted.has(i) || counted.has(id)) continue;
