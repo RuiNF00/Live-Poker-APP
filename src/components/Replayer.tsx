@@ -14,13 +14,15 @@ import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
 import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
-import { IcmPanel } from './replayer/IcmPanel';
 import { useReduceMotion } from './replayer/motion';
 import { RangeSheet } from './replayer/RangeSheet';
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { Scrubber } from './replayer/Scrubber';
 import { motionTimeline } from './replayer/timeline';
 import { tap } from './ui';
+
+// Only drawn when the player turns ICM on: loaded then, not at launch.
+const IcmPanel = React.lazy(() => import('./replayer/IcmPanel').then((m) => ({ default: m.IcmPanel })));
 
 const SPEEDS = [1, 1.5, 2, 0.5];
 // v2: shown once more to everyone when swiping between streets arrived.
@@ -302,7 +304,7 @@ export function Replayer({
           <Text style={{ flex: 1, color: C.text, fontFamily: F.regular, fontSize: 13, lineHeight: 18 }}>{note}</Text>
         </View>
       ) : null}
-      {icm && hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <IcmPanel hand={hand} facing={view.facing} /> : null}
+      {icm && hand.game.kind === 'mtt' && !locked && hand.players.length >= 2 ? <React.Suspense fallback={null}><IcmPanel hand={hand} facing={view.facing} /></React.Suspense> : null}
       {answered ? (
         <Text style={{ textAlign: 'center', color: C.textDim, fontFamily: F.regular, fontSize: 13 }}>
           {t('Tu escolheste')} <Text style={{ color: C.accent, fontFamily: ff(800) }}>{answered}</Text>. {t('Vê o que aconteceu.')}
