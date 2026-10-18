@@ -257,7 +257,7 @@ function BankrollTab() {
           <Empty
             compact
             title={t('Ainda sem sessões')}
-            body={t('O lucro e o €/hora aparecem aqui.')}
+            body={t('O lucro e o resultado por hora aparecem aqui.')}
             action={
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
                 <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />

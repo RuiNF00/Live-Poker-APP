@@ -870,5 +870,5 @@ function clock(ms: number) {
 /** The deal calculator with the players left, the live stack and the payouts already filled in (as from the tournament screen). */
 function toChop(s: Session) {
   const n = Math.min(9, Math.max(2, s.tourney?.left ?? 3));
-  router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (s.tourney?.payouts ?? []).slice(0, n).join(',') } });
+  router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (s.tourney?.payouts ?? []).slice(0, 9).join(',') } });
 }

@@ -23,7 +23,7 @@ test('three numbers: result first, then place and the biggest pot of the session
   assert.deepEqual(stats.map((x) => x.key), ['result', 'place', 'pot']);
   assert.equal(stats[0].value, '+1240€');
   assert.equal(stats[0].tone, 'good');
-  assert.equal(stats[1].value, '12º/340');
+  assert.equal(stats[1].value, '12.º/340');
   assert.ok(potInBB(h) > 0);
 });
 

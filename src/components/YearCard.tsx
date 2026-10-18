@@ -11,6 +11,7 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { locale, t } from '@/i18n';
 import { blindsLabel, chips, duration, pct, rawMoney, shortDate } from '@/poker/format';
 import { playedMs } from '@/store/session-math';
+import { placeLabel } from '@/share/festival-card';
 import type { StakeRow, YearCardKind, YearReview } from '@/share/year-review';
 import { countryName, flag } from '@/tax/countries';
 import { C, F, R, ff } from '@/theme';
@@ -175,7 +176,7 @@ function YearBody({ r, fg, dim, line, hideMoney }: BodyProps) {
 function BestBody({ r, fg, dim, line, hideMoney }: BodyProps) {
   const b = r.best;
   const sc = r.score;
-  const place = sc?.session.finish ? (sc.session.field ? `${sc.session.finish}º/${sc.session.field}` : `${sc.session.finish}º`) : null;
+  const place = sc?.session.finish ? placeLabel(sc.session.finish, sc.session.field) : null;
   return (
     <View style={{ gap: 18 }}>
       {b ? (

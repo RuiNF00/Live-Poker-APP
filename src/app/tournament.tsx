@@ -99,7 +99,7 @@ function Tournament({ s }: { s: Session }) {
   };
   const toChop = () => {
     const n = Math.min(9, Math.max(2, tour.left ?? 3));
-    router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (tour.payouts ?? []).slice(0, n).join(',') } });
+    router.push({ pathname: '/chop', params: { n: String(n), stack: String(s.stack), pays: (tour.payouts ?? []).slice(0, 9).join(',') } });
   };
 
   return (

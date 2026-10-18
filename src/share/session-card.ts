@@ -11,6 +11,8 @@ import { dayOf, isBagged } from '@/store/multi-day';
 import { playedMs, profit } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
+import { placeLabel } from './festival-card';
+
 export type CardStyle = 'noite' | 'brasa' | 'sticker';
 export const CARD_STYLES: CardStyle[] = ['noite', 'brasa', 'sticker'];
 
@@ -61,7 +63,7 @@ export function sessionStats(s: Session, hands: Hand[], hideMoney: boolean, now 
   const big = biggestHand(mine);
   const all: (CardStat | null)[] = [
     hideMoney ? null : { key: 'result', label: t('Resultado'), value: (p > 0 ? '+' : '') + rawMoney(p, s.currency), tone: p > 0 ? 'good' : p < 0 ? 'bad' : undefined },
-    s.kind === 'mtt' && s.finish ? { key: 'place', label: t('Lugar'), value: s.field ? `${s.finish}º/${s.field}` : `${s.finish}º` } : null,
+    s.kind === 'mtt' && s.finish ? { key: 'place', label: t('Lugar'), value: placeLabel(s.finish, s.field) } : null,
     big ? { key: 'pot', label: t('Maior pote'), value: bbs(big.bb * (big.hand.game.bb || 1), big.hand.game.bb) } : null,
     ms > 60_000 ? { key: 'hours', label: t('A jogar'), value: duration(ms) } : null,
     !hideMoney && hours >= 1 ? { key: 'perHour', label: t('Por hora'), value: (p > 0 ? '+' : '') + rawMoney(Math.round(p / hours), s.currency), tone: p > 0 ? 'good' : p < 0 ? 'bad' : undefined } : null,
