@@ -8,13 +8,19 @@
 import { sepId } from './bankroll-math';
 
 export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing', 'ownFestivals', 'weekly'] as const;
-export type DeletedList = (typeof DELETED_LISTS)[number];
+/**
+ * Swaps, group swaps, and entries I deleted before they were sent ('swapEntries', see entryId).
+ * Unlike the lists above, a restore doesn't bring these back: the swap is gone from the server,
+ * and a deleted entry sent again would change the other player's accounts.
+ */
+export const SWAP_DELETED_LISTS = ['swaps', 'swapGroups', 'swapEntries'] as const;
+export type DeletedList = (typeof DELETED_LISTS)[number] | (typeof SWAP_DELETED_LISTS)[number];
 /** 'sessions:<id>' → when it was deleted. */
 export type Deleted = Record<string, number>;
 
 /** The newest ones kept: about 150 KB of a 2 MB backup at most. */
 const MAX = 5000;
-const KEY_RE = new RegExp(`^(${DELETED_LISTS.join('|')}):[^\\n]{1,100}$`);
+const KEY_RE = new RegExp(`^(${[...DELETED_LISTS, ...SWAP_DELETED_LISTS].join('|')}):[^\\n]{1,100}$`);
 
 export const keyOf = (list: DeletedList, id: string) => `${list}:${id}`;
 
@@ -86,4 +92,28 @@ export function revive<B extends Partial<Record<DeletedList, { id: string; updat
     });
   }
   return { backup: out, revived };
+}
+
+/** The 'swapEntries' id of one entry: the swap, whose it is (side or seat) and its cid. */
+export const entryId = (swapId: string, who: string | number, cid: string) => `${swapId}:${who}${cid}`;
+
+/**
+ * Swaps (or group swaps) without the ones I deleted, and without pending entries I deleted.
+ * A swap's delete always wins: it's gone from the server for everyone, so there's nothing for a
+ * later edit to go back to. Entries the server already has are never touched here: those only go
+ * through the server, for both players. The same array when nothing goes.
+ */
+export function liveSwaps<T extends { id: string; entries: { cid: string; pending?: boolean }[] }>(items: T[], list: 'swaps' | 'swapGroups', d: Deleted, who: (e: T['entries'][number]) => string | number): T[] {
+  let changed = false;
+  const out: T[] = [];
+  for (const x of items) {
+    if (d[keyOf(list, x.id)] !== undefined) {
+      changed = true;
+      continue;
+    }
+    const entries = x.entries.filter((e) => !e.pending || d[keyOf('swapEntries', entryId(x.id, who(e), e.cid))] === undefined);
+    if (entries.length !== x.entries.length) changed = true;
+    out.push(entries.length === x.entries.length ? x : { ...x, entries });
+  }
+  return changed ? out : items;
 }

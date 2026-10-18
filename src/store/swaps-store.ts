@@ -11,6 +11,8 @@ import { onReconnect } from '@/lib/online';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOwnerRc, SwapError } from '@/lib/swap-api';
 
 import { quarantine } from './boot';
+import { currentDeleted, loadDeleted, markDeleted } from './deleted';
+import { entryId, liveSwaps } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
 import { mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
@@ -31,16 +33,19 @@ function emit(next: Swap[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<Swap>(kv, SPEC, { fix: fixSwap }).then(async (d) => {
+  booting ??= Promise.all([loadCollection<Swap>(kv, SPEC, { fix: fixSwap }), loadDeleted()]).then(async ([d]) => {
     // Records that no longer parse are kept aside (backup and support file), not dropped.
     await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swaps] write failed', e));
     // Anything saved before loading finished goes on top of what was on disk.
     const ids = new Set(state.swaps.map((s) => s.id));
-    emit([...state.swaps, ...d.items.filter((s) => !ids.has(s.id))]);
+    emit(live([...state.swaps, ...d.items.filter((s) => !ids.has(s.id))]));
   });
   return booting;
 }
+
+/** Without what I deleted here or on my other phone (deleted-math.ts). */
+const live = (list: Swap[]) => liveSwaps(list, 'swaps', currentDeleted(), (e) => e.side);
 
 const subscribe = (l: () => void) => {
   listeners.add(l);
@@ -60,8 +65,10 @@ export async function getAllSwaps(): Promise<Swap[]> {
  */
 export async function importSwaps(incoming: Swap[]): Promise<number> {
   await boot();
-  const r = mergeSwaps(state.swaps, incoming);
-  if (r.list !== state.swaps) emit(r.list);
+  const r = mergeSwaps(state.swaps, live(incoming));
+  // A swap I deleted on my other phone goes from this one too (its deletes came in first).
+  const list = live(r.list);
+  if (list !== state.swaps) emit(list);
   return r.added;
 }
 
@@ -110,6 +117,14 @@ export async function syncSwap(id: string): Promise<boolean> {
   await boot();
   let s = getSwap(id);
   if (!s || s.gone) return true;
+  // The last check before sending: an entry I deleted before it went out never goes.
+  const [kept] = live([s]);
+  if (kept !== s) {
+    if (kept) saveSwap(kept);
+    else emit(state.swaps.filter((x) => x.id !== id));
+    s = kept;
+    if (!s) return true;
+  }
   try {
     for (const e of s.entries.filter((x) => x.pending)) {
       try {
@@ -162,6 +177,8 @@ export async function removeEntry(id: string, entry: SwapEntry): Promise<boolean
   const s = getSwap(id);
   if (!s || entry.side !== s.side) return false;
   if (entry.pending || s.gone) {
+    // Kept as deleted: a backup or my other phone may still hold it pending (deleted-math.ts).
+    if (entry.pending) markDeleted('swapEntries', [entryId(id, entry.side, entry.cid)]);
     saveSwap({ ...s, entries: s.entries.filter((x) => x.cid !== entry.cid || x.side !== entry.side), updatedAt: Date.now() });
     return true;
   }
@@ -184,6 +201,8 @@ export async function deleteSwapEverywhere(id: string): Promise<boolean> {
       return false;
     }
   }
+  // So a backup or my other phone doesn't bring it back as «Apagado do servidor».
+  markDeleted('swaps', [id]);
   emit(state.swaps.filter((x) => x.id !== id));
   return true;
 }

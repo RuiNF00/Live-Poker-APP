@@ -5,6 +5,7 @@
 import { groupLeaveJobs } from '@/store/swap-groups';
 import { forgetGroupsLocally, getAllGroups } from '@/store/swap-groups-store';
 import { getAllSwaps, forgetSwapsLocally } from '@/store/swaps-store';
+import { markDeleted } from '@/store/deleted';
 import { swapDeleteJobs } from '@/store/swaps';
 
 import { onEraseAll } from './erase-hooks';
@@ -15,10 +16,15 @@ import { outcomeOf, queue, registerSender } from './sync';
 /** Queues the server deletes, then empties the phone's list. */
 export async function eraseSwaps(): Promise<void> {
   // The other player keeps a read-only copy (amounts as they were); my side's name and token go.
-  for (const job of swapDeleteJobs(await getAllSwaps())) queue('swap-leave', job, job.id);
+  const swaps = await getAllSwaps();
+  for (const job of swapDeleteJobs(swaps)) queue('swap-leave', job, job.id);
+  // Kept as deleted, so a backup file restored later doesn't bring them back (deleted.ts).
+  markDeleted('swaps', swaps.map((s) => s.id));
   forgetSwapsLocally();
   // Groups: the creator's goes for everyone; anyone else's seat is emptied (name and token gone).
-  for (const job of groupLeaveJobs(await getAllGroups())) queue('swap-group-leave', job, job.id);
+  const groups = await getAllGroups();
+  for (const job of groupLeaveJobs(groups)) queue('swap-group-leave', job, job.id);
+  markDeleted('swapGroups', groups.map((g) => g.id));
   forgetGroupsLocally();
 }
 

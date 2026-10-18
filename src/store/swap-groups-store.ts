@@ -11,6 +11,8 @@ import { SwapError, newCid } from '@/lib/swap-api';
 import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
 
 import { quarantine } from './boot';
+import { currentDeleted, loadDeleted, markDeleted } from './deleted';
+import { entryId, liveSwaps } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwapGroup } from './swap-validate';
 import { mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
@@ -31,15 +33,18 @@ function emit(next: SwapGroup[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<SwapGroup>(kv, SPEC, { fix: fixSwapGroup }).then(async (d) => {
+  booting ??= Promise.all([loadCollection<SwapGroup>(kv, SPEC, { fix: fixSwapGroup }), loadDeleted()]).then(async ([d]) => {
     // Records that no longer parse are kept aside (backup and support file), not dropped.
     await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swap-groups] write failed', e));
     const ids = new Set(state.groups.map((g) => g.id));
-    emit([...state.groups, ...d.items.filter((g) => !ids.has(g.id))]);
+    emit(live([...state.groups, ...d.items.filter((g) => !ids.has(g.id))]));
   });
   return booting;
 }
+
+/** Without what I deleted or left here or on my other phone (deleted-math.ts). */
+const live = (list: SwapGroup[]) => liveSwaps(list, 'swapGroups', currentDeleted(), (e) => e.seat);
 
 const subscribe = (l: () => void) => {
   listeners.add(l);
@@ -57,8 +62,9 @@ export const getGroup = (id: string) => state.groups.find((g) => g.id === id);
 
 export async function importGroups(incoming: SwapGroup[]): Promise<number> {
   await boot();
-  const r = mergeGroups(state.groups, incoming);
-  if (r.list !== state.groups) emit(r.list);
+  const r = mergeGroups(state.groups, live(incoming));
+  const list = live(r.list);
+  if (list !== state.groups) emit(list);
   return r.added;
 }
 
@@ -99,6 +105,14 @@ export async function syncGroup(id: string): Promise<boolean> {
   await boot();
   let g = getGroup(id);
   if (!g || g.gone) return true;
+  // The last check before sending: an entry I deleted before it went out never goes.
+  const [kept] = live([g]);
+  if (kept !== g) {
+    if (kept) saveGroup(kept);
+    else emit(state.groups.filter((x) => x.id !== id));
+    g = kept;
+    if (!g) return true;
+  }
   try {
     for (const e of g.entries.filter((x) => x.pending)) {
       try {
@@ -148,6 +162,7 @@ export async function removeGroupEntryHere(id: string, entry: GroupEntry): Promi
   const g = getGroup(id);
   if (!g || entry.seat !== g.seat) return false;
   if (entry.pending || g.gone) {
+    if (entry.pending) markDeleted('swapEntries', [entryId(id, entry.seat, entry.cid)]);
     saveGroup({ ...g, entries: g.entries.filter((x) => x.cid !== entry.cid || x.seat !== entry.seat), updatedAt: Date.now() });
     return true;
   }
@@ -182,6 +197,7 @@ export async function leaveGroupEverywhere(id: string): Promise<boolean> {
       return false;
     }
   }
+  markDeleted('swapGroups', [id]);
   emit(state.groups.filter((x) => x.id !== id));
   return true;
 }

@@ -7,7 +7,7 @@ import type { Festival } from '@/poker/festivals';
 
 import { mergeById, type BackupData } from './backup';
 import { emptyDuplicates, rehome, rehomeDeleted, separateBankrolls } from './bankroll-math';
-import { alive, joinDeleted } from './deleted-math';
+import { alive, joinDeleted, liveSwaps } from './deleted-math';
 import { mergePlan, type FestivalPlan } from './festival-plan';
 import { mergeGroups } from './swap-groups';
 import { mergeSwaps } from './swaps';
@@ -32,8 +32,9 @@ export function mergeBackups(local: BackupData, remote: BackupData, now = Date.n
   // (the same ones each phone drops on load, so no delete mark).
   const extra = emptyDuplicates(out.bankrolls ?? [], out.sessions, out.transfers ?? [], local.settings?.bankrollId);
   if (extra.length) out.bankrolls = out.bankrolls?.filter((b) => !extra.includes(b.id));
-  out.swaps = mergeSwaps(local.swaps ?? [], remote.swaps ?? []).list;
-  out.swapGroups = mergeGroups(local.swapGroups ?? [], remote.swapGroups ?? []).list;
+  // A swap deleted on either phone stays deleted, whatever was edited since (deleted-math.ts).
+  out.swaps = liveSwaps(mergeSwaps(local.swaps ?? [], remote.swaps ?? []).list, 'swaps', deleted, (e) => e.side);
+  out.swapGroups = liveSwaps(mergeGroups(local.swapGroups ?? [], remote.swapGroups ?? []).list, 'swapGroups', deleted, (e) => e.seat);
   const plans: Record<string, FestivalPlan> = { ...local.festivalPlans };
   for (const [id, p] of Object.entries(remote.festivalPlans ?? {})) plans[id] = mergePlan(plans[id], p);
   out.festivalPlans = plans;
