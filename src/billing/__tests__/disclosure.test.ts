@@ -35,6 +35,9 @@ test('an offer the store does not give in months has no month count', () => {
 test('percent off only between two real prices', () => {
   assert.equal(pctOff(29.99, 17.99), 40);
   assert.equal(pctOff(undefined, 17.99), null);
+  // Floored, never more than the real discount.
+  assert.equal(pctOff(4400, 2600), 40);
+  assert.equal(pctOff(10, 6), 40);
   assert.equal(pctOff(29.99, null), null);
   // Not a discount: no "−0%" or a negative one.
   assert.equal(pctOff(29.99, 29.99), null);

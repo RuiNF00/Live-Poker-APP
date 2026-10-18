@@ -87,10 +87,11 @@ function LockScreen({ cfg, onUnlock }: { cfg: LockConfig; onUnlock: () => void }
     if (r === 'ok') onUnlock();
     // The phone's own lock was removed: this lock can't be answered any more, so it goes too.
     else if (r === 'gone' && cfg.mode === 'device') {
-      await saveLock(null).catch(() => {});
+      // A lock that couldn't be read stays saved: it may be a PIN, read fine next time.
+      if (!cfg.unknown) await saveLock(null).catch(() => {});
       onUnlock();
     }
-  }, [onUnlock, cfg.mode]);
+  }, [onUnlock, cfg.mode, cfg.unknown]);
 
   useEffect(() => {
     if (cfg.mode === 'device') tryDevice();

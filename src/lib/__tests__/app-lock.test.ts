@@ -25,3 +25,26 @@ test('PIN is exactly 4 digits', () => {
   assert.ok(!validPin('04a7'));
   assert.ok(!validPin('04271'));
 });
+
+test('readLock fails closed: a read error or a damaged value locks with the phone, nothing is deleted', async () => {
+  const { readLock, UNKNOWN_LOCK } = await import('../app-lock-core');
+  let cleared = 0;
+  const io = (over: Partial<import('../app-lock-core').LockIO>) => ({
+    read: async () => JSON.stringify({ mode: 'pin', salt: 's', pinHash: 'h' }),
+    installKeys: async () => [['m', '1']] as [string, string | null][],
+    markInstalled: async () => {},
+    clear: async () => void cleared++,
+    ...over,
+  });
+  // Keychain error, storage error, damaged JSON, wrong shape: locked, asked with the phone's own lock.
+  assert.deepEqual(await readLock(io({ read: async () => { throw new Error('keychain'); } })), UNKNOWN_LOCK);
+  assert.deepEqual(await readLock(io({ installKeys: async () => { throw new Error('storage'); } })), UNKNOWN_LOCK);
+  assert.deepEqual(await readLock(io({ read: async () => '{not json' })), UNKNOWN_LOCK);
+  assert.deepEqual(await readLock(io({ read: async () => JSON.stringify({ mode: 'pin' }) })), UNKNOWN_LOCK);
+  assert.equal(cleared, 0);
+  // The normal cases are unchanged.
+  assert.deepEqual(await readLock(io({})), { mode: 'pin', salt: 's', pinHash: 'h' });
+  assert.equal(await readLock(io({ read: async () => null })), null);
+  // A deleted install's leftover still goes, even if clearing it fails.
+  assert.equal(await readLock(io({ installKeys: async () => [['m', null], ['rl.hands.v2', null]], clear: async () => { throw new Error('x'); } })), null);
+});

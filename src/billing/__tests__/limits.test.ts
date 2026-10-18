@@ -49,6 +49,8 @@ test('prune keeps today and yesterday only', () => {
 test('annual price math', () => {
   assert.equal(perMonth(PLANS.annual.price), 16.67);
   assert.equal(annualSavingPct(PLANS.monthly.price, PLANS.annual.price), 44);
+  assert.equal(annualSavingPct(10, 72), 40); // exactly 40 % stays 40, float noise aside
+  assert.equal(annualSavingPct(10, 70.9), 40); // 40.9 % reads 40
 });
 
 test('welcome offer: once, after the first hand, only with a trial to give', async () => {
@@ -85,7 +87,12 @@ test('per-month price is written like the store price next to it', async () => {
   assert.equal(priceLike('$199.99', 16.67, 'USD', 'en-GB'), '$16.67');
   assert.equal(priceLike('199,99\u00a0US$', 16.67, 'USD', 'pt-PT'), '16,67\u00a0US$');
   assert.equal(priceLike('R$ 1.099,90', 91.66, 'BRL', 'pt-BR'), 'R$ 91,66');
-  assert.equal(priceLike('¥30,000', 2500, 'JPY', 'ja-JP'), '¥2500');
+  // Zero- and three-decimal currencies keep the store's thousands separator and decimals.
+  assert.equal(priceLike('¥29,800', 2483.33, 'JPY', 'ja-JP'), '¥2,483');
+  assert.equal(priceLike('₩299,000', 24916.67, 'KRW', 'ko-KR'), '₩24,917');
+  assert.equal(priceLike('$189.990', 15832.5, 'CLP', 'es-CL'), '$15.833');
+  assert.equal(priceLike('KWD 59.990', 4.99917, 'KWD', 'en'), 'KWD 4.999');
+  assert.equal(priceLike('59,990 KWD', 4.99917, 'KWD', 'ar'), '4,999 KWD');
   assert.match(priceLike('free', 16.67, 'EUR', 'pt-PT'), /16,67\s€/);
 });
 

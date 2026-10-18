@@ -3282,6 +3282,8 @@ const en: Record<string, string> = {
   'Recebem os dois {pct}% no primeiro mês do Pro': 'You both get {pct}% off your first month of Pro',
   '{pct}% no primeiro mês por amigo': '{pct}% off the first month, per friend',
   'Tens {pct}% no primeiro mês do Pro': 'You have {pct}% off your first month of Pro',
+  'Tens um desconto no primeiro mês do Pro': 'You have a discount on your first Pro month',
+  'O desconto ainda não aparece na Google Play. Fica guardado aqui: tenta outra vez mais tarde.': 'The discount isn’t showing on Google Play yet. It stays saved here: try again later.',
   'Do teu convite. Dá para usar até {date}.': 'From your invite. Use it by {date}.',
   'Código da App Store: {code}. Fica copiado para colares se a App Store o pedir.': 'App Store code: {code}. It\'s copied so you can paste it if the App Store asks.',
   'Usar o desconto': 'Use the discount',
