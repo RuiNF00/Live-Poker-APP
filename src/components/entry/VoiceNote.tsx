@@ -50,23 +50,26 @@ export function useVoiceCapture(onDone: (uri: string) => void) {
     was.current = rec.isRecording;
   }, [rec.isRecording, recorder]);
 
+  /** True when the recording began. */
   const start = async () => {
-    if (starting) return;
+    if (starting) return false;
     setStarting(true);
     try {
       const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
         permissionOff('microphone');
-        return;
+        return false;
       }
       tap('medium');
       cancelled.current = false;
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record({ forDuration: MAX_NOTE_S });
+      return true;
     } catch {
       // A phone call or another app holding the microphone.
       notice(t('Não deu para gravar'), t('O microfone está ocupado. Tenta outra vez daqui a pouco.'));
+      return false;
     } finally {
       setStarting(false);
     }
@@ -81,6 +84,34 @@ export function useVoiceCapture(onDone: (uri: string) => void) {
     await recorder.stop();
   };
   return { recording: rec.isRecording, ms: rec.durationMillis, start, stop, cancel };
+}
+
+/**
+ * Records as soon as it mounts and shows the recording bar; `onEnd` when it's over (saved,
+ * cancelled, or the microphone wasn't available). The entry screen mounts it on the tap, so
+ * expo-audio loads then and not at launch.
+ */
+export function VoiceCapture({ onDone, onEnd }: { onDone: (uri: string) => void; onEnd: () => void }) {
+  const voice = useVoiceCapture(onDone);
+  const started = useRef(false);
+  const was = useRef(false);
+  const end = useRef(onEnd);
+  useEffect(() => {
+    end.current = onEnd;
+  });
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    voice.start().then((ok) => {
+      if (!ok) end.current();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (was.current && !voice.recording) end.current();
+    was.current = voice.recording;
+  }, [voice.recording]);
+  return <RecordingBar ms={voice.ms} onStop={voice.stop} onCancel={voice.cancel} />;
 }
 
 /** Takes the place of the dock while recording. */

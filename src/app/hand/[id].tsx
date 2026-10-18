@@ -6,7 +6,7 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 're
 
 import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
-import { VoiceNotePlayer } from '@/components/entry/VoiceNote';
+import { VoiceNotePlayer } from '@/components/audio';
 import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
 import { sameTable } from '@/poker/factory';
@@ -451,7 +451,11 @@ ${link}`;
             onPress={() => router.replace({ pathname: '/hand/new', params: { edit: nextLeft.id } })}
           />
         ) : null}
-        {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} /> : null}
+        {hand.voiceNote ? (
+          <React.Suspense fallback={null}>
+            <VoiceNotePlayer uri={hand.voiceNote} />
+          </React.Suspense>
+        ) : null}
         <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
