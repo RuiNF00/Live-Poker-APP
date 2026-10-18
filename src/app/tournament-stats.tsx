@@ -51,7 +51,7 @@ export default function TournamentStatsScreen() {
 
   if (!list.length) {
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter }}>
         <Stack.Screen options={{ title: t('Torneios') }} />
         <Empty icon="trophy-outline" title={t('Ainda sem torneios terminados')} body={t('Cada torneio que terminares entra aqui: ROI, ITM, buy-ins, festivais e os teus maiores resultados.')} action={<Button title={t('Começar sessão')} icon="play" onPress={() => router.replace('/session')} />} />
       </View>

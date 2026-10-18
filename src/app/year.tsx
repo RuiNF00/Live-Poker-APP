@@ -133,6 +133,7 @@ export default function YearScreen() {
           icon="sparkles-outline"
           title={t('Ainda não há um ano para ver')}
           body={t('Com {n} sessões terminadas no mesmo ano, o teu resumo aparece aqui.', { n: YEAR_MIN_SESSIONS })}
+          action={<Button title={t('Começar sessão')} icon="play" onPress={() => router.replace('/session')} />}
         />
       </View>
     );

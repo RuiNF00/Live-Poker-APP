@@ -249,7 +249,8 @@ export function ScreenHeader({ title, eyebrow, right, style }: { title: React.Re
       <View style={[{ gap: 2 }, wrap ? { flexGrow: 1, flexShrink: 1, flexBasis: '60%' } : { flex: 1 }]}>
         {eyebrow ? <T v="label">{eyebrow}</T> : null}
         {typeof title === 'string' ? (
-          <T v="title" numberOfLines={1}>
+          // A long session name next to "Terminar" ("Main Event €1.100") shrinks before it is cut.
+          <T v="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {title}
           </T>
         ) : (
@@ -571,7 +572,7 @@ export function Stat({
       // Read as one line: "Por hora: 26 €. Lucro ÷ horas à mesa".
       accessibilityLabel={`${label}: ${locked ? t('Pro') : value}${sub ? '. ' + sub : ''}`}>
       <Row gap={4}>
-        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ flexShrink: 1 }}>
           {label}
         </T>
         {locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
@@ -589,7 +590,10 @@ export function Stat({
 }
 
 /** Lays stats out in rows of `cols`, all the same width. */
-export function StatGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: number }) {
+export function StatGrid({ children, cols: want = 3 }: { children: React.ReactNode; cols?: number }) {
+  // With very large system text three tiles a row cut "RESULTADO" to "RESULT…": go to two.
+  const { fontScale } = useWindowDimensions();
+  const cols = fontScale >= 1.6 && want > 2 ? 2 : want;
   const items = React.Children.toArray(children).filter(Boolean);
   const rows: React.ReactNode[][] = [];
   for (let i = 0; i < items.length; i += cols) rows.push(items.slice(i, i + cols));
