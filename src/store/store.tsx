@@ -440,7 +440,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return l.map((s) => {
         const stakes = kept.get(s.id) ?? s.stakes;
         return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
-          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) } : x)), updatedAt: now }
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.cutPct !== undefined ? { cutPct: x.cutPct, cumBefore: x.cumBefore } : {}) } : x)), updatedAt: now }
           : s;
       });
     });

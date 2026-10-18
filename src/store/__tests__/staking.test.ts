@@ -327,9 +327,9 @@ test('deleting a package or its backer keeps the makeup cut on past results', ()
   const s = mk({ buyIn: 1000, cashOut: 5000, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
   const before = withCuts([s], [p])[0];
   assert.equal(profit(before), 3000);
-  // «Apagar pacote»: the piece stays with the backer as a plain sale, with the cut it gave.
+  // «Apagar pacote»: the piece stays with the backer as a plain sale, with the package's rule for it.
   const stakes = keepCuts([s], [p], new Set(['p1'])).get(s.id)!;
-  assert.deepEqual(stakes, [{ backerId: 'b1', share: 50, markup: 1, cut: 1000 }]);
+  assert.deepEqual(stakes, [{ backerId: 'b1', share: 50, markup: 1, cutPct: 50, cumBefore: 0 }]);
   const after = withCuts([{ ...s, stakes }], [])[0];
   assert.equal(after.makeupCut, 1000);
   assert.equal(profit(after), 3000);
@@ -338,8 +338,15 @@ test('deleting a package or its backer keeps the makeup cut on past results', ()
   assert.equal(l.cut, 1000);
   assert.equal(l.owed, 1500);
   // «Apagar backer»: an unnamed piece, same cut (the store drops the name the same way).
-  const anon = withCuts([{ ...s, stakes: [{ share: 50, markup: 1, cut: 1000 }] }], [])[0];
+  const anon = withCuts([{ ...s, stakes: [{ share: 50, markup: 1, cutPct: 50, cumBefore: 0 }] }], [])[0];
   assert.equal(profit(anon), 3000);
+  // An amount kept without the rule stays as it is.
+  assert.equal(profit(withCuts([{ ...s, stakes: [{ share: 50, markup: 1, cut: 1000 }] }], [])[0]), 3000);
+  // Edited after the delete (QA): prize 5000 → 500. The piece's net is −250: no cut, the backer is owed 250.
+  const edited = withCuts([{ ...s, cashOut: 500, stakes }], [])[0];
+  assert.equal(edited.makeupCut, undefined);
+  assert.equal(profit(edited), -250);
+  assert.equal(backerLedger('b1', [edited], [], []).owed, 250);
   // Kept through a restore and in the CSV's makeup_cut column.
   assert.deepEqual(fixSession(JSON.parse(JSON.stringify({ ...s, stakes })))?.stakes, stakes);
   const csv = sessionsCsv([after]).split('\n');
@@ -353,9 +360,12 @@ test('deleting a package or its backer keeps the makeup cut on past results', ()
   const both = withCuts([two], [p, q])[0].makeupCut;
   const left = withCuts([{ ...two, stakes: keepCuts([two], [p, q], new Set(['p1'])).get(two.id)! }], [q])[0];
   assert.equal(left.makeupCut, both);
-  // Running sessions have no cut yet: nothing kept.
+  // A running session keeps the rule: its cut is worked out once it ends.
   const live = mk({ endedAt: undefined, stakes: [{ backerId: 'b1', packageId: 'p1', share: 50, markup: 1 }] });
-  assert.deepEqual(keepCuts([live], [p], new Set(['p1'])).get(live.id), [{ backerId: 'b1', share: 50, markup: 1 }]);
+  const liveKept = keepCuts([live], [p], new Set(['p1'])).get(live.id)!;
+  assert.deepEqual(liveKept, [{ backerId: 'b1', share: 50, markup: 1, cutPct: 50, cumBefore: 0 }]);
+  assert.equal(withCuts([{ ...live, stakes: liveKept }], [])[0].makeupCut, undefined);
+  assert.equal(withCuts([{ ...live, stakes: liveKept, buyIn: 1000, cashOut: 5000, endedAt: live.startedAt + 1 }], [])[0].makeupCut, 1000);
 });
 
 test('deleting a package with makeup to win back, or with cut taken back, changes no result', () => {
@@ -376,10 +386,15 @@ test('deleting a package with makeup to win back, or with cut taken back, change
     const la = backerLedger('b1', after, [], pays);
     assert.deepEqual([la.cut, la.owed, la.balance], [lb.cut, lb.owed, lb.balance]);
     // The backer deleted: unnamed pieces, the player's results the same.
-    const anon = withCuts(gone.map((s) => ({ ...s, stakes: s.stakes!.map((x) => ({ share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}) })) })), []);
+    const anon = withCuts(gone.map((s) => ({ ...s, stakes: s.stakes!.map((x) => ({ share: x.share, markup: x.markup, cutPct: x.cutPct, cumBefore: x.cumBefore })) })), []);
     assert.deepEqual(anon.map(profit), before.map(profit));
   }
   assert.deepEqual(withCuts(cases[1].list, [pkg()]).map((s) => s.makeupCut), [1000, -500]);
+  // Makeup 1000 still open when deleted: an edit is worked out against it (+2000 net → 500 cut), as the package did.
+  const open = mk({ buyIn: 1000, cashOut: 4000, stakes: [stake] });
+  const keptOpen = keepCuts([open], [pkg({ makeupIn: 1000 })], new Set(['p1'])).get(open.id)!;
+  assert.equal(keptOpen[0].cumBefore, -1000);
+  assert.equal(withCuts([{ ...open, cashOut: 3000, stakes: keptOpen }], [])[0].makeupCut, 500);
 });
 
 test('reopening a closed package finds the one its makeup was carried to', () => {
