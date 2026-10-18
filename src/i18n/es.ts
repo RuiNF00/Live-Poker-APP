@@ -652,6 +652,7 @@ const es: Record<string, string> = {
   '1 registo apagado no outro telemóvel saiu também deste.': '1 registro borrado en el otro teléfono también salió de este.',
   '{n} registos apagados no outro telemóvel saíram também deste.': '{n} registros borrados en el otro teléfono también salieron de este.',
   'Novos: {list}. O que já tinhas ficou.': 'Nuevos: {list}. Lo que ya tenías sigue ahí.',
+  'Nada de novo: já tinhas tudo.': 'Nada nuevo: ya lo tenías todo.',
   'Blinds e antes': 'Ciegas y antes',
   'ganha': 'gana',
   'Efetivo': 'Efectivo',

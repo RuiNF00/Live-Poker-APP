@@ -331,6 +331,7 @@ const ptBR: Record<string, string> = {
   '1 registo apagado no outro telemóvel saiu também deste.': '1 registro apagado no outro celular saiu deste também.',
   '{n} registos apagados no outro telemóvel saíram também deste.': '{n} registros apagados no outro celular saíram deste também.',
   'Novos: {list}. O que já tinhas ficou.': 'Novos: {list}. O que você já tinha continua lá.',
+  'Nada de novo: já tinhas tudo.': 'Nada de novo: você já tinha tudo.',
   'HERO A DECIDIR': 'VEZ DO HERO',
   'O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.': 'O link fica pronto quando tiver sinal. Depois é só tocar de novo em Compartilhar.',
   'Link à espera de rede': 'Link esperando sinal',

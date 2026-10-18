@@ -681,6 +681,7 @@ const en: Record<string, string> = {
   '1 registo apagado no outro telemóvel saiu também deste.': '1 item deleted on the other phone is gone from this one too.',
   '{n} registos apagados no outro telemóvel saíram também deste.': '{n} items deleted on the other phone are gone from this one too.',
   'Novos: {list}. O que já tinhas ficou.': 'New: {list}. Everything you had is still there.',
+  'Nada de novo: já tinhas tudo.': 'Nothing new: you already had everything.',
   'Blinds e antes': 'Blinds and antes',
   'ganha': 'wins',
   'Efetivo': 'Effective',
