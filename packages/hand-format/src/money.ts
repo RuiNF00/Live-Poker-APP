@@ -121,3 +121,12 @@ export function moneyIn(
   const gap = /^[A-Za-z]{2,}$/.test(sym) ? ' ' : f.currencySpace;
   return f.currencyAfter ? `${sign}${s}${gap}${sym}` : `${sign}${sym}${gap}${s}`;
 }
+
+/** A balance settled to the cent: "0,00€", so it reads as squared up, not as a missing value. Currencies without cents stay "0¥". */
+export function settledIn(
+  f: LocaleFormat,
+  currency: string,
+  num: (digits?: number) => Intl.NumberFormat = (d) => new Intl.NumberFormat(f.locale, d === undefined ? undefined : { minimumFractionDigits: d, maximumFractionDigits: d }),
+): string {
+  return moneyIn(f, 0, currency, (d) => num(d ?? (decimalsOf(currency) ? 2 : undefined)));
+}
