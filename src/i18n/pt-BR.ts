@@ -1689,6 +1689,10 @@ const ptBR: Record<string, string> = {
   'Voltar a rever': 'Revisar de novo',
   '{n} gelos guardados': '{n} gelos salvos',
   'Apagar nota de voz': 'Excluir nota de voz',
+  'Ver o meu {year}': 'Ver meu {year}',
+  'Criar o meu link para backers': 'Criar meu link para backers',
+  'O meu currículo': 'Meu currículo',
+  'Incluir as minhas notas da mão': 'Incluir minhas notas da mão',
 };
 
 export default ptBR;
