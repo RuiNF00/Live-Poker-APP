@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { CardShareSheet } from '@/components/CardShareSheet';
+import { HandPoster } from '@/components/HandPoster';
 import { useLocked } from '@/components/ProGate';
 import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
@@ -22,6 +23,7 @@ import {
   canShareStory,
   captureFrame,
   dropLocal,
+  capturePost,
   captureStory,
   ensureShareId,
   MAX_FACE_BYTES,
@@ -102,6 +104,7 @@ export default function StoryScreen() {
       .catch(() => {});
   }, []);
   const card = useRef<React.ComponentRef<typeof View>>(null);
+  const poster = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
   const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
@@ -286,7 +289,8 @@ export default function StoryScreen() {
     try {
       const l = await linkFor(to === 'any' ? 'link' : to);
       if (!l) return;
-      await sharePost([await captureAs('preview', 'post')], postText(l.link), to);
+      // The 4:5 poster: a 9:16 story gets cut in the X and WhatsApp feeds.
+      await sharePost([await capturePost(poster)], postText(l.link), to);
       track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
     } catch {
       notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -334,6 +338,10 @@ export default function StoryScreen() {
     <>
       <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
+      {/* The 4:5 poster for X and other apps: drawn off screen, only ever captured. */}
+      <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
+        <HandPoster ref={poster} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} />
+      </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center' }}>
