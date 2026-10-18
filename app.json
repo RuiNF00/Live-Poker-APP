@@ -2,13 +2,15 @@
   "expo": {
     "name": "Sweatbook",
     "slug": "sweatbook",
+    "owner": "ruinf",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "fingerprint"
     },
     "updates": {
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/5e332dae-8677-4190-acbc-7912f606869b"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -331,6 +333,11 @@
       "pt-BR": "./locales/pt-BR.json",
       "en": "./locales/en.json",
       "es": "./locales/es.json"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5e332dae-8677-4190-acbc-7912f606869b"
+      }
     }
   }
 }
