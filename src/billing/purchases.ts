@@ -269,10 +269,11 @@ export async function retentionOffer(plans: StorePlan[]): Promise<(StoreOffer & 
 }
 
 /** The invite discount's first-month price on Google Play, as the store writes it. Null on the App Store (Apple's code sheet shows it) or when the offer isn't there. */
-export function inviteOfferPrice(plans: StorePlan[]): string | null {
+export function inviteOfferPrice(plans: StorePlan[]): { priceString: string; price: number } | null {
   if (!LIVE || Platform.OS !== 'android') return null;
   const opt = plans.find((p) => p.id === 'monthly')?.pkg?.product.subscriptionOptions?.find((o) => o.tags.includes(INVITE.android) || o.id.endsWith(`:${INVITE.android}`));
-  return opt?.pricingPhases[0]?.price.formatted ?? null;
+  const first = opt?.pricingPhases[0]?.price;
+  return first ? { priceString: first.formatted, price: first.amountMicros / 1e6 } : null;
 }
 
 // One store sheet at a time: the sheet takes a moment to appear, and a second tap meanwhile

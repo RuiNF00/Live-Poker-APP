@@ -1589,6 +1589,8 @@ const ptBR: Record<string, string> = {
   'Recebem os dois {pct}% no primeiro mês do Pro': 'Vocês dois recebem {pct}% no primeiro mês do Pro',
   '{pct}% no primeiro mês por amigo': '{pct}% no primeiro mês por amigo',
   'Tens {pct}% no primeiro mês do Pro': 'Você tem {pct}% no primeiro mês do Pro',
+  'Tens um desconto no primeiro mês do Pro': 'Você tem um desconto no primeiro mês do Pro',
+  'O desconto ainda não aparece na Google Play. Fica guardado aqui: tenta outra vez mais tarde.': 'O desconto ainda não aparece no Google Play. Fica salvo aqui: tente de novo mais tarde.',
   'Do teu convite. Dá para usar até {date}.': 'Do seu convite. Dá para usar até {date}.',
   'Código da App Store: {code}. Fica copiado para colares se a App Store o pedir.': 'Código da App Store: {code}. Fica copiado para você colar se a App Store pedir.',
   'Usar o desconto': 'Usar o desconto',

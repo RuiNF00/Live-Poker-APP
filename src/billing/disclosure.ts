@@ -32,5 +32,6 @@ export function offerMonths(unit: string | null | undefined, units: number | nul
 /** Percent off between two store prices, or null when either is missing (never compared with a made-up price). */
 export function pctOff(full: number | null | undefined, paid: number | null | undefined): number | null {
   if (!full || paid === null || paid === undefined || full <= 0 || paid < 0 || paid >= full) return null;
-  return Math.round((1 - paid / full) * 100);
+  // Floored: never more discount than the real one (¥4,400 → ¥2,600 is −40%, not −41%).
+  return Math.floor((1 - paid / full) * 100 + 1e-9);
 }

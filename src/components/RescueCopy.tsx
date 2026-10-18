@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { t } from '@/i18n';
-import { askDeviceResult, loadLock, type LockConfig } from '@/lib/app-lock';
+import { askDeviceResult, loadLock, UNKNOWN_LOCK, type LockConfig } from '@/lib/app-lock';
 import { saveTextFile } from '@/lib/files';
 import { versionLabel } from '@/lib/ota';
 import type { KV } from '@/store/persist';
@@ -24,13 +24,14 @@ export function RescueCopy() {
   useEffect(() => {
     let alive = true;
     loadLock()
-      .catch(() => null)
+      .catch(() => UNKNOWN_LOCK)
       .then((l) => alive && setLock(l));
     return () => {
       alive = false;
     };
   }, []);
-  if (lock === undefined || lock?.mode === 'pin') return null;
+  // Also hidden while the lock can't be read: it might be a PIN.
+  if (lock === undefined || lock?.mode === 'pin' || lock?.unknown) return null;
   const save = async () => {
     if (busy) return;
     setBusy(true);

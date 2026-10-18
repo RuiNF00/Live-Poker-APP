@@ -320,14 +320,38 @@ export function formatPrice(n: number, currency: string, locale: string): string
 export function priceLike(priceString: string, n: number, currency: string, locale: string): string {
   const num = priceString.match(/\d(?:[\d.,\s\u00a0\u202f']*\d)?/)?.[0];
   if (!num) return formatPrice(n, currency, locale);
-  const dec = /[.,](\d{1,2})$/.exec(num);
-  const digits = dec ? dec[1].length : 0;
-  const amount = n.toFixed(digits);
-  return priceString.replace(num, dec && num[num.length - digits - 1] === ',' ? amount.replace('.', ',') : amount);
+  // The currency's own decimals (¥ and ₩ none, KWD three), so the store's separators read the right way round.
+  const fd = fractionDigits(currency);
+  const decAt = fd > 0 && /[.,]/.test(num[num.length - fd - 1] ?? '') && /^\d+$/.test(num.slice(-fd)) ? num.length - fd - 1 : -1;
+  const dec = decAt >= 0 ? num[decAt] : null;
+  const intPart = decAt >= 0 ? num.slice(0, decAt) : num;
+  const group = intPart.match(/[^\d]/)?.[0] ?? localeGroup(locale);
+  const [i, f] = n.toFixed(dec ? fd : 0).split('.');
+  const grouped = i.replace(/\B(?=(\d{3})+(?!\d))/g, group);
+  return priceString.replace(num, dec && f ? grouped + dec + f : grouped);
 }
 
+function fractionDigits(currency: string): number {
+  try {
+    return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+  } catch {
+    return 2;
+  }
+}
+
+function localeGroup(locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale).formatToParts(1234567).find((p) => p.type === 'group')?.value ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Never more discount than the real one: 40.9% reads −40%. (The epsilon keeps an exact 40% from float noise.) */
+const floorPct = (x: number) => Math.floor(x * 100 + 1e-9);
+
 export function annualSavingPct(monthly: number, annual: number): number {
-  return Math.round((1 - annual / (monthly * 12)) * 100);
+  return floorPct(1 - annual / (monthly * 12));
 }
 
 /** Apple and Google require these links next to the subscribe button (disclosure.ts: legalUrl opens the player's language). */

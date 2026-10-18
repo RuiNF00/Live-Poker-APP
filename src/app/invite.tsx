@@ -8,7 +8,8 @@ import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-nat
 
 import { INVITE } from '@/billing/plans';
 import { buyNotice, usePro } from '@/billing/pro';
-import { inviteOfferPrice, redeemInviteOffer } from '@/billing/purchases';
+import { pctOff } from '@/billing/disclosure';
+import { inviteOfferPrice, LIVE, redeemInviteOffer } from '@/billing/purchases';
 import { LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
@@ -23,6 +24,10 @@ export default function InviteScreen() {
   const pro = usePro();
   const monthly = pro.plans.find((p) => p.id === 'monthly');
   const offerPrice = inviteOfferPrice(pro.plans);
+  // On Google Play the discount is the store's own offer: its % comes from the store, and without it
+  // nothing is claimed (the App Store's code sheet shows Apple's own price).
+  const playOffer = Platform.OS === 'android' && LIVE;
+  const offerPct = playOffer ? (offerPrice && monthly ? pctOff(monthly.price, offerPrice.price) : null) : INVITE.pct;
   const [busy, setBusy] = useState(false);
   const [s, setS] = useState<InviteStatus | null | undefined>(undefined);
   const load = () => {
@@ -89,7 +94,7 @@ export default function InviteScreen() {
         {s?.offer && !pro.isPro ? (
           <Card tone="accent" style={{ gap: S.sm }}>
             <T v="h3" color={C.accent}>
-              {t('Tens {pct}% no primeiro mês do Pro', { pct: INVITE.pct })}
+              {offerPct !== null ? t('Tens {pct}% no primeiro mês do Pro', { pct: offerPct }) : t('Tens um desconto no primeiro mês do Pro')}
             </T>
             <T v="small">{t('Do teu convite. Dá para usar até {date}.', { date: shortDate(Date.parse(s.offer.until)) })}</T>
             {s.offer.iosCode ? (
@@ -98,16 +103,24 @@ export default function InviteScreen() {
               </T>
             ) : null}
             {/* A purchase on Google Play: what it costs, what it renews at, and the legal links (App Store 3.1.2, Play). Prices only from the store. */}
-            {monthly ? (
+            {offerPct === null ? (
               <T v="small" color={C.text}>
-                {offerPrice
-                  ? t('{price} no primeiro mês. Depois, {monthly} por mês, até cancelares.', { price: offerPrice, monthly: monthly.priceString })
-                  : t('{pct}% no primeiro mês. Depois, {monthly} por mês, até cancelares.', { pct: INVITE.pct, monthly: monthly.priceString })}
+                {t('O desconto ainda não aparece na Google Play. Fica guardado aqui: tenta outra vez mais tarde.')}
               </T>
-            ) : null}
-            <Button title={t('Usar o desconto')} icon="pricetag" disabled={busy} onPress={takeOffer} />
-            <T v="tiny">{t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })}</T>
-            <LegalLinks />
+            ) : (
+              <>
+                {monthly ? (
+                  <T v="small" color={C.text}>
+                    {offerPrice
+                      ? t('{price} no primeiro mês. Depois, {monthly} por mês, até cancelares.', { price: offerPrice.priceString, monthly: monthly.priceString })
+                      : t('{pct}% no primeiro mês. Depois, {monthly} por mês, até cancelares.', { pct: offerPct, monthly: monthly.priceString })}
+                  </T>
+                ) : null}
+                <Button title={t('Usar o desconto')} icon="pricetag" disabled={busy} onPress={takeOffer} />
+                <T v="tiny">{t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })}</T>
+                <LegalLinks />
+              </>
+            )}
           </Card>
         ) : null}
 
