@@ -1666,7 +1666,7 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
-  'A tua parte, re-entries incluídas': 'Sua parte, reentradas incluídas',
+  'A tua parte, re-entries incluídas': 'Sua parte, re-entries incluídos',
 };
 
 export default ptBR;
