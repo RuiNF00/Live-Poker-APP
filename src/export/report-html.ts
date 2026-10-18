@@ -4,7 +4,7 @@
 
 import { locale, t } from '@/i18n';
 import { duration, rawMoney } from '@/poker/format';
-import { cost, playedMs, profit, type Breakdown } from '@/store/session-math';
+import { cost, playedMs, profit, rateShown, type Breakdown } from '@/store/session-math';
 
 import { countryName, flag } from '@/tax/countries';
 import { EXPENSE_KINDS } from '@/store/trip-math';
@@ -45,7 +45,7 @@ function table(title: string, rows: Breakdown[], cur: string, label = (k: string
         ${rows
           .map(
             (b) =>
-              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${b.hours >= 0.25 ? esc(rawMoney(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
+              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${rateShown(b.hours) ? esc(rawMoney(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
           )
           .join('')}
       </tbody>
@@ -64,7 +64,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const tiles: [string, string, string?][] = [
     [t('Resultado'), signed(tt.profit, cur), cls(tt.profit)],
     [t('Horas'), hours(tt.hours)],
-    [t('Por hora'), tt.hours >= 0.25 ? rawMoney(Math.round(tt.hourly), cur) : '—'],
+    [t('Por hora'), rateShown(tt.hours) ? rawMoney(Math.round(tt.hourly), cur) : '—'],
     [t('Sessões'), String(tt.sessions)],
   ];
   if (c.mtt.sessions) {

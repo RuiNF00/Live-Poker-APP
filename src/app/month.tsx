@@ -27,7 +27,7 @@ import { shareRef } from '@/lib/referrals';
 import { duration, money, shortDate } from '@/poker/format';
 import { stakeKey, stakeLabel } from '@/store/bankroll-math';
 import { compareMonths, defaultMonth, inMonth, monthKey, monthName, monthRecap, recapMonths, recapNotice, MIN_BB_HOURS, RECAP_HOUR, type MonthCompare, type MonthRecap } from '@/store/month-recap';
-import { breakdown, playedMs } from '@/store/session-math';
+import { breakdown, playedMs, rateShown } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { BRAND, C, R, S } from '@/theme';
@@ -173,7 +173,7 @@ export default function MonthScreen() {
             {[
               t('{h} h', { h: r.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
               r.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: r.sessions }),
-              r.hours >= 0.25 ? t('{amount}/h', { amount: signed(Math.round(r.hourly)) }) : '',
+              rateShown(r.hours) ? t('{amount}/h', { amount: signed(Math.round(r.hourly)) }) : '',
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -312,9 +312,9 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
           label={c.avg.months === 1 ? t('Este mês / o mês anterior com sessões') : t('Este mês / média dos {n} meses anteriores', { n: c.avg.months })}
           rows={[
             [t('Resultado'), `${fmt(r.profit)} / ${fmt(c.avg.profit)}`, r.profit - c.avg.profit],
-            [t('Por hora'), `${fmt(Math.round(r.hourly))} / ${fmt(Math.round(c.avg.hourly))}`, r.hourly - c.avg.hourly],
+            rateShown(r.hours) && rateShown(c.avg.hours * c.avg.months) ? [t('Por hora'), `${fmt(Math.round(r.hourly))} / ${fmt(Math.round(c.avg.hourly))}`, r.hourly - c.avg.hourly] : null,
             [t('Horas'), `${Math.round(r.hours)} / ${Math.round(c.avg.hours)}`, 0],
-          ]}
+          ].filter((x): x is [string, string, number] => x !== null)}
         />
       ) : null}
     </Card>
