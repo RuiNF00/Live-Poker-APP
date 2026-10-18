@@ -563,8 +563,9 @@ export default function NewHand() {
 
         {!voice.recording && phase === 'action' && l && (
           <>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2" numberOfLines={2} style={{ flex: 1 }}>
+            {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
+            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <T v="h2" numberOfLines={2} style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
@@ -626,7 +627,8 @@ export default function NewHand() {
                         borderColor: p.allIn ? C.danger : p.last ? C.warn : C.warn + '66',
                         opacity: pressed ? 0.7 : 1,
                       })}>
-                      <T v="body" numberOfLines={1} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
+                      {/* Four to a row: at large text "All-in" shrinks to fit instead of reading "Al…". */}
+                      <T v="body" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.6} color={p.allIn ? C.danger : C.warn} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 15 }}>
                         {p.label}
                       </T>
                       <T v="monoS" numberOfLines={1}>

@@ -47,7 +47,7 @@ export function StreakStat() {
         onPress={() => setOpen(true)}
         hitSlop={6}
         style={({ pressed }) => ({ gap: 2, opacity: pressed ? 0.7 : 1 })}>
-        <T v="label" numberOfLines={1}>
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3}>
           {t('Semanas')}
         </T>
         <Row gap={5}>

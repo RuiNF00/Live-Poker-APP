@@ -4,7 +4,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { RefreshControl, View } from 'react-native';
+import { RefreshControl, useWindowDimensions, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { seatLabel } from '@/components/swaps/group-parts';
@@ -30,6 +30,8 @@ function SwapsScreen() {
   const include = settings.includeSwaps !== false;
   const loose = include ? assignSwaps(sessions, swaps).unassigned.length + assignGroups(sessions, groups).unassigned.length : 0;
   const [refreshing, setRefreshing] = useState(false);
+  // At 160%+ the two buttons stack: side by side on a narrow phone "Grupo" broke mid-word.
+  const pair = useWindowDimensions().fontScale >= 1.6 ? { ...PAIR, flexBasis: '100%' as const } : PAIR;
   useFocusEffect(
     useCallback(() => {
       syncAllSwaps();
@@ -107,8 +109,8 @@ function SwapsScreen() {
             {locked && tot.open ? <AccountsLocked /> : null}
 
             <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
-              <Button lines={2} title={t('Novo swap')} icon="add" style={PAIR} onPress={() => router.push('/swaps/new')} />
-              <Button lines={2} title={t('Grupo')} kind="secondary" icon="people-outline" style={PAIR} onPress={newGroup} />
+              <Button lines={2} title={t('Novo swap')} icon="add" style={pair} onPress={() => router.push('/swaps/new')} />
+              <Button lines={2} title={t('Grupo')} kind="secondary" icon="people-outline" style={pair} onPress={newGroup} />
             </Row>
             {tot.open || activeGroups.length ? (
               <ListGroup>
