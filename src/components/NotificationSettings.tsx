@@ -9,6 +9,7 @@ import { AppState, Linking } from 'react-native';
 import { ListGroup, ListItem, Section, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { commentPushAvailable, turnOffCommentPush, turnOnCommentPush } from '@/lib/comment-push';
+import { useCommentPushReady } from '@/lib/comment-push-ready';
 import { notifications } from '@/lib/lock-screen/reminder';
 import { kindOn, type NotifyKind } from '@/lib/notify-policy';
 import { useStore } from '@/store/store';
@@ -57,6 +58,8 @@ export function NotificationSettings() {
     if (kind === 'comments') void (v ? Promise.all(shared.map(turnOnCommentPush)) : turnOffCommentPush(shared));
   };
   const push = commentPushAvailable();
+  // Android without a push token yet (no Firebase): no row at all, back by itself once there is one.
+  const ready = useCommentPushReady();
 
   return (
     <Section title={t('Notificações')}>
@@ -73,13 +76,15 @@ export function NotificationSettings() {
         </ListGroup>
       ) : null}
       <ListGroup>
-        {rows().map((r) =>
-          r.kind === 'comments' && !push ? (
-            <ListItem key={r.kind} icon={r.icon} iconColor={C.textDim} title={r.title} subtitle={t('Disponível na versão da loja')} chevron={false} />
-          ) : (
-            <ToggleItem key={r.kind} icon={r.icon} title={r.title} subtitle={r.subtitle} value={kindOn(settings, r.kind)} onChange={(v) => set(r.kind, v)} />
-          ),
-        )}
+        {rows()
+          .filter((r) => r.kind !== 'comments' || !push || ready)
+          .map((r) =>
+            r.kind === 'comments' && !push ? (
+              <ListItem key={r.kind} icon={r.icon} iconColor={C.textDim} title={r.title} subtitle={t('Disponível na versão da loja')} chevron={false} />
+            ) : (
+              <ToggleItem key={r.kind} icon={r.icon} title={r.title} subtitle={r.subtitle} value={kindOn(settings, r.kind)} onChange={(v) => set(r.kind, v)} />
+            ),
+          )}
         <ListItem icon="card-outline" title={t('Aviso antes de cobrar')} subtitle={t('Durante o teste grátis avisamos-te antes de cobrar.')} />
       </ListGroup>
       <ListGroup>

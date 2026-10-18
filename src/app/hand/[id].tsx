@@ -27,6 +27,7 @@ import { lastShare, rememberShare } from '@/lib/share-last';
 import { isRateLimited } from '@/lib/net';
 import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
+import { commentPushReady } from '@/lib/comment-push-ready';
 import { markCommentsSeen } from '@/lib/friend-hands';
 import { kindOn } from '@/lib/notify-policy';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -116,7 +117,7 @@ export default function HandScreen() {
   const made = useRef<{ shareId?: string; shareToken?: string }>({});
   // After the first share of a hand, once it went out: "Novo comentário na tua mão" is worth asking for then.
   const offerCommentPush = async () => {
-    if (!commentsOn || !commentPushAvailable() || !made.current.shareToken) return;
+    if (!commentsOn || !commentPushAvailable() || !made.current.shareToken || !(await commentPushReady())) return;
     const ok = await askNotify({
       where: 'comments',
       title: t('Avisamos-te quando alguém comentar'),

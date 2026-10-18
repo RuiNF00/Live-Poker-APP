@@ -12,6 +12,7 @@ import { Platform } from 'react-native';
 import { variant } from '@/i18n';
 import type { Hand } from '@/poker/types';
 
+import { commentPushReady } from './comment-push-ready';
 import { notifications } from './lock-screen/reminder';
 import { API } from './share-api';
 
@@ -109,5 +110,5 @@ export async function openedOwnHand(h: Owned, wanted: boolean): Promise<void> {
   const on = (await registered()).includes(h.shareId);
   if (on) {
     await fetch(`${API}/api/hands/${encodeURIComponent(h.shareId)}/push`, { method: 'PATCH', headers: { 'x-edit-token': h.shareToken } }).catch(() => {});
-  } else if (wanted && commentPushAvailable()) await turnOnCommentPush(h);
+  } else if (wanted && commentPushAvailable() && (await commentPushReady())) await turnOnCommentPush(h);
 }
