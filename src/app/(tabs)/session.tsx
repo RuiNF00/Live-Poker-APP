@@ -30,7 +30,7 @@ import { AfterFestivalSession, Day2Remind } from '@/components/AfterFestivalSess
 import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useStartEvent';
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
-import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, lockAction, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { askForLockScreen, LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, lockAction, nextLevelAt, sessionNoticePreview } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
@@ -336,6 +336,9 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
   );
 }
 
+/** Sessions already asked about the lock screen in this run of the app. */
+const lockScreenAsked = new Set<string>();
+
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
@@ -402,6 +405,12 @@ function Live({ s }: { s: Session }) {
     return ended;
   };
   const [softAsk, askNotify] = useNotifySoftAsk();
+  // Android: the session on the lock screen needs notifications; ask as the session starts (the soft ask holds a «Agora não» for 30 days).
+  useEffect(() => {
+    if (!askForLockScreen(Platform.OS, s, lockScreenAsked)) return;
+    void askNotify({ where: 'session', title: t('Vê a sessão no ecrã bloqueado'), preview: sessionNoticePreview(s, Date.now(), !!settings.hideAmounts || !settings.notifyAmounts) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.id]);
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
   // Memoised: hands can be thousands.

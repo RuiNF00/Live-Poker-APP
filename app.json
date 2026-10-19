@@ -226,6 +226,7 @@
       "expo-router",
       "./plugins/with-async-storage-size",
       "./plugins/with-android-backup",
+      "./plugins/with-android-portrait",
       [
         "expo-splash-screen",
         {

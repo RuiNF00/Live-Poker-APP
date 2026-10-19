@@ -19,8 +19,13 @@ const BREAK_WARNING = 2 * 60_000;
 const CHANNEL = 'level-up';
 /** Opened when the reminder is tapped: the session screen, where the level goes up. */
 export const LEVEL_UP_URL = 'sweatbook://session';
-/** Android channel of the ongoing session notification. */
-export const SESSION_CHANNEL = 'session';
+/**
+ * Android channel of the ongoing session notification. Default importance, so phones that keep
+ * silent notifications off the lock screen still show it, but with no sound and no vibration.
+ * A channel's importance can't change once created, hence the new id; the old LOW 'session' is deleted.
+ */
+export const SESSION_CHANNEL = 'session-live';
+const OLD_SESSION_CHANNEL = 'session';
 
 export type N = typeof import('expo-notifications');
 let mod: N | null | undefined;
@@ -56,8 +61,17 @@ export function setup(n: N) {
           ...(k.private ? { lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE } : null),
         });
       }
-      // The running session: quiet, and on a locked phone only "Sweatbook" with the contents hidden (no stack, no blinds).
-      await n.setNotificationChannelAsync(SESSION_CHANNEL, { name: t('Sessão a decorrer'), importance: n.AndroidImportance.LOW, lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE });
+      // The running session: silent, posted once (alertOnlyOnce), and PRIVATE: when the phone's own setting
+      // hides sensitive content, a locked phone shows only "Sweatbook"; otherwise the stack and blinds show.
+      await n.setNotificationChannelAsync(SESSION_CHANNEL, {
+        name: t('Sessão a decorrer'),
+        importance: n.AndroidImportance.DEFAULT,
+        sound: null,
+        enableVibrate: false,
+        vibrationPattern: null,
+        lockscreenVisibility: n.AndroidNotificationVisibility.PRIVATE,
+      });
+      await n.deleteNotificationChannelAsync(OLD_SESSION_CHANNEL).catch(() => {});
     }
   })().catch(() => {});
   return ready;

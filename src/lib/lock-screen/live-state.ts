@@ -189,6 +189,22 @@ export function lockAction(what: string | undefined, id: string | undefined, s: 
   return null;
 }
 
+/**
+ * Android 13+ shows the running session on the lock screen only once notifications are allowed,
+ * and a cash player is never asked for them otherwise: ask once per running session, Android only.
+ */
+export function askForLockScreen(os: string, s: Pick<Session, 'id' | 'endedAt'>, asked: Set<string>): boolean {
+  if (os !== 'android' || s.endedAt || asked.has(s.id)) return false;
+  asked.add(s.id);
+  return true;
+}
+
+/** The session notification the soft ask previews: the same title and line Android shows. */
+export function sessionNoticePreview(s: Session, now = Date.now(), hideAmounts = false): { title: string; body: string } {
+  const p = liveProps(s, now, hideAmounts);
+  return { title: p.title, body: `${p.status} · ${p.stack} · ${p.blinds}` };
+}
+
 /** Text of the level-up reminder. */
 export function levelUpMessage(s: Session, now = Date.now()): { title: string; body: string } {
   const after = levelAfter(s, 1);

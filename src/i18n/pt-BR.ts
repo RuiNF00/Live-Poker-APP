@@ -365,6 +365,7 @@ const ptBR: Record<string, string> = {
   'A tua mão contra cartas ou um range': 'Sua mão contra cartas ou um range',
   'Só avisos que pediste. Nada de publicidade. Podes desligar nas definições do telemóvel.': 'Só avisos que você pediu. Nada de publicidade. Você pode desativar nas configurações do celular.',
   'Avisamos-te quando o nível sobe': 'Avisamos você quando o nível sobe',
+  'Vê a sessão no ecrã bloqueado': 'Veja a sessão na tela de bloqueio',
   'Avisamos-te antes de cada torneio que escolheres': 'Avisamos você antes de cada torneio que escolher',
   'Guardar em pasta': 'Salvar em pasta',
   'Guardar 1 mão em': 'Salvar 1 mão em',

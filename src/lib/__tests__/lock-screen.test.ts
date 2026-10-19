@@ -4,6 +4,7 @@ import { test } from 'node:test';
 // Its own line, so it merges cleanly with the integration's changes to the import below.
 /* eslint-disable import/no-duplicates */
 import { lockAction } from '../lock-screen/live-state';
+import { askForLockScreen, sessionNoticePreview } from '../lock-screen/live-state';
 
 import type { Session } from '../../store/types';
 import { breakEndMessage, breakLabel, breakOf, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
@@ -184,4 +185,23 @@ test('lock-screen buttons: pause, resume and rebuy only for this session and onl
   assert.equal(lockAction('rebuy', 's', mk({ endedAt: 1 })), null);
   assert.equal(lockAction('rebuy', undefined, running), null);
   assert.equal(lockAction('delete', 's', running), null);
+});
+
+test('Android lock-screen ask: once per running session, never on iOS or for an ended session', () => {
+  const asked = new Set<string>();
+  assert.equal(askForLockScreen('ios', { id: 'a' }, asked), false);
+  assert.equal(askForLockScreen('android', { id: 'a', endedAt: 1 }, asked), false);
+  assert.equal(askForLockScreen('android', { id: 'a' }, asked), true);
+  assert.equal(askForLockScreen('android', { id: 'a' }, asked), false);
+  assert.equal(askForLockScreen('android', { id: 'b' }, asked), true);
+});
+
+test('Android lock-screen ask: the preview is the notification line, with privacy mode', () => {
+  const s = mk({ kind: 'cash', name: 'Casino Lisboa', stack: 500, sb: 1, bb: 2 });
+  const shown = sessionNoticePreview(s, 0);
+  assert.equal(shown.title, 'Casino Lisboa');
+  assert.match(shown.body, /500 · 1\/2$/);
+  const hidden = sessionNoticePreview(s, 0, true);
+  assert.equal(hidden.title, 'Cash game');
+  assert.match(hidden.body, /••• · 1\/2$/);
 });
