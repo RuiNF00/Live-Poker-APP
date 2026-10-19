@@ -1,6 +1,10 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+// Its own line, so it merges cleanly with the integration's changes to the import below.
+/* eslint-disable import/no-duplicates */
+import { lockAction } from '../lock-screen/live-state';
+import { askForLockScreen, sessionNoticePreview } from '../lock-screen/live-state';
 
 import type { Session } from '../../store/types';
 import { breakEndMessage, breakLabel, breakOf, caughtUp, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
@@ -160,4 +164,56 @@ test('a tournament started before its published start keeps level 1 until the fl
   assert.equal(levelsDue(s, 66 * MIN), null);
   // A new session without a start still runs from now.
   assert.equal(withLevelClock(undefined, mk({ levelMinutes: 30 }), 35 * MIN).levelStartedAt, 35 * MIN);
+});
+
+test('lock-screen level bar: the level starts one length before it ends, breaks taken out', () => {
+  const s = mk({ levelMinutes: 30, levelStartedAt: 60 * MIN, breaks: [{ start: 65 * MIN, end: 75 * MIN }] });
+  const p = liveProps(s, 80 * MIN);
+  assert.equal(p.nextLevelAt, 100 * MIN);
+  assert.equal(p.levelFrom, 70 * MIN);
+  // Paused mid-level: the bar freezes at the pause, a third of the way through.
+  const paused = liveProps(mk({ levelMinutes: 30, levelStartedAt: 60 * MIN, breaks: [{ start: 70 * MIN }] }), 70 * MIN);
+  assert.equal((paused.pausedAt - paused.levelFrom) / (paused.nextLevelAt - paused.levelFrom), 1 / 3);
+  // No level clock (cash, or no length): no bar.
+  assert.equal(liveProps(mk({ kind: 'cash' }), 80 * MIN).levelFrom, 0);
+});
+
+test('lock-screen buttons: pause, resume and rebuy only for this session and only when they still apply', () => {
+  const running = mk();
+  const paused = mk({ breaks: [{ start: 10 * MIN }] });
+  const p = liveProps(running, 20 * MIN);
+  assert.equal(p.pauseUrl, 'sweatbook://session?do=pause&id=s');
+  assert.equal(liveProps(paused, 20 * MIN).pauseUrl, 'sweatbook://session?do=resume&id=s');
+  assert.equal(p.labels.rebuy, 'Re-entry');
+  assert.equal(liveProps(mk({ kind: 'cash' }), 20 * MIN).labels.rebuy, 'Rebuy');
+  assert.equal(lockAction('pause', 's', running), 'pause');
+  assert.equal(lockAction('resume', 's', paused), 'resume');
+  assert.equal(lockAction('rebuy', 's', running), 'rebuy');
+  // An out-of-date banner: never the opposite of what it showed.
+  assert.equal(lockAction('pause', 's', paused), null);
+  assert.equal(lockAction('resume', 's', running), null);
+  // Another session, an ended one, no id or an unknown action: nothing.
+  assert.equal(lockAction('rebuy', 'other', running), null);
+  assert.equal(lockAction('rebuy', 's', mk({ endedAt: 1 })), null);
+  assert.equal(lockAction('rebuy', undefined, running), null);
+  assert.equal(lockAction('delete', 's', running), null);
+});
+
+test('Android lock-screen ask: once per running session, never on iOS or for an ended session', () => {
+  const asked = new Set<string>();
+  assert.equal(askForLockScreen('ios', { id: 'a' }, asked), false);
+  assert.equal(askForLockScreen('android', { id: 'a', endedAt: 1 }, asked), false);
+  assert.equal(askForLockScreen('android', { id: 'a' }, asked), true);
+  assert.equal(askForLockScreen('android', { id: 'a' }, asked), false);
+  assert.equal(askForLockScreen('android', { id: 'b' }, asked), true);
+});
+
+test('Android lock-screen ask: the preview is the notification line, with privacy mode', () => {
+  const s = mk({ kind: 'cash', name: 'Casino Lisboa', stack: 500, sb: 1, bb: 2 });
+  const shown = sessionNoticePreview(s, 0);
+  assert.equal(shown.title, 'Casino Lisboa');
+  assert.match(shown.body, /500 · 1\/2$/);
+  const hidden = sessionNoticePreview(s, 0, true);
+  assert.equal(hidden.title, 'Cash game');
+  assert.match(hidden.body, /••• · 1\/2$/);
 });

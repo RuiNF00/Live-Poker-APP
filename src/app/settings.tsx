@@ -21,6 +21,7 @@ import { LANG_KEY, locale, t, VARIANT_NAME, VARIANTS, variant, type Variant } fr
 import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { saveTextFile } from '@/lib/files';
+import { lockScreenAvailable } from '@/lib/lock-screen';
 import { notice } from '@/lib/notice';
 import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
@@ -202,7 +203,10 @@ export default function SettingsScreen() {
         <Section title={t('Privacidade')}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
-            <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
+            {/* Only where the build has a home widget (no App Group on iOS: none). */}
+            {lockScreenAvailable ? (
+              <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
+            ) : null}
             {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>

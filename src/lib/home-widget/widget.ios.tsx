@@ -4,8 +4,8 @@
 // Activity, the layout is serialized by the 'widget' directive, so it only
 // uses its props, @expo/ui and literals; colours are the "Noite" tokens.
 
-import { HStack, Link, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { background, containerBackground, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, widgetURL } from '@expo/ui/swift-ui/modifiers';
+import { HStack, Image, Link, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { accessibilityLabel, background, containerBackground, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, widgetURL } from '@expo/ui/swift-ui/modifiers';
 import { createWidget } from 'expo-widgets';
 
 import type { WidgetProps } from './widget-state';
@@ -68,9 +68,17 @@ const HomeWidget = createWidget<WidgetProps>('SweatbookHome', (p, env) => {
             <Text modifiers={[font({ size: 12, design: 'monospaced' }), foregroundStyle(dim)]}>{p.stackBB + ' · ' + p.blinds}</Text>
           </VStack>
         </HStack>
-        <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 8, bottom: 8 }), background(accent), cornerRadius(12)]}>
-          <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle('#1A0A04')]}>{'+ ' + p.labels.newHand}</Text>
-        </Link>
+        <HStack spacing={8}>
+          <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 8, bottom: 8 }), background(accent), cornerRadius(12)]}>
+            <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
+          </Link>
+          <Link destination={p.pauseUrl} modifiers={[padding({ top: 8, bottom: 8, leading: 12, trailing: 12 }), background('#1A2521'), cornerRadius(12), accessibilityLabel(p.labels.pause)]}>
+            <Image systemName={p.paused ? 'play.fill' : 'pause.fill'} size={15} color={text} />
+          </Link>
+          <Link destination={p.rebuyUrl} modifiers={[padding({ top: 8, bottom: 8, leading: 12, trailing: 12 }), background('#1A2521'), cornerRadius(12), accessibilityLabel(p.labels.rebuy)]}>
+            <Image systemName="arrow.counterclockwise" size={15} color={text} />
+          </Link>
+        </HStack>
       </VStack>
     );
   }

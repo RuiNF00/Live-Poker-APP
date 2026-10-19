@@ -20,7 +20,8 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
   const dim = '#B4BFBA';
   const accent = '#FF6A3D';
   const warn = '#F5B83D';
-  const levelDue = p.nextLevelAt > 0 && p.nextLevelAt <= Date.now();
+  // A break stops the level clock, so a paused level never reads as due.
+  const levelDue = p.nextLevelAt > 0 && !p.paused && p.nextLevelAt <= Date.now();
   const stat = (label: string, value: string, sub: string, color: string) => (
     <Column modifiers={[padding(0, 0, 28, 0)]}>
       <Text color={dim} style={{ fontSize: 11, fontWeight: '600' }}>{label.toUpperCase()}</Text>

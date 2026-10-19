@@ -36,7 +36,7 @@ export const KINDS: readonly KindInfo[] = [
 export const kindInfo = (k: NotifyKind): KindInfo => KINDS.find((x) => x.kind === k)!;
 
 /** The ongoing session notification's channel; not a switch (it is the session itself). */
-export const SESSION_CHANNEL = 'session';
+export const SESSION_CHANNEL = 'session-live';
 
 /** Kinds with a switch in Settings › Notificações. The notice before a charge has none: it protects the player. */
 export const SWITCHABLE: readonly NotifyKind[] = ['levels', 'festival', 'money', 'coach', 'comments', 'recap', 'tips'];
