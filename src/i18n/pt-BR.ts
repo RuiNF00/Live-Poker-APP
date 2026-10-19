@@ -1802,6 +1802,12 @@ const ptBR: Record<string, string> = {
   'A tua subscrição continua a renovar até a cancelares na {store}.': 'Sua assinatura continua renovando até você cancelar na loja ({store}).',
   'Toca para atualizar': 'Toque para atualizar',
   '{what}. Podes anular.': '{what}. Você pode desfazer.',
+  'Antes de publicares': 'Antes de publicar',
+  'Ao aceitar, concordas com os': 'Ao aceitar, você concorda com os',
+  'Termos de utilização': 'Termos de uso',
+  'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Seus comentários, as mãos que você compartilha e seu perfil público podem ser vistos por outras pessoas.',
+  'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Temos tolerância zero para conteúdo ofensivo e abusos. Você pode denunciar ou bloquear quem fizer isso. Nós retiramos esse conteúdo e afastamos quem o publicou.',
+  'Só te perguntamos uma vez.': 'Só perguntamos uma vez.',
 };
 
 export default ptBR;

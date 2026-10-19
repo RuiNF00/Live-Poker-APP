@@ -13,6 +13,7 @@ import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/componen
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { VoiceRecorder } from '@/components/audio';
 import { t } from '@/i18n';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { track } from '@/lib/events';
 import { isRateLimited } from '@/lib/net';
 import { notice } from '@/lib/notice';
@@ -54,6 +55,7 @@ const FACE_FRAME_QUALITY = 0.6;
 const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?'), t('Hero call ou spew?'), t('Cooler ou erro meu?')];
 
 export default function StoryScreen() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   // `to=instagram`: Instagram was already picked in the hand's Partilhar sheet, so the button goes straight there.
   // `ask`: the "O que queres saber?" typed in that sheet; it opens as the story's comment and goes with the link.
   const { id, to, ask: asked } = useLocalSearchParams<{ id: string; to?: string; ask?: string }>();
@@ -154,6 +156,7 @@ export default function StoryScreen() {
   const postVideo = async () => {
     tap('medium');
     const isNew = !hand.shareId;
+    if (isNew && !(await acceptUgcTerms())) return;
     setBusy(true);
     try {
       // The link is made on the server while the frames are captured, not before.
@@ -222,6 +225,7 @@ export default function StoryScreen() {
     tap('medium');
     // A story creates the hand's public link, so it counts as the free plan's daily share.
     const isNew = !hand.shareId;
+    if (isNew && !(await acceptUgcTerms())) return;
     setBusy(true);
     try {
       let shareId: string;
@@ -279,6 +283,7 @@ export default function StoryScreen() {
   // The hand's public link, made once (it counts as the free plan's daily share).
   const linkFor = async (channel: 'x' | 'whatsapp' | 'link'): Promise<{ link: string; shareId: string; ref: string } | null> => {
     const isNew = !hand.shareId;
+    if (isNew && !(await acceptUgcTerms())) return null;
     let shareId: string;
     try {
       shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
@@ -347,6 +352,7 @@ export default function StoryScreen() {
 
   return (
     <>
+      {termsSheet}
       <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       {/* The 4:5 poster for X and other apps: drawn off screen, only ever captured. */}
