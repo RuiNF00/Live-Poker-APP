@@ -35,12 +35,17 @@ export interface LiveProps {
   blinds: string;
   /** 0 when no level length is set. */
   nextLevelAt: number;
+  /** When the current level began, breaks taken out (so it pairs with nextLevelAt for the level bar); 0 with no level clock. */
+  levelFrom: number;
   nextBlinds: string;
   /** "Intervalo às 21:40 · 15 min" from the structure, '' when none is known. */
   breakAt: string;
   /** A tournament's chip-count story ("Partilhar stack"), one tap from the lock screen; '' for cash. */
   shareUrl: string;
-  labels: { time: string; stack: string; next: string; levelUp: string; newHand: string; shareStack: string };
+  /** Pause or resume, and a rebuy (cash) or re-entry (tournament), one tap from the lock screen: see lockAction. */
+  pauseUrl: string;
+  rebuyUrl: string;
+  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -148,18 +153,56 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     level: s.level ? t('Nível {n}', { n: s.level }) : 'Blinds',
     blinds: `${chips(s.sb)}/${chips(s.bb)}`,
     nextLevelAt: next ?? 0,
+    levelFrom: next && s.levelMinutes ? next - s.levelMinutes * 60_000 : 0,
     nextBlinds: `${chips(after.sb)}/${chips(after.bb)}`,
     breakAt: breakLabel(breakOf(s, now), now),
     shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
+    pauseUrl: `sweatbook://session?do=${paused ? 'resume' : 'pause'}&id=${encodeURIComponent(s.id)}`,
+    rebuyUrl: `sweatbook://session?do=rebuy&id=${encodeURIComponent(s.id)}`,
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
+      blinds: 'Blinds',
       next: t('Sobe em'),
       levelUp: t('Subir nível'),
       newHand: t('Nova mão'),
       shareStack: t('Partilhar stack'),
+      pause: paused ? t('Retomar') : t('Pausa'),
+      rebuy: mtt ? 'Re-entry' : 'Rebuy',
     },
   };
+}
+
+export type LockAction = 'pause' | 'resume' | 'rebuy';
+
+/**
+ * The action a lock-screen button asked for, if it still applies: same session (not one the
+ * lock screen showed before), and a pause only when running, a resume only when paused, so a
+ * tap on an out-of-date banner never does the opposite. The session screen runs it only once
+ * the app lock (if any) is open.
+ */
+export function lockAction(what: string | undefined, id: string | undefined, s: Session): LockAction | null {
+  if (!id || id !== s.id || s.endedAt) return null;
+  if (what === 'rebuy') return 'rebuy';
+  if (what === 'pause') return isPaused(s) ? null : 'pause';
+  if (what === 'resume') return isPaused(s) ? 'resume' : null;
+  return null;
+}
+
+/**
+ * Android 13+ shows the running session on the lock screen only once notifications are allowed,
+ * and a cash player is never asked for them otherwise: ask once per running session, Android only.
+ */
+export function askForLockScreen(os: string, s: Pick<Session, 'id' | 'endedAt'>, asked: Set<string>): boolean {
+  if (os !== 'android' || s.endedAt || asked.has(s.id)) return false;
+  asked.add(s.id);
+  return true;
+}
+
+/** The session notification the soft ask previews: the same title and line Android shows. */
+export function sessionNoticePreview(s: Session, now = Date.now(), hideAmounts = false): { title: string; body: string } {
+  const p = liveProps(s, now, hideAmounts);
+  return { title: p.title, body: `${p.status} · ${p.stack} · ${p.blinds}` };
 }
 
 /** Text of the level-up reminder. */

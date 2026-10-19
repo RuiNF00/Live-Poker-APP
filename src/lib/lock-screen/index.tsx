@@ -3,6 +3,7 @@
 // Expo Go too). Mounted once at the root; follows the active session.
 
 import { requireOptionalNativeModule } from 'expo';
+import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
@@ -22,9 +23,14 @@ type Native = typeof import('./activity');
 /**
  * The lock-screen views need the expo-widgets native module (and on iOS a
  * widget extension), which Expo Go doesn't have. Check before loading the
- * module, since importing it without the native side throws.
+ * module, since importing it without the native side throws. On iOS they also
+ * need the App Group, which a build has only with app.json extra.appGroup
+ * (plugins/with-app-group-gate.js): without it the extension can't read the
+ * session, so the app shows no Live Activity and no widget data. The app reads
+ * the same value from its config, which an update carries with its JS.
  */
-export const lockScreenAvailable = Platform.OS !== 'web' && requireOptionalNativeModule('ExpoWidgets') != null;
+export const lockScreenAvailable =
+  Platform.OS !== 'web' && (Platform.OS !== 'ios' || Constants.expoConfig?.extra?.appGroup === true) && requireOptionalNativeModule('ExpoWidgets') != null;
 
 let native: Native | null | undefined;
 function lockScreen(): Native | null {

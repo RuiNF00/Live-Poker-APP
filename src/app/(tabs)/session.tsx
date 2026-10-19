@@ -4,13 +4,14 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
+import { useLockScreenUp } from '@/components/AppLock';
 import { useAfterFirstFrame } from '@/components/Deferred';
 import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
@@ -29,7 +30,7 @@ import { AfterFestivalSession, Day2Remind } from '@/components/AfterFestivalSess
 import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useStartEvent';
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
-import { LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, nextLevelAt } from '@/lib/lock-screen/live-state';
+import { askForLockScreen, LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, lockAction, nextLevelAt, sessionNoticePreview } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
@@ -335,6 +336,9 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
   );
 }
 
+/** Sessions already asked about the lock screen in this run of the app. */
+const lockScreenAsked = new Set<string>();
+
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
@@ -401,6 +405,12 @@ function Live({ s }: { s: Session }) {
     return ended;
   };
   const [softAsk, askNotify] = useNotifySoftAsk();
+  // Android: the session on the lock screen needs notifications; ask as the session starts (the soft ask holds a «Agora não» for 30 days).
+  useEffect(() => {
+    if (!askForLockScreen(Platform.OS, s, lockScreenAsked)) return;
+    void askNotify({ where: 'session', title: t('Vê a sessão no ecrã bloqueado'), preview: sessionNoticePreview(s, Date.now(), !!settings.hideAmounts || !settings.notifyAmounts) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.id]);
   const paused = isPaused(s);
   const mtt = s.kind === 'mtt';
   // Memoised: hands can be thousands.
@@ -457,6 +467,20 @@ function Live({ s }: { s: Session }) {
       stackLog: [...s.stackLog, { t: Date.now(), stack, level: s.level }],
     });
   };
+
+  // Pause, resume or a rebuy tapped on the lock screen (Live Activity, widget): done here with the
+  // usual "Anular". Fails closed: nothing happens while the app lock is up or still being read.
+  const params = useLocalSearchParams<{ do?: string; id?: string }>();
+  const lockUp = useLockScreenUp();
+  const fromLock = lockAction(params.do, params.id, s);
+  useEffect(() => {
+    if (!params.do || lockUp) return;
+    router.setParams({ do: undefined, id: undefined });
+    if (fromLock === 'rebuy') rebuy();
+    else if (fromLock) togglePause();
+    // Only a new link or the lock opening runs it; the session changing under it doesn't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.do, params.id, lockUp]);
 
   const [bar, onBarLayout] = useBarHeight();
   // First live session: a three-step tour of what matters between hands.
