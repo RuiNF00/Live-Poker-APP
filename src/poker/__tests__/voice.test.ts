@@ -3,6 +3,12 @@
 // Spanish and English, must come out as the hand the entry screen would build.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { CASES, check } from './voice-cases';
+import { run as runQa } from './voice-qa/harness';
+import { PT } from './voice-qa/pt';
+import { BR } from './voice-qa/br';
+import { ES } from './voice-qa/es';
+import { EN } from './voice-qa/en';
 
 import { positions, replay } from '../engine';
 import type { GameInfo, Hand } from '../types';
@@ -208,4 +214,15 @@ test('cards already picked stay when the words leave them out', () => {
   const r = handFromSpeech('Estou no botão, o UTG abre para 1000 e eu pago.', b);
   assert.deepEqual(r.hand.players[0].cards, ['9d', '9c']);
   assert.ok(!r.notes.some((n) => n.code === 'noCards' || n.code === 'suits'));
+});
+
+test('the told sentences come out as the hand', () => {
+  for (const c of CASES) assert.equal(check(c), null, `[${c.lang}] ${c.text}`);
+});
+
+test('QA sentences in the four languages', () => {
+  for (const c of [...PT, ...BR, ...ES, ...EN]) {
+    const r = runQa(c);
+    assert.ok(r.ok, `[${c.lang}] ${c.text}\n${r.summary}\n${r.errs.join(' ; ')}`);
+  }
 });

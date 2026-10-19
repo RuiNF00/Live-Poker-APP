@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,7 +10,7 @@ import { CardShareSheet } from '@/components/CardShareSheet';
 import { useLocked } from '@/components/ProGate';
 import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { VoiceRecorder } from '@/components/audio';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { isRateLimited } from '@/lib/net';
@@ -401,7 +401,11 @@ export default function StoryScreen() {
               {face ? <ListItem icon="trash-outline" title={t('Tirar a cara')} destructive chevron={false} onPress={() => setFaceClip(null)} /> : null}
             </ListGroup>
           ) : null}
-          {canShareStory && !withFace ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
+          {canShareStory && !withFace ? (
+            <Suspense fallback={null}>
+              <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} />
+            </Suspense>
+          ) : null}
 
           <View style={{ gap: S.sm }}>
             <Field label={t('O teu comentário')} value={comment} onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))} placeholder={t('Ex.: Bolha a 58, ele só abriu uma vez em 3h. Fold?')} multiline inputStyle={{ minHeight: 72 }} />

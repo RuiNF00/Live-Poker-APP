@@ -3396,6 +3396,7 @@ const en: Record<string, string> = {
   '{pos} mostra': '{pos} shows',
   'Escolhe a carta certa': 'Pick the right card',
   'Pôr na mesa': 'Put it on the table',
+  'Ainda não percebemos a mão. Diz a tua posição, as tuas cartas ou quem abriu.': 'We didn’t get the hand yet. Say your position, your cards or who opened.',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Then fix anything missing with taps, like any other hand.',
   'Contar a mão por voz': 'Tell the hand by voice',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",

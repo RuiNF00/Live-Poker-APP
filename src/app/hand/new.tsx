@@ -28,7 +28,7 @@ import { CardPicker } from '@/components/CardPicker';
 import { TapCountProvider, TapCounted } from '@/components/TapCount';
 import { ContextSheet } from '@/components/entry/ContextSheet';
 import { SeatSheet } from '@/components/entry/SeatSheet';
-import { RecordingBar, useVoiceCapture, VoiceNotePlayer } from '@/components/entry/VoiceNote';
+import { VoiceCapture, VoiceNotePlayer } from '@/components/audio';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
@@ -347,10 +347,11 @@ export default function NewHand() {
     else router.replace(to);
   };
 
-  const voice = useVoiceCapture(async (recording) => {
+  const [capturing, setCapturing] = useState(false);
+  const onRecorded = async (recording: string) => {
     const voiceNote = await keepVoiceNote(recording, hand.id).catch(() => recording);
     save({ voiceNote });
-  });
+  };
 
   // "Contar a mão": the told hand replaces this one (same id, session and voice note). What it
   // already has is kept as entered: no automatic folds on top of it, like a reopened draft.
@@ -428,7 +429,7 @@ export default function NewHand() {
   // Two ways out at any point of the hand: a voice note (saved when it stops) or just save.
   const quickSave = (
     <Row gap={14}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={voice.start} hitSlop={{ top: 13, bottom: 13, left: 7, right: 7 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Gravar nota de voz e guardar')} onPress={() => setCapturing(true)} hitSlop={{ top: 13, bottom: 13, left: 7, right: 7 }}>
         <Row gap={4}>
           <Ionicons name="mic" size={15} color={C.accent} />
           <T v="small" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
@@ -489,7 +490,11 @@ export default function NewHand() {
             BB
           </T>
         </Pressable>
-        {hand.voiceNote ? <VoiceNotePlayer uri={hand.voiceNote} compact /> : null}
+        {hand.voiceNote ? (
+          <Suspense fallback={null}>
+            <VoiceNotePlayer uri={hand.voiceNote} compact />
+          </Suspense>
+        ) : null}
         <View style={{ opacity: canUndo ? 1 : 0.35 }} pointerEvents={canUndo ? 'auto' : 'none'}>
           <IconButton name="arrow-undo" label={t('Desfazer')} onPress={undo} />
         </View>
@@ -523,8 +528,12 @@ export default function NewHand() {
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
       <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
-        {voice.recording && <RecordingBar ms={voice.ms} onStop={voice.stop} onCancel={voice.cancel} />}
-        {!voice.recording && phase === 'hero' && (
+        {capturing && (
+          <Suspense fallback={null}>
+            <VoiceCapture onDone={onRecorded} onEnd={() => setCapturing(false)} />
+          </Suspense>
+        )}
+        {!capturing && phase === 'hero' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
@@ -575,7 +584,7 @@ export default function NewHand() {
             {!hand.actions.length && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('Contar a mão por voz')}
+                accessibilityLabel={!pro.isPro && PRO_ONLY.voiceHand ? `${t('Contar a mão por voz')}, Pro` : t('Contar a mão por voz')}
                 onPress={() => {
                   tap();
                   // Pro: telling the hand. Entering it with taps stays free.
@@ -599,7 +608,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && phase === 'action' && l && (
+        {!capturing && phase === 'action' && l && (
           <>
             {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
             <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
@@ -707,7 +716,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && phase === 'board' && (
+        {!capturing && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
@@ -726,7 +735,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && phase === 'board2' && (
+        {!capturing && phase === 'board2' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
               <T v="h2">
@@ -738,7 +747,7 @@ export default function NewHand() {
           </>
         )}
 
-        {!voice.recording && (phase === 'showdown' || phase === 'done') && (
+        {!capturing && (phase === 'showdown' || phase === 'done') && (
           <>
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
               {phase === 'showdown' && (
