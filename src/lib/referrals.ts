@@ -162,9 +162,6 @@ export interface InviteStatus {
   url: string;
   invited: number;
   activated: number;
-  /** Pro days from invites before the discount (17 Oct). */
-  daysEarned: number;
-  proUntil: string | null;
   discounts: number;
   offer: InviteOffer | null;
 }

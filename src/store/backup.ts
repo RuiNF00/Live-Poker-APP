@@ -459,7 +459,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
   return [head.join(sep), ...rows, ...moves, ...spent].join('\n') + '\n';
 }
 
-/** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */
+/** "Novos: 3 mãos · 1 sessão. …" with the right plurals, and only what came in (never "0 mãos"). */
 export function importSummary(n: {
   hands: number;
   sessions: number;
@@ -475,11 +475,10 @@ export function importSummary(n: {
   /** Deleted on the other phone, so gone from this one too. */
   removed?: number;
 }): string {
-  const parts = [
-    n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
-    n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }),
-    n.players === 1 ? t('1 jogador') : t('{n} jogadores', { n: n.players }),
-  ];
+  const parts: string[] = [];
+  if (n.hands) parts.push(n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }));
+  if (n.sessions) parts.push(n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }));
+  if (n.players) parts.push(n.players === 1 ? t('1 jogador') : t('{n} jogadores', { n: n.players }));
   if (n.backers) parts.push(n.backers === 1 ? t('1 backer') : t('{n} backers', { n: n.backers }));
   // Only when the backup had any: older backups have none to mention.
   if (n.bankrolls) parts.push(n.bankrolls === 1 ? t('1 bankroll') : t('{n} bankrolls', { n: n.bankrolls }));
@@ -492,9 +491,9 @@ export function importSummary(n: {
   if (n.removed) {
     const gone = n.removed === 1 ? t('1 registo apagado no outro telemóvel saiu também deste.') : t('{n} registos apagados no outro telemóvel saíram também deste.', { n: n.removed });
     // Nothing new: only what left, not a line of zeros.
-    const added = n.hands + n.sessions + n.players + (n.backers ?? 0) + (n.bankrolls ?? 0) + (n.transfers ?? 0) + (n.trips ?? 0) + (n.packages ?? 0) + (n.payments ?? 0) + (n.backing ?? 0) + (n.swaps ?? 0);
-    return added ? `${t('Novos: {list}.', { list: parts.join(' · ') })} ${gone}` : gone;
+    return parts.length ? `${t('Novos: {list}.', { list: parts.join(' · ') })} ${gone}` : gone;
   }
+  if (!parts.length) return t('Nada de novo: já tinhas tudo.');
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

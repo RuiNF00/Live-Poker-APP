@@ -73,6 +73,13 @@ test('importSummary also counts staking packages, payments and players you back'
   assert.ok(s.includes('2 pacotes de staking · 1 pagamento a backers · 1 jogador que apoias'), s);
 });
 
+test('importSummary lists only what came in, never a zero count', () => {
+  assert.equal(importSummary({ hands: 0, sessions: 0, players: 0, swaps: 1 }), 'Novos: 1 swap. O que já tinhas ficou.');
+  assert.doesNotMatch(importSummary({ hands: 2, sessions: 0, players: 0 }), /\b0 /);
+  assert.equal(importSummary({ hands: 0, sessions: 0, players: 0 }), 'Nada de novo: já tinhas tudo.');
+  assert.equal(importSummary({ hands: 0, sessions: 0, players: 0, removed: 2 }), '2 registos apagados no outro telemóvel saíram também deste.');
+});
+
 test('importSummary mentions bankrolls and transfers only when some came in', () => {
   assert.ok(!importSummary({ hands: 1, sessions: 2, players: 0 }).includes('bankroll'));
   const s = importSummary({ hands: 0, sessions: 0, players: 0, bankrolls: 2, transfers: 3 });

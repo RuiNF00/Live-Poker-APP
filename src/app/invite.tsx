@@ -167,11 +167,6 @@ export default function InviteScreen() {
               <Stat label={t('A usar')} value={String(s.activated)} />
               <Stat label={t('Descontos')} value={String(s.discounts)} tone={s.discounts ? 'accent' : undefined} />
             </StatGrid>
-            {s.proUntil ? (
-              <T v="small" style={{ textAlign: 'center' }}>
-                {t('Pro de convites até {date}', { date: shortDate(new Date(s.proUntil).getTime()) })}
-              </T>
-            ) : null}
           </>
         )}
         <T v="tiny" style={{ textAlign: 'center' }}>

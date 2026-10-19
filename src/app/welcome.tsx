@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FIRST_CURRENCIES, GOALS, isMtt, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type Goal } from '@/billing/onboarding';
@@ -38,6 +38,18 @@ export default function Welcome() {
   const [skipped, setSkipped] = useState(false);
   // One event per screen reached, so the funnel shows where people stop.
   useEffect(() => track('onboarding_step', { step: at, index: step }), [at, step]);
+  // A tap moves to the next step at once: VoiceOver and TalkBack go to its question, not to a button that is gone.
+  const head = useRef<React.ComponentRef<typeof View>>(null);
+  useEffect(() => {
+    if (step === 0) return;
+    const id = setTimeout(() => {
+      // No native node on the web (findNodeHandle throws there).
+      if (Platform.OS === 'web') return;
+      const node = head.current && findNodeHandle(head.current);
+      if (node) AccessibilityInfo.setAccessibilityFocus(node);
+    }, 150);
+    return () => clearTimeout(id);
+  }, [step]);
   // Closed any other way (Android's back button): the answers so far are saved too, so the
   // install counts as used (app-lock-core lockIsThisInstalls) and nothing typed is lost.
   const answers = useRef(a);
@@ -84,7 +96,7 @@ export default function Welcome() {
           <Pressable onPress={() => setStep((s) => s - 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Voltar')}>
             <Ionicons name="chevron-back" size={24} color={C.text} />
           </Pressable>
-          <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+          <View accessible accessibilityLabel={t('Passo {n} de {total}', { n: step, total: STEPS.length - 1 })} style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
             {STEPS.slice(1).map((s, i) => (
               <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i < step ? C.accent : C.surface3 }} />
             ))}
@@ -93,6 +105,7 @@ export default function Welcome() {
             <Pressable
               onPress={() => close('saltar')}
               hitSlop={10}
+              style={{ minHeight: 44, justifyContent: 'center' }}
               accessibilityRole="button">
               <T v="small" color={C.textDim}>
                 {t('Saltar')}
@@ -121,7 +134,7 @@ export default function Welcome() {
         ) : null}
 
         {at === 'goals' ? (
-          <Question title={t('O que queres da Sweatbook?')} hint={t('Escolhe uma ou mais.')}>
+          <Question head={head} title={t('O que queres da Sweatbook?')} hint={t('Escolhe uma ou mais.')}>
             {GOALS.map((g) => (
               <Option key={g.key} icon={g.icon as IconName} label={t(g.label)} active={a.goals.includes(g.key)} multi onPress={() => toggle(g.key)} />
             ))}
@@ -129,7 +142,7 @@ export default function Welcome() {
         ) : null}
 
         {at === 'plays' ? (
-          <Question title={t('O que jogas mais?')}>
+          <Question head={head} title={t('O que jogas mais?')}>
             {(['Cash', 'Torneios'] as const).map((g) => (
               <View key={g} style={{ gap: S.sm }}>
                 <T v="label" style={{ paddingTop: g === 'Cash' ? 0 : S.sm }}>
@@ -153,7 +166,7 @@ export default function Welcome() {
         ) : null}
 
         {at === 'volume' ? (
-          <Question title={t('Quantas sessões jogas?')}>
+          <Question head={head} title={t('Quantas sessões jogas?')}>
             {VOLUMES.map((v) => (
               <Option
                 key={v.key}
@@ -169,7 +182,7 @@ export default function Welcome() {
         ) : null}
 
         {at === 'currency' ? (
-          <Question title={t('Em que moeda jogas?')}>
+          <Question head={head} title={t('Em que moeda jogas?')}>
             {FIRST_CURRENCIES.map((c) => (
               <Option
                 key={c.code}
@@ -189,10 +202,12 @@ export default function Welcome() {
         {at === 'plan' ? (
           <View style={{ gap: S.xl }}>
             <View style={{ gap: S.sm }}>
-              <T v="label" color={C.accent}>
-                {t('O teu plano está pronto')}
-              </T>
-              <T v="title">{t(plan.title)}</T>
+              <View ref={head} accessible accessibilityRole="header" style={{ gap: S.sm }}>
+                <T v="label" color={C.accent}>
+                  {t('O teu plano está pronto')}
+                </T>
+                <T v="title">{t(plan.title)}</T>
+              </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.xs }}>
                 {[
                   play ? t(play.label) : null,
@@ -260,10 +275,10 @@ export default function Welcome() {
   );
 }
 
-function Question({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Question({ head, title, hint, children }: { head: React.RefObject<React.ComponentRef<typeof View> | null>; title: string; hint?: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: S.lg }}>
-      <View style={{ gap: S.xs }}>
+      <View ref={head} accessible accessibilityRole="header" style={{ gap: S.xs }}>
         <T v="title">{title}</T>
         {hint ? <T v="callout">{hint}</T> : null}
       </View>

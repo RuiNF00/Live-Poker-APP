@@ -12,7 +12,7 @@ import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { t } from '@/i18n';
 import { copyWaiting, download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, onCopyWaiting, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
 import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
-import { syncCloudExpiry } from '@/lib/cloud-expiry';
+import { cancelCloudExpiry, syncCloudExpiry } from '@/lib/cloud-expiry';
 import { offerStep, restoreOffer } from '@/lib/restore-offer';
 import { useOnline } from '@/lib/sync';
 import { shortDate } from '@/poker/format';
@@ -32,6 +32,7 @@ const ERR: Record<string, string> = {
   network: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   offline: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   rate_limited: 'Demasiados pedidos. Tenta daqui a pouco.',
+  server: 'O servidor não respondeu. Tenta outra vez daqui a pouco.',
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
@@ -342,8 +343,14 @@ export function AutoCloudBackup() {
   // Off the launch path, and only for players with a copy (it loads the notifications module).
   // Under «Lembretes»: switched off in Settings, the notice already planned goes too (and comes back when on).
   const tipsOn = store.settings.notify?.tips !== false;
+  const tipsWas = useRef(tipsOn);
   useEffect(() => {
-    const id = setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), 8000);
+    // The 8 s are for launch only. A switch flipped in Settings acts now: off cancels straight away
+    // (the app may close before any timer), on schedules on the next tick, once NotifyPolicySync has the new settings.
+    const flipped = tipsWas.current !== tipsOn;
+    tipsWas.current = tipsOn;
+    if (flipped && !tipsOn) void cancelCloudExpiry();
+    const id = flipped && !tipsOn ? undefined : setTimeout(() => loadCloud().then((c) => c && syncCloudExpiry(c)), flipped ? 0 : 8000);
     const off = onCloudChange((c) => void syncCloudExpiry(c));
     return () => {
       clearTimeout(id);
@@ -377,12 +384,15 @@ export function AutoCloudBackup() {
           asking.current = false;
           // The history comes back: no welcome flow, done as if «Saltar» (and no paywall either way).
           restoreOffer.set('accepted');
-          AsyncStorage.setItem(ONBOARDING_KEY, '{}').catch(() => {});
-          restoreFrom(c, latest.current.importData).catch((e) => {
-            // Offered again next launch: the code is only in the keychain, the player may not have it written down.
-            AsyncStorage.removeItem(OFFER_KEY).catch(() => {});
-            note(t('Não deu para recuperar'), errText(e));
-          });
+          restoreFrom(c, latest.current.importData)
+            .then(() => AsyncStorage.setItem(ONBOARDING_KEY, '{}').catch(() => {}))
+            .catch((e) => {
+              // Offered again next launch: the code is only in the keychain, the player may not have it written down.
+              // Nothing came back, so the empty app gets its welcome after all.
+              restoreOffer.failed();
+              AsyncStorage.removeItem(OFFER_KEY).catch(() => {});
+              note(t('Não deu para recuperar'), errText(e));
+            });
         },
         t('Agora não'),
         () => {

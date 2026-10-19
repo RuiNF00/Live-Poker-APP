@@ -130,7 +130,8 @@
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
             "NSPrivacyAccessedAPITypeReasons": [
-              "CA92.1"
+              "CA92.1",
+              "1C8F.1"
             ]
           },
           {
@@ -288,6 +289,7 @@
           "color": "#FF6A3D"
         }
       ],
+      "./plugins/with-widget-privacy",
       [
         "expo-widgets",
         {

@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { legalUrl } from '@/billing/disclosure';
 import { INVITE } from '@/billing/plans';
 import { LOCAL_PRO, restoreNotice, usePro } from '@/billing/pro';
-import { getSubscription, manageSubscription, redeemCode } from '@/billing/purchases';
+import { getSubscription, hasLifetime, manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
 import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
@@ -21,6 +21,7 @@ import { LANG_KEY, locale, t, VARIANT_NAME, VARIANTS, variant, type Variant } fr
 import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { saveTextFile } from '@/lib/files';
+import { notice } from '@/lib/notice';
 import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
@@ -88,11 +89,14 @@ export default function SettingsScreen() {
   const { settings, setSettings, hands, sessions, players } = store;
   const pro = usePro();
   // Renewal date, or the end of the paid period once cancelled, so nobody wonders whether the cancel worked. Lifetime has no date.
-  const [period, setPeriod] = useState<{ date: string; renews: boolean } | null>(null);
+  const [period, setPeriod] = useState<{ date: string; renews: boolean; trial?: boolean } | null>(null);
+  // Paid once: «Gerir subscrição» says so instead of asking why they want to cancel.
+  const [forGood, setForGood] = useState(false);
   useEffect(() => {
     void (pro.isPro ? getSubscription() : Promise.resolve(null)).then((s) =>
-      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew } : null),
+      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew, trial: s.trial } : null),
     );
+    void (pro.isPro ? hasLifetime() : Promise.resolve(false)).then(setForGood);
   }, [pro.isPro]);
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
@@ -243,9 +247,20 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && period?.renews ? t(period.trial ? 'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.' : 'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.', { date: period.date }) : forGood ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               // A failed renewal goes straight to the store's page, where the card is changed.
-              onPress={() => (pro.billingIssue ? manageSubscription() : pro.isPro ? router.push('/cancel') : manageSubscription())}
+              onPress={() =>
+                // Paid once while a subscription still renews: straight to the store to cancel it.
+                forGood && period?.renews
+                  ? manageSubscription()
+                  : forGood
+                    ? notice(t('Pro para sempre'), t('Pagaste uma vez: não há subscrição para cancelar nem renovações.'))
+                    : pro.billingIssue
+                      ? manageSubscription()
+                      : pro.isPro
+                        ? router.push('/cancel')
+                        : manageSubscription()
+              }
             />
             <ListItem
               icon="refresh-outline"

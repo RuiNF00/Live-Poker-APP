@@ -49,3 +49,14 @@ test('the answer stands for the rest of the launch', () => {
   assert.deepEqual(seen, ['due', 'accepted']);
   assert.equal(restoreOffer.get(), 'accepted');
 });
+
+test('a restore that fails after «Recuperar» opens the welcome after all', () => {
+  // Same module state as above: accepted.
+  assert.equal(restoreOffer.get(), 'accepted');
+  restoreOffer.failed();
+  assert.equal(restoreOffer.get(), 'declined');
+  assert.equal(welcomeStep(restoreOffer.get(), false), 'open');
+  // Only an accepted offer can fail.
+  restoreOffer.failed();
+  assert.equal(restoreOffer.get(), 'declined');
+});

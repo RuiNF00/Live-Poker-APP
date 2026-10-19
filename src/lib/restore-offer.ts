@@ -22,6 +22,12 @@ export const restoreOffer = {
     offer = next;
     subs.forEach((f) => f());
   },
+  /** «Recuperar» was tapped but the copy didn't come down: the welcome opens after all (offered again next launch). */
+  failed() {
+    if (offer !== 'accepted') return;
+    offer = 'declined';
+    subs.forEach((f) => f());
+  },
   subscribe(f: () => void) {
     subs.add(f);
     return () => {

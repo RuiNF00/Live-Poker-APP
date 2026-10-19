@@ -175,15 +175,32 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 }
 
 /** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
-export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null; trial?: boolean } | null> {
   if (!LIVE) return null;
   try {
-    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    const info = await (await rc()).getCustomerInfo();
+    const e = info.entitlements.active[ENTITLEMENT];
     if (!e || e.store === 'PROMOTIONAL') return null;
-    const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
-    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null } : null;
+    const planOf = (product: string) => (Object.keys(PRODUCTS) as PlanId[]).find((id) => product.startsWith(PRODUCTS[id]));
+    const plan = planOf(e.productIdentifier);
+    if (plan) return { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null };
+    // «Pagar uma vez» bought while a subscription still runs: the entitlement shows the lifetime
+    // (it lasts longest), but the subscription keeps renewing until it is cancelled in the store.
+    const sub = Object.values(info.subscriptionsByProductIdentifier ?? {}).find((x) => x.isActive && planOf(x.productIdentifier));
+    return sub ? { plan: planOf(sub.productIdentifier)!, willRenew: sub.willRenew, product: sub.productIdentifier, ends: sub.expiresDate ? Date.parse(sub.expiresDate) : null, trial: sub.periodType === 'TRIAL' } : null;
   } catch {
     return null;
+  }
+}
+
+/** Pro paid once («Pagar uma vez»): nothing renews, so there is no subscription to manage. */
+export async function hasLifetime(): Promise<boolean> {
+  if (!LIVE) return false;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    return !!e && (e.productIdentifier === LIFETIME.product || !e.expirationDateMillis);
+  } catch {
+    return false;
   }
 }
 
