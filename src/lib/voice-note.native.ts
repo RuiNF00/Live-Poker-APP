@@ -8,7 +8,12 @@ export async function keepVoiceNote(recording: string, handId: string): Promise<
   const dir = new Directory(Paths.document, 'voice');
   dir.create({ idempotent: true, intermediates: true });
   const out = new File(dir, `${handId}.m4a`);
-  await new File(recording).copy(out, { overwrite: true });
+  const raw = new File(recording);
+  await raw.copy(out, { overwrite: true });
+  // The recorder's own file would otherwise stay in the cache, outside what deleting the hand removes.
+  try {
+    raw.delete();
+  } catch {}
   return out.uri;
 }
 
