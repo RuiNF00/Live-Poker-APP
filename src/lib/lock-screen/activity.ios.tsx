@@ -13,6 +13,12 @@ import type { LiveProps } from './live-state';
 
 const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, env) => {
   'widget';
+  // Ended by a push from another phone (push-to-end): the push carries no props at all, so nothing
+  // of the session travels through Apple. It is dismissed at once; this only keeps the render safe.
+  if (!p || !p.labels) {
+    const mark = <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle('#FF6A3D')]}>♠︎</Text>;
+    return { banner: <HStack modifiers={[padding({ all: 16 }), activityBackgroundTint('#0C1311')]}>{mark}</HStack>, compactLeading: mark, compactTrailing: mark, minimal: mark };
+  }
   const text = '#F1F4F2';
   const dim = '#B4BFBA';
   const accent = '#FF6A3D';
@@ -186,23 +192,43 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
 
 let current: LiveActivity<LiveProps> | null = null;
 
+/** Push-to-end: called with this activity's APNs token whenever it is issued or changes. */
+let onToken: ((token: string) => void) | null = null;
+let tokenSub: { remove(): void } | null = null;
+export function onLiveToken(cb: ((token: string) => void) | null) {
+  onToken = cb;
+}
+function watchToken(a: LiveActivity<LiveProps>) {
+  tokenSub?.remove();
+  tokenSub = a.addPushTokenListener((e) => onToken?.(e.pushToken));
+  a.getPushToken().then((tk) => tk && onToken?.(tk), () => {});
+}
+
 /** Show or refresh the session on the lock screen. */
 export async function showSession(props: LiveProps): Promise<void> {
   // After a relaunch the activity is still up: pick it back up instead of starting a second one.
-  current ??= SessionActivity.getInstances()[0] ?? null;
+  if (!current) {
+    current = SessionActivity.getInstances()[0] ?? null;
+    if (current) watchToken(current);
+  }
   // Only ever one on the lock screen: any other left over (a start that raced a relaunch) goes.
   const extra = SessionActivity.getInstances().filter((a) => a.getId() !== current?.getId());
   await Promise.all(extra.map((a) => a.end('immediate').catch(() => {})));
   // Stale once the level should have gone up; a break stops that clock, so no stale date while paused.
   const stale = props.nextLevelAt && !props.paused ? new Date(props.nextLevelAt) : undefined;
   if (current) await current.update(props, stale);
-  else current = SessionActivity.start(props, 'sweatbook://session', stale);
+  else {
+    current = SessionActivity.start(props, 'sweatbook://session', stale);
+    watchToken(current);
+  }
 }
 
 /** Take it off the lock screen (session ended or deleted). */
 export async function endSession(): Promise<void> {
   const all = current ? [current, ...SessionActivity.getInstances().filter((a) => a.getId() !== current!.getId())] : SessionActivity.getInstances();
   current = null;
+  tokenSub?.remove();
+  tokenSub = null;
   await Promise.all(all.map((a) => a.end('immediate')));
 }
 

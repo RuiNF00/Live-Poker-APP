@@ -11,3 +11,5 @@ export async function endSession(): Promise<void> {}
 export function onLockButton(_cb: (target: string) => void): () => void {
   return () => {};
 }
+
+export function onLiveToken(_cb: ((token: string) => void) | null): void {}

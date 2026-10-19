@@ -9,6 +9,8 @@ import { AppState, Platform } from 'react-native';
 
 import { cancelFestivalReminders, syncFestivalReminders } from '@/lib/festival-reminders';
 import { loadLock } from '@/lib/app-lock';
+import { endLiveEverywhere, registerLiveToken } from '@/lib/live-end';
+import { endedSince } from '@/lib/live-end-slot';
 import { kindOn } from '@/lib/notify-policy';
 import { useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, useFestivals } from '@/store/my-festivals';
@@ -62,7 +64,7 @@ async function end() {
 }
 
 export function SessionLockScreen() {
-  const { activeSession, settings, saveSession } = useStore();
+  const { activeSession, sessions, settings, saveSession } = useStore();
   // Money stays off the lock screen unless the player turned on "Mostrar valores nas notificações" (notificacoes.md rule 5).
   const hide = !!settings.hideAmounts || !settings.notifyAmounts;
   const levelsOn = kindOn(settings, 'levels');
@@ -78,6 +80,26 @@ export function SessionLockScreen() {
     const sub = AppState.addEventListener('change', read);
     return () => sub.remove();
   }, []);
+
+  // Push-to-end (first update). This phone's Live Activity token goes to the server under an opaque
+  // slot; a session that stops running here (ended, deleted, or ended on another phone and merged in)
+  // asks the server to end its Live Activity on the other phones with the same recovery code.
+  const runningId = useRef<string | null>(null);
+  useEffect(() => {
+    runningId.current = activeSession?.id ?? null;
+  });
+  useEffect(() => {
+    if (!lockScreenAvailable) return;
+    lockScreen()?.onLiveToken((token) => {
+      if (runningId.current) void registerLiveToken(runningId.current, token);
+    });
+    return () => lockScreen()?.onLiveToken(null);
+  }, []);
+  const seen = useRef(sessions);
+  useEffect(() => {
+    for (const id of endedSince(seen.current, sessions)) void endLiveEverywhere(id);
+    seen.current = sessions;
+  }, [sessions]);
 
   // A button pressed on the lock screen with the app in the background. The lock is read again here,
   // not taken from the banner: one turned on since the banner was drawn wins.

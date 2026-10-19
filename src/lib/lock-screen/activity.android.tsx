@@ -99,3 +99,6 @@ export function onLockButton(cb: (target: string) => void): () => void {
   });
   return () => sub.remove();
 }
+
+/** No push-to-end on Android yet (it would need FCM): the app clears the notification at its next launch. */
+export function onLiveToken(_cb: ((token: string) => void) | null): void {}
