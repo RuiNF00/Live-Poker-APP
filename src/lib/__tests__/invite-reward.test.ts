@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CLAIM_KEY, createInviteReward, inviteStatusFrom } from '../invite-reward';
+import { canAnnounce, CLAIM_KEY, createInviteReward, inviteNewsBox, inviteStatusFrom, NEWS_KEY } from '../invite-reward';
 
 function mem() {
   const m = new Map<string, string>();
@@ -97,4 +97,25 @@ test('an invite status without a link is no status: the screen offers to try aga
     discounts: 0,
     offer: { until: '2026-11-01T00:00:00Z', iosCode: null },
   });
+});
+
+test('invite news never opens during a live session or over the app lock', () => {
+  assert.equal(canAnnounce({ atTable: false, lockUp: false }), true);
+  assert.equal(canAnnounce({ atTable: true, lockUp: false }), false);
+  assert.equal(canAnnounce({ atTable: false, lockUp: true }), false);
+});
+
+test('invite news kept from the table is said once afterwards, and not once the discount ran out', async () => {
+  const kv = mem();
+  const box = inviteNewsBox(kv);
+  const now = Date.parse('2026-11-20T12:00:00Z');
+  const offer = { until: '2026-12-20T00:00:00Z', iosCode: null };
+  assert.equal(await box.take(now), null);
+  await box.hold({ offer, side: 'friend' });
+  assert.ok(kv.m.get(NEWS_KEY));
+  assert.deepEqual(await box.take(now), { offer, side: 'friend' });
+  assert.equal(await box.take(now), null, 'said once');
+  await box.hold({ offer, side: 'inviter' });
+  assert.equal(await box.take(Date.parse('2026-12-21T00:00:00Z')), null, 'expired: dropped');
+  assert.equal(await box.take(now), null);
 });

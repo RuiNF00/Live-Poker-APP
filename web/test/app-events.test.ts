@@ -39,18 +39,18 @@ describe('funnel events', () => {
 });
 
 describe('PostHog copy', () => {
-  it('leaves out the typed note, content ids and the stakes played', async () => {
+  it('leaves out the typed note, content, offer and swap ids and the stakes played', async () => {
     const fetch = vi.fn(async () => new Response(null, { status: 200 }));
     vi.stubGlobal('fetch', fetch);
     await posthog('phc_test').capture({
       event: 'paywall_shown',
       installId: '00000000-0000-4000-8000-000000000000',
       platform: 'ios',
-      props: { reason: 'hands', volume: 'few', plays: 'cash3', note: 'x', share_id: 'y' },
+      props: { reason: 'hands', volume: 'few', plays: 'cash3', note: 'x', share_id: 'y', offerId: 'o', swapId: 's', swap_id: 's' },
     });
     vi.unstubAllGlobals();
     const sent = JSON.parse((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(sent.properties).toMatchObject({ reason: 'hands', volume: 'few', $geoip_disable: true, $process_person_profile: false });
-    for (const k of ['plays', 'note', 'share_id']) expect(sent.properties).not.toHaveProperty(k);
+    for (const k of ['plays', 'note', 'share_id', 'offerId', 'swapId', 'swap_id']) expect(sent.properties).not.toHaveProperty(k);
   });
 });
