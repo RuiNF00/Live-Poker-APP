@@ -317,7 +317,7 @@ function moveOf(r: string[], get: (r: string[], f: Field) => string, at: number,
 
 const TRANSFER_IN = /deposit|dep[oó]sito|cash ?in\b|top ?up|carregamento|einzahl|d[eé]p[oô]t/i;
 
-const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn', 'expenses', 'tips'];
+const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn', 'expenses', 'tips', 'taxWithheld'];
 
 /**
  * Amounts read with the file's own decimal mark: "12,50" anywhere (or semicolons and no "12.50")
