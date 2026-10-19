@@ -14,7 +14,7 @@
 New: log a live hand in 11 taps between levels, replay it street by street and ask your friends with one link. Free: 3 new hands a day and unlimited sharing.
 
 **Keywords** (100 bytes, comma-separated, no spaces):
-history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,icm,odds,chip,tax,notes
+history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,icm,equity,chip,tax,notes
 
 **Description** (4000):
 

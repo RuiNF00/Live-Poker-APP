@@ -14,7 +14,7 @@
 Novo: regista uma mão ao vivo em 11 toques entre níveis, revê-a rua a rua e pergunta aos amigos com um link. Grátis: 3 mãos novas por dia e partilha sem limite.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
-póquer,histórico,replayer,sessões,torneio,festival,horários,mtt,cash,staking,swap,icm,odds,notas
+póquer,histórico,replayer,sessões,torneio,festival,horários,mtt,cash,staking,swap,icm,notas
 
 **Descrição** (4000):
 
