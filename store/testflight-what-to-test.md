@@ -57,9 +57,9 @@ Com o site: «• Compartilhe uma mão por link e peça para um amigo comentar; 
 >
 > Cómo avisarnos: haz una captura de pantalla dentro de la app y TestFlight te pregunta si quieres enviarla. Cuenta qué hiciste, qué esperabas y qué pasó. Si la app se cierra sola, acepta enviar el informe.
 >
-> Ningún dinero pasa por Sweatbook: solo son registros.
+> Por Sweatbook no pasa dinero: solo son registros.
 
-Com o site: «• Comparte una mano por link y pide a un amigo que la comente; crea el vídeo de la mano para Instagram y dinos cuánto tardó.»
+Com o site: «• Comparte una mano por link y pide a un amigo que la comente; crea el video de la mano para Instagram y dinos cuánto tardó.»
 
 ## EN (English US and UK)
 
