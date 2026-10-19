@@ -13,7 +13,7 @@ const COPY: Record<Locale, NotFoundCopy> = {
   pt,
   'pt-BR': {
     title: 'Esta página não existe.',
-    body: 'O endereço pode estar errado, ou quem compartilhou o link apagou.',
+    body: 'O endereço pode estar errado, ou o link foi apagado por quem compartilhou.',
     home: 'Ir para o início',
   },
   es: {

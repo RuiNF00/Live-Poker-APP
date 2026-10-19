@@ -207,10 +207,12 @@ export async function Landing({ search, invite }: { search: Search; invite?: str
       </main>
 
       <footer className="lp-footer">
-        <span>© 2026 {brand.name}</span>
+        <span>© 2026 {brand.name} · 18+</span>
         <a href="/privacy">{c.privacy}</a>
         <a href="/terms">{c.terms}</a>
         <a href="/support">{c.support}</a>
+        <a href={c.helpHref}>{c.help}</a>
+        <a href="/press">{c.press}</a>
         {LOCALES.filter((l) => l !== locale).map((l) => (
           <a key={l} href={`${invite ? `/r/${invite}` : '/'}?lang=${l}`} hrefLang={l} lang={l}>
             {LANGUAGE_NAME[l]}

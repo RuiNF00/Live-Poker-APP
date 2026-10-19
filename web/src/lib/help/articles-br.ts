@@ -179,7 +179,7 @@ export const BR: Record<string, ArticleText> = {
           'Ele toca em Confirmo o swap no navegador, com ou sem o app. A partir daí, os termos e o horário ficam fixados e os dois recebem o código do acordo.',
         ],
       },
-      'Quando alguém ganhar prêmio, toque em Ganhei prêmio e registre o valor. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
+      'Quando alguém receber prêmio, toque em Recebi prêmio e registre o valor. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
       'Se você vendeu ação, o swap sai só da sua parte: seus backers continuam com a porcentagem deles do prêmio inteiro.',
       'Criar swaps e registrar resultados é grátis. O acerto (quem deve a quem) e o histórico fazem parte do Pro. Confirmar um swap pelo link é sempre grátis.',
       { note: 'Só registro e contas: nenhum dinheiro passa pelo Sweatbook, os pagamentos são feitos entre vocês. Só para maiores de 18 anos.' },
@@ -319,7 +319,7 @@ export const BR: Record<string, ArticleText> = {
     title: 'Existe um plano vitalício?',
     summary: 'Existe, para quem não quer assinatura. Aparece ao cancelar.',
     body: [
-      'O Pro é uma assinatura mensal ou anual. Para quem prefere pagar uma vez, existe o Pro para sempre, por US$ 499 (o preço na sua moeda é o da loja).',
+      'O Pro é uma assinatura mensal ou anual. Para quem prefere pagar uma vez, existe o Pro para sempre. O preço é o que a loja mostra na sua moeda.',
       'Ele não está na tela do Pro. Aparece quando você cancela e escolhe «Não quero uma assinatura»:',
       {
         steps: [

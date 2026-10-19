@@ -139,20 +139,6 @@
   background: var(--surface);
   border-left: 3px solid var(--accent);
 }
-.pk-quote.draft {
-  outline: 1px dashed var(--accent);
-  outline-offset: 4px;
-}
-.pk-draft {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 12px;
-  font-weight: 700;
-}
 .pk-quote blockquote {
   margin: 0;
   font-size: 18px;
