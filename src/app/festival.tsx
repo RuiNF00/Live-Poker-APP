@@ -6,7 +6,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { AddFestivalEvent } from '@/components/AddFestivalEvent';
 import { useAfterFirstFrame } from '@/components/Deferred';
@@ -23,6 +23,7 @@ import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
+import { getOffers } from '@/store/action-offer';
 import { balanceOf } from '@/store/bankroll-math';
 import { bankrollShare, buyInCaps, buyInsLeft, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
@@ -449,7 +450,22 @@ function EventRow({
               {remind ? <T v="tiny">{t('Avisamos-te {n} min antes de fechar.', { n: LATE_REMIND_BEFORE_MIN })}</T> : null}
             </View>
           ) : null}
-          {e.own ? <Button kind="plain" size="sm" title={t('Apagar torneio')} onPress={() => updatePlan(f.id, (p) => removeOwnEvent(p, e.id))} /> : null}
+          {e.own ? (
+            <Button
+              kind="plain"
+              size="sm"
+              title={t('Apagar torneio')}
+              onPress={() => {
+                // In a package, its backers' links have it: out of the package first, so they confirm the change.
+                if (getOffers().some((o) => o.festivalId === f.id && o.events.includes(e.id))) {
+                  const [title, body] = [t('Este torneio está numa ação vendida'), t('Tira-o primeiro do pacote, para os backers confirmarem a mudança.')];
+                  // Alert.alert does nothing on react-native-web.
+                  return Platform.OS === 'web' ? window.alert(`${title}\n\n${body}`) : Alert.alert(title, body);
+                }
+                updatePlan(f.id, (p) => removeOwnEvent(p, e.id));
+              }}
+            />
+          ) : null}
         </View>
       ) : null}
     </Card>

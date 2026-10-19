@@ -11,8 +11,8 @@ import { createBackerPage, newPageKey, sealPage, updateBackerPage, type BackerPa
 import { createKey, forgetCreateKey } from '@/lib/create-key';
 import { useOnline } from '@/lib/sync';
 import { nextEventFor, useOffers, type ActionOffer } from '@/store/action-offer';
-import { getPlan } from '@/store/festival-plan';
-import { shippedFestivals } from '@/store/my-festivals';
+import { getPlan, planFestival } from '@/store/festival-plan';
+import { allFestivals } from '@/store/my-festivals';
 import type { BackerLedger, YearStatement } from '@/store/staking';
 import { uid, useStore } from '@/store/store';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
@@ -28,7 +28,8 @@ export function statementFor(
   year?: YearStatement,
 ): Statement {
   const st = buildStatement(backer, player, l.currency || data.home, data.sessions, data.packages, data.payments, now, year, l);
-  const nx = nextEventFor(shippedFestivals(), data.offers, backer.id, (id) => getPlan(id).sessions);
+  const festivals = data.offers.flatMap((o) => planFestival(allFestivals(), o.festivalId) ?? []);
+  const nx = nextEventFor(festivals, data.offers, backer.id, (id) => getPlan(id).sessions);
   if (nx) st.nx = nx;
   return st;
 }
@@ -71,7 +72,8 @@ function Sync() {
     if (!online) return;
     for (const b of backers) {
       const l = ledgers.get(b.id);
-      if (!b.page || !b.shareKey || !l) continue;
+      // Part of the deal with no rate yet: the page keeps its last numbers until the rate is here.
+      if (!b.page || !b.shareKey || !l || l.apart.length) continue;
       const st = statementFor({ ...b, shareKey: b.shareKey }, settings.nickname || '', l, { sessions, packages, payments, offers, home: settings.currency });
       const key = keyOf(st);
       const page = b.page;

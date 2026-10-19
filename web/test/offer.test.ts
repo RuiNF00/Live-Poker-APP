@@ -58,6 +58,10 @@ describe('parseOffer (agreement)', () => {
     expect(parseOffer({ ...base, events: [{ ...base.events[0], b: 0 }] })).toBe(null);
     expect(parseOffer({ ...base, events: [{ ...base.events[0], b: Infinity }] })).toBe(null);
     expect(parseOffer({ ...base, events: [{ ...base.events[0], id: 'bad id!' }] })).toBe(null);
+    expect(parseOffer({ ...base, events: [{ ...base.events[0], id: 'x'.repeat(33) }] })).toBe(null);
+    // The player's own tournaments (uid('fe_'), QA P1) and schedule flights go through.
+    expect((parseOffer({ ...base, events: [{ ...base.events[0], id: 'fe_mvf1yoli79znl5' }, { ...base.events[1], id: '12-2A' }, { ...base.events[2], id: '85-1F Turbo' }] }) as Agreement).events.map((e) => e.id).sort()).toEqual(['12-2A', '85-1F Turbo', 'fe_mvf1yoli79znl5']);
+    expect(parseOffer({ ...base, events: [{ ...base.events[0], id: ' 12' }] })).toBe(null);
     expect(parseOffer({ ...base, events: [base.events[0], base.events[0]] })).toBe(null);
     const many = Array.from({ length: 41 }, (_, i) => ({ ...base.events[0], id: `e${i}` }));
     expect(parseOffer({ ...base, events: many })).toBe(null);

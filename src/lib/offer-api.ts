@@ -2,7 +2,7 @@
 // One link per backer; the token the server returns at creation lets this phone
 // change or remove it. The backer can only confirm the piece already agreed.
 
-import type { AgreementPayload } from '@/store/action-offer';
+import { sameTerms, type AgreementPayload } from '@/store/action-offer';
 import { BRAND } from '@/theme';
 
 import { outcomeOf, queue, queued, registerSender } from './sync';
@@ -10,7 +10,7 @@ import { outcomeOf, queue, queued, registerSender } from './sync';
 // Same server as share-api.ts (not imported from there: it pulls in native modules).
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
-export type OfferError = 'offensive' | 'gone' | 'rate_limited' | 'network';
+export type OfferError = 'offensive' | 'invalid' | 'gone' | 'rate_limited' | 'network';
 
 export class OfferFailure extends Error {
   constructor(public reason: OfferError) {
@@ -25,7 +25,12 @@ async function call(path: string, init: RequestInit): Promise<Response> {
   } catch {
     throw new OfferFailure('network');
   }
-  if (!res.ok) throw new OfferFailure(res.status === 422 ? 'offensive' : res.status === 404 || res.status === 403 ? 'gone' : res.status === 429 ? 'rate_limited' : 'network');
+  if (res.status === 422) {
+    // A name moderation refused, or terms the server can't take (the reason is in the body).
+    const j = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    throw new OfferFailure(j?.error === 'offensive' ? 'offensive' : 'invalid');
+  }
+  if (!res.ok) throw new OfferFailure(res.status === 404 || res.status === 403 ? 'gone' : res.status === 429 ? 'rate_limited' : 'network');
   return res;
 }
 
@@ -77,10 +82,13 @@ registerSender('offer-update', async (p) => {
   }
 });
 
-/** When the backer confirmed (ISO), or null. */
-export async function fetchConfirmation(remote: { id: string }): Promise<string | null> {
-  const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { cache: 'no-store' })).json()) as { confirmedAt?: unknown };
-  return typeof j.confirmedAt === 'string' ? j.confirmedAt : null;
+/**
+ * When the backer confirmed (ISO), or null. Only a confirmation of `terms`: a link still holding
+ * other ones (new terms the server refused, or not sent yet) has nothing confirmed for this phone.
+ */
+export async function fetchConfirmation(remote: { id: string }, terms: AgreementPayload): Promise<string | null> {
+  const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { cache: 'no-store' })).json()) as { confirmedAt?: unknown; offer?: unknown };
+  return typeof j.confirmedAt === 'string' && sameTerms(j.offer, terms) ? j.confirmedAt : null;
 }
 
 /** Removes the link now or when the signal is back (deleting a package, erasing all data). */

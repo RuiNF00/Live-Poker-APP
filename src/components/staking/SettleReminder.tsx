@@ -13,8 +13,8 @@ import { t } from '@/i18n';
 import { notifications, onNotificationsAllowed, setup } from '@/lib/lock-screen/reminder';
 import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { getOffers, settleReminders, useOffers } from '@/store/action-offer';
-import { festivalName, getPlan } from '@/store/festival-plan';
-import { shippedFestivals } from '@/store/my-festivals';
+import { festivalName, getPlan, planFestival } from '@/store/festival-plan';
+import { allFestivals, loadOwnFestivals } from '@/store/my-festivals';
 import { isPaused } from '@/store/session-math';
 import { useStore } from '@/store/store';
 
@@ -35,8 +35,10 @@ async function sync(names: Map<string, string>, playing: boolean) {
     // Nothing during a session: it comes back when the session ends or pauses.
     if (playing || !notifyKindOn('money')) return;
     const sent: Record<string, number> = JSON.parse((await AsyncStorage.getItem(SENT_KEY)) ?? '{}');
+    await loadOwnFestivals();
+    const festivals = allFestivals();
     const items = getOffers().flatMap((o) => {
-      const f = shippedFestivals().find((x) => x.id === o.festivalId);
+      const f = planFestival(festivals, o.festivalId);
       return f ? [{ f, o, started: getPlan(f.id).sessions }] : [];
     });
     for (const r of settleReminders(items, Date.now(), sent).map((x) => ({ ...x, at: notifyAt('money', x.at) }))) {

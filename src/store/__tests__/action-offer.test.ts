@@ -4,7 +4,9 @@ import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festival-data';
 import { venueTime } from '../../poker/festivals';
-import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, inFestivalPackage, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
+import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
@@ -178,3 +180,52 @@ test("a backer's usual terms: their newest piece, from a festival package or sol
   assert.equal(usualTerms('b2', [pkgOld], [loose]), null);
 });
 
+
+test("a package counts the player's own tournaments and own festivals, as the festival list does (QA P2)", () => {
+  // A tournament the player added to a shipped festival, picked with event 2.
+  const mine = ownEvent('own-1', { name: 'Deepstack', start: '2026-12-06T12:00', game: 'NLH', buyIn: 550 }, 1);
+  const plan = { ...EMPTY_PLAN, events: [mine] };
+  const o = { ...newOffer(withPlanEvents(F, plan), ['2', 'own-1'], 'o1', 1), lines: [{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }] };
+  assert.equal(offerTotals(F, o).events, 1, 'the schedule alone misses the added one');
+  const f = planFestival([F], F.id, () => plan)!;
+  assert.equal(offerTotals(f, o).events, 2);
+  assert.equal(offerTotals(f, o).buyIns, 26000 + 550);
+  assert.equal(lineCost(f, o, 10), 2920.5);
+  // A festival of the player's own: found among all festivals, with its tournaments.
+  const own = ownFestival('own-f', { name: 'Clube', city: 'Porto', currency: '€', from: '2026-11-01', to: '2026-11-02' });
+  const ev = ownEvent('own-2', { name: 'Main', start: '2026-11-01T20:00', game: 'NLH', buyIn: 60.5 }, 2);
+  const o2 = newOffer({ ...own, events: [ev] }, ['own-2'], 'o2', 1);
+  const g = planFestival([F, own], own.id, () => ({ ...EMPTY_PLAN, events: [ev] }));
+  assert.ok(g, 'no «Este pacote já não existe»');
+  assert.equal(offerTotals(g, o2).buyIns, 60.5);
+  assert.equal(planFestival([F], own.id), undefined);
+});
+
+test('a confirmation counts only for the terms the link holds: a refused change never shows as confirmed (QA P1)', () => {
+  const mine = ownEvent('fe_mvf1yoli79znl5', { name: 'Side QA', start: '2026-12-06T12:00', game: 'NLH', buyIn: 999 }, 1);
+  const plan = { ...EMPTY_PLAN, events: [mine] };
+  const f = planFestival([F], F.id, () => plan)!;
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 5 };
+  const before = { ...newOffer(f, ['2'], 'o1', 1), lines: [line] };
+  const after = { ...before, events: ['2', mine.id] };
+  // What the server keeps: sorted by date, to the cent, trimmed names (web/src/lib/offer.ts parseOffer).
+  const stored = (a: ReturnType<typeof agreement>) => ({ ...a, backer: a.backer.trim(), events: [...a.events].sort((x, y) => x.d - y.d).map((e) => ({ ...e, b: Math.round(e.b * 100) / 100 })) });
+  const old = stored(agreement(f, before, line, 'Rui', 'Ana', 'Bahamas'));
+  // The link still has the old terms (the PUT was refused): the new ones are not confirmed.
+  assert.equal(sameTerms(old, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms(old, agreement(f, { ...before, markup: 1.2 }, line, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms(old, agreement(f, before, { ...line, pct: 10 }, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms(old, agreement(f, before, line, 'Rui', 'Bea', 'Bahamas')), false);
+  // The same terms, whatever the order, the time sent or the title: confirmed.
+  const now = stored(agreement(f, after, line, 'Rui', 'Ana', 'Bahamas'));
+  assert.equal(sameTerms({ ...now, events: [...now.events].reverse(), at: 5, title: 'Outro' }, agreement(f, after, line, 'Rui', ' Ana ', 'Bahamas')), true);
+  assert.equal(sameTerms(null, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms({ markup: 1.1 }, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
+});
+
+test('a backer with a festival piece is found, so deleting them is stopped (Bankroll P2: the line kept counting)', () => {
+  const o = { ...newOffer(F, [F.events[0].id], 'o1'), lines: [{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }] };
+  assert.equal(inFestivalPackage([o], 'b1'), true);
+  assert.equal(inFestivalPackage([o], 'b2'), false);
+  assert.equal(inFestivalPackage([], 'b1'), false);
+});

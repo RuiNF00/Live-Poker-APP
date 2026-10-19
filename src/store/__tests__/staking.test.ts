@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 
@@ -454,4 +454,113 @@ test("a session's makeup cut is the sum of the backers' rounded lines", () => {
   const r2 = packageStates([loss, win], thirds);
   const rows = thirds.map((p) => backerLedger(p.backerId, [loss, win], thirds, [], r2).rows.find((x) => x.session.id === win.id)!.cut);
   assert.equal(both[1].makeupCut, Math.round(rows.reduce((a, x) => a + x, 0) * 100) / 100);
+});
+
+test('festival action without a rate is never added in: it stays apart in its own currency (QA P1, 19 Oct)', () => {
+  const l = backerLedger('b1', [], [], []);
+  l.currency = '€';
+  l.rows.push({} as never); // the deal already has a currency
+  addOfferDue(l, 'Kč', 1000, 0, () => null);
+  assert.equal(l.unpaid, 0);
+  assert.equal(l.balance, 0);
+  assert.deepEqual(l.apart, [{ currency: 'Kč', unpaid: 1000, balance: -1000 }]);
+  addOfferDue(l, 'Kč', 0, 200, () => null);
+  assert.deepEqual(l.apart, [{ currency: 'Kč', unpaid: 1000, balance: -800 }], 'one entry per currency');
+  // The totals show it in its own currency, never 1:1 in the deal's.
+  const only = stakingTotals([l], '€', {});
+  assert.deepEqual([only.currency, only.owed, only.split], ['Kč', 800, null]);
+  assert.equal(only.owedBy, 1);
+  l.balance = -50; // and 50€ in the deal's own currency: two numbers, not 850€
+  const tot = stakingTotals([l], '€', {});
+  assert.deepEqual(tot.split, [{ currency: '€', owe: 0, owed: 50 }, { currency: 'Kč', owe: 0, owed: 800 }]);
+  // With a rate: converted, nothing missing.
+  const m = backerLedger('b1', [], [], []);
+  m.currency = '€';
+  m.rows.push({} as never);
+  addOfferDue(m, '$', 100, 0, () => 0.9);
+  assert.equal(m.unpaid, 90);
+  assert.deepEqual(m.missing, []);
+  // A backer with no sessions yet takes the festival's currency.
+  const n = backerLedger('b1', [], [], []);
+  addOfferDue(n, '$', 100, 0, (a, b) => (a === b ? 1 : null));
+  assert.equal(n.currency, '$');
+  assert.deepEqual(n.missing, []);
+});
+
+test('no sessions: a second festival in another currency converts into the first one (Bankroll P2)', () => {
+  const r = (a: string, b: string) => (a === b ? 1 : a === '$' && b === '€' ? 0.9 : a === '€' && b === '$' ? 1.1 : null);
+  const l = backerLedger('b1', [], [], []);
+  addOfferDue(l, '$', 1000, 0, r);
+  addOfferDue(l, '€', 100, 0, r);
+  assert.equal(l.currency, '$');
+  assert.equal(Math.round(l.unpaid * 100) / 100, 1110);
+  const m = backerLedger('b1', [], [], []);
+  addOfferDue(m, '$', 1000, 0, r);
+  addOfferDue(m, 'Kč', 100, 0, r);
+  assert.equal(m.currency, '$');
+  assert.equal(m.unpaid, 1000);
+  assert.deepEqual(m.apart, [{ currency: 'Kč', unpaid: 100, balance: -100 }]);
+  // A refund alone also fixes the currency.
+  const n = backerLedger('b1', [], [], []);
+  addOfferDue(n, '$', 0, 50, r);
+  addOfferDue(n, '€', 100, 0, r);
+  assert.equal(n.currency, '$');
+});
+
+test('no sessions: settling a festival keeps the deal in its currency (QA P1: «Deves 27,50€» after «Marcar como pago»)', () => {
+  const r = (a: string, b: string) => (a === b ? 1 : a === '$' && b === '€' ? 0.9 : a === '€' && b === '$' ? 1.1 : null);
+  const fx = { table: {}, fallback: '€' };
+  // Before: the backer owes 27,50$ for a festival in $.
+  const before = backerLedger('b1', [], [], [], undefined, fx);
+  addOfferDue(before, '$', 27.5, 0, r);
+  assert.equal(before.currency, '$');
+  assert.equal(before.balance, -27.5);
+  // «Marcar como pago» on the backer: a payment of the balance, counted in $ (the line stays due).
+  const pay: BackerPayment[] = [{ id: 'p', backerId: 'b1', amount: -27.5, at: 1 } as BackerPayment];
+  const after = backerLedger('b1', [], [], pay, undefined, fx);
+  addOfferDue(after, '$', 27.5, 0, r);
+  assert.equal(after.currency, '$');
+  assert.equal(after.balance, 0);
+  assert.deepEqual(after.missing, []);
+  // Or the line marked paid in the package: nothing due, still $, square.
+  const line = backerLedger('b1', [], [], [], undefined, fx);
+  addOfferDue(line, '$', 0, 0, r);
+  assert.equal(line.currency, '$');
+  assert.equal(line.balance, 0);
+  // Paid, then a second festival in €: converted into $, the payment stays in $.
+  const two = backerLedger('b1', [], [], pay, undefined, fx);
+  addOfferDue(two, '$', 27.5, 0, r);
+  addOfferDue(two, '€', 100, 0, r);
+  assert.equal(two.currency, '$');
+  assert.equal(Math.round(two.balance * 100) / 100, -110);
+});
+
+test('festival packages in another currency ask for rates too (Pronto P2: 165$ + 33€ stayed «Sem câmbio»)', () => {
+  const s = (currency: string, startedAt: number, stakes?: unknown[]) => ({ currency, startedAt, stakes });
+  // No backed session in another currency: before, nothing was fetched.
+  assert.equal(stakingRatesSince('€', [s('€', 100, [{}]), s('$', 50)], [{ currency: '€', at: 300 }]), null);
+  assert.equal(stakingRatesSince('€', [s('€', 100, [{}])], [{ currency: '$', at: 300 }, { currency: '€', at: 200 }]), 300);
+  assert.equal(stakingRatesSince('€', [s('$', 100, [{}])], [{ currency: '$', at: 300 }]), 100);
+  assert.equal(stakingRatesSince('€', [], []), null);
+  // Once the rates are there, the € package lands in the $ deal converted, and nothing is missing.
+  const l = backerLedger('b', [], [], [], undefined, { table: {}, fallback: '€' });
+  addOfferDue(l, '$', 165, 0, (from, to) => (from === to ? 1 : null));
+  addOfferDue(l, '€', 33, 0, (from, to) => (from === to ? 1 : from === '€' && to === '$' ? 1.1 : null));
+  assert.equal(l.currency, '$');
+  assert.deepEqual(l.missing, []);
+  assert.equal(Math.round(l.unpaid * 100) / 100, 201.3);
+});
+
+test('nothing goes to the backer while festival action has no rate (Voz/Bankroll P2: the text and the link showed less)', () => {
+  const l = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  addOfferDue(l, '€', 30, 0, (a, b) => (a === b ? 1 : null));
+  assert.deepEqual(unconverted(l), []);
+  addOfferDue(l, '$', 302.5, 0, (a, b) => (a === b ? 1 : null));
+  assert.deepEqual(unconverted(l), ['$'], 'the $ part is apart: «Enviar contas» waits');
+  // Even with the deal itself square, the part apart stops it («Estamos acertados» was sent).
+  const sq = backerLedger('b1', [], [], [{ id: 'p', backerId: 'b1', amount: -30, at: 1 } as BackerPayment], undefined, { table: {}, fallback: '€' });
+  addOfferDue(sq, '€', 30, 0, (a, b) => (a === b ? 1 : null));
+  addOfferDue(sq, '$', 302.5, 0, (a, b) => (a === b ? 1 : null));
+  assert.equal(sq.balance, 0);
+  assert.deepEqual(unconverted(sq), ['$']);
 });

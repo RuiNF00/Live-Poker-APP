@@ -46,8 +46,8 @@ import {
   type PackageLine,
   type SettlementState,
 } from '@/store/action-offer';
-import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
-import { shippedFestivals } from '@/store/my-festivals';
+import { festivalName, planFestival, updatePlan, useFestivalPlan } from '@/store/festival-plan';
+import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -59,8 +59,10 @@ export default function ActionPackageScreen() {
   const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const offers = useOffers();
   const o = offers.find((x) => x.id === id);
-  const f = shippedFestivals().find((x) => x.id === o?.festivalId);
   const plan = useFestivalPlan(o?.festivalId ?? '');
+  // An own festival too, with the tournaments the player added (as the festival screen).
+  const f = planFestival(useFestivals(), o?.festivalId, () => plan);
+  const ready = useFestivalsReady();
   const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession, trips, saveTrip } = useStore();
   const pro = usePro();
   const [busy, setBusy] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export default function ActionPackageScreen() {
 
   // Confirmations come from the links: check the ones still waiting whenever the screen shows.
   const waiting = (o?.lines ?? []).filter((l) => l.remote && !l.confirmedAt).map((l) => `${l.id}:${l.remote!.id}`).join(',');
+
   const refresh = useCallback(async () => {
     if (!o || !waiting) return;
     for (const pair of waiting.split(',')) {
@@ -79,15 +82,18 @@ export default function ActionPackageScreen() {
       try {
         // New terms not on the server yet: what it says confirmed is the old terms.
         if (await agreementUpdateWaiting(remoteId)) continue;
-        const at = await fetchConfirmation({ id: remoteId });
+        // A confirmation counts only for the terms this phone has now (QA P1: a refused change).
+        const l = o.lines.find((x) => x.id === lineId);
+        if (!l || !f) continue;
+        const terms = agreement(f, o, l, settings.nickname, backers.find((b) => b.id === l.backerId)?.name ?? t('Backer'), festivalName(f, plan));
+        const at = await fetchConfirmation({ id: remoteId }, terms);
         if (at) updateLine(o.id, lineId, (l) => ({ ...l, confirmedAt: at }));
       } catch (e) {
         if (e instanceof OfferFailure && e.reason === 'gone') updateLine(o.id, lineId, (l) => ({ ...l, remote: undefined, confirmedAt: null }));
       }
     }
-    // Only when the set of links waiting changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [o?.id, waiting]);
+    // Again when the terms change too: each check compares against the terms of this render.
+  }, [o, f, plan, settings.nickname, backers, waiting]);
   useFocusEffect(
     useCallback(() => {
       void refresh();
@@ -96,6 +102,8 @@ export default function ActionPackageScreen() {
     }, [refresh]),
   );
 
+  // An own festival not read from the phone yet: wait, it isn't gone.
+  if (o && !f && !ready) return <Stack.Screen options={{ title: t('Ação vendida') }} />;
   if (!o || !f)
     return (
       <>
@@ -259,7 +267,9 @@ export default function ActionPackageScreen() {
       setError(
         why === 'offensive'
           ? t('Um dos nomes não passou no filtro. Muda-o e tenta outra vez.')
-          : why === 'rate_limited'
+          : why === 'invalid'
+            ? t('O link não aceitou estes termos. Atualiza a app e tenta outra vez.')
+            : why === 'rate_limited'
             ? t('Demasiadas tentativas. Tenta daqui a pouco.')
             : t('Sem ligação. Tenta outra vez quando tiveres rede.'),
       );
