@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
@@ -198,4 +198,26 @@ test("a package counts the player's own tournaments and own festivals, as the fe
   assert.ok(g, 'no «Este pacote já não existe»');
   assert.equal(offerTotals(g, o2).buyIns, 60.5);
   assert.equal(planFestival([F], own.id), undefined);
+});
+
+test('a confirmation counts only for the terms the link holds: a refused change never shows as confirmed (QA P1)', () => {
+  const mine = ownEvent('fe_mvf1yoli79znl5', { name: 'Side QA', start: '2026-12-06T12:00', game: 'NLH', buyIn: 999 }, 1);
+  const plan = { ...EMPTY_PLAN, events: [mine] };
+  const f = planFestival([F], F.id, () => plan)!;
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 5 };
+  const before = { ...newOffer(f, ['2'], 'o1', 1), lines: [line] };
+  const after = { ...before, events: ['2', mine.id] };
+  // What the server keeps: sorted by date, to the cent, trimmed names (web/src/lib/offer.ts parseOffer).
+  const stored = (a: ReturnType<typeof agreement>) => ({ ...a, backer: a.backer.trim(), events: [...a.events].sort((x, y) => x.d - y.d).map((e) => ({ ...e, b: Math.round(e.b * 100) / 100 })) });
+  const old = stored(agreement(f, before, line, 'Rui', 'Ana', 'Bahamas'));
+  // The link still has the old terms (the PUT was refused): the new ones are not confirmed.
+  assert.equal(sameTerms(old, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms(old, agreement(f, { ...before, markup: 1.2 }, line, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms(old, agreement(f, before, { ...line, pct: 10 }, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms(old, agreement(f, before, line, 'Rui', 'Bea', 'Bahamas')), false);
+  // The same terms, whatever the order, the time sent or the title: confirmed.
+  const now = stored(agreement(f, after, line, 'Rui', 'Ana', 'Bahamas'));
+  assert.equal(sameTerms({ ...now, events: [...now.events].reverse(), at: 5, title: 'Outro' }, agreement(f, after, line, 'Rui', ' Ana ', 'Bahamas')), true);
+  assert.equal(sameTerms(null, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
+  assert.equal(sameTerms({ markup: 1.1 }, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
 });

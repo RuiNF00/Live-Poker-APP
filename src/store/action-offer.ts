@@ -118,6 +118,26 @@ export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player
 }
 
 /**
+ * The link holds these terms: what the backer confirmed there is what this phone shows. Compared as
+ * the server keeps them (to the cent, trimmed names), event names aside. Anything else (a change the
+ * server refused, one not sent yet) and a confirmation there is of other terms.
+ */
+export function sameTerms(link: unknown, mine: AgreementPayload): boolean {
+  if (!link || typeof link !== 'object') return false;
+  const a = link as Partial<AgreementPayload>;
+  const ev = (e: { id: string; d: number; b: number; p: number }) => `${e.id}|${Math.round(e.d)}|${r2(e.b)}|${r2(e.p)}`;
+  return (
+    typeof a.markup === 'number' &&
+    r2(a.markup) === r2(mine.markup) &&
+    a.cur === mine.cur &&
+    (typeof a.backer === 'string' ? a.backer.trim() : null) === mine.backer.trim() &&
+    Array.isArray(a.events) &&
+    // The server keeps them by date: compared as sets.
+    a.events.map(ev).sort().join(',') === mine.events.map(ev).sort().join(',')
+  );
+}
+
+/**
  * A new line: the backer you already have with that name (or a new one) and a
  * staking package with the festival package's markup.
  */
