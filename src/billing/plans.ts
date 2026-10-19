@@ -116,10 +116,10 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   staking: {
     title: t('Staking sem folhas de cálculo'),
-    body: t('Backers, makeup e acertos, sempre certos.'),
+    body: t('Backers, makeup e saldos, sempre certos.'),
   },
   swaps: {
-    title: t('Swaps acertados sozinhos'),
+    title: t('Contas dos swaps feitas sozinhas'),
     body: t('Percentagens, prémios e quem deve a quem.'),
   },
   taxReport: {
@@ -234,7 +234,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
   { key: 'solver', icon: 'analytics', title: t('Mãos para o solver'), body: t('Várias de uma vez') },
   { key: 'coach', icon: 'school', title: t('Revisão com coach'), body: t('Pastas e mãos sem limite') },
-  { key: 'staking', icon: 'people', title: t('Staking'), body: t('Backers, makeup, acertos') },
+  { key: 'staking', icon: 'people', title: t('Staking'), body: t('Backers, makeup, saldos') },
   { key: 'swaps', icon: 'swap-horizontal', title: t('Swaps'), body: t('Quem deve a quem') },
   { key: 'taxReport', icon: 'document-text', title: t('Relatório do ano'), body: t('Por país, com imposto') },
   { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },

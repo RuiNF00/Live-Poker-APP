@@ -680,7 +680,7 @@ const ptBR: Record<string, string> = {
   '{who} faz check': '{who} dá check',
   '{who} faz raise para {amt}': '{who} dá raise para {amt}',
   'Staking sem folhas de cálculo': 'Staking sem planilhas',
-  'Backers, makeup e acertos, sempre certos.': 'Backers, makeup e acertos, sempre em dia.',
+  'Backers, makeup e saldos, sempre certos.': 'Backers, makeup e saldos, sempre em dia.',
   'Tudo desbloqueado. Nada a pagar.': 'Tudo liberado. Nada a pagar.',
   'a jogar': 'na vez',
   'Esta mão já não existe': 'Esta mão não existe mais',
