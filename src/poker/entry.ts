@@ -3,7 +3,7 @@
 
 import { t } from '../i18n';
 
-import { apply, legal, replay, totalPot, type TableState } from './engine';
+import { apply, legal, raiseName, replay, totalPot, type TableState } from './engine';
 import { decimal } from './format';
 import type { Hand, HandAction } from './types';
 
@@ -229,6 +229,16 @@ export function limpedPot(hand: Hand, from: number | undefined): boolean {
   return before.some((a) => a.kind === 'call') && !before.some((a) => a.kind === 'raise' || a.kind === 'bet');
 }
 
+/**
+ * Preflop, someone raised before the seats the app folded: one of them most
+ * likely called, so its chip is that call in one tap (a 3-bet is still a tap
+ * on its seat on the felt).
+ */
+export function raisedPot(hand: Hand, from: number | undefined): boolean {
+  if (from === undefined) return false;
+  return hand.actions.slice(0, from).some((a) => a.kind === 'raise' || a.kind === 'bet');
+}
+
 export function limpIn(hand: Hand, from: number, seat: number): HandAction[] | null {
   const actions = rewindTo(hand, from, seat);
   return actions && [...actions, { p: seat, kind: 'call' }];
@@ -324,5 +334,85 @@ export function stepBack(hand: Hand): Hand | null {
   if (!hand.actions.length) return null;
   const actions = hand.actions.slice(0, -1);
   const back = { ...hand, actions };
+  return { ...back, board: hand.board.slice(0, replay(back).final.boardCount) };
+}
+
+/**
+ * An opponent's call that would close the street before the river. The next
+ * street's first card can then stand for it: tapping the turn says they called.
+ * Calls only; a check can still be followed by a bet from the seat behind.
+ */
+export function closingCall(hand: Hand, s: TableState): HandAction | null {
+  const l = legal(s);
+  if (!l || l.p === hand.hero || !l.canCall || l.canCheck || s.street === 'river') return null;
+  const a: HandAction = { p: l.p, kind: 'call' };
+  const next = apply(s, a, hand);
+  return next && next.needsBoard ? a : null;
+}
+
+/**
+ * Heads-up on the river: the opponent's call that ends the betting, when their cards are still
+ * unknown. The first card they showed can then stand for it, like the next street's card above.
+ */
+export function showdownCall(hand: Hand, s: TableState): HandAction | null {
+  const l = legal(s);
+  if (!l || l.p === hand.hero || !l.canCall || l.canCheck || s.street !== 'river' || s.folded[hand.hero]) return null;
+  if (hand.players.some((_, i) => i !== hand.hero && i !== l.p && !s.folded[i])) return null;
+  if (hand.players[l.p].cards?.length) return null;
+  const a: HandAction = { p: l.p, kind: 'call' };
+  const next = apply(s, a, hand);
+  return next && next.toAct === null && !next.needsBoard && !next.foldWin ? a : null;
+}
+
+/** An entered action, as the line above the buttons shows it. */
+export interface LineItem {
+  i: number;
+  street: TableState['street'];
+  a: HandAction;
+  /** As the buttons said it: Open, 3-Bet, C-bet, All-in, Call, Check, Fold. */
+  verb: string;
+  /** The street total after a bet, raise or all-in. */
+  to?: number;
+}
+
+/**
+ * The actions worth a tap to fix, newest first: everything except the preflop
+ * folds of seats with nothing in yet (the app's own folds, mostly). A blind's
+ * fold stays, so «the BB called after all» is one tap.
+ */
+export function entryLine(hand: Hand): LineItem[] {
+  const out: LineItem[] = [];
+  const steps = replay(hand).steps;
+  steps.forEach((st, k) => {
+    if (st.kind !== 'action' || st.actionIndex === undefined) return;
+    const i = st.actionIndex;
+    const a = hand.actions[i];
+    const before = steps[k - 1]?.state;
+    if (a.kind === 'fold' && st.actStreet === 'preflop' && !(before && before.invested[a.p] > 0) && !hand.actions.slice(0, i).some((x) => x.p === a.p)) return;
+    const last = st.state.last;
+    const kind = last?.kind ?? a.kind;
+    const allIn = !!last?.allIn;
+    const verb = allIn ? 'All-in' : kind === 'bet' || kind === 'raise' ? (before ? raiseName(before) : kind === 'bet' ? 'Bet' : 'Raise') : kind[0].toUpperCase() + kind.slice(1);
+    out.push({ i, street: st.actStreet ?? st.street, a, verb, ...(kind === 'bet' || kind === 'raise' ? { to: last?.to ?? a.to } : {}) });
+  });
+  return out.reverse();
+}
+
+/**
+ * «Check até ao fim» after a change to the hand: still on from `from` while the
+ * hand reaches that far. `null` turns it off.
+ */
+export function keepCheckDown(h: Hand, from: number | null | undefined): number | undefined {
+  return typeof from === 'number' && h.actions.length >= from ? from : undefined;
+}
+
+/** A tap on a «Corrigir:» chip: back before action `i`, with «Check até ao fim» off (it was set for the line being undone). */
+export function fixAt(hand: Hand, i: number): { hand: Hand; checkDownFrom: null } {
+  return { hand: cutAt(hand, i), checkDownFrom: null };
+}
+
+/** The hand back to just before action `i`: that action, the ones after it, the board they dealt and the winners go. */
+export function cutAt(hand: Hand, i: number): Hand {
+  const back: Hand = { ...hand, actions: hand.actions.slice(0, i), winners: undefined, winners2: undefined, board2: undefined };
   return { ...back, board: hand.board.slice(0, replay(back).final.boardCount) };
 }

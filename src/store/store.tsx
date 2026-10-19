@@ -542,7 +542,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const pay = count(payments, b.payments ?? [], 'payments');
       const bc = count(backing, b.backing ?? [], 'backing');
       const gone = <T extends { id: string; updatedAt?: number }>(cur: T[], list: DeletedList) => cur.length - alive(cur, list, del).length;
-      const removed = gone(hands, 'hands') + gone(rawSessions, 'sessions') + gone(players, 'players') + gone(transfers, 'transfers') + gone(backers, 'backers') + gone(trips, 'trips') + gone(packages, 'packages') + gone(payments, 'payments') + gone(backing, 'backing');
+      const removed = gone(hands, 'hands') + gone(rawSessions, 'sessions') + gone(players, 'players') + gone(transfers, 'transfers') + gone(backers, 'backers') + gone(trips, 'trips') + gone(packages, 'packages') + gone(payments, 'payments') + gone(backing, 'backing') + gone(currentOwnFestivals(), 'ownFestivals') + gone(currentWeekly(), 'weekly');
       const into = <T extends { id: string; updatedAt?: number }>(incoming: T[], list: DeletedList) => (cur: T[]) => alive(incoming.length ? mergeById(cur, incoming).list : cur, list, del);
       setHands(into(b.hands, 'hands'));
       // A backup made before «Apagar tudo» brings back links that the erase deleted: they stop showing as shared.
@@ -573,8 +573,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       importSwaps(b.swaps ?? []).catch(() => {});
       importGroups(b.swapGroups ?? []).catch(() => {});
       importPlans(b.festivalPlans ?? {}).catch(() => {});
-      importOwnFestivals(b.ownFestivals ?? []).catch(() => {});
-      importWeekly(b.weekly ?? []).catch(() => {});
+      // These two have their own stores: the deletes are passed in, so one the other phone deleted goes here too.
+      importOwnFestivals(b.ownFestivals ?? [], del).catch(() => {});
+      importWeekly(b.weekly ?? [], del).catch(() => {});
       // Values another phone had set aside: kept here too; each launch tries them again with this version's checks.
       const q = (b.quarantine ?? []).filter(([k]) => !quarantine.some(([have]) => have === k));
       if (q.length) {

@@ -53,6 +53,8 @@ export interface Festival {
   month?: string;
   /** Added by the player ("Adicionar o meu festival"): their own name, no source, kept on the phone. */
   own?: boolean;
+  /** An own festival's last save: a later delete on another phone drops it, a later edit keeps it (deleted-math.ts). */
+  updatedAt?: number;
 }
 
 const ev = (number: number, name: string, game: FestivalEvent['game'], buyIn: number, guarantee: number, start: string, flight?: string): FestivalEvent => {

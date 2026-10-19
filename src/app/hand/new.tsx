@@ -14,14 +14,14 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
-import { PRO_ONLY } from '@/billing/plans';
+import { FREE, PRO_ONLY } from '@/billing/plans';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
@@ -38,7 +38,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -66,6 +66,8 @@ const VoiceHandSheet = React.lazy(() => import('@/components/entry/VoiceHandShee
 export default function NewHand() {
   crashProbe('hand');
   const insets = useSafeAreaInsets();
+  // 568-pt phones (iPhone SE): the hero step has to fit without the voice button under the cards.
+  const shortScreen = useWindowDimensions().height < 640;
   const params = useLocalSearchParams<{ edit?: string }>();
   const store = useStore();
   const pro = usePro();
@@ -95,6 +97,8 @@ export default function NewHand() {
   // undefined: the picker opens by itself for the only opponent left; null: closed.
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
+  // Facing a bet that a call would close, the next card replaces the raise sizes; «Raise» brings them back for that spot.
+  const [raiseAt, setRaiseAt] = useState<string | null>(null);
   const [telling, setTelling] = useState(false);
   const [toldOpened, setToldOpened] = useState(false);
   // Set once a hand came from "Contar a mão": the hand_saved event says so.
@@ -129,10 +133,10 @@ export default function NewHand() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand]);
 
-  const update = (h: Hand, posChosen = draft.posChosen, autoFrom?: number, checkDownFrom = draft.checkDownFrom) => {
+  // checkDownFrom left out carries «Check até ao fim» over; null turns it off.
+  const update = (h: Hand, posChosen = draft.posChosen, autoFrom?: number, checkDownFrom: number | null | undefined = draft.checkDownFrom) => {
     setHistory((x) => [...x.slice(-60), draft]);
-    const down = checkDownFrom !== undefined && h.actions.length >= checkDownFrom ? checkDownFrom : undefined;
-    setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen, autoFrom, checkDownFrom: down });
+    setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen, autoFrom, checkDownFrom: keepCheckDown(h, checkDownFrom) });
   };
   // A reopened or edited hand has no tap history: undo then steps back through the hand itself.
   const back = history.length ? null : stepBack(hand);
@@ -189,6 +193,8 @@ export default function NewHand() {
 
   // After a limp, the chips are more limps: one tap each.
   const limped = autoSeats.length > 0 && s.street === 'preflop' && limpedPot(hand, draft.autoFrom);
+  // After a raise, the same chips are cold calls.
+  const coldCall = autoSeats.length > 0 && s.street === 'preflop' && !limped && raisedPot(hand, draft.autoFrom);
   const overlimp = (seat: number) => {
     if (draft.autoFrom === undefined) return;
     const actions = limpIn(hand, draft.autoFrom, seat);
@@ -210,6 +216,13 @@ export default function NewHand() {
     const button = buttonForHeroPosition(n, hand.hero, label);
     autoDone.current.clear();
     update({ ...hand, button, actions: [] }, true);
+  };
+  const openVoice = () => {
+    tap();
+    // Pro: telling the hand. Entering it with taps stays free.
+    if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+    setToldOpened(true);
+    setTelling(true);
   };
   // Straddles change who acts first: the action starts over, as in the context sheet.
   const toggleStraddle = () => {
@@ -254,6 +267,19 @@ export default function NewHand() {
     const down = draft.checkDownFrom !== undefined && next.board.length === boardNeeded ? checkDownNext(next) : [];
     update(down.length ? { ...next, actions: [...next.actions, ...down] } : next);
   };
+  // The next street's first card after a call that closes the street: one tap for both.
+  const callWithCard = (a: HandAction, c: string) => {
+    tap();
+    // River: the card is the first one the caller showed; the showdown picker takes the second.
+    if (s.street === 'river') {
+      const players = hand.players.map((p, i) => (i === a.p ? { ...p, cards: [c] } : p));
+      return update({ ...hand, players, actions: [...hand.actions, a] });
+    }
+    const next = { ...hand, actions: [...hand.actions, a], board: [...hand.board, c] };
+    const done = next.board.length === (s.street === 'preflop' ? 3 : s.street === 'flop' ? 4 : 5);
+    const down = draft.checkDownFrom !== undefined && done ? checkDownNext(next) : [];
+    update(down.length ? { ...next, actions: [...next.actions, ...down] } : next);
+  };
   // Run it twice: offered while an all-in runs out, and at showdown if forgotten.
   const canTwice = r.runoutFrom !== null && r.runoutFrom < 5 && s.folded.filter((f) => !f).length > 1;
   const twiceChip = canTwice ? (
@@ -282,6 +308,8 @@ export default function NewHand() {
   const saved = useRef(false);
   // Player notes made by the first save: a repeat save (store not re-rendered yet) reuses them.
   const madePlayers = useRef(new Map<string, string>());
+  // Set when the free limit kept the hand as a draft: back from the paywall the editor says so.
+  const [heldBack, setHeldBack] = useState(false);
   const save = async (over?: Partial<Hand>) => {
     const again = saved.current;
     const asNew = !isEdit && !again;
@@ -291,10 +319,12 @@ export default function NewHand() {
     if (asNew && !pro.canSaveHand()) {
       if (over) update(hand);
       if (activeSession) void noteBlocked(activeSession.id, hand.id);
+      setHeldBack(true);
       pro.paywall(activeSession ? 'handsLive' : 'hands');
       return;
     }
     saved.current = true;
+    setHeldBack(false);
     // Named villains go into the player notes, so the next time they are one tap away.
     // A link to a note that was deleted (carried over from the last hand) counts as no link.
     const players = hand.players.map((p, i) => {
@@ -377,9 +407,15 @@ export default function NewHand() {
   const recentNames = useMemo(() => [...new Set(hands.map((h) => h.game.name).filter(Boolean))].slice(0, 8), [hands]);
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
+  const line = phase === 'action' || phase === 'board' ? entryLine(hand) : [];
+  const cardCall = phase === 'action' && raiseAt !== autoKey ? (closingCall(hand, s) ?? showdownCall(hand, s)) : null;
+  // Heads-up the grid already says it: «Só X paga» is the Call button, «Todos fold» the Fold.
+  // Heads-up, «Só X paga» and «Todos fold» are just Call and Fold again: the big buttons are enough.
+  const headsUp = hand.players.filter((_, i) => i !== hand.hero && !s.folded[i]).length === 1;
+  const callers = phase === 'action' && !cardCall && !headsUp ? callerCandidates(hand, s) : [];
   const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
-  const callers = phase === 'action' ? callerCandidates(hand, s) : [];
+
   const checks = phase === 'action' ? checkAround(hand, s) : [];
   // "Check até ao fim" on the flop and turn, also when the others already checked to hero.
   const checkDown = phase === 'action' && (s.street === 'flop' || s.street === 'turn') ? checkDownNow(hand, s) : [];
@@ -415,6 +451,34 @@ export default function NewHand() {
           ? t('Fold de todos até ti')
           : t('Fold de todos até {name}', { name: displayName(hand, l.p, pos) })
         : null;
+  // VoiceOver hears who acts now, on which street, and any folds made for them. TalkBack
+  // reads the same from the live region on the action heading, so Android isn't told twice.
+  const spoken =
+    phase === 'action' && l
+      ? [seatHint, STREET_PT[s.street], displayName(hand, l.p, pos)].filter(Boolean).join(', ')
+      : phase === 'board'
+        ? `${STREET_PT[s.street]}, ${boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}`
+        : phase === 'showdown'
+          ? 'Showdown'
+          : '';
+  useEffect(() => {
+    if (spoken && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(spoken);
+  }, [spoken]);
+  const heldBackText =
+    heldBack && !pro.isPro
+      ? t('Mão guardada como rascunho. Mãos grátis hoje: {left} de {n}.', { left: pro.handsLeft ?? 0, n: FREE.handsPerDay ?? 0 })
+      : '';
+  const heldBackRef = useRef('');
+  useEffect(() => {
+    heldBackRef.current = heldBackText;
+  }, [heldBackText]);
+  // Said each time the editor comes back to the front, so once the paywall closes and not over it
+  // (the banner's live region covers Android).
+  useFocusEffect(
+    useCallback(() => {
+      if (heldBackRef.current && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(heldBackRef.current);
+    }, []),
+  );
   // First hand only (onboarded is set when it's saved), and one tip at a time: the
   // way out while hero hasn't acted yet, then how to skip seats on the felt.
   const firstHint =
@@ -528,6 +592,11 @@ export default function NewHand() {
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
       <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
+        {heldBackText ? (
+          <T v="small" color={C.warn} accessibilityLiveRegion="polite">
+            {heldBackText}
+          </T>
+        ) : null}
         {capturing && (
           <Suspense fallback={null}>
             <VoiceCapture onDone={onRecorded} onEnd={() => setCapturing(false)} />
@@ -539,6 +608,10 @@ export default function NewHand() {
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
               <Row gap={10}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
+                {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
+                {shortScreen && !hand.actions.length ? (
+                  <Chip label={!pro.isPro && PRO_ONLY.voiceHand ? t('Voz') + ' · Pro' : t('Voz')} icon={!pro.isPro && PRO_ONLY.voiceHand ? 'lock-closed' : 'mic'} onPress={openVoice} />
+                ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
                   <T v="small">
@@ -581,17 +654,11 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
-            {!hand.actions.length && (
+            {!hand.actions.length && !shortScreen && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={!pro.isPro && PRO_ONLY.voiceHand ? `${t('Contar a mão por voz')}, Pro` : t('Contar a mão por voz')}
-                onPress={() => {
-                  tap();
-                  // Pro: telling the hand. Entering it with taps stays free.
-                  if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
-                  setToldOpened(true);
-                  setTelling(true);
-                }}
+                onPress={openVoice}
                 style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
                 <Ionicons name="mic" size={16} color={C.accent} />
                 <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
@@ -608,18 +675,42 @@ export default function NewHand() {
           </>
         )}
 
+        {/* What was entered, newest first: a tap on any action takes the hand back to just before it. */}
+        {!capturing && (phase === 'action' || phase === 'board') && line.length > 0 && (
+          <ChipRow>
+            <T v="tiny" color={C.textDim} style={{ alignSelf: 'center' }}>
+              {t('Corrigir:')}
+            </T>
+            {line.map((x, k) => (
+              <React.Fragment key={x.i}>
+                {k === 0 || line[k - 1].street !== x.street ? (
+                  <T v="tiny" color={C.textDim} style={{ alignSelf: 'center' }}>
+                    {STREET_PT[x.street]}
+                  </T>
+                ) : null}
+                <Chip
+                  label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}`}
+                  onPress={() => {
+                    const f = fixAt(hand, x.i);
+                    update(f.hand, draft.posChosen, undefined, f.checkDownFrom);
+                  }}
+                />
+              </React.Fragment>
+            ))}
+          </ChipRow>
+        )}
         {!capturing && phase === 'action' && l && (
           <>
             {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
             <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <T v="h2" numberOfLines={2} style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
+              <T v="h2" numberOfLines={2} accessibilityLiveRegion="polite" style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
               {quickSave}
             </Row>
             {seatHint ? (
-              <T v="tiny" color={C.textDim} numberOfLines={2}>
+              <T v="tiny" color={C.textDim} numberOfLines={2} accessibilityLiveRegion="polite">
                 {seatHint}
               </T>
             ) : null}
@@ -627,11 +718,11 @@ export default function NewHand() {
             {autoSeats.length > 0 && (
               <ChipRow>
                 <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
-                  {limped ? t('Mais limps?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
+                  {limped ? t('Mais limps?') : coldCall ? t('Alguém pagou?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
                 </T>
                 {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
                 {[...autoSeats].reverse().map((i) => (
-                  <Chip key={i} label={displayName(hand, i, pos)} onPress={() => (limped ? overlimp(i) : rewind(i))} />
+                  <Chip key={i} label={displayName(hand, i, pos)} onPress={() => (limped || coldCall ? overlimp(i) : rewind(i))} />
                 ))}
               </ChipRow>
             )}
@@ -652,7 +743,7 @@ export default function NewHand() {
                 )}
               </ChipRow>
             )}
-            {presets.length > 0 && (
+            {presets.length > 0 && !cardCall && (
               <View style={{ gap: 4 }}>
                 <T v="label">{l.canBet ? raiseName(s) : t('{action} para', { action: raiseName(s) })}</T>
                 <Row gap={6}>
@@ -698,6 +789,19 @@ export default function NewHand() {
                 </Row>
               </View>
             )}
+            {cardCall && (
+              <View style={{ gap: 6 }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <T v="label">
+                    {s.street === 'river'
+                      ? t('Call? Toca já nas cartas que mostrou')
+                      : t('Call? Toca já na carta do {street}', { street: s.street === 'preflop' ? 'flop' : s.street === 'flop' ? 'turn' : 'river' })}
+                  </T>
+                  <Chip label={raiseName(s)} onPress={() => setRaiseAt(autoKey)} />
+                </Row>
+                <CardPicker used={usedCards(hand)} onPick={(c) => callWithCard(cardCall, c)} />
+              </View>
+            )}
             {/* Facing more than the seat has: their all-in for less, with no trip to the seat sheet. */}
             {presets.length === 0 && l.canCall && l.p !== hand.hero && (
               <ChipRow>
@@ -719,7 +823,7 @@ export default function NewHand() {
         {!capturing && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2">
+              <T v="h2" accessibilityLiveRegion="polite">
                 {STREET_PT[s.street]} · {boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}
                 {s.bettingDone ? <T v="small" color={C.allin}>  all-in</T> : null}
               </T>
@@ -752,7 +856,7 @@ export default function NewHand() {
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
-                  <T v="h2">Showdown</T>
+                  <T v="h2" accessibilityLiveRegion="polite">Showdown</T>
                   {/* Who won comes first: it is the one answer the hand needs. Cards shown are optional. */}
                   {r.boards.length === 2 &&
                     r.boards.map((b, run) => (
@@ -947,7 +1051,8 @@ function BigAction({ label, kind, onPress }: { label: string; kind: 'fold' | 'ch
       onPress={onPress}
       style={({ pressed }) => ({
         flex: solid ? 1.4 : 1,
-        height: 56,
+        minHeight: 56,
+        paddingHorizontal: 6,
         borderRadius: R.md,
         alignItems: 'center',
         justifyContent: 'center',
@@ -956,7 +1061,7 @@ function BigAction({ label, kind, onPress }: { label: string; kind: 'fold' | 'ch
         borderColor: solid ? C.accent : C.borderStrong,
         opacity: pressed ? 0.8 : 1,
       })}>
-      <T v="body" numberOfLines={1} color={solid ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 17 }}>
+      <T v="body" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.6} color={solid ? C.accentInk : C.text} style={{ fontWeight: '800', fontFamily: ff(800), fontSize: 17 }}>
         {label}
       </T>
     </Pressable>

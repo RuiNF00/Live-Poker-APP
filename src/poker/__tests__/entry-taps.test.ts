@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -81,6 +81,8 @@ class Entry {
     // Labels follow the locale (2,5x in Portuguese); the tests name them with a dot.
     const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.label.replace(',', '.') === label);
     assert.ok(p, `no preset ${label}`);
+    // Where the next card stands for a call, the sizes are one tap away («Raise»).
+    if (closingCall(this.hand, this.s) || showdownCall(this.hand, this.s)) this.taps++;
     this.bet(p.to);
   }
   /** The keypad: open it, switch to bb, type the digits (e.g. "2,2" is 3), confirm. */
@@ -109,6 +111,14 @@ class Entry {
     this.taps++;
     this.set(actions);
   }
+  /** After a raise, the "Alguém pagou?" chip: that seat calls in one tap. */
+  coldCall(label: string) {
+    assert.ok(raisedPot(this.hand, this.autoFrom), '"alguém pagou?" not shown');
+    const actions = limpIn(this.hand, this.autoFrom!, this.seat(label));
+    assert.ok(actions);
+    this.taps++;
+    this.set(actions);
+  }
   skip(label: string) {
     const target = label === 'Hero' ? this.hand.hero : this.seat(label);
     this.push(skipTo(this.hand, this.s, target));
@@ -118,10 +128,15 @@ class Entry {
   }
   /** "Check até ao fim": this street now, every later street once its card is in. */
   checkDown() {
+    const from = this.hand.actions.length;
     this.push(checkDownNow(this.hand, this.s));
-    this.down = true;
+    this.checkDownFrom = keepCheckDown(this.hand, from);
   }
-  private down = false;
+  /** As in hand/new.tsx: «Check até ao fim» from this action on. */
+  private checkDownFrom?: number;
+  private get down() {
+    return this.checkDownFrom !== undefined;
+  }
   board(...cards: string[]) {
     assert.ok(this.s.needsBoard);
     this.taps += cards.length;
@@ -156,6 +171,17 @@ class Entry {
     this.autoFrom = undefined;
     this.settle();
   }
+  /** A call that closes the street, entered as the next street's first card: one tap. */
+  callWithCard(card: string) {
+    const a = closingCall(this.hand, this.s);
+    assert.ok(a, 'next card not offered');
+    this.taps++;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    this.hand = { ...this.hand, actions: [...this.hand.actions, a], board: [...this.hand.board, card] };
+    this.autoFrom = undefined;
+    if (this.down && this.hand.board.length >= 4) this.hand = { ...this.hand, actions: [...this.hand.actions, ...checkDownNext(this.hand)] };
+    this.settle();
+  }
   /** Multiway showdown: a tap on the seat, then its two cards. */
   showsPick(label: string, cards: string[]) {
     this.taps++;
@@ -167,6 +193,21 @@ class Entry {
     this.done.clear();
     this.hand = { ...this.hand, game: { ...this.hand.game, straddles: 1, straddleFrom: 'utg' }, actions: [] };
     this.settle();
+  }
+  /** A chip on «Corrigir:»: back to just before that action, «Check até ao fim» off. */
+  /** A tap on a «Corrigir:» chip, through the same fixAt and update() defaults the screen uses. */
+  fix(i: number) {
+    this.taps++;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    const f = fixAt(this.hand, i);
+    this.update(f.hand, f.checkDownFrom);
+    this.settle();
+  }
+  /** hand/new.tsx's update(): checkDownFrom left out carries over, null turns it off. */
+  private update(h: Hand, checkDownFrom: number | null | undefined = this.checkDownFrom) {
+    this.hand = h;
+    this.autoFrom = undefined;
+    this.checkDownFrom = keepCheckDown(h, checkDownFrom);
   }
   undo() {
     const prev = this.history.pop()!;
@@ -244,12 +285,11 @@ test('3-bet pot: HJ opens, hero 3-bets on the BTN, HJ calls and folds the flop �
   assert.equal(r.result!.net[0] > 0, true);
 });
 
-test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 16 taps (was 17)', () => {
+test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 15 taps (was 17; 16 before «Alguém pagou?»)', () => {
   const e = new Entry('BTN', ['8h', '7h']);
   e.entered('UTG');
   e.size('2.5x');
-  e.entered('LJ');
-  e.act('call');
+  e.coldCall('LJ'); // round 6: one tap on the chip, it was the seat and then Call
   assert.equal(e.s.toAct, 0);
   e.act('call');
   e.only(null); // blinds fold: "todos fold" now also after hero calls
@@ -259,7 +299,7 @@ test('multiway: UTG opens, LJ calls, hero calls on the BTN, blinds fold — 16 t
   e.size('½');
   e.only(null);
   const r = e.save();
-  assert.equal(e.taps, 16);
+  assert.equal(e.taps, 15);
   assert.equal(r.final.foldWin, true);
 });
 
@@ -729,14 +769,15 @@ test('round 4 · checks to the raiser: a donk bet is one tap on "Alguém fez bet
 // Round 5: amounts and showdown cards.
 test('round 5 · every typical size is one tap: 2.5x open, 3-bet, ⅓ c-bet, pot turn bet, all-in', () => {
   const e = new Entry('BTN', ['Ah', 'Kh']);
-  const one = (label: string) => {
+  // Round 6: a villain who could close the street with a call sees the next card first; their raise sizes are behind «Raise» (2 taps).
+  const one = (label: string, taps = 1) => {
     const before = e.taps;
     e.size(label);
-    assert.equal(e.taps - before, 1, label);
+    assert.equal(e.taps - before, taps, label);
   };
   one('2.5x');
   e.act('fold');
-  one('3x');
+  one('3x', 2); // BB's 3-bet heads-up
   e.act('call');
   e.board('Kd', '9s', '4c');
   e.act('check');
@@ -744,7 +785,7 @@ test('round 5 · every typical size is one tap: 2.5x open, 3-bet, ⅓ c-bet, pot
   e.act('call');
   e.board('2h'); // BB's check to the c-bettor is filled in by itself
   one('Pote');
-  one('All-in');
+  one('All-in', 2); // BB's shove facing the pot bet
 });
 
 test('round 5 · multiway showdown: two taps per hand shown, no tap on the seat', () => {
@@ -770,4 +811,201 @@ test('facing the only other player all-in: no raise sizes, just Call or Fold', (
   e.size('All-in');
   assert.equal(e.s.toAct, e.hand.hero);
   assert.deepEqual(sizePresets(e.hand, e.s), []);
+});
+
+// Round 6: a call that closes the street is the next street's first card.
+test('round 6 · 3-bet pot, c-bet called, turn checked, river to showdown — 17 taps (was 18)', () => {
+  const run = (card: boolean) => {
+    const e = new Entry('BTN', ['Qs', 'Qc']);
+    e.entered('CO');
+    e.size('2.5x');
+    e.size('3x');
+    e.only('CO');
+    e.board('Jh', '8c', '3d');
+    e.size('⅓');
+    if (card) e.callWithCard('2s');
+    else {
+      e.act('call');
+      e.board('2s');
+    }
+    e.checkDown();
+    e.board('7d');
+    e.shows('CO', ['Ad', 'Jd']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 18);
+  assert.equal(after.taps, 17);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 6 · the BB calling an open heads-up is the first flop card', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.act('fold');
+  const a = closingCall(e.hand, e.s);
+  assert.deepEqual(a, { p: e.seat('BB'), kind: 'call' });
+  e.callWithCard('Kc');
+  e.board('8d', '3s');
+  assert.equal(e.s.street, 'flop');
+  assert.equal(e.s.toAct, e.hand.hero, 'BB checks to the raiser by itself');
+});
+
+test('round 6 · no card shortcut for hero, for a check, on the river or when someone is still to act', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.entered('CO');
+  e.size('2.5x');
+  assert.equal(closingCall(e.hand, e.s), null, 'hero decides with the buttons');
+  e.act('call');
+  assert.equal(closingCall(e.hand, e.s), null, 'SB calling leaves the BB to act');
+  e.act('fold');
+  e.act('fold');
+  e.board('Kc', '8d', '3s');
+  assert.equal(closingCall(e.hand, e.s), null, 'a check never closes by a card');
+});
+
+test('round 6 · the action line: newest first, no app folds, one tap takes the hand back to before any action', () => {
+  const e = new Entry('BTN', ['Qs', 'Qc']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.size('3x');
+  e.only('CO');
+  e.board('Jh', '8c', '3d');
+  e.size('⅓');
+  e.callWithCard('2s');
+  const line = entryLine(e.hand);
+  assert.deepEqual(
+    line.map((x) => `${x.street}:${x.a.kind}`),
+    ['turn:check', 'flop:call', 'flop:bet', 'flop:check', 'preflop:call', 'preflop:fold', 'preflop:fold', 'preflop:raise', 'preflop:raise'],
+    "the folds before CO are the app's own; the blinds' folds stay (they had chips in), and CO's turn check to the raiser is an action",
+  );
+  assert.deepEqual(
+    line.map((x) => `${x.verb}${x.to ?? ''}`),
+    ['Check', 'Call', 'C-bet', 'Check', 'Call', 'Fold', 'Fold', '3-Bet', 'Open'].map((v, k) => v + (['', '', String(line[2].to), '', '', '', '', String(line[7].to), String(line[8].to)][k])),
+    'labelled as the buttons said it',
+  );
+  // CO actually raised the c-bet: one tap on «CO Call», the turn card goes with it.
+  const back = cutAt(e.hand, line.find((x) => x.a.kind === 'call' && x.street === 'flop')!.i);
+  assert.deepEqual(back.board, ['Jh', '8c', '3d']);
+  assert.equal(replay(back).final.toAct, e.seat('CO'));
+  // Hero didn't 3-bet: back to preflop, no board.
+  const pre = cutAt(e.hand, line.find((x) => x.a.p === e.hand.hero && x.street === 'preflop')!.i);
+  assert.deepEqual(pre.board, []);
+  assert.equal(replay(pre).final.toAct, e.hand.hero);
+});
+
+test('round 7 · a river call to showdown is the first card shown: hero bets, BTN calls and shows — 16 taps (was 17)', () => {
+  const run = (card: boolean) => {
+    const e = new Entry('CO', ['Ah', 'Kh']);
+    e.size('2.5x');
+    e.only('BTN');
+    e.board('Kc', '8d', '3s');
+    e.checkAround();
+    e.board('7h');
+    e.checkAround();
+    e.board('2c');
+    e.size('½');
+    if (card) {
+      const a = showdownCall(e.hand, e.s);
+      assert.ok(a, 'cards shown not offered');
+      e.taps += 2; // first card = the call, the picker stays open on the second
+      e.hand = { ...e.hand, actions: [...e.hand.actions, a], players: e.hand.players.map((p, i) => (i === a.p ? { ...p, cards: ['Kd', 'Qs'] } : p)) };
+    } else {
+      e.act('call');
+      e.shows('BTN', ['Kd', 'Qs']);
+    }
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 17);
+  assert.equal(after.taps, 16);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 7 · no river shortcut for hero, multiway, a check, or a caller whose cards are known', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.act('call');
+  e.only(null);
+  e.board('Kc', '8d', '3s');
+  assert.equal(showdownCall(e.hand, e.s), null, 'flop');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  assert.equal(showdownCall(e.hand, e.s), null, 'CO can check');
+  e.act('check');
+  assert.equal(e.s.toAct, 0);
+  e.size('½');
+  const co = e.s.toAct!;
+  assert.ok(showdownCall(e.hand, e.s), 'CO facing the river bet');
+  e.hand = { ...e.hand, players: e.hand.players.map((p, i) => (i === co ? { ...p, cards: ['Kd', 'Qs'] } : p)) };
+  assert.equal(showdownCall(e.hand, e.s), null, 'cards already known');
+});
+
+test('round 7 · a river bet by the villain: hero calls with the buttons, no shortcut', () => {
+  const e = new Entry('CO', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  e.act('check');
+  e.size('½');
+  assert.equal(e.s.toAct, 0);
+  assert.equal(showdownCall(e.hand, e.s), null);
+});
+
+test('round 7 · multiway river: no shortcut while a third player is in', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('UTG');
+  e.size('2.5x');
+  e.coldCall('LJ');
+  e.act('call');
+  e.only(null);
+  e.board('Kc', '8d', '3s');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  e.act('check');
+  e.act('check');
+  e.size('½');
+  assert.equal(showdownCall(e.hand, e.s), null, 'UTG and LJ both still in');
+});
+
+test('QA · a fix after «Check até ao fim» turns the check-down off: the next streets wait for their actions', () => {
+  const e = new Entry('CO', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('As', '7d', '2c');
+  e.checkDown();
+  e.board('9c');
+  assert.equal(e.s.needsBoard, true, 'checked down to the river card');
+  // Hero bet the flop after all: «Hero Check» on the flop.
+  e.fix(entryLine(e.hand).find((x) => x.street === 'flop' && x.a.p === e.hand.hero)!.i);
+  e.size('½');
+  e.callWithCard('9c');
+  assert.equal(e.s.street, 'turn');
+  assert.equal(e.s.needsBoard, false, 'the turn is not checked by itself');
+  assert.equal(e.s.toAct, e.hand.hero);
+});
+
+test('QA · an all-in reads as All-in on the line', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.size('All-in');
+  const line = entryLine(e.hand);
+  assert.equal(line[0].verb, 'All-in');
+  assert.equal(line[1].verb, 'Open');
 });
