@@ -172,6 +172,21 @@ export const CASES: Case[] = [
   { lang: 'en', text: "Live 1/3 with a 6 dollar straddle. I'm on the button with jack ten suited. UTG+1 raises to 20, I call.", game: CASH, pos: 'BTN', cards: 'JT', line: 'UTG+1 r20, BTN c' },
   { lang: 'en', text: "I'm on the button with big slick, UTG opens to 1000, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 
+  // ── E2E on 6b26c1a5: «o resto foge», «también», spoken corrections.
+  { lang: 'br', text: 'Tô no HJ com valete dez de ouros, abro pra 1000, o cutoff paga, o resto foge. Flop dama nove três, eu aposto 1500, ele paga. Turn dois, ninguém aposta. River oito, eu aposto 4000, ele desiste.', pos: 'HJ', cards: 'JT', line: 'HJ r1000, CO c, HJ b1500, CO c, HJ b4000', foldWin: true },
+  { lang: 'pt', text: 'Estou no HJ com valete dez, abro para 1000, o cutoff paga, os outros desistem. Flop dama nove três, eu aposto 1500, ele paga.', pos: 'HJ', cards: 'JT', line: 'HJ r1000, CO c, HJ b1500, CO c', board: 'Q93' },
+  { lang: 'es', text: 'Estoy en el HJ con jota diez, subo a 1000, el cutoff paga, el resto se retira. Flop reina nueve tres, apuesto 1500, me paga.', pos: 'HJ', cards: 'JT', line: 'HJ r1000, CO c, HJ b1500, CO c', board: 'Q93' },
+  { lang: 'en', text: "I'm in the hijack with jack ten, I open to 1000, the cutoff calls, the rest fold. Flop queen nine three, I bet 1500, he calls.", pos: 'HJ', cards: 'JT', line: 'HJ r1000, CO c, HJ b1500, CO c', board: 'Q93' },
+  { lang: 'es', text: 'Estoy en UTG con nueves, subo a 1100, el botón paga y la ciega grande también. Flop diez cinco dos, la ciega pasa, yo apuesto 2000, el botón sube a 6000, la ciega se retira, pago. Turn as, pasamos los dos. River siete, pasamos los dos.', pos: 'UTG', cards: '99', line: 'UTG r1100, BTN c, BB c, UTG b2000, BTN r6000, UTG c', board: 'T52A7' },
+  { lang: 'pt', text: 'Estou no UTG com noves, abro para 1100, o botão paga e o big também. Flop dez cinco dois, o big passa, eu aposto 2000, o botão paga, o big desiste.', pos: 'UTG', cards: '99', line: 'UTG r1100, BTN c, BB c, UTG b2000, BTN c', board: 'T52' },
+  { lang: 'br', text: 'Tô no UTG com par de noves, abro pra 1100, o botão paga e o big também. Flop dez cinco dois, passamos todos.', pos: 'UTG', cards: '99', line: 'UTG r1100, BTN c, BB c', board: 'T52' },
+  { lang: 'en', text: "I'm UTG with nines, I open to 1100, the button calls and the big blind too. Flop ten five two, we check.", pos: 'UTG', cards: '99', line: 'UTG r1100, BTN c, BB c', board: 'T52' },
+  { lang: 'pt', text: 'Estou no big com sete seis de espadas. O botão abre para 900, não, para 1100, eu pago. Flop oito nove dois, passo, ele aposta 800, eu pago.', pos: 'BB', cards: '76', line: 'BTN r1100, BB c, BTN b800, BB c', board: '892' },
+  { lang: 'br', text: 'Tô no botão com ás rei, abro pra 1000, quer dizer, 1200, o big paga.', pos: 'BTN', cards: 'AK', line: 'BTN r1200, BB c' },
+  { lang: 'es', text: 'Estoy en UTG con nueves, subo a 1000, perdón, a 1100, el botón paga.', pos: 'UTG', cards: '99', line: 'UTG r1100, BTN c' },
+  { lang: 'en', text: "I'm on the button with ace king, UTG raises to 900, sorry, 1100, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1100, BTN c' },
+  { lang: 'pt', text: 'Estou no UTG com ás rei, abro para 1000 e não paga ninguém.', pos: 'UTG', cards: 'AK', line: 'UTG r1000', foldWin: true },
+
   // ── P3s.
   { lang: 'pt', text: 'Blinds 400/200. Estou no botão com ás rei, o UTG abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 ];

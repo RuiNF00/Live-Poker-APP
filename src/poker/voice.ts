@@ -276,7 +276,11 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d)\s*x\b/g, '$1 x');
   s = s.replace(/(\d+(?:\.\d+)?)\s*(bbs?)\b/g, '$1 bb');
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 / $2');
+  // "Abre para 900, não, para 1100", "subo a 1000, perdón, a 1100": the amount said last stands.
+  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)/g, '');
   const sub: [RegExp, string | ((m: string) => string)][] = [
+    // "O resto foge": the rest fold, it isn't "o resto" as in all-in.
+    [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
     [/\ball[\s-]*ins?\b|\bol[\s-]*in\b|\ba tudo\b|\bo resto\b/g, ' allin '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
     [/(?<!\+ ?)\b([2-5])[\s-]*bet(s|o|ei|ou|a)?\b/g, ' $1bet$2 '],
@@ -293,6 +297,8 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:hi|high)[\s-]*jack\b|\bhijack\b/g, ' hj '],
     [/\bcut[\s-]*off\b|\bcutoff\b/g, ' co '],
     [/\bbig[\s-]*blind\b|\bbigblind\b|\bbig blinde\b|\bciega grande\b/g, ' bb '],
+    // "La ciega pasa": a blind on its own is the big blind.
+    [/\bciega\b(?! (?:pequena|chica|grande))/g, ' bb '],
     [/\bsmall[\s-]*blind\b|\bsmallblind\b|\bciega (?:pequena|chica)\b/g, ' sb '],
     [/\bbotao\b|\bboton\b|\bbutton\b|\bdealer\b|\bbtn\b/g, ' btn '],
     [/\barco[\s-]*iris\b/g, ' arcoiris '],
@@ -314,6 +320,11 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     // "Toda a gente desiste" is pt-PT for everyone; "ninguém paga", "nobody calls": the rest fold.
     [/\btoda a gente\b/g, ' todos '],
     [/\b(?:ninguem|nadie|nobody|no one|noone) (?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
+    // "Pasamos los dos", "passamos": everyone checks.
+    [/\b(?:pasamos|passamos|checamos|checkeamos|we (?:both )?check(?:ed)?)(?: (?:los|las|os|as) (?:dos|dois|duas|tres))?\b/g, ' todos check '],
+    [/\b(?:nao (?:paga|pagou) ninguem|no (?:paga|pago) nadie)\b/g, ' foldall '],
+    // "Ninguém aposta", "nadie apuesta": it checks through.
+    [/\b(?:ninguem|nadie|nobody|no one|noone) (?:aposta|apostou|apuesta|aposto|bets|bet)\b/g, ' todos check '],
     // "fold até mim", "checked to the button": the action passes to that seat.
     [/\b(?:todos |todo mundo |all |everyone |everybody |it )?(?:fold|folds|folded|folda|foldou|foldam|foldaram|foldaron|foldean|foldea|check|checks|checked|checkam|checkaram|passa|passou|passam|passaram|pasa|pasan|corre|correm|correu|foge|fogem|desiste|desistem|larga|largam|sai|saem|is folded|gets folded|comes|vem|vai)(?: around)? (?:ate|to|hasta|pra|para) (?:o |a |ao |a la |al |the |el |la |me )?(eu|mim|me|mi|hero|ti|utg1|utg2|utg|mp|lj|hj|co|btn|sb|bb)\b/g, ' passto $1 '],
     [/\b(?:todos|all|everyone|everybody|o resto|the rest|el resto|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desistem|largam|correm|correram)\b|\b(?:fold|foldam|foldaram) (?:todos|all|around)\b|\beveryone folds\b/g, ' foldall '],
@@ -540,6 +551,13 @@ export function atomise(text: string): Atom[] {
         i = j;
         continue;
       }
+    }
+    // "O botão paga e o big também", "and the big blind too": that seat does the same.
+    if (['tambem', 'tambien', 'too', 'also'].includes(x) && out[out.length - 1]?.t === 'actor' && !(w[i + 1] in VERBS)) {
+      const prev = [...out].reverse().find((a): a is Extract<Atom, { t: 'verb' }> => a.t === 'verb');
+      if (prev && (prev.v.kind === 'call' || prev.v.kind === 'check' || prev.v.kind === 'fold')) out.push({ t: 'verb', v: prev.v, at: i });
+      i++;
+      continue;
     }
     if (['so', 'only', 'solo', 'apenas', 'somente'].includes(x)) {
       out.push({ t: 'only', at: i });
