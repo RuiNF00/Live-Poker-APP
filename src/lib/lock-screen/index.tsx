@@ -153,7 +153,7 @@ export function SessionLockScreen() {
       await show(s, hide, noLock);
       await syncLevelReminder(levelsOn ? caughtUp(s) : null);
     })();
-  }, [activeSession, hide, levelsOn, allowed, resumed, noLock]);
+  }, [activeSession, hide, levelsOn, noLock, allowed, resumed]);
 
   // "Torneios planeados" switched off in Settings: what was planned goes too. On (at launch, after a
   // restore brought plans in, back on in Settings), every plan still ahead gets its reminders, in the
