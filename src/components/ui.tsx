@@ -930,6 +930,7 @@ export function Field({ label, oneLineLabel, style, inputStyle: ist, hint, ...re
         maxFontSizeMultiplier={CONTROL_SCALE}
         {...rest}
         accessibilityLabel={rest.accessibilityLabel ?? label ?? rest.placeholder}
+        accessibilityHint={rest.accessibilityHint ?? hint}
         onFocus={(e) => {
           setFocus(true);
           rest.onFocus?.(e);

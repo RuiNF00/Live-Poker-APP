@@ -2902,6 +2902,7 @@ const en: Record<string, string> = {
   'O ano na bankroll': 'The year in your bankroll',
   'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'The stakes where you won most, your months, the biggest pot and your streak are in Pro.',
   'Posição na mão': 'Position in the hand',
+  '{label}: {n} de 5': '{label}: {n} of 5',
   'Passo {n} de {total}': 'Step {n} of {total}',
   'Esconder nomes': 'Hide names',
   'Mostrar nomes': 'Show names',

@@ -94,7 +94,7 @@ export default function Welcome() {
           <Pressable onPress={() => setStep((s) => s - 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Voltar')}>
             <Ionicons name="chevron-back" size={24} color={C.text} />
           </Pressable>
-          <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+          <View accessible accessibilityLabel={t('Passo {n} de {total}', { n: step, total: STEPS.length - 1 })} style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
             {STEPS.slice(1).map((s, i) => (
               <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i < step ? C.accent : C.surface3 }} />
             ))}
@@ -103,6 +103,7 @@ export default function Welcome() {
             <Pressable
               onPress={() => close('saltar')}
               hitSlop={10}
+              style={{ minHeight: 44, justifyContent: 'center' }}
               accessibilityRole="button">
               <T v="small" color={C.textDim}>
                 {t('Saltar')}

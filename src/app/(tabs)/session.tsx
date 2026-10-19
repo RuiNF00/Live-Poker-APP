@@ -416,7 +416,10 @@ function Live({ s }: { s: Session }) {
 
   const bumpLevel = (dir: 1 | -1) => {
     tap();
-    save(levelAfter(s, dir));
+    const next = levelAfter(s, dir);
+    save(next);
+    // The new blinds are read out: the −/+ alone says nothing with a screen reader.
+    AccessibilityInfo.announceForAccessibility(`${next.level ? t('Nível {n}', { n: next.level }) + ', ' : ''}${chips(next.sb)}/${chips(next.bb)}`);
   };
   // Level length cycles Off → 15 → 20 → 30 → 40 → 60 → Off; the clock restarts on set (see withLevelClock).
   const cycleLevelLength = () => {
@@ -527,7 +530,7 @@ function Live({ s }: { s: Session }) {
               // The chip-count post of a festival day: card + text, chips only.
               <Pressable
                 onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })}
-                hitSlop={10}
+                hitSlop={15}
                 accessibilityRole="button"
                 accessibilityLabel={t('Partilhar stack')}
                 style={{ position: 'absolute', top: S.lg, right: S.lg + 13 + 10 }}>
@@ -545,7 +548,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
-            <Pressable onPress={cycleLevelLength} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }} accessibilityRole="button" accessibilityHint={t('Duração do nível')}>
+            <Pressable onPress={cycleLevelLength} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={s.levelMinutes ? `${t('Duração do nível')}: ${s.levelMinutes} min` : `${t('Duração do nível')}: ${t('Desligado')}`}>
               <LevelAlarm s={s} onDue={levelUp} />
             </Pressable>
           </Card>

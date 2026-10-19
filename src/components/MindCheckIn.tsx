@@ -95,7 +95,7 @@ export function ScaleRow({ label, low, high, value, onChange, hot }: { label: st
               key={k}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`${label} ${k}`}
+              accessibilityLabel={t('{label}: {n} de 5', { label, n: k })}
               hitSlop={4}
               onPress={() => {
                 tap('select');

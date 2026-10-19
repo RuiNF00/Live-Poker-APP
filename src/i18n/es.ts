@@ -2869,6 +2869,7 @@ const es: Record<string, string> = {
   'As stakes onde ganhaste mais, os teus meses, o maior pote e a tua sequência estão no Pro.': 'Las stakes donde más ganaste, tus meses, el mayor bote y tu racha están en Pro.',
   // Replayer: scrubber and hidden names
   'Posição na mão': 'Posición en la mano',
+  '{label}: {n} de 5': '{label}: {n} de 5',
   'Passo {n} de {total}': 'Paso {n} de {total}',
   'Esconder nomes': 'Ocultar nombres',
   'Mostrar nomes': 'Mostrar nombres',
