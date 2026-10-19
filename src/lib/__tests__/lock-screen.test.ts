@@ -7,7 +7,7 @@ import { lockAction, lockActionPatch, parseTarget } from '../lock-screen/live-st
 import { askForLockScreen, sessionNoticePreview } from '../lock-screen/live-state';
 
 import type { Session } from '../../store/types';
-import { breakEndMessage, breakLabel, breakOf, caughtUp, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
+import { breakEndMessage, breakLabel, breakOf, caughtUp, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, sessionPLO, withLevelClock } from '../lock-screen/live-state';
 
 const MIN = 60_000;
 
@@ -245,4 +245,25 @@ test('"end" from the lock screen: opens the end form for this running session on
   assert.equal(lockAction('end', 's', mk({ endedAt: 1 })), null);
   // No in-place target for it: an "end:" target from a button would be ignored by the listener.
   assert.ok(!Object.values(p).some((v) => typeof v === 'string' && v.startsWith('end:')));
+});
+
+test('PLO: the session takes the game of its latest hand, and the lock screen puts it on the blinds label', () => {
+  const h = (sessionId: string, createdAt: number, variant?: 'plo') => ({ sessionId, createdAt, game: variant ? { variant } : {} });
+  assert.equal(sessionPLO([], 's'), false);
+  assert.equal(sessionPLO([h('s', 1, 'plo'), h('s', 2)], 's'), false);
+  assert.equal(sessionPLO([h('s', 2, 'plo'), h('s', 1)], 's'), true);
+  // Another session's PLO hand doesn't count.
+  assert.equal(sessionPLO([h('s', 1), h('t', 5, 'plo')], 's'), false);
+
+  const mtt = liveProps(mk(), 0, false, false, true);
+  assert.equal(mtt.game, 'PLO');
+  assert.equal(mtt.gameLevel, 'PLO · ' + mtt.level);
+  // The blinds keep their width: PLO goes on the label only.
+  assert.equal(mtt.blinds, liveProps(mk(), 0).blinds);
+  const cash = liveProps(mk({ kind: 'cash', level: undefined, sb: 1, bb: 2 }), 0, false, false, true);
+  assert.equal(cash.gameLevel, 'PLO');
+  // Hold'em: as before.
+  const holdem = liveProps(mk(), 0);
+  assert.equal(holdem.game, '');
+  assert.equal(holdem.gameLevel, holdem.level);
 });

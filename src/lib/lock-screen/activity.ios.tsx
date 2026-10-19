@@ -96,7 +96,8 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
   );
   const blindsCol = (
     <VStack alignment="trailing" spacing={2}>
-      {label(leveled ? p.labels.blinds : p.level)}
+      {/* PLO goes on the label, so the blinds keep their width. */}
+      {label(leveled ? p.game || p.labels.blinds : p.gameLevel)}
       <Text modifiers={[...mono(20, levelDue ? accent : text), ...fit]}>{p.blinds}</Text>
       {levelDue ? (
         <Text modifiers={[type(12, 'bold'), foregroundStyle(accent), lineLimit(1), accessibilityLabel(p.labels.levelUp + ', ' + p.labels.nextBlinds + ' ' + p.nextBlinds)]}>{p.labels.levelUp + ' → ' + p.nextBlinds}</Text>

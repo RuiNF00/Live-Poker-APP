@@ -45,7 +45,7 @@ const SessionNotification = createCustomNotification<NoticeProps>('SweatbookSess
   const summary = (
     <Column modifiers={[...panel, paddingAll(10)]}>
       <Text color={p.paused ? warn : accent} style={{ fontSize: 13, fontWeight: '700' }} maxLines={1}>{p.status + ' · ' + p.played + ' · ' + p.since}</Text>
-      <Text color={text} style={{ fontSize: 15, fontWeight: '700', fontFamily: 'monospace' }} maxLines={1}>{p.stack + ' (' + p.stackBB + ') · ' + p.blinds}</Text>
+      <Text color={text} style={{ fontSize: 15, fontWeight: '700', fontFamily: 'monospace' }} maxLines={1}>{p.stack + ' (' + p.stackBB + ') · ' + (p.game ? p.game + ' ' : '') + p.blinds}</Text>
       {p.breakAt ? <Text color={warn} style={{ fontSize: 12, fontWeight: '600' }}>{p.breakAt}</Text> : null}
     </Column>
   );
@@ -56,7 +56,7 @@ const SessionNotification = createCustomNotification<NoticeProps>('SweatbookSess
         <Row modifiers={[fillMaxWidth()]}>
           {stat(p.labels.time, p.played, p.since, p.paused ? warn : text)}
           {stat(p.labels.stack, p.stack, p.stackBB, text)}
-          {stat(p.level, p.blinds, levelDue ? p.labels.levelUp + ' → ' + p.nextBlinds : p.nextBlinds ? '→ ' + p.nextBlinds : '', levelDue ? accent : text)}
+          {stat(p.gameLevel, p.blinds, levelDue ? p.labels.levelUp + ' → ' + p.nextBlinds : p.nextBlinds ? '→ ' + p.nextBlinds : '', levelDue ? accent : text)}
         </Row>
         {/* The expanded notification has a fixed height: with large text the break line would push
             the buttons out, and the collapsed line already carries it. */}
@@ -93,7 +93,7 @@ export async function showSession(props: LiveProps): Promise<void> {
     ongoing: true,
     alertOnlyOnce: true,
     title: props.title,
-    text: `${props.status} · ${props.stack} · ${props.blinds}`,
+    text: `${props.status} · ${props.stack} · ${props.game ? props.game + ' ' : ''}${props.blinds}`,
     url: 'sweatbook://hand/new',
     color: '#FF6A3D',
   });
