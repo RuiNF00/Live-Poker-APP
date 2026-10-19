@@ -3,6 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
+import { commentsFrom } from './comments-list';
 import { createKey, forgetCreateKey } from './create-key';
 import { keptOrNew } from './stored-id';
 import { publicHand, type ShareOptions } from '@/poker/privacy';
@@ -88,8 +89,7 @@ export async function fetchViews(id: string): Promise<number> {
 export async function fetchComments(id: string): Promise<Comment[]> {
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/comments`);
   if (!res.ok) return [];
-  const j = await res.json();
-  return (j.comments ?? j) as Comment[];
+  return commentsFrom(await res.json());
 }
 
 const AUTHOR_KEY = 'rl.commentAuthor.v1';
