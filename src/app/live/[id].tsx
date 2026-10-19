@@ -141,7 +141,7 @@ function LiveBody({ s, updatedAt, now, insetBottom }: { s: LiveSnapshot; updated
         <Card style={{ gap: S.xs }}>
           <T v="label">{mtt ? (s.cashOut ? t('Prémio') : t('Eliminado')) : t('Cash-out')}</T>
           {s.cashOut || !mtt ? <T v="monoXL">{m(s.cashOut)}</T> : null}
-          {s.finish ? <T v="h2">{s.field ? t('{n}.º de {field}', { n: s.finish, field: s.field }) : t('{n}.º lugar', { n: s.finish })}</T> : null}
+          {s.finish ? <T v="h2" accessibilityRole="text">{s.field ? t('{n}.º de {field}', { n: s.finish, field: s.field }) : t('{n}.º lugar', { n: s.finish })}</T> : null}
           <Row gap={S.xs}>
             <T v="small">{t('Resultado')}</T>
             <Amount value={result} text={m(result)} />

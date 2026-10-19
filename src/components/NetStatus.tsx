@@ -38,6 +38,9 @@ export function OfflineBadge() {
 /** Native stack header: the badge before the screen's own right button, if any. */
 export function headerRightWithBadge(right?: () => React.ReactNode) {
   return function HeaderRight() {
+    const offline = useOffline();
+    // Nothing at all with signal: iOS 26 draws a glass capsule around every header item, even an empty one.
+    if (!offline && !right) return null;
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <OfflineBadge />
