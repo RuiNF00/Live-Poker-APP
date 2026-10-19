@@ -16,7 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
@@ -66,6 +66,8 @@ const VoiceHandSheet = React.lazy(() => import('@/components/entry/VoiceHandShee
 export default function NewHand() {
   crashProbe('hand');
   const insets = useSafeAreaInsets();
+  // 568-pt phones (iPhone SE): the hero step has to fit without the voice button under the cards.
+  const shortScreen = useWindowDimensions().height < 640;
   const params = useLocalSearchParams<{ edit?: string }>();
   const store = useStore();
   const pro = usePro();
@@ -214,6 +216,13 @@ export default function NewHand() {
     const button = buttonForHeroPosition(n, hand.hero, label);
     autoDone.current.clear();
     update({ ...hand, button, actions: [] }, true);
+  };
+  const openVoice = () => {
+    tap();
+    // Pro: telling the hand. Entering it with taps stays free.
+    if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+    setToldOpened(true);
+    setTelling(true);
   };
   // Straddles change who acts first: the action starts over, as in the context sheet.
   const toggleStraddle = () => {
@@ -401,7 +410,9 @@ export default function NewHand() {
   const line = phase === 'action' || phase === 'board' ? entryLine(hand) : [];
   const cardCall = phase === 'action' && raiseAt !== autoKey ? (closingCall(hand, s) ?? showdownCall(hand, s)) : null;
   // Heads-up the grid already says it: «Só X paga» is the Call button, «Todos fold» the Fold.
-  const callers = phase === 'action' && !cardCall ? callerCandidates(hand, s) : [];
+  // Heads-up, «Só X paga» and «Todos fold» are just Call and Fold again: the big buttons are enough.
+  const headsUp = hand.players.filter((_, i) => i !== hand.hero && !s.folded[i]).length === 1;
+  const callers = phase === 'action' && !cardCall && !headsUp ? callerCandidates(hand, s) : [];
   const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
 
@@ -597,6 +608,8 @@ export default function NewHand() {
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
               <Row gap={10}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
+                {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
+                {shortScreen && !hand.actions.length ? <Chip label={t('Voz')} onPress={openVoice} /> : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
                   <T v="small">
@@ -639,17 +652,11 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
-            {!hand.actions.length && (
+            {!hand.actions.length && !shortScreen && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('Contar a mão por voz')}
-                onPress={() => {
-                  tap();
-                  // Pro: telling the hand. Entering it with taps stays free.
-                  if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
-                  setToldOpened(true);
-                  setTelling(true);
-                }}
+                onPress={openVoice}
                 style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
                 <Ionicons name="mic" size={16} color={C.accent} />
                 <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
@@ -680,8 +687,9 @@ export default function NewHand() {
                   </T>
                 ) : null}
                 <Chip
-                  label={`${displayName(hand, x.a.p, pos)} ${x.a.kind === 'bet' || x.a.kind === 'raise' ? `${x.a.kind === 'bet' ? 'Bet' : 'Raise'} ${amount(x.a.to ?? 0, hand, inBB)}` : x.a.kind[0].toUpperCase() + x.a.kind.slice(1)}`}
-                  onPress={() => update(cutAt(hand, x.i))}
+                  label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}`}
+                  // Back before that action, with «Check até ao fim» off: it was set for the line being undone.
+                  onPress={() => update(cutAt(hand, x.i), draft.posChosen, undefined, undefined)}
                 />
               </React.Fragment>
             ))}

@@ -189,6 +189,15 @@ class Entry {
     this.hand = { ...this.hand, game: { ...this.hand.game, straddles: 1, straddleFrom: 'utg' }, actions: [] };
     this.settle();
   }
+  /** A chip on «Corrigir:»: back to just before that action, «Check até ao fim» off. */
+  fix(i: number) {
+    this.taps++;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    this.hand = cutAt(this.hand, i);
+    this.autoFrom = undefined;
+    this.down = false;
+    this.settle();
+  }
   undo() {
     const prev = this.history.pop()!;
     this.taps++;
@@ -859,8 +868,13 @@ test('round 6 · the action line: newest first, no app folds, one tap takes the 
   const line = entryLine(e.hand);
   assert.deepEqual(
     line.map((x) => `${x.street}:${x.a.kind}`),
-    ['turn:check', 'flop:call', 'flop:bet', 'flop:check', 'preflop:call', 'preflop:raise', 'preflop:raise'],
-    "the folds before CO and the blinds are the app's own; CO's turn check to the raiser was too, but it is an action",
+    ['turn:check', 'flop:call', 'flop:bet', 'flop:check', 'preflop:call', 'preflop:fold', 'preflop:fold', 'preflop:raise', 'preflop:raise'],
+    "the folds before CO are the app's own; the blinds' folds stay (they had chips in), and CO's turn check to the raiser is an action",
+  );
+  assert.deepEqual(
+    line.map((x) => `${x.verb}${x.to ?? ''}`),
+    ['Check', 'Call', 'C-bet', 'Check', 'Call', 'Fold', 'Fold', '3-Bet', 'Open'].map((v, k) => v + (['', '', String(line[2].to), '', '', '', '', String(line[7].to), String(line[8].to)][k])),
+    'labelled as the buttons said it',
   );
   // CO actually raised the c-bet: one tap on «CO Call», the turn card goes with it.
   const back = cutAt(e.hand, line.find((x) => x.a.kind === 'call' && x.street === 'flop')!.i);
@@ -956,4 +970,31 @@ test('round 7 · multiway river: no shortcut while a third player is in', () => 
   e.act('check');
   e.size('½');
   assert.equal(showdownCall(e.hand, e.s), null, 'UTG and LJ both still in');
+});
+
+test('QA · a fix after «Check até ao fim» turns the check-down off: the next streets wait for their actions', () => {
+  const e = new Entry('CO', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('As', '7d', '2c');
+  e.checkDown();
+  e.board('9c');
+  assert.equal(e.s.needsBoard, true, 'checked down to the river card');
+  // Hero bet the flop after all: «Hero Check» on the flop.
+  e.fix(entryLine(e.hand).find((x) => x.street === 'flop' && x.a.p === e.hand.hero)!.i);
+  e.size('½');
+  e.callWithCard('9c');
+  assert.equal(e.s.street, 'turn');
+  assert.equal(e.s.needsBoard, false, 'the turn is not checked by itself');
+  assert.equal(e.s.toAct, e.hand.hero);
+});
+
+test('QA · an all-in reads as All-in on the line', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.size('All-in');
+  const line = entryLine(e.hand);
+  assert.equal(line[0].verb, 'All-in');
+  assert.equal(line[1].verb, 'Open');
 });

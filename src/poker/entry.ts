@@ -3,7 +3,7 @@
 
 import { t } from '../i18n';
 
-import { apply, legal, replay, totalPot, type TableState } from './engine';
+import { apply, legal, raiseName, replay, totalPot, type TableState } from './engine';
 import { decimal } from './format';
 import type { Hand, HandAction } from './types';
 
@@ -369,21 +369,32 @@ export interface LineItem {
   i: number;
   street: TableState['street'];
   a: HandAction;
+  /** As the buttons said it: Open, 3-Bet, C-bet, All-in, Call, Check, Fold. */
+  verb: string;
+  /** The street total after a bet, raise or all-in. */
+  to?: number;
 }
 
 /**
  * The actions worth a tap to fix, newest first: everything except the preflop
- * folds of seats that had not acted yet (the app's own folds, mostly).
+ * folds of seats with nothing in yet (the app's own folds, mostly). A blind's
+ * fold stays, so «the BB called after all» is one tap.
  */
 export function entryLine(hand: Hand): LineItem[] {
   const out: LineItem[] = [];
-  for (const st of replay(hand).steps) {
-    if (st.kind !== 'action' || st.actionIndex === undefined) continue;
+  const steps = replay(hand).steps;
+  steps.forEach((st, k) => {
+    if (st.kind !== 'action' || st.actionIndex === undefined) return;
     const i = st.actionIndex;
     const a = hand.actions[i];
-    if (a.kind === 'fold' && st.actStreet === 'preflop' && !hand.actions.slice(0, i).some((x) => x.p === a.p)) continue;
-    out.push({ i, street: st.actStreet ?? st.street, a });
-  }
+    const before = steps[k - 1]?.state;
+    if (a.kind === 'fold' && st.actStreet === 'preflop' && !(before && before.invested[a.p] > 0) && !hand.actions.slice(0, i).some((x) => x.p === a.p)) return;
+    const last = st.state.last;
+    const kind = last?.kind ?? a.kind;
+    const allIn = !!last?.allIn;
+    const verb = allIn ? 'All-in' : kind === 'bet' || kind === 'raise' ? (before ? raiseName(before) : kind === 'bet' ? 'Bet' : 'Raise') : kind[0].toUpperCase() + kind.slice(1);
+    out.push({ i, street: st.actStreet ?? st.street, a, verb, ...(kind === 'bet' || kind === 'raise' ? { to: last?.to ?? a.to } : {}) });
+  });
   return out.reverse();
 }
 
