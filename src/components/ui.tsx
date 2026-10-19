@@ -35,6 +35,8 @@ import { numText, parseNum, syncText, typedText } from '@/lib/num-input';
 import { MASK, moneyMasked } from '@/poker/format';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
+import { OfflineBadge, useOffline } from './NetStatus';
+
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 // Off in Settings › Vibração; kept here so every tap() call obeys it.
@@ -246,7 +248,8 @@ export function Screen({
 export function ScreenHeader({ title, eyebrow, right, style }: { title: React.ReactNode; eyebrow?: string; right?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   // At 160%+ a text title keeps at least 60% of the row; the actions go under it when they don't fit
   // beside it (the live session read "EPT B…" next to Terminar, its venue broken mid-word).
-  const wrap = useWindowDimensions().fontScale >= 1.6 && typeof title === 'string' && !!right;
+  const offline = useOffline();
+  const wrap = useWindowDimensions().fontScale >= 1.6 && typeof title === 'string' && (!!right || offline);
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: S.md, minHeight: 52 }, wrap ? { flexWrap: 'wrap' } : null, style]}>
       <View style={[{ gap: 2 }, wrap ? { flexGrow: 1, flexShrink: 1, flexBasis: '60%' } : { flex: 1 }]}>
@@ -260,7 +263,13 @@ export function ScreenHeader({ title, eyebrow, right, style }: { title: React.Re
           title
         )}
       </View>
-      {right ? <Row gap={S.sm}>{right}</Row> : null}
+      {right || offline ? (
+        <Row gap={S.sm}>
+          {/* No signal: next to the screen's buttons, in the row, so it never covers the title. */}
+          <OfflineBadge />
+          {right}
+        </Row>
+      ) : null}
     </View>
   );
 }

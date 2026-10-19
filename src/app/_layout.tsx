@@ -18,7 +18,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProProvider } from '@/billing/pro';
 import { AppLock } from '@/components/AppLock';
 import { Deferred } from '@/components/Deferred';
-import { NetStatus } from '@/components/NetStatus';
+import { headerRightWithBadge } from '@/components/NetStatus';
 import { CrashScreen, ScreenBoundary } from '@/components/ScreenError';
 import { KeyboardDoneBar } from '@/components/ui';
 import { t } from '@/i18n';
@@ -103,6 +103,8 @@ export default function RootLayout() {
               headerBackButtonDisplayMode: 'minimal',
               contentStyle: { backgroundColor: C.bg },
               headerShadowVisible: false,
+              // No signal: a small badge on the right of the header, where it covers nothing.
+              headerRight: headerRightWithBadge(),
               // Reduce Motion: screens fade in place instead of sliding across.
               animation: reduceMotion ? 'fade' : 'default',
             }}>
@@ -141,7 +143,6 @@ export default function RootLayout() {
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
-          <NetStatus />
           <AppLock />
           </ProProvider>
         </StoreProvider>
