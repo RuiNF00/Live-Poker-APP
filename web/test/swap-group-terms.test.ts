@@ -21,6 +21,12 @@ describe('group swaps', () => {
     expect(parseGroupEntry({ cid: 'c', kind: 'result', amount: 0, to: 2 })).not.toHaveProperty('to');
   });
 
+  it('the same prize saved twice by the server counts once', () => {
+    const seats = [0, 1, 2].map((seat) => ({ seat }));
+    const net = groupNet({ pct: 10 }, seats, [{ seat: 1, kind: 'result', amount: 1000, cid: 'x' }, { seat: 1, kind: 'result', amount: 1000, cid: 'x' }]);
+    expect(net.get(1)).toBe(-200);
+  });
+
   it('settles with the fewest transfers', () => {
     const seats = [0, 1, 2, 3].map((seat) => ({ seat }));
     const net = groupNet({ pct: 2 }, seats, [{ seat: 1, kind: 'result', amount: 100000 }]);

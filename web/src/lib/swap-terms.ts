@@ -183,7 +183,23 @@ export function seenTag(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[], 
 }
 
 /** Who owes whom: each side's percentage of the other's prizes, less what each already paid. */
-export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, entries: Paid[]): SwapBalance {
+/**
+ * Each entry once per player and cid, as the app counts them. Before 20261019070000_swap_entry_lock.sql the
+ * server could save a retry sent at the same moment as the first try twice.
+ */
+export function onePerCid<E extends { cid?: string }>(entries: E[], who: (e: E) => string | number): E[] {
+  const seen = new Set<string>();
+  return entries.filter((e) => {
+    if (!e.cid) return true;
+    const k = `${who(e)}:${e.cid}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+export function swapBalance(terms: Pick<SwapTerms, 'a' | 'b'>, all: Paid[]): SwapBalance {
+  const entries = onePerCid(all, (e) => e.side);
   let aOwes = 0;
   let bOwes = 0;
   for (const e of entries) {
