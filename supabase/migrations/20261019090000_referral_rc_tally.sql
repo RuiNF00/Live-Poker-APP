@@ -42,11 +42,12 @@ begin
   update referrals set activated_at = now() where friend_install_id = p_friend;
   if ref_rc is not null and ref_rc = friend_rc then return; end if;
 
-  if not exists (select 1 from referral_rc_tally t where t.rc_hash = referral_rc_hash(friend_rc) and t.role = 'friend') then
-    insert into referral_rewards (install_id, friend_install_id, role, kind, offer_until)
-    values (p_friend, p_friend, 'friend', 'discount', now() + make_interval(hours => p_hours));
-    insert into referral_rc_tally (rc_hash, role) values (referral_rc_hash(friend_rc), 'friend');
-  end if;
+  -- A friend's store account counts once, for both sides: a second install of the same friend
+  -- (or the same one after «Apagar todos os dados») books nothing, for the referrer either (Swaps QA P2-A).
+  if exists (select 1 from referral_rc_tally t where t.rc_hash = referral_rc_hash(friend_rc) and t.role = 'friend') then return; end if;
+  insert into referral_rewards (install_id, friend_install_id, role, kind, offer_until)
+  values (p_friend, p_friend, 'friend', 'discount', now() + make_interval(hours => p_hours));
+  insert into referral_rc_tally (rc_hash, role) values (referral_rc_hash(friend_rc), 'friend');
 
   if ref_rc is not null then
     select count(*) into earned from referral_rc_tally t

@@ -195,7 +195,8 @@ select referral_code_for(:dagain, 'DAGA2345', 'rc_dfriend') = 'DAGA2345' as agai
 select claim_referral(:dagain, 'DREF2345', 'link') = 'ok' as again_claimed;
 select count(*) = 1 from (select activate_referral_discount(:dagain)) x;
 reset role;
-select count(*) filter (where role = 'friend') = 0 and count(*) filter (where role = 'referrer') = 1 as friend_reward_once_per_rc
+-- Swaps QA P2-A: a friend's store account books once, for the referrer too.
+select count(*) filter (where role = 'friend') = 0 and count(*) filter (where role = 'referrer') = 0 as friend_account_books_once_for_both
   from referral_rewards where friend_install_id = :dagain;
 -- Ten more friends (fresh RevenueCat users) for a second install of the same referrer: the cap is per RevenueCat user.
 set role service_role;
@@ -248,5 +249,6 @@ select activate_referral_discount('c0000000-0000-0000-0000-000000000003');
 reset role;
 select count(*) = 0 as referrer_cap_survives_erase from referral_rewards where install_id = 'c0000000-0000-0000-0000-000000000001';
 select count(*) = 0 as friend_once_survives_erase from referral_rewards where install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'friend';
-select count(*) = 1 as referrer_still_paid_for_new_friend from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'referrer';
+select count(*) = 0 as referrer_not_paid_for_returning_friend from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'referrer';
+select count(*) = 1 as new_friend_still_gets_theirs from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000002' and role = 'friend';
 select count(*) = 0 as tally_has_no_raw_ids from referral_rc_tally where rc_hash like 'rc_%';
