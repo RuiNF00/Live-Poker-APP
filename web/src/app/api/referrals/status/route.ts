@@ -20,7 +20,12 @@ export async function POST(req: Request) {
     await r.b.codeFor(installId, codeToRegister(r.body), rcUserId);
     await grantPending(r.b, await r.b.pending(installId));
     const s = await r.b.status(installId);
-    return json(s ? { ...s, url: inviteUrl(s.code), offer: await r.b.offer(installId, platformOf(r.body)) } : null);
+    const platform = platformOf(r.body);
+    const offer = s ? await r.b.offer(installId, platform) : null;
+    // An open iPhone discount with no code: the pool is empty or the daily cap was hit (Security
+    // brake against made-up installs). Logged as an error so it shows in Vercel's alerts.
+    if (platform === 'ios' && offer && !offer.iosCode) console.error('[invite] App Store code not handed out: pool empty or daily cap reached');
+    return json(s ? { ...s, url: inviteUrl(s.code), offer } : null);
   } catch {
     return json({ error: 'unavailable' }, 503);
   }

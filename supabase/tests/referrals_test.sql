@@ -217,3 +217,18 @@ select * from invite_offer_codes;
 select referral_offer(:dfriend, 'ios');
 reset role;
 \set ON_ERROR_STOP on
+
+-- Security 05:05: at most 40 App Store codes leave the pool in 24 hours, whoever asks.
+insert into invite_offer_codes (code, taken_at) select 'CAPTAKEN' || lpad(i::text, 4, '0'), now() from generate_series(1, 40) i;
+insert into invite_offer_codes (code) values ('INVITECCC333');
+set role service_role;
+select count(*) = 1 and bool_and(ios_code is null) as daily_cap_holds_codes
+  from referral_offer(('b0000000-0000-0000-0000-000000000001')::uuid, 'ios');
+reset role;
+-- Older than a day: they no longer count (and leave the pool, as if handed out).
+delete from invite_offer_codes where code like 'CAPTAKEN%';
+insert into invite_offer_codes (code, taken_at) select 'CAPOLD' || lpad(i::text, 4, '0'), now() - interval '25 hours' from generate_series(1, 40) i;
+update invite_offer_codes set created_at = now() + interval '1 hour' where code like 'CAPOLD%';
+set role service_role;
+select (select ios_code from referral_offer(('b0000000-0000-0000-0000-000000000001')::uuid, 'ios')) = 'INVITECCC333' as cap_frees_after_a_day;
+reset role;
