@@ -21,7 +21,7 @@ Data not linked to you:
 | Purchases → Purchase History (RevenueCat receives receipts; purchases, renewals and cancellations from the RevenueCat webhook are also stored as usage events on the random install ID and sent to PostHog EU, #334) | App Functionality, Analytics |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
-| Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
+| Audio Data (voice notes for shared hand videos: Instagram stories, Reels, TikTok and WhatsApp; processed on our server and not retained) | App Functionality |
 | User Content → Photos or Videos (iPhone only: front-camera clip for the hand video, #234, sent to our server only to put the face in a circle on the MP4, then deleted; never stored, no facial recognition) | App Functionality |
 | Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward; since #305 also tap count and time on hand_saved, the interval on share_created and invite_rewarded; onboarding answers (goals, stakes range, sessions per month; stakes range kept out of PostHog) and counts (hands per session, length range, hours imported); never amounts, names, location or typed text, except the optional reason when cancelling) | Analytics, App Functionality |
 | Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA; plus, only if the player turns on comment notices for a shared hand, the Expo push token, stored with that link, #247; also the random `EAS-Client-ID` install ID that expo-updates sends to Expo on every launch to check for updates, App Functionality; the privacy manifest already lists DeviceID, so app.json does not change; also Sentry's random per-install ID, which native crash reports carry, only while crash reports are on) | Analytics, App Functionality |
@@ -32,7 +32,7 @@ Advertising Data (Security decision, scorecard #9): declared, **not linked, not 
 
 Not declared: the server keeps a daily-rotating keyed hash of the IP (max 30 days) only to rate-limit reports, votes and shares; it cannot be reversed or linked to a user, so it is not collected personal data for either form.
 
-Voice notes on hands (PR #25) stay on the device and are not declared; only Instagram story voice notes are (Audio, processed ephemerally).
+Voice notes on hands (PR #25) stay on the device and are not declared; only voice notes for shared hand videos (stories, Reels, TikTok, WhatsApp) are (Audio, processed ephemerally).
 
 PostHog EU (#106, optional): our server forwards usage events (install id, event name, small props; no IP, no free text) to PostHog as our processor. Still Analytics / not linked / not tracking on Apple; on Play, transfers to a service provider acting on our behalf are not "sharing", so "Shared: No" stays.
 
@@ -90,7 +90,7 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
 | Financial info → Purchase history | Yes (RevenueCat; purchase and cancellation events from its webhook are usage events, #334) | No (RevenueCat: "the collection is required and can't be turned off") | App functionality, Analytics |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites; Expo push token, only if comment notices are on, #247; the random `EAS-Client-ID` install ID that expo-updates sends to u.expo.dev on every launch; the per-install ID ML Kit sends to Google; the random per-install ID Sentry sends with crash reports, only when crash reports are on) | No (the push token alone is optional) | App functionality, Analytics |
-| Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
+| Audio → Voice or sound recordings | Yes (voice notes for shared hand videos: stories, Reels, TikTok, WhatsApp) | Yes | App functionality, **processed ephemerally: Yes** |
 | App activity → App interactions (first-party usage events, including the #305 launch metrics; also the referral check) | Yes | No | Analytics, App functionality |
 | App info and performance → Crash logs (Sentry, #166; switch in Settings → Os teus dados) | Yes | Yes (optional) | App functionality |
 | App info and performance → Diagnostics (Android only: Google ML Kit text recognition via expo-text-extractor → play-services-mlkit reads receipts and the structure sheet on the phone and sends Google performance and device data) | Yes, not shared (Google acts as service provider) | No | Analytics |
