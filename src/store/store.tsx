@@ -26,7 +26,7 @@ import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } f
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
-import { alive, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
+import { alive, bankrollMark, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
 import { keepCuts, withCuts } from './staking';
@@ -443,7 +443,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setSessions((l) => l.map((s) => (s.bankrollId === id ? { ...s, bankrollId: to.id, updatedAt: now } : s)));
         setTransfers((l) => l.map((x) => (x.bankrollId === id ? { ...x, bankrollId: to.id, updatedAt: now } : x)));
       }
-      markDeleted('bankrolls', [id]);
+      // By id and currency: the other phone may hold this id in another currency (deleted-math.ts).
+      markDeleted('bankrolls', [bankrollMark(id, gone.currency)]);
       setBankrolls((l) => l.filter((b) => b.id !== id));
       setSettingsState((st) => (st.bankrollId === id ? { ...st, bankrollId: to?.id } : st));
       return true;
@@ -570,7 +571,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // What comes in counts as use too: imported € rows land in "Principal", which must stay.
         return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: [...rawSessions, ...incomingSessions], transfers: [...transfers, ...(b.transfers ?? [])] });
       };
-      const { to } = foldSeparated(keptNow(bankrolls));
+      const predicted = foldSeparated(keptNow(bankrolls));
+      const { to } = predicted;
+      // For the summary: only the backup's bankrolls that stay (not deleted, folded or dropped as empty copies).
+      const dropNow = emptyDuplicates(predicted.bankrolls, refold(mergeById(rawSessions, incomingSessions).list, to), refold(mergeById(transfers, b.transfers ?? []).list, to), settings.bankrollId);
+      const stays = new Set(predicted.bankrolls.filter((x) => !dropNow.includes(x.id)).map((x) => x.id));
       setSessions((cur) => refold(into(incomingSessions, 'sessions')(cur), to));
       setPlayers(into(b.players, 'players'));
       setBankrolls((cur) => {
@@ -603,7 +608,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.multiSet(q).catch(storageFailed);
         setQuarantine((cur) => [...cur, ...q]);
       }
-      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack(b.bankrolls ?? [], { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw, removed };
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack((b.bankrolls ?? []).filter((x) => stays.has(x.id)), { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw, removed };
     },
     [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine, settings.bankrollId],
   );

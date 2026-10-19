@@ -198,15 +198,15 @@ test('the empty copies older syncs multiplied go, one of each stays, and none wi
   ];
   const sessions = [mk({ id: 'e', currency: '€', bankrollId: X }), mk({ id: 'd', currency: '$', bankrollId: `${Y}_6` })];
   const drop = emptyDuplicates(list, sessions, []);
-  // _6 has a session, _7 has a name of its own; of the empty ones, the oldest stays.
-  assert.deepEqual(drop, [`${Y}_3`, `${Y}_4`, `${Y}_5`]);
+  // _6 has a session and stays, so every empty "Principal" next to it goes; _7 has a name of its own.
+  assert.deepEqual(drop, [`${Y}_2`, `${Y}_3`, `${Y}_4`, `${Y}_5`]);
   // The currency's own id is the one kept, then the separated one.
   assert.deepEqual(emptyDuplicates([{ ...br(`${Y}_2`, '$', 1), name: 'P' }, { ...br(Y, '$', 9), name: 'P' }], [], []), [`${Y}_2`]);
   assert.deepEqual(emptyDuplicates([{ ...br(`${Y}_2`, '$', 1), name: 'P' }, { ...br(sepId(X, '$'), '$', 9), name: 'P' }], [], []), [`${Y}_2`]);
-  // One the player picked stays; rules, a shot or a transfer count as use, so the empty one left is alone and stays.
+  // One the player picked stays; next to one with rules, a shot or a transfer, the empty one goes.
   assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P' }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], [], `${Y}_2`), [Y]);
-  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P' }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], [tx(Y, 'deposit', 1)]), []);
-  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P', rules: { cashBuyIns: 1, mttBuyIns: 1, stopLoss: 0, stopLossPer: 'day', target: 0 } }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], []), []);
+  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P' }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], [tx(Y, 'deposit', 1)]), [`${Y}_2`]);
+  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P', rules: { cashBuyIns: 1, mttBuyIns: 1, stopLoss: 0, stopLossPer: 'day', target: 0 } }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], []), [`${Y}_2`]);
   // Ones the player made (not automatic) are never touched.
   assert.deepEqual(emptyDuplicates([br('a', '$'), br('a2', '$')].map((b) => ({ ...b, name: 'P' })), [], []), []);
 });

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { parseBackup } from '../backup';
-import { alive, cleanDeleted, joinDeleted, revive } from '../deleted-math';
+import { sepId } from '../bankroll-math';
+import { alive, bankrollMark, cleanDeleted, joinDeleted, revive } from '../deleted-math';
 
 test('deletes: the later time of each wins, and only what was not edited after goes', () => {
   const d = joinDeleted({ 'sessions:a': 10, 'hands:x': 5 }, { 'sessions:a': 30 });
@@ -46,4 +47,19 @@ test('a restore brings back what was deleted here, newer than the other phone\'s
   // Nothing deleted here: the same lists.
   const same = { players: [{ id: 'x', updatedAt: 5 }] };
   assert.equal(revive(same, {}, 100).backup.players, same.players);
+});
+
+test('a bankroll mark has its currency: it drops that bankroll under either name, never the same id in another currency', () => {
+  const X = 'br_auto_10';
+  const eur = { id: X, currency: '€', updatedAt: 1 };
+  const usd = { id: X, currency: '$', updatedAt: 1 };
+  const usdCopy = { id: sepId(X, '$'), currency: '$', updatedAt: 1 };
+  const d = { ['bankrolls:' + bankrollMark(X, '$')]: 5 };
+  assert.deepEqual(alive([eur], 'bankrolls', d), [eur]);
+  assert.deepEqual(alive([usd, usdCopy], 'bankrolls', d), []);
+  // The separated copy's own mark drops the bankroll it was made from, in its currency.
+  assert.deepEqual(alive([eur, usd], 'bankrolls', { ['bankrolls:' + bankrollMark(sepId(X, '€'), '€')]: 5 }), [usd]);
+  // An older mark with no currency still matches the id; a restore revives what it matched.
+  assert.deepEqual(alive([eur], 'bankrolls', { ['bankrolls:' + X]: 5 }), []);
+  assert.deepEqual(revive({ bankrolls: [usdCopy] }, d, 9).revived, ['bankrolls:' + bankrollMark(X, '$')]);
 });

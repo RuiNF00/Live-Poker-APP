@@ -6,7 +6,7 @@
 import type { Festival } from '@/poker/festivals';
 
 import { mergeById, type BackupData } from './backup';
-import { separateBankrolls } from './bankroll-math';
+import { emptyDuplicates, separateBankrolls } from './bankroll-math';
 import { alive, joinDeleted } from './deleted-math';
 import { mergePlan, type FestivalPlan } from './festival-plan';
 import { mergeGroups } from './swap-groups';
@@ -22,6 +22,10 @@ export function mergeBackups(local: BackupData, remote: BackupData): BackupData 
   const deleted = joinDeleted(local.deleted, remote.deleted);
   out.deleted = deleted;
   for (const k of LISTS) (out as unknown as Record<string, unknown[]>)[k] = alive(mergeById((local[k] ?? []) as { id: string }[], (remote[k] ?? []) as { id: string }[]).list, k, deleted);
+  // The empty copies older syncs multiplied leave the server copy too, or each upload brings them back
+  // (the same ones each phone drops on load, so no delete mark).
+  const extra = emptyDuplicates(out.bankrolls ?? [], out.sessions, out.transfers ?? [], local.settings?.bankrollId);
+  if (extra.length) out.bankrolls = out.bankrolls?.filter((b) => !extra.includes(b.id));
   out.swaps = mergeSwaps(local.swaps ?? [], remote.swaps ?? []).list;
   out.swapGroups = mergeGroups(local.swapGroups ?? [], remote.swapGroups ?? []).list;
   const plans: Record<string, FestivalPlan> = { ...local.festivalPlans };

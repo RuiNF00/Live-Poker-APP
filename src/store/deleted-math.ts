@@ -5,6 +5,8 @@
 // then the edit wins, as it does between two edits. Kept on the phone and in
 // the backup (deleted.ts). Pure, so it can be tested without a phone.
 
+import { sepId } from './bankroll-math';
+
 export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing', 'ownFestivals', 'weekly'] as const;
 export type DeletedList = (typeof DELETED_LISTS)[number];
 /** 'sessions:<id>' → when it was deleted. */
@@ -15,6 +17,23 @@ const MAX = 5000;
 const KEY_RE = new RegExp(`^(${DELETED_LISTS.join('|')}):[^\\n]{1,100}$`);
 
 export const keyOf = (list: DeletedList, id: string) => `${list}:${id}`;
+
+/**
+ * A bankroll is deleted by id and currency (`bankrolls:<id>@<currency>`): two phones can hold one id in
+ * two currencies (bankroll-math.ts), and a delete on one must not reach the other's. The mark covers the
+ * bankroll under either of its names, its own id or the separated one (sepId), as foldSeparated treats
+ * them as one. Marks from older builds have no currency and match the id alone.
+ */
+export const bankrollMark = (id: string, currency: string) => `${id}@${currency}`;
+
+function keysOf(list: DeletedList, x: { id: string; currency?: unknown }): string[] {
+  if (list !== 'bankrolls' || typeof x.currency !== 'string') return [keyOf(list, x.id)];
+  const c = x.currency;
+  const keys = [keyOf(list, x.id), keyOf(list, bankrollMark(x.id, c)), keyOf(list, bankrollMark(sepId(x.id, c), c))];
+  const cut = x.id.lastIndexOf('~');
+  if (cut > 0 && x.id === sepId(x.id.slice(0, cut), c)) keys.push(keyOf(list, bankrollMark(x.id.slice(0, cut), c)));
+  return keys;
+}
 
 function capped(d: Deleted): Deleted {
   const keys = Object.keys(d);
@@ -42,10 +61,7 @@ export function joinDeleted(a: Deleted | undefined, b: Deleted | undefined): Del
 
 /** The list without what was deleted after its last edit. The same array when nothing goes. */
 export function alive<T extends { id: string; updatedAt?: number }>(items: T[], list: DeletedList, d: Deleted): T[] {
-  const gone = (x: T) => {
-    const at = d[keyOf(list, x.id)];
-    return at !== undefined && at >= (x.updatedAt ?? 0);
-  };
+  const gone = (x: T) => keysOf(list, x).some((k) => d[k] !== undefined && d[k] >= (x.updatedAt ?? 0));
   return items.some(gone) ? items.filter((x) => !gone(x)) : items;
 }
 
@@ -60,10 +76,12 @@ export function revive<B extends Partial<Record<DeletedList, { id: string; updat
   const out: B = { ...backup };
   for (const k of DELETED_LISTS) {
     const list = backup[k];
-    if (!list?.some((x) => here[keyOf(k, x.id)] !== undefined)) continue;
+    const marks = (x: { id: string }) => keysOf(k, x).filter((key) => here[key] !== undefined);
+    if (!list?.some((x) => marks(x).length)) continue;
     (out as Record<DeletedList, unknown>)[k] = list.map((x) => {
-      if (here[keyOf(k, x.id)] === undefined) return x;
-      revived.push(keyOf(k, x.id));
+      const m = marks(x);
+      if (!m.length) return x;
+      revived.push(...m);
       return { ...x, updatedAt: now };
     });
   }
