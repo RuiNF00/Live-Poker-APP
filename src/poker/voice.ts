@@ -1084,7 +1084,8 @@ function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
     for (let j = k - 1; j >= Math.max(0, k - 3); j--) {
       const p = atoms[j];
       if (p.t === 'break' || p.t === 'cards') continue;
-      if (isActor(p) && p.a.k === 'pos' && !used.has(j) && p.a.label !== setup.heroPos) who = p.a;
+      // "O UTG, com 12 mil, abre": the seat is also the next verb's subject, so a used one counts too.
+      if (isActor(p) && p.a.k === 'pos' && p.a.label !== setup.heroPos) who = p.a;
       break;
     }
     setup.stacks.push({ actor: who, amt: a.amt, implicit: true });
