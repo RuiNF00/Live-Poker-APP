@@ -3378,9 +3378,9 @@ const es: Record<string, string> = {
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Tenemos tolerancia cero con el contenido ofensivo y los abusos. Puedes denunciar o bloquear a quien lo haga. Nosotros retiramos ese contenido y apartamos a quien lo publicó.',
   'Só te perguntamos uma vez.': 'Solo te lo preguntamos una vez.',
   'A Sweatbook é só para maiores de 18': 'Sweatbook es solo para mayores de 18',
-  'A tua conta Apple indica menos de 18 anos. Onde a lei o exige, a app só abre a quem tem 18 ou mais.': 'Tu cuenta de Apple indica que tienes menos de 18 años. Donde la ley lo exige, la app solo se abre a quien tiene 18 o más.',
+  'A tua conta Apple indica menos de 18 anos. Onde a lei o exige, a app só abre a quem tem 18 ou mais.': 'Tu Cuenta de Apple indica que tienes menos de 18 años. Donde la ley lo exige, la app solo se abre para quien tiene 18 o más.',
   'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Só fica no telemóvel a indicação de que tens 18 ou mais.': 'Donde la ley lo exige, la app le pide a Apple tu rango de edad antes de abrirse. Solo queda en el teléfono la indicación de que tienes 18 o más.',
-  'Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.': 'No se pudo confirmar tu edad. Comprueba que has iniciado sesión con tu cuenta de Apple e inténtalo de nuevo.',
+  'Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.': 'No se pudo confirmar tu edad. Comprueba que iniciaste sesión con tu Cuenta de Apple e inténtalo de nuevo.',
   'Saber mais': 'Más información',
 };
 
