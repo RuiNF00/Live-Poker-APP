@@ -14,6 +14,7 @@ import { Sheet } from '@/components/staking/sheets';
 import { Button, Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { notifications, setup } from '@/lib/lock-screen/reminder';
+import { notice } from '@/lib/notice';
 import { notifyAmountsOn, notifyOrHold } from '@/lib/notify-gate';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';

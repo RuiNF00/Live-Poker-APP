@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { swapStore, validId } from '@/lib/swaps';
 import { swapCors, swapResponse, tokenOf } from '../../../shared';
 
@@ -10,6 +11,7 @@ export function OPTIONS() {
 
 /** Removes one of your own entries (a typo, a payment that bounced) -> { swap }. */
 export async function DELETE(req: Request, { params }: Ctx) {
+  if (await limited(req, 'swap-del', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: swapCors });
   const { id, entryId } = await params;
   const token = tokenOf(req);
   const ok = !!token && validId(id) && /^[A-Za-z0-9]{1,40}$/.test(entryId) && (await swapStore().removeEntry(id, token, entryId));

@@ -1,5 +1,5 @@
-// Swaps created without signal (swap-create-core.ts): the create waits in the outbox and the
-// swaps list shows it as waiting until it lands. Imported at startup so the sender is
+// Swaps created, confirmed or joined without signal (swap-create-core.ts): it waits in the outbox
+// and the swaps list shows it as waiting until it lands. Imported at startup so the sender is
 // registered before the outbox first drains.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,11 +7,13 @@ import { useEffect, useState } from 'react';
 
 import { saveGroup } from '@/store/swap-groups-store';
 import { saveSwap } from '@/store/swaps-store';
+import { t } from '@/i18n';
 
 import { onEraseAll } from './erase-all';
-import { createSwap } from './swap-api';
+import { notice } from './notice';
+import { confirmSwap, createSwap } from './swap-api';
 import { addPending, jobKey, pendingOf, runCreate, type CreateJob, type PendingCreate } from './swap-create-core';
-import { createGroup } from './swap-group-api';
+import { claimSeat, createGroup } from './swap-group-api';
 import { queue, queued, registerSender, unqueue } from './sync';
 
 const KIND = 'swap-create';
@@ -39,9 +41,9 @@ async function update(fn: (l: PendingCreate[]) => PendingCreate[]) {
 }
 
 /** No signal: the create goes out by itself when it's back, even after Voltar or a restart. */
-export function queueSwapCreate(job: CreateJob) {
+export function queueSwapCreate(job: CreateJob, link?: PendingCreate['link']) {
   queue(KIND, job, jobKey(job));
-  void update((l) => addPending(l, pendingOf(job, Date.now())));
+  void update((l) => addPending(l, pendingOf(job, Date.now(), link)));
 }
 
 /** The screen created it itself: nothing left to send. */
@@ -52,8 +54,12 @@ export function forgetSwapCreate(key: string) {
 
 registerSender(KIND, async (p) => {
   const job = p as CreateJob;
-  const out = await runCreate(job, { createSwap, createGroup, saveSwap, saveGroup });
+  const out = await runCreate(job, { createSwap, createGroup, confirmSwap, claimSeat, saveSwap, saveGroup });
   if (out !== 'retry') await update((l) => l.filter((x) => x.key !== jobKey(job)));
+  // Confirmed or joined at the table without signal, then refused (someone else got there first):
+  // say so, or the player thinks they're in.
+  if (out === 'drop' && job.kind === 'confirm') notice(t('Não foi possível confirmar'), t('O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.', { title: job.title }));
+  if (out === 'drop' && job.kind === 'claim') notice(t('Não foi possível entrar'), t('O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.', { title: job.title }));
   return out;
 });
 

@@ -1447,6 +1447,8 @@ const es: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'La mano que estabas registrando y la sesión en vivo quedaron guardadas. Vuelve y sigue; si vuelve a pasar, cierra y abre la app.',
   'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'No se borró nada de este teléfono. Inténtalo de nuevo; si no tienes conexión, conéctate primero.',
   'Sem rede': 'Sin conexión',
+  'Swap cheio': 'Swap lleno',
+  'Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.': 'Este swap ya tiene el máximo de registros. Crea un swap nuevo para los próximos torneos.',
   'Sem rede · {n} por enviar': 'Sin conexión · {n} por enviar',
   'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Todo guardado en el teléfono. Se envía cuando haya señal.',
   '1 por confirmar': '1 por confirmar',
@@ -3447,6 +3449,12 @@ const es: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Pagaste una vez: no hay suscripción que cancelar ni renovaciones.',
   'Toca para atualizar': 'Toca para actualizar',
   '{what}. Podes anular.': '{what}. Puedes deshacerlo.',
+  "A tua confirmação fica guardada e é enviada quando houver sinal.": "Tu confirmación queda guardada y se envía cuando haya señal.",
+  "Sem rede: a tua escolha fica guardada e é enviada quando houver sinal.": "Sin conexión: tu elección queda guardada y se envía cuando haya señal.",
+  "Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.": "Sin conexión: el swap se crea cuando haya señal y el link abre a partir de ahí.",
+  "O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.": "El swap «{title}» ya estaba confirmado. Abre el link otra vez para verlo.",
+  "O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.": "Tu lugar en «{title}» ya estaba elegido. Abre el link otra vez para elegir otro.",
+  "Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.": "Quedó sin registrar el ajuste en «{titles}»: ya tiene el máximo de registros. Los demás quedaron registrados.",
 };
 
 export default es;

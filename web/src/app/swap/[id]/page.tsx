@@ -6,9 +6,10 @@ import { brand } from '@/config/brand';
 import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { normalizeCode } from '@/lib/refcode';
 import { swapCreatorPro } from '@/lib/swap-pro';
-import { loadSwap as loadSwapById, publicSwap } from '@/lib/swaps';
+import { loadSwap as loadSwapById, madeOffline, publicSwap } from '@/lib/swaps';
 import { SwapView } from '@/components/swap/SwapView';
 import { swapCopy } from '@/components/swap/copy';
+import { OnTheWay } from '@/components/swap/OnTheWay';
 import { PageFooter } from '@/components/PageFooter';
 
 type Params = { params: Promise<{ id: string }> };
@@ -22,7 +23,8 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   const rec = await loadSwap(id);
   const locale = previewLocale(lang, (await headers()).get('accept-language'));
   const c = swapCopy(locale);
-  if (!rec) return { title: c.notFound, robots: { index: false }, referrer: 'no-referrer' };
+  // Neutral while it doesn't exist: a chat may keep this preview after the swap arrives.
+  if (!rec) return { title: c.swap, robots: { index: false }, referrer: 'no-referrer' };
   const t = rec.terms;
   const title = c.metaTitle(t.a.name, rec.confirmedName || t.b.name, t.title);
   // No amounts in the preview: the chat it lands in may have more than the two players.
@@ -41,8 +43,12 @@ export default async function SwapPage({ params, searchParams }: Params & Search
   const { id } = await params;
   const { r } = await searchParams;
   const rec = await loadSwap(id);
-  if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
+  if (!rec && madeOffline(id)) {
+    const c = swapCopy(locale);
+    return <OnTheWay title={c.onWay} body={c.onWayBody} retry={c.retry} />;
+  }
+  if (!rec) notFound();
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   // Who pays whom shows only when the swap's creator has Pro; otherwise just the results.
   const accounts = await swapCreatorPro(id);

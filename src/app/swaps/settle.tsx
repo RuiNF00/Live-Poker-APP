@@ -51,12 +51,16 @@ function SettleScreen() {
   async function settle() {
     setBusy(true);
     let queued = false;
+    // The ones that couldn't take it, by name: the rest are recorded.
+    const full: string[] = [];
     for (const st of steps) {
       const res = await addEntry(st.id, { kind: st.kind, amount: st.amount, event: '', finish: null });
       if (res === 'queued') queued = true;
+      if (res === 'full') full.push(chosen.find((x) => x.id === st.id)?.terms.title ?? '');
     }
     tap('success');
-    if (queued) notice(t('Sem rede'), t('O que registares fica guardado e é enviado quando houver sinal.'));
+    if (full.length) notice(t('Swap cheio'), t('Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.', { titles: full.filter(Boolean).join('», «') }));
+    else if (queued) notice(t('Sem rede'), t('O que registares fica guardado e é enviado quando houver sinal.'));
     router.back();
   }
 

@@ -1,19 +1,23 @@
 // The phone's swaps: a copy of each swap on the server plus this side's token, on disk like
 // every other list (per-item keys). Kept apart from the main store so swaps never re-render
 // hands or sessions. Prizes and payments added without signal wait here (pending) and go out
-// on the next sync.
+// on the next sync; so do my entries deleted without signal (removing). A swap deleted without
+// signal goes from the phone at once and from the server through the outbox.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
 import { appUserId } from '@/billing/purchases';
 import { onReconnect } from '@/lib/online';
+import { queue } from '@/lib/sync';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOwnerRc, SwapError } from '@/lib/swap-api';
 
 import { quarantine } from './boot';
+import { currentDeleted, loadDeleted, markDeleted } from './deleted';
+import { entryId, liveSwaps, reclaimDeleted } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
-import { mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { MAX_SWAP_ENTRIES, mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -31,16 +35,19 @@ function emit(next: Swap[]) {
 }
 
 function boot(): Promise<void> {
-  booting ??= loadCollection<Swap>(kv, SPEC, { fix: fixSwap }).then(async (d) => {
+  booting ??= Promise.all([loadCollection<Swap>(kv, SPEC, { fix: fixSwap }), loadDeleted()]).then(async ([d]) => {
     // Records that no longer parse are kept aside (backup and support file), not dropped.
     await quarantine(kv, d.bad);
     writer = createWriter(kv, SPEC, d.persisted, (e) => console.warn('[swaps] write failed', e));
     // Anything saved before loading finished goes on top of what was on disk.
     const ids = new Set(state.swaps.map((s) => s.id));
-    emit([...state.swaps, ...d.items.filter((s) => !ids.has(s.id))]);
+    emit(live([...state.swaps, ...d.items.filter((s) => !ids.has(s.id))]));
   });
   return booting;
 }
+
+/** Without what I deleted here or on my other phone (deleted-math.ts). */
+const live = (list: Swap[]) => liveSwaps(list, 'swaps', currentDeleted(), (e) => e.side);
 
 const subscribe = (l: () => void) => {
   listeners.add(l);
@@ -60,8 +67,10 @@ export async function getAllSwaps(): Promise<Swap[]> {
  */
 export async function importSwaps(incoming: Swap[]): Promise<number> {
   await boot();
-  const r = mergeSwaps(state.swaps, incoming);
-  if (r.list !== state.swaps) emit(r.list);
+  const r = mergeSwaps(state.swaps, live(incoming));
+  // A swap I deleted on my other phone goes from this one too (its deletes came in first).
+  const list = live(r.list);
+  if (list !== state.swaps) emit(list);
   return r.added;
 }
 
@@ -96,7 +105,7 @@ export function onSwapNews(l: News): () => void {
 function applyRemote(id: string, remote: RemoteSwap) {
   const cur = getSwap(id);
   if (!cur) return;
-  const next = mergeRemote(cur, remote);
+  const next = reclaimDeleted(mergeRemote(cur, remote), currentDeleted(), (e) => e.side === cur.side, (e) => e.side);
   saveSwap(next);
   const news = newFromOther(cur, next);
   if (news.length) newsListeners.forEach((l) => l(next, news));
@@ -110,13 +119,34 @@ export async function syncSwap(id: string): Promise<boolean> {
   await boot();
   let s = getSwap(id);
   if (!s || s.gone) return true;
+  // The last check before sending: an entry I deleted before it went out never goes.
+  const [kept] = live([s]);
+  if (kept !== s) {
+    if (kept) saveSwap(kept);
+    else emit(state.swaps.filter((x) => x.id !== id));
+    s = kept;
+    if (!s) return true;
+  }
   try {
+    for (const rid of s.removing ?? []) {
+      try {
+        const remote = await removeSwapEntry(id, s.token, rid);
+        dropRemoving(id, rid);
+        applyRemote(id, remote);
+      } catch (err) {
+        // Already gone there, or refused: off the list. No signal or the server busy: the next sync.
+        if (!(err instanceof SwapError) || retryable(err.status)) throw err;
+        dropRemoving(id, rid);
+      }
+    }
+    s = getSwap(id)!;
     for (const e of s.entries.filter((x) => x.pending)) {
       try {
         applyRemote(id, await addSwapEntry(id, s.token, e));
       } catch (err) {
         // Not confirmed yet: it stays pending. Refused for good (bad data): drop it.
-        if (err instanceof SwapError && err.status === 422) {
+        if (err instanceof SwapError && (err.status === 422 || err.status === 413)) {
+          if (err.status === 413) refused.add(e.cid);
           s = getSwap(id)!;
           saveSwap({ ...s, entries: s.entries.filter((x) => x.cid !== e.cid) });
         } else if (!(err instanceof SwapError)) throw err;
@@ -132,7 +162,7 @@ export async function syncSwap(id: string): Promise<boolean> {
       }
     }
     const remote = await fetchSwap(id, s.token);
-    if (!remote) saveSwap({ ...s, gone: true, entries: s.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
+    if (!remote) saveSwap({ ...s, gone: true, removing: undefined, entries: s.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
     else applyRemote(id, remote);
     return true;
   } catch {
@@ -145,45 +175,85 @@ export async function syncAllSwaps(): Promise<void> {
   await Promise.all(state.swaps.filter((s) => !s.gone && !s.archived).map((s) => syncSwap(s.id)));
 }
 
-/** A prize I won or a payment I made: saved at once, sent now or on the next sync. */
-export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>, sessionId?: string): Promise<'sent' | 'queued'> {
+/** Entries the server refused because the swap is full (413): addEntry answers 'full'. */
+const refused = new Set<string>();
+
+/**
+ * A prize I won or a payment I made: saved at once, sent now or on the next sync. 'full': the
+ * swap already holds MAX_SWAP_ENTRIES (the server's limit) and nothing was saved.
+ */
+export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>, sessionId?: string): Promise<'sent' | 'queued' | 'full'> {
   const s = getSwap(id);
   if (!s) return 'queued';
+  if (s.entries.length >= MAX_SWAP_ENTRIES) return 'full';
   // A «Paguei» or «Recebi» carries how many of the other side's matching entries were here (paidBySide).
   const cid = newCid() + seenTag(s.entries, s.side, e.kind, e.amount);
   const links = sessionId ? { ...s.links, [cid]: sessionId } : s.links;
   saveSwap({ ...s, links, entries: [...s.entries, { ...e, id: cid, cid, side: s.side, at: Date.now(), pending: true }], updatedAt: Date.now() });
   await syncSwap(id);
+  if (refused.delete(cid)) return 'full';
   return getSwap(id)?.entries.some((x) => x.cid === cid && x.pending) ? 'queued' : 'sent';
 }
 
-/** Removes one of my entries. One not sent yet just goes; a sent one needs signal. */
+const retryable = (status: number) => status === 408 || status === 429 || status >= 500;
+
+function dropRemoving(id: string, rid: string) {
+  const s = getSwap(id);
+  if (!s?.removing?.includes(rid)) return;
+  const removing = s.removing.filter((x) => x !== rid);
+  saveSwap({ ...s, removing: removing.length ? removing : undefined });
+}
+
+/** Removes one of my entries. One not sent yet just goes; a sent one goes now, or here at once and there on the next sync. */
 export async function removeEntry(id: string, entry: SwapEntry): Promise<boolean> {
   const s = getSwap(id);
   if (!s || entry.side !== s.side) return false;
   if (entry.pending || s.gone) {
+    // Kept as deleted: a backup or my other phone may still hold it pending (deleted-math.ts).
+    if (entry.pending) markDeleted('swapEntries', [entryId(id, entry.side, entry.cid)]);
     saveSwap({ ...s, entries: s.entries.filter((x) => x.cid !== entry.cid || x.side !== entry.side), updatedAt: Date.now() });
     return true;
   }
   try {
     applyRemote(id, await removeSwapEntry(id, s.token, entry.id));
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    // Refused (not mine): stays. No signal or the server busy: off this phone now, sent later.
+    const cur = getSwap(id)!;
+    // Already gone there: gone here too.
+    if (err instanceof SwapError && err.status === 404) {
+      saveSwap({ ...cur, entries: cur.entries.filter((x) => x.id !== entry.id), updatedAt: Date.now() });
+      return true;
+    }
+    if (err instanceof SwapError && !retryable(err.status)) return false;
+    saveSwap({
+      ...cur,
+      entries: cur.entries.filter((x) => x.id !== entry.id),
+      removing: [...(cur.removing ?? []).filter((x) => x !== entry.id), entry.id],
+      updatedAt: Date.now(),
+    });
+    return true;
   }
 }
 
-/** Deletes it on the server for both players, then here. False without signal. */
+/**
+ * Deletes it on the server for both players, then here. Without signal it goes from here now and
+ * from the server when the signal is back (outbox 'swap-delete', kept until the server answers).
+ * False only when the server refused it.
+ */
 export async function deleteSwapEverywhere(id: string): Promise<boolean> {
   const s = getSwap(id);
   if (!s) return true;
   if (!s.gone) {
     try {
       await deleteSwap(id, s.token);
-    } catch {
-      return false;
+    } catch (err) {
+      if (err instanceof SwapError && !retryable(err.status)) return false;
+      queue('swap-delete', { id, token: s.token }, id);
     }
   }
+  // So a backup or my other phone doesn't bring it back as «Apagado do servidor».
+  markDeleted('swaps', [id]);
   emit(state.swaps.filter((x) => x.id !== id));
   return true;
 }
@@ -201,5 +271,5 @@ boot();
 
 // The signal is back: results and payments saved without it go out now, not on the next visit.
 onReconnect(() => {
-  void boot().then(() => Promise.all(state.swaps.filter((s) => !s.gone && s.entries.some((e) => e.pending)).map((s) => syncSwap(s.id))));
+  void boot().then(() => Promise.all(state.swaps.filter((s) => !s.gone && (s.removing?.length || s.entries.some((e) => e.pending))).map((s) => syncSwap(s.id))));
 });

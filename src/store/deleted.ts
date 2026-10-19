@@ -3,7 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { parseOrQuarantine } from './boot';
-import { cleanDeleted, joinDeleted, keyOf, type Deleted, type DeletedList } from './deleted-math';
+import { cleanDeleted, joinDeleted, keyOf, swapMarks, type Deleted, type DeletedList } from './deleted-math';
 import type { KV } from './persist';
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -62,7 +62,11 @@ export function forgetDeleted(keys: string[]) {
   });
 }
 
-/** Delete all my data: the stored map is already gone, forget the one in memory. */
+/**
+ * Delete all my data: the stored map is already gone, forget the one in memory. The swaps' stay
+ * (written again): the swaps left the server, so a backup file restored later can't bring them back.
+ */
 export function clearDeleted() {
-  map = {};
+  map = swapMarks(map);
+  if (Object.keys(map).length) persist();
 }

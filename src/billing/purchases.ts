@@ -404,7 +404,11 @@ export async function restore(): Promise<RestoreResult> {
   }
 }
 
-/** Link the store customer to the Supabase account once the player signs in. */
+/**
+ * Link the store customer to the Supabase account once the player signs in. Unused today: before
+ * calling it, swaps need a proof of the RevenueCat id (web/src/lib/swap-pro.ts rcUserIdOf takes
+ * only anonymous ids).
+ */
 export async function identify(userId: string): Promise<void> {
   if (!LIVE) return;
   await (await rc()).logIn(userId).catch(() => {});

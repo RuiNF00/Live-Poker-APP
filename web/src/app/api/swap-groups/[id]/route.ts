@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { clientIp, rateLimited } from '@/lib/ratelimit';
 import { rcUserIdOf } from '@/lib/swap-pro';
 import { groupStore } from '@/lib/swap-groups';
@@ -19,6 +20,7 @@ export async function GET(req: Request, { params }: Ctx) {
 
 /** DELETE with a seat's token: the creator deletes it for everyone; anyone else leaves it. */
 export async function DELETE(req: Request, { params }: Ctx) {
+  if (await limited(req, 'swap-del', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: groupCors });
   const { id } = await params;
   const token = tokenOf(req);
   const ok = !!token && validGroupId(id) && (await groupStore().leave(id, token));

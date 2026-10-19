@@ -26,7 +26,7 @@ import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } f
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
-import { alive, bankrollMark, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
+import { alive, bankrollMark, DELETED_LISTS, joinDeleted, keyOf, liveSwaps, revive, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
 import { keepCuts, withCuts } from './staking';
@@ -609,7 +609,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
       // Counted against what's loaded now; importSwaps merges the same way.
-      const sw = mergeSwaps(currentSwaps(), b.swaps ?? []).added;
+      const sw = mergeSwaps(currentSwaps(), liveSwaps(b.swaps ?? [], 'swaps', del, (e) => e.side)).added;
       importSwaps(b.swaps ?? []).catch(() => {});
       importGroups(b.swapGroups ?? []).catch(() => {});
       importPlans(b.festivalPlans ?? {}).catch(() => {});

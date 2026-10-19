@@ -25,6 +25,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const store = groupStore();
   if ((await store.seat(id, token)) === null) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: groupCors });
   const ok = await store.addEntry(id, token, entry);
+  // Full: the app tells the player to start a new one; retrying never helps.
+  if (ok === 'full') return NextResponse.json({ error: 'full' }, { status: 413, headers: groupCors });
   if (!ok) return NextResponse.json({ error: 'not_confirmed' }, { status: 409, headers: groupCors });
   return groupResponse(id, token);
 }

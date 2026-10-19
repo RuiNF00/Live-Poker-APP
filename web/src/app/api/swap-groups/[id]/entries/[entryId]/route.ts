@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { groupStore } from '@/lib/swap-groups';
 import { groupCors, groupResponse, tokenOf, validGroupId } from '../../../shared';
 
@@ -10,6 +11,7 @@ export function OPTIONS() {
 
 /** Removes one of your own entries -> { group }. */
 export async function DELETE(req: Request, { params }: Ctx) {
+  if (await limited(req, 'swap-del', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: groupCors });
   const { id, entryId } = await params;
   const token = tokenOf(req);
   const ok = !!token && validGroupId(id) && /^[A-Za-z0-9]{1,40}$/.test(entryId) && (await groupStore().removeEntry(id, token, entryId));

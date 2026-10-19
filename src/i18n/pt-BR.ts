@@ -703,6 +703,8 @@ const ptBR: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'A mão que você estava registrando e a sessão ao vivo ficaram salvas. Volte e continue; se acontecer de novo, feche e abra o app.',
   'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'Nada foi apagado deste celular. Tente de novo; sem conexão, conecte-se primeiro.',
   'Sem rede': 'Sem conexão',
+  'Swap cheio': 'Swap cheio',
+  'Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.': 'Este swap já tem o máximo de registros. Crie um swap novo para os próximos torneios.',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
   'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Tudo salvo no celular. É enviado quando houver sinal.',
   '1 por confirmar': '1 a confirmar',
@@ -1780,6 +1782,12 @@ const ptBR: Record<string, string> = {
   'A tua subscrição continua a renovar até a cancelares na {store}.': 'Sua assinatura continua renovando até você cancelar na loja ({store}).',
   'Toca para atualizar': 'Toque para atualizar',
   '{what}. Podes anular.': '{what}. Você pode desfazer.',
+  'A tua confirmação fica guardada e é enviada quando houver sinal.': 'Sua confirmação fica salva e é enviada quando tiver sinal.',
+  'Sem rede: a tua escolha fica guardada e é enviada quando houver sinal.': 'Sem conexão: sua escolha fica salva e é enviada quando tiver sinal.',
+  'Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.': 'Sem conexão: o swap é criado quando tiver sinal e o link abre a partir daí.',
+  'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'O swap “{title}” já tinha sido confirmado. Abra o link de novo para ver.',
+  'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Seu lugar em “{title}” já tinha sido escolhido. Abra o link de novo para escolher outro.',
+  'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'Ficou sem registrar o acerto em “{titles}”: ele já tem o máximo de registros. Os outros foram registrados.',
 };
 
 export default ptBR;
