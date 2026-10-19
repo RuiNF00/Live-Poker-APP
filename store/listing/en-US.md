@@ -27,13 +27,13 @@ Live poker has no hand history. You either scribble on paper or you forget. {{AP
 LOG IN SECONDS
 • Positions, stacks and actions with the fewest taps possible
 • A one-handed card picker
+• Tell the hand by voice (Pro)
 • Tournament, level and table are remembered, so you never type them twice
 • Tags to find the hands that matter later (bluff, hero call, cooler…)
 • Quick notes on the players at your table
 
 REVIEW WITH THE REPLAYER
 • Replay every street with pot and stacks updated
-• Show amounts in chips or big blinds
 • Study on your break or at home
 
 SHARE AND GET FEEDBACK
@@ -92,13 +92,13 @@ Live poker has no hand history. You either scribble on paper or you forget. {{AP
 LOG IN SECONDS
 • Positions, stacks and actions with the fewest taps possible
 • A one-handed card picker
+• Tell the hand by voice (Pro)
 • Tournament, level and table are remembered, so you never type them twice
 • Tags to find the hands that matter later (bluff, hero call, cooler…)
 • Quick notes on the players at your table
 
 REVIEW WITH THE REPLAYER
 • Replay every street with pot and stacks updated
-• Show amounts in chips or big blinds
 • Study on your break or at home
 
 SHARE AND GET FEEDBACK

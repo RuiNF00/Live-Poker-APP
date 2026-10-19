@@ -24,13 +24,13 @@ En el póker en vivo no hay historial de manos. O lo anotas en un papel, o lo ol
 REGISTRA EN SEGUNDOS
 • Posiciones, stacks y acciones con el mínimo de toques
 • Un teclado de cartas para usar con una sola mano
+• Cuenta la mano por voz (Pro)
 • Torneo, nivel y mesa quedan guardados: no los vuelves a escribir
 • Etiquetas para encontrar después las manos que importan (bluff, hero call, cooler…)
 • Notas rápidas sobre los jugadores de tu mesa
 
 REPÁSALA EN EL REPLAYER
 • Repite la mano calle a calle, con el bote y los stacks actualizados
-• Mírala en fichas o en big blinds
 
 COMPARTE Y PIDE OPINIÓN
 • Envía la mano con un link: quien la recibe ve el replayer en el navegador, sin instalar nada
@@ -86,13 +86,13 @@ En el póker en vivo no hay historial de manos. O lo anotas en un papel, o lo ol
 REGISTRA EN SEGUNDOS
 • Posiciones, stacks y acciones con el mínimo de toques
 • Un teclado de cartas para usar con una sola mano
+• Cuenta la mano por voz (Pro)
 • Torneo, nivel y mesa quedan guardados: no los vuelves a escribir
 • Etiquetas para encontrar después las manos que importan (bluff, hero call, cooler…)
 • Notas rápidas sobre los jugadores de tu mesa
 
 REPÁSALA EN EL REPLAYER
 • Repite la mano calle a calle, con el bote y los stacks actualizados
-• Mírala en fichas o en big blinds
 
 COMPARTE Y PIDE OPINIÓN
 • Envía la mano con un link: quien la recibe ve el replayer en el navegador, sin instalar nada

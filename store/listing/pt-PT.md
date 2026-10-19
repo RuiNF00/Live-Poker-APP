@@ -27,13 +27,13 @@ No live não há histórico de mãos. Ou escreves num papel, ou esqueces. {{APP_
 REGISTA EM SEGUNDOS
 • Posições, stacks e ações com o mínimo de toques
 • Teclado de cartas para usar com uma mão só
+• Conta a mão por voz (Pro)
 • O torneio, o nível e a mesa ficam guardados: não voltas a escrever o mesmo
 • Tags para encontrares depois as mãos que interessam
 • Notas rápidas sobre os jogadores da tua mesa
 
 REVÊ COM O REPLAYER
 • Repete a mão rua a rua, com pote e stacks atualizados
-• Mostra em fichas ou em big blinds
 
 PARTILHA E PEDE OPINIÃO
 • Envia a mão com um link: quem recebe vê o replayer no browser, sem instalar nada
@@ -91,13 +91,13 @@ No live não há histórico de mãos. Ou escreves num papel, ou esqueces. {{APP_
 REGISTA EM SEGUNDOS
 • Posições, stacks e ações com o mínimo de toques
 • Teclado de cartas para usar com uma mão só
+• Conta a mão por voz (Pro)
 • O torneio, o nível e a mesa ficam guardados: não voltas a escrever o mesmo
 • Tags para encontrares depois as mãos que interessam
 • Notas rápidas sobre os jogadores da tua mesa
 
 REVÊ COM O REPLAYER
 • Repete a mão rua a rua, com pote e stacks atualizados
-• Mostra em fichas ou em big blinds
 
 PARTILHA E PEDE OPINIÃO
 • Envia a mão com um link: quem recebe vê o replayer no browser, sem instalar nada

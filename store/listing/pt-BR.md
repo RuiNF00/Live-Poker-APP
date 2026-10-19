@@ -24,13 +24,13 @@ No poker ao vivo não existe histórico de mãos. Ou você anota no papel, ou es
 REGISTRE EM SEGUNDOS
 • Posições, stacks e ações com o mínimo de toques
 • Cartas escolhidas em um teclado pensado para usar com uma mão só
+• Conte a mão por voz (Pro)
 • O torneio, o nível e a mesa ficam salvos: você não digita a mesma coisa de novo
 • Tags para achar depois as mãos que importam (bluff, hero call, cooler…)
 • Anotações rápidas sobre os jogadores da sua mesa
 
 REVEJA NO REPLAYER
 • Repita a mão street a street, com pote e stacks atualizados
-• Veja em fichas ou em big blinds
 
 COMPARTILHE E PEÇA OPINIÃO
 • Envie a mão por link: quem recebe vê o replayer no navegador, sem instalar nada
@@ -86,13 +86,13 @@ No poker ao vivo não existe histórico de mãos. Ou você anota no papel, ou es
 REGISTRE EM SEGUNDOS
 • Posições, stacks e ações com o mínimo de toques
 • Cartas escolhidas em um teclado pensado para usar com uma mão só
+• Conte a mão por voz (Pro)
 • O torneio, o nível e a mesa ficam salvos: você não digita a mesma coisa de novo
 • Tags para achar depois as mãos que importam (bluff, hero call, cooler…)
 • Anotações rápidas sobre os jogadores da sua mesa
 
 REVEJA NO REPLAYER
 • Repita a mão street a street, com pote e stacks atualizados
-• Veja em fichas ou em big blinds
 
 COMPARTILHE E PEÇA OPINIÃO
 • Envie a mão por link: quem recebe vê o replayer no navegador, sem instalar nada
