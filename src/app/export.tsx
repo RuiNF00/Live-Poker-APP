@@ -59,7 +59,9 @@ export default function ExportScreen() {
   }, [fromText, toText, now]);
   const range = useMemo(() => rangeOf(period, now, custom), [period, now, custom]);
   const report = useMemo(() => buildReport({ sessions, transfers, bankrolls, scope, range, trips, home: settings.currency }), [sessions, transfers, bankrolls, scope, range, trips, settings.currency]);
-  const tax = useMemo(() => taxReport(report.currencies.flatMap((c) => c.sessions), range, report.trips), [report, range]);
+  // Every trip, not only those overlapping the range: a flight paid in December for a January trip
+  // is December's expense. taxReport keeps the expenses dated in the range.
+  const tax = useMemo(() => taxReport(report.currencies.flatMap((c) => c.sessions), range, trips.map((trip) => ({ trip }))), [report, range, trips]);
   const main = report.currencies[0];
   const ids = scope ? scopeIds(scope, bankrolls) : null;
   const handsIn = hands.filter((h) => inRange(h.createdAt, range)).length;

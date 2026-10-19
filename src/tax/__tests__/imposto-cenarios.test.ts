@@ -124,3 +124,11 @@ test('a trip expense in a currency with no rate is not dropped without a word', 
   const { tax, html } = pdf([sess({ country: 'CZ' })], Y(2026), [trip]);
   assert.ok(tax.expenses.some((e) => e.currency === 'CZK') || /CZK|Kč/.test(html), 'the CZK hotel shows somewhere');
 });
+
+test('a flight paid the year before the trip counts in the year it was paid', () => {
+  const trip: Trip = { id: 't', name: 'Vegas', venue: 'Aria', currency: '$', from: at(2027, 0, 10), to: at(2027, 0, 20), createdAt: 0,
+    expenses: [{ id: 'f', kind: 'flight', amount: 900, currency: '$', at: at(2026, 11, 15), note: '' }] };
+  // The export screen passes every trip; the expense's own date picks the year.
+  const total = (y: number) => taxReport([], Y(y), [{ trip }]).expenses.find((e) => e.currency === '$')?.total ?? 0;
+  assert.deepEqual([total(2026), total(2027)], [900, 0]);
+});
