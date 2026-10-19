@@ -14,6 +14,12 @@ begin
   select c.rc_user_id into friend_rc from referral_codes c where c.install_id = p_friend;
   if friend_rc is null then return; end if;
   select c.rc_user_id into ref_rc from referral_codes c where c.install_id = r.referrer_install_id;
+  -- Two installs on one RevenueCat user activating at once would both pass the checks below
+  -- (the row lock is per install): one at a time per RevenueCat user, always in the same order.
+  perform pg_advisory_xact_lock(hashtext('referral_rc:' || least(friend_rc, coalesce(ref_rc, friend_rc))));
+  if ref_rc is not null and ref_rc <> friend_rc then
+    perform pg_advisory_xact_lock(hashtext('referral_rc:' || greatest(friend_rc, ref_rc)));
+  end if;
   update referrals set activated_at = now() where friend_install_id = p_friend;
   if ref_rc is not null and ref_rc = friend_rc then return; end if;
 
