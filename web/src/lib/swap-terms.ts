@@ -184,7 +184,7 @@ export function seenTag(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[], 
 
 /** Who owes whom: each side's percentage of the other's prizes, less what each already paid. */
 /**
- * Each entry once per player and cid, as the app counts them. Before swap_entry_lock.sql the
+ * Each entry once per player and cid, as the app counts them. Before 20261019070000_swap_entry_lock.sql the
  * server could save a retry sent at the same moment as the first try twice.
  */
 export function onePerCid<E extends { cid?: string }>(entries: E[], who: (e: E) => string | number): E[] {

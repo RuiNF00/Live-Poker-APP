@@ -91,7 +91,7 @@ export const groupShareOf = (g: Pick<SwapGroup, 'terms'>, amount: number) => r2(
 export const groupOwedOn = (g: Pick<SwapGroup, 'terms' | 'seats'>, amount: number) => r2(groupShareOf(g, amount) * (g.seats.length - 1));
 
 /**
- * Each entry once per player and cid. Before swap_entry_lock.sql the server could save a retry
+ * Each entry once per player and cid. Before 20261019070000_swap_entry_lock.sql the server could save a retry
  * sent at the same moment as the first try twice; those copies never count twice.
  */
 export function onePerCid<E extends { cid?: string }>(entries: E[], who: (e: E) => string | number): E[] {
