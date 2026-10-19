@@ -50,9 +50,9 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 - Gambling / contests, real-money gambling: **No**.
 - Mature themes, violence, profanity, medical, alcohol/tobacco/drugs: **None**.
 - User-generated content: **Yes** (shared hands and comments). Requires report + removal, see `review-risks.md`.
-- Social media: **No** (no feed, no follows, no conversations).
+- Social media: **No** (no feed, no follows, no conversations; /h and /u are noindex, no sitemap, no people search).
 - Messaging and chat: **Yes**. Apple's definition includes "public posting", and per-street comments on shared hands are public posts (pesquisa/apple-classificacao-etaria.md).
-- Unrestricted web access: **No**, pending the Replayer's check that no in-app browser has a free address bar (if one does, the answer is Yes).
+- Unrestricted web access: **No**. No WebView; expo-web-browser only opens our own fixed URLs, with no editable address bar (Replayer, v17, qa/classificacao-etaria-codigo.md).
 - Age assurance questions (2025+): parental controls **No**, age verification **No**, ads **No** (the app shows no ads).
 - The answers compute **4+** (Brazil A12). Then **Override to Higher Age Rating → 18+**, which Apple makes mandatory when the terms set a higher minimum age ("you must override"); ours say 18+. Over-rating never causes a rejection.
 
