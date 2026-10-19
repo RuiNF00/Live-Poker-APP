@@ -75,7 +75,7 @@ export default function TrialNotice() {
               <ListItem icon="albums-outline" title={FREE.handsPerDay ? t('{n} mãos novas por dia', { n: FREE.handsPerDay }) : t('Mãos ilimitadas')} />
               <ListItem icon="link-outline" title={t('Partilha por link sem limite')} />
               <ListItem icon="play-circle-outline" title={t('Replayer, sessões e bankroll')} />
-              <ListItem icon="calculator-outline" title={t('Calculadora de odds e planeador de festivais')} />
+              <ListItem icon="calculator-outline" title={t('Calculadora de equity e planeador de festivais')} />
             </ListGroup>
           </View>
         ) : reason === null ? (
