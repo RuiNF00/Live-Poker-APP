@@ -99,6 +99,7 @@ test('amounts: yen and won have no cents, letter codes get a space', async () =>
   assert.doesNotMatch(rawMoney(1234.56, 'JPY'), /[.,]56/);
   assert.match(rawMoney(500.4, 'JPY'), /500/);
   assert.match(rawMoney(12.5, '€'), /12,50|12\.50/);
-  assert.match(rawMoney(300, 'SEK'), /300 SEK|SEK 300/);
+  // A no-break space, so "300 SEK" never ends a line on 300.
+  assert.match(rawMoney(300, 'SEK'), /300\u00a0SEK|SEK\u00a0300/);
   assert.match(rawMoney(300, 'CAD'), /CA\$/);
 });

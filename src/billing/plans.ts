@@ -3,6 +3,7 @@
 // Real prices shown on the paywall come from the store (RevenueCat); the
 // numbers below are only the fallback when the store can't be reached.
 
+import { unbroken } from '../../packages/hand-format/src/money';
 import { t } from '../i18n';
 
 export const ENTITLEMENT = 'pro';
@@ -308,9 +309,9 @@ export function perMonth(annualPrice: number, currency?: string): number {
 /** Price in the store's own currency, for numbers we derive (per month, a year of monthly). */
 export function formatPrice(n: number, currency: string, locale: string): string {
   try {
-    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n);
+    return unbroken(new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n));
   } catch {
-    return `${n.toFixed(2)} ${currency}`;
+    return unbroken(`${n.toFixed(2)} ${currency}`);
   }
 }
 
@@ -334,7 +335,7 @@ export function priceLike(priceString: string, n: number, currency: string, loca
   const dec = decAt >= 0 ? num[decAt] : fractional ? localeDecimal(locale, group) : null;
   const [i, f] = n.toFixed(dec ? fd : 0).split('.');
   const grouped = i.replace(/\B(?=(\d{3})+(?!\d))/g, group);
-  return priceString.replace(num, dec && f ? grouped + dec + f : grouped);
+  return unbroken(priceString.replace(num, dec && f ? grouped + dec + f : grouped));
 }
 
 /** The locale's decimal mark, never the same as the group mark the store used. */

@@ -370,7 +370,8 @@ function PlanCard({
               <T v="h3">{title}</T>
               {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
-            <T v="tiny" numberOfLines={bigText ? undefined : 2}>
+            {/* Wraps rather than clips: at 150% on 360 pt «Cancela quando quiseres» lost its end. */}
+            <T v="tiny">
               {line}
             </T>
           </View>
@@ -408,7 +409,7 @@ function PlanCard({
             </T>
           ) : null}
         </Row>
-        <T v="small" numberOfLines={1}>
+        <T v="small">
           {line}
         </T>
       </View>
