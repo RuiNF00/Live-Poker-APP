@@ -3372,7 +3372,7 @@ const es: Record<string, string> = {
   '{what}. Podes anular.': '{what}. Puedes deshacerlo.',
   'Antes de publicares': 'Antes de publicar',
   'Aceito': 'Acepto',
-  'Ao aceitar, concordas com os': 'Al aceptar, aceptas los',
+  'Ao aceitar, concordas com os': 'Al aceptar, estás de acuerdo con los',
   'Termos de utilização': 'Términos de uso',
   'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Tus comentarios, las manos que compartes y tu perfil público pueden verlos otras personas.',
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Tenemos tolerancia cero con el contenido ofensivo y los abusos. Puedes denunciar o bloquear a quien lo haga. Nosotros retiramos ese contenido y apartamos a quien lo publicó.',

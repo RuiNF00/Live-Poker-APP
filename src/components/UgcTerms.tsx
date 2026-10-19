@@ -59,6 +59,7 @@ export function useUgcTerms(): [React.ReactNode, () => Promise<boolean>] {
               <T v="small" color={C.accent} style={{ textDecorationLine: 'underline' }}>
                 {t('Termos de utilização')}
               </T>
+              .
             </T>
           </Pressable>
           <Button title={t('Aceito')} onPress={() => finish(true)} />
