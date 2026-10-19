@@ -12,7 +12,7 @@ const s = (id: string, start: string, buyIn: number, cashOut: number, more: Part
 test('the same night from another app is flagged, whatever the venue or start hour says', () => {
   const have = [s('a', '2025-02-03T21:00', 200, 450, { venue: 'Casino Estoril' })];
   const file = [s('imp_1', '2025-02-03T18:00', 200, 450, { venue: 'Estoril' }), s('imp_2', '2025-02-04T18:00', 200, 450)];
-  assert.deepEqual([...likelyDuplicates(file, have)], ['imp_1']);
+  assert.deepEqual([...likelyDuplicates(file, have)].map(([id, e]) => [id, e.id]), [['imp_1', 'a']]);
 });
 
 test('a different result, kind or currency is not a duplicate', () => {
@@ -44,6 +44,8 @@ test('an app that rounds to whole units still matches; two decimals that differ 
   const have = [s('a', '2025-02-03T21:00', 100, 250.6)];
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 251)], have).size, 1);
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 250.4)], have).size, 0);
+  // 150.30 - 50.30 is not exactly 100 in floating point: still a whole 100, so 100.40 from a rounding app matches.
+  assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 50.3, 150.7)], [s('a', '2025-02-03T21:00', 50.3, 150.3)]).size, 1);
   // Rounding never moves more than 0.50: 150.01 against 151 is another night.
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 251)], [s('a', '2025-02-03T21:00', 100, 250.01)]).size, 0);
   // +100 and +101 on the same day are two different nights.

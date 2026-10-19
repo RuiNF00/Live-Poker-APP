@@ -17,16 +17,18 @@ const dayKey = (t: number) => {
 /** The whole action at the table: other apps have no stakes, swaps, makeup, tips or expenses. */
 const gross = (s: Session) => (s.cashOut || 0) - (s.buyIn || 0) * (s.entries || 1) - (s.addOn || 0);
 
+/** In whole cents: 150.30 - 50.30 is 100.00000000000001 in floating point, and still a whole 100. */
+const cents = (x: number) => Math.round(x * 100);
 /** To the cent, or at most 0.50 apart when only one side is whole: that app rounded. Two whole amounts must be equal. */
 const sameAmount = (a: number, b: number) => {
-  const d = Math.abs(Math.round(a * 100) - Math.round(b * 100));
-  return d === 0 || (d <= 50 && Number.isInteger(a) !== Number.isInteger(b));
+  const d = Math.abs(cents(a) - cents(b));
+  return d === 0 || (d <= 50 && (cents(a) % 100 === 0) !== (cents(b) % 100 === 0));
 };
 
 const near = (a: number, b: number) => dayKey(a) === dayKey(b) || Math.abs(a - b) < THREE_HOURS;
 
-/** Ids of incoming sessions that match an existing one, each existing session matched at most once. */
-export function likelyDuplicates(incoming: Session[], existing: Session[]): Set<string> {
+/** Incoming session id → the existing session it matches, each existing session matched at most once. */
+export function likelyDuplicates(incoming: Session[], existing: Session[]): Map<string, Session> {
   const have = new Set(existing.map((s) => s.id));
   const byKind = new Map<string, Session[]>();
   for (const s of existing) {
@@ -36,7 +38,7 @@ export function likelyDuplicates(incoming: Session[], existing: Session[]): Set<
     else byKind.set(k, [s]);
   }
   const used = new Set<string>();
-  const out = new Set<string>();
+  const out = new Map<string, Session>();
   for (const s of incoming) {
     // Same id: the import merges it anyway.
     if (have.has(s.id)) continue;
@@ -44,7 +46,7 @@ export function likelyDuplicates(incoming: Session[], existing: Session[]): Set<
     const pair = byKind.get(s.kind + '|' + s.currency)?.find((e) => !used.has(e.id) && near(e.startedAt, s.startedAt) && sameAmount(gross(e), g));
     if (pair) {
       used.add(pair.id);
-      out.add(s.id);
+      out.set(s.id, pair);
     }
   }
   return out;
@@ -58,7 +60,7 @@ export function likelyDuplicateMoves(incoming: ImportedMove[], existing: Transfe
   const out = new Set<string>();
   for (const m of incoming) {
     if (have.has(m.id)) continue;
-    const pair = existing.find((x) => !used.has(x.id) && x.kind === m.kind && currency.get(x.bankrollId) === m.currency && dayKey(x.at) === dayKey(m.at) && Math.round(x.amount * 100) === Math.round(m.amount * 100));
+    const pair = existing.find((x) => !used.has(x.id) && x.kind === m.kind && currency.get(x.bankrollId) === m.currency && dayKey(x.at) === dayKey(m.at) && cents(x.amount) === cents(m.amount));
     if (pair) {
       used.add(pair.id);
       out.add(m.id);

@@ -395,9 +395,22 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
   // The same night from another app, or typed by hand: left out unless the player says otherwise.
   const dups = useMemo(() => likelyDuplicates(r.sessions, local), [r.sessions, local]);
   const dupMoves = useMemo(() => likelyDuplicateMoves(r.moves, localTx, bankrolls), [r.moves, localTx, bankrolls]);
-  const [keepDups, setKeepDups] = useState(false);
-  const skip = keepDups ? new Set<string>() : new Set([...dups, ...dupMoves]);
+  // The repeats the player chose to import anyway: all at once with the switch, or one by one with a tap.
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set());
+  const dupIds = [...dups.keys(), ...dupMoves];
+  const keepDups = dupIds.length > 0 && dupIds.every((id) => chosen.has(id));
+  const setKeepDups = (on: boolean) => setChosen(on ? new Set(dupIds) : new Set());
+  const pick = (id: string) =>
+    setChosen((c) => {
+      const next = new Set(c);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const skip = new Set(dupIds.filter((id) => !chosen.has(id)));
   const fresh = r.sessions.filter((s) => !have.has(s.id) && !skip.has(s.id)).length;
+  // Same id: already in Sweatbook. Repeats found by day and result are listed apart, below.
+  const already = r.sessions.filter((s) => have.has(s.id)).length;
   const freshMoves = r.moves.filter((m) => !have.has(m.id) && !skip.has(m.id)).length;
   const deposits = r.moves.filter((m) => m.kind === 'deposit').length;
   const fileCurrencies = currenciesOf(r.sessions, r.moves, settings.currency);
@@ -461,9 +474,9 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
             />
           </Card>
         ) : null}
-        {r.transfers || r.unreadable || fresh < r.sessions.length ? (
+        {r.transfers || r.unreadable || already ? (
           <Card tone="inset" style={{ gap: 6, paddingVertical: S.md }}>
-            {fresh < r.sessions.length ? <Note icon="copy-outline" text={r.sessions.length - fresh === 1 ? t('1 já está no Sweatbook e não entra outra vez.') : t('{n} já estão no Sweatbook e não entram outra vez.', { n: r.sessions.length - fresh })} /> : null}
+            {already ? <Note icon="copy-outline" text={already === 1 ? t('1 já está no Sweatbook e não entra outra vez.') : t('{n} já estão no Sweatbook e não entram outra vez.', { n: already })} /> : null}
             {r.transfers ? <Note icon="swap-horizontal" text={r.transfers === 1 ? t('1 depósito ou levantamento sem data ou valor fica de fora.') : t('{n} depósitos ou levantamentos sem data ou valor ficam de fora.', { n: r.transfers })} /> : null}
             {r.unreadable ? <Note icon="help-circle-outline" text={r.unreadable === 1 ? t('1 linha sem data ou sem valores fica de fora.') : t('{n} linhas sem data ou sem valores ficam de fora.', { n: r.unreadable })} /> : null}
             {currencies.size > 1 ? <Note icon="cash-outline" text={t('Há sessões em {n} moedas; cada uma fica na sua.', { n: currencies.size })} /> : null}
@@ -479,6 +492,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
                 subtitle={[
                   dups.size === 0 ? '' : dups.size === 1 ? t('1 sessão tem o mesmo dia e resultado de uma que já tens.') : t('{n} sessões têm o mesmo dia e resultado de outras que já tens.', { n: dups.size }),
                   dupMoves.size === 0 ? '' : dupMoves.size === 1 ? t('1 depósito ou levantamento igual a um que já tens.') : t('{n} depósitos ou levantamentos iguais a outros que já tens.', { n: dupMoves.size }),
+                  dups.size ? t('Toca numa para a escolher.') : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -490,14 +504,26 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
               {list
                 .filter((s) => dups.has(s.id))
                 .slice(0, 20)
-                .map((s) => (
-                  <ListItem
-                    key={s.id}
-                    title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
-                    subtitle={[fullDate(s.startedAt), s.kind === 'mtt' ? t('Torneio') : 'Cash', s.venue].filter(Boolean).join(' · ')}
-                    right={<Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />}
-                  />
-                ))}
+                .map((s) => {
+                  const twin = dups.get(s.id)!;
+                  const on = chosen.has(s.id);
+                  return (
+                    <ListItem
+                      key={s.id}
+                      icon={on ? 'checkmark-circle' : 'ellipse-outline'}
+                      iconColor={on ? C.good : C.muted}
+                      title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
+                      subtitle={[
+                        [whenOf(s.startedAt), s.kind === 'mtt' ? t('Torneio') : 'Cash', s.venue].filter(Boolean).join(' · '),
+                        t('Parecida com: {session}', { session: [twin.name, whenOf(twin.startedAt), twin.venue].filter(Boolean).join(' · ') }),
+                      ].join('\n')}
+                      numberOfLines={4}
+                      right={<Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />}
+                      onPress={() => pick(s.id)}
+                      accessibilityLabel={(on ? t('Entra: {name}', { name: s.name }) : t('Fica de fora: {name}', { name: s.name }))}
+                    />
+                  );
+                })}
             </ListGroup>
             {dups.size > 20 ? <T v="small">{t('E mais {n}.', { n: dups.size - 20 })}</T> : null}
           </View>
@@ -759,6 +785,11 @@ function Note({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['nam
       </T>
     </Row>
   );
+}
+
+/** Date and time: two €100 tournaments on the same day are told apart by the hour. */
+function whenOf(ts: number): string {
+  return new Date(ts).toLocaleString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function fullDate(ts: number): string {

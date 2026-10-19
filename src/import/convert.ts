@@ -466,7 +466,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     }
     // Poker Ledger leaves the end and the cash-out empty while a session is still on: not a loss of the whole buy-in.
     if (opt.source === 'pokerledger' && !get(r, 'end') && !get(r, 'cashOut')) {
-      unreadable++;
+      // Listed with its own reason, not counted as a row without a date or values.
       failed.push({ line, reason: 'running', value: get(r, 'start') });
       continue;
     }

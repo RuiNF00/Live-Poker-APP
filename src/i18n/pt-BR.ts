@@ -1676,6 +1676,7 @@ const ptBR: Record<string, string> = {
   '{n} parecidas com sessões que já tinhas ficaram de fora.': '{n} parecidas com sessões que você já tinha ficaram de fora.',
   '1 depósito ou levantamento igual a um que já tinhas ficou de fora.': '1 depósito ou saque igual a um que você já tinha ficou de fora.',
   '{n} depósitos ou levantamentos iguais a outros que já tinhas ficaram de fora.': '{n} depósitos ou saques iguais a outros que você já tinha ficaram de fora.',
+  'Toca numa para a escolher.': 'Toque numa para escolhê-la.',
 };
 
 export default ptBR;
