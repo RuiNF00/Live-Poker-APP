@@ -97,6 +97,26 @@ describe('the webhook route', () => {
   });
 });
 
+describe('webhook retries and the Authorization value', () => {
+  it('records a retried event once, also when both deliveries arrive together', async () => {
+    process.env.REVENUECAT_WEBHOOK_AUTH = 's3cret';
+    const once = vi.spyOn(getStore(), 'logEventOnce');
+    const ev = { ...conversion, id: 'rc-evt-1' };
+    const [a, b] = await Promise.all([post({ event: ev }, 's3cret'), post({ event: ev }, 's3cret')]);
+    expect([a.status, b.status]).toEqual([204, 204]);
+    expect(once).toHaveBeenCalledTimes(2);
+    const results = await Promise.all(once.mock.results.map((r) => r.value));
+    expect(results.filter(Boolean)).toHaveLength(1);
+  });
+
+  it('takes the secret with or without «Bearer »', async () => {
+    process.env.REVENUECAT_WEBHOOK_AUTH = 's3cret';
+    expect((await post({ event: { ...conversion, type: 'TRANSFER' } }, 's3cret')).status).toBe(204);
+    expect((await post({ event: { ...conversion, type: 'TRANSFER' } }, 'Bearer s3cret')).status).toBe(204);
+    expect((await post({ event: { ...conversion, type: 'TRANSFER' } }, 'Bearer s3cre')).status).toBe(401);
+  });
+});
+
 describe('the public events route', () => {
   it('refuses the events only the webhook writes', async () => {
     const send = (event: string) =>

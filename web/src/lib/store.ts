@@ -71,6 +71,8 @@ export interface ShareStore {
   vote(id: string, voterId: string, choice: VoteChoice, ipHash: string): Promise<void>;
   voteCounts(id: string): Promise<Partial<Record<VoteChoice, number>>>;
   logEvent(e: AppEvent): Promise<void>;
+  /** logEvent once per id (a RevenueCat webhook retry carries the same event id). True when it was new. */
+  logEventOnce(id: string, e: AppEvent): Promise<boolean>;
   /** Deletes usage events older than 12 months (privacy policy retention). */
   purgeOldEvents(): Promise<void>;
 }
@@ -309,6 +311,18 @@ class SupabaseStore implements ShareStore {
     if (error) throw error;
   }
 
+  async logEventOnce(id: string, e: AppEvent) {
+    const { data, error } = await this.db.rpc('log_rc_event', {
+      p_id: id,
+      p_event: e.event,
+      p_install_id: e.installId,
+      p_platform: e.platform,
+      p_props: e.props,
+    });
+    if (error) throw error;
+    return data === true;
+  }
+
   async purgeOldEvents() {
     await this.db.rpc('purge_old_app_events');
     await this.db.rpc('purge_moderation');
@@ -328,6 +342,7 @@ interface LocalData {
   /** Blocked author keys per hand. */
   blocks?: Record<string, string[]>;
   events?: (AppEvent & { createdAt: string })[];
+  rcSeen?: string[];
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -531,6 +546,17 @@ class LocalStore implements ShareStore {
     await this.mutate((d) => {
       d.events = [...(d.events ?? []), { ...e, createdAt: new Date().toISOString() }].slice(-2000);
     });
+  }
+
+  async logEventOnce(id: string, e: AppEvent) {
+    let fresh = false;
+    await this.mutate((d) => {
+      if ((d.rcSeen ?? []).includes(id)) return;
+      fresh = true;
+      d.rcSeen = [...(d.rcSeen ?? []), id].slice(-5000);
+      d.events = [...(d.events ?? []), { ...e, createdAt: new Date().toISOString() }].slice(-2000);
+    });
+    return fresh;
   }
 
   async purgeOldEvents() {

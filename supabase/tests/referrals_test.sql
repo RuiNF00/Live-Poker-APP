@@ -252,3 +252,15 @@ select count(*) = 0 as friend_once_survives_erase from referral_rewards where in
 select count(*) = 0 as referrer_not_paid_for_returning_friend from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'referrer';
 select count(*) = 1 as new_friend_still_gets_theirs from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000002' and role = 'friend';
 select count(*) = 0 as tally_has_no_raw_ids from referral_rc_tally where rc_hash like 'rc_%';
+
+-- RevenueCat webhook retries: one event per id (Swaps QA, 19 Oct).
+set role service_role;
+select log_rc_event('rc-evt-1', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{"plan":"monthly"}') as first_delivery_recorded;
+select not log_rc_event('rc-evt-1', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{"plan":"monthly"}') as retry_not_recorded;
+reset role;
+select count(*) = 1 as one_row_per_rc_event from app_events where install_id = '99999999-9999-4999-8999-999999999999';
+\set ON_ERROR_STOP off
+set role anon;
+select log_rc_event('rc-evt-2', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{}');
+reset role;
+\set ON_ERROR_STOP on

@@ -3,6 +3,8 @@
 // trial's outcome comes from RevenueCat's server instead.
 
 export interface RcWebhookEvent {
+  /** RevenueCat's own event id: a retry carries the same one. */
+  id?: string;
   type?: string;
   period_type?: string;
   is_trial_conversion?: boolean;
