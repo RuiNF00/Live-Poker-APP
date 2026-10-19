@@ -72,7 +72,7 @@ export function sepId(id: string, currency: string): string {
  * phones copying to each other end with the same two bankrolls, never a new one per copy.
  * Its sessions (in its currency) and transfers follow it.
  */
-export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: Session[]; transfers?: Transfer[] }>(local: Bankroll[], incoming: B): B {
+export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: Session[]; transfers?: Transfer[]; deleted?: Record<string, number> }>(local: Bankroll[], incoming: B): B {
   const mine = new Map(local.map((b) => [b.id, b.currency]));
   const to = (id: string, currency: string) => {
     const here = mine.get(id);
@@ -86,13 +86,46 @@ export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: 
   // A session follows the bankroll it points at, in that bankroll's currency: one in another currency
   // stays a mismatch and counts where it did on the other phone (its currency's own bankroll).
   const sid = (x: Session) => (x.bankrollId ? to(x.bankrollId, cur.get(x.bankrollId) ?? x.currency) : undefined);
-  if (!list.some((b) => to(b.id, b.currency) !== b.id) && !incoming.sessions.some((x) => sid(x) !== x.bankrollId)) return incoming;
+  const deleted = currencyMarks(local, list, incoming.deleted);
+  if (deleted === incoming.deleted && !list.some((b) => to(b.id, b.currency) !== b.id) && !incoming.sessions.some((x) => sid(x) !== x.bankrollId)) return incoming;
   return {
     ...incoming,
+    ...(deleted !== incoming.deleted ? { deleted } : null),
     bankrolls: list.map((b) => (to(b.id, b.currency) !== b.id ? { ...b, id: to(b.id, b.currency) } : b)),
     sessions: incoming.sessions.map((x) => (sid(x) !== x.bankrollId ? { ...x, bankrollId: sid(x) } : x)),
     transfers: incoming.transfers?.map((x) => (cur.has(x.bankrollId) && to(x.bankrollId, cur.get(x.bankrollId)!) !== x.bankrollId ? { ...x, bankrollId: to(x.bankrollId, cur.get(x.bankrollId)!) } : x)),
   };
+}
+
+/**
+ * Bankroll delete marks from older builds have no currency (deleted-math.ts). One for an id held here
+ * in another currency is for the other phone's bankroll: its currency comes from the other phone's
+ * list, or from the separated copy of it kept here, and the mark gets it, so it can't drop this
+ * phone's. When none of those say but the other phone keeps this one's as a separated copy, the mark
+ * was for a bankroll this phone doesn't have and is left out. Otherwise it is this phone's own (the same
+ * bankroll on both).
+ */
+function currencyMarks(local: Bankroll[], incoming: Bankroll[], d: Record<string, number> | undefined): Record<string, number> | undefined {
+  if (!d) return d;
+  const mine = new Map(local.map((b) => [b.id, b.currency]));
+  const theirs = new Map(incoming.map((b) => [b.id, b.currency]));
+  let out: Record<string, number> | undefined;
+  for (const [k, at] of Object.entries(d)) {
+    if (!k.startsWith('bankrolls:') || k.includes('@')) continue;
+    const id = k.slice(10);
+    const here = mine.get(id);
+    if (here === undefined) continue;
+    const there = theirs.get(id) ?? local.find((b) => b.currency !== here && b.id === sepId(id, b.currency))?.currency;
+    // The other phone keeps this phone's bankroll as a separated copy: its own id was in another currency.
+    const notOurs = there === undefined && theirs.get(sepId(id, here)) === here;
+    if (!notOurs && (there === undefined || there === here)) continue;
+    out ??= { ...d };
+    delete out[k];
+    if (notOurs) continue;
+    const key = `bankrolls:${id}@${there}`;
+    if (!(out[key] >= at)) out[key] = at;
+  }
+  return out ?? d;
 }
 
 /**
@@ -128,8 +161,8 @@ export function refold<T extends { bankrollId?: string }>(list: T[], to: Map<str
 /**
  * Empty bankrolls that earlier copies between two phones multiplied (each copy gave the other
  * phone's a new id): of those with the same currency and name, made automatically and with no
- * session, transfer, rules or shot, one stays (the currency's own id, else the oldest) and the
- * rest go. One with sessions, a name of its own or the last of its currency never goes.
+ * session, transfer, rules or shot, one stays (a used one, else the currency's own id, else the
+ * oldest) and the rest go. One with sessions, a name of its own or the last of its currency never goes.
  * Returns the ids to drop.
  */
 export function emptyDuplicates(bankrolls: Bankroll[], sessions: Session[], transfers: Transfer[], keep?: string): string[] {
@@ -138,18 +171,20 @@ export function emptyDuplicates(bankrolls: Bankroll[], sessions: Session[], tran
     const b = bankrollOf(s, bankrolls);
     if (b) used.add(b.id);
   }
+  // The empty ones go next to any bankroll with their currency and name, the used one included.
+  // The one picked in Settings (`keep`) never goes.
+  const empty = (b: Bankroll) => b.id !== keep && b.id.startsWith('br_auto_') && !used.has(b.id) && !b.rules && !b.shot;
   const groups = new Map<string, Bankroll[]>();
   for (const b of bankrolls) {
-    if (!b.id.startsWith('br_auto_') || used.has(b.id) || b.rules || b.shot) continue;
     const k = `${b.currency}\n${b.name}`;
     groups.set(k, [...(groups.get(k) ?? []), b]);
   }
-  const rank = (b: Bankroll) => (b.id === keep ? 0 : b.id === autoBankrollId(b.currency) ? 1 : b.id.includes('~') ? 2 : 3);
+  const rank = (b: Bankroll) => (!empty(b) ? 0 : b.id === autoBankrollId(b.currency) ? 1 : b.id.includes('~') ? 2 : 3);
   const drop: string[] = [];
   for (const g of groups.values()) {
     if (g.length < 2) continue;
     const [stay] = [...g].sort((a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt || (a.id < b.id ? -1 : 1));
-    drop.push(...g.filter((b) => b !== stay).map((b) => b.id));
+    drop.push(...g.filter((b) => b !== stay && empty(b)).map((b) => b.id));
   }
   return drop;
 }
