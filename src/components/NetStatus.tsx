@@ -21,7 +21,8 @@ export function NetStatus() {
   const path = usePathname();
   // Hand entry has its own header with the blinds right where the pill floats; the hand is saved on the phone anyway.
   // First run has nothing to send yet, and the pill would sit on the progress bar.
-  if (online || path === '/hand/new' || path === '/welcome') return null;
+  // The paywall scrolls its plans under it (it covered «3 dias grátis»), and says itself when the store can't be reached.
+  if (online || path === '/hand/new' || path === '/welcome' || path === '/paywall') return null;
   return (
     <View
       pointerEvents="none"

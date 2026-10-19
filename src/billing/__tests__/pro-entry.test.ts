@@ -82,3 +82,10 @@ test('restoring a one-time Pro inside the cancel flow reads lifetime again', () 
   const body = /const onRestore = async \(\) => \{([\s\S]*?)\n {2}\};/.exec(c)?.[1] ?? '';
   assert.match(body, /if \(res === 'ok' \|\| res === 'lifetime'\) hasLifetime\(\)\.then\(setForGood\);/);
 });
+
+test('nothing floats over the paywall plans, and the trial steps stack with large text', () => {
+  const n = src.find(([f]) => f === path.join('components', 'NetStatus.tsx'))![1];
+  assert.match(n, /path === '\/paywall'\) return null;/);
+  const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
+  assert.match(p, /const stacked = useWindowDimensions\(\)\.fontScale > 1\.3;/);
+});

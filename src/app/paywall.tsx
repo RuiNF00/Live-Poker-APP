@@ -489,19 +489,23 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
       : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
     { icon: 'card-outline', when: day(end), what: t('Começa: {price}', { price: after }) },
   ];
+  // Large text: the line goes under the day, or «Tudo desbloqueado. Nada a pagar.» broke into three at 150% on 360 pt.
+  const stacked = useWindowDimensions().fontScale > 1.3;
   return (
     <View style={{ paddingHorizontal: 4, paddingTop: S.sm, gap: S.md }}>
       {steps.map((s, i) => (
-        <Row key={s.when} gap={S.md}>
+        <Row key={s.when} gap={S.md} style={stacked ? { alignItems: 'flex-start' } : null}>
           <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: i === 0 ? C.accentSoft : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={s.icon} size={14} color={i === 0 ? C.accent : C.textDim} />
           </View>
-          <T v="h3" style={{ width: 92 }}>
-            {s.when}
-          </T>
-          <T v="small" style={{ flex: 1 }}>
-            {s.what}
-          </T>
+          <View style={stacked ? { flex: 1, gap: 2 } : { flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+            <T v="h3" style={stacked ? null : { width: 92 }}>
+              {s.when}
+            </T>
+            <T v="small" style={stacked ? null : { flex: 1 }}>
+              {s.what}
+            </T>
+          </View>
         </Row>
       ))}
     </View>
