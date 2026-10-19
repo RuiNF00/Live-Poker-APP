@@ -19,10 +19,11 @@ export type AgeVerdict =
 /**
  * Apple's eligibility answer → ask or not. `false`: the law doesn't cover this account. `null`: iOS
  * below 26.2, where Apple can't say, so nobody is asked (asking there would ask everyone, everywhere).
- * An error or no answer is "unknown" in a place that may need it, so the question is asked.
+ * An error or no answer isn't a yes either: only the people the law covers are ever asked, so this
+ * launch asks nothing and the next cold launch asks Apple again.
  */
 export function shouldAsk(eligible: boolean | null | 'error'): boolean {
-  return eligible === true || eligible === 'error';
+  return eligible === true;
 }
 
 /** The age-range answer (or its error code) → what the app does. Only lowerBound ≥ 18 opens it. */

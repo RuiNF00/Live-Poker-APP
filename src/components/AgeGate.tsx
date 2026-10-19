@@ -24,7 +24,9 @@ export function AgeGate() {
 
   useEffect(() => {
     let live = true;
-    checkAge().then((r) => live && setV(r), () => live && setV('unavailable'));
+    // askAge() turns its own failures into a verdict, so a failure here came before Apple said the law
+    // applies: nothing is shown.
+    checkAge().then((r) => live && setV(r), () => live && setV('not-required'));
     return () => {
       live = false;
     };

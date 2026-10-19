@@ -5,12 +5,13 @@ import { test } from 'node:test';
 import { OLD_AGE_KEY, opens, shouldAsk, verdictOf } from '../age-gate-core';
 import { keysToErase } from '../erase-core';
 
-test('age check: asked only where Apple says the law applies, or when Apple could not answer', () => {
+test('age check: asked only where Apple says the law applies', () => {
   assert.equal(shouldAsk(false), false);
   // Below iOS 26.2 Apple can't tell: asking would ask everyone, everywhere.
   assert.equal(shouldAsk(null), false);
+  // No answer or an error: nobody outside the law is asked; the next launch asks Apple again.
+  assert.equal(shouldAsk('error'), false);
   assert.equal(shouldAsk(true), true);
-  assert.equal(shouldAsk('error'), true);
 });
 
 test('age check: only a lower bound of 18 or more opens the app', () => {
