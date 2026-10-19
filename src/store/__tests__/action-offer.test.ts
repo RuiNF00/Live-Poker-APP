@@ -148,7 +148,8 @@ test('settlement reminders: the next unanswered event per package at 13:00, one 
   // Overdue and never reminded: the next 13:00. Once reminded and gone by: not repeated.
   const late = settleReminders([{ f: F, o, started: {} }], AFTER);
   assert.equal(late[0].eventId, '2');
-  assert.ok(late[0].at > AFTER && late[0].at - AFTER <= 24 * 3600e3);
+  // At or after now: in a zone where AFTER is 13:00 on the dot (Auckland), it's now.
+  assert.ok(late[0].at >= AFTER && late[0].at - AFTER <= 24 * 3600e3);
   const sent = { 'o1:2': AFTER - 1, 'o1:3': AFTER - 1 };
   assert.deepEqual(settleReminders([{ f: F, o, started: {} }], AFTER, sent), []);
 });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
+import { seenVersion } from '@/lib/offer';
 import { offersStore, validId } from '@/lib/offers-store';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -22,7 +23,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (await limited(req, 'offer-confirm', 20, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: noStore });
   const body = (await req.json().catch(() => null)) as { seen?: unknown } | null;
   // A page from before this check sends no version: it reloads and shows the terms as they are.
-  const seen = typeof body?.seen === 'string' && body.seen.length <= 40 && Number.isFinite(Date.parse(body.seen)) ? body.seen : null;
+  const seen = seenVersion(body?.seen);
   const r = validId(id) ? await offersStore().confirm(id, seen) : null;
   if (!r) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: noStore });
   if (r === 'stale') return NextResponse.json({ error: 'terms_changed' }, { status: 409, headers: noStore });

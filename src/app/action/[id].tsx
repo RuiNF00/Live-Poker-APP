@@ -20,7 +20,7 @@ import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Scree
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
-import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
+import { agreementUpdateWaiting, fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, queueAgreementUpdate, updateAgreement } from '@/lib/offer-api';
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
 import {
@@ -77,6 +77,8 @@ export default function ActionPackageScreen() {
     for (const pair of waiting.split(',')) {
       const [lineId, remoteId] = pair.split(':');
       try {
+        // New terms not on the server yet: what it says confirmed is the old terms.
+        if (await agreementUpdateWaiting(remoteId)) continue;
         const at = await fetchConfirmation({ id: remoteId });
         if (at) updateLine(o.id, lineId, (l) => ({ ...l, confirmedAt: at }));
       } catch (e) {
@@ -179,7 +181,8 @@ export default function ActionPackageScreen() {
     for (const l of next.lines) {
       const p = packages.find((x) => x.id === l.packageId);
       if (p && p.markup !== next.markup) savePackage({ ...p, markup: next.markup });
-      if (l.remote) void updateAgreement(l.remote, agreement(f, next, l, settings.nickname, nameOf(l), title)).catch(() => {});
+      // Offline too: it goes when the signal is back, and until then no old confirmation is read.
+      if (l.remote) queueAgreementUpdate(l.remote, agreement(f, next, l, settings.nickname, nameOf(l), title));
     }
     applyToSessions(before);
   };

@@ -90,6 +90,16 @@ export function agreementCost(a: Agreement): number {
   return round2(a.events.reduce((t, e) => t + (e.p / 100) * e.b * a.markup, 0));
 }
 
+/**
+ * The version a backer's page sends with the confirm: the updatedAt it showed, as the server wrote
+ * it (ISO-8601 with a zone). Anything else ("1", "2026-10", "October 2026") is no version: the page
+ * reloads and shows the terms as they are, instead of the database refusing the date.
+ */
+const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/;
+export function seenVersion(x: unknown): string | null {
+  return typeof x === 'string' && ISO.test(x) && Number.isFinite(Date.parse(x)) ? x : null;
+}
+
 /** New terms (markup, events, currency, or who the backer is) need the backer to confirm again. */
 export function termsChanged(prev: Agreement, next: Agreement): boolean {
   return prev.markup !== next.markup || prev.cur !== next.cur || prev.backer !== next.backer || JSON.stringify(prev.events) !== JSON.stringify(next.events);

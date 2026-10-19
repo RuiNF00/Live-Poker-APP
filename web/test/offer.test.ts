@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { agreementCost, eventCost, parseOffer, termsChanged, type Agreement } from '../src/lib/offer';
+import { agreementCost, eventCost, parseOffer, seenVersion, termsChanged, type Agreement } from '../src/lib/offer';
 import { offerCopy } from '../src/components/offer/copy';
 
 // The store is server-only; outside Next that import would throw.
@@ -84,6 +84,15 @@ describe('cost', () => {
     expect(termsChanged(a, agreement({ backer: 'Bia' }))).toBe(true);
     expect(termsChanged(a, agreement({ markup: 1.2 }))).toBe(true);
     expect(termsChanged(a, agreement({ events: [{ ...base.events[0], p: 6 }, base.events[1], base.events[2]] }))).toBe(true);
+  });
+});
+
+describe('seenVersion', () => {
+  it('takes the updatedAt the server wrote, and nothing the database would refuse', () => {
+    for (const v of ['2026-10-19T06:00:00.123456+00:00', '2026-10-19T06:00:00.123Z', '2026-10-19T06:00:00Z', '2026-10-19T08:00:00+01:00'])
+      expect(seenVersion(v)).toBe(v);
+    for (const v of ['1', '2026-10', '2026-10-19T07:00:00+01', 'October 2026', '2026-10-19', '2026-13-45T00:00:00Z', ' 2026-10-19T06:00:00Z', 42, null, undefined])
+      expect(seenVersion(v)).toBeNull();
   });
 });
 

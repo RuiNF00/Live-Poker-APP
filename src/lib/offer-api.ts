@@ -5,7 +5,7 @@
 import type { AgreementPayload } from '@/store/action-offer';
 import { BRAND } from '@/theme';
 
-import { outcomeOf, queue, registerSender } from './sync';
+import { outcomeOf, queue, queued, registerSender } from './sync';
 
 // Same server as share-api.ts (not imported from there: it pulls in native modules).
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -42,6 +42,40 @@ export async function updateAgreement(remote: { id: string; token: string }, off
     body: JSON.stringify({ offer }),
   });
 }
+
+/**
+ * New terms go out now or when the signal is back: until they reach the server, the link still has
+ * the old ones (and their confirmation), so the screen doesn't read a confirmation while one waits.
+ * A newer change replaces one still waiting.
+ */
+export function queueAgreementUpdate(remote: { id: string; token: string }, offer: AgreementPayload) {
+  // Known at once: the screen checks right after, before the outbox has written the job.
+  sending.add(remote.id);
+  queue('offer-update', { id: remote.id, token: remote.token, offer }, remote.id);
+}
+
+const sending = new Set<string>();
+
+/** New terms for this link still waiting to go out. */
+export async function agreementUpdateWaiting(id: string): Promise<boolean> {
+  return sending.has(id) || queued('offer-update', id);
+}
+
+registerSender('offer-update', async (p) => {
+  const r = p as { id: string; token: string; offer: AgreementPayload };
+  try {
+    const res = await fetch(`${API}/api/offers/${encodeURIComponent(r.id)}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', 'x-edit-token': r.token },
+      body: JSON.stringify({ offer: r.offer }),
+    });
+    const out = outcomeOf(res.status);
+    if (out !== 'retry') sending.delete(r.id);
+    return out;
+  } catch {
+    return 'retry';
+  }
+});
 
 /** When the backer confirmed (ISO), or null. */
 export async function fetchConfirmation(remote: { id: string }): Promise<string | null> {
