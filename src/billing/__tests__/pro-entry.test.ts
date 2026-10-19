@@ -70,3 +70,9 @@ test('restoring the one-time Pro on the paywall unlocks like a subscription', ()
   assert.match(body, /if \(found\) return unlocked\(/);
   assert.doesNotMatch(body, /res === 'ok'\) return unlocked/);
 });
+
+test('with large text the plan price goes under the name, so the per-month line has the width', () => {
+  const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
+  assert.match(p, /const bigText = useWindowDimensions\(\)\.fontScale > 1\.3;/);
+  assert.doesNotMatch(p, /numberOfLines=\{bigText \? undefined : 2\}/);
+});

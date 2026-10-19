@@ -354,7 +354,8 @@ function PlanCard({
   /** One row: radio, name and line on the left, price on the right. */
   compact?: boolean;
 }) {
-  const bigText = useWindowDimensions().fontScale >= 1.6;
+  // Same threshold as compact's text check: at 150% on a 360 pt screen the line still broke inside «16,67 US$».
+  const bigText = useWindowDimensions().fontScale > 1.3;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -375,7 +376,7 @@ function PlanCard({
         opacity: pressed ? 0.9 : 1,
       })}>
       {compact ? (
-        // Text at 160%+: the price goes under the name, or it squeezed the line to "16, 6…".
+        // Large text: the price goes under the name, or it squeezed the line to "16, 6…".
         <Row gap={S.sm} style={bigText ? { flexWrap: 'wrap' } : null}>
           <Radio active={active} />
           <View style={{ flex: 1, gap: 1 }}>
