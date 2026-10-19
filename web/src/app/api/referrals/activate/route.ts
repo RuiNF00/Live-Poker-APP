@@ -20,11 +20,11 @@ export async function POST(req: Request) {
   const { installId, rcUserId } = r.body;
   try {
     await r.b.codeFor(installId, codeToRegister(r.body), rcUserId);
-    // Rewards are for new players: with RevenueCat configured, the friend's RevenueCat user
-    // (the one stored first, not whatever this request says) must exist and be first seen
-    // this week, or nothing is booked and the referral stays open.
+    // Rewards are for new players: the friend's RevenueCat user (the one stored first, not
+    // whatever this request says) must exist and be first seen this week, or nothing is booked
+    // and the referral stays open. Without RevenueCat set up, production books nothing (P1, 19 Oct).
     const rc = await r.b.awaitingRc(installId);
-    const ok = !rc || !revenueCatConfigured() || (await isNewSubscriber(rc));
+    const ok = !!rc && (revenueCatConfigured() ? await isNewSubscriber(rc) : process.env.NODE_ENV !== 'production');
     const booked = ok ? await r.b.activate(installId) : [];
     await grantPending(r.b, [...booked, ...(await r.b.pending(installId))]);
     // booked: the referral is activated now (this call or an earlier one whose response was
