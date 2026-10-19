@@ -7,7 +7,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
+import { mergeById } from './backup';
 import { parseOrQuarantine } from './boot';
+import { markDeleted } from './deleted';
+import { alive, type Deleted } from './deleted-math';
 import type { KV } from './persist';
 import type { Session } from './types';
 
@@ -23,6 +26,8 @@ export interface WeeklyTournament {
   buyIn: number;
   stack?: number;
   levelMinutes?: number;
+  /** Last saved: an edit after another phone's delete wins (deleted-math.ts). */
+  updatedAt?: number;
 }
 
 /** The weekly tournament a live session repeats, from the form as it is and its start time. */
@@ -113,12 +118,16 @@ export function useWeekly(): WeeklyTournament[] {
 }
 
 /** Saves it, replacing one with the same name and buy-in on the same day. */
-export function saveWeekly(w: WeeklyTournament) {
-  set([...list.filter((x) => x.id !== w.id && !(x.weekday === w.weekday && x.name === w.name && x.buyIn === w.buyIn)), w]);
+export function saveWeekly(w: WeeklyTournament, now = Date.now()) {
+  const same = (x: WeeklyTournament) => x.id !== w.id && x.weekday === w.weekday && x.name === w.name && x.buyIn === w.buyIn;
+  // The one it replaces is deleted, or the other phone's copy brings it back as a twin.
+  markDeleted('weekly', list.filter(same).map((x) => x.id), now);
+  set([...list.filter((x) => x.id !== w.id && !same(x)), { ...w, updatedAt: now }]);
   persist();
 }
 
 export function deleteWeekly(id: string) {
+  markDeleted('weekly', [id]);
   set(list.filter((x) => x.id !== id));
   persist();
 }
@@ -132,13 +141,15 @@ export function currentWeekly(): WeeklyTournament[] {
   return list;
 }
 
-/** A backup's weekly tournaments this phone doesn't have yet (by id); the phone's copy of the rest stays. */
-export async function importWeekly(incoming: WeeklyTournament[]): Promise<void> {
-  if (!incoming.length) return;
+/**
+ * A backup's weekly tournaments joined in (by id, the later save of each; with no save times the phone's copy
+ * stays), less what either phone deleted after its last save (`deleted`, both phones' deletes).
+ */
+export async function importWeekly(incoming: WeeklyTournament[], deleted: Deleted = {}): Promise<void> {
   await load();
-  const add = incoming.filter((w) => !list.some((x) => x.id === w.id));
-  if (!add.length) return;
-  set([...list, ...add]);
+  const next = alive(mergeById(list, incoming).list, 'weekly', deleted);
+  if (next.length === list.length && next.every((w, i) => w === list[i])) return;
+  set(next);
   persist();
 }
 

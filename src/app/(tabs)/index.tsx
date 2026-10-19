@@ -5,7 +5,7 @@ import { Alert, BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
-import { BackupHealthBanner, BackupSuggestion, useBackupSuggestion, useBackupWarning } from '@/components/CloudBackup';
+import { useBackupSuggestion, useBackupWarning } from '@/components/backup-hooks';
 import { SharedHandsCard } from '@/components/SharedHandsCard';
 import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettleReminder';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
@@ -33,6 +33,10 @@ import { mainCurrency, profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S, SHADOW, ff } from '@/theme';
+
+// Only when there is something to say about the cloud copy: the copy code stays off the first frame.
+const BackupHealthBanner = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.BackupHealthBanner })));
+const BackupSuggestion = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.BackupSuggestion })));
 
 const DAY = 86400000;
 const FOLDER = 'folder:';
@@ -266,7 +270,9 @@ export default function HandsScreen() {
               ) : narrowed ? null : chargeEnd ? (
                 <ChargeNotice end={chargeEnd} />
               ) : backup.health ? (
-                <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+                <React.Suspense fallback={null}>
+                  <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+                </React.Suspense>
               ) : !activeSession && settle ? (
                 <SwapSettleCard {...settle} />
               ) : !activeSession && shared.newTotal > 0 ? (
@@ -287,7 +293,9 @@ export default function HandsScreen() {
               ) : !activeSession && news.item ? (
                 <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
               ) : !activeSession && suggest.show ? (
-                <BackupSuggestion onDone={suggest.dismiss} />
+                <React.Suspense fallback={null}>
+                  <BackupSuggestion onDone={suggest.dismiss} />
+                </React.Suspense>
               ) : !activeSession && checklist ? (
                 <StartChecklist state={checklist} />
               ) : !activeSession && moment ? (

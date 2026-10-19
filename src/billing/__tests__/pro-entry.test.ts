@@ -62,3 +62,11 @@ test('on 760-900 pt screens the paywall keeps both plans above the footer', () =
   assert.match(p, /table && !compact && !medium \? <FreeVsPro/);
   assert.match(p, /reason !== 'welcome' && !medium \? <Pill/);
 });
+
+test('restoring the one-time Pro on the paywall unlocks like a subscription', () => {
+  const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
+  const body = /const onRestore = async \(\) => \{([\s\S]*?)\n {2}\};/.exec(p)?.[1] ?? '';
+  assert.match(body, /const found = res === 'ok' \|\| res === 'lifetime';/);
+  assert.match(body, /if \(found\) return unlocked\(/);
+  assert.doesNotMatch(body, /res === 'ok'\) return unlocked/);
+});

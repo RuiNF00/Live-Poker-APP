@@ -9,7 +9,7 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { unbroken } from '../../packages/hand-format/src/money';
 import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
-import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
+import { buyError, playSubscriptionId, restoreFound, type BuyResult } from './buy-result';
 import { offerMonths } from './disclosure';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
@@ -374,9 +374,9 @@ export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResul
   return attempt(() => P.purchasePackage(plan.pkg!, null, change));
 }
 
-/** 'none': the store answered and this account has no subscription; 'error': it didn't answer. */
+/** 'none': the store answered and this account has no Pro; 'lifetime': it has the one-time Pro; 'error': it didn't answer. */
 /** 'slow': the store is still answering (an Apple ID sign-in can take a while); Pro turns on by itself if it finds the purchase. 'busy': one is already running. */
-export type RestoreResult = 'ok' | 'none' | 'error' | 'slow' | 'busy';
+export type RestoreResult = 'ok' | 'lifetime' | 'none' | 'error' | 'slow' | 'busy';
 
 // Held until the store answers, also after we stop waiting: a second restore never runs alongside the first
 // (a call that never answers stops holding it after a few minutes, as with purchases).
@@ -392,7 +392,7 @@ export async function restore(): Promise<RestoreResult> {
     () => void (restoring === mine && (restoring = 0)),
   );
   try {
-    return hasPro(await withTimeout(run, RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
+    return restoreFound(await withTimeout(run, RESTORE_TIMEOUT_MS), ENTITLEMENT, LIFETIME.product);
   } catch (e) {
     return (e as Error)?.message === 'timeout' ? 'slow' : 'error';
   }

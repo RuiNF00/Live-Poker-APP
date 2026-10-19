@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { useLocked } from '@/components/ProGate';
@@ -13,6 +13,7 @@ import { topClasses } from '@/poker/ranges';
 import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
+import { STAGE_RATIO } from './replayer/layout';
 import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
 import { useReduceMotion } from './replayer/motion';
 import { RangeSheet } from './replayer/RangeSheet';
@@ -72,6 +73,9 @@ export function Replayer({
   /** The player's private note on each street, shown while that street is on screen. */
   streetNotes?: Partial<Record<Street, string>>;
 }) {
+  // The felt is as tall as its width allows: on a wide window (a tablet on its side) it would run
+  // past the screen, so it stops at 70% of the height. Phones held upright never reach it.
+  const maxW = (useWindowDimensions().height * 0.7) / STAGE_RATIO;
   const r = useMemo(() => replay(hand), [hand]);
   useEffect(() => {
     const key = `${source}:${hand.id}`;
@@ -269,7 +273,9 @@ export function Replayer({
 
   return (
     <View style={{ gap: 8 }}>
-      <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} onSwipe={locked ? undefined : (d) => (d > 0 ? nextStreet() : prevStreet())} />
+      <View style={{ width: '100%', maxWidth: maxW, alignSelf: 'center' }}>
+        <ReplayerTable animate motion={forward ? motion[k] : undefined} view={view} heroIndex={hand.hero} button={hand.button} onTapLeft={() => go(k - 1)} onTapRight={() => go(k + 1)} onSwipe={locked ? undefined : (d) => (d > 0 ? nextStreet() : prevStreet())} />
+      </View>
 
       {locked && k === last ? (
         <QuizPanel

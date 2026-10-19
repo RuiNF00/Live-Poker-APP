@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { isRateLimited } from '@/lib/net';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
@@ -21,10 +22,12 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
  * replayer is on marked "you are here". There the player also keeps a private note per street.
  */
 const NAME_KEY = 'rl.commentName.v1';
+// Challenge votes made in the app are posted as "🗳️ Fold" comments: counted in the tally, not listed (as on the web page).
+const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|c-?bet|[3-9]-?bet|bet|raise|open|all-?in)\b/i;
 
 export function CommentsList({
   shareId,
-  comments,
+  comments: all,
   onPosted,
   defaultName = '',
   streets,
@@ -63,6 +66,7 @@ export function CommentsList({
   /** The hand's own player: their replies don't send them a notice. */
   ownerToken?: string;
 }) {
+  const comments = all.filter((c) => !VOTE_COMMENT.test(c.text.trim()));
   const [name, setName] = useState(defaultName);
   // The name used last time on this phone, so a friend's hand doesn't ask for it again.
   useEffect(() => {
@@ -103,7 +107,7 @@ export function CommentsList({
     } catch (e) {
       const m = e instanceof Error ? e.message : '';
       // Blocked by the hand's owner: said plainly, without inviting retries (and without saying why).
-      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.'));
+      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : isRateLimited(e) ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Não deu para enviar. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

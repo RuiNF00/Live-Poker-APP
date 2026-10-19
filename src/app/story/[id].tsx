@@ -13,6 +13,7 @@ import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T,
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
+import { isRateLimited } from '@/lib/net';
 import { notice } from '@/lib/notice';
 import { shareDelay } from '@/lib/friction';
 import { shareRef } from '@/lib/referrals';
@@ -150,9 +151,10 @@ export default function StoryScreen() {
     setBusy(true);
     try {
       // The link is made on the server while the frames are captured, not before.
+      let idErr: unknown;
       const idP = ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes }).then(
         (id) => id,
-        () => null,
+        (e: unknown) => ((idErr = e), null),
       );
       const refP = shareRef();
       refP.catch(() => {});
@@ -172,7 +174,8 @@ export default function StoryScreen() {
       setFaceView('preview');
       const shareId = await idP;
       if (!shareId) {
-        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        if (isRateLimited(idErr)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+        else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -215,8 +218,9 @@ export default function StoryScreen() {
       let shareId: string;
       try {
         shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
-      } catch {
-        notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+      } catch (e) {
+        if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+        else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
         return;
       }
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -269,8 +273,9 @@ export default function StoryScreen() {
     let shareId: string;
     try {
       shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
-    } catch {
-      notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+    } catch (e) {
+      if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+      else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
       return null;
     }
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });

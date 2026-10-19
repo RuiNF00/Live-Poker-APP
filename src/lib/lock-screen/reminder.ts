@@ -3,10 +3,10 @@
 // notifications work in Expo Go too, so this is the part Rui can try there.
 // expo-notifications is required lazily so web and the Node tests never load it.
 
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { t } from '@/i18n';
-import { KINDS } from '@/lib/notify-policy';
+import { becameAllowed, KINDS } from '@/lib/notify-policy';
 import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -96,6 +96,43 @@ export async function askExactAlarms(): Promise<boolean> {
   }
 }
 
+// Reminders planned before the player said yes (a session's level clock set, a festival's first
+// pick) found no permission and scheduled nothing; these listeners plan them again.
+let granted: boolean | null = null;
+const allowedListeners = new Set<() => void>();
+function noteGranted(now: boolean) {
+  const was = granted;
+  granted = now;
+  if (becameAllowed(was, now)) for (const f of allowedListeners) f();
+}
+let watching: { remove: () => void } | null = null;
+
+/**
+ * Calls `fn` each time notifications become allowed: from the ask in the app, or turned on in
+ * the phone's settings and back in the app.
+ */
+export function onNotificationsAllowed(fn: () => void): () => void {
+  const n = notifications();
+  if (!n) return () => {};
+  allowedListeners.add(fn);
+  if (!watching) {
+    const check = () =>
+      n
+        .getPermissionsAsync()
+        .then((p) => noteGranted(p.granted))
+        .catch(() => {});
+    check();
+    watching = AppState.addEventListener('change', (st) => st === 'active' && check());
+  }
+  return () => {
+    allowedListeners.delete(fn);
+    if (!allowedListeners.size) {
+      watching?.remove();
+      watching = null;
+    }
+  };
+}
+
 /** Ask once, when the player shows they want reminders. True when allowed. */
 export async function askNotificationPermission(): Promise<boolean> {
   const n = notifications();
@@ -103,8 +140,11 @@ export async function askNotificationPermission(): Promise<boolean> {
   try {
     const cur = await n.getPermissionsAsync();
     if (cur.granted) return true;
+    noteGranted(false);
     if (!cur.canAskAgain) return false;
-    return (await n.requestPermissionsAsync()).granted;
+    const ok = (await n.requestPermissionsAsync()).granted;
+    noteGranted(ok);
+    return ok;
   } catch {
     return false;
   }

@@ -8,7 +8,10 @@ import { useSyncExternalStore } from 'react';
 
 import { FESTIVALS, festivalSortKey, festivalSpan, type Festival } from '@/poker/festivals';
 
+import { mergeById } from './backup';
 import { parseOrQuarantine } from './boot';
+import { markDeleted } from './deleted';
+import { alive, type Deleted } from './deleted-math';
 import type { KV } from './persist';
 
 export interface OwnFestivalInput {
@@ -130,8 +133,8 @@ export function festivalById(id: string | undefined): Festival | undefined {
   return id ? allFestivals().find((f) => f.id === id) : undefined;
 }
 
-export function saveOwnFestival(f: Festival) {
-  set([...mine.filter((x) => x.id !== f.id), f]);
+export function saveOwnFestival(f: Festival, now = Date.now()) {
+  set([...mine.filter((x) => x.id !== f.id), { ...f, updatedAt: now }]);
   persist();
 }
 
@@ -144,17 +147,20 @@ export function currentOwnFestivals(): Festival[] {
   return mine;
 }
 
-/** A backup's own festivals that this phone doesn't have yet; the phone's copy of the rest stays. */
-export async function importOwnFestivals(incoming: Festival[]): Promise<void> {
-  if (!incoming.length) return;
+/**
+ * A backup's own festivals joined in (by id, the later save of each; with no save times the phone's copy
+ * stays), less what either phone deleted after its last save (`deleted`, both phones' deletes).
+ */
+export async function importOwnFestivals(incoming: Festival[], deleted: Deleted = {}): Promise<void> {
   await load();
-  const add = incoming.filter((f) => !mine.some((x) => x.id === f.id));
-  if (!add.length) return;
-  set([...mine, ...add]);
+  const next = alive(mergeById(mine, incoming.filter((f) => f.own)).list, 'ownFestivals', deleted);
+  if (next.length === mine.length && next.every((f, i) => f === mine[i])) return;
+  set(next);
   persist();
 }
 
 export function deleteOwnFestival(id: string) {
+  markDeleted('ownFestivals', [id]);
   set(mine.filter((x) => x.id !== id));
   persist();
 }

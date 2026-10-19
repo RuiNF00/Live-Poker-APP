@@ -61,7 +61,7 @@ function BackerForm({ backer, onSave, onDelete }: { backer: Backer; onSave: (b: 
         label={t('Nota')}
         value={x.note}
         onChangeText={(note) => setX({ ...x, note })}
-        placeholder={t('Contacto, IBAN, como combinaram…')}
+        placeholder={t('Contacto, como combinaram…')}
         multiline
         maxLength={400}
       />

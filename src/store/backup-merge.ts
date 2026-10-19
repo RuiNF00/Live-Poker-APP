@@ -6,6 +6,7 @@
 import type { Festival } from '@/poker/festivals';
 
 import { mergeById, type BackupData } from './backup';
+import { separateBankrolls } from './bankroll-math';
 import { alive, joinDeleted } from './deleted-math';
 import { mergePlan, type FestivalPlan } from './festival-plan';
 import { mergeGroups } from './swap-groups';
@@ -15,6 +16,8 @@ const LISTS = ['hands', 'sessions', 'players', 'backers', 'packages', 'payments'
 
 /** What goes up: this phone's backup with the server copy's items joined in. This phone's settings stay. */
 export function mergeBackups(local: BackupData, remote: BackupData): BackupData {
+  // Same bankroll id in two currencies: the server copy's takes its own id (bankroll-math.ts).
+  remote = separateBankrolls(local.bankrolls ?? [], remote);
   const out: BackupData = { ...local };
   const deleted = joinDeleted(local.deleted, remote.deleted);
   out.deleted = deleted;
@@ -24,10 +27,9 @@ export function mergeBackups(local: BackupData, remote: BackupData): BackupData 
   const plans: Record<string, FestivalPlan> = { ...local.festivalPlans };
   for (const [id, p] of Object.entries(remote.festivalPlans ?? {})) plans[id] = mergePlan(plans[id], p);
   out.festivalPlans = plans;
-  const own: Festival[] = local.ownFestivals ?? [];
-  out.ownFestivals = [...own, ...(remote.ownFestivals ?? []).filter((f) => !own.some((x) => x.id === f.id))];
-  const weekly = local.weekly ?? [];
-  out.weekly = [...weekly, ...(remote.weekly ?? []).filter((w) => !weekly.some((x) => x.id === w.id))];
+  // The later save of each (with no save times, this phone's copy stays), less what was deleted after it.
+  out.ownFestivals = alive(mergeById<Festival>(local.ownFestivals ?? [], remote.ownFestivals ?? []).list, 'ownFestivals', deleted);
+  out.weekly = alive(mergeById(local.weekly ?? [], remote.weekly ?? []).list, 'weekly', deleted);
   const q = local.quarantine ?? [];
   const more = (remote.quarantine ?? []).filter(([k]) => !q.some(([have]) => have === k));
   if (q.length || more.length) out.quarantine = [...q, ...more];

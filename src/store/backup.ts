@@ -157,6 +157,9 @@ function decodePlans(x: unknown): Record<string, FestivalPlan> {
       sessions: strMap(p.sessions, isStr),
       ...(isStr(p.name) ? { name: p.name.slice(0, 60) } : {}),
       ...(events.length ? { events } : {}),
+      // When each pick changed and the added tournaments deleted: so a second phone's copy doesn't undo them.
+      ...(isObj(p.picks) ? { picks: strMap(p.picks, (v): v is number => isNum(v) && v !== 0 && Math.abs(v) <= Date.now() + 86_400_000) } : {}),
+      ...(Array.isArray(p.removed) ? { removed: (p.removed as unknown[]).filter((x): x is string => isStr(x) && safeKey(x)).slice(0, 1000) } : {}),
     };
   }
   return out;
@@ -179,6 +182,7 @@ function decodeWeekly(x: unknown): WeeklyTournament[] {
       buyIn: w.buyIn as number,
       ...(isNum(w.stack) ? { stack: w.stack } : {}),
       ...(isNum(w.levelMinutes) ? { levelMinutes: w.levelMinutes } : {}),
+      ...(isNum(w.updatedAt) ? { updatedAt: w.updatedAt } : {}),
     }));
 }
 
@@ -201,6 +205,7 @@ function decodeOwnFestivals(x: unknown): Festival[] {
         events: [],
         dates: { from: dates.from, to: dates.to },
         own: true,
+        ...(isNum(f.updatedAt) ? { updatedAt: f.updatedAt } : {}),
       };
     });
 }
@@ -295,13 +300,18 @@ export function parseBackup(text: string): BackupData {
  * the backup's preferences come back: currency, default bankroll, privacy mode and the
  * rest. On a phone already in use, its own choices stay and only an empty nickname is filled.
  */
-export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean): Settings {
+export function restoredSettings(cur: Settings, incoming: Partial<Settings> | undefined, fresh: boolean, now = Date.now()): Settings {
   if (!incoming) return cur;
   // Rates typed for currencies the ECB doesn't publish: without them sessions in those currencies lose their value at home.
   const rates = fxRates(incoming.fxManual);
+  // The year notice that already went out on the other phone doesn't go out again here.
+  const sentYear = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x > 2000 && x < 3000 ? x : 0);
+  const firedAt = typeof incoming.yearRecapAt === 'number' && incoming.yearRecapAt <= now ? new Date(incoming.yearRecapAt).getFullYear() : 0;
+  const year = Math.max(sentYear(cur.yearRecapSent), sentYear(incoming.yearRecapSent), sentYear(firedAt));
+  const yearMark = year ? { yearRecapSent: year } : {};
   if (!fresh) {
     const fx = { ...rates, ...cur.fxManual };
-    return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : ''), ...(Object.keys(fx).length ? { fxManual: fx } : {}) };
+    return { ...cur, nickname: cur.nickname || (typeof incoming.nickname === 'string' ? incoming.nickname : ''), ...(Object.keys(fx).length ? { fxManual: fx } : {}), ...yearMark };
   }
   const pick = <K extends keyof Settings>(k: K, ok: (v: unknown) => boolean): Partial<Settings> => (ok(incoming[k]) ? { [k]: incoming[k] } : {});
   const isStr = (v: unknown) => typeof v === 'string';
@@ -327,6 +337,7 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('streakPauses', (v) => Array.isArray(v) && v.every((p) => isObj(p) && isNum(p.from) && (p.to === undefined || isNum(p.to)))),
     ...pick('notify', (v) => isObj(v) && Object.entries(v).every(([k, x]) => /^[a-z]{1,20}$/.test(k) && isBool(x))),
     ...(Object.keys(rates).length ? { fxManual: rates } : {}),
+    ...yearMark,
     // Onboarding stays done: the restore itself happens after it.
     onboarded: cur.onboarded || incoming.onboarded === true,
   };
@@ -448,7 +459,7 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
   return [head.join(sep), ...rows, ...moves, ...spent].join('\n') + '\n';
 }
 
-/** "Novos: 3 mãos · 1 sessão · 0 jogadores. …" with the right plurals. */
+/** "Novos: 3 mãos · 1 sessão. …" with the right plurals, and only what came in (never "0 mãos"). */
 export function importSummary(n: {
   hands: number;
   sessions: number;
@@ -464,11 +475,10 @@ export function importSummary(n: {
   /** Deleted on the other phone, so gone from this one too. */
   removed?: number;
 }): string {
-  const parts = [
-    n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }),
-    n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }),
-    n.players === 1 ? t('1 jogador') : t('{n} jogadores', { n: n.players }),
-  ];
+  const parts: string[] = [];
+  if (n.hands) parts.push(n.hands === 1 ? t('1 mão') : t('{n} mãos', { n: n.hands }));
+  if (n.sessions) parts.push(n.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: n.sessions }));
+  if (n.players) parts.push(n.players === 1 ? t('1 jogador') : t('{n} jogadores', { n: n.players }));
   if (n.backers) parts.push(n.backers === 1 ? t('1 backer') : t('{n} backers', { n: n.backers }));
   // Only when the backup had any: older backups have none to mention.
   if (n.bankrolls) parts.push(n.bankrolls === 1 ? t('1 bankroll') : t('{n} bankrolls', { n: n.bankrolls }));
@@ -478,7 +488,12 @@ export function importSummary(n: {
   if (n.payments) parts.push(n.payments === 1 ? t('1 pagamento a backers') : t('{n} pagamentos a backers', { n: n.payments }));
   if (n.backing) parts.push(n.backing === 1 ? t('1 jogador que apoias') : t('{n} jogadores que apoias', { n: n.backing }));
   if (n.swaps) parts.push(n.swaps === 1 ? t('1 swap') : t('{n} swaps', { n: n.swaps }));
-  if (n.removed) return `${t('Novos: {list}.', { list: parts.join(' · ') })} ${n.removed === 1 ? t('1 registo apagado no outro telemóvel saiu também deste.') : t('{n} registos apagados no outro telemóvel saíram também deste.', { n: n.removed })}`;
+  if (n.removed) {
+    const gone = n.removed === 1 ? t('1 registo apagado no outro telemóvel saiu também deste.') : t('{n} registos apagados no outro telemóvel saíram também deste.', { n: n.removed });
+    // Nothing new: only what left, not a line of zeros.
+    return parts.length ? `${t('Novos: {list}.', { list: parts.join(' · ') })} ${gone}` : gone;
+  }
+  if (!parts.length) return t('Nada de novo: já tinhas tudo.');
   return t('Novos: {list}. O que já tinhas ficou.', { list: parts.join(' · ') });
 }
 

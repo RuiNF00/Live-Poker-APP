@@ -5,7 +5,7 @@
 // then the edit wins, as it does between two edits. Kept on the phone and in
 // the backup (deleted.ts). Pure, so it can be tested without a phone.
 
-export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing'] as const;
+export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing', 'ownFestivals', 'weekly'] as const;
 export type DeletedList = (typeof DELETED_LISTS)[number];
 /** 'sessions:<id>' → when it was deleted. */
 export type Deleted = Record<string, number>;
@@ -22,11 +22,14 @@ function capped(d: Deleted): Deleted {
   return Object.fromEntries(keys.sort((a, b) => d[b] - d[a]).slice(0, MAX).map((k) => [k, d[k]]));
 }
 
-/** Only well-formed keys with a real time: a hand-made file can't drop anything else. */
-export function cleanDeleted(x: unknown): Deleted {
+/**
+ * Only well-formed keys with a real time: a hand-made file can't drop anything else. A time
+ * more than a day ahead is left out, or it would keep beating every later edit.
+ */
+export function cleanDeleted(x: unknown, now = Date.now()): Deleted {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return {};
   const out: Deleted = {};
-  for (const [k, v] of Object.entries(x)) if (KEY_RE.test(k) && typeof v === 'number' && Number.isFinite(v) && v > 0) out[k] = v;
+  for (const [k, v] of Object.entries(x)) if (KEY_RE.test(k) && typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= now + 86_400_000) out[k] = v;
   return capped(out);
 }
 
@@ -46,3 +49,23 @@ export function alive<T extends { id: string; updatedAt?: number }>(items: T[], 
   return items.some(gone) ? items.filter((x) => !gone(x)) : items;
 }
 
+
+/**
+ * A restore brings back what it holds, even what was deleted on this phone: those items come back
+ * with a fresh edit time, so another phone's older delete can't drop them again on the next copy.
+ * Returns the lists to use and the keys revived (no longer deleted here).
+ */
+export function revive<B extends Partial<Record<DeletedList, { id: string; updatedAt?: number }[]>>>(backup: B, here: Deleted, now: number): { backup: B; revived: string[] } {
+  const revived: string[] = [];
+  const out: B = { ...backup };
+  for (const k of DELETED_LISTS) {
+    const list = backup[k];
+    if (!list?.some((x) => here[keyOf(k, x.id)] !== undefined)) continue;
+    (out as Record<DeletedList, unknown>)[k] = list.map((x) => {
+      if (here[keyOf(k, x.id)] === undefined) return x;
+      revived.push(keyOf(k, x.id));
+      return { ...x, updatedAt: now };
+    });
+  }
+  return { backup: out, revived };
+}

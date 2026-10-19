@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { LandingCopy } from './copy';
+import type { Locale } from '@/lib/i18n';
 import { track } from '@/lib/track';
 
 export interface StoreLinks {
@@ -28,70 +29,46 @@ export function useStoreLink(stores: StoreLinks) {
   return '#baixar';
 }
 
-function AppleLogo() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.1 2.5-1.8 3.1-.5 7.6 1.3 10.1.8 1.2 1.8 2.6 3.1 2.6 1.3-.1 1.7-.8 3.3-.8 1.5 0 1.9.8 3.3.8 1.4 0 2.2-1.2 3-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1ZM14 5.4c.7-.8 1.1-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4Z"
-      />
-    </svg>
-  );
-}
+/**
+ * The stores' official badges, only once the app is published there. Apple and Google don't
+ * allow a redrawn badge (nor a "coming soon" one with their logo), so until a store link exists
+ * the page shows plain text. At launch: put each official SVG, in the page's language and
+ * unaltered (developer.apple.com/app-store/marketing/guidelines, play.google.com/intl/en_us/badges),
+ * in web/public/badges/ and list it here by store and language.
+ */
+const BADGES: Record<'ios' | 'android', Partial<Record<Locale, string>>> = { ios: {}, android: {} };
+const BADGE_NAME = { ios: 'App Store', android: 'Google Play' } as const;
 
-function PlayLogo() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <path fill="currentColor" d="M4 2.6v18.8c0 .5.5.8 1 .6l10.6-10-10.6-10c-.5-.2-1 .1-1 .6Zm12.8 8.2L6.9 1.5l11.9 6.8-2 2.5Zm0 2.4 2 2.5-11.9 6.8 9.9-9.3Zm2.9-4.3 2.5 1.4c.7.4.7 1 0 1.4l-2.5 1.4-2.3-2.1 2.3-2.1Z" />
-    </svg>
-  );
-}
-
-/** App Store and Google Play badges; on a phone, its own store comes first. */
+/** App Store and Google Play badges; on a phone, its own store comes first. Before launch, one line of text. */
 export function StoreButtons({
   c,
   stores,
   from,
-  fallback = '#baixar',
   shareId,
 }: {
-  c: Pick<LandingCopy, 'soon' | 'soonPlay' | 'getOn' | 'getOnPlay'>;
+  c: Pick<LandingCopy, 'soonBoth' | 'getOn' | 'getOnPlay' | 'lang'>;
   stores: StoreLinks;
   from: string;
-  /** Where a "coming soon" badge leads while the store link isn't set. */
+  /** Kept for callers: there is no "coming soon" badge to link anywhere any more. */
   fallback?: string;
   shareId?: string;
 }) {
   const platform = usePlatform();
-  const ios = (
-    <a
-      key="ios"
-      className={`lp-store${stores.ios ? '' : ' soon'}`}
-      href={stores.ios || fallback}
-      onClick={() => track('store_click', { store: 'ios', from, live: !!stores.ios, ...(shareId ? { shareId } : {}) })}
-    >
-      <AppleLogo />
-      <span>
-        <small>{stores.ios ? c.getOn : c.soon}</small>
-        <b>App Store</b>
-      </span>
-    </a>
-  );
-  const android = (
-    <a
-      key="android"
-      className={`lp-store${stores.android ? '' : ' soon'}`}
-      href={stores.android || fallback}
-      onClick={() => track('store_click', { store: 'android', from, live: !!stores.android, ...(shareId ? { shareId } : {}) })}
-    >
-      <PlayLogo />
-      <span>
-        <small>{stores.android ? c.getOnPlay : c.soonPlay}</small>
-        <b>Google Play</b>
-      </span>
-    </a>
-  );
-  return <div className="lp-stores">{platform === 'android' ? [android, ios] : [ios, android]}</div>;
+  if (!stores.ios && !stores.android) return <p className="lp-stores-soon">{c.soonBoth}</p>;
+  const badge = (store: 'ios' | 'android') => {
+    const href = stores[store];
+    if (!href) return null;
+    const src = BADGES[store][c.lang] ?? BADGES[store].en;
+    const label = `${store === 'ios' ? c.getOn : c.getOnPlay} ${BADGE_NAME[store]}`;
+    return (
+      <a key={store} className={src ? 'lp-badge' : 'lp-store'} href={href} onClick={() => track('store_click', { store, from, live: true, ...(shareId ? { shareId } : {}) })}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- the store's own artwork, as published */}
+        {src ? <img src={src} alt={label} height={52} /> : <span>{label}</span>}
+      </a>
+    );
+  };
+  const order: ('ios' | 'android')[] = platform === 'android' ? ['android', 'ios'] : ['ios', 'android'];
+  return <div className="lp-stores">{order.map(badge)}</div>;
 }
 
 /** Counts a landing visit once per page load (top of the site → store funnel). */

@@ -4,7 +4,7 @@
 // at 18:00, held by a live session. Never asks for permission by itself; the
 // month screen offers that.
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { t } from '@/i18n';
@@ -13,7 +13,7 @@ import { planYearRecap, yearNotice, yearSessions } from '@/store/year-recap';
 import { useStore } from '@/store/store';
 import type { Session, Settings } from '@/store/types';
 
-import { notifications, setup } from './lock-screen/reminder';
+import { notifications, onNotificationsAllowed, setup } from './lock-screen/reminder';
 import { notifyAt, notifyOrHold } from './notify-gate';
 import { kindOn } from './notify-policy';
 
@@ -89,6 +89,9 @@ export async function syncYearRecap(sessions: Session[], settings: Settings, set
 export function MonthRecapSync() {
   const { sessions, settings, setSettings, ready } = useStore();
   const { hideAmounts, monthRecap: on, notifyAmounts } = settings;
+  // Allowed after the recap was planned (from the month screen's ask, or the phone's settings): planned now.
+  const [allowed, setAllowed] = useState(0);
+  useEffect(() => onNotificationsAllowed(() => setAllowed((n) => n + 1)), []);
   useEffect(() => {
     if (!ready) return;
     const id = setTimeout(() => {
@@ -97,6 +100,6 @@ export function MonthRecapSync() {
     }, 1500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only the fields the notice reads
-  }, [ready, sessions, hideAmounts, on, notifyAmounts]);
+  }, [ready, sessions, hideAmounts, on, notifyAmounts, allowed]);
   return null;
 }

@@ -34,9 +34,20 @@ export default function Paywall() {
   // Very short screens (320×568): the fixed footer keeps the billed price, the button and
   // the disclosures; Restore and the other ways out move to the end of the scroll.
   const short = win.height < 640;
-  // Short screen and text at 160%+: the fixed footer took ~3/4 of the screen and left the plans a sliver.
-  // It scrolls after the plans instead, the button still with the terms and links right under it.
-  const inline = short && win.fontScale >= 1.6;
+  // Short screen (iPhone SE's 667 too) and text at 160%+: the fixed footer took ~2/3 of the screen and
+  // left no plan in sight. It scrolls after the plans instead, the button still with the terms and links right under it.
+  // Also wherever the fixed footer, measured, would cover a price (130-150% on a 360×640 Android
+  // left the yearly price under it). Once inline it stays inline, so the screen can't flip back and forth.
+  const [crowded, setCrowded] = useState(false);
+  const fit = useRef({ scroll: 0, footer: 0, plans: 0 });
+  const inline = crowded || (win.height < 700 && win.fontScale >= 1.6);
+  const measure = (k: 'scroll' | 'footer' | 'plans', v: number) => {
+    fit.current[k] = v;
+    const { scroll, footer, plans } = fit.current;
+    // Normal text keeps the layout the stores reviewed.
+    if (inline || win.fontScale < 1.1 || !scroll || !footer || !plans) return;
+    if (plans > scroll) setCrowded(true);
+  };
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
@@ -140,8 +151,10 @@ export default function Paywall() {
     setBusy('restore');
     const res = await restore();
     setBusy(null);
-    if (res !== 'ok') acting.current = false;
-    if (res === 'ok') return unlocked(t('Compras restauradas'));
+    // The one-time Pro restores as 'lifetime': it unlocks just the same.
+    const found = res === 'ok' || res === 'lifetime';
+    if (!found) acting.current = false;
+    if (found) return unlocked(res === 'lifetime' ? t('O teu Pro para sempre está ativo nesta conta da loja.') : t('Compras restauradas'));
     restoreNotice(res, store);
   };
 
@@ -196,7 +209,7 @@ export default function Paywall() {
   );
 
   const footer = (
-    <View style={inline ? { gap: S.xs } : { paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
+    <View onLayout={(e) => measure('footer', e.nativeEvent.layout.height)} style={inline ? { gap: S.xs } : { paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
       {busy === 'buy' ? (
         // The button stays, busy and saying what is happening, so the focus doesn't jump.
         <Button title={t('A abrir a {store}…', { store })} disabled onPress={onBuy} />
@@ -229,7 +242,7 @@ export default function Paywall() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: short ? S.sm : compact ? S.lg : S.xl }}>
+      <ScrollView onLayout={(e) => measure('scroll', e.nativeEvent.layout.height)} contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: short ? S.sm : compact ? S.lg : S.xl }}>
         <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
         <View style={{ gap: short ? S.sm : S.md }}>
@@ -276,7 +289,7 @@ export default function Paywall() {
             <T v="small">{t('A carregar os preços da {store}…', { store })}</T>
           </Row>
         ) : (
-          <View style={{ gap: short ? S.sm : S.sm + 2 }}>
+          <View onLayout={(e) => measure('plans', e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">Sweatbook Pro</T>
             {inviteOffer ? (

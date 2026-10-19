@@ -74,8 +74,10 @@ export function newsTarget(fresh: Record<string, number>, mine: { id: string; sh
 /**
  * Why a shared hand didn't open: the server said it isn't there (404, 410), or it couldn't be
  * reached (no signal, a timeout, a server error). Only the first is "this hand no longer exists".
+ * A 429 reached the server too: too many requests, said as such, not as no signal.
  */
-export function handLoadError(e: unknown): 'gone' | 'offline' {
+export function handLoadError(e: unknown): 'gone' | 'offline' | 'rate_limited' {
   const m = /^fetch (\d{3})$/.exec(e instanceof Error ? e.message : '');
+  if (m?.[1] === '429') return 'rate_limited';
   return m && (m[1] === '404' || m[1] === '410') ? 'gone' : 'offline';
 }

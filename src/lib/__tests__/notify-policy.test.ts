@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { holdNow, kindOn, outOfQuiet, pickDaily, SOFT_ASK_COOLDOWN, softAskAllowed } from '../notify-policy';
+import { becameAllowed, holdNow, kindOn, outOfQuiet, pickDaily, SOFT_ASK_COOLDOWN, softAskAllowed } from '../notify-policy';
 
 const at = (h: number, m = 0, day = 17) => new Date(2026, 9, day, h, m).getTime();
 
@@ -47,4 +47,12 @@ test('"Agora não" waits 30 days', () => {
   assert.equal(softAskAllowed(null, now), true);
   assert.equal(softAskAllowed(now - SOFT_ASK_COOLDOWN + 1, now), false);
   assert.equal(softAskAllowed(now - SOFT_ASK_COOLDOWN, now), true);
+});
+
+test('reminders are planned again only when notifications go from no to yes', () => {
+  assert.equal(becameAllowed(false, true), true);
+  assert.equal(becameAllowed(true, true), false);
+  assert.equal(becameAllowed(null, true), false);
+  assert.equal(becameAllowed(false, false), false);
+  assert.equal(becameAllowed(true, false), false);
 });
