@@ -582,7 +582,9 @@ export function atomise(text: string): Atom[] {
       continue;
     }
     // "O big me dá 3-bet", "la ciega grande me sube": "me" says whom it was against, the seat acts.
-    const clitic = x === 'me' && out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero' && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]));
+    // "Apuesto 1000, me paga": a third-person verb after "me" is the villain's too.
+    const villainAct = (out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero') || VERBS[w[i + 1] ?? '']?.person === 3 || AUX_3.has(w[i + 1] ?? '');
+    const clitic = x === 'me' && villainAct && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]));
     if (clitic) {
       i++;
       continue;

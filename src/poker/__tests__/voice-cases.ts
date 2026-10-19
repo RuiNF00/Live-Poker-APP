@@ -164,6 +164,7 @@ export const CASES: Case[] = [
   { lang: 'en', text: 'I am on the button with ace king, UTG raises to €2500, I call.', pos: 'BTN', cards: 'AK', line: 'UTG r2500, BTN c' },
   { lang: 'es', text: 'Estoy en el botón con as rey, UTG sube a $2500, pago.', pos: 'BTN', cards: 'AK', line: 'UTG r2500, BTN c' },
   { lang: 'br', text: 'Tô no botão com ás rei, o UTG abre pra R$ 2.500, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r2500, BTN c' },
+  { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, la ciega grande paga. Flop rey siete dos, apuesto 1000, me paga.', pos: 'BTN', line: 'BTN r1000, BB c, BTN b1000, BB c', board: 'K72' },
   { lang: 'en', text: "Live 1/3 with a 6 dollar straddle. I'm on the button with jack ten suited. UTG+1 raises to 20, I call.", game: CASH, pos: 'BTN', cards: 'JT', line: 'UTG+1 r20, BTN c' },
   { lang: 'en', text: "I'm on the button with big slick, UTG opens to 1000, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 
