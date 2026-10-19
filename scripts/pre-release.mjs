@@ -27,7 +27,7 @@ const steps = [
     cmd: `${existsSync(join(root, 'packages/hand-format/node_modules')) ? '' : 'npm ci --silent && '}npm run --silent typecheck && npm test --silent`,
     cwd: 'packages/hand-format',
   },
-  { name: 'Sem Pro local (EXPO_PUBLIC_LOCAL_PRO)', cmd: 'node scripts/check-local-pro.mjs' },
+  { name: 'Sem flags de teste (Pro local, capturas)', cmd: 'node scripts/check-local-pro.mjs' },
   { name: 'Configuração Expo válida', cmd: 'npx expo config --type public --json > /dev/null' },
   { name: 'iOS: modos em segundo plano e textos de permissão', cmd: 'node scripts/check-ios-plist.mjs' },
   { name: 'Atualizações over-the-air (EAS Update)', cmd: 'node scripts/check-updates.mjs' },
@@ -37,6 +37,7 @@ const steps = [
     : [
         { name: 'Bundle exporta sem erros', cmd: `npx expo export --platform web --output-dir ${out}` },
         { name: 'Tamanho do bundle dentro do limite', cmd: `node scripts/check-bundle.mjs ${out}` },
+        { name: 'Bundle sem flags de teste (2.5.19)', cmd: `node scripts/check-store-bundle.mjs ${out}` },
       ]),
 ];
 

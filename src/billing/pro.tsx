@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 
-import { devPro, localProFrom } from './dev-pro';
+import { devPro, localProFrom, TEST_BUILD_MARK } from './dev-pro';
 import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
 import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
@@ -71,6 +71,8 @@ interface ProValue {
 
 const Ctx = createContext<ProValue | null>(null);
 const DEV_PRO = devPro();
+// Kept in the bundle (and the log) of a test build, so the pre-upload check can find it.
+if (TEST_BUILD_MARK) console.info(TEST_BUILD_MARK);
 /** Test-iPhone build only (dev-pro.ts); never written to the cached Pro flag, so turning it off removes Pro at once. */
 export const LOCAL_PRO = localProFrom(process.env.EXPO_PUBLIC_LOCAL_PRO, store.LIVE);
 

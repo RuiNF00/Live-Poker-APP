@@ -31,3 +31,11 @@ export function devPro(): boolean {
 export function localProFrom(flag: string | undefined, live: boolean): boolean {
   return flag === '1' && !live;
 }
+
+/**
+ * Present in the bundle only when a test flag was on at build time (both are inlined, so a
+ * store build compiles this to ''). scripts/check-store-bundle.mjs looks for it in the built
+ * app before an upload: Apple's 2.5.19 forbids features a build hides from review.
+ */
+export const TEST_BUILD_MARK =
+  process.env.EXPO_PUBLIC_LOCAL_PRO === '1' ? 'sweatbook:test-build:local-pro' : process.env.EXPO_PUBLIC_SCREENSHOTS === '1' ? 'sweatbook:test-build:screenshots' : '';
