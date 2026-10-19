@@ -121,26 +121,42 @@ describe('LocalOffers', () => {
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
+  const seen = async (id: string) => (await store.get(id))!.updatedAt;
+  const tick = () => new Promise((r) => setTimeout(r, 2));
+
   it('starts unconfirmed; confirming is idempotent', async () => {
     const { id } = await store.create(agreement());
     expect((await store.get(id))?.confirmedAt).toBe(null);
-    const first = await store.confirm(id);
-    expect(first).toBeTruthy();
-    expect(await store.confirm(id)).toBe(first);
-    expect((await store.get(id))?.confirmedAt).toBe(first);
-    expect(await store.confirm('nope000000')).toBe(null);
+    const first = await store.confirm(id, await seen(id));
+    expect(first).toMatchObject({ confirmedAt: expect.any(String) });
+    expect(await store.confirm(id, await seen(id))).toEqual(first);
+    expect((await store.get(id))?.confirmedAt).toBe(first && first !== 'stale' ? first.confirmedAt : 'x');
+    expect(await store.confirm('nope000000', new Date().toISOString())).toBe(null);
   });
 
   it('new markup or events clear the confirmation; other edits keep it', async () => {
     const { id, editToken } = await store.create(agreement());
-    const first = await store.confirm(id);
+    const first = await store.confirm(id, await seen(id));
+    await tick();
     expect(await store.update(id, editToken, agreement({ title: 'Outro' }))).toBe(true);
-    expect((await store.get(id))?.confirmedAt).toBe(first);
+    expect((await store.get(id))?.confirmedAt).toBe(first && first !== 'stale' ? first.confirmedAt : 'x');
     expect(await store.update(id, editToken, agreement({ markup: 1.2 }))).toBe(true);
     expect((await store.get(id))?.confirmedAt).toBe(null);
-    await store.confirm(id);
+    await store.confirm(id, await seen(id));
     expect(await store.update(id, editToken, agreement({ markup: 1.2, events: [{ ...base.events[0], p: 6 }] }))).toBe(true);
     expect((await store.get(id))?.confirmedAt).toBe(null);
+  });
+
+  it('a page opened before the terms changed confirms nothing (Security P2, 19 Oct)', async () => {
+    const { id, editToken } = await store.create(agreement());
+    const shown = await seen(id);
+    await tick();
+    expect(await store.update(id, editToken, agreement({ markup: 1.3 }))).toBe(true);
+    expect(await store.confirm(id, shown)).toBe('stale');
+    expect(await store.confirm(id, null)).toBe('stale');
+    expect((await store.get(id))?.confirmedAt).toBe(null);
+    // After reloading, the new terms confirm.
+    expect(await store.confirm(id, await seen(id))).toMatchObject({ confirmedAt: expect.any(String) });
   });
 
   it('needs the token to change or delete', async () => {

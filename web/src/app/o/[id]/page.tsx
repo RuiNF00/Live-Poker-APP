@@ -37,7 +37,7 @@ export default async function OfferPage({ params, searchParams }: Params & Searc
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   return (
     <>
-      <OfferView id={id} locale={locale} agreement={rec.offer} initialConfirmedAt={rec.confirmedAt} invite={invite} />
+      <OfferView id={id} locale={locale} agreement={rec.offer} initialConfirmedAt={rec.confirmedAt} version={rec.updatedAt} invite={invite} />
       <PageFooter locale={locale} page={`o/${id}`} />
     </>
   );
