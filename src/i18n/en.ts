@@ -3086,7 +3086,6 @@ const en: Record<string, string> = {
   'Estoril, maio 2027': 'Estoril, May 2027',
   'Las Vegas, verão 2027': 'Las Vegas, summer 2027',
   'Evento principal de 26 de fevereiro a 3 de março.': 'Main Event 26 February to 3 March.',
-  'Evento principal de 21 a 26 de março.': 'Main Event 21 to 26 March.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs in February.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from late March to mid-April.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e o início de maio.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from late April to early May.',

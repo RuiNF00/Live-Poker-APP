@@ -159,12 +159,13 @@ test('plannedNow: the planned event from 2 h before its start until late reg clo
   assert.equal(late!.action.kind, 'reenter');
 });
 
-test('Las Vegas: published starting stack and level length, none for Turbo flights or Day 2s', () => {
+test('Las Vegas: published starting stack and level length, 40,000 and 20 min on Turbo flights, none on Day 2s', () => {
   const ev = (id: string) => LV.events.find((e) => e.id === id)!;
   assert.deepEqual([ev('10-1A').stack, ev('10-1A').levelMinutes], [100000, 60]);
   assert.deepEqual([ev('24').stack, ev('24').levelMinutes], [200000, 40]);
   assert.equal(ev('10-2').stack, undefined);
-  assert.equal(ev('29-1B Turbo').stack, undefined);
+  assert.deepEqual([ev('29-1B Turbo').stack, ev('29-1B Turbo').levelMinutes], [40000, 20]);
+  assert.deepEqual([ev('29-2').day2, ev('29-2').buyIn, ev('29-2').start], [true, 0, '2026-12-21T13:00']);
   assert.equal(ev('29-1A').stack, 40000);
 });
 

@@ -217,15 +217,18 @@ const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   85: [40000, 30],
   86: [40000, 30],
 };
+// Every evening Turbo flight: 40,000 and 20-minute levels (WPT schedule page, read 2026-10-19).
+const LV_TURBO: [stack: number, levelMinutes: number] = [40000, 20];
 const lvStructure = (e: FestivalEvent): FestivalEvent => {
-  const x = e.day2 || e.flight?.includes('Turbo') ? undefined : LV_STRUCTURE[e.number];
+  const x = e.day2 ? undefined : e.flight?.includes('Turbo') ? LV_TURBO : LV_STRUCTURE[e.number];
   return x ? { ...e, stack: x[0], levelMinutes: x[1] } : e;
 };
 
 /**
  * The Wynn Las Vegas festival, 27 Nov – 21 Dec 2026, side events and
  * satellites included. Source: the organiser's schedule page, read on 2026-10-17
- * (two separate reads, same rows); the same schedule is linked as a PDF from
+ * (two separate reads, same rows) and again on 2026-10-19 for the Turbo structures and
+ * the first Day 2 of every tournament; the same schedule is linked as a PDF from
  * wynnlasvegas.com. Shipped under a generic name (App Review 5.2.1). The
  * schedule has no event numbers: `number` here only ties flights and Day 2s
  * of one tournament together. Day 3+ and final tables aren't rows: a bagged
@@ -250,11 +253,13 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(1, 'PLO', 'PLO', 1100, 0, '2026-12-01T13:00'),
     lv(2, "No Limit Hold'em", 'NLH', 1600, 1_000_000, '2026-12-03T11:00', '1A'),
     lv(2, "No Limit Hold'em", 'NLH', 1600, 1_000_000, '2026-12-04T11:00', '1B'),
+    lv(2, "No Limit Hold'em", 'NLH', 0, 1_000_000, '2026-12-05T11:00', '2'),
     lv(3, 'NLH Championship', 'NLH', 1100, 5_000_000, '2026-12-05T11:00', '1A'),
     lv(3, 'NLH Championship', 'NLH', 1100, 5_000_000, '2026-12-06T11:00', '1B'),
     lv(4, 'PLO Mystery Bounty', 'PLO', 1600, 500_000, '2026-12-06T11:00', '1A'),
     lv(4, 'PLO Mystery Bounty', 'PLO', 1600, 500_000, '2026-12-06T18:00', '1B Turbo'),
     lv(3, 'NLH Championship', 'NLH', 1100, 5_000_000, '2026-12-07T11:00', '1C'),
+    lv(4, 'PLO Mystery Bounty', 'PLO', 0, 500_000, '2026-12-07T12:00', '2'),
     lv(5, 'HORSE (2 Day)', 'Mix', 1100, 0, '2026-12-07T11:00'),
     lv(6, 'PLO $500 Bounty', 'PLO', 1600, 100_000, '2026-12-07T13:00'),
     lv(3, 'NLH Championship', 'NLH', 1100, 5_000_000, '2026-12-08T11:00', '1D'),
@@ -271,6 +276,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(14, 'Mixed Triple Draw (A-5, 2-7, Badugi) (2 Day)', 'Mix', 1100, 0, '2026-12-14T12:00'),
     lv(15, 'PLO Turbo', 'PLO', 1100, 100_000, '2026-12-14T19:00'),
     lv(10, 'Main Event', 'NLH', 10400, 0, '2026-12-15T11:00', '1C'),
+    lv(13, 'PLO', 'PLO', 0, 1_000_000, '2026-12-15T12:00', '2'),
     lv(16, 'Big O', 'Mix', 1100, 0, '2026-12-15T12:00'),
     lv(17, 'PLO Progressive Bounty (PKO)', 'PLO', 3000, 250_000, '2026-12-15T13:00'),
     lv(18, 'NLH $500 Bounty Turbo', 'NLH', 1600, 100_000, '2026-12-15T19:00'),
@@ -281,12 +287,14 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(21, 'Seniors NLH Championship (3 Day)', 'NLH', 1100, 500_000, '2026-12-17T11:00'),
     lv(22, 'Mixed Championship (2 Day)', 'Mix', 1600, 0, '2026-12-17T11:00'),
     lv(23, "No Limit Hold'em", 'NLH', 3000, 2_000_000, '2026-12-17T12:00', '1A'),
+    lv(19, "No Limit Hold'em", 'NLH', 0, 1_000_000, '2026-12-17T12:00', '2'),
     lv(24, 'NLH High Roller (2 Day)', 'NLH', 25800, 0, '2026-12-17T13:00'),
     lv(23, "No Limit Hold'em", 'NLH', 3000, 2_000_000, '2026-12-18T12:00', '1B'),
     lv(25, 'Limit Omaha 8 Championship (2 Day)', 'Mix', 1600, 0, '2026-12-18T12:00'),
     lv(26, 'NLH 6-Max', 'NLH', 10500, 0, '2026-12-18T13:00'),
     lv(27, 'NLH Turbo', 'NLH', 1100, 100_000, '2026-12-18T18:00'),
     lv(28, 'Seniors High Roller (3 Day)', 'NLH', 5000, 250_000, '2026-12-19T11:00'),
+    lv(23, "No Limit Hold'em", 'NLH', 0, 2_000_000, '2026-12-19T12:00', '2'),
     lv(29, 'NLH Mystery Bounty', 'NLH', 1600, 1_000_000, '2026-12-19T11:00', '1A'),
     lv(30, 'PLO', 'PLO', 10500, 0, '2026-12-19T13:00'),
     lv(31, 'NLH 6-Max', 'NLH', 3000, 500_000, '2026-12-19T13:00'),
@@ -296,6 +304,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(33, 'NLH 8-Max', 'NLH', 10500, 0, '2026-12-20T13:00'),
     lv(29, 'NLH Mystery Bounty', 'NLH', 1600, 1_000_000, '2026-12-20T19:00', '1D Turbo'),
     lv(34, "No Limit Hold'em", 'NLH', 1100, 100_000, '2026-12-21T12:00'),
+    lv(29, 'NLH Mystery Bounty', 'NLH', 0, 1_000_000, '2026-12-21T13:00', '2'),
     // Under $1,000 and satellites, from the schedule PDF.
     lv(35, 'TORSE', 'Mix', 600, 0, '2026-11-27T12:00'),
     lv(36, 'PLO', 'PLO', 400, 0, '2026-11-27T13:00'),
@@ -349,6 +358,7 @@ export const LAS_VEGAS_DEC_2026: Festival = {
     lv(86, "No Limit Hold'em", 'NLH', 800, 1_000_000, '2026-12-02T18:00', '1F Turbo'),
     lv(86, "No Limit Hold'em", 'NLH', 0, 1_000_000, '2026-12-03T13:00', '2'),
     lv(65, 'NLH Turbo', 'NLH', 600, 50_000, '2026-12-14T21:00'),
+    lv(61, "No Limit Hold'em", 'NLH', 0, 500_000, '2026-12-15T11:00', '2'),
     lv(66, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-15T11:00'),
     lv(67, 'Satellite to Main Event', 'NLH', 1100, 0, '2026-12-15T18:00'),
     lv(68, 'PLO Double Board Bomb Pot', 'PLO', 800, 0, '2026-12-16T12:00'),
@@ -406,6 +416,7 @@ export const BARCELONA_MAR_2027: Festival = {
   currency: '€',
   utcOffset: 60,
   tz: 'Europe/Madrid',
+  // https://www.campeonatopoker.es/paradas (no 2027 dates yet, 2026-10-19)
   source: { label: 'calendário oficial do organizador', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em março.'],
   month: '2027-03',
@@ -433,8 +444,8 @@ export const LOS_ANGELES_JAN_2027: Festival = {
 };
 
 /**
- * Ireland's Easter festival, 18–28 March 2027, Main Event 21–26 March. Dates as
- * announced with the organiser's qualifier programme (read 2026-10-17).
+ * Ireland's Easter festival, 18–29 March 2027, as announced by the organiser (read
+ * 2026-10-17, re-checked 2026-10-19). The Main Event's own dates aren't published yet.
  * Generic name, no brand.
  */
 export const DUBLIN_MAR_2027: Festival = {
@@ -447,7 +458,7 @@ export const DUBLIN_MAR_2027: Festival = {
   tz: 'Europe/Dublin',
   // https://irishpokeropen.com/blog/2026/10/15/every-days-st-paddys-day-dates-announced-for-2027-irish-open/
   source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
-  notes: ['Evento principal de 21 a 26 de março.'],
+  notes: [],
   events: [],
   dates: { from: '2027-03-18', to: '2027-03-29' },
 };
@@ -464,7 +475,7 @@ export const MELBOURNE_APR_2027: Festival = {
   currency: 'A$',
   utcOffset: 600,
   tz: 'Australia/Melbourne',
-  // https://asgam.com/2026/08/24/crown-melbourne-announces-april-dates-for-2027-aussie-millions/
+  // https://www.crownmelbourne.com.au/casino/offers/aussie-millions (8–24 April, re-checked 2026-10-19)
   source: { label: 'datas anunciadas pelo organizador', checked: '2026-10-17' },
   notes: [],
   events: [],
@@ -482,7 +493,7 @@ export const PARIS_FEB_2027: Festival = {
   currency: '€',
   utcOffset: 60,
   tz: 'Europe/Paris',
-  // https://www.pokernews.com/news/2025/08/pokerstars-confirms-european-poker-tour-paris-returns-49393.htm
+  // https://www.pokerstarslive.com/ept/paris/ (no 2027 dates yet, 2026-10-19)
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.'],
   month: '2027-02',
@@ -500,7 +511,7 @@ export const PRAGUE_APR_2027: Festival = {
   currency: '€',
   utcOffset: 120,
   tz: 'Europe/Prague',
-  // https://www.pokernews.com/news/2025/12/2026-wsop-europe-schedule-released-new-home-new-dates-50239.htm
+  // https://www.wsop.com/news/wsop-europe-heads-to-prague-in-2026/ (no 2027 dates yet, 2026-10-19)
   source: { label: 'edições anteriores do festival', checked: '2026-10-17' },
   notes: ['Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.'],
   month: '2027-04',
