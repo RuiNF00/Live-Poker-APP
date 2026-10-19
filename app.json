@@ -315,6 +315,7 @@
           ]
         }
       ],
+      "./plugins/with-app-group-gate",
       "expo-background-task",
       [
         "expo-localization",

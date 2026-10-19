@@ -22,9 +22,13 @@ type Native = typeof import('./activity');
 /**
  * The lock-screen views need the expo-widgets native module (and on iOS a
  * widget extension), which Expo Go doesn't have. Check before loading the
- * module, since importing it without the native side throws.
+ * module, since importing it without the native side throws. On iOS they also
+ * need the App Group, which a build has only with EXPO_PUBLIC_APP_GROUP=1
+ * (plugins/with-app-group-gate.js): without it the extension can't read the
+ * session, so the app shows no Live Activity and no widget data.
  */
-export const lockScreenAvailable = Platform.OS !== 'web' && requireOptionalNativeModule('ExpoWidgets') != null;
+export const lockScreenAvailable =
+  Platform.OS !== 'web' && (Platform.OS !== 'ios' || process.env.EXPO_PUBLIC_APP_GROUP === '1') && requireOptionalNativeModule('ExpoWidgets') != null;
 
 let native: Native | null | undefined;
 function lockScreen(): Native | null {
