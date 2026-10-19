@@ -15,7 +15,7 @@ export default function NotFound() {
         icon="compass-outline"
         title={t('Este ecrã não existe')}
         body={t('O link pode ser antigo. As tuas mãos e sessões estão todas no sítio.')}
-        action={<Button title={t('Ir para as mãos')} onPress={() => router.replace('/')} style={{ alignSelf: 'stretch', marginTop: 8 }} />}
+        action={<Button title={t('Ir para as mãos')} onPress={() => router.replace('/hands')} style={{ alignSelf: 'stretch', marginTop: 8 }} />}
       />
     </View>
   );

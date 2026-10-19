@@ -3482,6 +3482,16 @@ const es: Record<string, string> = {
   'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Não guardamos a tua idade.': 'Donde la ley lo exige, la app le pide a Apple tu rango de edad antes de abrirse. No guardamos tu edad.',
   'Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.': 'No se pudo confirmar tu edad. Comprueba que iniciaste sesión con tu Cuenta de Apple e inténtalo de nuevo.',
   'Saber mais': 'Más información',
+  // Início (resumo) e Notas
+  'Resumo': 'Resumen',
+  'Últimas mãos': 'Últimas manos',
+  'Ver todas': 'Ver todas',
+  'Atalhos': 'Atajos',
+  'Sem as sessões em {list}: vê-as no Bankroll.': 'Sin las sesiones en {list}: las ves en Bankroll.',
+  'Nova nota': 'Nueva nota',
+  'Aqui vês tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.': 'Aquí ves todo de un vistazo: el resultado, las últimas manos y sesiones y las notas de la mesa.',
+  'Começar uma sessão': 'Empezar una sesión',
+  'Apagar nota': 'Borrar nota',
 };
 
 export default es;

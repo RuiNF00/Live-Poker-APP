@@ -49,7 +49,7 @@ export default function CoachLinks() {
         icon="school-outline"
         title={t('Ainda sem links para o coach')}
         body={t('Seleciona mãos na lista (toque longo) ou abre uma pasta e toca em Enviar ao coach.')}
-        action={<Button title={t('Ir para as mãos')} kind="secondary" size="md" onPress={() => router.navigate('/')} />}
+        action={<Button title={t('Ir para as mãos')} kind="secondary" size="md" onPress={() => router.navigate('/hands')} />}
       />
     );
 
