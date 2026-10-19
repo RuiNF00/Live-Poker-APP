@@ -10,6 +10,12 @@ if (process.env.VERCEL_ENV === 'production' && !process.env.MODERATION_WEBHOOK_U
   throw new Error('MODERATION_WEBHOOK_URL em falta: as denúncias não chegam a ninguém (security/incidentes.md §3)');
 }
 
+// The data stores (cloud copies, shared hands, swaps) fall back to files on disk without Supabase:
+// on Vercel that disk is wiped, so a copy would vanish and every phone would read it as deleted.
+if (process.env.VERCEL_ENV === 'production' && (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  throw new Error('Supabase em falta em produção: os dados iriam para um disco que a Vercel apaga');
+}
+
 const nextConfig: NextConfig = {
   transpilePackages: ['@livepoker/hand-format'],
   // Shared links open on casino Wi-Fi and in chat apps: the CSS (~10 KB) rides in the HTML instead of

@@ -40,7 +40,7 @@ if (!found.length) {
 }
 const bad = found.filter((b) => b.data.includes(MARK));
 if (bad.length) {
-  const kinds = [...new Set(bad.flatMap((b) => b.data.toString('latin1').match(/sweatbook:test-build:[a-z-]+/g) ?? []))];
+  const kinds = [...new Set(bad.flatMap((b) => b.data.toString('latin1').match(/sweatbook:test-build:(?:local-pro|screenshots)/g) ?? []))];
   console.error(`Test build (${kinds.join(', ')}) in ${bad.map((b) => b.name).join(', ')}. Rebuild without EXPO_PUBLIC_LOCAL_PRO / EXPO_PUBLIC_SCREENSHOTS before uploading.`);
   process.exit(1);
 }

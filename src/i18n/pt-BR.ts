@@ -288,7 +288,7 @@ const ptBR: Record<string, string> = {
   'Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.': 'Se você trocar ou perder o celular, não perde nada. Sem conta nem e-mail.',
   'Juntámos o que o outro telemóvel copiou': 'Juntamos o que o outro celular copiou',
   'A cópia passou o limite: exporta para guardar tudo': 'O backup passou do limite: exporte para guardar tudo',
-  'Foi apagada noutro telemóvel ou no site. As tuas mãos continuam neste telemóvel. Para voltar a guardar, cria uma cópia nova, com um código novo.': 'Ele foi apagado em outro celular ou no site. Suas mãos continuam neste celular. Para voltar a salvar, crie um backup novo, com um código novo.',
+  'Foi apagada noutro telemóvel ou no site. As tuas mãos continuam neste telemóvel. Para voltar a guardar, cria uma cópia nova, com um código novo.': 'Foi apagado em outro celular ou no site. Suas mãos continuam neste celular. Para voltar a fazer backup, crie um backup novo, com um código novo.',
   'Criar cópia nova': 'Criar backup novo',
   'A cópia na nuvem foi apagada': 'O backup na nuvem foi apagado',
   'A cópia na nuvem foi apagada noutro telemóvel ou no site. Cria uma cópia nova, com um código novo, nas Definições.': 'O backup na nuvem foi apagado em outro celular ou no site. Crie um backup novo, com um código novo, nas Configurações.',

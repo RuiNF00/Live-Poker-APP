@@ -187,9 +187,11 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
     // («Apagar tudo» on another phone, the website), and must not come back with the same code.
     const remote = await get(c).catch((e: Error) => {
       if (e.message === 'not_found') throw new Error('gone');
+      // Replacing on purpose: a copy that can't be read (a later version, damaged) is what gets replaced.
+      if (opts.force) return null;
       throw e;
     });
-    if (!opts.force && writtenElsewhere(remote, c.sent)) {
+    if (remote && !opts.force && writtenElsewhere(remote, c.sent)) {
       data = mergeBackups(local, remote);
       opts.onRemote?.(remote);
     }

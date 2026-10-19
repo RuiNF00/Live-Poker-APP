@@ -214,3 +214,16 @@ test('enqueue throws when the job could not be saved; drain keeps going on a fai
   await box.enqueue('x', 2, 'k');
   assert.equal(JSON.parse(kv.m.get('rl.outbox.v1')!)[0].payload, 2);
 });
+
+test('a job that could not be saved is not sent from memory either', async () => {
+  const kv = mem();
+  let broken = true;
+  const flaky = { getItem: kv.getItem, setItem: async (k: string, v: string) => (broken ? Promise.reject(new Error('disk')) : kv.setItem(k, v)) };
+  const sent: unknown[] = [];
+  const box = createOutbox(flaky, { del: async (p) => (sent.push(p), 'done' as Outcome) });
+  await assert.rejects(box.enqueue('del', { id: 'x' }, 'x'), /disk/);
+  broken = false;
+  await box.drain(true);
+  assert.deepEqual(sent, []);
+  assert.equal(await box.size(), 0);
+});

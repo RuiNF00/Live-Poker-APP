@@ -82,6 +82,8 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
   const api = {
     async enqueue(kind: string, payload: unknown, key?: string) {
       const list = await load();
+      // Put back as it was if the write fails: a job the caller was told isn't queued must not go out from memory.
+      const before = [...list];
       const t = now();
       const job: Job = { id: `${t.toString(36)}${(seq++).toString(36)}`, kind, key, payload, tries: 0, nextAt: t, createdAt: t };
       const i = key === undefined ? -1 : list.findIndex((j) => j.kind === kind && j.key === key);
@@ -93,7 +95,13 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
         else list.splice(j, 1);
       }
       // A write that failed throws: queue() ignores it, queueOrThrow() passes it on.
-      await save(true);
+      try {
+        await save(true);
+      } catch (e) {
+        list.splice(0, list.length, ...before);
+        for (const l of listeners) l(count(jobs));
+        throw e;
+      }
     },
 
     /** Forgets a job that hasn't gone out yet. True when there was one. */
