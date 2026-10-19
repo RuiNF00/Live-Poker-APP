@@ -3507,6 +3507,25 @@ const en: Record<string, string> = {
   'Stack, nível, rebuy ou pausa por voz, sem largar as cartas.': 'Stack, level, rebuy or break by voice, without letting go of your cards.',
   'Sessão por voz': 'Session by voice',
   'Stack e nível sem escrever': 'Stack and level, no typing',
+  // Como ditar uma mão (voice help)
+  'Como ditar uma mão': 'How to dictate a hand',
+  'Conta pela ordem em que aconteceu, como a contarias a um amigo. Não precisa de frases certas.': 'Tell it in the order it happened, the way you would tell a friend. It doesn\'t need perfect sentences.',
+  'A tua posição e as tuas cartas.': 'Your position and your cards.',
+  'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Each action in order, with the amount: who opens, who calls, who raises.',
+  'As cartas de cada rua: flop, turn e river.': 'The cards on each street: flop, turn and river.',
+  'No fim, o que mostraram, se mostraram.': 'At the end, what was shown, if anything.',
+  'Enganaste-te? Diz logo a seguir: «900, não, 1100».': 'Got it wrong? Say so right after: “900, sorry, 1100”.',
+  'Exemplos': 'Examples',
+  'Toca num exemplo para o experimentar.': 'Tap an example to try it.',
+  'Põe este exemplo na mão': 'Puts this example in the hand',
+  'Ainda não percebemos': 'Not understood yet',
+  'Nomes ou lugares («o João», «o lugar 3», «o da minha esquerda»): diz a posição, como UTG, cutoff ou botão.': 'Names or seats (“John”, “seat 3”, “the guy on my left”): say the position, like UTG, cutoff or button.',
+  'O stack de alguém dito no fim: diz antes da ação dele, «o UTG, com 12 mil, abre».': 'Someone\'s stack said at the end: say it before their action, “UTG, with 12k, opens”.',
+  'Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».': 'Decimals said in words (“one point two”): say “1200” or “twelve hundred”.',
+  'Duas mãos de seguida: conta uma de cada vez.': 'Two hands in a row: tell one at a time.',
+  'Jogos que não sejam Hold\'em ou PLO de 4 cartas.': 'Games other than Hold\'em or 4-card PLO.',
+  'Trocar o que escreveste pelo exemplo?': 'Replace what you wrote with the example?',
+  'Trocar': 'Replace',
 };
 
 export default en;

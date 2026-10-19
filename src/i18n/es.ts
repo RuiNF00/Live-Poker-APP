@@ -3501,6 +3501,25 @@ const es: Record<string, string> = {
   'Stack, nível, rebuy ou pausa por voz, sem largar as cartas.': 'Stack, nivel, rebuy o pausa por voz, sin soltar las cartas.',
   'Sessão por voz': 'Sesión por voz',
   'Stack e nível sem escrever': 'Stack y nivel sin escribir',
+  // Como ditar uma mão (voice help)
+  'Como ditar uma mão': 'Cómo dictar una mano',
+  'Conta pela ordem em que aconteceu, como a contarias a um amigo. Não precisa de frases certas.': 'Cuéntala en el orden en que pasó, como se la contarías a un amigo. No hacen falta frases perfectas.',
+  'A tua posição e as tuas cartas.': 'Tu posición y tus cartas.',
+  'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Cada acción en orden, con la cantidad: quién abre, quién paga, quién sube.',
+  'As cartas de cada rua: flop, turn e river.': 'Las cartas de cada calle: flop, turn y river.',
+  'No fim, o que mostraram, se mostraram.': 'Al final, lo que mostraron, si mostraron algo.',
+  'Enganaste-te? Diz logo a seguir: «900, não, 1100».': '¿Te equivocaste? Dilo justo después: «900, no, perdón, 1100».',
+  'Exemplos': 'Ejemplos',
+  'Toca num exemplo para o experimentar.': 'Toca un ejemplo para probarlo.',
+  'Põe este exemplo na mão': 'Pone este ejemplo en la mano',
+  'Ainda não percebemos': 'Aún no entendemos',
+  'Nomes ou lugares («o João», «o lugar 3», «o da minha esquerda»): diz a posição, como UTG, cutoff ou botão.': 'Nombres o asientos («Juan», «el asiento 3», «el de mi izquierda»): di la posición, como UTG, cutoff o botón.',
+  'O stack de alguém dito no fim: diz antes da ação dele, «o UTG, com 12 mil, abre».': 'El stack de alguien dicho al final: dilo antes de su acción, «el UTG, con 12 mil, sube».',
+  'Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».': 'Decimales dichos en palabras («uno coma dos»): di «1200» o «mil doscientos».',
+  'Duas mãos de seguida: conta uma de cada vez.': 'Dos manos seguidas: cuéntalas de una en una.',
+  'Jogos que não sejam Hold\'em ou PLO de 4 cartas.': 'Juegos que no sean Hold\'em o PLO de 4 cartas.',
+  'Trocar o que escreveste pelo exemplo?': '¿Cambiar lo que escribiste por el ejemplo?',
+  'Trocar': 'Cambiar',
 };
 
 export default es;

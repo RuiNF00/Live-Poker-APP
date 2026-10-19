@@ -1813,6 +1813,19 @@ const ptBR: Record<string, string> = {
   'Diz o que mudou, nós atualizamos': 'Diga o que mudou, a gente atualiza',
   'Stack e nível sem escrever': 'Stack e nível sem digitar',
   'Stack, nível, rebuy ou pausa por voz, sem largar as cartas.': 'Stack, nível, rebuy ou pausa por voz, sem soltar as cartas.',
+  // Como ditar uma mão (voice help)
+  'Conta pela ordem em que aconteceu, como a contarias a um amigo. Não precisa de frases certas.': 'Conte na ordem em que aconteceu, como contaria a um amigo. Não precisa de frases certas.',
+  'A tua posição e as tuas cartas.': 'Sua posição e suas cartas.',
+  'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Cada ação na ordem, com o valor: quem abre, quem paga, quem aumenta.',
+  'Enganaste-te? Diz logo a seguir: «900, não, 1100».': 'Errou? Diga logo em seguida: «900, não, 1100».',
+  'Toca num exemplo para o experimentar.': 'Toque em um exemplo para testar.',
+  'Põe este exemplo na mão': 'Coloca este exemplo na mão',
+  'Ainda não percebemos': 'Ainda não entendemos',
+  'Nomes ou lugares («o João», «o lugar 3», «o da minha esquerda»): diz a posição, como UTG, cutoff ou botão.': 'Nomes ou lugares («o João», «o lugar 3», «o da minha esquerda»): diga a posição, como UTG, cutoff ou botão.',
+  'O stack de alguém dito no fim: diz antes da ação dele, «o UTG, com 12 mil, abre».': 'O stack de alguém dito no fim: diga antes da ação dele, «o UTG, com 12 mil, abre».',
+  'Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».': 'Valores com vírgula por extenso («um vírgula dois»): diga «1200» ou «mil e duzentos».',
+  'Duas mãos de seguida: conta uma de cada vez.': 'Duas mãos seguidas: conte uma de cada vez.',
+  'Trocar o que escreveste pelo exemplo?': 'Trocar o que você escreveu pelo exemplo?',
 };
 
 export default ptBR;
