@@ -178,6 +178,8 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '99', number: 99, name: 'PLO5 High Roller', game: 'PLO', buyIn: 25000, guarantee: 0, start: '2026-11-27T19:00', stack: 200000, levelMinutes: 30 },
     { id: '94-1B', number: 94, name: "No Limit Hold'em", flight: '1B', game: 'NLH', buyIn: 2500, guarantee: 1_000_000, start: '2026-11-27T20:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '100', number: 100, name: 'Turbo', game: 'NLH', buyIn: 4000, guarantee: 0, start: '2026-11-27T22:00', stack: 25000, levelMinutes: 15, lateRegMin: 135 },
+    // https://bsop.com.br/wp-content/uploads/Evento-99-25K-PLO5-6-MAX-INVITATIONAL-2.pdf (Day 2 28/11 14:00, read 2026-10-19)
+    { id: '99-2', number: 99, name: 'PLO5 High Roller', flight: '2', day2: true, game: 'PLO', buyIn: 0, guarantee: 0, start: '2026-11-28T14:00' },
     { id: '101', number: 101, name: "No Limit Hold'em", game: 'NLH', buyIn: 1000, guarantee: 500_000, start: '2026-11-28T14:00', stack: 50000, levelMinutes: 25, lateRegMin: 280 },
     { id: '102', number: 102, name: "Dealer's Choice", game: 'Mix', buyIn: 2500, guarantee: 0, start: '2026-11-28T14:00', stack: 40000, levelMinutes: 30, lateRegMin: 270 },
     { id: '103', number: 103, name: 'PKO', game: 'NLH', buyIn: 4000, guarantee: 0, start: '2026-11-28T14:00', stack: 30000, levelMinutes: 20, lateRegMin: 175 },
@@ -431,7 +433,8 @@ export const PRAGUE_DEC_2026: Festival = {
     { id: '27-2', number: 27, name: 'Main Event', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-12-09T12:00' },
     { id: '40', number: 40, name: '8-Game', game: 'Mix', buyIn: 2700, guarantee: 0, start: '2026-12-09T12:00', stack: 50000, lateRegMin: 390 },
     { id: '41', number: 41, name: 'Satellite to #42 Mystery Bounty', game: 'NLH', buyIn: 730, guarantee: 0, start: '2026-12-09T12:00', stack: 10000, lateRegMin: 180 },
-    { id: '42', number: 42, name: 'Mystery Bounty', game: 'NLH', buyIn: 3250, guarantee: 0, start: '2026-12-09T14:00', stack: 30000 },
+    // €3,200 on the organiser's festival page (re-checked 2026-10-19); the schedule table loads without rows.
+    { id: '42', number: 42, name: 'Mystery Bounty', game: 'NLH', buyIn: 3200, guarantee: 0, start: '2026-12-09T14:00', stack: 30000 },
     { id: '43', number: 43, name: 'Knockout Turbo', game: 'NLH', buyIn: 1050, guarantee: 0, start: '2026-12-09T20:00', stack: 20000, lateRegMin: 80 },
     { id: '44', number: 44, name: 'Mixed Games', game: 'Mix', buyIn: 2700, guarantee: 0, start: '2026-12-10T12:00', stack: 50000, lateRegMin: 450 },
     { id: '42-2', number: 42, name: 'Mystery Bounty', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 0, start: '2026-12-10T12:30' },
