@@ -4,7 +4,7 @@
 
 import { t } from '@/i18n';
 
-import { cost, mainCurrency, playedMs, profit, rateShown } from './session-math';
+import { cost, mainCurrency, ownBuyIns, playedMs, profit, rateShown } from './session-math';
 import type { Session } from './types';
 
 export interface Drawdown {
@@ -60,8 +60,8 @@ export interface MttStats {
   tournaments: number;
   /** Average total cost (buy-ins, re-entries, add-ons). */
   avgBuyIn: number;
-  /** % on cost. */
-  roi: number;
+  /** % on your share of the buy-ins, the same figure as Bankroll and Torneios; null when all of it was sold. */
+  roi: number | null;
   /** Standard deviation of one tournament's result, in buy-ins. */
   sdBuyIns: number;
 }
@@ -75,9 +75,10 @@ export function mttStats(list: Session[], currency = mainCurrency(list)): MttSta
   const sd = Math.sqrt(bis.reduce((a, b) => a + (b - mean) ** 2, 0) / (bis.length - 1));
   const paid = done.reduce((a, s) => a + cost(s), 0);
   const avgBuyIn = paid / done.length;
-  // ROI on the total paid, the same figure as Torneios and Bankroll (an average of each ROI weighs a 100€ win like a 1000€ one).
-  const net = done.reduce((a, s) => a + s.cashOut - cost(s), 0);
-  return { tournaments: done.length, avgBuyIn, roi: (net / paid) * 100, sdBuyIns: sd };
+  // ROI on the total of your buy-ins, the same figure as Torneios and Bankroll (an average of each ROI weighs a 100€ win like a 1000€ one).
+  const own = done.reduce((a, s) => a + ownBuyIns(s), 0);
+  const net = done.reduce((a, s) => a + profit(s), 0);
+  return { tournaments: done.length, avgBuyIn, roi: own > 0 ? (net / own) * 100 : null, sdBuyIns: sd };
 }
 
 /** Standard normal CDF (Abramowitz–Stegun 7.1.26, error < 1.5e-7). */
@@ -188,7 +189,7 @@ export function verdict(list: Session[], currency: string, money: (n: number) =>
     if (cash.hourly + 1.645 * se < 0) return { ready: true, tone: 'bad', text: t('Perdes cerca de {rate}/h em cash, e com {h} h já não é azar.', { rate: money(Math.round(-cash.hourly)), h }) };
     return { ready: true, tone: 'neutral', text: t('Com {h} h de cash, os teus {rate}/h ainda cabem na variância: nem dá para dizer que ganhas, nem que perdes.', { rate, h }) };
   }
-  if (mtt && mtt.tournaments >= VERDICT_MIN.tournaments) {
+  if (mtt && mtt.roi !== null && mtt.tournaments >= VERDICT_MIN.tournaments) {
     const se = (mtt.sdBuyIns * 100) / Math.sqrt(mtt.tournaments);
     const n = mtt.tournaments;
     const roi = `${Math.round(mtt.roi)}%`;

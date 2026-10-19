@@ -76,3 +76,18 @@ test('a venue remembers its country', () => {
   assert.deepEqual(countryOrder(list).slice(0, 3), ['PT', 'US', 'ES']);
   assert.equal(flag('PT'), '🇵🇹');
 });
+
+test('with backers the withheld tax stays whole, with a note, and the PDF says what results include', () => {
+  const backed = sess('s', { cashOut: 10000, stakes: [{ share: 40, markup: 1 }], withheld: { amount: 2400, form: 'W-2G', status: 'final' } });
+  const tax = taxReport([backed, sess('p', { buyIn: 500, swapNet: 50 })], year);
+  assert.equal(tax.rows[0].withheld, 2400, 'not split by the backers’ share');
+  assert.equal(tax.rows[0].backedWithheld, true);
+  assert.equal(tax.sharesIncluded, true);
+  const html = reportHtml(buildReport({ sessions: [backed], transfers: [], bankrolls: [], range: year }), { now: 0, tax });
+  assert.match(html, /formulário 5754/);
+  assert.match(html, /Inclui swaps e a tua parte dos pacotes de staking/);
+  const own = taxReport([sess('o', { cashOut: 5000, withheld: { amount: 1200, form: 'W-2G', status: 'final' } })], year);
+  assert.deepEqual([own.rows[0].backedWithheld, own.sharesIncluded], [false, false]);
+  const plain = reportHtml(buildReport({ sessions: [], transfers: [], bankrolls: [], range: year }), { now: 0, tax: own });
+  assert.doesNotMatch(plain, /5754|pacotes de staking/);
+});

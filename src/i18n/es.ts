@@ -1701,6 +1701,8 @@ const es: Record<string, string> = {
   'Formulário': 'Formulario',
   'Galeria': 'Galería',
   'Ganhos': 'Ganancias',
+  'Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).': 'Importe total del documento; la parte de tus backers puede declararse con el formulario 5754 (EE. UU.).',
+  'Inclui swaps e a tua parte dos pacotes de staking.': 'Incluye swaps y tu parte de los paquetes de staking.',
   'Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).': 'Ganancias y pérdidas suman las sesiones que ganaste y las que perdiste, antes de gastos. Retenido: impuesto que el casino retuvo del premio (W-2G, 1042-S).',
   'Imposto retido ({currency})': 'Impuesto retenido ({currency})',
   'Imposto retido a recuperar: {amount}': 'Impuesto retenido por recuperar: {amount}',
@@ -3084,7 +3086,6 @@ const es: Record<string, string> = {
   'Estoril, maio 2027': 'Estoril, mayo 2027',
   'Las Vegas, verão 2027': 'Las Vegas, verano 2027',
   'Evento principal de 26 de fevereiro a 3 de março.': 'Evento principal del 26 de febrero al 3 de marzo.',
-  'Evento principal de 21 a 26 de março.': 'Evento principal del 21 al 26 de marzo.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. Suele ser en febrero.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. Suele ser entre finales de marzo y mediados de abril.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e o início de maio.': 'Fechas por confirmar: el organizador aún no ha publicado las fechas de 2027. Suele ser entre finales de abril y principios de mayo.',
@@ -3185,6 +3186,8 @@ const es: Record<string, string> = {
   'Espinho, dezembro 2026': 'Espinho, diciembre 2026',
   'Praga, dezembro 2026': 'Praga, diciembre 2026',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: 550 €, stack inicial de 40.000, niveles de 45 minutos. El organizador aún no ha publicado los días y las horas de los flights.',
+  'Mixed Games: o dia final também aceita inscrições até às 14:00.': 'Mixed Games: el día final también acepta inscripciones hasta las 14:00.',
+  'Super High Roller: o Dia 2 também aceita inscrições até às 17:50.': 'Super High Roller: el Día 2 también acepta inscripciones hasta las 17:50.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'El organizador publica el stack inicial de cada torneo, pero no la duración de los niveles, salvo en algunos.',
   'Lisboa': 'Lisboa',
   'Praga': 'Praga',
@@ -3395,6 +3398,7 @@ const es: Record<string, string> = {
   'O vídeo não ficou pronto': 'El video no está listo',
   'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'No pudimos montar el video. Inténtalo de nuevo en un rato.',
   '{a} e {b}': '{a} y {b}',
+  'A tua parte, re-entries incluídas': 'Tu parte, re-entries incluidos',
 };
 
 export default es;

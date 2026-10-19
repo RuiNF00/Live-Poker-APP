@@ -1811,6 +1811,8 @@ const en: Record<string, string> = {
   'Formulário': 'Form',
   'Galeria': 'Photos',
   'Ganhos': 'Winnings',
+  'Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).': "The whole document's amount; your backers' share can be reported on Form 5754 (US).",
+  'Inclui swaps e a tua parte dos pacotes de staking.': 'Includes swaps and your share of staking packages.',
   'Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).': 'Winnings and losses add up your winning and losing sessions, before expenses. Withheld: tax the casino kept from the prize (W-2G, 1042-S).',
   'Imposto retido ({currency})': 'Tax withheld ({currency})',
   'Imposto retido a recuperar: {amount}': 'Withheld tax to recover: {amount}',
@@ -3090,7 +3092,6 @@ const en: Record<string, string> = {
   'Estoril, maio 2027': 'Estoril, May 2027',
   'Las Vegas, verão 2027': 'Las Vegas, summer 2027',
   'Evento principal de 26 de fevereiro a 3 de março.': 'Main Event 26 February to 3 March.',
-  'Evento principal de 21 a 26 de março.': 'Main Event 21 to 26 March.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser em fevereiro.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs in February.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de março e meados de abril.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from late March to mid-April.',
   'Datas a confirmar: o organizador ainda não publicou as datas de 2027. Costuma ser entre o fim de abril e o início de maio.': 'Dates to be confirmed: the organiser hasn’t published the 2027 dates yet. It usually runs from late April to early May.',
@@ -3193,6 +3194,8 @@ const en: Record<string, string> = {
   'Lisboa': 'Lisbon',
   'Praga': 'Prague',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Main Event: €550, 40,000 starting stack, 45-minute levels. The organiser has not published the flight days and times yet.',
+  'Mixed Games: o dia final também aceita inscrições até às 14:00.': 'Mixed Games: the final day also takes new entries until 14:00.',
+  'Super High Roller: o Dia 2 também aceita inscrições até às 17:50.': 'Super High Roller: Day 2 also takes new entries until 17:50.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'The organiser publishes each tournament\'s starting stack but not its level length, except for a few.',
   'Punta del Este, dezembro 2026': 'Punta del Este, December 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'No exchange rate for {list}: approximate until you are back online.',
@@ -3401,6 +3404,7 @@ const en: Record<string, string> = {
   'O vídeo não ficou pronto': "The video isn't ready",
   'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': "We couldn't put the video together. Try again in a moment.",
   '{a} e {b}': '{a} and {b}',
+  'A tua parte, re-entries incluídas': 'Your share, re-entries included',
 };
 
 export default en;

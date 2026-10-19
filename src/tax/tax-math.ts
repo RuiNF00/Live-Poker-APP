@@ -5,7 +5,7 @@
 // can be tested.
 
 import { inRange, type DateRange } from '@/store/bankroll-math';
-import { profit } from '@/store/session-math';
+import { profit, soldShare } from '@/store/session-math';
 import { EXPENSE_KINDS, type TripSummary } from '@/store/trip-math';
 import type { ExpenseKind, Session } from '@/store/types';
 
@@ -22,6 +22,8 @@ export interface TaxRow {
   toRecover: number;
   recovered: number;
   docs: number;
+  /** Tax was withheld on a session with backers: the amount is the whole document's, not split. */
+  backedWithheld: boolean;
 }
 
 export interface UsLosses {
@@ -44,6 +46,8 @@ export interface TaxReport {
   pending: { currency: string; amount: number }[];
   /** Poker expenses per currency: trip expenses by kind, plus the expenses typed on sessions. */
   expenses: { currency: string; byKind: Record<ExpenseKind, number>; sessions: number; total: number }[];
+  /** Some result in the range includes swaps or staking, so the PDF says what the numbers count. */
+  sharesIncluded: boolean;
 }
 
 /** The gambling result of a session: your share, before travel and other expenses (those are listed apart). */
@@ -64,7 +68,7 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { summar
   const rows = new Map<string, TaxRow>();
   for (const s of list) {
     const key = `${s.country ?? ''}|${s.currency}`;
-    const row = rows.get(key) ?? { country: s.country ?? '', currency: s.currency, sessions: 0, wins: 0, losses: 0, net: 0, withheld: 0, toRecover: 0, recovered: 0, docs: 0 };
+    const row = rows.get(key) ?? { country: s.country ?? '', currency: s.currency, sessions: 0, wins: 0, losses: 0, net: 0, withheld: 0, toRecover: 0, recovered: 0, docs: 0, backedWithheld: false };
     const g = gamblingResult(s);
     row.sessions++;
     if (g > 0) row.wins += g;
@@ -74,6 +78,7 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { summar
     row.withheld += w;
     if (s.withheld?.status === 'recover') row.toRecover += w;
     if (s.withheld?.status === 'recovered') row.recovered += w;
+    if (w && soldShare(s) > 0) row.backedWithheld = true;
     row.docs += s.docs?.length ?? 0;
     rows.set(key, row);
   }
@@ -122,6 +127,7 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { summar
       b.total += (s.expenses || 0) + (s.tips || 0);
     }
   const expenses = [...exp.values()].map((b) => ({ ...b, sessions: r2(b.sessions), total: r2(b.total), byKind: Object.fromEntries(EXPENSE_KINDS.map((k) => [k, r2(b.byKind[k])])) as Record<ExpenseKind, number> }));
+  const sharesIncluded = list.some((s) => soldShare(s) > 0 || !!s.swapNet || !!s.makeupCut);
 
-  return { rows: out, us, pending: [...pend.entries()].map(([currency, amount]) => ({ currency, amount: r2(amount) })), expenses };
+  return { rows: out, us, pending: [...pend.entries()].map(([currency, amount]) => ({ currency, amount: r2(amount) })), expenses, sharesIncluded };
 }

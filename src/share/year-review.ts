@@ -5,7 +5,7 @@
 
 import type { Hand } from '@/poker/types';
 import { downswings, type Downswing } from '@/store/results-math';
-import { mainCurrency, playedMs, profit } from '@/store/session-math';
+import { mainCurrency, ownBuyIns, playedMs, profit } from '@/store/session-math';
 import { weekStart, type Pause } from '@/store/streak';
 import type { Session } from '@/store/types';
 
@@ -200,7 +200,7 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
     if (list.length < STAKE_MIN_SESSIONS || h < STAKE_MIN_HOURS) continue;
     const p = list.reduce((a, s) => a + profit(s), 0);
     const s0 = list[0];
-    const spent = list.reduce((a, s) => a + s.buyIn * (s.entries || 1) + (s.addOn || 0), 0);
+    const spent = list.reduce((a, s) => a + ownBuyIns(s), 0);
     stakes.push({
       key,
       kind: s0.kind,

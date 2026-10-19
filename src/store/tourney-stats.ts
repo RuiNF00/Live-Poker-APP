@@ -4,12 +4,12 @@
 // same number the Bankroll tab shows.
 //
 // Two views: `mine` is your result after staking, swaps, makeup and expenses
-// (profit/ownCost, as in totals()); `action` is the whole action as played,
+// (profit over your share of the buy-ins, as in totals()); `action` is the whole action as played,
 // buy-ins against prizes, before any of that.
 
 import { inRange } from './bankroll-math';
 import { isBagged } from './multi-day';
-import { cost, gross, mainCurrency, ownCost, profit, soldShare } from './session-math';
+import { cost, gross, mainCurrency, ownBuyIns, profit, soldShare } from './session-math';
 import type { Session, Trip } from './types';
 
 export type StatsView = 'mine' | 'action';
@@ -50,7 +50,7 @@ export function finishedTourneys(sessions: Session[], currency?: string): { curr
 
 /** What a tournament cost and returned in this view. */
 function money(s: Session, view: StatsView) {
-  return view === 'mine' ? { inv: Math.max(0, ownCost(s)), net: profit(s) } : { inv: cost(s), net: gross(s) };
+  return view === 'mine' ? { inv: ownBuyIns(s), net: profit(s) } : { inv: cost(s), net: gross(s) };
 }
 
 /** Bounties are part of the prize; a cash is a prize beyond them. */

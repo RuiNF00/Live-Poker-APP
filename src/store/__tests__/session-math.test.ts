@@ -2,8 +2,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, owedToBackers, parseDay, profit, totals } from '../session-math';
+import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, ownBuyIns, owedToBackers, parseDay, profit, totals } from '../session-math';
 import type { Session } from '../types';
+import { mttStats } from '../results-math';
+import { summarize } from '../tourney-stats';
+import { homeTotals } from '../fx-math';
+import { yearOf, yearReview } from '../../share/year-review';
 
 function mk(over: Partial<Session> = {}): Session {
   return {
@@ -160,4 +164,39 @@ test('addDays steps calendar days, not 24-hour blocks', () => {
   assert.deepEqual(days, [31, 30, 29, 28, 27, 26, 25]);
   const evening = new Date(addDays(new Date(2026, 2, 28, 21).getTime(), 1));
   assert.deepEqual([evening.getDate(), evening.getHours()], [29, 21]);
+});
+
+test('ROI is the result over your share of the buy-ins, the same on every screen', () => {
+  // Half sold at 1.2 with a tip and a taxi: tips and expenses are already out of the result, not buy-ins.
+  const staked = mk({ id: 'a', buyIn: 1000, entries: 2, cashOut: 5000, staking: { sold: 50, markup: 1.2 }, tips: 50, expenses: 100 });
+  const plain = [1, 2, 3, 4].map((i) => mk({ id: 'p' + i, buyIn: 100, cashOut: i === 1 ? 300 : 0 }));
+  const list = [staked, ...plain];
+  assert.equal(ownBuyIns(staked), 1000);
+  const own = 1000 + 4 * 100;
+  const net = list.reduce((a, s) => a + profit(s), 0);
+  const roi = (net / own) * 100;
+  const tot = totals(list);
+  assert.equal(tot.invested, own);
+  assert.equal(tot.roi, roi);
+  assert.equal(breakdown(list, () => 'x')[0].roi, roi);
+  assert.equal(summarize(list, 'mine').roi, roi);
+  assert.equal(mttStats(list)!.roi, roi);
+  // The home-currency card and the year in review divide by the same thing.
+  assert.equal(homeTotals({ sessions: list, transfers: [], bankrolls: [] }, '€', {}, {}).roi, roi);
+  const row = yearReview(yearOf(0), list, []).stakes.find((x) => x.key === 'mtt|100')!;
+  assert.equal(row.roi, plain.reduce((a, s) => a + profit(s), 0) / 400);
+  assert.equal(yearReview(yearOf(0), [staked, { ...staked, id: 'b' }], []).stakes[0].roi, (2 * profit(staked)) / 2000);
+});
+
+test('ROI with a tournament sold 100%: its markup counts as result, nothing as buy-ins', () => {
+  // The staking convention: markup is profit, and a fully sold session adds no buy-ins of yours.
+  const sold = mk({ id: 's', buyIn: 1000, cashOut: 0, staking: { sold: 100, markup: 1.1 } });
+  assert.equal(ownBuyIns(sold), 0);
+  assert.equal(profit(sold), 100);
+  const plain = mk({ id: 'p', buyIn: 100, cashOut: 0 });
+  assert.equal(totals([sold, plain]).roi, 0);
+  // Only fully sold tournaments: no ROI to show, never 0% or a division by zero.
+  assert.equal(totals([sold]).roi, null);
+  assert.equal(summarize([sold], 'mine').roi, null);
+  assert.equal(mttStats([1, 2, 3, 4, 5].map((i) => ({ ...sold, id: 's' + i })))!.roi, null);
 });

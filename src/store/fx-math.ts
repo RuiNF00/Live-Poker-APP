@@ -6,7 +6,7 @@
 
 import { balanceOf } from './bankroll-math';
 import { CURRENCY_INFO, isoOf } from './currencies';
-import { ownCost, profit } from './session-math';
+import { ownBuyIns, profit } from './session-math';
 import type { Bankroll, Session, Transfer } from './types';
 
 /** Stored currency values, as ISO codes. */
@@ -133,7 +133,7 @@ export function homeTotals(
     p += v;
     n++;
     if (s.kind === 'mtt') {
-      mttInv += Math.max(0, ownCost(s)) * r;
+      mttInv += ownBuyIns(s) * r;
       mttProfit += v;
     }
   }

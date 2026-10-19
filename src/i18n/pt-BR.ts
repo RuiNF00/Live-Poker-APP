@@ -846,6 +846,8 @@ const ptBR: Record<string, string> = {
   'Fica guardado para esta sala: da próxima vez já vem preenchido.': 'Fica salvo para esta sala: da próxima vez já vem preenchido.',
   'Ficheiro': 'Arquivo',
   'Ficou no outro telemóvel': 'Ficou no outro celular',
+  'Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).': 'Valor total do documento; a parte dos seus backers pode ser declarada com o formulário 5754 (EUA).',
+  'Inclui swaps e a tua parte dos pacotes de staking.': 'Inclui swaps e a sua parte dos pacotes de staking.',
   'Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).': 'Ganhos e perdas somam as sessões que você ganhou e as que perdeu, antes de despesas. Retido: imposto que o cassino reteve no prêmio (W-2G, 1042-S).',
   'Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.': 'Isto não é consultoria fiscal. São os números que você registrou, organizados por país. Confirme com um contador as regras do seu país e de onde você jogou.',
   'Não residentes nos EUA: 30% se o teu país não tem tratado. Pode pedir-se de volta até 3 anos depois.': 'Não residentes nos EUA: 30% se o seu país não tem tratado. Dá para pedir de volta até 3 anos depois.',
@@ -1534,6 +1536,8 @@ const ptBR: Record<string, string> = {
   'Espinho, dezembro 2026': 'Espinho, dezembro de 2026',
   'Praga, dezembro 2026': 'Praga, dezembro de 2026',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
+  'Super High Roller: o Dia 2 também aceita inscrições até às 17:50.': 'Super High Roller: o Dia 2 também aceita inscrições até as 17h50.',
+  'Mixed Games: o dia final também aceita inscrições até às 14:00.': 'Mixed Games: o dia final também aceita inscrições até as 14h.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
   'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
@@ -1729,6 +1733,7 @@ const ptBR: Record<string, string> = {
   'O vídeo não ficou pronto': 'O vídeo não ficou pronto',
   'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'Não conseguimos montar o vídeo. Tente de novo daqui a pouco.',
   '{a} e {b}': '{a} e {b}',
+  'A tua parte, re-entries incluídas': 'Sua parte, re-entries incluídos',
 };
 
 export default ptBR;

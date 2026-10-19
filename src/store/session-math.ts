@@ -78,6 +78,14 @@ export function ownCost(s: Session): number {
 }
 
 /**
+ * Your share of the buy-ins (re-entries and add-ons included): what ROI divides by. Tips and
+ * expenses are already out of the result, and markup is part of it, so neither changes this.
+ */
+export function ownBuyIns(s: Session): number {
+  return cost(s) * (1 - soldShare(s));
+}
+
+/**
  * Your result: your share of the prize, plus what backers paid, minus buy-ins and expenses,
  * plus your cut of a makeup package credited to this session (kept in sync by the store).
  */
@@ -136,7 +144,7 @@ export function breakdown(list: Session[], by: 'venue' | 'name' | ((s: Session) 
     b.hours += playedMs(s) / 3600000;
     if (s.kind === 'mtt') {
       b.mtts++;
-      b.mttInv += Math.max(0, ownCost(s));
+      b.mttInv += ownBuyIns(s);
       b.mttProfit += p;
     }
     m.set(key.toLowerCase(), b);
@@ -153,6 +161,7 @@ export interface Totals {
   otherCurrencies: string[];
   sessions: number;
   profit: number;
+  /** Your share of the buy-ins: what ROI divides by. */
   invested: number;
   hours: number;
   hourly: number;
@@ -172,10 +181,10 @@ export function totals(list: Session[], currency?: string): Totals {
   const cur = currency ?? mainCurrency(ended, mainCurrency(list));
   const done = inCurrency(ended, cur);
   const p = done.reduce((a, s) => a + profit(s), 0);
-  const inv = done.reduce((a, s) => a + Math.max(0, ownCost(s)), 0);
+  const inv = done.reduce((a, s) => a + ownBuyIns(s), 0);
   const hours = done.reduce((a, s) => a + playedMs(s), 0) / 3600000;
   const mtts = done.filter((s) => s.kind === 'mtt');
-  const mttInv = mtts.reduce((a, s) => a + Math.max(0, ownCost(s)), 0);
+  const mttInv = mtts.reduce((a, s) => a + ownBuyIns(s), 0);
   const mttProfit = mtts.reduce((a, s) => a + profit(s), 0);
   const profits = done.map(profit);
   const counted = done.filter((s) => (s.handsDealt ?? 0) > 0);
