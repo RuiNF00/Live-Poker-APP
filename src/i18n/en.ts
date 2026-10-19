@@ -1525,7 +1525,7 @@ const en: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'The hand you were entering and your live session are saved. Go back and carry on; if it happens again, close and reopen the app.',
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
-  'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
+  'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
   // Swaps
   "1 por confirmar": "1 awaiting confirmation",
   "1 swap ativo": "1 active swap",

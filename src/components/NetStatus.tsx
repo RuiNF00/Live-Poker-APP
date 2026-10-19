@@ -23,7 +23,7 @@ export function OfflineBadge() {
     <View
       accessible
       accessibilityLiveRegion="polite"
-      accessibilityLabel={(pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')) + '. ' + t('Tudo guardado no telemóvel. Envia quando houver sinal.')}
+      accessibilityLabel={(pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')) + '. ' + t('Tudo guardado no telemóvel. Segue quando houver sinal.')}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 26, height: 26, justifyContent: 'center', paddingHorizontal: pending > 0 ? 8 : 0, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
       <Ionicons name="cloud-offline-outline" size={14} color={C.textDim} />
       {pending > 0 ? (
