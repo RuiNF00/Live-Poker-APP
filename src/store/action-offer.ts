@@ -30,6 +30,8 @@ export interface PackageLine {
   pct: number;
   /** The backer has paid for the piece (marked by the player; paid outside the app). */
   paid?: boolean;
+  /** Events already marked not played when the piece was marked paid: never paid for, so nothing goes back. */
+  paidSkipped?: string[];
   /** The private confirmation link, once sent. */
   remote?: { id: string; token: string; url: string };
   /** When the backer confirmed these terms on the link (ISO), null/undefined until then. */
@@ -121,8 +123,9 @@ export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player
 
 /**
  * The link holds these terms: what the backer confirmed there is what this phone shows. Compared as
- * the server keeps them (to the cent, trimmed names), event names aside. Anything else (a change the
- * server refused, one not sent yet) and a confirmation there is of other terms.
+ * the server keeps them (to the cent), names aside: a backer renamed here confirmed the same deal
+ * (Pronto P2-A, 19 Oct). Anything else (a change the server refused, one not sent yet) and a
+ * confirmation there is of other terms.
  */
 export function sameTerms(link: unknown, mine: AgreementPayload): boolean {
   if (!link || typeof link !== 'object') return false;
@@ -132,7 +135,6 @@ export function sameTerms(link: unknown, mine: AgreementPayload): boolean {
     typeof a.markup === 'number' &&
     r2(a.markup) === r2(mine.markup) &&
     a.cur === mine.cur &&
-    (typeof a.backer === 'string' ? a.backer.trim() : null) === mine.backer.trim() &&
     Array.isArray(a.events) &&
     // The server keeps them by date: compared as sets.
     a.events.map(ev).sort().join(',') === mine.events.map(ev).sort().join(',')
@@ -233,9 +235,10 @@ export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, star
 /** A paid piece of events the player said they didn't play: that money goes back to the backer. */
 export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
   if (!line.paid) return 0;
+  const before = Array.isArray(line.paidSkipped) ? line.paidSkipped : [];
   return r2(
     offerEvents(f, o)
-      .filter((e) => missed(o, e, started))
+      .filter((e) => missed(o, e, started) && !before.includes(e.id))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
@@ -339,7 +342,8 @@ export function settleReminders(
 /**
  * A backer's festival pieces still to pay for, in these currencies: what «Marcar como pago» marks paid
  * when only festival action with no rate is left (QA P2, 19 Oct). Paid outside the app, in the
- * festival's currency, like the package screen's own «Marcar como pago».
+ * festival's currency, like the package screen's own «Marcar como pago». Only packages with no event
+ * started: there, what is pending is the whole piece (Voz P2, 19 Oct).
  */
 export function unpaidLinesIn(
   offers: ActionOffer[],
@@ -347,12 +351,18 @@ export function unpaidLinesIn(
   currencies: string[],
   festival: (id: string) => Festival | undefined,
   started: (festivalId: string) => Record<string, string>,
-): { offerId: string; lineId: string }[] {
-  const out: { offerId: string; lineId: string }[] = [];
+): { offerId: string; lineId: string; currency: string; due: number }[] {
+  const out: { offerId: string; lineId: string; currency: string; due: number }[] = [];
   for (const o of offers) {
     const f = festival(o.festivalId);
     if (!f || !currencies.includes(f.currency)) continue;
-    for (const l of o.lines) if (l.backerId === backerId && pendingCost(f, o, l, started(f.id)) > 0) out.push({ offerId: o.id, lineId: l.id });
+    // A session already carries part of the piece: its stake changes too, so that is the package screen's job.
+    const st = started(f.id);
+    if (offerEvents(f, o).some((e) => st[e.id])) continue;
+    for (const l of o.lines) {
+      const due = l.backerId === backerId ? pendingCost(f, o, l, st) : 0;
+      if (due > 0) out.push({ offerId: o.id, lineId: l.id, currency: f.currency, due });
+    }
   }
   return out;
 }
@@ -431,6 +441,17 @@ export function updateOffer(id: string, fn: (o: ActionOffer) => ActionOffer) {
 
 export function updateLine(offerId: string, lineId: string, fn: (l: PackageLine) => PackageLine) {
   updateOffer(offerId, (o) => ({ ...o, lines: o.lines.map((l) => (l.id === lineId ? fn(l) : l)) }));
+}
+
+/**
+ * Marks a piece paid or not. What the backer pays leaves out the events already not played
+ * (pendingCost), so those are remembered and never refunded (Voz P2, 19 Oct).
+ */
+export function setLinePaid(offerId: string, lineId: string, paid: boolean) {
+  updateOffer(offerId, (o) => ({
+    ...o,
+    lines: o.lines.map((l) => (l.id === lineId ? { ...l, paid, paidSkipped: paid && o.skipped?.length ? [...o.skipped] : undefined } : l)),
+  }));
 }
 
 export function deleteOffer(id: string) {

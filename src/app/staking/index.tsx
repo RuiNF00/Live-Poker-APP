@@ -80,7 +80,8 @@ function StakingScreen() {
                               ))
                             : null}
                           {/* Apart for want of a rate: in the warning colour, so it doesn't read as part of the sum. */}
-                          {apart.map((p) => (
+                          {/* The headline already shows the first one: here only that it's out of the total. */}
+                          {(head.apart ? [t('Sem câmbio: fica fora do total.'), ...apart.slice(1)] : apart).map((p) => (
                             <T key={p} v="tiny" color={C.warn}>
                               {p}
                             </T>

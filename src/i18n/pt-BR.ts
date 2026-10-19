@@ -587,6 +587,7 @@ const ptBR: Record<string, string> = {
   'Junta pelo menos 2 jogadores': 'Adicione pelo menos 2 jogadores',
   'Já estão todos no grupo. Quem entrou no browser pode usar o botão "Abrir na app" da página.': 'Já estão todos no grupo. Quem entrou pelo navegador pode usar o botão "Abrir no app" da página.',
   'Pagaste {amount} a {name} e ficam acertados.': 'Você pagou {amount} a {name} e estão acertados.',
+  '{name} pagou-te {amount}.': '{name} te pagou {amount}.',
   '{name} pagou-te {amount} e ficam acertados.': '{name} te pagou {amount} e estão acertados.',
   'Como chegámos aqui': 'Como chegamos aqui',
   'Toca numa sessão para ver as contas passo a passo.': 'Toque em uma sessão para ver as contas passo a passo.',

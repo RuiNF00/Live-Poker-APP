@@ -26,13 +26,13 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { inFestivalPackage, offerPackageIds, unpaidLinesIn, updateLine, useOffers, type ActionOffer } from '@/store/action-offer';
+import { inFestivalPackage, offerPackageIds, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, headlineOf, ledgerYears, packageDefaults, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -94,6 +94,8 @@ function BackerScreen() {
   const head = headlineOf(l, cur);
   const bal = balanceLabel(head.balance, head.currency);
   const apart = unconverted(l);
+  // Kept with each payment: the rates its festival packages were converted at (Pronto P2-B).
+  const ratesNow = () => offerRatesNow(backer.id, cur, offers, (fid) => planFestival(allFestivals(), fid)?.currency, (from, to, at) => rate(fx.table, from, to, at, fx.manual));
   // Currencies the ECB doesn't publish never get a rate with the signal: the player types theirs here (QA P2).
   const typedApart = apart.filter((c) => CURRENCY_INFO[c]?.ecb === false);
   // Festival pieces with no rate, still to pay for: «Marcar como pago» marks them paid (QA P2).
@@ -127,7 +129,7 @@ function BackerScreen() {
         : t('{name} pagou-te {amount} e ficam acertados.', { amount: money(-l.balance, cur), name: backer.name }),
       () => {
         const now = Date.now();
-        savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now });
+        savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now, fx: ratesNow() });
         tap('medium');
         // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
         if (!apart.length) void maybeAskForReview('settled');
@@ -136,16 +138,22 @@ function BackerScreen() {
     );
 
   // Only festival action with no rate is left: the backer paid their pieces, in the festival's currency.
-  const settleApart = () =>
-    confirm(
+  const settleApart = () => {
+    const paidIn = new Map<string, number>();
+    for (const x of apartDue) paidIn.set(x.currency, (paidIn.get(x.currency) ?? 0) + x.due);
+    const amount = [...paidIn].map(([c, v]) => money(v, c)).join(' + ');
+    // A refund for an event not played, or a piece still in a session, can leave something either way.
+    const square = l.apart.every((a) => Math.abs(a.balance + (paidIn.get(a.currency) ?? 0)) < 0.01);
+    return confirm(
       t('Marcar como pago?'),
-      t('{name} pagou-te {amount} e ficam acertados.', { name: backer.name, amount: l.apart.filter((a) => a.unpaid >= 0.01).map((a) => money(a.unpaid, a.currency)).join(' + ') }),
+      square ? t('{name} pagou-te {amount} e ficam acertados.', { name: backer.name, amount }) : t('{name} pagou-te {amount}.', { name: backer.name, amount }),
       () => {
-        for (const x of apartDue) updateLine(x.offerId, x.lineId, (y) => ({ ...y, paid: true }));
+        for (const x of apartDue) setLinePaid(x.offerId, x.lineId, true);
         tap('medium');
       },
       t('Marcar como pago'),
     );
+  };
 
   const shareSummary = async (withYear = false) => {
     if (sending.current) return;
@@ -559,7 +567,7 @@ function BackerScreen() {
         currency={cur}
         onClose={() => setPaying(false)}
         onSave={(p) => {
-          savePayment(p);
+          savePayment({ ...p, fx: ratesNow() ?? p.fx });
           setPaying(false);
           // A payment that squares the balance is moment C too.
           if (Math.abs(l.balance - p.amount) < 0.01 && !apart.length) void maybeAskForReview('settled');

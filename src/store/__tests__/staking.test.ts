@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
+import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, offerRatesNow, packageDefaults, packageStates, savedOfferRate, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 import { rate } from '../fx-math';
@@ -595,4 +595,34 @@ test('a currency the ECB does not publish: the rate the player types brings it i
   addOfferDue(m, 'ARS', 10000, 0, (a, b) => rate({}, a, b, 0, { ARS: 1000 }));
   assert.deepEqual(unconverted(m), []);
   assert.equal(m.unpaid, 10);
+});
+
+test('a payment keeps the rates it settled at: with none later, the backer stays settled (Pronto P2-B, 19 Oct)', () => {
+  const offers = [
+    { id: 'o1', festivalId: 'bahamas', createdAt: 1, lines: [{ backerId: 'b1' }] },
+    { id: 'o2', festivalId: 'lisboa', createdAt: 2, lines: [{ backerId: 'b1' }] },
+    { id: 'o3', festivalId: 'lisboa', createdAt: 3, lines: [{ backerId: 'b2' }] },
+  ];
+  const cur = (fid: string) => (fid === 'bahamas' ? '$' : fid === 'lisboa' ? '€' : undefined);
+  // Only the other currency, only this backer's packages, only rates there are.
+  assert.deepEqual(offerRatesNow('b1', '$', offers, cur, () => 1.1), { 'o2>$': 1.1 });
+  assert.equal(offerRatesNow('b1', '$', offers, cur, () => null), undefined);
+  // Settled with the rate: 583$ + 22€ × 1.1 = 607,20$ paid.
+  const pay = { id: 'y', backerId: 'b1', amount: -607.2, at: 10, note: '', createdAt: 10, fx: offerRatesNow('b1', '$', offers, cur, () => 1.1) } as BackerPayment;
+  const ledger = (rateTo: (from: string, to: string, offerId: string) => number | null) => {
+    const l = backerLedger('b1', [], [], [pay], undefined, { table: {}, fallback: '$' });
+    addOfferDue(l, '$', 583, 0, (a, b) => (a === b ? 1 : rateTo(a, b, 'o1')));
+    addOfferDue(l, '€', 22, 0, (a, b) => (a === b ? 1 : rateTo(a, b, 'o2')));
+    return l;
+  };
+  // No rate table any more (a new phone, offline): the payment's rate converts the €, still square.
+  const l = ledger((_a, b, id) => savedOfferRate([pay], 'b1', id, b));
+  assert.ok(Math.abs(l.balance) < 0.01);
+  assert.deepEqual(unconverted(l), []);
+  // Without it, as before: «Deves 24,20$» with 22€ apart.
+  assert.equal(Math.round(ledger(() => null).balance * 100) / 100, 24.2);
+  // Junk from a backup is no rate; the newest payment's rate wins.
+  assert.equal(savedOfferRate([{ ...pay, fx: { 'o2>$': -1 } }], 'b1', 'o2', '$'), null);
+  assert.equal(savedOfferRate([pay, { ...pay, at: 20, fx: { 'o2>$': 1.2 } }], 'b1', 'o2', '$'), 1.2);
+  assert.equal(savedOfferRate([pay], 'b2', 'o2', '$'), null);
 });
