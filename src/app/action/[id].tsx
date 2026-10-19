@@ -235,10 +235,12 @@ export default function ActionPackageScreen() {
     ]);
   };
 
+  // Paid, but an event skipped before paying was played after: «Por pagar», and a tap marks it all paid (QA P1).
+  const paidAll = (l: PackageLine) => settled.find((x) => x.l.id === l.id)?.st.paid ?? !!l.paid;
   const togglePaid = (l: PackageLine) => {
     tap('select');
     const before = offerPackageIds(getOffers());
-    setLinePaid(o.id, l.id, !l.paid);
+    setLinePaid(o.id, l.id, !paidAll(l), plan.sessions);
     applyToSessions(before);
   };
 
@@ -349,8 +351,8 @@ export default function ActionPackageScreen() {
                   ) : l.remote ? (
                     <Pill label={t('Por confirmar')} color={C.warn} />
                   ) : null}
-                  <Pressable onPress={() => togglePaid(l)} accessibilityRole="switch" accessibilityState={{ checked: !!l.paid }} hitSlop={6}>
-                    <Pill label={l.paid ? t('Pago') : t('Por pagar')} color={l.paid ? C.good : C.muted} icon={l.paid ? 'checkmark' : 'ellipse-outline'} />
+                  <Pressable onPress={() => togglePaid(l)} accessibilityRole="switch" accessibilityState={{ checked: paidAll(l) }} hitSlop={6}>
+                    <Pill label={paidAll(l) ? t('Pago') : t('Por pagar')} color={paidAll(l) ? C.good : C.muted} icon={paidAll(l) ? 'checkmark' : 'ellipse-outline'} />
                   </Pressable>
                 </Row>
                 <Button

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festival-data';
 import { venueTime } from '../../poker/festivals';
-import { agreement, covers, inFestivalPackage, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, covers, inFestivalPackage, paidSkippedNow, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
@@ -274,4 +274,12 @@ test('skipped, then paid, then played after all: that event was never paid for, 
   // Paid with nothing skipped: as before.
   const all = lineSettlement(F, pkg([line]), { ...line, paid: true }, { '2': 's1' }, [session('s1', 0, [{ ...stake[0], unpaid: undefined }])], 0);
   assert.deepEqual([all.paid, all.cost, all.net], [true, 9120, 0]);
+});
+
+test('marked paid: only events not played as things stand stay out of the payment (Bankroll, 19 Oct)', () => {
+  const o = { ...pkg([]), skipped: ['2', '3'] };
+  // Event 2 skipped by mistake and played since: paid for with the rest; event 3 still not played.
+  assert.deepEqual(paidSkippedNow(o, { '2': 's1' }), ['3']);
+  assert.equal(paidSkippedNow(o, { '2': 's1', '3': 's2' }), undefined);
+  assert.equal(paidSkippedNow(pkg([]), {}), undefined);
 });

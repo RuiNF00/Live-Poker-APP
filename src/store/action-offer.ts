@@ -456,11 +456,17 @@ export function updateLine(offerId: string, lineId: string, fn: (l: PackageLine)
  * Marks a piece paid or not. What the backer pays leaves out the events already not played
  * (pendingCost), so those are remembered and never refunded (Voz P2, 19 Oct).
  */
-export function setLinePaid(offerId: string, lineId: string, paid: boolean) {
+export function setLinePaid(offerId: string, lineId: string, paid: boolean, started: Record<string, string>) {
   updateOffer(offerId, (o) => ({
     ...o,
-    lines: o.lines.map((l) => (l.id === lineId ? { ...l, paid, paidSkipped: paid && o.skipped?.length ? [...o.skipped] : undefined } : l)),
+    lines: o.lines.map((l) => (l.id === lineId ? { ...l, paid, paidSkipped: paid ? paidSkippedNow(o, started) : undefined } : l)),
   }));
+}
+
+/** Events not played as things stand (skipped, no session): one skipped by mistake and played since was paid for too. */
+export function paidSkippedNow(o: ActionOffer, started: Record<string, string>): string[] | undefined {
+  const out = (o.skipped ?? []).filter((id) => !started[id]);
+  return out.length ? out : undefined;
 }
 
 export function deleteOffer(id: string) {
