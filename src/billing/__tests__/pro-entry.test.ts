@@ -112,3 +112,11 @@ test('the funnel counts the cancel offer shown and the invite discount used', ()
   const inv = src.find(([f]) => f === path.join('app', 'invite.tsx'))![1];
   assert.match(inv, /if \(res === 'ok'\) \{\n      track\('purchase', \{ plan: 'monthly', reason: 'invite', offer: 'invite' \}\)/);
 });
+
+test('the invite discount alert never opens by itself at the table or over the lock', () => {
+  const p = readFileSync(path.join(root, 'billing', 'pro.tsx'), 'utf8');
+  const calls = p.split('\n').filter((l) => /announceInviteOffer\(/.test(l) && !/^function announceInviteOffer/.test(l.trim()));
+  assert.ok(calls.length >= 3);
+  for (const l of calls) assert.match(l, /canAnnounce\(quietRef\.current\)/, l.trim());
+  assert.match(p, /else await inviteNews\.hold\(\{ offer, side: 'friend' \}\);/);
+});

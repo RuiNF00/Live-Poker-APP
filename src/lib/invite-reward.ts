@@ -57,6 +57,36 @@ export function inviteStatusFrom(x: unknown): InviteStatus | null {
 
 /** The offer while it can still be used, else null. */
 export const openOffer = (o: InviteOffer | null | undefined, now = Date.now()) => (o && Date.parse(o.until) > now ? o : null);
+/** Invite news found at the table or behind the app lock, kept until the player can read it. */
+export const NEWS_KEY = 'rl.ref.news.v1';
+export type InviteSide = 'friend' | 'inviter';
+export interface InviteNews {
+  offer: InviteOffer;
+  side: InviteSide;
+}
+
+/** Nothing opens by itself during a live session, nor over the app lock: the news waits for both to be gone. */
+export const canAnnounce = (o: { atTable: boolean; lockUp: boolean }) => !o.atTable && !o.lockUp;
+
+/** The invite news kept for later: one at a time (the newest), taken once, dropped when the discount ran out. */
+export function inviteNewsBox(kv: KV) {
+  return {
+    hold: (n: InviteNews) => kv.setItem(NEWS_KEY, JSON.stringify(n)).catch(() => {}),
+    async take(now = Date.now()): Promise<InviteNews | null> {
+      let n: InviteNews | null = null;
+      try {
+        const v = await kv.getItem(NEWS_KEY);
+        n = v ? (JSON.parse(v) as InviteNews) : null;
+      } catch {
+        return null;
+      }
+      if (!n) return null;
+      await kv.setItem(NEWS_KEY, '').catch(() => {});
+      return openOffer(n.offer, now) ? n : null;
+    },
+  };
+}
+
 /** A hand was saved on this install (set even before any invite is known). */
 export const HAND_KEY = 'rl.firsthand.v1';
 

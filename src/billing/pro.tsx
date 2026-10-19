@@ -22,6 +22,7 @@ import { OFFER_WAIT_MS, restoreOffer, welcomeStep } from '@/lib/restore-offer';
 import { track } from '@/lib/events';
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
+import { canAnnounce, inviteNewsBox, type InviteSide } from '@/lib/invite-reward';
 import { activateInvite, claimState, newInviteOffer, type InviteOffer } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
@@ -32,7 +33,7 @@ import { useStore } from '@/store/store';
  * player already on Pro (there's no first month left to discount). On Google Play the % is the
  * store offer's own, as on the paywall and the invite screen; without it no figure is claimed.
  */
-function announceInviteOffer(offer: InviteOffer, side: 'friend' | 'inviter', plans: store.StorePlan[]) {
+function announceInviteOffer(offer: InviteOffer, side: InviteSide, plans: store.StorePlan[]) {
   const pct = invitePct(Platform.OS === 'android' && store.LIVE, plans.find((p) => p.id === 'monthly')?.price, store.inviteOfferPrice(plans)?.price, INVITE.pct);
   track('invite_rewarded', { side, pct: pct ?? INVITE.pct });
   const vars = { pct: pct ?? 0, date: shortDate(Date.parse(offer.until)) };
@@ -50,6 +51,7 @@ function announceInviteOffer(offer: InviteOffer, side: 'friend' | 'inviter', pla
 }
 
 const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcome.v1' };
+const inviteNews = inviteNewsBox(AsyncStorage);
 
 interface ProValue {
   isPro: boolean;
@@ -90,6 +92,15 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     isProRef.current = isPro;
   }, [isPro]);
+  // Invite news never opens at the table nor over the app lock (rule: nothing opens by itself mid-session).
+  // Until the data is loaded a live session can't be ruled out: counted as at the table.
+  const { ready: dataReady, activeSession: liveSession } = useStore();
+  const atTable = !dataReady || !!liveSession;
+  const lockUp = useLockScreenUp();
+  const quietRef = useRef({ atTable, lockUp });
+  useEffect(() => {
+    quietRef.current = { atTable, lockUp };
+  }, [atTable, lockUp]);
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [plans, setPlans] = useState<store.StorePlan[]>([]);
   const [plansFailed, setPlansFailed] = useState(false);
@@ -150,7 +161,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       activateInvite().then(async (granted) => {
         if (!granted || isProRef.current) return;
         const offer = await newInviteOffer({ force: true });
-        if (offer) announceInviteOffer(offer, 'friend', plansRef.current);
+        if (!offer) return;
+        // A hand saved during a live session: said when the session is over (or on the next open without one).
+        if (canAnnounce(quietRef.current)) announceInviteOffer(offer, 'friend', plansRef.current);
+        else await inviteNews.hold({ offer, side: 'friend' });
       });
     setUsage((l) => {
       const next = pruneLog([...l, { kind, t: Date.now() }]);
@@ -214,31 +228,33 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
   // The inviter hears about a friend's first hand on the next open, not only in Definições.
-  // Not over the app lock (the alert would sit on top of it): the news waits for the unlock.
-  const lockUp = useLockScreenUp();
-  const lockRef = useRef(lockUp);
-  useEffect(() => {
-    lockRef.current = lockUp;
-  }, [lockUp]);
-  const inviteNews = useCallback(() => {
-    if (lockRef.current) return;
-    newInviteOffer().then((offer) => {
-      if (offer && !isProRef.current) announceInviteOffer(offer, 'inviter', plansRef.current);
-    });
+  // Not over the app lock (the alert would sit on top of it) nor during a live session: the news
+  // waits for the unlock or the end of the session. News kept from the table comes first.
+  const tellInviteNews = useCallback(async () => {
+    if (!canAnnounce(quietRef.current)) return;
+    const kept = await inviteNews.take();
+    if (kept) {
+      if (!isProRef.current && canAnnounce(quietRef.current)) announceInviteOffer(kept.offer, kept.side, plansRef.current);
+      return;
+    }
+    const offer = await newInviteOffer();
+    if (!offer || isProRef.current) return;
+    if (canAnnounce(quietRef.current)) announceInviteOffer(offer, 'inviter', plansRef.current);
+    else await inviteNews.hold({ offer, side: 'inviter' });
   }, []);
   useEffect(() => {
-    if (!lockUp) inviteNews();
-  }, [lockUp, inviteNews]);
+    if (canAnnounce({ atTable, lockUp })) void tellInviteNews();
+  }, [atTable, lockUp, tellInviteNews]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st !== 'active') return;
       refreshNudges();
       checkBilling();
       // After the lock has had its turn to come up on resume.
-      setTimeout(inviteNews, 1000);
+      setTimeout(() => void tellInviteNews(), 1000);
     });
     return () => sub.remove();
-  }, [refreshNudges, inviteNews, checkBilling]);
+  }, [refreshNudges, tellInviteNews, checkBilling]);
   const annualPrice = plans.find((p) => p.id === 'annual')?.priceString ?? '';
   useEffect(() => {
     const timer = setTimeout(() => {
