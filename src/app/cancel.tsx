@@ -76,7 +76,8 @@ export default function Cancel() {
   // whether the subscription was still set to renew (i.e. they were about to cancel).
   const lifetimeProps = () => ({ reason: reason ?? '', plan: plan ?? '', will_renew: willRenew ?? '' });
   const pick = (r: CancelReason) => {
-    track('cancel_flow', { step: 'reason', reason: r });
+    // Which offer this reason puts on screen (discount = the −40%), so the funnel counts the offer shown, not just the reason.
+    track('cancel_flow', { step: 'reason', reason: r, offer: offerOnScreen(r, { discount: !!offer, lifetime: !!lifetime }) ?? 'none' });
     if (r === 'noSubscription' && lifetime) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
     setReason(r);
     // The list turns into the answer for this reason: say which, so a screen reader isn't left on nothing.

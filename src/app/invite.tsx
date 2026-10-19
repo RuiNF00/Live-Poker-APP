@@ -67,8 +67,11 @@ export default function InviteScreen() {
     if (s.offer.iosCode) await Clipboard.setStringAsync(s.offer.iosCode);
     const res = await redeemInviteOffer(pro.plans, s.offer.iosCode);
     setBusy(false);
-    if (res === 'ok') router.back();
-    else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
+    // The invite discount used in the app (Google Play); an App Store code finishes in the store and comes from RevenueCat's webhook (store_purchase, offer: code).
+    if (res === 'ok') {
+      track('purchase', { plan: 'monthly', reason: 'invite', offer: 'invite' });
+      router.back();
+    } else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
     else if (res === 'unavailable') notice(t('Não deu para abrir o desconto'), t('Tenta outra vez daqui a pouco. O desconto continua guardado aqui.'));
     else if (res === 'error') notice(t('Não deu para concluir'), t('Tenta outra vez daqui a pouco. O desconto continua guardado aqui.'));
     else if (res !== 'redeem') buyNotice(res, store);

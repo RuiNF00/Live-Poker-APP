@@ -105,3 +105,10 @@ test('the paywall at the hand limit says the hand is kept as a draft, at the tab
   assert.match(plans, /hands: \{\n    title: t\('Mão guardada como rascunho'\)/);
   assert.match(body('handsLive'), /rascunho/);
 });
+
+test('the funnel counts the cancel offer shown and the invite discount used', () => {
+  const c = src.find(([f]) => f === path.join('app', 'cancel.tsx'))![1];
+  assert.match(c, /track\('cancel_flow', \{ step: 'reason', reason: r, offer: offerOnScreen\(r, \{ discount: !!offer, lifetime: !!lifetime \}\) \?\? 'none' \}\)/);
+  const inv = src.find(([f]) => f === path.join('app', 'invite.tsx'))![1];
+  assert.match(inv, /if \(res === 'ok'\) \{\n      track\('purchase', \{ plan: 'monthly', reason: 'invite', offer: 'invite' \}\)/);
+});
