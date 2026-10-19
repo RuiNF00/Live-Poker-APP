@@ -2,8 +2,6 @@
 // the balance between you. Pure, so it can be tested; screens call these with
 // the store's lists.
 
-import { playedClock } from '@/lib/time-zone';
-
 import { rate, type ManualRates, type RateTable } from './fx-math';
 import { cost, owedToBackers, pieceOf, profit, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
@@ -301,18 +299,15 @@ export interface YearPackage {
   makeup: number;
 }
 
-/** The year a session was played, on the clock where it was played (as the tax report counts it). */
-const playedYear = (s: Session) => new Date(playedClock(s.startedAt, s.tz)).getFullYear();
-
 /** The years with sessions for this backer, newest first. */
 export function ledgerYears(l: BackerLedger): number[] {
-  return [...new Set(l.rows.map((r) => playedYear(r.session)))].sort((a, b) => b - a);
+  return [...new Set(l.rows.map((r) => new Date(r.session.startedAt).getFullYear()))].sort((a, b) => b - a);
 }
 
 /**
  * Everything with one backer in one year, package by package: their buy-ins, what
  * they got back, their result and the makeup left. Sessions count in the year they
- * started, where they were played. `k` converts a session's money to the ledger's currency.
+ * started. `k` converts a session's money to the ledger's currency.
  */
 export function yearStatement(
   l: BackerLedger,
@@ -327,7 +322,7 @@ export function yearStatement(
   const by = new Map<string, YearPackage>();
   for (const r of l.rows) {
     const s = r.session;
-    if (playedYear(s) !== year) continue;
+    if (new Date(s.startedAt).getFullYear() !== year) continue;
     const id = r.stake.packageId && pkgOf.has(r.stake.packageId) ? r.stake.packageId : null;
     const key = id ?? '';
     const p = id ? pkgOf.get(id)! : null;

@@ -254,16 +254,6 @@ test("a backer's year: package by package, sessions counted in the year they sta
   assert.equal(yearStatement(l, 2025, packages, pk).sessions, 1);
 });
 
-test("a backer's year is the one where the session was played, whatever the phone's zone now", () => {
-  const ms = Date.UTC(2027, 0, 1, 7); // 31 Dec 23:00 in Las Vegas
-  const sessions = [mk({ startedAt: ms, endedAt: ms + 3 * 3600000, buyIn: 1000, cashOut: 3000, tz: 'America/Los_Angeles', stakes: [{ backerId: 'b1', share: 50, markup: 1 }] })];
-  const pk = packageStates(sessions, []);
-  const l = backerLedger('b1', sessions, [], [], pk);
-  assert.deepEqual(ledgerYears(l), [2026]);
-  assert.equal(yearStatement(l, 2026, [], pk).sessions, 1);
-  assert.equal(yearStatement(l, 2027, [], pk).sessions, 0);
-});
-
 test('a package with sessions in two currencies counts its makeup in its own, at each day rate', () => {
   const p = pkg({ id: 'px' });
   const x = { backerId: 'b1', packageId: 'px', share: 100, markup: 1 };
