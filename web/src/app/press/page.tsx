@@ -44,12 +44,15 @@ const FEATURES: [string, string][] = [
   ['Privacy built in', 'Hide the amounts with one tap, lock the app with Face ID and export or erase everything.'],
 ];
 
-// Only the 4 approved for the press in marketing/kit-imprensa.md: the others show amounts.
+// Rendered from the v1 with generic event names. Without the bankroll, trip and backer
+// screens: press images show no money amounts (marketing/kit-imprensa.md).
 const SHOTS: [number, string][] = [
   [1, 'Log a hand in seconds'],
-  [2, 'Replay every street'],
-  [3, 'Share it and ask your friends'],
-  [4, 'Your festival, in one story'],
+  [2, 'Tell the hand, we put it on the table'],
+  [3, 'Replay every street'],
+  [4, 'Share it and ask your friends'],
+  [5, 'The tournament and level, remembered'],
+  [6, 'Wrap up the festival in one Story'],
 ];
 
 const LOGOS: [string, string, string][] = [
