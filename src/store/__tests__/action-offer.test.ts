@@ -214,7 +214,8 @@ test('a confirmation counts only for the terms the link holds: a refused change 
   assert.equal(sameTerms(old, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
   assert.equal(sameTerms(old, agreement(f, { ...before, markup: 1.2 }, line, 'Rui', 'Ana', 'Bahamas')), false);
   assert.equal(sameTerms(old, agreement(f, before, { ...line, pct: 10 }, 'Rui', 'Ana', 'Bahamas')), false);
-  assert.equal(sameTerms(old, agreement(f, before, line, 'Rui', 'Bea', 'Bahamas')), false);
+  // Renamed here after the link went out: still the deal they confirmed (Pronto P2-A).
+  assert.equal(sameTerms(old, agreement(f, before, line, 'Rui', 'Bea', 'Bahamas')), true);
   // The same terms, whatever the order, the time sent or the title: confirmed.
   const now = stored(agreement(f, after, line, 'Rui', 'Ana', 'Bahamas'));
   assert.equal(sameTerms({ ...now, events: [...now.events].reverse(), at: 5, title: 'Outro' }, agreement(f, after, line, 'Rui', ' Ana ', 'Bahamas')), true);

@@ -207,6 +207,38 @@ export function addOfferDue(l: BackerLedger, currency: string, due: number, back
 }
 
 /**
+ * The rates this backer's festival packages convert at now, to keep with a payment (BackerPayment.fx):
+ * a payment that squared them stays square on a phone with no rates (Pronto P2-B, 19 Oct).
+ */
+export function offerRatesNow(
+  backerId: string,
+  deal: string,
+  offers: { id: string; festivalId: string; createdAt: number; lines: { backerId: string }[] }[],
+  currencyOf: (festivalId: string) => string | undefined,
+  rateAt: (from: string, to: string, at: number) => number | null,
+): Record<string, number> | undefined {
+  const out: Record<string, number> = {};
+  for (const o of offers) {
+    const c = o.lines.some((l) => l.backerId === backerId) ? currencyOf(o.festivalId) : undefined;
+    if (!c || c === deal) continue;
+    const r = rateAt(c, deal, o.createdAt);
+    if (r !== null) out[`${o.id}>${deal}`] = r;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** The rate a payment kept for this package (offerRatesNow), the newest one; null when none did. */
+export function savedOfferRate(payments: BackerPayment[], backerId: string, offerId: string, to: string): number | null {
+  let best: { at: number; r: number } | null = null;
+  for (const p of payments) {
+    const r = p.backerId === backerId && p.fx && typeof p.fx === 'object' ? p.fx[`${offerId}>${to}`] : undefined;
+    // From a backup too: only a real rate.
+    if (typeof r === 'number' && Number.isFinite(r) && r > 0 && (!best || p.at >= best.at)) best = { at: p.at, r };
+  }
+  return best ? best.r : null;
+}
+
+/**
  * Currencies of festival action still apart for want of a rate (see addOfferDue). While there are
  * any, the backer is sent nothing: the text, the link and the fixed page would all show less than
  * they owe or are owed (Voz/Bankroll P2, 19 Oct).

@@ -123,8 +123,9 @@ export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player
 
 /**
  * The link holds these terms: what the backer confirmed there is what this phone shows. Compared as
- * the server keeps them (to the cent, trimmed names), event names aside. Anything else (a change the
- * server refused, one not sent yet) and a confirmation there is of other terms.
+ * the server keeps them (to the cent), names aside: a backer renamed here confirmed the same deal
+ * (Pronto P2-A, 19 Oct). Anything else (a change the server refused, one not sent yet) and a
+ * confirmation there is of other terms.
  */
 export function sameTerms(link: unknown, mine: AgreementPayload): boolean {
   if (!link || typeof link !== 'object') return false;
@@ -134,7 +135,6 @@ export function sameTerms(link: unknown, mine: AgreementPayload): boolean {
     typeof a.markup === 'number' &&
     r2(a.markup) === r2(mine.markup) &&
     a.cur === mine.cur &&
-    (typeof a.backer === 'string' ? a.backer.trim() : null) === mine.backer.trim() &&
     Array.isArray(a.events) &&
     // The server keeps them by date: compared as sets.
     a.events.map(ev).sort().join(',') === mine.events.map(ev).sort().join(',')
