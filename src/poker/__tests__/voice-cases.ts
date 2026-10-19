@@ -198,6 +198,10 @@ export const CASES: Case[] = [
   { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, no hay 3bet, la ciega grande paga.', pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c' },
   { lang: 'en', text: "I'm on the button with ace king, I open to 1000, there's no 3-bet, the big blind calls.", pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c' },
   // ── P3s.
+  // A seat's stack said before its action is that seat's, not hero's (Voz, 19 Oct).
+  { lang: 'pt', text: 'Estou no botão com ás rei e 25 mil. O UTG, com 12 mil, abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000, UTG: 12000 } },
+  { lang: 'es', text: 'Estoy en el botón con as rey y 25 mil. El UTG, con 12 mil, sube a 1000, pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000, UTG: 12000 } },
+  { lang: 'en', text: "I'm on the button with ace king and 25k. UTG, with 12k, opens to 1000, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000, UTG: 12000 } },
   { lang: 'pt', text: 'Blinds 400/200. Estou no botão com ás rei, o UTG abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 ];
 
