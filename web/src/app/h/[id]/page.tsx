@@ -9,6 +9,7 @@ import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
 import { ogLocale, pageLocale, previewLocale, t } from '@/lib/i18n';
 import { previewCopy } from '@/lib/preview-copy';
+import { withoutMoney } from '@/lib/no-money';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
 import { ShareView } from '@/components/ShareView';
 import { PageFooter } from '@/components/PageFooter';
@@ -38,7 +39,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   }
   const challenge = q === '1' || !!share.quiz;
   const title = challenge ? c.challengeTitle(share.title || handTitle(hand)) : share.title || handTitle(hand);
-  const where = hand.tournament?.name || hand.location;
+  const where = withoutMoney(hand.tournament?.name) || withoutMoney(hand.location);
   const description = [where, challenge ? c.challengeDescription : c.description].filter(Boolean).join(' · ');
   // The challenge preview stops at the hero's decision so it never spoils the result. The image's
   // language is in its URL, so a cached copy never answers in another one.

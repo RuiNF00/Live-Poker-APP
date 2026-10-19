@@ -9,6 +9,7 @@ import { previewCopy } from '@/lib/preview-copy';
 import type { QuizSpot, SharedHand } from '@/lib/types';
 import { SUIT_COLORS, SUIT_PATHS } from '@/components/PlayingCard';
 import { MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX } from '@/components/Brand';
+import { withoutMoney } from './no-money';
 
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -129,7 +130,7 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean, 
     ? stakesText(hand.blinds)
     : '';
   const wordmark = /^(.*?)(book)$/i.exec(brand.name);
-  const where = hand?.tournament?.name || hand?.location || (hand?.format === 'cash' ? 'Cash game' : '');
+  const where = withoutMoney(hand?.tournament?.name) || withoutMoney(hand?.location) || (hand?.format === 'cash' ? 'Cash game' : '');
   const heroCards = hero?.cards?.length ? hero.cards : [null, null];
   // PLO (4 cards) and a full board must fit side by side in 1072px.
   const heroW = heroCards.length > 2 ? 104 : 150;
@@ -216,6 +217,7 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean, 
         </div>
       </div>
     ),
-    { ...OG_SIZE, fonts: await brandFonts(), headers: { 'cache-control': 'public, max-age=3600, s-maxage=86400' } },
+    // Short at the edge: a hand deleted or taken down stops showing within minutes, not a day.
+    { ...OG_SIZE, fonts: await brandFonts(), headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } },
   );
 }
