@@ -6,7 +6,7 @@ export const brand = {
     pt: 'Regista as tuas mãos live em segundos.',
     'pt-BR': 'Registre suas mãos live em segundos.',
     en: 'Log your live hands in seconds.',
-    es: 'Registra tus manos en live en segundos.',
+    es: 'Registra tus manos en vivo en segundos.',
   },
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'https://sweatbook.poker').replace(/\/$/, ''),
   appStoreUrl: process.env.NEXT_PUBLIC_APP_STORE_URL || '',

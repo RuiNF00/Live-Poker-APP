@@ -37,6 +37,7 @@ export function landingCopy(locale: Locale) {
     getOnPlay: 'Descarregar no',
     tryDemo: 'Ver uma mão partilhada',
     heroNote: `Grátis · ${PRICES.freeHandsPerDay} mãos por dia · Sem conta · 18+`,
+    metaDescription: `Regista as mãos que jogas ao vivo em segundos, revê-as rua a rua e partilha com os amigos. Grátis para começar, Pro por ${m(PRICES.monthly)}/mês ou ${m(PRICES.annual)}/ano.`,
     mock: { session: 'Torneio · 1.000/2.000', street: 'Turn', pot: 'Pote 41.000', you: 'Tu', fold: 'Fold', call: 'Call 18.500', dec: ',' },
     proof: [
       ['Sem conta', 'Abres e jogas'],
@@ -149,6 +150,7 @@ export function landingCopy(locale: Locale) {
       getOnPlay: 'Get it on',
       tryDemo: 'See a shared hand',
       heroNote: `Free · ${PRICES.freeHandsPerDay} hands a day · No account · 18+`,
+      metaDescription: `Log the hands you play live in seconds, replay them street by street and share them with friends. Free to start, Pro for ${m(PRICES.monthly)}/month or ${m(PRICES.annual)}/year.`,
       mock: { session: 'Tournament · 1,000/2,000', street: 'Turn', pot: 'Pot 41,000', you: 'You', fold: 'Fold', call: 'Call 18,500', dec: '.' },
       proof: [
         ['No account', 'Open and play'],
@@ -260,6 +262,7 @@ export function landingCopy(locale: Locale) {
       getOnPlay: 'Baixar no',
       tryDemo: 'Ver uma mão compartilhada',
       heroNote: `Grátis · ${PRICES.freeHandsPerDay} mãos por dia · Sem conta · 18+`,
+      metaDescription: `Registre as mãos que você joga ao vivo em segundos, reveja street por street e compartilhe com os amigos. Grátis para começar, Pro por ${m(PRICES.monthly)}/mês ou ${m(PRICES.annual)}/ano.`,
       mock: { session: 'Torneio · 1.000/2.000', street: 'Turn', pot: 'Pote 41.000', you: 'Você', fold: 'Fold', call: 'Call 18.500', dec: ',' },
       proof: [
         ['Sem conta', 'Abra e jogue'],
@@ -371,6 +374,7 @@ export function landingCopy(locale: Locale) {
       getOnPlay: 'Descárgalo en',
       tryDemo: 'Ver una mano compartida',
       heroNote: `Gratis · ${PRICES.freeHandsPerDay} manos al día · Sin cuenta · +18`,
+      metaDescription: `Registra las manos que juegas en vivo en segundos, revísalas calle a calle y compártelas con tus amigos. Gratis para empezar, Pro por ${m(PRICES.monthly)}/mes o ${m(PRICES.annual)}/año.`,
       mock: { session: 'Torneo · 1.000/2.000', street: 'Turn', pot: 'Bote 41.000', you: 'Tú', fold: 'Fold', call: 'Call 18.500', dec: ',' },
       proof: [
         ['Sin cuenta', 'Abres y juegas'],

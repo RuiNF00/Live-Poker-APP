@@ -447,7 +447,7 @@ const es: Dict = {
   quizTop: (pct: number, a: string) => `${pct}% ${a}`,
   quizWithMost: 'Estás con la mayoría. ¿Y el jugador?',
   quizAgainstMost: 'Fuiste contra la mayoría. ¿Y el jugador?',
-  ctaTitle: '¿Registras manos en live?',
+  ctaTitle: '¿Registras manos en vivo?',
   ctaBody: 'Guarda la mano en 10 segundos entre jugadas y compártela con tus amigos para recibir feedback.',
   ctaDownload: 'Descargar app',
   endTitle: 'Y tú, ¿cómo la jugarías?',

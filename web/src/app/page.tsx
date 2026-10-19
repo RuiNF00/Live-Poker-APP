@@ -1,15 +1,22 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { brand } from '@/config/brand';
 import { Landing, type Search } from '@/components/landing/Landing';
+import { landingCopy } from '@/components/landing/copy';
+import { isLocale, pickLocale } from '@/lib/i18n';
 
-export const metadata: Metadata = {
-  title: { absolute: `${brand.name} · ${brand.tagline.pt}` },
-  description:
-    'Regista as mãos que jogas ao vivo em segundos, revê-as rua a rua e partilha com os amigos. Grátis para começar, Pro por 29,99 US$/mês ou 199,99 US$/ano.',
-  alternates: { canonical: '/' },
-  openGraph: { type: 'website', siteName: brand.name, url: '/' },
-  twitter: { card: 'summary_large_image' },
-};
+/** Title and description in the page's language (same choice as Landing: ?lang=, else the browser). */
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
+  const { lang } = await searchParams;
+  const locale = isLocale(lang) ? lang : pickLocale((await headers()).get('accept-language'));
+  return {
+    title: { absolute: `${brand.name} · ${brand.tagline[locale]}` },
+    description: landingCopy(locale).metaDescription,
+    alternates: { canonical: '/' },
+    openGraph: { type: 'website', siteName: brand.name, url: '/' },
+    twitter: { card: 'summary_large_image' },
+  };
+}
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   return <Landing search={await searchParams} />;
