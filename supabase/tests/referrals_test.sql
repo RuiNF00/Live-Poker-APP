@@ -307,6 +307,21 @@ select referral_code_for('e0000000-0000-0000-0000-000000000003', 'WEBC2345', 'rc
 reset role;
 select count(*) = 0 as web_wait_expires from referral_rewards where friend_install_id = 'e0000000-0000-0000-0000-000000000013' and role = 'referrer';
 select referrer_pending_hash is null as expired_wait_cleared from referrals where friend_install_id = 'e0000000-0000-0000-0000-000000000013';
+-- An inviter who never comes back: the purge clears the wait after 30 days.
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000006', 'WEBF2345', null);
+select referral_code_for('e0000000-0000-0000-0000-000000000016', 'WFRF2345', 'rc_wf6');
+select claim_referral('e0000000-0000-0000-0000-000000000016', 'WEBF2345', 'link');
+select activate_referral_discount('e0000000-0000-0000-0000-000000000016');
+select referral_code_for('e0000000-0000-0000-0000-000000000007', 'WEBG2345', null);
+select referral_code_for('e0000000-0000-0000-0000-000000000017', 'WFRG2345', 'rc_wf7');
+select claim_referral('e0000000-0000-0000-0000-000000000017', 'WEBG2345', 'link');
+select activate_referral_discount('e0000000-0000-0000-0000-000000000017');
+reset role;
+update referrals set activated_at = now() - interval '31 days' where friend_install_id = 'e0000000-0000-0000-0000-000000000016';
+select purge_referrals();
+select referrer_pending_hash is null as purge_clears_old_wait from referrals where friend_install_id = 'e0000000-0000-0000-0000-000000000016';
+select referrer_pending_hash is not null as purge_keeps_fresh_wait from referrals where friend_install_id = 'e0000000-0000-0000-0000-000000000017';
 -- The 10 a year still hold.
 insert into referral_rc_tally (rc_hash, role) select referral_rc_hash('rc_web4'), 'referrer' from generate_series(1, 10);
 set role service_role;

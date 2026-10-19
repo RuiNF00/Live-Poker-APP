@@ -94,3 +94,20 @@ begin
   end if;
   return c;
 end $$;
+
+-- An inviter who never comes back: the wait (a hash) goes after its 30 days, not at 400 (Security P3).
+create or replace function public.purge_referrals() returns void
+language sql security definer set search_path = public as $$
+  update referrals set referrer_pending_hash = null
+  where referrer_pending_hash is not null and activated_at < now() - interval '30 days';
+  delete from referrals r
+  where greatest(
+          r.claimed_at,
+          coalesce(r.activated_at, r.claimed_at),
+          coalesce((select max(coalesce(w.pro_until, w.offer_until)) from referral_rewards w where w.friend_install_id = r.friend_install_id), r.claimed_at)
+        ) < now() - interval '400 days';
+  delete from referral_codes c
+  where c.last_seen_at < now() - interval '400 days'
+    and not exists (select 1 from referrals r where r.referrer_install_id = c.install_id or r.friend_install_id = c.install_id);
+  delete from referral_rc_tally where created_at < now() - interval '400 days';
+$$;
