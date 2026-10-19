@@ -138,10 +138,10 @@ export async function upload(c: CloudState, data: BackupData, opts: UploadOpts =
     // It reached the server: no longer waiting on the network; the card shows the real reason.
     setWaiting(false);
     // Remembered for the backup warning (would_shrink is the player's call, not a failure).
-    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden'].includes(msg) ? msg : 'network';
+    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden', 'gone'].includes(msg) ? msg : 'network';
     if (reason !== 'would_shrink') {
       const now = await loadCloud();
-      if (now && now.id === c.id) await saveCloud({ ...now, failedAt: Date.now(), failure: reason }).catch(() => {});
+      if (now && now.id === c.id) await saveCloud({ ...now, failedAt: Date.now(), failure: reason, ...(reason === 'gone' ? { gone: true } : {}) }).catch(() => {});
     }
     throw e;
   }
@@ -178,18 +178,26 @@ export function onCopyWaiting(fn: (w: boolean) => void): () => void {
 }
 
 async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<CloudState> {
+  // Deleted on purpose somewhere else: this code is never written again, not even when forced.
+  if (c.gone) throw new Error('gone');
   let data = local;
-  if (!opts.force && c.lastAt) {
+  if (c.lastAt) {
     // Read and decrypted here, on the phone; the server never sees either copy.
+    // Also when forced: a copy this phone wrote or restored that is no longer there was deleted
+    // («Apagar tudo» on another phone, the website), and must not come back with the same code.
     const remote = await get(c).catch((e: Error) => {
-      if (e.message === 'not_found') return null;
+      if (e.message === 'not_found') throw new Error('gone');
       throw e;
     });
-    if (remote && writtenElsewhere(remote, c.sent)) {
+    if (!opts.force && writtenElsewhere(remote, c.sent)) {
       data = mergeBackups(local, remote);
       opts.onRemote?.(remote);
     }
   }
+  return send(c, data, opts);
+}
+
+async function send(c: CloudState, data: BackupData, opts: UploadOpts): Promise<CloudState> {
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
   const cr = await crypto();

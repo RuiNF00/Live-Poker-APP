@@ -12,6 +12,8 @@ export interface CloudState {
   sent?: number;
   /** Size of the last copy this phone uploaded (sealed bytes), for the warning before the server limit. */
   bytes?: number;
+  /** The server copy this phone wrote or restored was deleted (another phone's «Apagar tudo», the website): never written again with this code. */
+  gone?: boolean;
   /** Last upload that failed, and why ('network', 'quota'…); cleared by the next one that works. */
   failedAt?: number;
   failure?: string;

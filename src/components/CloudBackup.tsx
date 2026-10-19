@@ -35,6 +35,7 @@ const ERR: Record<string, string> = {
   quota: 'O servidor está cheio de momento. As tuas mãos estão seguras neste telemóvel; tentamos outra vez mais tarde.',
   disabled: 'A cópia na nuvem ainda não funciona. Por agora, exporta para ficheiro.',
   would_shrink: 'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.',
+  gone: 'A cópia na nuvem foi apagada noutro telemóvel ou no site. Cria uma cópia nova, com um código novo, nas Definições.',
   // Decrypted but not a copy this version can read (parseBackup): nothing was imported.
   newer: 'Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.',
   invalid: 'Não conseguimos ler esta cópia. Nada foi alterado neste telemóvel.',
@@ -237,7 +238,16 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
           <Button size="sm" kind={health.level === 'near' ? 'secondary' : undefined} icon="download-outline" title={t('Exportar tudo (ficheiro)')} onPress={onExport} />
         </>
       ) : null}
-      {cloud ? (
+      {cloud?.gone ? (
+        // Deleted on purpose elsewhere: the old code is never used again; a new copy gets a new one.
+        <>
+          <T v="small">{t('Foi apagada noutro telemóvel ou no site. As tuas mãos continuam neste telemóvel. Para voltar a guardar, cria uma cópia nova, com um código novo.')}</T>
+          <Row gap={S.sm}>
+            <Button size="sm" icon="cloud-upload-outline" title={busy ? t('A ativar…') : t('Criar cópia nova')} style={{ flex: 1 }} disabled={busy} onPress={turnOn} />
+            <Button size="sm" kind="ghost" title={t('Desligar')} onPress={() => saveCloud(null)} />
+          </Row>
+        </>
+      ) : cloud ? (
         <>
           <Pressable
             accessibilityRole="button"
@@ -381,7 +391,7 @@ export function AutoCloudBackup() {
 }
 
 function healthTitle(h: Exclude<Health, { level: 'ok' }>): string {
-  if (h.level === 'failed') return h.reason === 'too_big' ? t('A cópia passou o limite: exporta para guardar tudo') : t('A última cópia na nuvem falhou');
+  if (h.level === 'failed') return h.reason === 'too_big' ? t('A cópia passou o limite: exporta para guardar tudo') : h.reason === 'gone' ? t('A cópia na nuvem foi apagada') : t('A última cópia na nuvem falhou');
   if (h.level === 'near') return t('A cópia na nuvem está quase no limite ({pct} %)', { pct: h.pct });
   return !Number.isFinite(h.days) ? t('Ainda não há cópia na nuvem') : t('Última cópia na nuvem há {n} dias', { n: h.days });
 }
@@ -470,8 +480,10 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
 
   // Over the limit another try fails the same way, and near it the answer is a file: the export is in Settings.
   const overLimit = (health.level === 'failed' && health.reason === 'too_big') || health.level === 'near';
+  // Deleted elsewhere: a new copy (new code) is made in Settings.
+  const gone = health.level === 'failed' && health.reason === 'gone';
   const copyNow = async () => {
-    if (overLimit) return router.push('/settings');
+    if (overLimit || gone) return router.push('/settings');
     const c = await loadCloud();
     if (!c || busy) return;
     tap();
@@ -494,7 +506,7 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
       icon={health.level === 'near' ? 'cloud-outline' : 'cloud-offline-outline'}
       title={healthTitle(health)}
       // Same shape as the unfinished-hand card: what's wrong, then what a tap does.
-      body={overLimit ? t('Exportar tudo') : busy ? t('A copiar…') : waiting ? t('Sem rede: copia quando voltar') : t('Fazer cópia agora')}
+      body={overLimit ? t('Exportar tudo') : gone ? t('Criar cópia nova') : busy ? t('A copiar…') : waiting ? t('Sem rede: copia quando voltar') : t('Fazer cópia agora')}
       onPress={copyNow}
       dismissLabel={t('Agora não')}
       onDismiss={onSnooze}

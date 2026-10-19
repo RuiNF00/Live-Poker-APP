@@ -50,7 +50,7 @@ export function cloudAhead(data: Counts, c: CloudState): boolean {
 
 /** What the launch auto-backup does: nothing, or upload. It never forces. */
 export function autoBackup(c: CloudState | null, data: Counts, now: number): 'skip' | 'upload' {
-  if (!c || (c.lastAt && now - c.lastAt < AUTO_EVERY_MS)) return 'skip';
+  if (!c || c.gone || (c.lastAt && now - c.lastAt < AUTO_EVERY_MS)) return 'skip';
   return uploadBlock(data, c) ? 'skip' : 'upload';
 }
 
@@ -65,7 +65,7 @@ export const CHANGE_GAP_MS = 10 * 60_000;
  * to the 6-hourly try, not one per hand.
  */
 export function changeBackupIn(c: CloudState | null, data: Counts, now: number): number | null {
-  if (!c || uploadBlock(data, c)) return null;
+  if (!c || c.gone || uploadBlock(data, c)) return null;
   const tooBig = c.failure === 'too_big' && !!c.failedAt && (!c.lastAt || c.failedAt > c.lastAt);
   const at = tooBig ? c.failedAt! + AUTO_EVERY_MS : (c.lastAt ?? 0) + CHANGE_GAP_MS;
   return Math.max(CHANGE_DEBOUNCE_MS, at - now);
@@ -84,6 +84,7 @@ export type Health = { level: 'ok' } | { level: 'failed'; reason: string } | { l
  */
 export function backupHealth(c: CloudState | null, now: number): Health {
   if (!c) return { level: 'ok' };
+  if (c.gone) return { level: 'failed', reason: 'gone' };
   if (c.failedAt && (!c.lastAt || c.failedAt > c.lastAt)) return { level: 'failed', reason: c.failure ?? 'network' };
   const days = c.lastAt ? Math.floor((now - c.lastAt) / 86400000) : Infinity;
   if (days >= STALE_DAYS) return { level: 'stale', days };

@@ -89,6 +89,16 @@ test('backup health: says so before the copy stops fitting (80 % of the server l
   assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 9 * day, bytes: BACKUP_MAX_BYTES }, now), { level: 'stale', days: 9 });
 });
 
+test('a copy deleted elsewhere: stays off, says so, never copied again by itself', () => {
+  const now = 100 * 86400000;
+  const gone = { id: 'a', secret: 's', lastAt: now - 1000, counts: { hands: 3 }, gone: true };
+  assert.deepEqual(backupHealth(gone, now), { level: 'failed', reason: 'gone' });
+  // Even over the limit or a week old, the deletion is what the player needs to know.
+  assert.deepEqual(backupHealth({ ...gone, lastAt: now - 9 * 86400000, bytes: BACKUP_MAX_BYTES }, now), { level: 'failed', reason: 'gone' });
+  assert.equal(autoBackup(gone, { hands: 3 }, now + 7 * 86400000), 'skip');
+  assert.equal(changeBackupIn(gone, { hands: 4 }, now), null);
+});
+
 test('"Cópia parada" only when the cloud holds a copy: not on the first backup of an empty phone', () => {
   assert.equal(cloudAhead({}, code), false); // just turned on, nothing to copy yet
   assert.equal(uploadBlock({}, code), 'would_shrink'); // and still nothing is uploaded
