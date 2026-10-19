@@ -23,7 +23,7 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { useOffers } from '@/store/action-offer';
+import { offerPackageIds, useOffers } from '@/store/action-offer';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
 import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
@@ -135,6 +135,8 @@ function BackerScreen() {
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
           : t('Deves-me {amount}.', { amount: money(-l.balance, cur) }),
       ...apartLines(l),
+      // Sessions counted 1:1 for want of a rate: the backer is told, as the screen says.
+      l.missing.length ? t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.join(', ') }) : '',
     ].filter((x) => x !== '');
     // The statement as a link they can open, or save in their own Sweatbook to follow every session.
     // It carries only this backer's own pieces (see lib/backing-link).
@@ -454,11 +456,19 @@ function BackerScreen() {
         }}
         onDelete={
           pkg && packages.some((p) => p.id === pkg.id)
-            ? () =>
+            ? () => {
+                // A festival package's piece lives in the festival's package (and the backer's link): taken out there.
+                if (offerPackageIds(offers).has(pkg.id)) {
+                  const [title, body] = [t('Este pacote é de uma ação de festival'), t('Tira {name} no pacote do festival, para o link mudar também.', { name: backer.name })];
+                  if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
+                  else Alert.alert(title, body);
+                  return;
+                }
                 confirm(t('Apagar pacote?'), t('As sessões ficam vendidas a {name}, fora de pacote.', { name: backer.name }), () => {
                   deletePackage(pkg.id);
                   setPkg(null);
-                }, t('Apagar'))
+                }, t('Apagar'));
+              }
             : undefined
         }
       />

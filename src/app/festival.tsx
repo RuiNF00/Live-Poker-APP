@@ -6,7 +6,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { AddFestivalEvent } from '@/components/AddFestivalEvent';
 import { useAfterFirstFrame } from '@/components/Deferred';
@@ -455,8 +455,11 @@ function EventRow({
               title={t('Apagar torneio')}
               onPress={() => {
                 // In a package, its backers' links have it: out of the package first, so they confirm the change.
-                if (getOffers().some((o) => o.festivalId === f.id && o.events.includes(e.id)))
-                  return Alert.alert(t('Este torneio está numa ação vendida'), t('Tira-o primeiro do pacote, para os backers confirmarem a mudança.'));
+                if (getOffers().some((o) => o.festivalId === f.id && o.events.includes(e.id))) {
+                  const [title, body] = [t('Este torneio está numa ação vendida'), t('Tira-o primeiro do pacote, para os backers confirmarem a mudança.')];
+                  // Alert.alert does nothing on react-native-web.
+                  return Platform.OS === 'web' ? window.alert(`${title}\n\n${body}`) : Alert.alert(title, body);
+                }
                 updatePlan(f.id, (p) => removeOwnEvent(p, e.id));
               }}
             />
