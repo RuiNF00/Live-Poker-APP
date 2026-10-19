@@ -471,7 +471,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
                       label={mine.length ? t('Nova: {name}', { name: SOURCE_NAME[file.source] }) : t('Nova bankroll {currency}', { currency: c })}
                       icon={newLocked ? 'lock-closed' : 'add'}
                       active={placed[c] === NEW}
-                      onPress={() => (newLocked ? pro.paywall('stats') : setPlacement({ ...placed, [c]: NEW }))}
+                      onPress={() => (newLocked ? pro.paywall('stats', () => setPlacement({ ...placed, [c]: NEW })) : setPlacement({ ...placed, [c]: NEW }))}
                     />
                   </ChipRow>
                 </View>

@@ -18,10 +18,9 @@ const src = files(root).map((p) => [path.relative(root, p), readFileSync(p, 'utf
 test('every lock button says "Ver com Pro"', () => {
   const odd: string[] = [];
   for (const [f, s] of src)
-    for (const m of s.matchAll(/<Button\b[^>]*icon="lock-(?:closed|open-outline)"[^>]*>/g)) {
-      const title = /title=\{t\('([^']+)'/.exec(m[0])?.[1];
-      if (title !== 'Ver com Pro') odd.push(`${f}: ${title}`);
-    }
+    // Literal or in a ternary (icon={isPro ? '…' : 'lock-closed'}): the locked title is "Ver com Pro".
+    for (const m of s.matchAll(/<Button\b(?:[^>]|=>)*?lock-(?:closed|open-outline)(?:[^>]|=>)*?\/>/g))
+      if (!m[0].includes("t('Ver com Pro')")) odd.push(`${f}: ${/title=\{([^}]+)\}/.exec(m[0])?.[1]}`);
   assert.deepEqual(odd, []);
 });
 

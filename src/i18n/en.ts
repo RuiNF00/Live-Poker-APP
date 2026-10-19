@@ -1414,7 +1414,6 @@ const en: Record<string, string> = {
   'Quanto podes ganhar ou perder nas próximas horas ou torneios, com o teu win rate e desvio padrão.': 'How much you could win or lose over the next hours or tournaments, from your win rate and standard deviation.',
   'Resultado esperado em {n}': 'Expected result over {n}',
   'Torneios a jogar': 'Tournaments to play',
-  'Usar os meus números com Pro': 'Use my numbers with Pro',
   'Usar os meus números': 'Use my numbers',
   'Variância': 'Variance',
   'Win rate /h': 'Win rate /h',
