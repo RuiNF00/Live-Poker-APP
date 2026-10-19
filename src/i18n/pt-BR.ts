@@ -288,6 +288,8 @@ const ptBR: Record<string, string> = {
   'Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.': 'Se você trocar ou perder o celular, não perde nada. Sem conta nem e-mail.',
   'Juntámos o que o outro telemóvel copiou': 'Juntamos o que o outro celular copiou',
   'A cópia passou o limite: exporta para guardar tudo': 'O backup passou do limite: exporte para guardar tudo',
+  'A cópia na nuvem está quase no limite ({pct} %)': 'O backup na nuvem está quase no limite ({pct}%)',
+  'Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.': 'Quando passar do limite, a nuvem guarda o último backup que coube. Exporte para um arquivo para guardar tudo.',
   'Na tua mesa': 'Na sua mesa',
   'Escolhe as cartas': 'Escolha as cartas',
   'Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.': 'Toque em um lugar para mudá-lo. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.',

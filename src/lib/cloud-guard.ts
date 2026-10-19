@@ -10,6 +10,11 @@ export type Counts = Partial<Record<Kind, number>>;
 
 const AUTO_EVERY_MS = 6 * 3600000;
 
+/** Same as BACKUP_MAX_BYTES on the server. */
+export const BACKUP_MAX_BYTES = 2 * 1024 * 1024;
+/** From this share of the limit the player is told before a copy stops fitting. */
+export const NEAR_LIMIT = 0.8;
+
 export function countsOf(d: Partial<Record<Kind, unknown[]>>): Counts {
   const out: Counts = {};
   for (const k of KINDS) out[k] = d[k]?.length ?? 0;
@@ -69,18 +74,22 @@ export function changeBackupIn(c: CloudState | null, data: Counts, now: number):
 /** A cloud copy older than this gets a warning (the launch auto-backup runs every 6 hours). */
 export const STALE_DAYS = 7;
 
-export type Health = { level: 'ok' } | { level: 'failed'; reason: string } | { level: 'stale'; days: number };
+export type Health = { level: 'ok' } | { level: 'failed'; reason: string } | { level: 'stale'; days: number } | { level: 'near'; pct: number };
 
 /**
  * Is the cloud copy keeping up? Only for players who turned it on: 'failed'
  * when the last attempt failed after the last copy that worked, 'stale' when
- * the last good copy is STALE_DAYS old or more.
+ * the last good copy is STALE_DAYS old or more, 'near' when the last copy
+ * used NEAR_LIMIT of the server limit or more (time to export to a file).
  */
 export function backupHealth(c: CloudState | null, now: number): Health {
   if (!c) return { level: 'ok' };
   if (c.failedAt && (!c.lastAt || c.failedAt > c.lastAt)) return { level: 'failed', reason: c.failure ?? 'network' };
   const days = c.lastAt ? Math.floor((now - c.lastAt) / 86400000) : Infinity;
-  return days >= STALE_DAYS ? { level: 'stale', days } : { level: 'ok' };
+  if (days >= STALE_DAYS) return { level: 'stale', days };
+  const used = (c.bytes ?? 0) / BACKUP_MAX_BYTES;
+  // Floored so it never reads 100 % while the copy still fits.
+  return used >= NEAR_LIMIT ? { level: 'near', pct: Math.min(99, Math.floor(used * 100)) } : { level: 'ok' };
 }
 
 /** The server deletes a copy not updated for 18 months: the notice goes out a month before. */

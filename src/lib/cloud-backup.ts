@@ -11,7 +11,7 @@ import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
 import { ALPHA, parseCloud, type CloudState } from './cloud-code';
-import { countsOf, uploadBlock } from './cloud-guard';
+import { BACKUP_MAX_BYTES, countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
@@ -23,8 +23,6 @@ export { formatCode, parseCode, type CloudState } from './cloud-code';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const KEY = 'rl.cloud.v1';
-/** Same as BACKUP_MAX_BYTES on the server. */
-const MAX_BYTES = 2 * 1024 * 1024;
 /** How long the quick "is the server there?" may take before a big transfer. */
 const REACH_MS = 8000;
 
@@ -41,6 +39,8 @@ export async function loadCloud(): Promise<CloudState | null> {
     const c = parseCloud(await AsyncStorage.getItem(KEY));
     // Codes made before the keychain copy existed get one on the first read.
     if (c) void keepCode(c).catch(() => {});
+    // With the copy on, the ciphers load now: «Apagar tudo» offline needs them to queue the delete.
+    if (c) void crypto().catch(() => {});
     return c;
   } catch {
     return null;
@@ -196,7 +196,7 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
   const { auth, enc } = cr.deriveKeys(c.secret);
   const body = await cr.sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
   // The server's limit: no point sending what it will refuse.
-  if (body.length > MAX_BYTES) throw new Error('too_big');
+  if (body.length > BACKUP_MAX_BYTES) throw new Error('too_big');
   const res = await fetch(`${API}/api/backup/${c.id}`, {
     method: 'PUT',
     // Encrypted on the phone; the server only ever sees a key derived from the code.
@@ -210,7 +210,7 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const { failedAt: _f, failure: _r, ...ok } = c;
-  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt };
+  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt, bytes: body.length };
   // A restore with another code may have finished while this was uploading;
   // don't put the old code back.
   const now = await loadCloud();

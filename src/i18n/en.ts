@@ -609,6 +609,8 @@ const en: Record<string, string> = {
   'Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.': 'If you switch or lose your phone, you lose nothing. No account or email.',
   'Juntámos o que o outro telemóvel copiou': 'Added what your other phone backed up',
   'A cópia passou o limite: exporta para guardar tudo': 'The backup is over the limit: export to keep everything',
+  'A cópia na nuvem está quase no limite ({pct} %)': 'The cloud backup is close to the limit ({pct}%)',
+  'Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.': 'Once it goes over, the cloud keeps the last backup that fit. Export to a file to keep everything.',
   'Calculadora de deal (ICM)': 'Deal calculator (ICM)',
   'Na tua mesa': 'At your table',
   'Notas': 'Notes',

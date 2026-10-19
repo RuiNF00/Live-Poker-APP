@@ -201,7 +201,8 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   // Only a copy that is on can be waiting: a failed «Ativar» offline must not promise one.
   const pendingCopy = !!cloud && waiting;
   const warn = pendingCopy || stalled || health.level !== 'ok';
-  const overLimit = health.level === 'failed' && health.reason === 'too_big';
+  // Over the limit, or close to it: the file keeps everything.
+  const overLimit = (health.level === 'failed' && health.reason === 'too_big') || health.level === 'near';
 
   return (
     <Card style={{ gap: S.md }}>
@@ -230,7 +231,10 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
       </Row>
       {overLimit && onExport ? (
         // The last copy that fit stays on the server; the file keeps everything.
-        <Button size="sm" icon="download-outline" title={t('Exportar tudo (ficheiro)')} onPress={onExport} />
+        <>
+          {health.level === 'near' ? <T v="small">{t('Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.')}</T> : null}
+          <Button size="sm" icon="download-outline" title={t('Exportar tudo (ficheiro)')} onPress={onExport} />
+        </>
       ) : null}
       {cloud ? (
         <>
@@ -377,6 +381,7 @@ export function AutoCloudBackup() {
 
 function healthTitle(h: Exclude<Health, { level: 'ok' }>): string {
   if (h.level === 'failed') return h.reason === 'too_big' ? t('A cópia passou o limite: exporta para guardar tudo') : t('A última cópia na nuvem falhou');
+  if (h.level === 'near') return t('A cópia na nuvem está quase no limite ({pct} %)', { pct: h.pct });
   return !Number.isFinite(h.days) ? t('Ainda não há cópia na nuvem') : t('Última cópia na nuvem há {n} dias', { n: h.days });
 }
 
@@ -462,8 +467,8 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
   const [busy, setBusy] = useState(false);
   const waiting = useCopyWaiting();
 
-  // Over the limit another try fails the same way: the export is in Settings.
-  const overLimit = health.level === 'failed' && health.reason === 'too_big';
+  // Over the limit another try fails the same way, and near it the answer is a file: the export is in Settings.
+  const overLimit = (health.level === 'failed' && health.reason === 'too_big') || health.level === 'near';
   const copyNow = async () => {
     if (overLimit) return router.push('/settings');
     const c = await loadCloud();
@@ -483,8 +488,9 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
   };
   return (
     <Banner
-      tone="warn"
-      icon="cloud-offline-outline"
+      // Near the limit nothing is wrong yet: a calm card, not a warning.
+      tone={health.level === 'near' ? 'info' : 'warn'}
+      icon={health.level === 'near' ? 'cloud-outline' : 'cloud-offline-outline'}
       title={healthTitle(health)}
       // Same shape as the unfinished-hand card: what's wrong, then what a tap does.
       body={overLimit ? t('Exportar tudo') : busy ? t('A copiar…') : waiting ? t('Sem rede: copia quando voltar') : t('Fazer cópia agora')}

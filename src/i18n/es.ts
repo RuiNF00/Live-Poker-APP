@@ -580,6 +580,8 @@ const es: Record<string, string> = {
   'Se trocares ou perderes o telemóvel, não perdes nada. Sem conta nem email.': 'Si cambias o pierdes el teléfono, no pierdes nada. Sin cuenta ni email.',
   'Juntámos o que o outro telemóvel copiou': 'Unimos lo que copió el otro teléfono',
   'A cópia passou o limite: exporta para guardar tudo': 'La copia superó el límite: exporta para guardarlo todo',
+  'A cópia na nuvem está quase no limite ({pct} %)': 'La copia en la nube está cerca del límite ({pct} %)',
+  'Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.': 'Cuando lo supere, la nube guardará la última copia que cupo. Exporta a un archivo para guardarlo todo.',
   'Calculadora de deal (ICM)': 'Calculadora de deal (ICM)',
   'Na tua mesa': 'En tu mesa',
   'Notas': 'Notas',

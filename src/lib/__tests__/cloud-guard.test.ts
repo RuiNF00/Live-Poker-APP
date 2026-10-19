@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
+import { autoBackup, BACKUP_MAX_BYTES, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -69,6 +69,24 @@ test('backup health: warns when the last copy failed or is a week old, never whe
   assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - day, failedAt: now - 1000, failure: 'quota' }, now), { level: 'failed', reason: 'quota' });
   // A copy that worked after the failure clears it.
   assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 1000, failedAt: now - day, failure: 'network' }, now), { level: 'ok' });
+});
+
+test('backup health: says so before the copy stops fitting (80 % of the server limit)', () => {
+  const day = 86400000;
+  const now = 100 * day;
+  const at = (share: number) => backupHealth({ id: 'a', secret: 's', lastAt: now - 1000, bytes: Math.round(BACKUP_MAX_BYTES * share) }, now);
+  assert.equal(BACKUP_MAX_BYTES, 2 * 1024 * 1024); // same as the server
+  assert.deepEqual(at(0.5), { level: 'ok' });
+  assert.deepEqual(at(0.79), { level: 'ok' });
+  assert.deepEqual(at(0.8), { level: 'near', pct: 80 });
+  assert.deepEqual(at(0.876), { level: 'near', pct: 87 });
+  // Never 100 % while it still fits.
+  assert.deepEqual(at(1), { level: 'near', pct: 99 });
+  // Copies made before the size was kept: no warning until the next one.
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 1000 }, now), { level: 'ok' });
+  // A failure or an old copy says more than the size does.
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - day, bytes: BACKUP_MAX_BYTES, failedAt: now - 1000, failure: 'too_big' }, now), { level: 'failed', reason: 'too_big' });
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 9 * day, bytes: BACKUP_MAX_BYTES }, now), { level: 'stale', days: 9 });
 });
 
 test('"Cópia parada" only when the cloud holds a copy: not on the first backup of an empty phone', () => {
