@@ -11,7 +11,9 @@ import { Avatar } from '@/components/Avatar';
 import { ensureBackerPage, pushBackerPage, statementFor } from '@/components/staking/BackerPage';
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
-import { balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
+import { Sheet } from '@/components/BankrollSheets';
+import { ManualRatesForm } from '@/components/HomeCurrencyCard';
+import { apartLines, balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { statementUrl } from '@/lib/backing-link';
@@ -23,10 +25,13 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { useOffers } from '@/store/action-offer';
+import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
+import { getPlan, planFestival } from '@/store/festival-plan';
+import { allFestivals } from '@/store/my-festivals';
+import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -37,14 +42,32 @@ function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: okLabel, style: 'destructive', onPress: ok }]);
 }
 
+/** A message with OK, and a way there when there is one (Alert.alert does nothing on react-native-web). */
+function tell(title: string, body: string, action?: { label: string; ask: string; run: () => void }) {
+  if (Platform.OS === 'web') {
+    if (!action) window.alert(`${title}\n\n${body}`);
+    else if (window.confirm(`${title}\n\n${body}\n\n${action.ask}`)) action.run();
+  } else Alert.alert(title, body, action ? [{ text: 'OK', style: 'cancel' }, { text: action.label, onPress: action.run }] : undefined);
+}
+
+/** A currency as the backer reads it: its symbol, or its code where the symbol is shared ($, kr, ¥). */
+function curName(c: string): string {
+  const s = symbolOf(c);
+  return ['$', 'kr', '¥'].includes(s) ? (isoOf(c) ?? s) : s;
+}
+
+/** Opens the festival package, from an alert that says to go there. */
+const openOffer = (o: ActionOffer | undefined) => (o ? { label: t('Abrir o pacote'), ask: t('Abrir o pacote?'), run: () => router.push({ pathname: '/action/[id]', params: { id: o.id } }) } : undefined);
+
 function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sessions, backers, packages, payments, trips, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings } = useStore();
+  const { sessions, backers, packages, payments, trips, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveSession, settings, setSettings } = useStore();
   const { pk, ledgers, fx } = useStaking();
   const offers = useOffers();
   const [editing, setEditing] = useState(false);
   const [pkg, setPkg] = useState<StakePackage | null>(null);
   const [paying, setPaying] = useState(false);
+  const [typing, setTyping] = useState(false);
   const [piece, setPiece] = useState<BackerLedgerRow | null>(null);
   const [year, setYear] = useState<number | null>(null);
   // «Enviar contas» one at a time: on one bar of signal the page can take a while, and a second tap would open a second share.
@@ -66,7 +89,25 @@ function BackerScreen() {
       </>
     );
 
-  const bal = balanceLabel(l.balance, cur);
+  // With the deal square, festival action with no rate leads: never «Acertado» above a debt (Design P2).
+  const head = headlineOf(l, cur);
+  const bal = balanceLabel(head.balance, head.currency);
+  const apart = unconverted(l);
+  // Kept with each payment: the rates its festival packages were converted at (Pronto P2-B).
+  const ratesNow = () => offerRatesNow(backer.id, cur, offers, (fid) => planFestival(allFestivals(), fid)?.currency, (from, to, at) => rate(fx.table, from, to, at, fx.manual));
+  // Currencies the ECB doesn't publish never get a rate with the signal: the player types theirs here (QA P2).
+  const typedApart = apart.filter((c) => CURRENCY_INFO[c]?.ecb === false);
+  // Rates already typed for this backer's festivals: shown, and changed here too (QA P2: nowhere else had them).
+  const typedSet = [
+    ...new Set(
+      offers
+        .filter((o) => o.lines.some((x) => x.backerId === backer.id))
+        .map((o) => planFestival(allFestivals(), o.festivalId)?.currency ?? '')
+        .filter((c) => CURRENCY_INFO[c]?.ecb === false && (settings.fxManual?.[isoOf(c) ?? c] ?? 0) > 0),
+    ),
+  ];
+  // Festival pieces with no rate, still to pay for: «Marcar como pago» marks them paid (QA P2).
+  const apartDue = unpaidLinesIn(offers, backer.id, apart, (fid) => planFestival(allFestivals(), fid), (fid) => getPlan(fid).sessions);
   const mine = packages.filter((p) => p.backerId === backer.id).sort((a, b) => Number(!!a.closedAt) - Number(!!b.closedAt) || b.createdAt - a.createdAt);
   const pays = payments.filter((p) => p.backerId === backer.id).sort((a, b) => b.at - a.at);
   // A package started during a trip is usually for that festival.
@@ -85,26 +126,77 @@ function BackerScreen() {
     setPiece(null);
   };
 
+  // Nothing to settle in the deal's currency (festival action apart, if any, can't be settled without a rate).
   const square = Math.abs(l.balance) < 0.01;
-  // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
+  // Festival pieces in the balance: paid with it, so their package says so too (QA P2). The payment keeps the rest.
+  const piecesPaid = () =>
+    linesSettledWith(
+      offers,
+      backer.id,
+      (fid) => planFestival(allFestivals(), fid),
+      (fid) => getPlan(fid).sessions,
+      (o, c) => (c === cur ? 1 : (rate(fx.table, c, cur, o.createdAt, fx.manual) ?? savedOfferRate(payments, backer.id, o.id, cur))),
+      // Its unpaid stakes on sessions already started, at each session's rate, as the ledger counted them.
+      (line) =>
+        l.rows
+          .filter((r) => r.stake.unpaid && r.stake.packageId === line.packageId)
+          .reduce((a, r) => {
+            const c = r.session.currency;
+            return a + Math.round(r.cost * (!c || c === cur ? 1 : (rate(fx.table, c, cur, r.session.startedAt, fx.manual) ?? 1)) * 100) / 100;
+          }, 0),
+    );
+  // Settle the whole balance in one payment, the way Splitwise's "settle up" does. A session or payment
+  // with no rate counts 1:1 in the balance: recorded as paid, that guess would stay (QA P2, 19 Oct).
   const markPaid = () =>
-    confirm(
+    l.missing.length
+      ? tell(t('Falta o câmbio de {list}', { list: l.missing.map(curName).join(', ') }), t('Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.', { list: l.missing.map(curName).join(', ') }))
+      : confirm(
       t('Marcar como pago?'),
       l.balance > 0
         ? t('Pagaste {amount} a {name} e ficam acertados.', { amount: money(l.balance, cur), name: backer.name })
         : t('{name} pagou-te {amount} e ficam acertados.', { amount: money(-l.balance, cur), name: backer.name }),
       () => {
         const now = Date.now();
-        savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now });
+        const pieces = piecesPaid();
+        const rest = Math.round((l.balance + pieces.reduce((a, x) => a + x.due, 0)) * 100) / 100;
+        if (Math.abs(rest) >= 0.01) savePayment({ id: uid('y_'), backerId: backer.id, amount: rest, at: now, note: '', createdAt: now, fx: ratesNow(), currency: cur });
+        // Skipped events with no session stay unpaid for (never refunded); the started ones' stakes become paid.
+        const before = offerPackageIds(getOffers());
+        for (const x of pieces) setLinePaid(x.offerId, x.lineId, true, getPlan(x.festivalId).sessions);
+        for (const fid of new Set(pieces.map((x) => x.festivalId))) for (const s of offerStakeChanges(sessions, getOffers(), fid, getPlan(fid).sessions, before)) saveSession(s);
         tap('medium');
         // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
-        void maybeAskForReview('settled');
+        if (!apart.length) void maybeAskForReview('settled');
       },
       t('Marcar como pago'),
     );
 
+  // Only festival action with no rate is left: the backer paid their pieces, in the festival's currency.
+  const settleApart = () => {
+    const paidIn = new Map<string, number>();
+    for (const x of apartDue) paidIn.set(x.currency, (paidIn.get(x.currency) ?? 0) + x.due);
+    const amount = [...paidIn].map(([c, v]) => money(v, c)).join(' + ');
+    // A refund for an event not played, or a piece still in a session, can leave something either way.
+    const square = l.apart.every((a) => Math.abs(a.balance + (paidIn.get(a.currency) ?? 0)) < 0.01);
+    return confirm(
+      t('Marcar como pago?'),
+      square ? t('{name} pagou-te {amount} e ficam acertados.', { name: backer.name, amount }) : t('{name} pagou-te {amount}.', { name: backer.name, amount }),
+      () => {
+        // No event of these packages started (unpaidLinesIn): every skipped one is not played.
+        for (const x of apartDue) setLinePaid(x.offerId, x.lineId, true, {});
+        tap('medium');
+      },
+      t('Marcar como pago'),
+    );
+  };
+
   const shareSummary = async (withYear = false) => {
     if (sending.current) return;
+    // Festival action with no rate yet: the text and the link would show less than the real balance.
+    if (apart.length)
+      return typedApart.length
+        ? tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('O BCE não publica {list}. Escreve o teu câmbio e envia outra vez.', { list: typedApart.map(curName).join(', ') }), { label: t('Escrever o câmbio'), ask: t('Escrever o câmbio?'), run: gate(() => setTyping(true)) })
+        : tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('Sem ele, as contas que o backer recebe ficavam incompletas. Com rede, ou com o câmbio escrito no Bankroll, envia outra vez.'));
     sending.current = true;
     try {
       await sendSummary(withYear);
@@ -134,6 +226,8 @@ function BackerScreen() {
         : l.balance > 0
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
           : t('Deves-me {amount}.', { amount: money(-l.balance, cur) }),
+      // Sessions counted 1:1 for want of a rate: the backer is told, in the player's voice to them.
+      l.missing.length ? t('Contas aproximadas: falta o câmbio de {list}.', { list: l.missing.map(curName).join(', ') }) : '',
     ].filter((x) => x !== '');
     // The statement as a link they can open, or save in their own Sweatbook to follow every session.
     // It carries only this backer's own pieces (see lib/backing-link).
@@ -203,30 +297,60 @@ function BackerScreen() {
           <T v="monoXL" color={bal.color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 34, lineHeight: 40 }}>
             {bal.text}
           </T>
+          {head.apart ? (
+            <T v="small" color={C.warn} style={{ textAlign: 'center' }}>
+              {t('Sem câmbio: fica fora do total.')}
+            </T>
+          ) : null}
           {/* Offline with no rate yet: sessions in another currency are counted 1 to 1, so say it. */}
           {l.missing.length ? (
             <T v="small" color={C.warn} style={{ textAlign: 'center' }}>
-              {t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.join(', ') })}
+              {t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.map(symbolOf).join(', ') })}
             </T>
           ) : null}
+          {/* Festival action with no rate: never added in, shown apart in its own currency (the one leading is above). */}
+          {apartLines(l).slice(head.apart ? 1 : 0).map((x) => (
+            <T key={x} v="small" color={C.warn} style={{ textAlign: 'center' }}>
+              {x}
+            </T>
+          ))}
           {backer.note ? (
             <T v="small" style={{ textAlign: 'center' }} numberOfLines={3}>
               {backer.note}
             </T>
           ) : null}
-          {square ? (
-            <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
-              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
-              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={gate(() => setPaying(true))} />
-            </Row>
+          {square && !apartDue.length ? (
+            // Stacked too: side by side, «Enviar contas» is cut at 320 points and with large text (Design P3).
+            <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
+              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
+              <Button size="md" kind="secondary" icon="cash-outline" title={t('Pagamento')} onPress={gate(() => setPaying(true))} />
+            </View>
           ) : (
             // Stacked: "Marcar como pago" (and "Marcar como pagado" in es) doesn't fit half the width of an iPhone.
             <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
-              <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={gate(markPaid)} />
+              <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={gate(square ? settleApart : markPaid)} />
               <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
             </View>
           )}
-          {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={gate(() => setPaying(true))} />}
+          {square && !apartDue.length ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={gate(() => setPaying(true))} />}
+          {typedApart.length ? (
+            <T v="small" color={C.accent} onPress={gate(() => setTyping(true))} accessibilityRole="button" style={{ textAlign: 'center' }}>
+              {t('O BCE não publica {list}: escreve o teu câmbio ›', { list: typedApart.map(curName).join(', ') })}
+            </T>
+          ) : typedSet.length ? (
+            <T v="small" color={C.accent} onPress={gate(() => setTyping(true))} accessibilityRole="button" style={{ textAlign: 'center' }}>
+              {t('Câmbio escrito: {list} · mudar ›', { list: typedSet.map((c) => `1 € = ${num(settings.fxManual?.[isoOf(c) ?? c] ?? 0)} ${curName(c)}`).join(', ') })}
+            </T>
+          ) : null}
+          {/* Known before the tap: the statement waits for the rate (Design P3). With only an amount apart to
+              settle and no piece to mark paid, recording it waits for the rate too (QA P2). */}
+          {apart.length ? (
+            <T v="tiny" color={C.warn} style={{ textAlign: 'center' }}>
+              {square && head.apart && !apartDue.length
+                ? t('Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.', { list: apart.map(curName).join(', ') })
+                : t('Para enviar as contas, falta o câmbio de {list}.', { list: apart.map(curName).join(', ') })}
+            </T>
+          ) : null}
           {backer.page ? (
             // Their fixed link: the player sees exactly what the backer sees, and can take it down.
             <View style={{ alignSelf: 'stretch', alignItems: 'center', gap: 2 }}>
@@ -379,9 +503,9 @@ function BackerScreen() {
                     iconColor={h.p.amount > 0 ? C.warn : C.good}
                     title={h.p.amount > 0 ? t('Pagaste') : t('Recebeste')}
                     subtitle={[shortDate(h.p.at), h.p.note].filter(Boolean).join(' · ')}
-                    value={money(Math.abs(h.p.amount), cur)}
+                    value={money(Math.abs(h.p.amount), l.payCurrency[h.p.id] ?? cur)}
                     chevron={false}
-                    onPress={gate(() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), cur), () => deletePayment(h.p.id), t('Apagar')))}
+                    onPress={gate(() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), l.payCurrency[h.p.id] ?? cur), () => deletePayment(h.p.id), t('Apagar')))}
                   />
                 ) : (
                   <ListItem
@@ -408,7 +532,10 @@ function BackerScreen() {
           setEditing(false);
         }}
         onDelete={() =>
-          confirm(t('Apagar {name}?', { name: backer.name }), t('Os pacotes e pagamentos deste backer também são apagados. As sessões ficam, com a ação vendida sem nome.'), () => {
+          // Their festival pieces would keep counting as sold, and their links stay open: taken out there first.
+          inFestivalPackage(offers, backer.id)
+            ? tell(t('{name} tem ação de festival', { name: backer.name }), t('Para tirar {name}, vai ao pacote do festival: assim o link também muda.', { name: backer.name }), openOffer(offers.find((o) => o.lines.some((x) => x.backerId === backer.id))))
+            : confirm(t('Apagar {name}?', { name: backer.name }), t('Os pacotes e pagamentos deste backer também são apagados. As sessões ficam, com a ação vendida sem nome.'), () => {
             setEditing(false);
             deleteBacker(backer.id);
             router.back();
@@ -447,11 +574,14 @@ function BackerScreen() {
         }}
         onDelete={
           pkg && packages.some((p) => p.id === pkg.id)
-            ? () =>
+            ? () => {
+                // A festival package's piece lives in the festival's package (and the backer's link): taken out there.
+                if (offerPackageIds(offers).has(pkg.id)) return tell(t('Este pacote é de uma ação de festival'), t('Para tirar {name}, vai ao pacote do festival: assim o link também muda.', { name: backer.name }), openOffer(offers.find((o) => o.lines.some((x) => x.packageId === pkg.id))));
                 confirm(t('Apagar pacote?'), t('As sessões ficam vendidas a {name}, fora de pacote.', { name: backer.name }), () => {
                   deletePackage(pkg.id);
                   setPkg(null);
-                }, t('Apagar'))
+                }, t('Apagar'));
+              }
             : undefined
         }
       />
@@ -463,16 +593,26 @@ function BackerScreen() {
         onClose={() => setPiece(null)}
         onTogglePaid={gate(togglePaid)}
       />
+      <Sheet visible={typing} title={t('Câmbio escrito por ti')} onClose={() => setTyping(false)}>
+        <ManualRatesForm
+          codes={typedApart.length ? typedApart : typedSet}
+          initial={settings.fxManual ?? {}}
+          onSave={(fxManual) => {
+            setSettings({ fxManual });
+            setTyping(false);
+          }}
+        />
+      </Sheet>
       <PaymentSheet
         backer={paying ? backer : null}
         balance={l.balance}
         currency={cur}
         onClose={() => setPaying(false)}
         onSave={(p) => {
-          savePayment(p);
+          savePayment({ ...p, fx: ratesNow() ?? p.fx });
           setPaying(false);
           // A payment that squares the balance is moment C too.
-          if (Math.abs(l.balance - p.amount) < 0.01) void maybeAskForReview('settled');
+          if (Math.abs(l.balance - p.amount) < 0.01 && !apart.length) void maybeAskForReview('settled');
         }}
       />
     </>

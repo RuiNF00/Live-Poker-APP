@@ -41,7 +41,8 @@ const num = (v: unknown, min: number, max: number): number | null => {
   return r >= min && r <= max ? r : null;
 };
 const str = (v: unknown, n: number) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '');
-const EVENT_ID = /^[A-Za-z0-9-]{1,16}$/;
+// Schedule ids ("12", "12-2A", "85-1F Turbo") and the player's own tournaments (uid('fe_'), 17 characters).
+const EVENT_ID = /^[A-Za-z0-9_-][A-Za-z0-9 _-]{0,31}$/;
 
 function parseEvent(x: unknown): AgreementEvent | null {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
@@ -88,6 +89,16 @@ export const eventCost = (a: Agreement, e: AgreementEvent) => round2((e.p / 100)
 /** The cost of the whole piece: Σ p/100 × buy-in × markup. A record, never a payment. */
 export function agreementCost(a: Agreement): number {
   return round2(a.events.reduce((t, e) => t + (e.p / 100) * e.b * a.markup, 0));
+}
+
+/**
+ * The version a backer's page sends with the confirm: the updatedAt it showed, as the server wrote
+ * it (ISO-8601 with a zone). Anything else ("1", "2026-10", "October 2026") is no version: the page
+ * reloads and shows the terms as they are, instead of the database refusing the date.
+ */
+const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/;
+export function seenVersion(x: unknown): string | null {
+  return typeof x === 'string' && ISO.test(x) && Number.isFinite(Date.parse(x)) ? x : null;
 }
 
 /** New terms (markup, events, currency, or who the backer is) need the backer to confirm again. */

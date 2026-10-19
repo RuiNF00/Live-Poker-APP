@@ -8,12 +8,12 @@ import { View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankBacker } from '@/components/staking/sheets';
-import { balanceLabel, splitMoney, useHasBackers, useStaking } from '@/components/staking/use-staking';
+import { apartLines, balanceLabel, splitMoney, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
-import type { BackerLedger, StakingTotals } from '@/store/staking';
+import { headlineOf, type BackerLedger, type StakingTotals } from '@/store/staking';
 import type { Backer } from '@/store/types';
 import { C, S } from '@/theme';
 import { ReadOnlyNote, useProReadOnly, withPro } from '@/components/ProGate';
@@ -54,15 +54,18 @@ function StakingScreen() {
                 {sorted.map((b) => {
                   const l = ledgers.get(b.id);
                   const cur = l?.currency ?? totals.currency;
-                  const bal = { ...balanceLabel(l?.balance ?? 0, cur), owe: (l?.balance ?? 0) > 0 };
-                  const square = Math.abs(l?.balance ?? 0) < 0.01;
+                  // With the deal square, festival action with no rate still shows (never «Acertado» above a debt).
+                  const head = l ? headlineOf(l, cur) : { balance: 0, currency: cur, apart: false };
+                  const bal = { ...balanceLabel(head.balance, head.currency), owe: head.balance > 0 };
+                  const square = Math.abs(head.balance) < 0.01;
+                  const apart = l ? apartLines(l) : [];
                   const n = l?.rows.length ?? 0;
                   return (
                     <ListItem
                       key={b.id}
                       left={<Avatar name={b.name} />}
                       title={b.name}
-                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? parts(l, cur).join(' · ') : ''].filter(Boolean).join(', ')}
+                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? [...parts(l, cur), ...apartLines(l)].join(' · ') : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
                           <T v="small" numberOfLines={2}>
@@ -76,6 +79,13 @@ function StakingScreen() {
                                 </T>
                               ))
                             : null}
+                          {/* Apart for want of a rate: in the warning colour, so it doesn't read as part of the sum. */}
+                          {/* The headline already shows the first one: here only that it's out of the total. */}
+                          {(head.apart ? [t('Sem câmbio: fica fora do total.'), ...apart.slice(1)] : apart).map((p) => (
+                            <T key={p} v="tiny" color={C.warn}>
+                              {p}
+                            </T>
+                          ))}
                         </View>
                       }
                       right={
@@ -86,7 +96,7 @@ function StakingScreen() {
                             </T>
                           )}
                           <T v="mono" color={bal.color} style={{ fontSize: 15 }}>
-                            {square ? t('Acertado') : money(Math.abs(l?.balance ?? 0), cur)}
+                            {square ? t('Acertado') : money(Math.abs(head.balance), head.currency)}
                           </T>
                         </View>
                       }

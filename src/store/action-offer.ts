@@ -30,6 +30,8 @@ export interface PackageLine {
   pct: number;
   /** The backer has paid for the piece (marked by the player; paid outside the app). */
   paid?: boolean;
+  /** Events already marked not played when the piece was marked paid: never paid for, so nothing goes back. */
+  paidSkipped?: string[];
   /** The private confirmation link, once sent. */
   remote?: { id: string; token: string; url: string };
   /** When the backer confirmed these terms on the link (ISO), null/undefined until then. */
@@ -62,6 +64,8 @@ export interface AgreementPayload {
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+/** A name as the server keeps it: control characters as spaces, trimmed, cut. */
+const clean = (s: string, n: number) => s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 
 export function newOffer(f: Festival, picked: string[], id: string, now = Date.now()): ActionOffer {
   const events = f.events.filter((e) => picked.includes(e.id) && !e.day2).map((e) => e.id);
@@ -105,9 +109,9 @@ export function offerTotals(f: Festival, o: ActionOffer) {
 export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player: string, backer: string, title: string, now = Date.now()): AgreementPayload {
   return {
     v: 1,
-    player: player.trim().slice(0, 40),
-    backer: backer.trim().slice(0, 40),
-    title: title.trim().slice(0, 60),
+    player: clean(player, 40),
+    backer: clean(backer, 40),
+    title: clean(title, 60),
     cur: f.currency.slice(0, 4),
     markup: r2(o.markup),
     events: offerEvents(f, o)
@@ -115,6 +119,26 @@ export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player
       .map((e) => ({ id: e.id, n: (eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '')).slice(0, 80), d: venueTime(f, e.start), b: e.buyIn, p: r2(line.pct) })),
     at: now,
   };
+}
+
+/**
+ * The link holds these terms: what the backer confirmed there is what this phone shows. Compared as
+ * the server keeps them (to the cent), names aside: a backer renamed here confirmed the same deal
+ * (Pronto P2-A, 19 Oct). Anything else (a change the server refused, one not sent yet) and a
+ * confirmation there is of other terms.
+ */
+export function sameTerms(link: unknown, mine: AgreementPayload): boolean {
+  if (!link || typeof link !== 'object') return false;
+  const a = link as Partial<AgreementPayload>;
+  const ev = (e: { id: string; d: number; b: number; p: number }) => `${e.id}|${Math.round(e.d)}|${r2(e.b)}|${r2(e.p)}`;
+  return (
+    typeof a.markup === 'number' &&
+    r2(a.markup) === r2(mine.markup) &&
+    a.cur === mine.cur &&
+    Array.isArray(a.events) &&
+    // The server keeps them by date: compared as sets.
+    a.events.map(ev).sort().join(',') === mine.events.map(ev).sort().join(',')
+  );
 }
 
 /**
@@ -142,12 +166,20 @@ export function usualTerms(backerId: string, packages: StakePackage[], sessions:
   return best && { pct: best.pct, markup: best.markup };
 }
 
-/** The backers' stakes for a session started from this event. Pieces not marked paid count against the backer. */
+/**
+ * The piece's payment covers this event: marked paid, and the event wasn't already «Não joguei» then.
+ * One skipped before paying and played after all was never paid for (QA P1, 19 Oct).
+ */
+export function covers(line: PackageLine, eventId: string): boolean {
+  return !!line.paid && !(Array.isArray(line.paidSkipped) && line.paidSkipped.includes(eventId));
+}
+
+/** The backers' stakes for a session started from this event. Pieces not paid for it count against the backer. */
 export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: string): Stake[] {
   const out: Stake[] = [];
   for (const o of offers) {
     if (o.festivalId !== festivalId || !o.events.includes(eventId)) continue;
-    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, unpaid: l.paid ? undefined : true });
+    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, unpaid: covers(l, eventId) ? undefined : true });
   }
   return out;
 }
@@ -200,20 +232,18 @@ function eventPiece(o: ActionOffer, e: FestivalEvent, pct: number): number {
  * the player said they didn't play aren't charged.
  */
 export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
-  if (line.paid) return 0;
   return r2(
     offerEvents(f, o)
-      .filter((e) => !started[e.id] && !missed(o, e, started))
+      .filter((e) => !started[e.id] && !missed(o, e, started) && !covers(line, e.id))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
 
 /** A paid piece of events the player said they didn't play: that money goes back to the backer. */
 export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
-  if (!line.paid) return 0;
   return r2(
     offerEvents(f, o)
-      .filter((e) => missed(o, e, started))
+      .filter((e) => missed(o, e, started) && covers(line, e.id))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
@@ -251,14 +281,18 @@ export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, s
   });
   const prizes = r2(rows.reduce((a, r) => a + r.prize, 0));
   const cost = r2(rows.reduce((a, r) => a + r.cost, 0));
+  // What the payment didn't cover: all of it unpaid, or an event skipped before paying and played after.
+  const owed = r2(rows.filter((r) => !covers(line, r.event.id)).reduce((a, r) => a + r.cost, 0));
+  const paid = !!line.paid && owed < 0.005;
   const refund = missedRefund(f, o, line, started);
   return {
     rows,
     prizes,
-    cost,
-    paid: !!line.paid,
+    /** The piece's cost when paid; what is still to pay otherwise. */
+    cost: paid ? cost : owed,
+    paid,
     refund,
-    net: r2(prizes + refund - (line.paid ? 0 : cost)),
+    net: r2(prizes + refund - owed),
     /** Every event ended or not played (as the player said): the numbers won't change. */
     done: rows.every((r) => r.state === 'cashed' || r.state === 'busted' || r.state === 'missed'),
     live: rows.filter((r) => r.state === 'live').length,
@@ -312,6 +346,88 @@ export function settleReminders(
       days.add(key);
       return true;
     });
+}
+
+/**
+ * A backer's festival pieces still to pay for, in these currencies: what «Marcar como pago» marks paid
+ * when only festival action with no rate is left (QA P2, 19 Oct). Paid outside the app, in the
+ * festival's currency, like the package screen's own «Marcar como pago». Only packages with no event
+ * started: there, what is pending is the whole piece (Voz P2, 19 Oct).
+ */
+export function unpaidLinesIn(
+  offers: ActionOffer[],
+  backerId: string,
+  currencies: string[],
+  festival: (id: string) => Festival | undefined,
+  started: (festivalId: string) => Record<string, string>,
+): { offerId: string; lineId: string; currency: string; due: number }[] {
+  const out: { offerId: string; lineId: string; currency: string; due: number }[] = [];
+  for (const o of offers) {
+    const f = festival(o.festivalId);
+    if (!f || !currencies.includes(f.currency)) continue;
+    // A session already carries part of the piece: its stake changes too, so that is the package screen's job.
+    const st = started(f.id);
+    if (offerEvents(f, o).some((e) => st[e.id])) continue;
+    for (const l of o.lines) {
+      const due = l.backerId === backerId ? pendingCost(f, o, l, st) : 0;
+      if (due > 0) out.push({ offerId: o.id, lineId: l.id, currency: f.currency, due });
+    }
+  }
+  return out;
+}
+
+/**
+ * Festival pieces a «Marcar como pago» of the whole balance pays too: the ones in it (with a rate, so
+ * their due is in the balance). Marked paid, the package screen says what the backer screen says,
+ * and the payment keeps only the rest (QA P2, 19 Oct). `due` is in the deal's currency, converted as
+ * the balance did: the events no session carries yet (`rateOf`) and, once the festival is under way,
+ * the unpaid stakes the piece already has on sessions (`stakesDue`, Bankroll P2), less what goes back
+ * for events not played. Marked paid with the events started now (setLinePaid), the refunded events
+ * are no longer covered (paidSkipped): nothing more goes back, and one played after all is owed again.
+ */
+export function linesSettledWith(
+  offers: ActionOffer[],
+  backerId: string,
+  festival: (id: string) => Festival | undefined,
+  started: (festivalId: string) => Record<string, string>,
+  rateOf: (o: ActionOffer, currency: string) => number | null,
+  stakesDue: (line: PackageLine) => number = () => 0,
+): { offerId: string; festivalId: string; lineId: string; due: number }[] {
+  const out: { offerId: string; festivalId: string; lineId: string; due: number }[] = [];
+  for (const o of offers) {
+    const f = festival(o.festivalId);
+    if (!f || !o.lines.some((l) => l.backerId === backerId)) continue;
+    const x = rateOf(o, f.currency);
+    if (x === null) continue;
+    const st = started(f.id);
+    for (const l of o.lines) {
+      if (l.backerId !== backerId) continue;
+      // A refund for events not played is in the balance too: settled, it is paid back (QA P2, 19 Oct).
+      const back = missedRefund(f, o, l, st);
+      const due = (pendingCost(f, o, l, st) - back) * x + stakesDue(l);
+      if (Math.abs(due) > 0.005 || back > 0) out.push({ offerId: o.id, festivalId: f.id, lineId: l.id, due });
+    }
+  }
+  return out;
+}
+
+/** Sessions of a festival's started events whose stakes change with its packages: the ones to save. */
+export function offerStakeChanges(sessions: Session[], offers: ActionOffer[], festivalId: string, started: Record<string, string>, before: Set<string>): Session[] {
+  const mine = offers.filter((x) => x.festivalId === festivalId);
+  const pkgs = new Set([...before, ...offerPackageIds(mine)]);
+  const out: Session[] = [];
+  for (const [eventId, sessionId] of Object.entries(started)) {
+    const s = sessions.find((x) => x.id === sessionId);
+    if (!s) continue;
+    const stakes = withOfferStakes(s.stakes, stakesFor(mine, festivalId, eventId), pkgs);
+    if (JSON.stringify(stakes) !== JSON.stringify(s.stakes ?? [])) out.push({ ...s, stakes });
+  }
+  return out;
+}
+
+/** The backer has a piece in a festival package: deleting them would leave it counting, and its link open. */
+export function inFestivalPackage(offers: ActionOffer[], backerId: string): boolean {
+  return offers.some((o) => o.lines.some((l) => l.backerId === backerId));
 }
 
 /** Packages these offers created: their stakes on a session are replaced, the rest kept. */
@@ -383,6 +499,23 @@ export function updateOffer(id: string, fn: (o: ActionOffer) => ActionOffer) {
 
 export function updateLine(offerId: string, lineId: string, fn: (l: PackageLine) => PackageLine) {
   updateOffer(offerId, (o) => ({ ...o, lines: o.lines.map((l) => (l.id === lineId ? fn(l) : l)) }));
+}
+
+/**
+ * Marks a piece paid or not. What the backer pays leaves out the events already not played
+ * (pendingCost), so those are remembered and never refunded (Voz P2, 19 Oct).
+ */
+export function setLinePaid(offerId: string, lineId: string, paid: boolean, started: Record<string, string>) {
+  updateOffer(offerId, (o) => ({
+    ...o,
+    lines: o.lines.map((l) => (l.id === lineId ? { ...l, paid, paidSkipped: paid ? paidSkippedNow(o, started) : undefined } : l)),
+  }));
+}
+
+/** Events not played as things stand (skipped, no session): one skipped by mistake and played since was paid for too. */
+export function paidSkippedNow(o: ActionOffer, started: Record<string, string>): string[] | undefined {
+  const out = (o.skipped ?? []).filter((id) => !started[id]);
+  return out.length ? out : undefined;
 }
 
 export function deleteOffer(id: string) {

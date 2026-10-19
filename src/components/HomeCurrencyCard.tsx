@@ -146,7 +146,7 @@ function Parts({ parts, home, hidden }: { parts: HomeTotals['parts']; home: stri
 }
 
 /** One field per currency: how many of it make 1 €, as the player saw at the cage or the exchange. */
-function ManualRatesForm({ codes, initial, onSave }: { codes: string[]; initial: Record<string, number>; onSave: (r: Record<string, number>) => void }) {
+export function ManualRatesForm({ codes, initial, onSave }: { codes: string[]; initial: Record<string, number>; onSave: (r: Record<string, number>) => void }) {
   const [text, setText] = useState<Record<string, string>>(() => Object.fromEntries(codes.map((c) => [c, initial[isoOf(c) ?? c] ? String(initial[isoOf(c) ?? c]).replace('.', ',') : ''])));
   const parse = (v: string) => Number(v.replace(/\s/g, '').replace(',', '.'));
   return (

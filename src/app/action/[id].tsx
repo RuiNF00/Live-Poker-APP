@@ -5,8 +5,8 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import { router, Stack, useIsFocused, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
@@ -20,8 +20,8 @@ import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Scree
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
-import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
-import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { agreementUpdateWaiting, fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, queueAgreementUpdate, updateAgreement } from '@/lib/offer-api';
+import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
 import {
   MARKUPS,
@@ -33,20 +33,23 @@ import {
   lineSettlement,
   offerEvents,
   offerPackageIds,
+  offerStakeChanges,
   offerTotals,
   stakesFor,
   unanswered,
+  setLinePaid,
   updateLine,
   updateOffer,
   useOffers,
   usualTerms,
-  withOfferStakes,
   type ActionOffer,
+  type AgreementPayload,
   type LineSettlement,
   type PackageLine,
   type SettlementState,
 } from '@/store/action-offer';
-import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
+import { festivalName, planFestival, updatePlan, useFestivalPlan } from '@/store/festival-plan';
+import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -54,12 +57,28 @@ import { C, R, S } from '@/theme';
 
 const pct = (n: number) => `${num(n)}%`;
 
+/** Saves the confirmations of the links still waiting (`key`: the checks, as JSON). */
+async function checkLinks(offerId: string, key: string) {
+  for (const c of JSON.parse(key) as { lineId: string; remoteId: string; terms: AgreementPayload }[]) {
+    try {
+      // New terms not on the server yet: what it says confirmed is the old terms.
+      if (await agreementUpdateWaiting(c.remoteId)) continue;
+      const at = await fetchConfirmation({ id: c.remoteId }, c.terms);
+      if (at) updateLine(offerId, c.lineId, (l) => ({ ...l, confirmedAt: at }));
+    } catch (e) {
+      if (e instanceof OfferFailure && e.reason === 'gone') updateLine(offerId, c.lineId, (l) => ({ ...l, remote: undefined, confirmedAt: null }));
+    }
+  }
+}
+
 export default function ActionPackageScreen() {
   const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const offers = useOffers();
   const o = offers.find((x) => x.id === id);
-  const f = FESTIVALS.find((x) => x.id === o?.festivalId);
   const plan = useFestivalPlan(o?.festivalId ?? '');
+  // An own festival too, with the tournaments the player added (as the festival screen).
+  const f = planFestival(useFestivals(), o?.festivalId, () => plan);
+  const ready = useFestivalsReady();
   const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession, trips, saveTrip } = useStore();
   const pro = usePro();
   const [busy, setBusy] = useState<string | null>(null);
@@ -70,29 +89,27 @@ export default function ActionPackageScreen() {
   const [softAsk, askNotify] = useNotifySoftAsk();
 
   // Confirmations come from the links: check the ones still waiting whenever the screen shows.
-  const waiting = (o?.lines ?? []).filter((l) => l.remote && !l.confirmedAt).map((l) => `${l.id}:${l.remote!.id}`).join(',');
-  const refresh = useCallback(async () => {
-    if (!o || !waiting) return;
-    for (const pair of waiting.split(',')) {
-      const [lineId, remoteId] = pair.split(':');
-      try {
-        const at = await fetchConfirmation({ id: remoteId });
-        if (at) updateLine(o.id, lineId, (l) => ({ ...l, confirmedAt: at }));
-      } catch (e) {
-        if (e instanceof OfferFailure && e.reason === 'gone') updateLine(o.id, lineId, (l) => ({ ...l, remote: undefined, confirmedAt: null }));
-      }
-    }
-    // Only when the set of links waiting changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [o?.id, waiting]);
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-      const timer = setInterval(() => void refresh(), 30_000);
-      return () => clearInterval(timer);
-    }, [refresh]),
-  );
+  // A confirmation counts only for the terms this phone has now (QA P1: a refused change).
+  const checks =
+    o && f
+      ? o.lines
+          .filter((l) => l.remote && !l.confirmedAt)
+          .map((l) => ({ lineId: l.id, remoteId: l.remote!.id, terms: agreement(f, o, l, settings.nickname, backers.find((b) => b.id === l.backerId)?.name ?? t('Backer'), festivalName(f, plan)) }))
+      : [];
+  // By value: with the player's own events the festival is a new object every render, so checking
+  // on it would ask the server again at every render (Pronto P3).
+  const checksKey = JSON.stringify(checks);
+  const offerId = o ? o.id : '';
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (!focused || !offerId) return;
+    void checkLinks(offerId, checksKey);
+    const timer = setInterval(() => void checkLinks(offerId, checksKey), 30_000);
+    return () => clearInterval(timer);
+  }, [focused, offerId, checksKey]);
 
+  // An own festival not read from the phone yet: wait, it isn't gone.
+  if (o && !f && !ready) return <Stack.Screen options={{ title: t('Ação vendida') }} />;
   if (!o || !f)
     return (
       <>
@@ -160,14 +177,7 @@ export default function ActionPackageScreen() {
 
   // The package's stakes on every session already started from its events.
   const applyToSessions = (before: Set<string>) => {
-    const mine = getOffers().filter((x) => x.festivalId === f.id);
-    const pkgs = new Set([...before, ...offerPackageIds(mine)]);
-    for (const [eventId, sessionId] of Object.entries(plan.sessions)) {
-      const s = sessions.find((x) => x.id === sessionId);
-      if (!s) continue;
-      const stakes = withOfferStakes(s.stakes, stakesFor(mine, f.id, eventId), pkgs);
-      if (JSON.stringify(stakes) !== JSON.stringify(s.stakes ?? [])) saveSession({ ...s, stakes });
-    }
+    for (const s of offerStakeChanges(sessions, getOffers(), f.id, plan.sessions, before)) saveSession(s);
   };
 
   /** New terms (events or markup): staking packages follow, and every sent link asks to confirm again. */
@@ -178,7 +188,8 @@ export default function ActionPackageScreen() {
     for (const l of next.lines) {
       const p = packages.find((x) => x.id === l.packageId);
       if (p && p.markup !== next.markup) savePackage({ ...p, markup: next.markup });
-      if (l.remote) void updateAgreement(l.remote, agreement(f, next, l, settings.nickname, nameOf(l), title)).catch(() => {});
+      // Offline too: it goes when the signal is back, and until then no old confirmation is read.
+      if (l.remote) queueAgreementUpdate(l.remote, agreement(f, next, l, settings.nickname, nameOf(l), title));
     }
     applyToSessions(before);
   };
@@ -217,10 +228,12 @@ export default function ActionPackageScreen() {
     ]);
   };
 
+  // Paid, but an event skipped before paying was played after: «Por pagar», and a tap marks it all paid (QA P1).
+  const paidAll = (l: PackageLine) => settled.find((x) => x.l.id === l.id)?.st.paid ?? !!l.paid;
   const togglePaid = (l: PackageLine) => {
     tap('select');
     const before = offerPackageIds(getOffers());
-    updateLine(o.id, l.id, (x) => ({ ...x, paid: !x.paid }));
+    setLinePaid(o.id, l.id, !paidAll(l), plan.sessions);
     applyToSessions(before);
   };
 
@@ -255,7 +268,9 @@ export default function ActionPackageScreen() {
       setError(
         why === 'offensive'
           ? t('Um dos nomes não passou no filtro. Muda-o e tenta outra vez.')
-          : why === 'rate_limited'
+          : why === 'invalid'
+            ? t('O link não aceitou estes termos. Atualiza a app e tenta outra vez.')
+            : why === 'rate_limited'
             ? t('Demasiadas tentativas. Tenta daqui a pouco.')
             : t('Sem ligação. Tenta outra vez quando tiveres rede.'),
       );
@@ -329,8 +344,8 @@ export default function ActionPackageScreen() {
                   ) : l.remote ? (
                     <Pill label={t('Por confirmar')} color={C.warn} />
                   ) : null}
-                  <Pressable onPress={() => togglePaid(l)} accessibilityRole="switch" accessibilityState={{ checked: !!l.paid }} hitSlop={6}>
-                    <Pill label={l.paid ? t('Pago') : t('Por pagar')} color={l.paid ? C.good : C.muted} icon={l.paid ? 'checkmark' : 'ellipse-outline'} />
+                  <Pressable onPress={() => togglePaid(l)} accessibilityRole="switch" accessibilityState={{ checked: paidAll(l) }} hitSlop={6}>
+                    <Pill label={paidAll(l) ? t('Pago') : t('Por pagar')} color={paidAll(l) ? C.good : C.muted} icon={paidAll(l) ? 'checkmark' : 'ellipse-outline'} />
                   </Pressable>
                 </Row>
                 <Button

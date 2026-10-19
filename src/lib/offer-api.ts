@@ -2,15 +2,15 @@
 // One link per backer; the token the server returns at creation lets this phone
 // change or remove it. The backer can only confirm the piece already agreed.
 
-import type { AgreementPayload } from '@/store/action-offer';
+import { sameTerms, type AgreementPayload } from '@/store/action-offer';
 import { BRAND } from '@/theme';
 
-import { outcomeOf, queue, registerSender } from './sync';
+import { outcomeOf, queue, queued, registerSender } from './sync';
 
 // Same server as share-api.ts (not imported from there: it pulls in native modules).
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
-export type OfferError = 'offensive' | 'gone' | 'rate_limited' | 'network';
+export type OfferError = 'offensive' | 'invalid' | 'gone' | 'rate_limited' | 'network';
 
 export class OfferFailure extends Error {
   constructor(public reason: OfferError) {
@@ -25,7 +25,12 @@ async function call(path: string, init: RequestInit): Promise<Response> {
   } catch {
     throw new OfferFailure('network');
   }
-  if (!res.ok) throw new OfferFailure(res.status === 422 ? 'offensive' : res.status === 404 || res.status === 403 ? 'gone' : res.status === 429 ? 'rate_limited' : 'network');
+  if (res.status === 422) {
+    // A name moderation refused, or terms the server can't take (the reason is in the body).
+    const j = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    throw new OfferFailure(j?.error === 'offensive' ? 'offensive' : 'invalid');
+  }
+  if (!res.ok) throw new OfferFailure(res.status === 404 || res.status === 403 ? 'gone' : res.status === 429 ? 'rate_limited' : 'network');
   return res;
 }
 
@@ -43,10 +48,47 @@ export async function updateAgreement(remote: { id: string; token: string }, off
   });
 }
 
-/** When the backer confirmed (ISO), or null. */
-export async function fetchConfirmation(remote: { id: string }): Promise<string | null> {
-  const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { cache: 'no-store' })).json()) as { confirmedAt?: unknown };
-  return typeof j.confirmedAt === 'string' ? j.confirmedAt : null;
+/**
+ * New terms go out now or when the signal is back: until they reach the server, the link still has
+ * the old ones (and their confirmation), so the screen doesn't read a confirmation while one waits.
+ * A newer change replaces one still waiting.
+ */
+export function queueAgreementUpdate(remote: { id: string; token: string }, offer: AgreementPayload) {
+  // Known at once: the screen checks right after, before the outbox has written the job.
+  sending.add(remote.id);
+  queue('offer-update', { id: remote.id, token: remote.token, offer }, remote.id);
+}
+
+const sending = new Set<string>();
+
+/** New terms for this link still waiting to go out. */
+export async function agreementUpdateWaiting(id: string): Promise<boolean> {
+  return sending.has(id) || queued('offer-update', id);
+}
+
+registerSender('offer-update', async (p) => {
+  const r = p as { id: string; token: string; offer: AgreementPayload };
+  try {
+    const res = await fetch(`${API}/api/offers/${encodeURIComponent(r.id)}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', 'x-edit-token': r.token },
+      body: JSON.stringify({ offer: r.offer }),
+    });
+    const out = outcomeOf(res.status);
+    if (out !== 'retry') sending.delete(r.id);
+    return out;
+  } catch {
+    return 'retry';
+  }
+});
+
+/**
+ * When the backer confirmed (ISO), or null. Only a confirmation of `terms`: a link still holding
+ * other ones (new terms the server refused, or not sent yet) has nothing confirmed for this phone.
+ */
+export async function fetchConfirmation(remote: { id: string }, terms: AgreementPayload): Promise<string | null> {
+  const j = (await (await call(`/api/offers/${encodeURIComponent(remote.id)}`, { cache: 'no-store' })).json()) as { confirmedAt?: unknown; offer?: unknown };
+  return typeof j.confirmedAt === 'string' && sameTerms(j.offer, terms) ? j.confirmedAt : null;
 }
 
 /** Removes the link now or when the signal is back (deleting a package, erasing all data). */

@@ -28,8 +28,12 @@ export interface OffersStore {
   /** False with a wrong token or a gone link. New markup or events clear confirmedAt. */
   update(id: string, editToken: string, a: Agreement): Promise<boolean>;
   remove(id: string, editToken: string): Promise<boolean>;
-  /** Idempotent: keeps the first confirmation. Null when the link is gone. */
-  confirm(id: string): Promise<string | null>;
+  /**
+   * Confirms the terms the backer saw (`seen` = the updatedAt the page showed). Idempotent: keeps
+   * the first confirmation. 'stale' when the terms changed since (nothing stamped), null when the
+   * link is gone.
+   */
+  confirm(id: string, seen: string | null): Promise<{ confirmedAt: string } | 'stale' | null>;
   /** Removes agreements 60 days after their last event. */
   purge(): Promise<void>;
 }
@@ -71,10 +75,14 @@ class SupabaseOffers implements OffersStore {
     return !!data;
   }
 
-  async confirm(id: string) {
-    const { data, error } = await this.db.rpc('confirm_action_offer', { p_id: id });
+  async confirm(id: string, seen: string | null) {
+    const { data, error } = await this.db.rpc('confirm_action_offer', { p_id: id, p_seen: seen });
+    // A version the database can't read as a time (the route only lets ISO through): no version, so stale.
+    if (error && (error.code === '22007' || error.code === '22008')) return 'stale' as const;
     if (error) throw error;
-    return typeof data === 'string' ? data : null;
+    const r = data as { stale?: boolean; confirmed_at?: string } | null;
+    if (r?.stale) return 'stale' as const;
+    return typeof r?.confirmed_at === 'string' ? { confirmedAt: r.confirmed_at } : null;
   }
 
   async purge() {
@@ -133,7 +141,9 @@ export class LocalOffers implements OffersStore {
     return this.mutate((d) => {
       const r = d[id];
       if (r?.editTokenHash !== sha256(editToken)) return false;
-      d[id] = { ...r, offer: a, confirmedAt: termsChanged(r.offer, a) ? null : r.confirmedAt, updatedAt: new Date().toISOString() };
+      // updatedAt is the version the backer's page confirms against: it moves only with the terms.
+      const changed = termsChanged(r.offer, a);
+      d[id] = { ...r, offer: a, confirmedAt: changed ? null : r.confirmedAt, updatedAt: changed ? new Date().toISOString() : r.updatedAt };
       return true;
     });
   }
@@ -146,12 +156,13 @@ export class LocalOffers implements OffersStore {
     });
   }
 
-  async confirm(id: string) {
+  async confirm(id: string, seen: string | null) {
     return this.mutate((d) => {
       const r = d[id];
       if (!r) return null;
+      if (!seen || Date.parse(seen) !== Date.parse(r.updatedAt)) return 'stale' as const;
       r.confirmedAt ??= new Date().toISOString();
-      return r.confirmedAt;
+      return { confirmedAt: r.confirmedAt };
     });
   }
 

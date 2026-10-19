@@ -170,6 +170,94 @@ export interface BackerLedgerRow {
   owed: number;
 }
 
+/**
+ * How far back the staking screens need rates: the oldest backed session or festival package (with
+ * backers) in a currency other than home. A package's due is converted at its createdAt, so without
+ * it a 165$ + 33€ backer never got rates and stayed «Sem câmbio» even online (Pronto P2, 19 Oct).
+ */
+export function stakingRatesSince(home: string, sessions: { stakes?: unknown[]; currency: string; startedAt: number }[], offers: { currency: string; at: number }[]): number | null {
+  const at = [...sessions.filter((s) => s.stakes?.length && s.currency !== home).map((s) => s.startedAt), ...offers.filter((o) => o.currency !== home).map((o) => o.at)];
+  return at.length ? Math.min(...at) : null;
+}
+
+/**
+ * Festival action not yet in a session, onto a backer's ledger: what they owe for it (`due`) and what
+ * comes back for events that went by unplayed (`back`), both in the festival's currency. Without a
+ * rate it is never added in: it stays apart, in its own currency, and the screens show it as such.
+ */
+const offerDeals = new WeakSet<BackerLedger>();
+export function addOfferDue(l: BackerLedger, currency: string, due: number, back: number, rateTo: (from: string, to: string) => number | null) {
+  // A deal with no sessions is in its oldest festival's currency, paid or not (call this for every
+  // line, oldest offer first): payments carry no currency, so they count in the one they were made in.
+  // Settling the line must not move the deal to the fallback (QA P1, 19 Oct: «Deves 27,50€»).
+  if (!l.rows.length && !offerDeals.has(l)) {
+    offerDeals.add(l);
+    l.currency = currency;
+  }
+  if (!due && !back) return;
+  const x = rateTo(currency, l.currency);
+  if (x === null) {
+    const a = l.apart.find((y) => y.currency === currency) ?? l.apart[l.apart.push({ currency, unpaid: 0, balance: 0 }) - 1];
+    a.unpaid += due;
+    a.balance += back - due;
+    return;
+  }
+  l.unpaid += due * x;
+  l.balance += (back - due) * x;
+}
+
+/**
+ * The rates this backer's festival packages convert at now, to keep with a payment (BackerPayment.fx):
+ * a payment that squared them stays square on a phone with no rates (Pronto P2-B, 19 Oct).
+ */
+export function offerRatesNow(
+  backerId: string,
+  deal: string,
+  offers: { id: string; festivalId: string; createdAt: number; lines: { backerId: string }[] }[],
+  currencyOf: (festivalId: string) => string | undefined,
+  rateAt: (from: string, to: string, at: number) => number | null,
+): Record<string, number> | undefined {
+  const out: Record<string, number> = {};
+  for (const o of offers) {
+    const c = o.lines.some((l) => l.backerId === backerId) ? currencyOf(o.festivalId) : undefined;
+    if (!c || c === deal) continue;
+    const r = rateAt(c, deal, o.createdAt);
+    if (r !== null) out[`${o.id}>${deal}`] = r;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** The rate a payment kept for this package (offerRatesNow), the newest one; null when none did. */
+export function savedOfferRate(payments: BackerPayment[], backerId: string, offerId: string, to: string): number | null {
+  let best: { at: number; r: number } | null = null;
+  for (const p of payments) {
+    const r = p.backerId === backerId && p.fx && typeof p.fx === 'object' ? p.fx[`${offerId}>${to}`] : undefined;
+    // From a backup too: only a real rate.
+    if (typeof r === 'number' && Number.isFinite(r) && r > 0 && (!best || p.at >= best.at)) best = { at: p.at, r };
+  }
+  return best ? best.r : null;
+}
+
+/**
+ * Currencies of festival action still apart for want of a rate (see addOfferDue). While there are
+ * any, the backer is sent nothing: the text, the link and the fixed page would all show less than
+ * they owe or are owed (Voz/Bankroll P2, 19 Oct).
+ */
+export function unconverted(l: BackerLedger): string[] {
+  return l.apart.filter((a) => Math.abs(a.balance) >= 0.01 || Math.abs(a.unpaid) >= 0.01).map((a) => a.currency);
+}
+
+/**
+ * What the backer's headline shows: the deal's balance or, with it square, the first festival
+ * amount kept apart for want of a rate. «Acertado» is only said when nothing is owed either way
+ * (Design P2, 19 Oct: «Acertado» above «Deve-te 7650Kč»).
+ */
+export function headlineOf(l: BackerLedger, currency: string): { balance: number; currency: string; apart: boolean } {
+  if (Math.abs(l.balance) >= 0.01) return { balance: l.balance, currency, apart: false };
+  const a = l.apart.find((x) => Math.abs(x.balance) >= 0.01);
+  return a ? { balance: a.balance, currency: a.currency, apart: true } : { balance: 0, currency, apart: false };
+}
+
 export interface BackerLedger {
   rows: BackerLedgerRow[];
   /**
@@ -179,6 +267,10 @@ export interface BackerLedger {
   currency: string;
   /** Session currencies with no rate to convert them: counted as if they were `currency`. */
   missing: string[];
+  /** Festival action in a currency with no rate yet: kept apart in its own, never added to the totals here. */
+  apart: { currency: string; unpaid: number; balance: number }[];
+  /** Each payment's own currency, by payment id: `paid` below is them converted at the payment's day. */
+  payCurrency: Record<string, string>;
   /** Their money in, over every session. */
   invested: number;
   /** Their result: owed minus invested, ended sessions only. */
@@ -207,7 +299,8 @@ export function backerLedger(
   packages: StakePackage[],
   payments: BackerPayment[],
   pk = packageStates(sessions, packages),
-  fx: { table: RateTable; fallback: string; manual?: ManualRates } = { table: {}, fallback: '' },
+  /** `deal`: with no sessions yet, the currency of their oldest festival package (addOfferDue). */
+  fx: { table: RateTable; fallback: string; manual?: ManualRates; deal?: string } = { table: {}, fallback: '' },
 ): BackerLedger {
   const pkgOf = new Map(packages.map((p) => [p.id, p]));
   const rows: BackerLedgerRow[] = [];
@@ -222,7 +315,7 @@ export function backerLedger(
       rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut });
     }
   rows.sort((a, b) => byEnd(b.session, a.session));
-  const currency = dealCurrency(rows) ?? fx.fallback;
+  const currency = dealCurrency(rows) ?? fx.deal ?? fx.fallback;
   // Each session's money in the deal's currency, at that day's rate.
   const missing = new Set<string>();
   const k = (r: BackerLedgerRow) => {
@@ -238,7 +331,21 @@ export function backerLedger(
   const cut = cents(done.reduce((a, r) => a + cents(r.cut * k(r)), 0));
   const owed = cents(prizes - cut);
   const unpaid = cents(rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + cents(r.cost * k(r)), 0));
-  const paid = cents(payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0));
+  // Each payment in its own currency, at that day's rate: a bigger session in another currency later
+  // moves the deal, never what was paid (QA P1, 19 Oct: «Deve-te 5090,91$» for a 909,09€ payment).
+  const payCurrency: Record<string, string> = {};
+  const paid = cents(
+    payments
+      .filter((p) => p.backerId === backerId)
+      .reduce((a, p) => {
+        const c = paymentCurrency(p, rows, fx.deal ?? currency);
+        payCurrency[p.id] = c;
+        if (c === currency) return a + p.amount;
+        const x = rate(fx.table, c, currency, p.at, fx.manual);
+        if (x === null) missing.add(c);
+        return a + cents(p.amount * (x ?? 1));
+      }, 0),
+  );
   // Each package's makeup is in its own currency: converted to the deal's at today's rate.
   const makeup = packages
     .filter((p) => p.backerId === backerId && !p.closedAt)
@@ -254,6 +361,8 @@ export function backerLedger(
     rows,
     currency,
     missing: [...missing],
+    apart: [],
+    payCurrency,
     invested,
     result: cents(owed - done.reduce((a, r) => a + cents(r.cost * k(r)), 0)),
     prizes,
@@ -265,6 +374,15 @@ export function backerLedger(
     makeup,
     live: rows.length - done.length,
   };
+}
+
+/**
+ * The currency a payment was made in. Older ones kept none: the deal's as it stood on the day, from the
+ * sessions started by then (with none, `before`: their festival's, or the deal's now).
+ */
+export function paymentCurrency(p: BackerPayment, rows: BackerLedgerRow[], before: string): string {
+  if (typeof p.currency === 'string' && p.currency) return p.currency;
+  return dealCurrency(rows.filter((r) => r.session.startedAt <= p.at)) ?? before;
 }
 
 /** The currency most of the backer's money went in at (ties: the newest session's). Undefined with no sessions. */
@@ -363,14 +481,19 @@ export function stakingTotals(ledgers: BackerLedger[], home: string, table: Rate
   const per = new Map<string, { owe: number; owed: number }>();
   let oweTo = 0;
   let owedBy = 0;
+  let rough = false;
   for (const l of ledgers) {
-    const c = l.currency || home;
-    const acc = per.get(c) ?? { owe: 0, owed: 0 };
-    acc.owe += Math.max(0, l.balance);
-    acc.owed += Math.max(0, -l.balance);
-    per.set(c, acc);
-    if (l.balance >= 0.01) oweTo++;
-    if (l.balance <= -0.01) owedBy++;
+    // What has no rate stays in its own currency: shown apart (split), never added in as if 1:1.
+    for (const [c, b] of [[l.currency || home, l.balance] as const, ...l.apart.map((a) => [a.currency, a.balance] as const)]) {
+      const acc = per.get(c) ?? { owe: 0, owed: 0 };
+      acc.owe += Math.max(0, b);
+      acc.owed += Math.max(0, -b);
+      per.set(c, acc);
+    }
+    if (l.missing.length) rough = true;
+    const b = [l.balance, ...l.apart.map((a) => a.balance)];
+    if (b.some((x) => x >= 0.01)) oweTo++;
+    if (b.some((x) => x <= -0.01)) owedBy++;
   }
   const byCurrency = [...per.entries()].map(([currency, acc]) => ({ currency, ...acc })).filter((x) => x.owe >= 0.01 || x.owed >= 0.01);
   const cur = byCurrency.length === 1 ? byCurrency[0].currency : home;
@@ -389,8 +512,8 @@ export function stakingTotals(ledgers: BackerLedger[], home: string, table: Rate
     owed,
     oweTo,
     owedBy,
-    /** Totals converted from other currencies at today's rate. */
-    approx: convertible && byCurrency.some((x) => x.currency !== cur),
+    /** Totals converted from other currencies at today's rate, or with sessions counted 1:1 for want of one. */
+    approx: convertible && (rough || byCurrency.some((x) => x.currency !== cur)),
     /** Set when the currencies can't be added up: show these instead of one number. */
     split: convertible ? null : byCurrency,
   };

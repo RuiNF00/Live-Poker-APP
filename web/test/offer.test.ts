@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { agreementCost, eventCost, parseOffer, termsChanged, type Agreement } from '../src/lib/offer';
+import { agreementCost, eventCost, parseOffer, seenVersion, termsChanged, type Agreement } from '../src/lib/offer';
 import { offerCopy } from '../src/components/offer/copy';
 
 // The store is server-only; outside Next that import would throw.
@@ -58,6 +58,10 @@ describe('parseOffer (agreement)', () => {
     expect(parseOffer({ ...base, events: [{ ...base.events[0], b: 0 }] })).toBe(null);
     expect(parseOffer({ ...base, events: [{ ...base.events[0], b: Infinity }] })).toBe(null);
     expect(parseOffer({ ...base, events: [{ ...base.events[0], id: 'bad id!' }] })).toBe(null);
+    expect(parseOffer({ ...base, events: [{ ...base.events[0], id: 'x'.repeat(33) }] })).toBe(null);
+    // The player's own tournaments (uid('fe_'), QA P1) and schedule flights go through.
+    expect((parseOffer({ ...base, events: [{ ...base.events[0], id: 'fe_mvf1yoli79znl5' }, { ...base.events[1], id: '12-2A' }, { ...base.events[2], id: '85-1F Turbo' }] }) as Agreement).events.map((e) => e.id).sort()).toEqual(['12-2A', '85-1F Turbo', 'fe_mvf1yoli79znl5']);
+    expect(parseOffer({ ...base, events: [{ ...base.events[0], id: ' 12' }] })).toBe(null);
     expect(parseOffer({ ...base, events: [base.events[0], base.events[0]] })).toBe(null);
     const many = Array.from({ length: 41 }, (_, i) => ({ ...base.events[0], id: `e${i}` }));
     expect(parseOffer({ ...base, events: many })).toBe(null);
@@ -84,6 +88,15 @@ describe('cost', () => {
     expect(termsChanged(a, agreement({ backer: 'Bia' }))).toBe(true);
     expect(termsChanged(a, agreement({ markup: 1.2 }))).toBe(true);
     expect(termsChanged(a, agreement({ events: [{ ...base.events[0], p: 6 }, base.events[1], base.events[2]] }))).toBe(true);
+  });
+});
+
+describe('seenVersion', () => {
+  it('takes the updatedAt the server wrote, and nothing the database would refuse', () => {
+    for (const v of ['2026-10-19T06:00:00.123456+00:00', '2026-10-19T06:00:00.123Z', '2026-10-19T06:00:00Z', '2026-10-19T08:00:00+01:00'])
+      expect(seenVersion(v)).toBe(v);
+    for (const v of ['1', '2026-10', '2026-10-19T07:00:00+01', 'October 2026', '2026-10-19', '2026-13-45T00:00:00Z', ' 2026-10-19T06:00:00Z', 42, null, undefined])
+      expect(seenVersion(v)).toBeNull();
   });
 });
 
@@ -121,26 +134,52 @@ describe('LocalOffers', () => {
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
+  const seen = async (id: string) => (await store.get(id))!.updatedAt;
+  const tick = () => new Promise((r) => setTimeout(r, 2));
+
   it('starts unconfirmed; confirming is idempotent', async () => {
     const { id } = await store.create(agreement());
     expect((await store.get(id))?.confirmedAt).toBe(null);
-    const first = await store.confirm(id);
-    expect(first).toBeTruthy();
-    expect(await store.confirm(id)).toBe(first);
-    expect((await store.get(id))?.confirmedAt).toBe(first);
-    expect(await store.confirm('nope000000')).toBe(null);
+    const first = await store.confirm(id, await seen(id));
+    expect(first).toMatchObject({ confirmedAt: expect.any(String) });
+    expect(await store.confirm(id, await seen(id))).toEqual(first);
+    expect((await store.get(id))?.confirmedAt).toBe(first && first !== 'stale' ? first.confirmedAt : 'x');
+    expect(await store.confirm('nope000000', new Date().toISOString())).toBe(null);
   });
 
   it('new markup or events clear the confirmation; other edits keep it', async () => {
     const { id, editToken } = await store.create(agreement());
-    const first = await store.confirm(id);
+    const first = await store.confirm(id, await seen(id));
+    await tick();
     expect(await store.update(id, editToken, agreement({ title: 'Outro' }))).toBe(true);
-    expect((await store.get(id))?.confirmedAt).toBe(first);
+    expect((await store.get(id))?.confirmedAt).toBe(first && first !== 'stale' ? first.confirmedAt : 'x');
     expect(await store.update(id, editToken, agreement({ markup: 1.2 }))).toBe(true);
     expect((await store.get(id))?.confirmedAt).toBe(null);
-    await store.confirm(id);
+    await store.confirm(id, await seen(id));
     expect(await store.update(id, editToken, agreement({ markup: 1.2, events: [{ ...base.events[0], p: 6 }] }))).toBe(true);
     expect((await store.get(id))?.confirmedAt).toBe(null);
+  });
+
+  it('a page opened before the terms changed confirms nothing (Security P2, 19 Oct)', async () => {
+    const { id, editToken } = await store.create(agreement());
+    const shown = await seen(id);
+    await tick();
+    expect(await store.update(id, editToken, agreement({ markup: 1.3 }))).toBe(true);
+    expect(await store.confirm(id, shown)).toBe('stale');
+    expect(await store.confirm(id, null)).toBe('stale');
+    expect((await store.get(id))?.confirmedAt).toBe(null);
+    // After reloading, the new terms confirm.
+    expect(await store.confirm(id, await seen(id))).toMatchObject({ confirmedAt: expect.any(String) });
+  });
+
+  it('sharing the link again with the same terms, or a new title, keeps an open page valid (QA P2, 19 Oct)', async () => {
+    const { id, editToken } = await store.create(agreement());
+    const shown = await seen(id);
+    await tick();
+    expect(await store.update(id, editToken, agreement())).toBe(true);
+    expect(await store.update(id, editToken, agreement({ title: 'Outro' }))).toBe(true);
+    expect(await seen(id)).toBe(shown);
+    expect(await store.confirm(id, shown)).toMatchObject({ confirmedAt: expect.any(String) });
   });
 
   it('needs the token to change or delete', async () => {
