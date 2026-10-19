@@ -1,8 +1,8 @@
 // Numeric keypad for custom amounts. In-app (not the OS keyboard) so it never
 // covers the table and supports "k" for thousands and bb input.
 
-import React, { useState } from 'react';
-import { Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, Modal, Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { bbs, chips } from '@/poker/format';
@@ -60,6 +60,15 @@ export function AmountPad({
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', inBB ? ',' : 'k', '0', '⌫'];
   const tooLow = min !== undefined && value < min;
   const capped = max !== undefined ? Math.min(value, max) : value;
+  // What the screen shows, for VoiceOver and TalkBack: the amount in chips and in bb, and the minimum when under it.
+  const shown = plain ? chips(capped) : [inBB ? chips(capped) + ' ' + t('fichas') : chips(capped), bbs(capped, bb)].join(', ');
+  const readout = tooLow ? `${shown}. ${t('mínimo {amount}', { amount: chips(min!) })}` : shown;
+  // Android reads the live region on its own; iOS is told after each pause in typing.
+  useEffect(() => {
+    if (Platform.OS !== 'ios' || txt === '') return;
+    const id = setTimeout(() => AccessibilityInfo.announceForAccessibility(readout), 500);
+    return () => clearTimeout(id);
+  }, [txt, readout]);
   const sheetPad = useSheetPad(34);
   // Short phones (iPhone SE) keep Confirmar on screen with shorter keys.
   const win = useWindowDimensions();
@@ -85,7 +94,7 @@ export function AmountPad({
             />
           )}
         </Row>
-        <View style={{ backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'flex-end', gap: 2 }}>
+        <View accessible accessibilityLabel={readout} accessibilityLiveRegion="polite" style={{ backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'flex-end', gap: 2 }}>
           <Text style={{ color: txt === '' && initial !== undefined ? C.textDim : C.text, fontSize: 38, fontFamily: F.mono, fontVariant: ['tabular-nums'], letterSpacing: -1 }}>
             {txt || (initial !== undefined ? (inBB ? String(Math.round((initial / bb) * 10) / 10).replace('.', ',') : chips(initial)) : '0')}
             <Text style={{ color: C.muted, fontSize: 18 }}>{inBB ? ' bb' : ''}</Text>
@@ -163,6 +172,7 @@ export function AmountPad({
             title={t('Confirmar')}
             style={{ flex: 1 }}
             disabled={value <= 0 || tooLow}
+            hint={tooLow ? t('mínimo {amount}', { amount: chips(min!) }) : undefined}
             onPress={() => {
               onDone(capped);
               setTxt('');

@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -20,7 +20,6 @@ import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
 import { useSwapEnd } from '@/components/swaps/SwapEndRow';
-import { MindAfter, MindBefore } from '@/components/MindCheckIn';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
 import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
@@ -48,6 +47,11 @@ import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 import { reduceMotion, useSheetAnimation } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
+import { useScreenReader } from '@/lib/screen-reader';
+
+// Only when the check-in shows (it can be turned off): off the first frame. A chunk that fails to load leaves it out.
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore }), () => ({ default: (() => null) as never })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter }), () => ({ default: (() => null) as never })));
 
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
@@ -322,7 +326,7 @@ function ArrivalSheet({ s, onClose, onStart, onNever }: { s: Session | null; onC
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md, maxHeight: '92%' }}>
           <SheetHeader title={t('Antes de começar')} onClose={onClose} />
           <ScrollView contentContainerStyle={{ gap: S.md }} keyboardShouldPersistTaps="handled">
-            <MindBefore value={mind} onChange={setMind} />
+            <React.Suspense fallback={null}><MindBefore value={mind} onChange={setMind} /></React.Suspense>
           </ScrollView>
           <Row gap={S.sm}>
             <Button kind="secondary" size="md" title={t('Saltar')} haptic={false} style={{ flex: 1 }} onPress={() => s && onStart(s)} />
@@ -412,7 +416,10 @@ function Live({ s }: { s: Session }) {
 
   const bumpLevel = (dir: 1 | -1) => {
     tap();
-    save(levelAfter(s, dir));
+    const next = levelAfter(s, dir);
+    save(next);
+    // The new blinds are read out: the −/+ alone says nothing with a screen reader.
+    AccessibilityInfo.announceForAccessibility(`${next.level ? t('Nível {n}', { n: next.level }) + ', ' : ''}${chips(next.sb)}/${chips(next.bb)}`);
   };
   // Level length cycles Off → 15 → 20 → 30 → 40 → 60 → Off; the clock restarts on set (see withLevelClock).
   const cycleLevelLength = () => {
@@ -436,17 +443,23 @@ function Live({ s }: { s: Session }) {
   };
 
   // No "Are you sure?": it happens at once with "Anular" for a few seconds, which is quicker at the table and as safe.
-  const [undo, setUndo] = useState<{ title: string; prev: Partial<Session> } | null>(null);
+  const [kept, setUndo] = useState<{ title: string; prev: Partial<Session>; stack: number; log: number } | null>(null);
+  // A stack saved since (a hand with «Guardar já», the stack pad) is newer than what «Anular» would put back:
+  // the offer goes, even when a screen reader kept it on screen long after.
+  const undo = kept && kept.stack === s.stack && kept.log === s.stackLog.length ? kept : null;
+  const reader = useScreenReader();
   useEffect(() => {
-    if (!undo) return;
+    if (!undo || reader) return;
     const timer = setTimeout(() => setUndo(null), 6000);
     return () => clearTimeout(timer);
-  }, [undo]);
+  }, [undo, reader]);
   const undoable = (title: string, next: Partial<Session>) => {
     tap('success');
     const prev = Object.fromEntries(Object.keys(next).map((k) => [k, s[k as keyof Session]])) as Partial<Session>;
-    setUndo({ title, prev });
+    setUndo({ title, prev, stack: next.stack ?? s.stack, log: (next.stackLog ?? s.stackLog).length });
     save(next);
+    // Six seconds is too short to find «Anular» with VoiceOver or TalkBack: it is said, and stays until closed (below).
+    AccessibilityInfo.announceForAccessibility(t('{what}. Podes anular.', { what: title }));
   };
   // The new chips go on the stack too (cash: the buy-in; tournament: a fresh starting stack), so nobody has to type it.
   const rebuy = () => {
@@ -493,7 +506,11 @@ function Live({ s }: { s: Session }) {
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
           {/* The card opens the stack pad; the share icon sits on top of it, not inside, so the two taps aren't a button in a button. */}
           <Card style={{ flex: 1 }}>
-            <Pressable onPress={() => setPad('stack')} accessibilityRole="button" accessibilityLabel={t('Atualizar stack')} style={({ pressed }) => ({ flex: 1, gap: 4, opacity: pressed ? 0.7 : 1 })}>
+            <Pressable onPress={() => setPad('stack')} accessibilityRole="button"
+              // What the card shows is read too, not only what a tap does.
+              accessibilityLabel={['Stack ' + chips(s.stack), bbs(s.stack, s.bb), delta ? (delta > 0 ? '+' : '') + chips(delta) : null].filter(Boolean).join(', ')}
+              accessibilityHint={t('Toca para atualizar')}
+              style={({ pressed }) => ({ flex: 1, gap: 4, opacity: pressed ? 0.7 : 1 })}>
               <Row>
                 <T v="label" style={{ flex: 1 }}>
                   Stack
@@ -516,7 +533,7 @@ function Live({ s }: { s: Session }) {
               // The chip-count post of a festival day: card + text, chips only.
               <Pressable
                 onPress={() => router.push({ pathname: '/session-card/[id]', params: { id: s.id, stack: '1' } })}
-                hitSlop={10}
+                hitSlop={15}
                 accessibilityRole="button"
                 accessibilityLabel={t('Partilhar stack')}
                 style={{ position: 'absolute', top: S.lg, right: S.lg + 13 + 10 }}>
@@ -534,7 +551,7 @@ function Live({ s }: { s: Session }) {
               <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
-            <Pressable onPress={cycleLevelLength} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }} accessibilityRole="button" accessibilityHint={t('Duração do nível')}>
+            <Pressable onPress={cycleLevelLength} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={s.levelMinutes ? `${t('Duração do nível')}: ${s.levelMinutes} min` : `${t('Duração do nível')}: ${t('Desligado')}`}>
               <LevelAlarm s={s} onDue={levelUp} />
             </Pressable>
           </Card>
@@ -679,7 +696,7 @@ function Live({ s }: { s: Session }) {
                       <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={finish.tips} onChange={(tips) => setFinish((f) => ({ ...f, tips }))} />
                       <NumField label={t('Mãos jogadas')} value={finish.handsDealt} onChange={(handsDealt) => setFinish((f) => ({ ...f, handsDealt }))} />
                     </Row>
-                    {settings.mindAsk === false ? null : <MindAfter value={s.mind} onChange={(mind) => save({ mind })} />}
+                    {settings.mindAsk === false ? null : <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={(mind) => save({ mind })} /></React.Suspense>}
                     <StakeFields s={s} onChange={save} />
                   </View>
                 ) : null}
@@ -731,6 +748,8 @@ function Live({ s }: { s: Session }) {
               save(undo.prev);
               setUndo(null);
             }}
+            // With a screen reader it stays until closed.
+            onDismiss={reader ? () => setUndo(null) : undefined}
           />
         </View>
       ) : null}

@@ -28,8 +28,11 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
       <Text color={dim} style={{ fontSize: 12 }}>{sub}</Text>
     </Column>
   );
+  // The notification is decorated, so it sits on the system's own background, which is light in
+  // the light theme: the layout carries its own dark panel so the "Noite" text always reads.
+  const panel = [fillMaxWidth(), background('#0C1311'), cornerRadius(12)];
   const summary = (
-    <Column modifiers={[fillMaxWidth()]}>
+    <Column modifiers={[...panel, paddingAll(10)]}>
       <Text color={p.paused ? warn : accent} style={{ fontSize: 13, fontWeight: '700' }}>{p.status + ' · ' + p.played + ' · ' + p.since}</Text>
       <Text color={text} style={{ fontSize: 15, fontWeight: '700', fontFamily: 'monospace' }}>{p.stack + ' (' + p.stackBB + ') · ' + p.blinds}</Text>
       {p.breakAt ? <Text color={warn} style={{ fontSize: 12, fontWeight: '600' }}>{p.breakAt}</Text> : null}
@@ -38,7 +41,7 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
   return {
     collapsed: summary,
     expanded: (
-      <Column modifiers={[fillMaxWidth(), paddingAll(4)]}>
+      <Column modifiers={[...panel, paddingAll(12)]}>
         <Row modifiers={[fillMaxWidth()]}>
           {stat(p.labels.time, p.played, p.since, p.paused ? warn : text)}
           {stat(p.labels.stack, p.stack, p.stackBB, text)}

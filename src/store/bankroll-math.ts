@@ -21,7 +21,10 @@ export function autoBankrollId(currency: string): string {
  * none), and that there is at least one. Returns the same array when nothing
  * was missing, so callers can skip a save.
  */
-export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defaultCurrency: string, now = Date.now()): Bankroll[] {
+export function ensureBankrolls(list: Bankroll[], sessions: Session[], defaultCurrency: string, now = Date.now()): Bankroll[] {
+  // Older builds could make two bankrolls with one id (see freeAutoId): keep the first.
+  const ids = new Set(list.map((b) => b.id));
+  const bankrolls = ids.size === list.length ? list : list.filter((b) => ids.delete(b.id));
   const have = new Set(bankrolls.map((b) => b.currency));
   const need = byCurrency(sessions)
     .map((g) => g.currency)
@@ -31,8 +34,9 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
   if (!bankrolls.length && !need.length) need.push(defaultCurrency);
   if (!need.length) return bankrolls;
   const first = !bankrolls.length;
+  const taken = new Set(bankrolls.map((b) => b.id));
   const made = need.map((currency, i) => ({
-    id: autoBankrollId(currency),
+    id: freeAutoId(currency, taken),
     // The first one is just "Main"; any extra one says its currency.
     name: first && i === 0 ? t('Principal') : `Bankroll ${currency}`,
     currency,
@@ -40,6 +44,181 @@ export function ensureBankrolls(bankrolls: Bankroll[], sessions: Session[], defa
     updatedAt: 0,
   }));
   return [...bankrolls, ...made];
+}
+
+/**
+ * The stable id for a currency, unless a bankroll in another currency already has it: before
+ * the onboarding's currency pick made a new bankroll, it moved the first one to the new
+ * currency and kept its id ("br_auto_€" in dollars). Then "_2", "_3"…, the same on every phone.
+ */
+function freeAutoId(currency: string, taken: Set<string>): string {
+  const base = autoBankrollId(currency);
+  let id = base;
+  for (let n = 2; taken.has(id); n++) id = `${base}_${n}`;
+  taken.add(id);
+  return id;
+}
+
+/** The id a bankroll takes on a phone that has its id in another currency: the same on every phone. */
+export function sepId(id: string, currency: string): string {
+  return `${id}~${autoBankrollId(currency).slice(8)}`;
+}
+
+/**
+ * A backup (or the other phone) with a bankroll under the id of one here in another currency
+ * (an older onboarding moved the first bankroll to a new currency and kept its id). One must
+ * never write over the other: this phone's stays and the incoming one takes sepId(id, its
+ * currency). One of this phone's coming back under that name gets its own id again, so two
+ * phones copying to each other end with the same two bankrolls, never a new one per copy.
+ * Its sessions (in its currency) and transfers follow it.
+ */
+export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: Session[]; transfers?: Transfer[]; deleted?: Record<string, number> }>(local: Bankroll[], incoming: B): B {
+  const mine = new Map(local.map((b) => [b.id, b.currency]));
+  const to = (id: string, currency: string) => {
+    const here = mine.get(id);
+    if (here !== undefined && here !== currency) return sepId(id, currency);
+    const cut = id.lastIndexOf('~');
+    if (cut > 0 && id === sepId(id.slice(0, cut), currency) && mine.get(id.slice(0, cut)) === currency) return id.slice(0, cut);
+    return id;
+  };
+  const list = incoming.bankrolls ?? [];
+  const cur = new Map(list.map((b) => [b.id, b.currency]));
+  // A session follows the bankroll it points at, in that bankroll's currency: one in another currency
+  // stays a mismatch and counts where it did on the other phone (its currency's own bankroll).
+  const sid = (x: Session) => (x.bankrollId ? to(x.bankrollId, cur.get(x.bankrollId) ?? x.currency) : undefined);
+  const deleted = currencyMarks(local, list, incoming.deleted);
+  if (deleted === incoming.deleted && !list.some((b) => to(b.id, b.currency) !== b.id) && !incoming.sessions.some((x) => sid(x) !== x.bankrollId)) return incoming;
+  return {
+    ...incoming,
+    ...(deleted !== incoming.deleted ? { deleted } : null),
+    bankrolls: list.map((b) => (to(b.id, b.currency) !== b.id ? { ...b, id: to(b.id, b.currency) } : b)),
+    sessions: incoming.sessions.map((x) => (sid(x) !== x.bankrollId ? { ...x, bankrollId: sid(x) } : x)),
+    transfers: incoming.transfers?.map((x) => (cur.has(x.bankrollId) && to(x.bankrollId, cur.get(x.bankrollId)!) !== x.bankrollId ? { ...x, bankrollId: to(x.bankrollId, cur.get(x.bankrollId)!) } : x)),
+  };
+}
+
+/**
+ * Bankroll delete marks from older builds have no currency (deleted-math.ts). One for an id held here
+ * in another currency is for the other phone's bankroll: its currency comes from the other phone's
+ * list, or from the separated copy of it kept here, and the mark gets it, so it can't drop this
+ * phone's. When none of those say but the other phone keeps this one's as a separated copy, the mark
+ * was for a bankroll this phone doesn't have and is left out. Otherwise it is this phone's own (the same
+ * bankroll on both).
+ */
+function currencyMarks(local: Bankroll[], incoming: Bankroll[], d: Record<string, number> | undefined): Record<string, number> | undefined {
+  if (!d) return d;
+  const mine = new Map(local.map((b) => [b.id, b.currency]));
+  const theirs = new Map(incoming.map((b) => [b.id, b.currency]));
+  let out: Record<string, number> | undefined;
+  for (const [k, at] of Object.entries(d)) {
+    if (!k.startsWith('bankrolls:') || k.includes('@')) continue;
+    const id = k.slice(10);
+    const here = mine.get(id);
+    if (here === undefined) continue;
+    const there = theirs.get(id) ?? local.find((b) => b.currency !== here && b.id === sepId(id, b.currency))?.currency;
+    // The other phone keeps this phone's bankroll as a separated copy: its own id was in another currency.
+    const notOurs = there === undefined && theirs.get(sepId(id, here)) === here;
+    if (!notOurs && (there === undefined || there === here)) continue;
+    out ??= { ...d };
+    delete out[k];
+    if (notOurs) continue;
+    const key = `bankrolls:${id}@${there}`;
+    if (!(out[key] >= at)) out[key] = at;
+  }
+  return out ?? d;
+}
+
+/**
+ * Bankrolls the other phone deleted, as they leave this one (`before` → `after`): what still points
+ * at one here (a deposit made on this phone before the copy) moves to the first other bankroll in
+ * its currency (one of the other phone's, `theirs`, first), as deleteBankroll did there, with a fresh edit time so the other phone takes the
+ * move. With none left in that currency the bankroll stays, edited now, so the delete can't take it:
+ * a deposit is never lost nor counted in another currency. `to` says where things go.
+ */
+export function rehomeDeleted(before: Bankroll[], after: Bankroll[], sessions: Pick<Session, 'bankrollId' | 'currency'>[], transfers: Pick<Transfer, 'bankrollId'>[], now: number, theirs: Bankroll[] = []): { bankrolls: Bankroll[]; to: Map<string, string> } {
+  const to = new Map<string, string>();
+  const kept = new Set(after.map((b) => b.id));
+  const gone = before.filter((b) => !kept.has(b.id));
+  if (!gone.length) return { bankrolls: after, to };
+  const used = new Set<string>(transfers.map((x) => x.bankrollId));
+  for (const x of sessions) if (x.bankrollId) used.add(x.bankrollId);
+  const back: Bankroll[] = [];
+  const sent = new Set(theirs.map((b) => b.id));
+  for (const g of gone) {
+    if (!used.has(g.id)) continue;
+    // Where the other phone's delete sent its own: the first of its bankrolls left in that currency.
+    const home = sortBankrolls(after.filter((b) => sent.has(b.id))).find((b) => b.currency === g.currency) ?? sortBankrolls(after).find((b) => b.currency === g.currency);
+    if (home) to.set(g.id, home.id);
+    else back.push({ ...g, updatedAt: now });
+  }
+  return { bankrolls: back.length ? [...after, ...back] : after, to };
+}
+
+/** Sessions or transfers moved by rehomeDeleted, with a fresh edit time. The same array when nothing moves. */
+export function rehome<T extends { bankrollId?: string; updatedAt?: number }>(list: T[], to: Map<string, string>, now: number): T[] {
+  if (!to.size || !list.some((x) => x.bankrollId && to.has(x.bankrollId))) return list;
+  return list.map((x) => (x.bankrollId && to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)!, updatedAt: now } : x));
+}
+
+/**
+ * A separated copy next to the bankroll it was made from, now in the same currency (this phone's
+ * own one in the other currency went, unused): the same bankroll twice. The copy folds into it,
+ * with the copy's name and rules when it was edited later; `to` says where its sessions and
+ * transfers go. No delete mark: the other phone folds the same way.
+ */
+export function foldSeparated(bankrolls: Bankroll[]): { bankrolls: Bankroll[]; to: Map<string, string> } {
+  const byId = new Map(bankrolls.map((b) => [b.id, b]));
+  const to = new Map<string, string>();
+  for (const b of bankrolls) {
+    const cut = b.id.lastIndexOf('~');
+    const base = cut > 0 ? byId.get(b.id.slice(0, cut)) : undefined;
+    if (base && base.currency === b.currency && b.id === sepId(base.id, b.currency)) to.set(b.id, base.id);
+  }
+  if (!to.size) return { bankrolls, to };
+  const out = bankrolls
+    .filter((b) => !to.has(b.id))
+    .map((b) => {
+      const copy = bankrolls.find((x) => to.get(x.id) === b.id);
+      return copy && (copy.updatedAt ?? 0) > (b.updatedAt ?? 0) ? { ...copy, id: b.id, currency: b.currency, createdAt: b.createdAt } : b;
+    });
+  return { bankrolls: out, to };
+}
+
+/** Sessions or transfers moved with foldSeparated. The same array when nothing moves. */
+export function refold<T extends { bankrollId?: string }>(list: T[], to: Map<string, string>): T[] {
+  if (!to.size || !list.some((x) => x.bankrollId && to.has(x.bankrollId))) return list;
+  return list.map((x) => (x.bankrollId && to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x));
+}
+
+/**
+ * Empty bankrolls that earlier copies between two phones multiplied (each copy gave the other
+ * phone's a new id): of those with the same currency and name, made automatically and with no
+ * session, transfer, rules or shot, one stays (a used one, else the currency's own id, else the
+ * oldest) and the rest go. One with sessions, a name of its own or the last of its currency never goes.
+ * Returns the ids to drop.
+ */
+export function emptyDuplicates(bankrolls: Bankroll[], sessions: Session[], transfers: Transfer[], keep?: string): string[] {
+  const used = new Set<string>(transfers.map((x) => x.bankrollId));
+  for (const s of sessions) {
+    const b = bankrollOf(s, bankrolls);
+    if (b) used.add(b.id);
+  }
+  // The empty ones go next to any bankroll with their currency and name, the used one included.
+  // The one picked in Settings (`keep`) never goes.
+  const empty = (b: Bankroll) => b.id !== keep && b.id.startsWith('br_auto_') && !used.has(b.id) && !b.rules && !b.shot;
+  const groups = new Map<string, Bankroll[]>();
+  for (const b of bankrolls) {
+    const k = `${b.currency}\n${b.name}`;
+    groups.set(k, [...(groups.get(k) ?? []), b]);
+  }
+  const rank = (b: Bankroll) => (!empty(b) ? 0 : b.id === autoBankrollId(b.currency) ? 1 : b.id.includes('~') ? 2 : 3);
+  const drop: string[] = [];
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    const [stay] = [...g].sort((a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt || (a.id < b.id ? -1 : 1));
+    drop.push(...g.filter((b) => b !== stay && empty(b)).map((b) => b.id));
+  }
+  return drop;
 }
 
 /**
@@ -56,7 +235,11 @@ export function dropUnusedAuto(merged: Bankroll[], incoming: Bankroll[], local: 
   return out.length ? out : merged;
 }
 
-/** This phone's own "Principal", made on its own and never renamed or used. */
+/**
+ * This phone's own "Principal", made on its own and never renamed or used. The onboarding's
+ * currency pick moves it to that currency (a save, so it has an edit time): still the same
+ * untouched "Principal", known by its id no longer matching its currency.
+ */
 function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }) {
   const used = new Set<string>();
   for (const x of local.sessions) {
@@ -64,7 +247,8 @@ function unusedAuto(local: { bankrolls: Bankroll[]; sessions: Session[]; transfe
     if (b) used.add(b.id);
   }
   for (const x of local.transfers) used.add(x.bankrollId);
-  return (b: Bankroll) => b.id.startsWith('br_auto_') && !((b.updatedAt ?? 0) > 0) && !used.has(b.id);
+  const untouched = (b: Bankroll) => !((b.updatedAt ?? 0) > 0) || (b.id !== autoBankrollId(b.currency) && b.name === t('Principal') && !b.rules && !b.shot);
+  return (b: Bankroll) => b.id.startsWith('br_auto_') && untouched(b) && !used.has(b.id);
 }
 
 /**
@@ -91,11 +275,12 @@ export function sortBankrolls(list: Bankroll[]): Bankroll[] {
   return [...list].sort((a, b) => auto(a) - auto(b) || a.createdAt - b.createdAt);
 }
 
-/** The bankroll a session counts towards. Unknown or missing id: the first bankroll in its currency. */
+/** The bankroll a session counts towards. Unknown or missing id: its currency's own, else the first in its currency. */
 export function bankrollOf(s: Pick<Session, 'bankrollId' | 'currency'>, bankrolls: Bankroll[]): Bankroll | null {
   const own = s.bankrollId ? bankrolls.find((b) => b.id === s.bankrollId) : undefined;
   if (own && own.currency === s.currency) return own;
-  return sortBankrolls(bankrolls).find((b) => b.currency === s.currency) ?? null;
+  // The currency's own bankroll first: a restore can bring older ones that must not take its sessions.
+  return bankrolls.find((b) => b.id === autoBankrollId(s.currency) && b.currency === s.currency) ?? sortBankrolls(bankrolls).find((b) => b.currency === s.currency) ?? null;
 }
 
 export function formatOf(s: Pick<Session, 'format'>): GameFormat {
@@ -305,11 +490,6 @@ export function activeFilters(f: SessionFilter): number {
 }
 
 // ---- Bankroll changes ------------------------------------------------------
-
-/** Sessions of a bankroll being deleted move to another one in the same currency. */
-export function moveSessions(sessions: Session[], fromId: string, to: Bankroll, bankrolls: Bankroll[]): Session[] {
-  return sessions.filter((s) => bankrollOf(s, bankrolls)?.id === fromId).map((s) => ({ ...s, bankrollId: to.id }));
-}
 
 /** Newest first: sessions and transfers of the scope as one history. */
 export type LedgerEntry = { t: number; session: Session } | { t: number; transfer: Transfer };

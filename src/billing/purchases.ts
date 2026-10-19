@@ -8,7 +8,7 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
 import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
-import { buyError, playSubscriptionId, type BuyResult } from './buy-result';
+import { buyError, playSubscriptionId, restoreFound, type BuyResult } from './buy-result';
 import { offerMonths } from './disclosure';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
 import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
@@ -175,15 +175,32 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 }
 
 /** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
-export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null; trial?: boolean } | null> {
   if (!LIVE) return null;
   try {
-    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    const info = await (await rc()).getCustomerInfo();
+    const e = info.entitlements.active[ENTITLEMENT];
     if (!e || e.store === 'PROMOTIONAL') return null;
-    const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
-    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null } : null;
+    const planOf = (product: string) => (Object.keys(PRODUCTS) as PlanId[]).find((id) => product.startsWith(PRODUCTS[id]));
+    const plan = planOf(e.productIdentifier);
+    if (plan) return { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null };
+    // «Pagar uma vez» bought while a subscription still runs: the entitlement shows the lifetime
+    // (it lasts longest), but the subscription keeps renewing until it is cancelled in the store.
+    const sub = Object.values(info.subscriptionsByProductIdentifier ?? {}).find((x) => x.isActive && planOf(x.productIdentifier));
+    return sub ? { plan: planOf(sub.productIdentifier)!, willRenew: sub.willRenew, product: sub.productIdentifier, ends: sub.expiresDate ? Date.parse(sub.expiresDate) : null, trial: sub.periodType === 'TRIAL' } : null;
   } catch {
     return null;
+  }
+}
+
+/** Pro paid once («Pagar uma vez»): nothing renews, so there is no subscription to manage. */
+export async function hasLifetime(): Promise<boolean> {
+  if (!LIVE) return false;
+  try {
+    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    return !!e && (e.productIdentifier === LIFETIME.product || !e.expirationDateMillis);
+  } catch {
+    return false;
   }
 }
 
@@ -356,9 +373,9 @@ export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResul
   return attempt(() => P.purchasePackage(plan.pkg!, null, change));
 }
 
-/** 'none': the store answered and this account has no subscription; 'error': it didn't answer. */
+/** 'none': the store answered and this account has no Pro; 'lifetime': it has the one-time Pro; 'error': it didn't answer. */
 /** 'slow': the store is still answering (an Apple ID sign-in can take a while); Pro turns on by itself if it finds the purchase. 'busy': one is already running. */
-export type RestoreResult = 'ok' | 'none' | 'error' | 'slow' | 'busy';
+export type RestoreResult = 'ok' | 'lifetime' | 'none' | 'error' | 'slow' | 'busy';
 
 // Held until the store answers, also after we stop waiting: a second restore never runs alongside the first
 // (a call that never answers stops holding it after a few minutes, as with purchases).
@@ -374,7 +391,7 @@ export async function restore(): Promise<RestoreResult> {
     () => void (restoring === mine && (restoring = 0)),
   );
   try {
-    return hasPro(await withTimeout(run, RESTORE_TIMEOUT_MS)) ? 'ok' : 'none';
+    return restoreFound(await withTimeout(run, RESTORE_TIMEOUT_MS), ENTITLEMENT, LIFETIME.product);
   } catch (e) {
     return (e as Error)?.message === 'timeout' ? 'slow' : 'error';
   }

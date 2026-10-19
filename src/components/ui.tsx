@@ -464,6 +464,8 @@ export function ListItem({
             subtitle
           )
         ) : null}
+        {/* At 160%+ a pill beside the title left it 45 px ("Jo/aq/ui/m"): it goes under the text. */}
+        {right && bigText ? <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>{right}</View> : null}
       </View>
       {value ? (
         // Capped, so a long amount at large text can't squeeze the title to nothing.
@@ -471,7 +473,7 @@ export function ListItem({
           {value}
         </T>
       ) : null}
-      {right}
+      {bigText ? null : right}
       {chevron ?? !!onPress ? <Ionicons name="chevron-forward" size={17} color={C.muted} /> : null}
     </>
   );
@@ -623,6 +625,7 @@ export function Button({
   haptic,
   sub,
   lines = 1,
+  hint,
 }: {
   title: string;
   kind?: BtnKind;
@@ -640,6 +643,8 @@ export function Button({
   sub?: string;
   /** Lines the title may take in a narrow slot. Web can't shrink text, and 200% may not fit in one line even shrunk. */
   lines?: 1 | 2;
+  /** Read after the title: why it is off, say. */
+  hint?: string;
 }) {
   const sz: BtnSize = size ?? (small ? 'sm' : 'lg');
   const h = sz === 'lg' ? 54 : sz === 'md' ? 44 : 36;
@@ -652,6 +657,7 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityHint={hint}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       hitSlop={sz === 'sm' ? 4 : 0}
@@ -924,6 +930,7 @@ export function Field({ label, oneLineLabel, style, inputStyle: ist, hint, ...re
         maxFontSizeMultiplier={CONTROL_SCALE}
         {...rest}
         accessibilityLabel={rest.accessibilityLabel ?? label ?? rest.placeholder}
+        accessibilityHint={rest.accessibilityHint ?? hint}
         onFocus={(e) => {
           setFocus(true);
           rest.onFocus?.(e);

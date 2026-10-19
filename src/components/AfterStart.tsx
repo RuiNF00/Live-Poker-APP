@@ -9,7 +9,6 @@ import { useLocales } from 'expo-localization';
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { AutoCloudBackup } from '@/components/CloudBackup';
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { BackerPageSync } from '@/components/staking/BackerPage';
 import { SettleReminder } from '@/components/staking/SettleReminder';
@@ -22,6 +21,9 @@ import { SessionLockScreen } from '@/lib/lock-screen';
 import { MonthRecapSync } from '@/lib/month-recap';
 import { NotifyPolicySync } from '@/lib/notify-gate';
 import { ReviewSync } from '@/lib/review';
+
+// Every use of CloudBackup.tsx is lazy, so it stays one chunk off the first frame.
+const AutoCloudBackup = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.AutoCloudBackup })));
 
 /**
  * Android changes the app's language (Settings › Apps › Sweatbook › Language) without restarting
@@ -40,7 +42,9 @@ function LanguageWatch() {
 export default function AfterStart() {
   return (
     <>
-      <AutoCloudBackup />
+      <React.Suspense fallback={null}>
+        <AutoCloudBackup />
+      </React.Suspense>
       <BackerLiveSync />
       <BackerPageSync />
       <SessionLockScreen />

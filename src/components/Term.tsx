@@ -37,7 +37,7 @@ export function TermSheet({ k, onClose }: { k: TermKey | null; onClose: () => vo
             <>
               <SheetHeader title={k} onClose={onClose} />
               <View style={{ gap: S.xs }}>
-                <T v="label">{GLOSSARY[k].name}</T>
+                <T v="label">{t(GLOSSARY[k].name)}</T>
                 <T v="body">{t(GLOSSARY[k].line)}</T>
               </View>
             </>

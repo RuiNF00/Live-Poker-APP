@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Session } from '../../store/types';
-import { breakEndMessage, breakLabel, breakOf, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
+import { breakEndMessage, breakLabel, breakOf, caughtUp, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
 
 const MIN = 60_000;
 
@@ -131,6 +131,18 @@ test('levelsDue: the level moves up by itself when its clock runs out, on the fl
   // No clock, a cash game, or a finished session: nothing.
   assert.equal(levelsDue(mk(), 99 * MIN), null);
   assert.equal(levelsDue(mk({ kind: 'cash', levelMinutes: 30, levelStartedAt: 10 * MIN }), 99 * MIN), null);
+});
+
+test('caughtUp: back after two levels, the lock screen and the reminder are on the current level', () => {
+  const s = mk({ levelMinutes: 30, levelStartedAt: 10 * MIN });
+  const now = caughtUp(s, 75 * MIN);
+  assert.equal(now.level, (s.level ?? 1) + 2);
+  assert.equal(nextLevelAt(now, 75 * MIN), 100 * MIN);
+  assert.equal(liveProps(now, 75 * MIN).nextLevelAt, 100 * MIN);
+  // Nothing due: the same session, untouched.
+  assert.equal(caughtUp(s, 20 * MIN), s);
+  const cash = mk({ kind: 'cash', levelMinutes: 30, levelStartedAt: 10 * MIN });
+  assert.equal(caughtUp(cash, 99 * MIN), cash);
 });
 
 test('levelsDue: a 10-hour day of 15-minute levels away from the screen still lands on the right level', () => {

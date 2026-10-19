@@ -13,14 +13,15 @@ import { withLang } from '@/lib/link-lang';
 import { createKey, forgetCreateKey } from '@/lib/create-key';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive } from '@/lib/live-link';
+import { isRateLimited } from '@/lib/net';
 import { shareRef } from '@/lib/referrals';
 import { useOnline } from '@/lib/sync';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
 
-function note(title: string, body: string) {
-  if (Platform.OS === 'web') console.warn(title, body);
+function note(title: string, body?: string) {
+  if (Platform.OS === 'web') console.warn(title, body ?? '');
   else Alert.alert(title, body);
 }
 
@@ -59,8 +60,9 @@ export function BackerLiveCard({ s }: { s: Session }) {
       saveSession({ ...latest.current, live });
       await forgetCreateKey(scope);
       await shareLink(s, live.id);
-    } catch {
-      note(t('Sem ligação'), t('Não deu para criar o link. Tenta outra vez quando tiveres rede.'));
+    } catch (e) {
+      if (isRateLimited(e)) note(t('Demasiados pedidos. Tenta daqui a pouco.'));
+      else note(t('Sem ligação'), t('Não deu para criar o link. Tenta outra vez quando tiveres rede.'));
     } finally {
       setBusy(false);
     }
@@ -74,7 +76,8 @@ export function BackerLiveCard({ s }: { s: Session }) {
         await deleteLive(s.live);
         saveSession({ ...latest.current, live: undefined });
       } catch (e) {
-        if (/^live \d+$/.test((e as Error)?.message ?? '')) note(t('Sem ligação'), t('O link continua ativo. Tenta outra vez quando tiveres rede.'));
+        if (isRateLimited(e)) note(t('Demasiados pedidos. Tenta daqui a pouco.'));
+        else if (/^live \d+$/.test((e as Error)?.message ?? '')) note(t('Sem ligação'), t('O link continua ativo. Tenta outra vez quando tiveres rede.'));
         else {
           // No signal: off on the phone now, and the page goes as soon as there's network.
           queueLiveDelete(s.live);

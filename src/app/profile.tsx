@@ -17,6 +17,7 @@ import { EMPTY_DRAFT, handleLooksValid, MAX_ITEMS, normalizeHandle, profileBody,
 import { checkHandle, createProfile, deleteProfile, loadProfileLink, profileUrl, updateProfile, type HandleCheck, type SaveResult } from '@/lib/public-profile';
 import { shareRef } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { useStore } from '@/store/store';
 import { C, F, S } from '@/theme';
 import { ordinal } from '@/share/festival-card';
@@ -55,6 +56,7 @@ function confirm(title: string, body: string, yes: string): Promise<boolean> {
 }
 
 export default function ProfileScreen() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   const { hands, sessions, settings } = useStore();
   const [link, setLink] = useState<ProfileLink | null | undefined>(undefined);
   const [draft, setDraft] = useState<ProfileDraft>(EMPTY_DRAFT);
@@ -111,6 +113,7 @@ export default function ProfileScreen() {
 
   const save = async () => {
     tap('medium');
+    if (!link && !(await acceptUgcTerms())) return;
     setBusy(true);
     const body = profileBody(draft, { hands, sessions }, (await shareRef()) || null);
     const r = link ? await updateProfile(link, draft, body, h) : await createProfile(h, draft, body);
@@ -162,6 +165,7 @@ export default function ProfileScreen() {
 
   return (
     <>
+      {termsSheet}
       <Stack.Screen options={{ title: t('Perfil público') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {link ? (

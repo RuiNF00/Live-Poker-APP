@@ -2,10 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { cancelReasons, logged, markOfferSeen, offersSeen, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
+import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerTaken, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
 import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
@@ -32,6 +32,8 @@ export default function Cancel() {
   const [product, setProduct] = useState<string | null>(null);
   const [storeOffer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
+  // Paid once: the subscription still renews until it is cancelled in the store, which stays one tap away.
+  const [paidOnce, setPaidOnce] = useState(false);
   const annual = plans.find((p) => p.id === 'annual');
   const monthly = plans.find((p) => p.id === 'monthly');
   // The discount shows only with the store's own numbers for every part of its line: price, % off, months and the price after.
@@ -59,14 +61,13 @@ export default function Cancel() {
       if (!s.includes('lifetime')) lifetimeOffer().then(setLifetime);
     });
   }, []);
+  // The −40% is on the monthly plan: someone on the yearly one isn't offered it.
   useEffect(() => {
-    if (seen && !seen.includes('discount')) retentionOffer(plans).then(setOffer);
-  }, [seen, plans]);
-  const discountShown = !!offer;
-  useEffect(() => {
-    if (reason === 'bankroll' && discountShown) void markOfferSeen('discount');
-    if (reason === 'noSubscription' && lifetime) void markOfferSeen('lifetime');
-  }, [reason, discountShown, lifetime]);
+    if (seen && !seen.includes('discount') && plan === 'monthly') retentionOffer(plans).then(setOffer);
+  }, [seen, plans, plan]);
+  // An offer is used up only once it is taken or turned down with a tap («Continuar a cancelar»):
+  // going back, or a purchase that fails, leaves it there for the next visit (App Store 2.1).
+  const shownOffer = offerOnScreen(reason, { discount: !!offer, lifetime: !!lifetime });
 
   // Lifetime is judged on long-term revenue: who saw it, from which plan, and
   // whether the subscription was still set to renew (i.e. they were about to cancel).
@@ -82,10 +83,12 @@ export default function Cancel() {
   };
   const toStore = () => {
     track('cancel_flow', { step: 'store', reason: reason ?? '' });
+    if (shownOffer) void markOfferSeen(shownOffer);
     void manageSubscription();
   };
   const result = (res: string, what: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: what, result: res });
+    if (offerTaken(res) && what === 'discount') void markOfferSeen('discount');
     // The store's own sheet already confirmed it: straight back, no extra alert.
     if (res === 'ok') router.back();
     else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
@@ -94,16 +97,24 @@ export default function Cancel() {
   // Pro for good, but the subscription is still running: send them to the store to stop it.
   const lifetimeResult = (res: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: 'lifetime', result: res });
+    if (offerTaken(res)) void markOfferSeen('lifetime');
     if (res === 'ok') {
       track('lifetime_purchased', lifetimeProps());
+      setPaidOnce(true);
+      AccessibilityInfo.announceForAccessibility(t('A tua subscrição continua a renovar até a cancelares na {store}.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
       // The subscription keeps renewing until the player cancels it: straight to the store's page (payments audit §7).
       toStore();
     } else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
     else buyNotice(res as BuyResult, Platform.OS === 'android' ? 'Google Play' : 'App Store');
   };
+  // The store can take a while to answer: said on the link, as in Settings and the paywall, so a second tap isn't lost.
+  const [restoring, setRestoring] = useState(false);
   const onRestore = async () => {
     track('cancel_flow', { step: 'restore' });
-    restoreNotice(await restore(), Platform.OS === 'android' ? 'Google Play' : 'App Store');
+    setRestoring(true);
+    const res = await restore();
+    setRestoring(false);
+    restoreNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store');
   };
   const send = () => {
     track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: scrubNote(note) });
@@ -204,7 +215,11 @@ export default function Cancel() {
               ) : null}
 
               {reason === 'noSubscription' ? (
-                lifetime ? (
+                paidOnce ? (
+                  <OfferCard icon="infinite" title={t('Pro para sempre')} body={t('A tua subscrição continua a renovar até a cancelares na {store}.', { store })}>
+                    <Button kind="secondary" title={t('Gerir subscrição')} onPress={() => void manageSubscription()} />
+                  </OfferCard>
+                ) : lifetime ? (
                   <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
                     <Button kind="secondary" title={t('Pagar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
                   </OfferCard>
@@ -246,7 +261,7 @@ export default function Cancel() {
           {/* Charged twice, or Pro missing after a reinstall: the fixes are here too, not only in Settings. */}
           {/* The offers above are purchases too: Terms (EULA) and Privacy sit next to them (App Store 3.1.2). */}
           <LegalLinks>
-            <LegalLink role="button" title={t('Restaurar compras')} onPress={onRestore} />
+            <LegalLink role="button" title={restoring ? t('A restaurar…') : t('Restaurar compras')} disabled={restoring} color={restoring ? C.accent : undefined} onPress={onRestore} />
             <LegalLink title={t('Ajuda e contacto')} onPress={() => void WebBrowser.openBrowserAsync(`${BRAND.webUrl}/support`)} />
           </LegalLinks>
         </View>

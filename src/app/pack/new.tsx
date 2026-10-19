@@ -16,6 +16,7 @@ import { withLang } from '@/lib/link-lang';
 import { createPack } from '@/lib/pack-api';
 import { MAX_PACK_HANDS, packHands } from '@/lib/pack-core';
 import { shareRef } from '@/lib/referrals';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
@@ -25,6 +26,7 @@ function note(title: string, body?: string) {
 }
 
 export default function NewPack() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   const { ids, folder, session } = useLocalSearchParams<{ ids?: string; folder?: string; session?: string }>();
   const { hands, sessions, settings, saveHand } = useStore();
   const pro = usePro();
@@ -49,6 +51,7 @@ export default function NewPack() {
 
   const create = async () => {
     tap('medium');
+    if (!(await acceptUgcTerms())) return;
     setBusy(true);
     const name = title.trim().slice(0, 80);
     const r = await createPack({ hands: send, title: name, hideAmounts: !chips, share: { names: settings.shareNames, notes: settings.shareNotes }, saveHand });
@@ -80,6 +83,7 @@ export default function NewPack() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+      {termsSheet}
       <Card style={{ gap: S.md, paddingVertical: S.lg }}>
         <Row gap={S.md} style={{ alignItems: 'flex-start' }}>
           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>

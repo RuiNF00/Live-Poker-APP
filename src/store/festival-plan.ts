@@ -24,6 +24,13 @@ export interface FestivalPlan {
   name?: string;
   /** Tournaments the player added: ones the schedule doesn't have, or a festival with no schedule yet. */
   events?: FestivalEvent[];
+  /**
+   * When each event was last picked (+ms) or unpicked (−ms), so between two phones the later tap wins
+   * (mergePlan). Absent in plans from before: those join by union.
+   */
+  picks?: Record<string, number>;
+  /** Added tournaments the player deleted: another phone's copy doesn't bring them back. */
+  removed?: string[];
 }
 
 export const EMPTY_PLAN: FestivalPlan = { picked: [], lateReg: {}, sessions: {} };
@@ -339,11 +346,13 @@ export function cleanPlans(saved: Record<string, unknown>, dropped = { any: fals
     const before = dropped.any;
     dropped.any = true;
     if (!isRecord(p)) continue;
-    const { picked = [], lateReg = {}, sessions = {}, name, events } = p;
+    const { picked = [], lateReg = {}, sessions = {}, name, events, picks, removed } = p;
     if (!Array.isArray(picked) || !picked.every((x) => typeof x === 'string')) continue;
     if (!isNumbers(lateReg) || !isStrings(sessions)) continue;
     if (name !== undefined && typeof name !== 'string') continue;
     if (events !== undefined && !Array.isArray(events)) continue;
+    if (picks !== undefined && !isNumbers(picks)) continue;
+    if (removed !== undefined && !(Array.isArray(removed) && removed.every((x) => typeof x === 'string'))) continue;
     const okEvents = events?.filter(isOwnEvent);
     dropped.any = before || okEvents?.length !== events?.length;
     out[id] = { ...(p as unknown as FestivalPlan), picked, lateReg: lateReg as FestivalPlan['lateReg'], sessions: sessions as FestivalPlan['sessions'], ...(okEvents ? { events: okEvents as unknown as FestivalEvent[] } : {}) };
@@ -400,16 +409,50 @@ export function currentPlans(): Plans {
  */
 export function mergePlan(local: FestivalPlan | undefined, incoming: FestivalPlan): FestivalPlan {
   if (!local) return incoming;
+  const removed = [...new Set([...(local.removed ?? []), ...(incoming.removed ?? [])])];
+  const gone = new Set(removed);
   const have = new Set((local.events ?? []).map((e) => e.id));
-  const events = [...(local.events ?? []), ...(incoming.events ?? []).filter((e) => !have.has(e.id))];
+  const events = [...(local.events ?? []), ...(incoming.events ?? []).filter((e) => !have.has(e.id))].filter((e) => !gone.has(e.id));
+  // Each event as the phone that tapped it last left it; a pick with no time counts as the oldest tap,
+  // and with no times on either side (or the same time) a pick on either phone stays, as before.
+  const picks: Record<string, number> = { ...incoming.picks };
+  for (const [id, at] of Object.entries(local.picks ?? {})) if (!(Math.abs(picks[id] ?? 0) > Math.abs(at))) picks[id] = at;
+  const mine = new Set(local.picked);
+  const theirs = new Set(incoming.picked);
+  const picked = [...new Set([...local.picked, ...incoming.picked, ...Object.keys(picks)])].filter((id) => {
+    if (gone.has(id)) return false;
+    const l = Math.abs(local.picks?.[id] ?? 0);
+    const i = Math.abs(incoming.picks?.[id] ?? 0);
+    return l > i ? mine.has(id) : i > l ? theirs.has(id) : mine.has(id) || theirs.has(id);
+  });
   return {
     ...incoming,
     ...local,
-    picked: [...new Set([...local.picked, ...incoming.picked])],
+    picked,
     lateReg: { ...incoming.lateReg, ...local.lateReg },
     sessions: { ...incoming.sessions, ...local.sessions },
     name: local.name?.trim() ? local.name : incoming.name,
-    ...(events.length ? { events } : {}),
+    ...(events.length || local.events || incoming.events ? { events } : {}),
+    ...(Object.keys(picks).length ? { picks } : {}),
+    ...(removed.length ? { removed } : {}),
+  };
+}
+
+/**
+ * The plan after a change, with when each pick changed (`picks`) and which added tournaments went
+ * (`removed`), for mergePlan. Every change goes through updatePlan, so no screen has to remember.
+ */
+export function stampPlan(before: FestivalPlan, after: FestivalPlan, now = Date.now()): FestivalPlan {
+  const was = new Set(before.picked);
+  const is = new Set(after.picked);
+  const changed = [...after.picked.filter((id) => !was.has(id)).map((id) => [id, now] as const), ...before.picked.filter((id) => !is.has(id)).map((id) => [id, -now] as const)];
+  const left = new Set((after.events ?? []).map((e) => e.id));
+  const dropped = (before.events ?? []).map((e) => e.id).filter((id) => !left.has(id));
+  if (!changed.length && !dropped.length) return after;
+  return {
+    ...after,
+    ...(changed.length ? { picks: { ...after.picks, ...Object.fromEntries(changed) } } : {}),
+    ...(dropped.length ? { removed: [...new Set([...(after.removed ?? []), ...dropped])] } : {}),
   };
 }
 
@@ -432,7 +475,8 @@ export function getPlan(festivalId: string): FestivalPlan {
 }
 
 export function updatePlan(festivalId: string, fn: (p: FestivalPlan) => FestivalPlan) {
-  plans = { ...plans, [festivalId]: fn(getPlan(festivalId)) };
+  const before = getPlan(festivalId);
+  plans = { ...plans, [festivalId]: stampPlan(before, fn(before)) };
   emit();
   AsyncStorage.setItem(KEY, JSON.stringify(plans)).catch(() => {});
 }

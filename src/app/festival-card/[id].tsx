@@ -16,6 +16,7 @@ import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
@@ -29,6 +30,7 @@ import { BRAND, C, R, S } from '@/theme';
 const LOOK_NAME = { noite: t('Noite'), brasa: t('Brasa') };
 
 export default function FestivalCardScreen() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { trips, sessions, hands, settings, saveHand } = useStore();
   const trip = trips.find((x) => x.id === id);
@@ -61,7 +63,7 @@ export default function FestivalCardScreen() {
       const ref = await shareRef().catch(() => '');
       let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`, variant);
       // The best hand's replay is the link (sharing is unlimited on every plan).
-      if (best) {
+      if (best && (best.hand.shareId || (await acceptUgcTerms()))) {
         try {
           const isNew = !best.hand.shareId;
           const shareId = await ensureShareId(best.hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
@@ -109,6 +111,7 @@ export default function FestivalCardScreen() {
 
   return (
     <>
+      {termsSheet}
       <Stack.Screen options={{ title: trip.festivalId ? t('Partilhar festival') : t('Partilhar viagem') }} />
       <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingVertical: S.gutter, gap: S.lg, paddingBottom: 24 }}>

@@ -13,6 +13,11 @@ import { kindInfo } from './notify-policy';
 
 const ID = 'cloud-expiry';
 
+/** «Lembretes» switched off: the planned notice goes now, without waiting for the copy or the settings. */
+export async function cancelCloudExpiry(): Promise<void> {
+  await notifications()?.cancelScheduledNotificationAsync(ID).catch(() => {});
+}
+
 export async function syncCloudExpiry(c: CloudState | null): Promise<void> {
   const n = notifications();
   if (!n) return;

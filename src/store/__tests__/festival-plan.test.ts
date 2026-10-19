@@ -7,7 +7,7 @@ import { eventDay, FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, venueTime,
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
 import { nextLevelAt } from '../../lib/lock-screen/live-state';
 import { bagDay, resumeDay } from '../multi-day';
-import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, stampPlan, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -241,6 +241,52 @@ test('a restored plan joins this phone’s: nothing here goes away, this phone w
   assert.deepEqual(m.events?.map((e) => e.id), ['o1', 'o2']);
   assert.equal(mergePlan({ ...EMPTY_PLAN, name: ' ' }, incoming).name, 'Outro');
   assert.equal(mergePlan(undefined, incoming), incoming);
+});
+
+test('two phones: the later tap on each event wins, a pick or unpick alike', () => {
+  // Both picked 1-A and 2-A; this phone unpicked 1-A at 200, the other unpicked 2-A at 300 and picked 3-A at 100.
+  const local = { ...EMPTY_PLAN, picked: ['2-A'], picks: { '1-A': -200, '2-A': 50 } };
+  const incoming = { ...EMPTY_PLAN, picked: ['1-A', '3-A'], picks: { '1-A': 50, '2-A': -300, '3-A': 100 } };
+  const m = mergePlan(local, incoming);
+  assert.deepEqual(m.picked.sort(), ['3-A']);
+  assert.deepEqual(m.picks, { '1-A': -200, '2-A': -300, '3-A': 100 });
+  // Picked again after the other phone's unpick: back in.
+  assert.deepEqual(mergePlan({ ...local, picked: ['1-A', '2-A'], picks: { '1-A': 400, '2-A': 50 } }, incoming).picked.sort(), ['1-A', '3-A']);
+  // An old phone with no times: its picks are the oldest taps, the unpick stays.
+  assert.deepEqual(mergePlan({ ...EMPTY_PLAN, picked: ['1-A', '4-A'] }, local).picked.sort(), ['2-A', '4-A']);
+  assert.deepEqual(mergePlan(local, { ...EMPTY_PLAN, picked: ['1-A', '4-A'] }).picked.sort(), ['2-A', '4-A']);
+  // No times on either side: union, as before.
+  assert.deepEqual(mergePlan({ ...EMPTY_PLAN, picked: ['1-A'] }, { ...EMPTY_PLAN, picked: ['2-A'] }).picked, ['1-A', '2-A']);
+  assert.equal(mergePlan({ ...EMPTY_PLAN, picked: ['1-A'] }, { ...EMPTY_PLAN, picked: ['2-A'] }).picks, undefined);
+});
+
+test('two phones: an added tournament deleted on one doesn’t come back from the other', () => {
+  const ev = (id: string) => ownEvent(id, { name: id, start: '2026-11-02T18:00', game: 'NLH', buyIn: 100 }, 1);
+  const before = { ...EMPTY_PLAN, picked: ['o1', 'o2'], events: [ev('o1'), ev('o2')] };
+  const local = stampPlan(before, removeOwnEvent(before, 'o1'), 500);
+  assert.deepEqual(local.removed, ['o1']);
+  assert.equal(local.picks?.o1, -500);
+  const m = mergePlan(before, local);
+  assert.deepEqual(m.events?.map((e) => e.id), ['o2']);
+  assert.deepEqual(m.picked, ['o2']);
+  assert.deepEqual(mergePlan(local, before).events?.map((e) => e.id), ['o2']);
+  // The last one gone: the list is empty, not this phone's old copy.
+  const none = stampPlan(local, removeOwnEvent(local, 'o2'), 600);
+  assert.deepEqual(mergePlan(before, none).events, []);
+});
+
+test('every plan change is stamped: picks and unpicks with their time, nothing when picks stay', () => {
+  const p = { ...EMPTY_PLAN, picked: ['1-A'] };
+  assert.deepEqual(stampPlan(p, togglePicked(p, '2-A'), 10).picks, { '2-A': 10 });
+  assert.deepEqual(stampPlan(p, togglePicked(p, '1-A'), 10).picks, { '1-A': -10 });
+  const same = { ...p, lateReg: { '1-A': 60 } };
+  assert.equal(stampPlan(p, same, 10), same);
+});
+
+test('a plan file keeps the pick times and deleted tournaments, sane ones only', () => {
+  const plan = { ...EMPTY_PLAN, picked: ['1-A'], picks: { '1-A': 5, '2-A': -6 }, removed: ['o1'] };
+  assert.deepEqual(cleanPlans({ lis: plan }).lis, plan);
+  assert.deepEqual(cleanPlans({ lis: { ...plan, picks: { '1-A': 'x' } } }), {});
 });
 
 test('sharing the plan: by day in start order, days/times/names only, buy-ins only when asked', () => {

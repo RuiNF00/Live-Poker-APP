@@ -9,7 +9,7 @@ import { ScrollView, View } from 'react-native';
 
 import { Sheet } from '@/components/BankrollSheets';
 import { Insights } from '@/components/Insights';
-import { MindAfter, MindBefore, mindLine } from '@/components/MindCheckIn';
+import { mindLine } from '@/lib/mind-line';
 import { Card, ListGroup, ListItem, Row, Section, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { money, plus } from '@/poker/format';
@@ -17,6 +17,10 @@ import { profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { MindCheck, Session } from '@/store/types';
 import { C, S } from '@/theme';
+
+// Only when the check-in shows (it can be turned off): off the first frame.
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore }), () => ({ default: (() => null) as never })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter }), () => ({ default: (() => null) as never })));
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const one = (n: number | null) => (n === null ? '—' : n.toLocaleString(locale, { maximumFractionDigits: 1 }));
@@ -95,8 +99,8 @@ function Edit({ s, onChange, onSave }: { s: Session; onChange: (m: MindCheck | u
   };
   return (
     <View style={{ gap: S.md }}>
-      <MindBefore value={s.mind} onChange={change} />
-      <MindAfter value={s.mind} onChange={change} />
+      <React.Suspense fallback={null}><MindBefore value={s.mind} onChange={change} /></React.Suspense>
+      <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={change} /></React.Suspense>
     </View>
   );
 }
