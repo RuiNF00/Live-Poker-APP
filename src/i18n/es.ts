@@ -3450,6 +3450,11 @@ const es: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Pagaste una vez: no hay suscripción que cancelar ni renovaciones.',
   'Toca para atualizar': 'Toca para actualizar',
   '{what}. Podes anular.': '{what}. Puedes deshacerlo.',
+  "A tua confirmação fica guardada e é enviada quando houver sinal.": "Tu confirmación queda guardada y se envía cuando haya señal.",
+  "Sem rede: a tua escolha fica guardada e é enviada quando houver sinal.": "Sin conexión: tu elección queda guardada y se envía cuando haya señal.",
+  "Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.": "Sin conexión: el swap se crea cuando haya señal y el link abre a partir de ahí.",
+  "O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.": "El swap «{title}» ya estaba confirmado. Abre el link otra vez para verlo.",
+  "O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.": "Tu lugar en «{title}» ya estaba elegido. Abre el link otra vez para elegir otro.",
 };
 
 export default es;

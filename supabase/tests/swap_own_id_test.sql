@@ -1,5 +1,5 @@
--- A swap made without signal keeps the id the phone picked, so the link shared at once works
--- when the create lands. Run as service_role.
+-- A swap made without signal keeps the id the phone worked out from its token, so the link
+-- shared at once works when the create lands. Run as service_role.
 \set ON_ERROR_STOP on
 set role service_role;
 
@@ -7,24 +7,28 @@ set role service_role;
 \set k2 'e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
 \set k3 'f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6'
 \set k4 '0707070707070707070707070707070707070707070707070707070707070707'
-select id = 'Ph0neId001' as own_id_kept from create_swap('{"v":1,"title":"Main"}'::jsonb, :'k1', 'Ph0neId001');
-select id = 'Ph0neId001' as own_id_same_on_retry from create_swap('{"v":1,"title":"Main"}'::jsonb, :'k1', 'Ph0neId001');
-select count(*) = 1 as own_id_one_row from swaps where id = 'Ph0neId001';
-select swap_side('Ph0neId001', :'k1') = 'a' as own_id_creator_side;
-select id <> 'Ph0neId001' as no_id_still_random from create_swap('{"v":1}'::jsonb, :'k2');
+select swap_own_id(:'k1') as sid \gset
+select swap_own_id(:'k3') as gid \gset
+select :'sid' ~ '^[a-f0-9]{16}$' as own_id_shape;
+select id = :'sid' as own_id_kept from create_swap('{"v":1,"title":"Main"}'::jsonb, :'k1', :'sid');
+select id = :'sid' as own_id_same_on_retry from create_swap('{"v":1,"title":"Main"}'::jsonb, :'k1', :'sid');
+select count(*) = 1 as own_id_one_row from swaps where id = :'sid';
+select swap_side(:'sid', :'k1') = 'a' as own_id_creator_side;
+select id <> :'sid' as no_id_still_random from create_swap('{"v":1}'::jsonb, :'k2');
 
-select id = 'Gr0upId001' as group_own_id_kept from create_swap_group('{"v":1,"title":"Bahamas","pct":2}'::jsonb, array['Rui','Ana','João'], :'k3', :'k4', 'Gr0upId001');
-select id = 'Gr0upId001' as group_own_id_same_on_retry from create_swap_group('{"v":1,"title":"Bahamas","pct":2}'::jsonb, array['Rui','Ana','João'], :'k3', :'k4', 'Gr0upId001');
-select swap_group_seat('Gr0upId001', :'k3') = 0 as group_own_id_creator_seat;
+select id = :'gid' as group_own_id_kept from create_swap_group('{"v":1,"title":"Bahamas","pct":2}'::jsonb, array['Rui','Ana','João'], :'k3', :'k4', :'gid');
+select id = :'gid' as group_own_id_same_on_retry from create_swap_group('{"v":1,"title":"Bahamas","pct":2}'::jsonb, array['Rui','Ana','João'], :'k3', :'k4', :'gid');
+select swap_group_seat(:'gid', :'k3') = 0 as group_own_id_creator_seat;
 reset role;
 
 \set ON_ERROR_STOP off
 set role service_role;
--- Each prints an ERROR: an id another swap has (id_taken), a bad id, an id without a token.
-select create_swap('{"v":1}'::jsonb, 'abababababababababababababababababababababababababababababababab', 'Ph0neId001');
-select create_swap('{"v":1}'::jsonb, 'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd', 'short');
-select create_swap('{"v":1}'::jsonb, null, 'Ph0neId009');
-select create_swap_group('{"v":1,"pct":2}'::jsonb, array['a','b','c'], 'abababababababababababababababababababababababababababababababab', 'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd', 'Gr0upId001');
+-- Each prints an ERROR: another token's id (someone who saw the link early), a made-up id, an id
+-- without a token.
+select create_swap('{"v":1}'::jsonb, 'abababababababababababababababababababababababababababababababab', :'sid');
+select create_swap('{"v":1}'::jsonb, 'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd', 'Ph0neId001');
+select create_swap('{"v":1}'::jsonb, null, :'sid');
+select create_swap_group('{"v":1,"pct":2}'::jsonb, array['a','b','c'], 'abababababababababababababababababababababababababababababababab', 'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd', :'gid');
 select create_swap_group('{"v":1,"pct":2}'::jsonb, array['a','b','c'], 'abababababababababababababababababababababababababababababababab', 'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd', 'bad-id!!!!');
 reset role;
 \set ON_ERROR_STOP on

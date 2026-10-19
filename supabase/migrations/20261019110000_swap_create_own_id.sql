@@ -1,8 +1,14 @@
--- A swap made without signal can be shared at once: the app picks the id too (10 letters and
--- digits, like short_id()), so the link exists on the phone before the create reaches us. The
--- same token again still returns the swap it made; an id another swap already has is refused
--- ('id_taken') and the app sends the create again with a new one. Ids stay random: the app
--- draws them from 62 characters, as short_id() does.
+-- A swap made without signal can be shared at once: the app sends the id too, so the link exists
+-- on the phone before the create reaches us. The id comes from the app's own secret token
+-- (swap_own_id), which never leaves the phone before the create: someone who sees the link early
+-- can't take the id for another swap. The same token again still returns the swap it made.
+
+create or replace function public.swap_own_id(p_token text) returns text
+language sql immutable as $$
+  select left(encode(sha256(convert_to('swap-id:' || coalesce(p_token, ''), 'utf8')), 'hex'), 16);
+$$;
+revoke execute on function public.swap_own_id(text) from public, anon, authenticated;
+grant execute on function public.swap_own_id(text) to service_role;
 
 drop function if exists public.create_swap(jsonb, text);
 
@@ -13,7 +19,7 @@ declare
   v_token text := coalesce(p_token, public.swap_new_token());
 begin
   if p_token is not null and p_token !~ '^[a-f0-9]{64}$' then raise exception 'token'; end if;
-  if p_id is not null and (p_token is null or p_id !~ '^[A-Za-z0-9]{10}$') then raise exception 'id'; end if;
+  if p_id is not null and (p_token is null or p_id <> public.swap_own_id(p_token)) then raise exception 'id'; end if;
   -- Same token again: the swap made the first time.
   select s.id into v_id from public.swaps s where s.token_a_hash = public.swap_hash(v_token);
   if v_id is not null then
@@ -56,7 +62,7 @@ declare
 begin
   if (p_token is null) <> (p_invite is null) then raise exception 'token'; end if;
   if p_token is not null and (p_token !~ '^[a-f0-9]{64}$' or p_invite !~ '^[a-f0-9]{64}$') then raise exception 'token'; end if;
-  if p_id is not null and (p_token is null or p_id !~ '^[A-Za-z0-9]{10}$') then raise exception 'id'; end if;
+  if p_id is not null and (p_token is null or p_id <> public.swap_own_id(p_token)) then raise exception 'id'; end if;
   if n < 3 or n > 8 then raise exception 'group size'; end if;
   -- Same token again: the group made the first time (its invite has to match too).
   select g.id into v_id

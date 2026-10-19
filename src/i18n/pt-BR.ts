@@ -1779,6 +1779,11 @@ const ptBR: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Você pagou uma vez: não há assinatura para cancelar nem renovações.',
   'Toca para atualizar': 'Toque para atualizar',
   '{what}. Podes anular.': '{what}. Você pode desfazer.',
+  'A tua confirmação fica guardada e é enviada quando houver sinal.': 'Sua confirmação fica salva e é enviada quando tiver sinal.',
+  'Sem rede: a tua escolha fica guardada e é enviada quando houver sinal.': 'Sem conexão: sua escolha fica salva e é enviada quando tiver sinal.',
+  'Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.': 'Sem conexão: o swap é criado quando tiver sinal e o link abre a partir daí.',
+  'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'O swap “{title}” já tinha sido confirmado. Abra o link de novo para ver.',
+  'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Seu lugar em “{title}” já tinha sido escolhido. Abra o link de novo para escolher outro.',
 };
 
 export default ptBR;

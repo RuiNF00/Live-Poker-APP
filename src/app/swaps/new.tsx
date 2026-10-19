@@ -3,7 +3,7 @@
 // player confirms; nothing counts until they do.
 
 import { router, Stack, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -16,9 +16,8 @@ import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, Row, Screen, Section, Segmented, T, ToggleItem, ListGroup, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
-import { createSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
+import { createSwap, newCreateKey, SwapError, swapIdFor, swapUrl } from '@/lib/swap-api';
 import { forgetSwapCreate, queueSwapCreate } from '@/lib/swap-create-queue';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
@@ -27,6 +26,8 @@ import { saveSwap, useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
 const PCTS = [1, 2, 3, 5, 7.5, 10];
+// When the terms are made (only ever from the create button, never during a render).
+const madeAt = () => Date.now();
 
 function NewSwap() {
   const { settings, activeSession, setSettings } = useStore();
@@ -50,9 +51,7 @@ function NewSwap() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   // Created, choosing where to send the link: the swap screen opens when the sheet closes.
-  const [sent, setSent] = useState<{ id: string; link: SwapLink } | null>(null);
-  // No signal: everything typed stays, and the swap is created by itself when the signal is back.
-  const [waiting, setWaiting] = useState(false);
+  const [sent, setSent] = useState<{ id: string; queued: boolean; link: SwapLink } | null>(null);
   // The draft's own key: a retry (by hand or when the signal is back) can't make a second swap.
   const key = useRef(newCreateKey());
 
@@ -66,7 +65,6 @@ function NewSwap() {
         setTheirPct(5);
         setNote('');
         setBusy(false);
-        setWaiting(false);
         key.current = newCreateKey();
       },
       [],
@@ -120,36 +118,27 @@ function NewSwap() {
       a: { name: me.trim(), pct },
       b: { name: them.trim(), pct: pB },
       note: note.trim(),
-      createdAt: Date.now(),
+      createdAt: madeAt(),
     };
     const rc = await appUserId();
+    // The link's id comes from the draft's key: the same link with or without signal.
+    const id = await swapIdFor(key.current);
     try {
-      const { swap, token } = await createSwap(terms, rc, key.current);
+      const { swap, token } = await createSwap(terms, rc, key.current, id);
       saveSwap({ ...fromRemote(swap, token, 'a'), ownerRc: rc });
       forgetSwapCreate(key.current);
       if (!settings.nickname) setSettings({ nickname: me.trim() });
-      const ref = await shareRef().catch(() => '');
-      const url = swapUrl(swap.id, ref);
       // The server's terms: the copy sent while offline may have gone first.
-      const msg = t('Swap de {pct} no {title}. Confirma aqui para ficar por escrito: {url}', { pct: pctLabel(swap.terms.a.pct), title: swap.terms.title, url });
-      track('link_shared', { channel: 'swap' });
-      const open = () => router.replace({ pathname: '/swap/[id]', params: { id: swap.id } });
-      if (Platform.OS === 'web') {
-        open();
-        await Clipboard.setStringAsync(url);
-        notice(t('Link copiado'), url);
-      } else if (sendsToWhatsapp()) {
-        open();
-        await sendWhatsapp(msg);
-      } else setSent({ id: swap.id, link: { url, message: msg, to: t('Envia o link só a {name}: quem o abrir primeiro pode confirmar.', { name: terms.b.name }) } });
+      await send(swap.id, swap.terms, false);
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
-      setBusy(false);
       if (code === 'offline') {
-        // Kept on the phone: it is created by itself when the signal is back, even after Voltar.
-        queueSwapCreate({ kind: 'pair', key: key.current, terms, rc });
+        // No signal: the link goes out now and the swap is created by itself when the signal is
+        // back, even after Voltar or a restart. Until then the link says to try again in a little while.
+        const link = await linkFor(id, terms);
+        queueSwapCreate({ kind: 'pair', key: key.current, terms, rc, id }, { url: link.url, message: link.message });
         if (!settings.nickname) setSettings({ nickname: me.trim() });
-        setWaiting(true);
+        await send(id, terms, true, link);
         return;
       }
       notice(
@@ -160,17 +149,27 @@ function NewSwap() {
     }
   }
 
-  const createRef = useRef(create);
-  useEffect(() => {
-    createRef.current = create;
-  });
-  useEffect(() => {
-    if (!waiting) return;
-    return onReconnect(() => {
-      setWaiting(false);
-      void createRef.current();
-    });
-  }, [waiting]);
+  async function linkFor(id: string, terms: SwapTerms): Promise<SwapLink> {
+    const ref = await shareRef().catch(() => '');
+    const url = swapUrl(id, ref);
+    const message = t('Swap de {pct} no {title}. Confirma aqui para ficar por escrito: {url}', { pct: pctLabel(terms.a.pct), title: terms.title, url });
+    return { url, message, to: t('Envia o link só a {name}: quem o abrir primeiro pode confirmar.', { name: terms.b.name }) };
+  }
+
+  // Made: the swap screen once the link is sent. Waiting for signal: the swaps list, where it shows as waiting.
+  async function send(id: string, terms: SwapTerms, queued: boolean, made?: SwapLink) {
+    const link = made ?? (await linkFor(id, terms));
+    track('link_shared', { channel: 'swap' });
+    const open = () => (queued ? router.replace('/swaps') : router.replace({ pathname: '/swap/[id]', params: { id } }));
+    if (Platform.OS === 'web') {
+      open();
+      await Clipboard.setStringAsync(link.url);
+      notice(t('Link copiado'), link.url);
+    } else if (sendsToWhatsapp()) {
+      open();
+      await sendWhatsapp(link.message);
+    } else setSent({ id, queued, link: queued ? { ...link, to: `${t('Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.')} ${link.to ?? ''}` } : link });
+  }
 
   return (
     <>
@@ -272,8 +271,8 @@ function NewSwap() {
         </Card>
 
         <View style={{ gap: S.sm }}>
-          <Button lines={2} title={busy ? t('A criar…') : waiting ? t('Sem rede: é criado quando houver sinal') : sendsToWhatsapp() ? t('Criar e enviar por WhatsApp') : t('Criar e enviar link')}
-            icon={sendsToWhatsapp() && !busy && !waiting ? 'logo-whatsapp' : 'paper-plane-outline'} disabled={!ok} onPress={create} />
+          <Button lines={2} title={busy ? t('A criar…') : sendsToWhatsapp() ? t('Criar e enviar por WhatsApp') : t('Criar e enviar link')}
+            icon={sendsToWhatsapp() && !busy ? 'logo-whatsapp' : 'paper-plane-outline'} disabled={!ok} onPress={create} />
           <Row gap={6} style={{ justifyContent: 'center', paddingHorizontal: S.lg }}>
             <T v="tiny" style={{ textAlign: 'center' }} color={C.muted}>
               {them.trim() ? t('{name} confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.', { name }) : t('O outro jogador confirma no link, com ou sem a app. Depois disso os termos e a hora ficam fixados.')}{' '}
@@ -285,7 +284,7 @@ function NewSwap() {
       <SwapSend
         link={sent?.link ?? null}
         onDone={() => {
-          if (sent) router.replace({ pathname: '/swap/[id]', params: { id: sent.id } });
+          if (sent) router.replace(sent.queued ? '/swaps' : { pathname: '/swap/[id]', params: { id: sent.id } });
           setSent(null);
         }}
       />

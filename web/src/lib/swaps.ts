@@ -18,10 +18,14 @@ export const MAX_SWAP_ENTRIES = 300;
 
 type NewEntry = Omit<SwapEntry, 'id' | 'side' | 'at'>;
 
-/** An id the app picked for a create (10 letters and digits, as short_id()), only with its own token. */
-export const ownId = (x: unknown, token: string | undefined): string | undefined => (token && typeof x === 'string' && /^[A-Za-z0-9]{10}$/.test(x) ? x : undefined);
+/** The id a create made without signal gets: from the app's own token, which only the phone knows
+ * until the create lands, so someone who sees the link early can't take it (swap_own_id, 20261019110000). */
+export const idForToken = (token: string) => createHash('sha256').update('swap-id:' + token).digest('hex').slice(0, 16);
 
-/** The id the app picked is another swap's: 409, and the app sends the create again with a new one. */
+/** The app's id for a create, only when it is the one its token gives. */
+export const ownId = (x: unknown, token: string | undefined): string | undefined => (token && typeof x === 'string' && x === idForToken(token) ? x : undefined);
+
+/** The id is another swap's (only if two tokens ever gave the same id): 409, and the app sends the create again without one. */
 export class IdTaken extends Error {
   constructor() {
     super('id_taken');

@@ -3456,6 +3456,11 @@ const en: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'You paid once: there is no subscription to cancel and nothing renews.',
   'Toca para atualizar': 'Tap to update',
   '{what}. Podes anular.': '{what}. You can undo it.',
+  'A tua confirmação fica guardada e é enviada quando houver sinal.': 'Your confirmation is saved and goes out when you\'re back online.',
+  'Sem rede: a tua escolha fica guardada e é enviada quando houver sinal.': 'No signal: your pick is saved and goes out when you\'re back online.',
+  'Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.': 'No signal: the swap is created when you\'re back online, and the link opens from then on.',
+  'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'The swap “{title}” had already been confirmed. Open the link again to see it.',
+  'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Your seat in “{title}” had already been taken. Open the link again to pick another.',
 };
 
 export default en;
