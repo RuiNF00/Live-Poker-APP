@@ -77,7 +77,7 @@ export function landingCopy(locale: Locale) {
     proTag: `${PRICES.trialDays} dias grátis`,
     proFeatures: [
       'Mãos ilimitadas',
-      'Staking, acerto de swaps e relatório de impostos',
+      'Staking, contas dos swaps e relatório de impostos',
       'Stories do Instagram com a tua voz, sem marca de água',
       'Contar a mão por voz',
       'Bankroll completo: 30 dias, 90 dias, ano, ROI e ITM',
@@ -191,7 +191,7 @@ export function landingCopy(locale: Locale) {
       proTag: `${PRICES.trialDays} days free`,
       proFeatures: [
         'Unlimited hands',
-        'Staking, swap settlement and tax report',
+        'Staking, swap balances and tax report',
         'Instagram stories with your voice, no watermark',
         'Tell the hand by voice',
         'Full bankroll: 30 days, 90 days, year, ROI and ITM',
@@ -304,7 +304,7 @@ export function landingCopy(locale: Locale) {
       proTag: `${PRICES.trialDays} dias grátis`,
       proFeatures: [
         'Mãos ilimitadas',
-        'Staking, acerto de swaps e relatório de impostos',
+        'Staking, contas dos swaps e relatório de impostos',
         'Stories do Instagram com a sua voz, sem marca d’água',
         'Contar a mão por voz',
         'Bankroll completo: 30 dias, 90 dias, ano, ROI e ITM',
@@ -417,7 +417,7 @@ export function landingCopy(locale: Locale) {
       proTag: `${PRICES.trialDays} días gratis`,
       proFeatures: [
         'Manos ilimitadas',
-        'Staking, liquidación de swaps y informe de impuestos',
+        'Staking, cuentas de los swaps e informe de impuestos',
         'Stories de Instagram con tu voz, sin marca de agua',
         'Contar la mano por voz',
         'Bankroll completo: 30 días, 90 días, año, ROI e ITM',
