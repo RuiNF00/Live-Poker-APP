@@ -166,12 +166,20 @@ export function usualTerms(backerId: string, packages: StakePackage[], sessions:
   return best && { pct: best.pct, markup: best.markup };
 }
 
-/** The backers' stakes for a session started from this event. Pieces not marked paid count against the backer. */
+/**
+ * The piece's payment covers this event: marked paid, and the event wasn't already «Não joguei» then.
+ * One skipped before paying and played after all was never paid for (QA P1, 19 Oct).
+ */
+export function covers(line: PackageLine, eventId: string): boolean {
+  return !!line.paid && !(Array.isArray(line.paidSkipped) && line.paidSkipped.includes(eventId));
+}
+
+/** The backers' stakes for a session started from this event. Pieces not paid for it count against the backer. */
 export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: string): Stake[] {
   const out: Stake[] = [];
   for (const o of offers) {
     if (o.festivalId !== festivalId || !o.events.includes(eventId)) continue;
-    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, unpaid: l.paid ? undefined : true });
+    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, unpaid: covers(l, eventId) ? undefined : true });
   }
   return out;
 }
@@ -224,21 +232,18 @@ function eventPiece(o: ActionOffer, e: FestivalEvent, pct: number): number {
  * the player said they didn't play aren't charged.
  */
 export function pendingCost(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
-  if (line.paid) return 0;
   return r2(
     offerEvents(f, o)
-      .filter((e) => !started[e.id] && !missed(o, e, started))
+      .filter((e) => !started[e.id] && !missed(o, e, started) && !covers(line, e.id))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
 
 /** A paid piece of events the player said they didn't play: that money goes back to the backer. */
 export function missedRefund(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>): number {
-  if (!line.paid) return 0;
-  const before = Array.isArray(line.paidSkipped) ? line.paidSkipped : [];
   return r2(
     offerEvents(f, o)
-      .filter((e) => missed(o, e, started) && !before.includes(e.id))
+      .filter((e) => missed(o, e, started) && covers(line, e.id))
       .reduce((a, e) => a + eventPiece(o, e, line.pct), 0),
   );
 }
@@ -276,14 +281,18 @@ export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, s
   });
   const prizes = r2(rows.reduce((a, r) => a + r.prize, 0));
   const cost = r2(rows.reduce((a, r) => a + r.cost, 0));
+  // What the payment didn't cover: all of it unpaid, or an event skipped before paying and played after.
+  const owed = r2(rows.filter((r) => !covers(line, r.event.id)).reduce((a, r) => a + r.cost, 0));
+  const paid = !!line.paid && owed < 0.005;
   const refund = missedRefund(f, o, line, started);
   return {
     rows,
     prizes,
-    cost,
-    paid: !!line.paid,
+    /** The piece's cost when paid; what is still to pay otherwise. */
+    cost: paid ? cost : owed,
+    paid,
     refund,
-    net: r2(prizes + refund - (line.paid ? 0 : cost)),
+    net: r2(prizes + refund - owed),
     /** Every event ended or not played (as the player said): the numbers won't change. */
     done: rows.every((r) => r.state === 'cashed' || r.state === 'busted' || r.state === 'missed'),
     live: rows.filter((r) => r.state === 'live').length,
