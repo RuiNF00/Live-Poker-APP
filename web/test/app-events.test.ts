@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
+import { posthog } from '../src/lib/analytics';
 import { APP_EVENTS } from '../src/lib/store';
 
 const root = join(__dirname, '..', '..');
@@ -34,5 +35,22 @@ describe('funnel events', () => {
 
   it('the database accepts exactly the events the API accepts', () => {
     expect([...dbEvents()].sort()).toEqual([...APP_EVENTS].sort());
+  });
+});
+
+describe('PostHog copy', () => {
+  it('leaves out the typed note, content ids and the stakes played', async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    await posthog('phc_test').capture({
+      event: 'paywall_shown',
+      installId: '00000000-0000-4000-8000-000000000000',
+      platform: 'ios',
+      props: { reason: 'hands', volume: 'few', plays: 'cash3', note: 'x', share_id: 'y' },
+    });
+    vi.unstubAllGlobals();
+    const sent = JSON.parse((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(sent.properties).toMatchObject({ reason: 'hands', volume: 'few', $geoip_disable: true, $process_person_profile: false });
+    for (const k of ['plays', 'note', 'share_id']) expect(sent.properties).not.toHaveProperty(k);
   });
 });

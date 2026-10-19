@@ -8,10 +8,11 @@
 import type { AppEvent } from './store';
 
 /**
- * Kept in our own table only: anything the player typed (the cancel note), and
- * ids that point at a person's content or invite (Security, 17 Oct).
+ * Kept in our own table only: anything the player typed (the cancel note), ids that point at a
+ * person's content or invite (Security, 17 Oct), and the stakes the player said they play (plays:
+ * it hints at how much money they play; split by it in our table, Security 19 Oct).
  */
-const PRIVATE = new Set(['note', 'share_id', 'shareId', 'ref', 'live_id', 'liveId', 'handle']);
+const PRIVATE = new Set(['note', 'share_id', 'shareId', 'ref', 'live_id', 'liveId', 'handle', 'plays']);
 
 export interface AnalyticsProvider {
   capture(e: AppEvent): Promise<void>;
