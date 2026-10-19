@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, covers, inFestivalPackage, linesSettledWith, paidSkippedNow, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, covers, inFestivalPackage, linesSettledWith, offerStakeChanges, paidSkippedNow, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
 import { addOfferDue, backerLedger } from '../staking';
@@ -291,10 +291,11 @@ test('«Marcar como pago» on the backer pays their festival pieces too, and kee
   const fest = (id: string) => (id === F.id ? F : undefined);
   const due = pendingCost(F, o, line, {});
   // In the deal's currency, as the balance converted it.
-  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', lineId: 'l1', due: due * 0.5 }]);
-  // No rate: it stays apart (settleApart's job). An event in a session: the package screen's.
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', due: due * 0.5 }]);
+  // No rate: it stays apart (settleApart's job).
   assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => null), []);
-  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({ '2': 's1' }), () => 1), []);
+  // Under way: the events not started, plus what its stakes on sessions still owe (Bankroll P2).
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({ '2': 's1' }), () => 1, () => 3120), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', due: pendingCost(F, o, line, { '2': 's1' }) + 3120 }]);
   // Already paid: nothing left to pay.
   assert.deepEqual(linesSettledWith([pkg([{ ...line, paid: true }])], 'b1', fest, () => ({}), () => 1), []);
   // Once marked, the package says paid: nothing owed, no refund.
@@ -324,4 +325,33 @@ test('settling the whole balance with a festival piece in it: square on the back
   const after = ledger(paid, [{ id: 'y1', backerId: 'b1', amount: rest, at: 3000, note: '', createdAt: 3000, currency: '€' }]);
   assert.equal(Math.abs(after.balance) < 0.01, true);
   assert.equal(lineSettlement(F, { ...o, lines: [paid] }, paid, {}, []).net, 0);
+});
+
+test('«Marcar como pago» with event 2 already played: the package agrees, and «Pago» there never counts it twice (Bankroll P2, 19 Oct)', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 };
+  const o = pkg([line]);
+  const started = { '2': 's2' };
+  const fest = (id: string) => (id === F.id ? F : undefined);
+  const base = { id: 's2', kind: 'mtt', name: 'E2', venue: 'x', currency: '$', startedAt: 10, breaks: [], buyIn: 26000, entries: 1, addOn: 0, cashOut: 0 } as unknown as Session;
+  const s0 = offerStakeChanges([base], [o], F.id, started, new Set())[0];
+  assert.equal(s0.stakes?.[0].unpaid, true);
+  const ledger = (l: typeof line, s: Session, payments: Parameters<typeof backerLedger>[3]) => {
+    const led = backerLedger('b1', [s], [], payments, undefined, { table: {}, fallback: '$' });
+    addOfferDue(led, '$', pendingCost(F, { ...o, lines: [l] }, l, started), 0, () => 1);
+    return led;
+  };
+  const before = ledger(line, s0, []);
+  assert.equal(before.balance, -9120);
+  const stakesDue = () => before.rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + r.cost, 0);
+  const pieces = linesSettledWith([o], 'b1', fest, () => started, () => 1, stakesDue);
+  const rest = Math.round((before.balance + pieces.reduce((a, p) => a + p.due, 0)) * 100) / 100;
+  assert.equal(rest, 0);
+  // Marked paid with the events started now: the session's stake is paid too.
+  const paid = { ...line, paid: true, paidSkipped: paidSkippedNow(o, started) };
+  const s1 = offerStakeChanges([s0], [{ ...o, lines: [paid] }], F.id, started, new Set(['p1']))[0];
+  assert.equal(s1.stakes?.[0].unpaid, undefined);
+  assert.equal(ledger(paid, s1, []).balance, 0);
+  assert.equal(lineSettlement(F, { ...o, lines: [paid] }, paid, started, [s1]).net, 0);
+  // «Pago» tapped again on the package: already paid, nothing moves.
+  assert.equal(linesSettledWith([{ ...o, lines: [paid] }], 'b1', fest, () => started, () => 1, () => 0).length, 0);
 });
