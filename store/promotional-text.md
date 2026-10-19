@@ -26,47 +26,49 @@ Nota: no período 5 o pt-BR é o lançamento no Brasil e no período 6 o es é o
 
 ## 1. Lançamento → 30 nov
 
-**EN** (152)
-> New: log a live hand in 11 taps between levels, replay it street by street and share a link anyone can open. Free: 3 new hands a day, unlimited sharing.
+Revisto a 19 out com o Marketing (marketing/texto-promocional.md, «Revisão de 19 out»): períodos 1 a 3.
 
-**PT-PT** (148)
-> Novo: regista uma mão ao vivo em 11 toques entre níveis, revê-a rua a rua e partilha um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
+**EN** (157)
+> New: log a live hand in 11 taps between levels, replay it street by street and ask your friends with one link. Free: 3 new hands a day and unlimited sharing.
 
-**pt-BR** (161)
-> Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e compartilhe um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
+**PT-PT** (160)
+> Novo: regista uma mão ao vivo em 11 toques entre níveis, revê-a rua a rua e pergunta aos amigos com um link. Grátis: 3 mãos novas por dia e partilha sem limite.
 
-**es** (154)
-> Nuevo: registra una mano en vivo en 11 toques entre niveles, repásala calle a calle y comparte un link que cualquiera abre. Gratis: 3 manos nuevas al día.
+**pt-BR** (148)
+> Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e pergunte aos amigos com um link. Grátis: 3 mãos novas por dia.
+
+**es** (151)
+> Nuevo: registra una mano en vivo en 11 toques entre niveles, repásala calle a calle y pregunta a tus amigos con un link. Gratis: 3 manos nuevas al día.
 
 
 ## 2. 1 → 21 dez
 
-**EN** (146)
-> December festivals in the Bahamas and Las Vegas: plan your events against your bankroll, get late-reg reminders and log a typical hand in 11 taps.
+**EN** (155)
+> December in the Bahamas or Las Vegas? Pick your events, get a reminder before late reg closes and save the day's hands between levels. The planner is free.
 
-**PT-PT** (162)
-> Festivais de dezembro nas Bahamas e em Las Vegas: planeia os torneios com a tua banca, recebe lembretes de inscrição tardia e regista uma mão típica em 11 toques.
+**PT-PT** (156)
+> Dezembro nas Bahamas ou em Las Vegas? Marca os torneios, recebe o aviso antes do fim do late reg e guarda as mãos do dia entre níveis. O planeador é grátis.
 
-**pt-BR** (155)
-> Festivais de dezembro nas Bahamas e em Las Vegas: planeje os torneios com a sua banca, receba lembretes de late reg e registre uma mão típica em 11 toques.
+**pt-BR** (160)
+> Dezembro nas Bahamas ou em Las Vegas? Marque os torneios, receba o aviso antes do fim do late reg e salve as mãos do dia entre os níveis. O planejador é grátis.
 
-**es** (153)
-> Festivales de diciembre en Bahamas y Las Vegas: planifica tus torneos con tu bankroll, recibe avisos de late reg y registra una mano típica en 11 toques.
+**es** (169)
+> ¿Diciembre en las Bahamas o Las Vegas? Marca tus torneos, recibe el aviso antes del fin del late reg y guarda las manos del día entre niveles. El planificador es gratis.
 
 
 ## 3. 22 dez → 6 jan
 
-**EN** (141)
-> Your year in poker on one card: sessions, hours, hands and your best night. Then replay the hands that mattered before the new season starts.
+**EN** (156)
+> Your poker year on one card: sessions, hours and hands logged. Before the new season, replay the hands that mattered and send the worst one to your friends.
 
-**PT-PT** (138)
-> O teu ano no póquer num cartão: sessões, horas, mãos e a melhor noite. Depois revê as mãos que contaram antes de começar a nova temporada.
+**PT-PT** (143)
+> O teu ano no póquer num cartão: sessões, horas e mãos registadas. Antes da nova temporada, revê as mãos que contaram e manda a pior aos amigos.
 
-**pt-BR** (141)
-> Seu ano no poker em um cartão: sessões, horas, mãos e a melhor noite. Depois reveja as mãos que importaram antes de começar a nova temporada.
+**pt-BR** (151)
+> Seu ano no poker em um cartão: sessões, horas e mãos registradas. Antes da nova temporada, reveja as mãos que importaram e mande a pior para os amigos.
 
-**es** (142)
-> Tu año en el póker en una tarjeta: sesiones, horas, manos y tu mejor noche. Luego repasa las manos que importaron antes de la nueva temporada.
+**es** (162)
+> Tu año en el póker en una tarjeta: sesiones, horas y manos registradas. Antes de la nueva temporada, repasa las manos que importaron y manda la peor a tus amigos.
 
 
 ## 4. 7 → 21 jan

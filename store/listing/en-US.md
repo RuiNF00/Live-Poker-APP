@@ -11,10 +11,10 @@
 **Subtitle** (30): {{APP_SUBTITLE_EN}}
 
 **Promotional text** (170):
-New: log a live hand in 11 taps between levels, replay it street by street and share a link anyone can open. Free: 3 new hands a day, unlimited sharing.
+New: log a live hand in 11 taps between levels, replay it street by street and ask your friends with one link. Free: 3 new hands a day and unlimited sharing.
 
 **Keywords** (100 bytes, comma-separated, no spaces):
-history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,stats,chip,count,tax,notes
+history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,icm,odds,chip,tax,notes
 
 **Description** (4000):
 

@@ -10,10 +10,10 @@
 **Subtítulo** (30): Manos, replayer y bankroll
 
 **Texto promocional** (170):
-Nuevo: registra una mano en vivo en 11 toques entre niveles, repásala calle a calle y comparte un link que cualquiera abre. Gratis: 3 manos nuevas al día.
+Nuevo: registra una mano en vivo en 11 toques entre niveles, repásala calle a calle y pregunta a tus amigos con un link. Gratis: 3 manos nuevas al día.
 
 **Palabras clave** (100 bytes, separadas por comas, sin espacios):
-poker,tracker,historial,sesiones,torneo,calendario,horarios,mtt,cash,staking,swap,fichas,live,notas
+tracker,historial,sesiones,torneo,festival,horarios,mtt,cash,staking,swap,fichas,live,notas,icm,odds
 
 **Descripción** (4000):
 

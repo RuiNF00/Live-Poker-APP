@@ -10,10 +10,10 @@
 **Subtítulo** (30): Controle de banca e mãos
 
 **Texto promocional** (170):
-Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e compartilhe um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
+Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e pergunte aos amigos com um link. Grátis: 3 mãos novas por dia.
 
 **Palavras-chave** (100 bytes, separadas por vírgulas, sem espaços):
-histórico,replayer,bankroll,sessões,torneio,agenda,grade,horários,mtt,cash,staking,swap,fichas
+pôquer,histórico,replayer,bankroll,sessões,torneio,festival,grade,mtt,cash,staking,swap,fichas
 
 **Descrição** (4000):
 
