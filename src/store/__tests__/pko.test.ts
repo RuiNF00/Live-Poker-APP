@@ -12,6 +12,7 @@ import { taxReport } from '../../tax/tax-math';
 import { backedReturn, bountiesOf, gross, ownBounties, owedToBackers, profit, totals } from '../session-math';
 import { backerLedger, packageStates, pieceSteps, withCuts, withPackageBounties } from '../staking';
 import type { Session, StakePackage } from '../types';
+import { fixSession } from '../validate';
 
 let n = 0;
 function mk(over: Partial<Session> = {}): Session {
@@ -155,4 +156,13 @@ test('no backer amount multiplies the raw cashOut: every piece goes through back
     const hits = src.split('\n').filter((l) => /cashOut/.test(l) && /share|piece|sold|stake/i.test(l) && !/^\s*(\/\/|\*|\/\*\*)/.test(l));
     assert.deepEqual(hits, [], f);
   }
+});
+
+test('a backup with junk in the PKO fields never turns a result into NaN', () => {
+  const s = fixSession({ ...mk({ cashOut: 500 }), bounties: 'x', stakes: [{ backerId: 'b1', share: 20, markup: 1, bountiesKept: 'false' }] } as unknown)!;
+  assert.equal(s.bounties, undefined);
+  assert.ok(!('bountiesKept' in s.stakes![0]));
+  assert.equal(owedToBackers(s), 100);
+  assert.equal(bountiesOf(mk({ cashOut: 500, tourney: { bounties: Number.NaN } })), 0);
+  assert.ok(Number.isFinite(profit(mk({ cashOut: 500, bounties: 'x' as unknown as number }))));
 });

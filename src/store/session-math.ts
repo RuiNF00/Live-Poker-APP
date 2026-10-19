@@ -62,7 +62,8 @@ export function pieceOf(s: Session, x: Stake): number {
  * (older sessions). Never below 0 nor above the prize.
  */
 export function bountiesOf(s: Session): number {
-  return Math.min(Math.max(0, s.bounties ?? s.tourney?.bounties ?? 0), s.cashOut || 0);
+  const b = s.bounties ?? s.tourney?.bounties;
+  return Number.isFinite(b) ? Math.min(Math.max(0, b!), s.cashOut || 0) : 0;
 }
 
 /** The prize a stake has a piece of: the whole cashOut, or without the bounties when they stay with you. */

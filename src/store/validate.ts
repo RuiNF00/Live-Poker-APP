@@ -89,9 +89,19 @@ export const fixSession: Fix<Session> = (x) => {
   // A receipt's file is a bare name inside the documents folder; one from a hand-edited backup
   // that climbs out of it ("../", "..") is dropped, so opening or deleting it can't reach anything else.
   if (Array.isArray(s.docs) && !(s.docs as Obj[]).every((d) => okDocFile(d.file))) patch.docs = (s.docs as Obj[]).filter((d) => okDocFile(d.file));
+  // PKO bounties go into the backers' amounts: not a number, dropped.
+  if (s.bounties !== undefined && !isNum(s.bounties)) patch.bounties = undefined;
   // A kept makeup cut (Stake.cut) goes straight into the result: one that isn't a number is dropped.
-  if (Array.isArray(s.stakes) && (s.stakes as Obj[]).some((x) => x.cut !== undefined && !isNum(x.cut)))
-    patch.stakes = (s.stakes as Obj[]).map((x) => (x.cut !== undefined && !isNum(x.cut) ? { ...x, cut: undefined } : x));
+  // "Bounties ficam comigo" changes what the backer gets: only a real true counts.
+  const badStake = (x: Obj) => (x.cut !== undefined && !isNum(x.cut)) || (x.bountiesKept !== undefined && x.bountiesKept !== true);
+  if (Array.isArray(s.stakes) && (s.stakes as Obj[]).some(badStake))
+    patch.stakes = (s.stakes as Obj[]).map((x) => {
+      if (!badStake(x)) return x;
+      const y = { ...x };
+      if (y.cut !== undefined && !isNum(y.cut)) y.cut = undefined;
+      if (y.bountiesKept !== undefined && y.bountiesKept !== true) delete y.bountiesKept;
+      return y;
+    });
   return (Object.keys(patch).length ? { ...s, ...patch } : s) as unknown as Session;
 };
 
