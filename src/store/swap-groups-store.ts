@@ -15,7 +15,7 @@ import { currentDeleted, loadDeleted, markDeleted } from './deleted';
 import { entryId, liveSwaps } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwapGroup } from './swap-validate';
-import { mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
+import { MAX_GROUP_ENTRIES, mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
 
 const SPEC: CollectionSpec = { index: 'rl.swapgroups.v1', prefix: 'rl.swapgroup.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -118,7 +118,8 @@ export async function syncGroup(id: string): Promise<boolean> {
       try {
         applyRemote(id, await addGroupEntry(id, g.token, e));
       } catch (err) {
-        if (err instanceof SwapError && err.status === 422) {
+        if (err instanceof SwapError && (err.status === 422 || err.status === 413)) {
+          if (err.status === 413) refused.add(e.cid);
           g = getGroup(id)!;
           saveGroup({ ...g, entries: g.entries.filter((x) => x.cid !== e.cid) });
         } else if (!(err instanceof SwapError)) throw err;
@@ -148,13 +149,19 @@ export async function syncAllGroups(): Promise<void> {
 }
 
 /** A prize I won or a payment I made: saved at once, sent now or on the next sync. */
-export async function addGroupPrize(id: string, e: Pick<GroupEntry, 'kind' | 'amount' | 'event' | 'finish' | 'to'>, sessionId?: string): Promise<'sent' | 'queued'> {
+/** Entries the server refused because the group is full (413): addGroupPrize answers 'full'. */
+const refused = new Set<string>();
+
+/** Like addEntry for a pair: 'full' when the group already holds MAX_GROUP_ENTRIES and nothing was saved. */
+export async function addGroupPrize(id: string, e: Pick<GroupEntry, 'kind' | 'amount' | 'event' | 'finish' | 'to'>, sessionId?: string): Promise<'sent' | 'queued' | 'full'> {
   const g = getGroup(id);
   if (!g) return 'queued';
+  if (g.entries.length >= MAX_GROUP_ENTRIES) return 'full';
   const cid = newCid();
   const links = sessionId ? { ...g.links, [cid]: sessionId } : g.links;
   saveGroup({ ...g, links, entries: [...g.entries, { ...e, id: cid, cid, seat: g.seat, at: Date.now(), pending: true }], updatedAt: Date.now() });
   await syncGroup(id);
+  if (refused.delete(cid)) return 'full';
   return getGroup(id)?.entries.some((x) => x.cid === cid && x.pending) ? 'queued' : 'sent';
 }
 

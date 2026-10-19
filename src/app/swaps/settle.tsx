@@ -51,12 +51,15 @@ function SettleScreen() {
   async function settle() {
     setBusy(true);
     let queued = false;
+    let full = false;
     for (const st of steps) {
       const res = await addEntry(st.id, { kind: st.kind, amount: st.amount, event: '', finish: null });
       if (res === 'queued') queued = true;
+      if (res === 'full') full = true;
     }
     tap('success');
-    if (queued) notice(t('Sem rede'), t('O que registares fica guardado e é enviado quando houver sinal.'));
+    if (full) notice(t('Swap cheio'), t('Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.'));
+    else if (queued) notice(t('Sem rede'), t('O que registares fica guardado e é enviado quando houver sinal.'));
     router.back();
   }
 

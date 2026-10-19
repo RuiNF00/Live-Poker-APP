@@ -5,6 +5,9 @@
 
 import type { Session } from './types';
 
+/** The most entries the server keeps for one group (check on swap_groups.entries, 20261017230000). */
+export const MAX_GROUP_ENTRIES = 600;
+
 export interface GroupTerms {
   v: 1;
   scope: 'event' | 'series';

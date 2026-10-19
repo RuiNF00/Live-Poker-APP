@@ -99,6 +99,9 @@ export function waitingOn(s: Swap): SwapSide | null {
 
 /** Server ids (short_id(), as web/src/lib/swaps.ts validId) and side tokens (64 hex). Checked
  * before either goes into a URL or a header, e.g. from a restored backup or a link. */
+/** The most entries the server keeps for one swap (check on swaps.entries, 20261017160000). */
+export const MAX_SWAP_ENTRIES = 300;
+
 export const validSwapId = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z0-9]{6,16}$/.test(x);
 export const validSwapToken = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x);
 

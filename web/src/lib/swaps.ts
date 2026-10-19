@@ -9,6 +9,9 @@ import type { PublicSwap, Side, SwapEntry, SwapRecord, SwapTerms } from './swap-
 
 export * from './swap-terms';
 
+/** The most entries one swap holds (check on swaps.entries, 20261017160000). */
+export const MAX_SWAP_ENTRIES = 300;
+
 // Swaps between players (/swap/<id>). Supabase in production (migration 20261017160000), a JSON
 // file without it. The database functions enforce the rules: terms never change, the other
 // player confirms once, and each side only adds or removes its own entries.
@@ -28,7 +31,8 @@ export interface SwapStore {
    * own (64 hex), so a confirm sent again after a lost answer gets the same token back.
    */
   confirm(id: string, name: string, token?: string): Promise<string | null>;
-  addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
+  /** 'full': the swap already holds MAX_SWAP_ENTRIES (the table's check, 20261017160000). */
+  addEntry(id: string, token: string, e: NewEntry): Promise<boolean | 'full'>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   remove(id: string, token: string): Promise<boolean>;
   /** "Delete all my data": this side leaves; the other keeps a read-only record. */
@@ -83,6 +87,7 @@ class SupabaseSwaps implements SwapStore {
 
   async addEntry(id: string, token: string, e: NewEntry) {
     const { data, error } = await this.db.rpc('add_swap_entry', { p_id: id, p_token: token, p_entry: e });
+    if (error?.code === '23514') return 'full' as const;
     if (error) throw error;
     return !!data;
   }
@@ -201,6 +206,7 @@ class LocalSwaps implements SwapStore {
       const side = this.sideOf(r, token);
       if (!r || !side || !r.confirmedAt || r.leftSide) return false;
       if (r.entries.some((x) => x.side === side && x.cid === e.cid)) return true;
+      if (r.entries.length >= MAX_SWAP_ENTRIES) return 'full' as const;
       r.entries.push({ ...e, id: randomBytes(6).toString('hex'), side, at: Date.now() });
       r.updatedAt = new Date().toISOString();
       return true;

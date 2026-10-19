@@ -15,7 +15,7 @@ import { currentDeleted, loadDeleted, markDeleted } from './deleted';
 import { entryId, liveSwaps } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
-import { mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { MAX_SWAP_ENTRIES, mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -131,7 +131,8 @@ export async function syncSwap(id: string): Promise<boolean> {
         applyRemote(id, await addSwapEntry(id, s.token, e));
       } catch (err) {
         // Not confirmed yet: it stays pending. Refused for good (bad data): drop it.
-        if (err instanceof SwapError && err.status === 422) {
+        if (err instanceof SwapError && (err.status === 422 || err.status === 413)) {
+          if (err.status === 413) refused.add(e.cid);
           s = getSwap(id)!;
           saveSwap({ ...s, entries: s.entries.filter((x) => x.cid !== e.cid) });
         } else if (!(err instanceof SwapError)) throw err;
@@ -160,15 +161,23 @@ export async function syncAllSwaps(): Promise<void> {
   await Promise.all(state.swaps.filter((s) => !s.gone && !s.archived).map((s) => syncSwap(s.id)));
 }
 
-/** A prize I won or a payment I made: saved at once, sent now or on the next sync. */
-export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>, sessionId?: string): Promise<'sent' | 'queued'> {
+/** Entries the server refused because the swap is full (413): addEntry answers 'full'. */
+const refused = new Set<string>();
+
+/**
+ * A prize I won or a payment I made: saved at once, sent now or on the next sync. 'full': the
+ * swap already holds MAX_SWAP_ENTRIES (the server's limit) and nothing was saved.
+ */
+export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' | 'event' | 'finish'>, sessionId?: string): Promise<'sent' | 'queued' | 'full'> {
   const s = getSwap(id);
   if (!s) return 'queued';
+  if (s.entries.length >= MAX_SWAP_ENTRIES) return 'full';
   // A «Paguei» or «Recebi» carries how many of the other side's matching entries were here (paidBySide).
   const cid = newCid() + seenTag(s.entries, s.side, e.kind, e.amount);
   const links = sessionId ? { ...s.links, [cid]: sessionId } : s.links;
   saveSwap({ ...s, links, entries: [...s.entries, { ...e, id: cid, cid, side: s.side, at: Date.now(), pending: true }], updatedAt: Date.now() });
   await syncSwap(id);
+  if (refused.delete(cid)) return 'full';
   return getSwap(id)?.entries.some((x) => x.cid === cid && x.pending) ? 'queued' : 'sent';
 }
 

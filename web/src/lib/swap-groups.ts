@@ -9,6 +9,9 @@ import type { GroupEntry, GroupRecord, GroupTerms, PublicGroup } from './swap-gr
 
 export * from './swap-group-terms';
 
+/** The most entries one group holds (check on swap_groups.entries, 20261017230000). */
+export const MAX_GROUP_ENTRIES = 600;
+
 // Group swaps (/swap/g/<id>). Supabase in production (migration 20261017230000), a JSON file
 // without it. The database enforces the rules: terms and names never change, each seat is
 // claimed once with the group's invite, and each seat only adds or removes its own entries.
@@ -25,7 +28,8 @@ export interface GroupStore {
    * (64 hex), so a claim sent again after a lost answer gets the same seat back.
    */
   claim(id: string, invite: string, seat: number, token?: string): Promise<string | null>;
-  addEntry(id: string, token: string, e: NewEntry): Promise<boolean>;
+  /** 'full': the group already holds MAX_GROUP_ENTRIES (the table's check, 20261017230000). */
+  addEntry(id: string, token: string, e: NewEntry): Promise<boolean | 'full'>;
   removeEntry(id: string, token: string, entryId: string): Promise<boolean>;
   /** Seat 0 frees another seat with nothing in the accounts: open again, its token dead. */
   release(id: string, token: string, seat: number): Promise<boolean>;
@@ -79,6 +83,7 @@ class SupabaseGroups implements GroupStore {
 
   async addEntry(id: string, token: string, e: NewEntry) {
     const { data, error } = await this.db.rpc('add_swap_group_entry', { p_id: id, p_token: token, p_entry: e });
+    if (error?.code === '23514') return 'full' as const;
     if (error) throw error;
     return !!data;
   }
@@ -213,6 +218,7 @@ class LocalGroups implements GroupStore {
       if (!r || seat === null || r.seats.some((s) => !s.confirmedAt && !r.dropped?.includes(s.seat))) return false;
       if (e.kind === 'payment' && (e.to === seat || !r.seats[e.to ?? -1] || r.dropped?.includes(e.to ?? -1))) return false;
       if (r.entries.some((x) => x.seat === seat && x.cid === e.cid)) return true;
+      if (r.entries.length >= MAX_GROUP_ENTRIES) return 'full' as const;
       r.entries.push({ ...e, id: randomBytes(6).toString('hex'), seat, at: Date.now() });
       r.updatedAt = new Date().toISOString();
       return true;

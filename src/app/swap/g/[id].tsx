@@ -200,7 +200,8 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
     const { sessionId, ...entry } = d;
     const res = await addGroupPrize(g.id, entry, sessionId);
     tap('success');
-    if (res === 'queued') setOffline(true);
+    if (res === 'full') notice(t('Swap cheio'), t('Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.'));
+    else if (res === 'queued') setOffline(true);
   }
 
   function onEntry(e: GroupEntry) {

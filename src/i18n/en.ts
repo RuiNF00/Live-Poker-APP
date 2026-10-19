@@ -1554,6 +1554,8 @@ const en: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'The hand you were entering and your live session are saved. Go back and carry on; if it happens again, close and reopen the app.',
   'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'Nothing was deleted from this phone. Try again; if you’re offline, connect first.',
   'Sem rede': 'Offline',
+  'Swap cheio': 'Swap full',
+  'Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.': 'This swap already has the most records it can hold. Start a new swap for the next tournaments.',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
   'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
   // Swaps

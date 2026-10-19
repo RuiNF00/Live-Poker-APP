@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { clientIp, rateLimited } from '@/lib/ratelimit';
 import { rcUserIdOf } from '@/lib/swap-pro';
 import { swapStore, validId } from '@/lib/swaps';
@@ -22,6 +23,7 @@ export async function GET(req: Request, { params }: Ctx) {
  * `?leave=1` ("Delete all my data"): only this side goes; the other keeps a read-only record.
  */
 export async function DELETE(req: Request, { params }: Ctx) {
+  if (await limited(req, 'swap-del', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: swapCors });
   const { id } = await params;
   const token = tokenOf(req);
   const leave = new URL(req.url).searchParams.get('leave') === '1';

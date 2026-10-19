@@ -703,6 +703,8 @@ const ptBR: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'A mão que você estava registrando e a sessão ao vivo ficaram salvas. Volte e continue; se acontecer de novo, feche e abra o app.',
   'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'Nada foi apagado deste celular. Tente de novo; sem conexão, conecte-se primeiro.',
   'Sem rede': 'Sem conexão',
+  'Swap cheio': 'Swap cheio',
+  'Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.': 'Este swap já tem o máximo de registros. Crie um swap novo para os próximos torneios.',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
   'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Tudo salvo no celular. É enviado quando houver sinal.',
   '1 por confirmar': '1 a confirmar',

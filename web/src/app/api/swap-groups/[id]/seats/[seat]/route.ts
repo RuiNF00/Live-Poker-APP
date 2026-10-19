@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { groupStore } from '@/lib/swap-groups';
 import { groupCors, groupResponse, tokenOf, validGroupId } from '../../../shared';
 
@@ -14,6 +15,7 @@ export function OPTIONS() {
  * the accounts. A player who never joined: the seat goes (from 4 players up; 409 at 3).
  */
 export async function DELETE(req: Request, { params }: Ctx) {
+  if (await limited(req, 'swap-del', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: groupCors });
   const { id, seat: s } = await params;
   const token = tokenOf(req);
   const seat = /^[1-7]$/.test(s) ? Number(s) : 0;
