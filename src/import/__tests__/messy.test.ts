@@ -167,3 +167,22 @@ test('no type column, but a game column that says Torneio or Cash gives the type
   assert.deepEqual(r.sessions.map((s) => s.kind), ['mtt', 'cash']);
   assert.equal(r.kindKnown, true);
 });
+
+test('a row split by a line break fails as incomplete instead of saving the whole buy-in as lost', () => {
+  const r = run(['Date,Type,Buy-in,Cash out,Location', '2024-03-01,Cash,100', ',250,Lisboa', '2024-03-02,Cash,50,80,Porto', '2024-03-03,Cash,50,80'].join('\n'));
+  // The last row only lacks the location: still read.
+  assert.deepEqual(r.sessions.map((s) => profit(s)), [30, 30]);
+  assert.deepEqual(r.failed.map((f) => [f.line, f.reason]), [[2, 'short'], [3, 'short']]);
+});
+
+test('a run of digits too long for an amount fails instead of saving Infinity', () => {
+  const r = run(['Date,Type,Buy-in,Cash out', `2024-03-01,Cash,${'9'.repeat(400)},200`, '2024-03-02,Cash,1000000000000,0', '2024-03-03,Cash,100,200'].join('\n'));
+  assert.equal(r.sessions.length, 1);
+  assert.deepEqual(r.failed.map((f) => f.reason), ['badMoney', 'badMoney']);
+});
+
+test('an end weeks after the start fails with its own reason', () => {
+  const r = run(['Start,End,Type,Buy-in,Cash out', '2024-03-01 20:00,2030-01-01 00:00,Cash,100,250', '2024-07-01 12:00,2024-07-10 23:00,Torneio,1000,0', '2024-03-02 20:00,,Cash,100,250'].join('\n'));
+  assert.equal(r.sessions.length, 2);
+  assert.deepEqual(r.failed, [{ line: 2, reason: 'tooLong', value: '2030-01-01 00:00' }]);
+});

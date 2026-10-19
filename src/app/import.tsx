@@ -360,6 +360,9 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
   );
 }
 
+const NO_DUPS = new Map<string, Session>();
+const NO_DUP_MOVES = new Set<string>();
+
 function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement, skipped: { sessions: number; moves: number }) => void }) {
   const tight = useTight();
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
@@ -393,8 +396,17 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
   const r = conv.r;
   const have = useMemo(() => new Set([...local.map((s) => s.id), ...localTx.map((x) => x.id)]), [local, localTx]);
   // The same night from another app, or typed by hand: left out unless the player says otherwise.
-  const dups = useMemo(() => likelyDuplicates(r.sessions, local), [r.sessions, local]);
-  const dupMoves = useMemo(() => likelyDuplicateMoves(r.moves, localTx, bankrolls), [r.moves, localTx, bankrolls]);
+  // Looked for after the screen has drawn, and again when the file or the phone's data change;
+  // the import button waits for it, so a repeat is never let in while the search runs.
+  const [found, setFound] = useState<{ r: ImportResult; local: typeof local; localTx: typeof localTx; bankrolls: typeof bankrolls; dups: Map<string, Session>; dupMoves: Set<string> } | null>(null);
+  const searching = !found || found.r !== r || found.local !== local || found.localTx !== localTx || found.bankrolls !== bankrolls;
+  useEffect(() => {
+    if (!searching) return;
+    const id = setTimeout(() => setFound({ r, local, localTx, bankrolls, dups: likelyDuplicates(r.sessions, local), dupMoves: likelyDuplicateMoves(r.moves, localTx, bankrolls) }), 0);
+    return () => clearTimeout(id);
+  }, [searching, r, local, localTx, bankrolls]);
+  const dups = found?.dups ?? NO_DUPS;
+  const dupMoves = found?.dupMoves ?? NO_DUP_MOVES;
   // The repeats the player chose to import anyway: all at once with the switch, or one by one with a tap.
   const [chosen, setChosen] = useState<Set<string>>(() => new Set());
   const dupIds = [...dups.keys(), ...dupMoves];
@@ -643,8 +655,8 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
           <Button kind="secondary" title={t('Voltar')} onPress={onBack} style={{ paddingHorizontal: 18 }} />
           <Button
             style={tight ? undefined : { flex: 1 }}
-            title={importing ? t('A importar…') : pending ? t('A atualizar…') : r.sessions.length + r.moves.length === 0 ? t('Nada para importar') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
-            disabled={importing || stale || fresh + freshMoves === 0}
+            title={importing ? t('A importar…') : pending ? t('A atualizar…') : searching && r.sessions.length + r.moves.length > 250 ? t('A procurar repetidas…') : r.sessions.length + r.moves.length === 0 ? t('Nada para importar') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
+            disabled={importing || stale || searching || fresh + freshMoves === 0}
             onPress={async () => {
               // Thousands of sessions take a moment to add: say so first.
               setImporting(true);
@@ -710,6 +722,8 @@ const FAIL_TEXT: Record<FailReason, string> = {
   badMoney: t('Valor que não é um número'),
   badMove: t('Depósito ou levantamento sem valor'),
   running: t('Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez'),
+  short: t('Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez'),
+  tooLong: t('Acaba mais de 14 dias depois de começar: confirma a data de fim'),
 };
 
 /** Each row left out, with its line in the file and why, plus the choice to send the file to support. */

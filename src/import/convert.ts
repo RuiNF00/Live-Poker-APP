@@ -34,7 +34,7 @@ export interface ImportedMove {
 }
 
 /** Why a row of the file was left out. */
-export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove' | 'running';
+export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove' | 'running' | 'short' | 'tooLong';
 
 export interface FailedRow {
   /** Line in the file (1 = first line). */
@@ -346,6 +346,9 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
   }
 }
 
+/** Longest a session can last: a festival day 1 to final table, with days off in between. */
+const MAX_SPAN = 14 * 86400000;
+
 /** Rows converted between two looks at the clock. */
 const CHUNK = 100;
 /** Longest the screen goes without drawing while a file is converted. */
@@ -397,11 +400,19 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
   const bankrollNames: Record<string, string> = {};
   const money = moneyReader(table, get);
+  // Columns that hold money: a row that stops before one of them was cut in two (a line break in a cell).
+  const moneyCols = (['buyIn', 'cashOut', 'profit'] as const).map((f) => mapping[f]).filter((c): c is number => c !== undefined);
 
   for (let ri = 0; ri < table.rows.length; ri++) {
     if (ri && ri % CHUNK === 0) yield ri;
     const r = table.rows[ri];
     const line = table.lines?.[ri] ?? ri + 2;
+    if (r.length < table.headers.length && moneyCols.some((c) => c >= r.length)) {
+      // Reading the half that has a buy-in would save the whole buy-in as lost.
+      unreadable++;
+      failed.push({ line, reason: 'short', value: preview(r) });
+      continue;
+    }
     // Trip expenses in Sweatbook's CSV belong to a trip, not to the sessions.
     if (opt.source === 'sweatbook' && /^expense$/i.test(get(r, 'kind'))) continue;
     // Sweatbook's own id: importing the same file again merges instead of doubling.
@@ -517,6 +528,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     // A clock time earlier than the start is past midnight.
     if (end < start && start - end < 86400000) end += 86400000;
     if (end < start) end = start;
+    if (end - start > MAX_SPAN) {
+      // An end weeks after the start is a typo (a year off): those hours would sink the hourly rate.
+      unreadable++;
+      failed.push({ line, reason: 'tooLong', value: get(r, 'end') || get(r, 'hours') || get(r, 'minutes') });
+      continue;
+    }
     const breaks: Session['breaks'] = [];
     // Minutes played, or hours: next to an end time, the difference is the breaks.
     const hrs = mapping.minutes === undefined && endP ? parseHours(get(r, 'hours')) : null;

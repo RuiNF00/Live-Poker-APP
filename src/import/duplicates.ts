@@ -27,26 +27,42 @@ const sameAmount = (a: number, b: number) => {
 
 const near = (a: number, b: number) => dayKey(a) === dayKey(b) || Math.abs(a - b) < THREE_HOURS;
 
+/** Existing items grouped by kind, currency and day, each with its place in the list so the first match still wins. */
+function index<T>(items: T[], key: (x: T) => string, at: (x: T) => number): Map<string, [number, T][]> {
+  const m = new Map<string, [number, T][]>();
+  items.forEach((x, i) => {
+    const k = key(x) + '|' + dayKey(at(x));
+    const list = m.get(k);
+    if (list) list.push([i, x]);
+    else m.set(k, [[i, x]]);
+  });
+  return m;
+}
+
 /** Incoming session id → the existing session it matches, each existing session matched at most once. */
 export function likelyDuplicates(incoming: Session[], existing: Session[]): Map<string, Session> {
   const have = new Set(existing.map((s) => s.id));
-  const byKind = new Map<string, Session[]>();
-  for (const s of existing) {
-    const k = s.kind + '|' + s.currency;
-    const list = byKind.get(k);
-    if (list) list.push(s);
-    else byKind.set(k, [s]);
-  }
+  // Only the same day and the days 3 hours either side can hold a match: 2,000 sessions against
+  // a 10,000-row file was 20 million comparisons on the review screen.
+  const groups = index(existing, (s) => s.kind + '|' + s.currency, (s) => s.startedAt);
   const used = new Set<string>();
   const out = new Map<string, Session>();
   for (const s of incoming) {
     // Same id: the import merges it anyway.
     if (have.has(s.id)) continue;
     const g = gross(s);
-    const pair = byKind.get(s.kind + '|' + s.currency)?.find((e) => !used.has(e.id) && near(e.startedAt, s.startedAt) && sameAmount(gross(e), g));
+    const k = s.kind + '|' + s.currency + '|';
+    const days = new Set([dayKey(s.startedAt - THREE_HOURS), dayKey(s.startedAt), dayKey(s.startedAt + THREE_HOURS)]);
+    let pair: [number, Session] | undefined;
+    for (const d of days)
+      for (const c of groups.get(k + d) ?? [])
+        if ((!pair || c[0] < pair[0]) && !used.has(c[1].id) && near(c[1].startedAt, s.startedAt) && sameAmount(gross(c[1]), g)) {
+          pair = c;
+          break;
+        }
     if (pair) {
-      used.add(pair.id);
-      out.set(s.id, pair);
+      used.add(pair[1].id);
+      out.set(s.id, pair[1]);
     }
   }
   return out;
@@ -56,13 +72,14 @@ export function likelyDuplicates(incoming: Session[], existing: Session[]): Map<
 export function likelyDuplicateMoves(incoming: ImportedMove[], existing: Transfer[], bankrolls: Bankroll[]): Set<string> {
   const currency = new Map(bankrolls.map((b) => [b.id, b.currency]));
   const have = new Set(existing.map((x) => x.id));
+  const groups = index(existing, (x) => x.kind + '|' + currency.get(x.bankrollId), (x) => x.at);
   const used = new Set<string>();
   const out = new Set<string>();
   for (const m of incoming) {
     if (have.has(m.id)) continue;
-    const pair = existing.find((x) => !used.has(x.id) && x.kind === m.kind && currency.get(x.bankrollId) === m.currency && dayKey(x.at) === dayKey(m.at) && cents(x.amount) === cents(m.amount));
+    const pair = groups.get(m.kind + '|' + m.currency + '|' + dayKey(m.at))?.find(([, x]) => !used.has(x.id) && cents(x.amount) === cents(m.amount));
     if (pair) {
-      used.add(pair.id);
+      used.add(pair[1].id);
       out.add(m.id);
     }
   }
