@@ -3181,6 +3181,7 @@ const es: Record<string, string> = {
   'Espinho, dezembro 2026': 'Espinho, diciembre 2026',
   'Praga, dezembro 2026': 'Praga, diciembre 2026',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: 550 €, stack inicial de 40.000, niveles de 45 minutos. El organizador aún no ha publicado los días y las horas de los flights.',
+  'Mixed Games: o dia final também aceita inscrições até às 14:00.': 'Mixed Games: el día final también acepta inscripciones hasta las 14:00.',
   'Super High Roller: o Dia 2 também aceita inscrições até às 17:50.': 'Super High Roller: el Día 2 también acepta inscripciones hasta las 17:50.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'El organizador publica el stack inicial de cada torneo, pero no la duración de los niveles, salvo en algunos.',
   'Lisboa': 'Lisboa',

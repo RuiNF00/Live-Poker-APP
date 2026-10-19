@@ -22,9 +22,10 @@ export const SAO_PAULO_NOV_2026: Festival = {
   // https://bsop.com.br/bsop-millions/ and the per-event structure PDFs linked from it.
   // Re-checked 2026-10-19: the night flights of #26 (30 min), #39 (20 min) and #76 (25 min) have shorter levels than
   // flight 1A; satellites carry the guaranteed seat pools listed on the schedule; #52 ends on a final day on 21/11 14:00;
-  // #57 Day 2 takes new entries (R$ 250,000, 500,000 stack, late reg until 17:50).
+  // #57 Day 2 takes new entries (R$ 250,000, 500,000 stack, late reg until 17:50); so does #52's final day (R$ 6,000,
+  // late reg until 14:00). Night flights of #1 (25 min) and #11 1C (20 min) are shorter too.
   source: { label: 'calendário oficial do organizador', checked: '2026-10-19' },
-  notes: ['Super High Roller: o Dia 2 também aceita inscrições até às 17:50.'],
+  notes: ['Super High Roller: o Dia 2 também aceita inscrições até às 17:50.', 'Mixed Games: o dia final também aceita inscrições até às 14:00.'],
   events: [
     { id: '1-1A', number: 1, name: 'Mystery Bounty', flight: '1A', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-13T12:00', stack: 30000, levelMinutes: 30, lateRegMin: 330 },
     { id: '2', number: 2, name: 'High Roller', game: 'NLH', buyIn: 25000, guarantee: 0, start: '2026-11-13T14:00', stack: 200000, levelMinutes: 30, lateRegMin: 465 },
@@ -33,7 +34,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '5', number: 5, name: '8-Game', game: 'Mix', buyIn: 500, guarantee: 0, start: '2026-11-13T15:00', stack: 50000, levelMinutes: 30, lateRegMin: 280 },
     { id: '6', number: 6, name: 'PLO', game: 'PLO', buyIn: 2500, guarantee: 0, start: '2026-11-13T16:00', stack: 50000, levelMinutes: 30, lateRegMin: 390 },
     { id: '7', number: 7, name: "No Limit Hold'em", game: 'NLH', buyIn: 500, guarantee: 0, start: '2026-11-13T18:00', stack: 20000, levelMinutes: 20, lateRegMin: 175 },
-    { id: '1-1B', number: 1, name: 'Mystery Bounty', flight: '1B', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-13T19:00', stack: 30000, levelMinutes: 30, lateRegMin: 280 },
+    { id: '1-1B', number: 1, name: 'Mystery Bounty', flight: '1B', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-13T19:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '8', number: 8, name: "No Limit Hold'em", game: 'NLH', buyIn: 1000, guarantee: 0, start: '2026-11-13T19:00', stack: 25000, levelMinutes: 20, lateRegMin: 175 },
     { id: '9', number: 9, name: 'Satellite to #1 Mystery Bounty', game: 'NLH', buyIn: 200, guarantee: 150_000, start: '2026-11-13T20:00', stack: 25000, levelMinutes: 20, lateRegMin: 230 },
     { id: '10', number: 10, name: 'High Roller', game: 'NLH', buyIn: 10000, guarantee: 0, start: '2026-11-13T22:00', stack: 100000, levelMinutes: 15, lateRegMin: 195 },
@@ -44,9 +45,9 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '14', number: 14, name: 'PLO5 High Roller PKO', game: 'PLO', buyIn: 10000, guarantee: 0, start: '2026-11-14T15:00', stack: 100000, levelMinutes: 25, lateRegMin: 365 },
     { id: '15', number: 15, name: 'Super High Roller', game: 'NLH', buyIn: 50000, guarantee: 0, start: '2026-11-14T16:00', stack: 200000, levelMinutes: 30 },
     { id: '11-1B', number: 11, name: "No Limit Hold'em", flight: '1B', game: 'NLH', buyIn: 500, guarantee: 500_000, start: '2026-11-14T18:00', stack: 50000, levelMinutes: 25, lateRegMin: 280 },
-    { id: '1-1D', number: 1, name: 'Mystery Bounty', flight: '1D', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-14T19:00', stack: 30000, levelMinutes: 30, lateRegMin: 280 },
+    { id: '1-1D', number: 1, name: 'Mystery Bounty', flight: '1D', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-14T19:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '16', number: 16, name: 'Mystery Bounty', game: 'NLH', buyIn: 6000, guarantee: 0, start: '2026-11-14T20:00', stack: 100000, levelMinutes: 25, lateRegMin: 305 },
-    { id: '11-1C', number: 11, name: "No Limit Hold'em", flight: '1C', game: 'NLH', buyIn: 500, guarantee: 500_000, start: '2026-11-14T22:00', stack: 50000, levelMinutes: 25, lateRegMin: 230 },
+    { id: '11-1C', number: 11, name: "No Limit Hold'em", flight: '1C', game: 'NLH', buyIn: 500, guarantee: 500_000, start: '2026-11-14T22:00', stack: 50000, levelMinutes: 20, lateRegMin: 230 },
     { id: '17', number: 17, name: 'PKO', game: 'NLH', buyIn: 1500, guarantee: 0, start: '2026-11-14T22:00', stack: 25000, levelMinutes: 15, lateRegMin: 135 },
     { id: '1-1E', number: 1, name: 'Mystery Bounty', flight: '1E', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-15T12:00', stack: 30000, levelMinutes: 30, lateRegMin: 330 },
     { id: '18', number: 18, name: 'Seniors', game: 'NLH', buyIn: 2500, guarantee: 0, start: '2026-11-15T12:00', stack: 30000, levelMinutes: 40, lateRegMin: 405 },
@@ -56,7 +57,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '22', number: 22, name: 'Super High Roller', game: 'NLH', buyIn: 50000, guarantee: 0, start: '2026-11-15T16:00', stack: 100000, levelMinutes: 30, lateRegMin: 435 },
     { id: '23', number: 23, name: "No Limit Hold'em", game: 'NLH', buyIn: 500, guarantee: 0, start: '2026-11-15T18:00', stack: 25000, levelMinutes: 20, lateRegMin: 175 },
     { id: '24', number: 24, name: 'High Roller', game: 'NLH', buyIn: 10000, guarantee: 0, start: '2026-11-15T18:00', stack: 100000, levelMinutes: 30 },
-    { id: '1-1F', number: 1, name: 'Mystery Bounty', flight: '1F', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-15T19:00', stack: 30000, levelMinutes: 30, lateRegMin: 280 },
+    { id: '1-1F', number: 1, name: 'Mystery Bounty', flight: '1F', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-15T19:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '25', number: 25, name: "No Limit Hold'em", game: 'NLH', buyIn: 1500, guarantee: 0, start: '2026-11-15T22:00', stack: 25000, levelMinutes: 15, lateRegMin: 135 },
     { id: '1-1G', number: 1, name: 'Mystery Bounty', flight: '1G', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-16T12:00', stack: 30000, levelMinutes: 30, lateRegMin: 330 },
     { id: '26-1A', number: 26, name: 'Main Event', flight: '1A', game: 'NLH', buyIn: 5000, guarantee: 10_000_000, start: '2026-11-16T12:00', stack: 40000, levelMinutes: 40, lateRegMin: 465 },
@@ -64,7 +65,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '28', number: 28, name: '8-Game', game: 'Mix', buyIn: 2500, guarantee: 0, start: '2026-11-16T14:00', stack: 50000, levelMinutes: 30, lateRegMin: 390 },
     { id: '29', number: 29, name: "No Limit Hold'em", game: 'NLH', buyIn: 2500, guarantee: 0, start: '2026-11-16T14:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '30', number: 30, name: 'High Roller PKO', game: 'NLH', buyIn: 10000, guarantee: 0, start: '2026-11-16T18:00', stack: 100000, levelMinutes: 30 },
-    { id: '1-1H', number: 1, name: 'Mystery Bounty', flight: '1H', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-16T19:00', stack: 30000, levelMinutes: 30, lateRegMin: 280 },
+    { id: '1-1H', number: 1, name: 'Mystery Bounty', flight: '1H', game: 'NLH', buyIn: 1500, guarantee: 1_000_000, start: '2026-11-16T19:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '26-1B', number: 26, name: 'Main Event', flight: '1B', game: 'NLH', buyIn: 5000, guarantee: 10_000_000, start: '2026-11-16T20:00', stack: 40000, levelMinutes: 30, lateRegMin: 300 },
     { id: '31', number: 31, name: "No Limit Hold'em", game: 'NLH', buyIn: 1500, guarantee: 0, start: '2026-11-16T22:00', stack: 25000, levelMinutes: 15, lateRegMin: 135 },
     { id: '26-1C', number: 26, name: 'Main Event', flight: '1C', game: 'NLH', buyIn: 5000, guarantee: 10_000_000, start: '2026-11-17T12:00', stack: 40000, levelMinutes: 40, lateRegMin: 465 },
