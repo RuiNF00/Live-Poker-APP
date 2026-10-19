@@ -20,9 +20,9 @@ export const metadata: Metadata = {
 const FACTS: [string, string][] = [
   ['Product', `${brand.name}, a hand log and replayer for live poker players`],
   ['Platforms', 'iPhone and Android'],
-  ['Launch', LAUNCH],
+  ['Launch', `${LAUNCH}, on the App Store and Google Play in 175 countries`],
   ['Languages', 'English, European Portuguese, Brazilian Portuguese and Spanish'],
-  ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan'],
+  ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan. Pro adds unlimited hands, staking, swap settlement, a tax report, multi-currency totals and brand-free sharing'],
   ['Founder', 'Rui, a live tournament player'],
   ['Based in', 'Portugal'],
   ['Age rating', '18+'],
@@ -31,13 +31,14 @@ const FACTS: [string, string][] = [
 ];
 
 const FEATURES: [string, string][] = [
-  ['A hand in 11 taps', 'Log a hand between levels, or leave a 10-second voice note and finish it later.'],
+  ['A hand in 11 taps', 'Log a hand between levels, or leave a voice note and finish it later.'],
   ['A replayer for every street', 'Watch the hand back with stacks, pot and position, step by step.'],
   ['A link your friends can open', 'Share the hand as a link. Friends replay it and vote on the decision in the browser, no app needed.'],
   ['Session and bankroll in one place', 'Clock, level, stack and notes during the session; results, trips and expenses after it.'],
   LIVE_FEATURES.swaps
     ? ['Backer and swap accounts', 'Record the action you sold, makeup and swaps agreed with other players. Records and accounts only: no money moves through the app.']
     : ['Backer accounts', 'Record the action you sold, makeup and a statement for each backer. Records and accounts only: no money moves through the app.'],
+  ['Festival planner', 'Full schedules, with a reminder before late reg closes.'],
   ['Bring your history', 'Import from the app you use today, from CSV.'],
   ['Encrypted backup, free', 'Cloud backup encrypted on your phone with a recovery code. No account.'],
   ['Privacy built in', 'Hide the amounts with one tap, lock the app with Face ID and export or erase everything.'],
