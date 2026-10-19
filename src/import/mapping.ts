@@ -35,6 +35,9 @@ export const FIELDS = [
   'tableSize',
   'notes',
   'tags',
+  // PKO: cash won in bounties, inside cashOut. Only from Sweatbook's own CSV: elsewhere a
+  // "Bounties" column can be the number of knockouts.
+  'bounties',
   // Only in Sweatbook's own CSV: never guessed from another app's headers.
   'id',
   'bankroll',
@@ -91,6 +94,7 @@ const SYN: Record<Field, string[]> = {
   taxWithheld: [],
   taxForm: [],
   taxStatus: [],
+  bounties: [],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());
@@ -226,6 +230,7 @@ export function mappingFor(source: SourceId, headers: string[], rows: string[][]
       taxWithheld: idx(headers, 'taxwithheld'),
       taxForm: idx(headers, 'taxform'),
       taxStatus: idx(headers, 'taxstatus'),
+      bounties: idx(headers, 'bounties'),
       hours: idx(headers, 'hours'),
       handsDealt: idx(headers, 'hands'),
       kind: idx(headers, 'type'),

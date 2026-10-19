@@ -1320,7 +1320,6 @@ const ptBR: Record<string, string> = {
   "Regista só os teus prémios; {name} regista os seus.": "Registre só os seus prêmios; {name} registra os próprios.",
   "À espera do resultado de {name}": "Aguardando o resultado de {name}",
   "Enviar o meu resultado sozinho": "Enviar meu resultado automaticamente",
-  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.": "Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar.",
   "Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.": "Mãos, notas e bankroll nunca saem do seu celular. Desligue quando quiser.",
   "Enviado automaticamente: cobraste {amount}.": "Enviado automaticamente: você recebeu {amount} de prêmio.",
   "Enviado automaticamente: não cobraste.": "Enviado automaticamente: você não recebeu prêmio.",
@@ -1792,6 +1791,18 @@ const ptBR: Record<string, string> = {
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Seu lugar em “{title}” já tinha sido escolhido. Abra o link de novo para escolher outro.',
   'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'Ficou sem registrar o acerto em “{titles}”: ele já tem o máximo de registros. Os outros foram registrados.',
   'Em PLO o máximo é o pote: o valor do {pos} ficou no pote.': 'No PLO o máximo é o pote: o valor do {pos} ficou no pote.',
+  // PKO bounties
+  'Os bounties passam a ficar contigo': 'Os bounties passam a ficar com você',
+  'Os bounties passam a ser partilhados': 'Os bounties passam a ser divididos',
+  'Dos prémios': 'Dos prêmios',
+  'Torneio com bounties: o prémio do lugar acima, os bounties aqui.': 'Torneio com bounties: o prêmio da colocação acima, os bounties aqui.',
+  'Os backers têm parte do prémio sem os bounties (PKO).': 'Os backers têm parte do prêmio sem os bounties (PKO).',
+  'Os backers têm parte do prémio todo, bounties incluídos.': 'Os backers têm parte do prêmio todo, bounties incluídos.',
+  'bounties ficam contigo': 'bounties ficam com você',
+  'O backer tem parte do prémio sem os bounties (PKO).': 'O backer tem parte do prêmio sem os bounties (PKO).',
+  'O backer tem parte do prémio todo, bounties incluídos.': 'O backer tem parte do prêmio todo, bounties incluídos.',
+  'Sem {amount} em bounties, que ficam contigo': 'Sem {amount} em bounties, que ficam com você',
+  'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar. O swap conta o prêmio inteiro, bounties incluídos.',
 };
 
 export default ptBR;

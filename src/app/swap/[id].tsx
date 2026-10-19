@@ -274,7 +274,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
               <ToggleItem
                 icon="flash-outline"
                 title={t('Enviar o meu resultado sozinho')}
-                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.')}
+                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.')}
                 value={!!s.autoShare}
                 onChange={(v) => saveSwap({ ...s, autoShare: v, updatedAt: Date.now() })}
               />

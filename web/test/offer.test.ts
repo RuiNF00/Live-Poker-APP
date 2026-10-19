@@ -85,6 +85,16 @@ describe('cost', () => {
     expect(termsChanged(a, agreement({ markup: 1.2 }))).toBe(true);
     expect(termsChanged(a, agreement({ events: [{ ...base.events[0], p: 6 }, base.events[1], base.events[2]] }))).toBe(true);
   });
+  it('PKO: who keeps the bounties is a term; only a real true is kept', () => {
+    const a = agreement();
+    expect(a.bountiesKept).toBeUndefined();
+    expect(termsChanged(a, agreement({ bountiesKept: true }))).toBe(true);
+    const kept = parseOffer({ ...base, bountiesKept: true });
+    expect(kept && kept !== 'offensive' && kept.bountiesKept).toBe(true);
+    const junk = parseOffer({ ...base, bountiesKept: 'yes' });
+    expect(junk && junk !== 'offensive' && junk.bountiesKept).toBeFalsy();
+    expect(offerCopy('pt').bountiesKept).toMatch(/bounties/);
+  });
 });
 
 describe('seenVersion', () => {

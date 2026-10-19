@@ -3,7 +3,7 @@
 // the store's lists.
 
 import { rate, type ManualRates, type RateTable } from './fx-math';
-import { cost, owedToBackers, pieceOf, profit, stakesOf, type Cuts } from './session-math';
+import { backedReturn, bountiesOf, cost, owedToBackers, pieceOf, profit, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
@@ -16,9 +16,9 @@ export function stakeCost(s: Session, x: Stake): number {
   return pieceOf(s, x) * cost(s) * (x.markup || 1);
 }
 
-/** The backer's share of the prize, before any makeup cut. */
+/** The backer's share of the prize (without the bounties when they stay with you), before any makeup cut. */
 export function stakePrize(s: Session, x: Stake): number {
-  return pieceOf(s, x) * (s.cashOut || 0);
+  return pieceOf(s, x) * backedReturn(s, x);
 }
 
 export interface PackageState {
@@ -146,11 +146,37 @@ export function closePackage(p: StakePackage, makeup: number, carry: boolean, ne
     share: p.share,
     markup: p.markup,
     playerCut: p.playerCut,
+    ...(p.bountiesKept ? { bountiesKept: true as const } : null),
     makeupIn: Math.round(makeup * 100) / 100,
     ...(currency || p.currency ? { currency: currency || p.currency } : {}),
     createdAt: now,
   };
   return { closed, next };
+}
+
+/** A deleted backer's piece, kept as a plain sale: the same share, markup, kept makeup cut and bounties term. */
+export function anonymousStake(x: Stake): Stake {
+  return { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.cutPct !== undefined ? { cutPct: x.cutPct, cumBefore: x.cumBefore } : {}), ...(x.bountiesKept ? { bountiesKept: true as const } : {}) };
+}
+
+/**
+ * The sessions whose stakes in this package change when its "bounties stay with you" term is set
+ * as `kept`: every stake of the package carries the term, so the package's makeup stays coherent.
+ */
+export function withPackageBounties(sessions: Session[], packageId: string, kept: boolean): Session[] {
+  const out: Session[] = [];
+  for (const s of sessions) {
+    if (!s.stakes?.some((x) => x.packageId === packageId && !!x.bountiesKept !== kept)) continue;
+    out.push({
+      ...s,
+      stakes: s.stakes.map((x) => {
+        if (x.packageId !== packageId) return x;
+        const { bountiesKept: _, ...rest } = x;
+        return kept ? { ...rest, bountiesKept: true as const } : rest;
+      }),
+    });
+  }
+  return out;
 }
 
 /**
@@ -501,7 +527,9 @@ export function pieceSteps(r: BackerLedgerRow) {
   const buyIns = cost(s);
   return {
     buyIns,
-    prizeTotal: s.cashOut || 0,
+    /** The prize the piece is of: without the bounties when they stay with you (`kept`). */
+    prizeTotal: backedReturn(s, r.stake),
+    kept: r.stake.bountiesKept ? bountiesOf(s) : 0,
     piece: pieceOf(s, r.stake),
     markup: r.stake.markup || 1,
     cost: r.cost,
@@ -519,10 +547,10 @@ export function pieceSteps(r: BackerLedgerRow) {
  * recent package (deals rarely change between series), named after the trip
  * the player is on when there is one.
  */
-export function packageDefaults(backerId: string, packages: StakePackage[], tripName = ''): Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut' | 'name'> {
+export function packageDefaults(backerId: string, packages: StakePackage[], tripName = ''): Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut' | 'name' | 'bountiesKept'> {
   const last = packages.filter((p) => p.backerId === backerId).sort((a, b) => b.createdAt - a.createdAt)[0];
   return last
-    ? { kind: last.kind, share: last.share, markup: last.markup, playerCut: last.playerCut, name: tripName }
+    ? { kind: last.kind, share: last.share, markup: last.markup, playerCut: last.playerCut, name: tripName, ...(last.bountiesKept ? { bountiesKept: true as const } : null) }
     : { kind: 'action', share: 20, markup: 1.1, playerCut: 50, name: tripName };
 }
 

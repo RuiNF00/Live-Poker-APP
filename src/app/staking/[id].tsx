@@ -29,7 +29,7 @@ import { useOffers } from '@/store/action-offer';
 import { currentDeleted } from '@/store/deleted';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, withPackageBounties, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -442,13 +442,28 @@ function BackerScreen() {
             notice(t('Não dá para reabrir este pacote'), t('O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.', { name: next.name }));
             return;
           }
-          if (next) deletePackage(next.id);
-          if (carry) {
-            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
-            savePackage(closed);
-            if (next) savePackage(next);
-          } else savePackage(p);
-          setPkg(null);
+          // The bounties term goes onto every stake of the package (saved, so links and backers see it change).
+          const moved = was && !!was.bountiesKept !== !!p.bountiesKept ? withPackageBounties(sessions, p.id, !!p.bountiesKept) : [];
+          const apply = () => {
+            if (next) deletePackage(next.id);
+            for (const s of moved) saveSession(s);
+            if (carry) {
+              const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
+              savePackage(closed);
+              if (next) savePackage(next);
+            } else savePackage(p);
+            setPkg(null);
+          };
+          // Sessions already played change what the backer gets, payments made included: said before, not after.
+          const played = moved.filter((s) => s.endedAt).length;
+          if (played)
+            confirm(
+              p.bountiesKept ? t('Os bounties passam a ficar contigo') : t('Os bounties passam a ser partilhados'),
+              played === 1 ? t('Muda o que o backer recebe na sessão já jogada deste pacote, e o saldo com ele.') : t('Muda o que o backer recebe nas {n} sessões já jogadas deste pacote, e o saldo com ele.', { n: played }),
+              apply,
+              t('Mudar'),
+            );
+          else apply();
         }}
         onDelete={
           pkg && packages.some((p) => p.id === pkg.id)

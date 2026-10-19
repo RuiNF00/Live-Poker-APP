@@ -26,6 +26,8 @@ export interface Agreement {
   title: string;
   cur: string;
   markup: number;
+  /** The bounties (PKO) stay with the player: the backer's piece is of the prize without them. */
+  bountiesKept?: true;
   events: AgreementEvent[];
   at: number;
 }
@@ -75,6 +77,7 @@ export function parseOffer(x: unknown): Agreement | 'offensive' | null {
     title: str(o.title, 60),
     cur: str(o.cur, 4) || '€',
     markup,
+    ...(o.bountiesKept === true ? { bountiesKept: true as const } : null),
     events,
     at: typeof o.at === 'number' && Number.isFinite(o.at) && o.at >= 1 ? Math.round(o.at) : Date.now(),
   };
@@ -100,7 +103,7 @@ export function seenVersion(x: unknown): string | null {
   return typeof x === 'string' && ISO.test(x) && Number.isFinite(Date.parse(x)) ? x : null;
 }
 
-/** New terms (markup, events, currency, or who the backer is) need the backer to confirm again. */
+/** New terms (markup, bounties, events, currency, or who the backer is) need the backer to confirm again. */
 export function termsChanged(prev: Agreement, next: Agreement): boolean {
-  return prev.markup !== next.markup || prev.cur !== next.cur || prev.backer !== next.backer || JSON.stringify(prev.events) !== JSON.stringify(next.events);
+  return prev.markup !== next.markup || !!prev.bountiesKept !== !!next.bountiesKept || prev.cur !== next.cur || prev.backer !== next.backer || JSON.stringify(prev.events) !== JSON.stringify(next.events);
 }

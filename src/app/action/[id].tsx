@@ -16,7 +16,7 @@ import { ProRow } from '@/components/ProGate';
 import { blankSession, SessionForm } from '@/components/SessionForm';
 import { markupLabel } from '@/components/staking/sheets';
 import { balanceLabel } from '@/components/staking/use-staking';
-import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, Pill, Row, Screen, Section, T, tap } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, ListGroup, Pill, Row, Screen, Section, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
@@ -180,7 +180,10 @@ export default function ActionPackageScreen() {
     updateOffer(o.id, () => ({ ...next, lines: next.lines.map((l) => (l.remote ? { ...l, confirmedAt: null } : l)) }));
     for (const l of next.lines) {
       const p = packages.find((x) => x.id === l.packageId);
-      if (p && p.markup !== next.markup) savePackage({ ...p, markup: next.markup });
+      if (p && (p.markup !== next.markup || !!p.bountiesKept !== !!next.bountiesKept)) {
+        const { bountiesKept: _, ...rest } = p;
+        savePackage({ ...rest, markup: next.markup, ...(next.bountiesKept ? { bountiesKept: true as const } : null) });
+      }
       // Offline too: it goes when the signal is back, and until then no old confirmation is read.
       if (l.remote) queueAgreementUpdate(l.remote, agreement(f, next, l, settings.nickname, nameOf(l), title));
     }
@@ -389,6 +392,21 @@ export default function ActionPackageScreen() {
             ))}
           </ChipRow>
         </Section>
+
+        <ListGroup>
+          <ToggleItem
+            icon="trophy-outline"
+            title={t('Bounties ficam comigo')}
+            subtitle={o.bountiesKept ? t('Os backers têm parte do prémio sem os bounties (PKO).') : t('Os backers têm parte do prémio todo, bounties incluídos.')}
+            value={!!o.bountiesKept}
+            onChange={(v) =>
+              changeTerms((x) => {
+                const { bountiesKept: _, ...rest } = x;
+                return v ? { ...rest, bountiesKept: true } : rest;
+              })
+            }
+          />
+        </ListGroup>
 
         <Section title={t('Torneios ({n})', { n: events.length })}>
           {candidates.length === 0 ? (

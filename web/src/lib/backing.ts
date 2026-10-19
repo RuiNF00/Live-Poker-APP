@@ -27,8 +27,12 @@ export interface StatementRow {
   p?: string;
   /** Live link id, to follow the session while it runs. */
   l?: string;
-  /** The session's currency, when it isn't the statement's: c and o are in it. */
+  /** The session's currency, when it isn't the statement's: c, o and bo are in it. */
   cu?: string;
+  /** PKO, ended: the backer's piece of the bounties, already inside o (before any makeup cut). */
+  bo?: number;
+  /** PKO, ended: the bounties stay with the player, so o has none of them. */
+  kb?: 1;
   /** While it runs: the stack, the big blind, the level, the day of a multi-day event, bagged. */
   lv?: StatementLive;
 }
@@ -151,6 +155,9 @@ export function checkStatement(json: unknown): Statement | null {
       if (typeof x.p === 'string' && x.p) row.p = str(x.p, 40);
       if (typeof x.l === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(x.l)) row.l = x.l;
       if (typeof x.cu === 'string' && x.cu) row.cu = str(x.cu, 4);
+      const bo = row.e !== null ? num(x.bo, 0, MAX) : null;
+      if (bo) row.bo = bo;
+      if (x.kb && row.e !== null) row.kb = 1;
       const lv = x.lv as Record<string, unknown> | undefined;
       const stack = lv && typeof lv === 'object' && row.e === null ? num(lv.s, 0, MAX) : null;
       if (lv && stack !== null) {

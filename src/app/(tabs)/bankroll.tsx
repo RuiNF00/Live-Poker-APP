@@ -47,7 +47,7 @@ import {
 } from '@/store/bankroll-math';
 import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
-import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, rateShown, totals } from '@/store/session-math';
+import { bountiesOf, breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, rateShown, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
@@ -857,7 +857,7 @@ function SessionRow({ s, bankroll, onEdit }: { s: Session; bankroll?: string; on
       icon={mtt ? 'trophy-outline' : 'cash-outline'}
       iconColor={mtt ? C.warn : C.info}
       title={s.name || (mtt ? t('Torneio') : 'Cash')}
-      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : '', bountiesOf(s) ? t('{amount} em bounties', { amount: fmt(bountiesOf(s), s.currency) }) : ''].filter(Boolean).join(' · ')}
       right={
         <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
           {plus(p) + fmt(p, s.currency)}

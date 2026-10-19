@@ -299,7 +299,7 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
               <ToggleItem
                 icon="flash-outline"
                 title={t('Enviar o meu resultado sozinho')}
-                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.')}
+                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.')}
                 value={!!g.autoShare}
                 onChange={(v) => saveGroup({ ...g, autoShare: v, updatedAt: Date.now() })}
               />

@@ -111,7 +111,7 @@ function PieceSteps({ row, name, pkgName, currency, onTogglePaid }: { row: Backe
 
       <Card style={{ paddingVertical: S.sm }}>
         <Step label={t('Buy-ins da sessão')} amount={x.buyIns} currency={currency} sign={false} />
-        {ended ? <Step label={t('Prémio da sessão')} amount={x.prizeTotal} currency={currency} sign={false} /> : null}
+        {ended ? <Step label={t('Prémio da sessão')} detail={x.kept > 0 ? t('Sem {amount} em bounties, que ficam contigo', { amount: m(x.kept) }) : undefined} amount={x.prizeTotal} currency={currency} sign={false} /> : null}
         <Step
           label={t('{name} pagou', { name })}
           detail={`${pct(x.piece)} × ${m(x.buyIns)}${x.markup !== 1 ? ` × ${dec(x.markup)} markup` : ''}`}
