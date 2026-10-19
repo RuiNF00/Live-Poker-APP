@@ -22,6 +22,16 @@ test('opponents are anonymous by default, ids, tokens and notes never leave', ()
   assert.equal(p.notes, '');
 });
 
+test('the buy-in and the venue stay on the phone, the rest of the game goes', () => {
+  const mtt = { ...hand, game: { kind: 'mtt', name: 'Main Event', venue: 'Estoril', buyIn: 100, level: 3, sb: 100, bb: 200, ante: 200, anteType: 'bb', currency: '€' } } as unknown as Hand;
+  const p = publicHand(mtt);
+  assert.equal('buyIn' in p.game, false);
+  assert.equal('venue' in p.game, false);
+  assert.equal(p.game.name, 'Main Event');
+  assert.equal(p.game.level, 3);
+  assert.equal(mtt.game.buyIn, 100, 'the hand on the phone keeps them');
+});
+
 test('opt-in names, opt-out notes', () => {
   const p = publicHand(hand, { names: true, notes: false });
   assert.equal(p.players[1].name, 'Zé do boné');

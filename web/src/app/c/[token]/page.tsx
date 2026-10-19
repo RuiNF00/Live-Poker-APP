@@ -6,6 +6,7 @@ import { CoachView, type CoachHand } from '@/components/coach/CoachView';
 import { coachCopy } from '@/components/coach/copy';
 import { coachStore, TOKEN_RE } from '@/lib/coach';
 import { resolveHand } from '@/lib/hand';
+import { withoutPrivateGame } from '@/lib/hand-private';
 import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import '@/components/coach/coach.css';
 import { PageFooter } from '@/components/PageFooter';
@@ -48,7 +49,8 @@ export default async function CoachLink({ params }: Params) {
   }
   const hands: CoachHand[] = [];
   for (const h of link.hands) {
-    const r = resolveHand(h.payload);
+    // Links made before the buy-in and venue were dropped (lib/hand-private) still have them stored.
+    const r = resolveHand(withoutPrivateGame(h.payload));
     if (!r) continue;
     const title = (h.payload as { title?: unknown }).title;
     hands.push({ id: h.id, hand: r.hand, title: typeof title === 'string' && title.trim() ? title.trim() : handTitle(r.hand) });
