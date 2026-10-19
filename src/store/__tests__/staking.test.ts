@@ -155,7 +155,7 @@ test('the live link says when a tournament day is bagged, and which day', () => 
 // QA: home currency €, a backing on $ sessions showed "Deves 14 508€".
 const fxTable = { '2026-12-03': { USD: 1.1 }, '2026-10-17': { USD: 1.25 } };
 const usd = (over: Partial<Session> = {}) =>
-  mk({ currency: '$', startedAt: Date.UTC(2026, 11, 3), endedAt: Date.UTC(2026, 11, 4), stakes: [{ backerId: 'b1', share: 50, markup: 1 }], ...over });
+  mk({ currency: '$', startedAt: Date.UTC(2026, 11, 3, 12), endedAt: Date.UTC(2026, 11, 4, 12), stakes: [{ backerId: 'b1', share: 50, markup: 1 }], ...over });
 
 test('a $ deal stays in $ when the home currency is €', () => {
   const l = backerLedger('b1', [usd({ buyIn: 1000, cashOut: 30016 })], [], [], undefined, { table: fxTable, fallback: '€' });
