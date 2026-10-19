@@ -376,6 +376,36 @@ export function unpaidLinesIn(
   return out;
 }
 
+/**
+ * Festival pieces a «Marcar como pago» of the whole balance pays too: the ones in it (with a rate, so
+ * their due is in the balance) with no event started. Marked paid, the package screen says what the
+ * backer screen says, and the payment keeps only the rest (QA P2, 19 Oct). `due` is in the deal's
+ * currency, converted as the balance did (`rateOf`).
+ */
+export function linesSettledWith(
+  offers: ActionOffer[],
+  backerId: string,
+  festival: (id: string) => Festival | undefined,
+  started: (festivalId: string) => Record<string, string>,
+  rateOf: (o: ActionOffer, currency: string) => number | null,
+): { offerId: string; lineId: string; due: number }[] {
+  const out: { offerId: string; lineId: string; due: number }[] = [];
+  for (const o of offers) {
+    const f = festival(o.festivalId);
+    if (!f || !o.lines.some((l) => l.backerId === backerId)) continue;
+    // A session already carries part of the piece: its stake changes too, so that is the package screen's job.
+    const st = started(f.id);
+    if (offerEvents(f, o).some((e) => st[e.id])) continue;
+    const x = rateOf(o, f.currency);
+    if (x === null) continue;
+    for (const l of o.lines) {
+      const due = l.backerId === backerId ? pendingCost(f, o, l, st) : 0;
+      if (due > 0) out.push({ offerId: o.id, lineId: l.id, due: due * x });
+    }
+  }
+  return out;
+}
+
 /** The backer has a piece in a festival package: deleting them would leave it counting, and its link open. */
 export function inFestivalPackage(offers: ActionOffer[], backerId: string): boolean {
   return offers.some((o) => o.lines.some((l) => l.backerId === backerId));

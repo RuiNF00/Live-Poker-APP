@@ -283,6 +283,8 @@ export interface BackerPayment {
    * with none later (a new phone offline), the same ones keep a settled backer settled (Pronto P2-B).
    */
   fx?: Record<string, number>;
+  /** What it was paid in: the deal's currency then. Older payments have none (paymentCurrency). */
+  currency?: string;
 }
 
 /** Stored in Portuguese; translate with t() only when shown. */

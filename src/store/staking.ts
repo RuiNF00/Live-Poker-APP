@@ -269,6 +269,8 @@ export interface BackerLedger {
   missing: string[];
   /** Festival action in a currency with no rate yet: kept apart in its own, never added to the totals here. */
   apart: { currency: string; unpaid: number; balance: number }[];
+  /** Each payment's own currency, by payment id: `paid` below is them converted at the payment's day. */
+  payCurrency: Record<string, string>;
   /** Their money in, over every session. */
   invested: number;
   /** Their result: owed minus invested, ended sessions only. */
@@ -297,7 +299,8 @@ export function backerLedger(
   packages: StakePackage[],
   payments: BackerPayment[],
   pk = packageStates(sessions, packages),
-  fx: { table: RateTable; fallback: string; manual?: ManualRates } = { table: {}, fallback: '' },
+  /** `deal`: with no sessions yet, the currency of their oldest festival package (addOfferDue). */
+  fx: { table: RateTable; fallback: string; manual?: ManualRates; deal?: string } = { table: {}, fallback: '' },
 ): BackerLedger {
   const pkgOf = new Map(packages.map((p) => [p.id, p]));
   const rows: BackerLedgerRow[] = [];
@@ -312,7 +315,7 @@ export function backerLedger(
       rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut });
     }
   rows.sort((a, b) => byEnd(b.session, a.session));
-  const currency = dealCurrency(rows) ?? fx.fallback;
+  const currency = dealCurrency(rows) ?? fx.deal ?? fx.fallback;
   // Each session's money in the deal's currency, at that day's rate.
   const missing = new Set<string>();
   const k = (r: BackerLedgerRow) => {
@@ -328,7 +331,21 @@ export function backerLedger(
   const cut = cents(done.reduce((a, r) => a + cents(r.cut * k(r)), 0));
   const owed = cents(prizes - cut);
   const unpaid = cents(rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + cents(r.cost * k(r)), 0));
-  const paid = cents(payments.filter((p) => p.backerId === backerId).reduce((a, p) => a + p.amount, 0));
+  // Each payment in its own currency, at that day's rate: a bigger session in another currency later
+  // moves the deal, never what was paid (QA P1, 19 Oct: «Deve-te 5090,91$» for a 909,09€ payment).
+  const payCurrency: Record<string, string> = {};
+  const paid = cents(
+    payments
+      .filter((p) => p.backerId === backerId)
+      .reduce((a, p) => {
+        const c = paymentCurrency(p, rows, fx.deal ?? currency);
+        payCurrency[p.id] = c;
+        if (c === currency) return a + p.amount;
+        const x = rate(fx.table, c, currency, p.at, fx.manual);
+        if (x === null) missing.add(c);
+        return a + cents(p.amount * (x ?? 1));
+      }, 0),
+  );
   // Each package's makeup is in its own currency: converted to the deal's at today's rate.
   const makeup = packages
     .filter((p) => p.backerId === backerId && !p.closedAt)
@@ -345,6 +362,7 @@ export function backerLedger(
     currency,
     missing: [...missing],
     apart: [],
+    payCurrency,
     invested,
     result: cents(owed - done.reduce((a, r) => a + cents(r.cost * k(r)), 0)),
     prizes,
@@ -356,6 +374,15 @@ export function backerLedger(
     makeup,
     live: rows.length - done.length,
   };
+}
+
+/**
+ * The currency a payment was made in. Older ones kept none: the deal's as it stood on the day, from the
+ * sessions started by then (with none, `before`: their festival's, or the deal's now).
+ */
+export function paymentCurrency(p: BackerPayment, rows: BackerLedgerRow[], before: string): string {
+  if (typeof p.currency === 'string' && p.currency) return p.currency;
+  return dealCurrency(rows.filter((r) => r.session.startedAt <= p.at)) ?? before;
 }
 
 /** The currency most of the backer's money went in at (ties: the newest session's). Undefined with no sessions. */

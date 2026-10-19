@@ -246,7 +246,7 @@ function PaymentForm({ backer, balance, currency, onSave }: { backer: Backer; ba
         disabled={!amount}
         onPress={() => {
           const now = Date.now();
-          onSave({ id: uid('y_'), backerId: backer.id, amount: dir === 'out' ? amount : -amount, at: now, note: note.trim(), createdAt: now });
+          onSave({ id: uid('y_'), backerId: backer.id, amount: dir === 'out' ? amount : -amount, at: now, note: note.trim(), createdAt: now, currency });
         }}
       />
     </>

@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, covers, inFestivalPackage, paidSkippedNow, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, covers, inFestivalPackage, linesSettledWith, paidSkippedNow, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
+import { addOfferDue, backerLedger } from '../staking';
 import type { Session } from '../types';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
@@ -281,4 +282,46 @@ test('marked paid: only events not played as things stand stay out of the paymen
   assert.deepEqual(paidSkippedNow(o, { '2': 's1' }), ['3']);
   assert.equal(paidSkippedNow(o, { '2': 's1', '3': 's2' }), undefined);
   assert.equal(paidSkippedNow(pkg([]), {}), undefined);
+});
+
+test('«Marcar como pago» on the backer pays their festival pieces too, and keeps only the rest as a payment (QA P2, 19 Oct)', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 };
+  const other = { id: 'l2', backerId: 'b2', packageId: 'p2', pct: 5 };
+  const o = pkg([line, other]);
+  const fest = (id: string) => (id === F.id ? F : undefined);
+  const due = pendingCost(F, o, line, {});
+  // In the deal's currency, as the balance converted it.
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', lineId: 'l1', due: due * 0.5 }]);
+  // No rate: it stays apart (settleApart's job). An event in a session: the package screen's.
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => null), []);
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({ '2': 's1' }), () => 1), []);
+  // Already paid: nothing left to pay.
+  assert.deepEqual(linesSettledWith([pkg([{ ...line, paid: true }])], 'b1', fest, () => ({}), () => 1), []);
+  // Once marked, the package says paid: nothing owed, no refund.
+  const paid = { ...line, paid: true, paidSkipped: paidSkippedNow(o, {}) };
+  assert.equal(pendingCost(F, o, paid, {}), 0);
+  assert.equal(lineSettlement(F, o, paid, {}, []).paid, true);
+});
+
+test('settling the whole balance with a festival piece in it: square on the backer and on the package', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 };
+  const o = pkg([line]);
+  const fest = (id: string) => (id === F.id ? F : undefined);
+  const s = { id: 's1', kind: 'cash', name: 'NL', venue: '', currency: '€', startedAt: 1000, endedAt: 2000, breaks: [], buyIn: 1000, entries: 1, addOn: 0, cashOut: 0, sb: 1, bb: 2, ante: 0, anteType: 'bb', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '', stakes: [{ backerId: 'b1', share: 50, markup: 1, unpaid: true }] } as Session;
+  const x = 0.5; // 1$ = 0,5€
+  const ledger = (l: typeof line, payments: Parameters<typeof backerLedger>[3]) => {
+    const led = backerLedger('b1', [s], [], payments, undefined, { table: {}, fallback: '€' });
+    addOfferDue(led, F.currency, pendingCost(F, { ...o, lines: [l] }, l, {}), 0, () => x);
+    return led;
+  };
+  const before = ledger(line, []);
+  assert.equal(before.balance, -500 - pendingCost(F, o, line, {}) * x);
+  const pieces = linesSettledWith([o], 'b1', fest, () => ({}), () => x);
+  const rest = Math.round((before.balance + pieces.reduce((a, p) => a + p.due, 0)) * 100) / 100;
+  // The payment keeps only the € session; the piece is marked paid.
+  assert.equal(rest, -500);
+  const paid = { ...line, paid: true };
+  const after = ledger(paid, [{ id: 'y1', backerId: 'b1', amount: rest, at: 3000, note: '', createdAt: 3000, currency: '€' }]);
+  assert.equal(Math.abs(after.balance) < 0.01, true);
+  assert.equal(lineSettlement(F, { ...o, lines: [paid] }, paid, {}, []).net, 0);
 });
