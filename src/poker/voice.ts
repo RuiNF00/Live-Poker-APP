@@ -35,7 +35,9 @@ export type VoiceNoteCode =
   /** A stack grew so a bet that was said would fit. */
   | 'stackGrew'
   /** PLO: a size above the pot, brought down to a pot-sized bet or raise. */
-  | 'potLimit';
+  | 'potLimit'
+  /** PLO5 or Hi-Lo was said: the hand is kept as four-card PLO. */
+  | 'ploOnly';
 
 export interface VoiceNote {
   code: VoiceNoteCode;
@@ -286,10 +288,17 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
     [/\ball[\s-]*ins?\b|\bol[\s-]*in\b|\ba tudo\b|\bo resto\b/g, ' allin '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
-    // "PLO", "Pot-Limit Omaha", "Omaha": four hole cards (see handFromSpeech).
-    [/\bpot[\s-]*limit[\s-]*omaha\b|\bplo ?[45]?\b|\bomaha\b/g, ' plo '],
+    // "PLO5", "Omaha de 5 cartas", "Omaha Hi-Lo": not dealt by the app, kept as PLO with a note.
+    [/\bplo5\b|\b(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)(?: de)? (?:5|five|cinco)[\s-]*(?:cartas|card|cards)\b|\b(?:5|five|cinco)[\s-]*(?:card|cards|cartas)[\s-]*(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)\b|\b(?:plo|omaha)[\s-]*(?:hi[\s-]*lo|high[\s-]*low|o8|8 or better)\b/g, ' plo plox '],
+    // "PLO", "Pot-Limit Omaha", "Omaha": four hole cards (see handFromSpeech). A number after
+    // "PLO" with a space is the table ("PLO 4 jogadores"), only "PLO4" written together is the game.
+    [/\bpot[\s-]*limit[\s-]*omaha\b|\bplo4?\b|\bomaha\b/g, ' plo '],
     // "Dá pot", "faz pote", "va al bote": a pot-sized bet, or raise if there's one to face.
-    [/\b(?:da|dou|deu|dei|faz|faco|fiz|fez|vai|vou|foi|fui|hace|hago|hizo|va|voy|go|goes|went|makes|made)(?: (?:o|el|the|a|al|ao))? (?:pot|pote|bote)\b/g, ' bet pote '],
+    // The verb stays when it says who ("voy al bote" with no "yo" is hero), before "bet".
+    [/\b(da|dou|deu|dei|faz|faco|fiz|fez|vai|vou|foi|fui|hace|hago|hizo|va|voy|go|goes|went|makes|made)(?: (?:o|el|the|a|al|ao))? (?:pot|pote|bote)\b/g, (m: string) => {
+      const v = m.split(' ')[0];
+      return AUX_1.has(v) || AUX_3.has(v) ? ` ${v} bet pote ` : ' bet pote ';
+    }],
     // "Double suited", "duplo naipe", "doble palo": two pairs of suits; "single suited", one.
     [/\bdouble[\s-]*suited\b|\bduplo[\s-]*naipe\b|\bduplamente naipad[ao]s?\b|\bdoble[\s-]*(?:palo|suited)\b|\bdos palos\b|\bdois naipes\b/g, ' dsuited '],
     [/\bsingle[\s-]*suited\b|\bnaipe simples\b|\bum naipe\b|\bun palo\b|\bsimple[\s-]*suited\b/g, ' ssuited '],
@@ -588,7 +597,7 @@ export function atomise(text: string, hole = 2): Atom[] {
       i++;
       continue;
     }
-    if (x === 'preflop' || x === 'plo') {
+    if (x === 'preflop' || x === 'plo' || x === 'plox') {
       i++;
       continue;
     }
@@ -717,6 +726,13 @@ export function atomise(text: string, hole = 2): Atom[] {
         i = j + 1;
         continue;
       }
+      // "eu faço 3000", "hace 2500": a size with no noun is a bet or a raise.
+      if (['faco', 'fiz', 'faz', 'fez', 'hago', 'hice', 'hace', 'hizo'].includes(x) && readNumber(w, ['para', 'pra', 'a'].includes(w[i + 1]) ? i + 2 : i + 1)) {
+        out.push({ t: 'verb', v: { kind: 'raise', person: AUX_1.has(x) ? 1 : 3 }, at: i });
+        i++;
+        if (['para', 'pra', 'a'].includes(w[i])) i++;
+        continue;
+      }
     }
     if (x === 'allin') {
       // "dá 4bet all-in", "aposta 5000 all-in": the verb just said, for everything.
@@ -826,8 +842,9 @@ export function atomise(text: string, hole = 2): Atom[] {
         i = bbN.next;
         continue;
       }
-      // "6 max", "9 jogadores"
-      const tableCue = ['max', 'handed'].includes(w[j]) || ['mesa', 'de', 'com', 'table', 'of', 'with', 'somos', 'eramos', 'estamos', 'a'].includes(w[i - 1] ?? '');
+      // "6 max", "9 jogadores", "PLO 4 jogadores": also a count said alone before a pause, which no verb follows.
+      const tableCue =
+        ['max', 'handed'].includes(w[j]) || ['mesa', 'de', 'com', 'table', 'of', 'with', 'somos', 'eramos', 'estamos', 'a', 'plo'].includes(w[i - 1] ?? '') || (i === 0 && (w[j + 1] === undefined || w[j + 1] === ','));
       if (SIZE_WORDS.has(w[j]) && tableCue && num.value >= 2 && num.value <= 10 && Number.isInteger(num.value)) {
         out.push({ t: 'size', n: num.value, at: i });
         i = j + 1;
@@ -1189,6 +1206,7 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
   const note = (n: VoiceNote) => {
     if (!notes.some((x) => x.code === n.code && x.street === n.street && x.pos === n.pos)) notes.push(n);
   };
+  if (normalise(text).words.includes('plox')) note({ code: 'ploOnly' });
   const deck = new Deck();
 
   let hand: Hand = { ...base, actions: [], board: [], winners: undefined, board2: undefined, winners2: undefined, players: base.players.map((p) => ({ ...p, cards: undefined })) };
@@ -1615,9 +1633,10 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       if (e.verb === 'allin' && !e.amt) to = l.maxTo;
       if (e.verb === 'allin' && e.amt && to > l.maxTo && stated.has(p)) to = l.maxTo;
       // PLO: nothing above the pot; a bigger size said is a pot-sized bet or raise.
-      if (s.potLimit && to > l.maxTo && l.maxTo < s.bets[p] + s.stacks[p]) {
+      // An all-in the pot can't hold is the same: the player hears it, unless they said "pote".
+      if (s.potLimit && (to > l.maxTo || e.verb === 'allin') && l.maxTo < s.bets[p] + s.stacks[p]) {
         to = l.maxTo;
-        if (!(e.amt?.unit === 'pot' || e.verb === 'allin')) note({ code: 'potLimit', street: s.street, pos: positions(n, hand.button)[p] });
+        if (e.amt?.unit !== 'pot') note({ code: 'potLimit', street: s.street, pos: positions(n, hand.button)[p] });
       }
       // A size bigger than the stack the app assumed: the stack was bigger (or it's all-in, if the stack was said).
       if (to > l.maxTo) {

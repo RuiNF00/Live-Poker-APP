@@ -3465,7 +3465,6 @@ const en: Record<string, string> = {
   'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'The swap “{title}” had already been confirmed. Open the link again to see it.',
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Your seat in “{title}” had already been taken. Open the link again to pick another.',
   'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'The settle-up in “{titles}” wasn\'t recorded: it already has the most entries it can hold. The others were recorded.',
-  'Em PLO o máximo é o pote: o valor do {pos} ficou no pote.': 'In PLO the most is the pot: the {pos}\'s amount was set to the pot.',
   // PKO bounties
   'Os bounties passam a ficar contigo': 'You now keep the bounties',
   'Os bounties passam a ser partilhados': 'The bounties are now shared',
@@ -3489,6 +3488,8 @@ const en: Record<string, string> = {
   'os bounties ficam com o jogador': 'the player keeps the bounties',
   'Sem {amount} em bounties, que ficam contigo': 'Excluding {amount} in bounties, which you keep',
   'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'When a tournament in this swap ends, the prize and the event go in without asking. The swap counts the whole prize, bounties included.',
+  'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'In PLO the most is the pot: the {pos}\'s amount was cut to the size of the pot.',
+  'Por agora gravamos só PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'For now we only record four-card PLO, without Hi-Lo: the hand was kept as PLO.',
 };
 
 export default en;

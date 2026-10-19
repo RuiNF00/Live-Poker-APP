@@ -58,6 +58,13 @@ const CASES: Case[] = [
     line: 'BTN r1000, BB c, BTN b2600, BB c',
     board: 'T92',
   },
+  // «Voy al bote» with no «yo»: first person, so hero (Registo QA).
+  {
+    text: 'Pot limit omaha. Estoy en el botón con as as rey diez, UTG sube a 7, voy al bote, paga.',
+    base: base(CASH, 6),
+    cards: 'AAKT',
+    line: 'UTG r7, BTN r24, UTG c',
+  },
   // en
   {
     text: "PLO, I'm on the button with ace ace king jack single suited, UTG raises to 1000, I raise to 50000, he calls.",
@@ -109,4 +116,31 @@ test('a PLO table needs no «PLO» in the sentence; hold\'em stays two cards', (
   assert.equal(nlh.game.variant, undefined);
   assert.equal(nlh.players[nlh.hero].cards?.length, 2);
   assert.equal(line(nlh), 'UTG r1000, BTN r4000, UTG c');
+});
+
+test('PLO: an all-in the pot cannot hold is a pot-sized raise, and the player is told', () => {
+  for (const text of [
+    'PLO. Estou no botão com ás ás rei dez, o UTG abre para 1000, eu vou all in, ele paga.',
+    'PLO. Estoy en el botón con as as rey diez, el UTG sube a 1000, voy all in, él paga.',
+  ]) {
+    const r = handFromSpeech(text, base());
+    assert.equal(line(r.hand), 'UTG r1000, BTN r4000, UTG c', text);
+    assert.ok(r.notes.some((x) => x.code === 'potLimit'), text);
+  }
+  // «Pote» said: that was the size meant, no note.
+  const pot = handFromSpeech('PLO. Estou no botão com ás ás rei dez, o UTG abre para 1000, eu faço pote, ele paga.', base());
+  assert.ok(!pot.notes.some((x) => x.code === 'potLimit'));
+});
+
+test('«PLO 4 jogadores» keeps the table size; PLO5 and Hi-Lo stay PLO with a note', () => {
+  const four = handFromSpeech('PLO 4 jogadores. Estou no botão com ás ás rei dez, o cutoff abre para 1000, eu pago.', base());
+  assert.equal(four.hand.game.variant, 'plo');
+  assert.equal(four.hand.players.length, 4);
+  assert.ok(!four.notes.some((x) => x.code === 'ploOnly'));
+  for (const text of ['PLO5. Estou no botão com ás ás rei dez, o UTG abre para 1000, eu pago.', 'Omaha Hi-Lo. Estou no botão com ás ás rei dez, o UTG abre para 1000, eu pago.', 'Omaha de cinco cartas. Estou no botão com ás ás rei dez, o UTG abre para 1000, eu pago.']) {
+    const r = handFromSpeech(text, base());
+    assert.equal(r.hand.game.variant, 'plo', text);
+    assert.equal(r.hand.players[r.hand.hero].cards?.length, 4, text);
+    assert.ok(r.notes.some((x) => x.code === 'ploOnly'), text);
+  }
 });

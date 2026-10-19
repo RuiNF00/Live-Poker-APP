@@ -1792,7 +1792,6 @@ const ptBR: Record<string, string> = {
   'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'O swap “{title}” já tinha sido confirmado. Abra o link de novo para ver.',
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Seu lugar em “{title}” já tinha sido escolhido. Abra o link de novo para escolher outro.',
   'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'Ficou sem registrar o acerto em “{titles}”: ele já tem o máximo de registros. Os outros foram registrados.',
-  'Em PLO o máximo é o pote: o valor do {pos} ficou no pote.': 'No PLO o máximo é o pote: o valor do {pos} ficou no pote.',
   // PKO bounties
   'Os bounties passam a ficar contigo': 'Os bounties passam a ficar com você',
   'Os bounties passam a ser partilhados': 'Os bounties passam a ser divididos',
@@ -1805,6 +1804,8 @@ const ptBR: Record<string, string> = {
   'O backer tem parte do prémio todo, bounties incluídos.': 'O backer tem parte do prêmio todo, bounties incluídos.',
   'Sem {amount} em bounties, que ficam contigo': 'Sem {amount} em bounties, que ficam com você',
   'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar. O swap conta o prêmio inteiro, bounties incluídos.',
+  'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'No PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.',
+  'Por agora gravamos só PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por enquanto só registramos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.',
 };
 
 export default ptBR;

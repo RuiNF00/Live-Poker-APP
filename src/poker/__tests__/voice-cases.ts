@@ -85,6 +85,8 @@ export const CASES: Case[] = [
   // ── «fold até…»: everyone before that seat folds, and only them.
   { lang: 'pt', text: 'Estou no botão com ás rei. Fold até ao cutoff, ele abre para 1000 e eu pago.', pos: 'BTN', cards: 'AK', line: 'CO r1000, BTN c' },
   { lang: 'pt', text: 'Fold até o cutoff, o cutoff abre para 1000, eu no botão pago com valete dez.', pos: 'BTN', cards: 'JT', line: 'CO r1000, BTN c' },
+  { lang: 'pt', text: 'Estou no botão com ás rei, o UTG abre para 1000, eu faço 3000, ele paga.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN r3000, UTG c' },
+  { lang: 'es', text: 'Estoy en el botón con as rey, el UTG sube a 1000, hago 3000, él paga.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN r3000, UTG c' },
   { lang: 'br', text: 'Tô no botão com dama dama. Fold até o cutoff, ele abre pra 1000, eu dou 3bet pra 3000, ele paga.', pos: 'BTN', cards: 'QQ', line: 'CO r1000, BTN r3000, CO c' },
   { lang: 'br', text: 'Todo mundo folda até mim no botão, abro pra 1000 com ás dama e o big paga.', pos: 'BTN', cards: 'AQ', line: 'BTN r1000, BB c' },
   { lang: 'es', text: 'Estoy en el botón con as rey. Todos foldean hasta el cutoff, sube a 1000 y yo pago.', pos: 'BTN', cards: 'AK', line: 'CO r1000, BTN c' },

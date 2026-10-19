@@ -78,7 +78,9 @@ function noteText(n: VoiceNote, hand: Hand): string {
     case 'stackGrew':
       return t('O stack do {pos} subiu para caber o valor que disseste.', { pos: n.pos ?? '' });
     case 'potLimit':
-      return t('Em PLO o máximo é o pote: o valor do {pos} ficou no pote.', { pos: n.pos ?? '' });
+      return t('Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.', { pos: n.pos ?? '' });
+    case 'ploOnly':
+      return t('Por agora gravamos só PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.');
   }
 }
 
