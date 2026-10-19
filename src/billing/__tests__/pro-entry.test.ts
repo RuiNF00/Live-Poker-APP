@@ -89,3 +89,9 @@ test('nothing floats over the paywall plans, and the trial steps stack with larg
   const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
   assert.match(p, /const stacked = useWindowDimensions\(\)\.fontScale > 1\.3;/);
 });
+
+test('Settings reads the plan again after a restore, also when already Pro', () => {
+  const st = src.find(([f]) => f === path.join('app', 'settings.tsx'))![1];
+  assert.match(st, /\}, \[pro\.isPro, restored\]\);/);
+  assert.match(st, /if \(res === 'ok' \|\| res === 'lifetime'\) setRestored\(\(n\) => n \+ 1\);/);
+});
