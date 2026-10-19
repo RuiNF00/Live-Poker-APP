@@ -57,6 +57,25 @@ export function pieceOf(s: Session, x: Stake): number {
   return sold > 100 ? x.share / sold : x.share / 100;
 }
 
+/**
+ * Bounties won in cash, part of cashOut: the session's own, else what tournament mode counted
+ * (older sessions). Never below 0 nor above the prize.
+ */
+export function bountiesOf(s: Session): number {
+  return Math.min(Math.max(0, s.bounties ?? s.tourney?.bounties ?? 0), s.cashOut || 0);
+}
+
+/** The prize a stake has a piece of: the whole cashOut, or without the bounties when they stay with you. */
+export function backedReturn(s: Session, x: Stake): number {
+  return (s.cashOut || 0) - (x.bountiesKept ? bountiesOf(s) : 0);
+}
+
+/** Bounties that are yours: all of them, less the backers' pieces of those they share in. */
+export function ownBounties(s: Session): number {
+  const b = bountiesOf(s);
+  return b ? b - stakesOf(s).reduce((a, x) => a + (x.bountiesKept ? 0 : pieceOf(s, x) * b), 0) : 0;
+}
+
 /** Result of the whole action, before staking and expenses. */
 export function gross(s: Session): number {
   return (s.cashOut || 0) - cost(s);
@@ -69,7 +88,7 @@ export function stakeIn(s: Session): number {
 
 /** What you owe the backers from the prize. */
 export function owedToBackers(s: Session): number {
-  return c2(stakesOf(s).reduce((a, x) => a + c2(pieceOf(s, x) * (s.cashOut || 0)), 0));
+  return c2(stakesOf(s).reduce((a, x) => a + c2(pieceOf(s, x) * backedReturn(s, x)), 0));
 }
 
 /** Your own money in play. */
@@ -166,6 +185,11 @@ export interface Totals {
   hours: number;
   hourly: number;
   roi: number | null;
+  /** Your bounties in the tournaments (your share of them when backers share in them). */
+  bounties: number;
+  /** ROI without those bounties; null without any. */
+  roiNoBounties: number | null;
+  /** % of tournaments cashed: bounties alone don't count. */
   itm: number | null;
   best: number;
   worst: number;
@@ -186,6 +210,7 @@ export function totals(list: Session[], currency?: string): Totals {
   const mtts = done.filter((s) => s.kind === 'mtt');
   const mttInv = mtts.reduce((a, s) => a + ownBuyIns(s), 0);
   const mttProfit = mtts.reduce((a, s) => a + profit(s), 0);
+  const bounties = mtts.reduce((a, s) => a + ownBounties(s), 0);
   const profits = done.map(profit);
   const counted = done.filter((s) => (s.handsDealt ?? 0) > 0);
   const countedHours = counted.reduce((a, s) => a + playedMs(s), 0) / 3600000;
@@ -198,7 +223,9 @@ export function totals(list: Session[], currency?: string): Totals {
     hours,
     hourly: hours > 0 ? p / hours : 0,
     roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null,
-    itm: mtts.length ? (mtts.filter((s) => s.cashOut > 0).length / mtts.length) * 100 : null,
+    bounties,
+    roiNoBounties: mttInv > 0 && bounties > 0 ? ((mttProfit - bounties) / mttInv) * 100 : null,
+    itm: mtts.length ? (mtts.filter((s) => s.cashOut - bountiesOf(s) > 0).length / mtts.length) * 100 : null,
     best: profits.length ? Math.max(...profits) : 0,
     worst: profits.length ? Math.min(...profits) : 0,
     tips: done.reduce((a, s) => a + (s.tips || 0), 0),

@@ -74,3 +74,20 @@ describe('holdResult', () => {
     expect(holdResult(base as LiveSnapshot, 0)).toEqual(base);
   });
 });
+
+describe('PKO bounties kept by the player', () => {
+  const ended = { ...base, endedAt: base.startedAt + 3_600_000, cashOut: 1650 };
+  it('keeps kept only once ended, never above the prize', () => {
+    const s = parseSnapshot({ ...ended, kept: 450 });
+    expect(s && s !== 'offensive' && s.kept).toBe(450);
+    const over = parseSnapshot({ ...ended, kept: 9999 });
+    expect(over && over !== 'offensive' && over.kept).toBeUndefined();
+    const running = parseSnapshot({ ...base, kept: 10 });
+    expect(running && running !== 'offensive' && running.kept).toBeUndefined();
+  });
+  it('is held back with the prize', () => {
+    const s = parseSnapshot({ ...ended, kept: 450 }) as LiveSnapshot;
+    expect(holdResult(s, s.endedAt! + 1).kept).toBeUndefined();
+    expect(holdResult(s, s.endedAt! + RESULT_DELAY_MS).kept).toBe(450);
+  });
+});

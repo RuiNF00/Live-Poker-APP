@@ -26,7 +26,7 @@ import { money, num, shortDate } from '@/poker/format';
 import { useOffers } from '@/store/action-offer';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, withPackageBounties, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -438,6 +438,8 @@ function BackerScreen() {
             return;
           }
           if (next) deletePackage(next.id);
+          // The bounties term goes onto every stake of the package (saved, so links and backers see it change).
+          if (was && !!was.bountiesKept !== !!p.bountiesKept) for (const s of withPackageBounties(sessions, p.id, !!p.bountiesKept)) saveSession(s);
           if (carry) {
             const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
             savePackage(closed);

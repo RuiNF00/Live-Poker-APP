@@ -140,11 +140,11 @@ export function LiveView({
           {/* The result above is the whole session's; backers own only their piece of the prize. */}
           {mine && s.cashOut ? (
             <p className="live-delta up">
-              {c.yourPrize(mine)} {money((mine / 100) * s.cashOut)}
+              {c.yourPrize(mine)} {money((mine / 100) * (s.cashOut - (s.kept ?? 0)))}
             </p>
           ) : s.sold && s.cashOut ? (
             <p className="live-delta">
-              {c.backersShare(s.sold)} {money((s.sold / 100) * s.cashOut)}
+              {c.backersShare(s.sold)} {money((s.sold / 100) * (s.cashOut - (s.kept ?? 0)))}
             </p>
           ) : null}
         </section>

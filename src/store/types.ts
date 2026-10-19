@@ -22,6 +22,8 @@ export interface Session {
   addOn: number;
   /** Prize (MTT) or cash-out (cash). */
   cashOut: number;
+  /** Bounties paid in cash (PKO, knockout), in the session's currency: part of cashOut, not on top of it. */
+  bounties?: number;
   finish?: number;
   field?: number;
   /** Travel, hotel, food: comes off your result. */
@@ -221,6 +223,8 @@ export interface Stake {
   unpaid?: boolean;
   /** Your makeup cut out of this piece, kept when its package (or backer) was deleted: no package works it out any more. */
   cut?: number;
+  /** The bounties stay with you: the backer's piece is of the prize without them. Copied from the package's terms. */
+  bountiesKept?: true;
 }
 
 export interface Backer {
@@ -255,6 +259,8 @@ export interface StakePackage {
   makeupIn?: number;
   /** The package's currency (its first session's): its makeup and makeupIn are counted in it. */
   currency?: string;
+  /** Term of the deal: bounties stay with the player (copied onto every stake of the package). */
+  bountiesKept?: true;
   createdAt: number;
   closedAt?: number;
   updatedAt?: number;

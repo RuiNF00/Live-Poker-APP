@@ -528,6 +528,8 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     if (get(r, 'bankroll')) bankrollNames[id] = get(r, 'bankroll');
     const country = get(r, 'country').toUpperCase();
     const day = parseNum(get(r, 'day'));
+    // Bounties are part of the prize: never more than it, and only in tournaments.
+    const bounties = kind === 'mtt' ? round2(Math.min(Math.abs(money(get(r, 'bounties')) ?? 0), Math.max(0, out))) : 0;
     sessions.push({
       id,
       kind,
@@ -546,6 +548,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       expenses: expenses ? round2(expenses) : undefined,
       ...(tips ? { tips: round2(tips) } : null),
       ...(cut ? { fileCut: round2(cut) } : null),
+      ...(bounties ? { bounties } : null),
       ...(handsDealt && handsDealt > 0 ? { handsDealt: Math.round(handsDealt) } : null),
       sb,
       bb,
@@ -572,4 +575,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut' && f !== 'bounties');

@@ -105,6 +105,7 @@ export function OfferView({
         <p className="of-total-label">{c.total(f.markup(a.markup))}</p>
         <p className="of-big">{f.money(agreementCost(a), a.cur)}</p>
         <p className="of-muted of-small">{c.totalHint}</p>
+        {a.bountiesKept ? <p className="of-small">{c.bountiesKept}</p> : null}
       </section>
 
       {confirmedAt ? (

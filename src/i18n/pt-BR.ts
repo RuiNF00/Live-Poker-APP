@@ -1678,6 +1678,13 @@ const ptBR: Record<string, string> = {
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
   'A tua parte, re-entries incluídas': 'Sua parte, re-entries incluídos',
+  // PKO bounties
+  'Os backers têm parte do prémio sem os bounties (PKO).': 'Os backers têm parte do prêmio sem os bounties (PKO).',
+  'Os backers têm parte do prémio todo, bounties incluídos.': 'Os backers têm parte do prêmio todo, bounties incluídos.',
+  'bounties ficam contigo': 'bounties ficam com você',
+  'O backer tem parte do prémio sem os bounties (PKO).': 'O backer tem parte do prêmio sem os bounties (PKO).',
+  'O backer tem parte do prémio todo, bounties incluídos.': 'O backer tem parte do prêmio todo, bounties incluídos.',
+  'Sem {amount} em bounties, que ficam contigo': 'Sem {amount} em bounties, que ficam com você',
 };
 
 export default ptBR;

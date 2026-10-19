@@ -42,6 +42,8 @@ export interface ActionOffer {
   /** Events in the package (ids from the festival). Day 2s are never in it. */
   events: string[];
   markup: number;
+  /** Term of the deal: the bounties stay with the player (PKO). Goes onto the packages and stakes. */
+  bountiesKept?: true;
   lines: PackageLine[];
   /** Events the player said they didn't play (asked a day after an event with no session). */
   skipped?: string[];
@@ -57,6 +59,8 @@ export interface AgreementPayload {
   title: string;
   cur: string;
   markup: number;
+  /** The bounties stay with the player: a term the backer confirms. */
+  bountiesKept?: true;
   events: { id: string; n: string; d: number; b: number; p: number }[];
   at: number;
 }
@@ -110,6 +114,7 @@ export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player
     title: title.trim().slice(0, 60),
     cur: f.currency.slice(0, 4),
     markup: r2(o.markup),
+    ...(o.bountiesKept ? { bountiesKept: true as const } : null),
     events: offerEvents(f, o)
       .slice(0, MAX_EVENTS)
       .map((e) => ({ id: e.id, n: (eventTitle(e) + (e.flight ? ` · Flight ${e.flight}` : '')).slice(0, 80), d: venueTime(f, e.start), b: e.buyIn, p: r2(line.pct) })),
@@ -147,7 +152,7 @@ export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: st
   const out: Stake[] = [];
   for (const o of offers) {
     if (o.festivalId !== festivalId || !o.events.includes(eventId)) continue;
-    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, unpaid: l.paid ? undefined : true });
+    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, ...(o.bountiesKept ? { bountiesKept: true as const } : null), unpaid: l.paid ? undefined : true });
   }
   return out;
 }

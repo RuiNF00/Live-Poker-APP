@@ -35,6 +35,8 @@ export const FIELDS = [
   'tableSize',
   'notes',
   'tags',
+  // PKO: only read from a column named exactly "bounties" (cash won in bounties, inside cashOut).
+  'bounties',
   // Only in Sweatbook's own CSV: never guessed from another app's headers.
   'id',
   'bankroll',
@@ -85,6 +87,7 @@ const SYN: Record<Field, string[]> = {
   country: [],
   day: [],
   makeupCut: [],
+  bounties: ['bounties'],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());
@@ -200,6 +203,7 @@ export function mappingFor(source: SourceId, headers: string[], rows: string[][]
       country: idx(headers, 'country'),
       day: idx(headers, 'mttday'),
       makeupCut: idx(headers, 'makeupcut'),
+      bounties: idx(headers, 'bounties'),
       hours: idx(headers, 'hours'),
       handsDealt: idx(headers, 'hands'),
       kind: idx(headers, 'type'),

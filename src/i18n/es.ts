@@ -3363,6 +3363,22 @@ const es: Record<string, string> = {
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
   'A tua parte, re-entries incluídas': 'Tu parte, re-entries incluidos',
+  // PKO bounties
+  '{pct} sem bounties ({amount})': '{pct} sin bounties ({amount})',
+  '{amount} em bounties': '{amount} en bounties',
+  'Bounties ({currency})': 'Bounties ({currency})',
+  'Total: {amount}': 'Total: {amount}',
+  'Bounties ficam comigo': 'Me quedo los bounties',
+  'Os backers têm parte do prémio sem os bounties (PKO).': 'Los backers tienen parte del premio sin los bounties (PKO).',
+  'Os backers têm parte do prémio todo, bounties incluídos.': 'Los backers tienen parte de todo el premio, bounties incluidos.',
+  'bounties ficam contigo': 'te quedas los bounties',
+  'O backer tem parte do prémio sem os bounties (PKO).': 'El backer tiene parte del premio sin los bounties (PKO).',
+  'O backer tem parte do prémio todo, bounties incluídos.': 'El backer tiene parte de todo el premio, bounties incluidos.',
+  'Dos quais bounties': 'De los cuales bounties',
+  'Os ganhos incluem os bounties recebidos em dinheiro.': 'Las ganancias incluyen los bounties cobrados en efectivo.',
+  'dos quais bounties {amount}': 'de los cuales bounties {amount}',
+  'os bounties ficam com o jogador': 'los bounties se los queda el jugador',
+  'Sem {amount} em bounties, que ficam contigo': 'Sin {amount} en bounties, que te quedas tú',
 };
 
 export default es;

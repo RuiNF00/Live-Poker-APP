@@ -47,7 +47,7 @@ import {
 } from '@/store/bankroll-math';
 import { insights, MIND_IDS, type MindId } from '@/store/insights-math';
 import { bestWeekday, dailyResults, drawdown, lastResults, verdict } from '@/store/results-math';
-import { breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, rateShown, totals } from '@/store/session-math';
+import { bountiesOf, breakdown, curve, lastPlayed, owedToBackers, playedMs, profit, rateShown, totals } from '@/store/session-math';
 import { isBagged } from '@/store/multi-day';
 import { uid, useStore } from '@/store/store';
 import { cashDone, winRate } from '@/store/winrate-math';
@@ -361,7 +361,7 @@ function BankrollTab() {
               </Card>
               <StatGrid cols={2}>
                 <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={rateShown(tot.hours) ? fmt(Math.round(tot.hourly), cur) : '—'} tone={!rateShown(tot.hours) ? undefined : tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
-                {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
+                {tot.roi !== null ? <Stat label="ROI" sub={tot.roiNoBounties !== null ? t('{pct} sem bounties ({amount})', { pct: pct(tot.roiNoBounties), amount: money(tot.bounties, cur) }) : t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
                 {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
                 <Stat label={t('Buy-ins')} sub={t('A tua parte, re-entries incluídas')} value={fmt(tot.invested, cur)} />
                 {tot.tips ? <Stat label={t('Gorjetas')} sub={t('Já descontadas')} value={fmt(tot.tips, cur)} /> : null}
@@ -850,7 +850,7 @@ function SessionRow({ s, bankroll, onEdit }: { s: Session; bankroll?: string; on
       icon={mtt ? 'trophy-outline' : 'cash-outline'}
       iconColor={mtt ? C.warn : C.info}
       title={s.name || (mtt ? t('Torneio') : 'Cash')}
-      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : '', bountiesOf(s) ? t('{amount} em bounties', { amount: fmt(bountiesOf(s), s.currency) }) : ''].filter(Boolean).join(' · ')}
       right={
         <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
           {plus(p) + fmt(p, s.currency)}

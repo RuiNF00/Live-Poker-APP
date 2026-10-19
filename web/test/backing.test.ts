@@ -28,3 +28,17 @@ describe('backer statement link', () => {
     expect(checkStatement({ v: 1, id: 'k_abc123', rows: [], nx: { n: 'x', s: '<script>' } })!.nx).toBeUndefined();
   });
 });
+
+describe('PKO lines on the statement', () => {
+  const row = { d: 1, e: 2, n: 'PKO', k: 'mtt', sh: 20, mu: 1, c: 30, o: 330 };
+  const st = (r: object) => checkStatement({ v: 1, id: 'k_abc123', cur: '€', rows: [r] })!.rows[0];
+  it('keeps the bounties share and the kept flag of an ended session', () => {
+    expect(st({ ...row, bo: 90 }).bo).toBe(90);
+    expect(st({ ...row, kb: 1 }).kb).toBe(1);
+  });
+  it('drops them while it runs or when they are not numbers', () => {
+    expect(st({ ...row, e: null, bo: 90, kb: 1 })).not.toHaveProperty('bo');
+    expect(st({ ...row, e: null, kb: 1 })).not.toHaveProperty('kb');
+    expect(st({ ...row, bo: 'x' })).not.toHaveProperty('bo');
+  });
+});

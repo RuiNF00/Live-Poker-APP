@@ -6,7 +6,7 @@ import { checkStatement } from '@/lib/backing-link';
 import type { Festival, FestivalEvent } from '@/poker/festivals';
 import type { Hand } from '@/poker/types';
 
-import { cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
+import { bountiesOf, cost, playedMs, profit, stakesOf, stakingSummary } from './session-math';
 import { bankrollOf, formatOf } from './bankroll-math';
 import { cleanDeleted, type Deleted } from './deleted-math';
 import type { FestivalPlan } from './festival-plan';
@@ -366,7 +366,7 @@ function stampOf(ts: number): string {
 
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = [], sep: CsvSep = ','): string {
   const cell = (v: string | number | undefined) => csvCell(v, sep);
-  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'makeup_cut', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'makeup_cut', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id', 'bounties'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -411,6 +411,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         stampOf(s.startedAt),
         stampOf(s.endedAt!),
         s.id,
+        // Last, so spreadsheets made from older files keep their columns. Inside cash_out, not on top of it.
+        bountiesOf(s) || '',
       ]
         .map(cell)
         .join(sep),

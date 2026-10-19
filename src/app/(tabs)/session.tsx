@@ -352,7 +352,9 @@ function Live({ s }: { s: Session }) {
   // The clock and stack first; the chart, money and staking a frame later.
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
-  const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
+  // MTT: cashOut is the place's prize here, bounties apart; the session keeps their sum as its cashOut.
+  const [finish, setFinish] = useState({ cashOut: 0, bounties: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
+  const total = finish.cashOut + (s.kind === 'mtt' ? finish.bounties : 0);
   const swapEnd = useSwapEnd(s);
   const [more, setMore] = useState(false);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -363,7 +365,7 @@ function Live({ s }: { s: Session }) {
       const tr = s.tourney;
       const place = tr?.left || 0;
       const prize = (place && tr?.payouts?.[place - 1]) || 0;
-      setFinish({ cashOut: prize + (tr?.bounties || 0), place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
+      setFinish({ cashOut: prize, bounties: s.bounties ?? tr?.bounties ?? 0, place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
     } else {
       // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
       setFinish((f) => ({ ...f, cashOut: s.stack, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 }));
@@ -384,7 +386,8 @@ function Live({ s }: { s: Session }) {
     const now = Date.now();
     const ended: Session = {
       ...s,
-      cashOut: finish.cashOut,
+      cashOut: total,
+      bounties: mtt && finish.bounties > 0 ? finish.bounties : undefined,
       finish: finish.place || undefined,
       field: finish.field || undefined,
       tips: finish.tips || undefined,
@@ -617,6 +620,12 @@ function Live({ s }: { s: Session }) {
                   {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                   {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
                 </Row>
+                {mtt ? (
+                  <Row gap={S.sm} style={{ alignItems: 'flex-end' }}>
+                    <NumField money label={t('Bounties ({currency})', { currency: s.currency })} value={finish.bounties} onChange={(bounties) => setFinish((f) => ({ ...f, bounties }))} />
+                    {finish.bounties > 0 ? <T v="small" style={{ flex: 2 }}>{t('Total: {amount}', { amount: money(total, s.currency) })}</T> : <View style={{ flex: 2 }} />}
+                  </Row>
+                ) : null}
                 <View style={{ gap: S.sm }}>
                   <T v="label">{t('Como correu')}</T>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
@@ -626,7 +635,7 @@ function Live({ s }: { s: Session }) {
                   </View>
                 </View>
                 {(() => {
-                  const { owed, profit: p } = endPreview({ ...s, cashOut: finish.cashOut, tips: finish.tips || undefined }, sessions, packages);
+                  const { owed, profit: p } = endPreview({ ...s, cashOut: total, bounties: mtt ? finish.bounties : undefined, tips: finish.tips || undefined }, sessions, packages);
                   return (
                     <View style={{ gap: 6, paddingTop: S.xs }}>
                       {owed > 0 ? (
@@ -648,7 +657,7 @@ function Live({ s }: { s: Session }) {
                   <AfterFestivalSession
                     s={s}
                     after={after}
-                    prize={finish.cashOut}
+                    prize={total}
                     onReenter={() => {
                       setEnding(false);
                       rebuy();
