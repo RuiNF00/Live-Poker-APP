@@ -253,7 +253,7 @@ const ptBR: Copy = {
   gone: 'Este swap foi excluído por um dos jogadores.',
   autoRefresh: 'Esta página se atualiza sozinha.',
   ctaTitle: 'Faça seus swaps por escrito',
-  ctaBody: 'Na Sweatbook cada swap fica confirmado pelos dois, com as contas feitas quando alguém recebe prêmio. Você também registra sessões, mãos e staking.',
+  ctaBody: 'No Sweatbook cada swap fica confirmado pelos dois, com as contas feitas quando alguém recebe prêmio. Você também registra sessões, mãos e staking.',
   notFound: 'Swap não encontrado',
   metaTitle: (a, b, title) => `Swap ${a} × ${b} · ${title}`,
   metaDescription: 'Confirme o swap e acompanhe quem deve a quem.',
