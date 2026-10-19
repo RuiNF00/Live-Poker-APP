@@ -25,7 +25,7 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { inFestivalPackage, offerPackageIds, unpaidLinesIn, updateLine, useOffers, type ActionOffer } from '@/store/action-offer';
+import { inFestivalPackage, offerPackageIds, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
@@ -135,16 +135,22 @@ function BackerScreen() {
     );
 
   // Only festival action with no rate is left: the backer paid their pieces, in the festival's currency.
-  const settleApart = () =>
-    confirm(
+  const settleApart = () => {
+    const paidIn = new Map<string, number>();
+    for (const x of apartDue) paidIn.set(x.currency, (paidIn.get(x.currency) ?? 0) + x.due);
+    const amount = [...paidIn].map(([c, v]) => money(v, c)).join(' + ');
+    // A refund for an event not played, or a piece still in a session, can leave something either way.
+    const square = l.apart.every((a) => Math.abs(a.balance + (paidIn.get(a.currency) ?? 0)) < 0.01);
+    return confirm(
       t('Marcar como pago?'),
-      t('{name} pagou-te {amount} e ficam acertados.', { name: backer.name, amount: l.apart.filter((a) => a.unpaid >= 0.01).map((a) => money(a.unpaid, a.currency)).join(' + ') }),
+      square ? t('{name} pagou-te {amount} e ficam acertados.', { name: backer.name, amount }) : t('{name} pagou-te {amount}.', { name: backer.name, amount }),
       () => {
-        for (const x of apartDue) updateLine(x.offerId, x.lineId, (y) => ({ ...y, paid: true }));
+        for (const x of apartDue) setLinePaid(x.offerId, x.lineId, true);
         tap('medium');
       },
       t('Marcar como pago'),
     );
+  };
 
   const shareSummary = async (withYear = false) => {
     if (sending.current) return;

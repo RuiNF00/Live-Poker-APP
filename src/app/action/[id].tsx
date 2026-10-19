@@ -36,6 +36,7 @@ import {
   offerTotals,
   stakesFor,
   unanswered,
+  setLinePaid,
   updateLine,
   updateOffer,
   useOffers,
@@ -232,7 +233,7 @@ export default function ActionPackageScreen() {
   const togglePaid = (l: PackageLine) => {
     tap('select');
     const before = offerPackageIds(getOffers());
-    updateLine(o.id, l.id, (x) => ({ ...x, paid: !x.paid }));
+    setLinePaid(o.id, l.id, !l.paid);
     applyToSessions(before);
   };
 

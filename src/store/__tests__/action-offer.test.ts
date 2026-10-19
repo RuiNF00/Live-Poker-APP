@@ -233,8 +233,22 @@ test('only festival action with no rate left: «Marcar como pago» marks the bac
   const ev = F.events.filter((e) => !e.day2)[0].id;
   const o = { ...newOffer(F, [ev], 'o1'), lines: [{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }, { id: 'l2', backerId: 'b1', packageId: 'p2', pct: 5, paid: true }, { id: 'l3', backerId: 'b2', packageId: 'p3', pct: 5 }] };
   const fest = (id: string) => (id === F.id ? F : undefined);
-  assert.deepEqual(unpaidLinesIn([o], 'b1', [F.currency], fest, () => ({})), [{ offerId: 'o1', lineId: 'l1' }]);
+  assert.deepEqual(unpaidLinesIn([o], 'b1', [F.currency], fest, () => ({})), [{ offerId: 'o1', lineId: 'l1', currency: F.currency, due: lineCost(F, o, 10) }]);
   // Another currency, or the event already in a session: nothing to mark here.
   assert.deepEqual(unpaidLinesIn([o], 'b1', ['Kč'], fest, () => ({})), []);
   assert.deepEqual(unpaidLinesIn([o], 'b1', [F.currency], fest, () => ({ [ev]: 's1' })), []);
+});
+
+test('a piece marked paid after an event was skipped: that event is never refunded (Voz P2, 19 Oct)', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 1 };
+  const o = { ...pkg([line]), skipped: ['3'] };
+  // What the backer pays: event 2 only ($26,000 × 1% × 1.2).
+  assert.equal(pendingCost(F, o, line, {}), 312);
+  // Marked paid with event 3 already skipped: nothing goes back.
+  assert.equal(missedRefund(F, o, { ...line, paid: true, paidSkipped: ['3'] }, {}), 0);
+  // Skipped after paying: event 3 was paid for, so it goes back.
+  assert.equal(missedRefund(F, o, { ...line, paid: true }, {}), 600);
+  // A package with an event already in a session is left to the package screen (its stake changes too).
+  const fest = (id: string) => (id === F.id ? F : undefined);
+  assert.deepEqual(unpaidLinesIn([pkg([line])], 'b1', [F.currency], fest, () => ({ '2': 's1' })), []);
 });
