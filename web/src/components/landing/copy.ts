@@ -346,7 +346,7 @@ export function landingCopy(locale: Locale) {
       ctaFree: 'Descargar gratis',
       ctaSoon: 'Próximamente',
       lang: 'es',
-      soonBoth: 'Pronto en iPhone y Android',
+      soonBoth: 'Próximamente en iPhone y Android',
       getOn: 'Descárgalo en',
       getOnPlay: 'Descárgalo en',
       tryDemo: 'Ver una mano compartida',
