@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePro } from '@/billing/pro';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
+import { OfflineBadge } from '@/components/NetStatus';
 import { Button, Chip, Empty, IconButton, Row, T, tap } from '@/components/ui';
 import { YearCard } from '@/components/YearCard';
 import { t, variant } from '@/i18n';
@@ -160,6 +161,7 @@ export default function YearScreen() {
             {CARD_TITLE[kind]} · {page + 1}/{cards.length}
           </T>
         </View>
+        <OfflineBadge />
         <IconButton
           name={hideMoney ? 'eye-off-outline' : 'eye-outline'}
           label={hideMoney ? t('Mostrar valores') : t('Esconder valores')}

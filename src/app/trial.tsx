@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scrubNote } from '@/billing/cancel';
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
+import { OfflineBadge } from '@/components/NetStatus';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -61,8 +62,12 @@ export default function TrialNotice() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.xl, paddingHorizontal: S.gutter, paddingBottom: S.xl, gap: S.xl }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={{ gap: S.md }}>
-          <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name={ended ? 'leaf-outline' : 'checkmark-circle-outline'} size={28} color={C.accent} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={ended ? 'leaf-outline' : 'checkmark-circle-outline'} size={28} color={C.accent} />
+            </View>
+            {/* No native header here, so the no-signal badge sits in the screen itself. */}
+            <OfflineBadge />
           </View>
           <T v="title">{ended ? t('O teu teste grátis acabou') : t('O teu Pro continua até {date}', { date: until })}</T>
           <T v="callout">{ended ? t('Nada do que registaste se perde.') : t('Não vais ser cobrado. Tudo o que registares fica teu, mesmo depois.')}</T>
