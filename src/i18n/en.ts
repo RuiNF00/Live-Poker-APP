@@ -1069,7 +1069,7 @@ const en: Record<string, string> = {
   '{n} depósitos ou levantamentos ficam de fora (não são sessões).': '{n} deposits or withdrawals left out (they aren\'t sessions).',
   '{n} já estavam no Sweatbook e ficaram como estavam.': '{n} were already in Sweatbook and stayed as they were.',
   '{n} já estão no Sweatbook e não entram outra vez.': '{n} are already in Sweatbook and won\'t be added again.',
-  'Entra': 'Imported',
+  'Entra': 'Included',
   'Fica de fora': 'Left out',
   'Parecida com: {session}': 'Looks like: {session}',
   'Toca numa para a escolher.': 'Tap one to choose it.',
