@@ -6,25 +6,39 @@ select id as oid, edit_token as otok from create_action_offer('{"v":1,"player":"
 select last_event_at = to_timestamp(1790100000) as last_event_set from action_offers where id = :'oid';
 select payload->>'backer' = 'Ana' and confirmed_at is null as readable_unconfirmed from get_action_offer(:'oid');
 
--- Confirming is idempotent: the first time stays.
-select confirm_action_offer(:'oid') is not null as confirmed;
+-- Confirming is idempotent: the first time stays. It needs the version the page showed (20261019060000).
+select updated_at as v from get_action_offer(:'oid') \gset
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as confirmed;
 select confirmed_at as first_at from get_action_offer(:'oid') \gset
-select confirm_action_offer(:'oid') = :'first_at'::timestamptz as confirm_idempotent;
-select confirm_action_offer('nope') is null as confirm_unknown_null;
+select (confirm_action_offer(:'oid', :'v')->>'confirmed_at')::timestamptz = :'first_at'::timestamptz as confirm_idempotent;
+select confirm_action_offer('nope', now()) is null as confirm_unknown_null;
+select confirm_action_offer(:'oid', null) = '{"stale": true}'::jsonb as confirm_without_version_stale;
+-- The version rounded to the millisecond (through a JS Date) still confirms.
+select confirm_action_offer(:'oid', date_trunc('milliseconds', :'v'::timestamptz)) ? 'confirmed_at' as ms_version_confirms;
 
 -- A new title keeps the confirmation; new markup or events clear it.
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{title}', '"Outro"')) as title_updated from action_offers where id = :'oid';
 select confirmed_at = :'first_at'::timestamptz as title_keeps_confirmation from get_action_offer(:'oid');
+-- Neither a new title nor the same terms sent again (sharing the link again) make an open page stale.
+select update_action_offer(:'oid', :'otok', payload) as same_updated from action_offers where id = :'oid';
+select updated_at = :'v'::timestamptz as same_terms_keep_version from get_action_offer(:'oid');
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as same_terms_page_confirms;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{markup}', '1.2')) as markup_updated from action_offers where id = :'oid';
 select confirmed_at is null as markup_clears_confirmation from get_action_offer(:'oid');
-select confirm_action_offer(:'oid') is not null as reconfirmed;
+-- A page opened before the new markup can't confirm it: nothing is stamped.
+select confirm_action_offer(:'oid', :'v') = '{"stale": true}'::jsonb as old_page_stale;
+select confirmed_at is null as old_page_stamps_nothing from get_action_offer(:'oid');
+select updated_at as v from get_action_offer(:'oid') \gset
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as reconfirmed;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{events,0,p}', '6')) as events_updated from action_offers where id = :'oid';
 select confirmed_at is null as events_clear_confirmation from get_action_offer(:'oid');
 -- So do a new currency or backer name (20261017211000).
-select confirm_action_offer(:'oid') is not null as reconfirmed_2;
+select updated_at as v from get_action_offer(:'oid') \gset
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as reconfirmed_2;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{cur}', '"$"')) as cur_updated from action_offers where id = :'oid';
 select confirmed_at is null as cur_clears_confirmation from get_action_offer(:'oid');
-select confirm_action_offer(:'oid') is not null as reconfirmed_3;
+select updated_at as v from get_action_offer(:'oid') \gset
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as reconfirmed_3;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{backer}', '"Bea"')) as backer_updated from action_offers where id = :'oid';
 select confirmed_at is null as backer_clears_confirmation from get_action_offer(:'oid');
 select update_action_offer(:'oid', 'wrong', '{"v":1,"events":[]}') = false as update_wrong_token;
@@ -55,6 +69,6 @@ set role anon;
 \set ON_ERROR_STOP off
 select * from action_offers;
 select * from get_action_offer('x');
-select confirm_action_offer('x');
+select confirm_action_offer('x', now());
 \set ON_ERROR_STOP on
 reset role;

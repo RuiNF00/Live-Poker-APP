@@ -25,12 +25,15 @@ export function OfferView({
   locale,
   agreement: a,
   initialConfirmedAt,
+  version,
   invite,
 }: {
   id: string;
   locale: Locale;
   agreement: Agreement;
   initialConfirmedAt: string | null;
+  /** The updatedAt of the terms shown: the confirm only counts while they are still these. */
+  version: string;
   invite: string | null;
 }) {
   const c = offerCopy(locale);
@@ -38,6 +41,7 @@ export function OfferView({
   const [confirmedAt, setConfirmedAt] = useState(initialConfirmedAt);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [stale, setStale] = useState(false);
 
   useEffect(() => {
     track('share_viewed', { kind: 'action_agreement', offerId: id });
@@ -54,9 +58,14 @@ export function OfferView({
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/offers/${encodeURIComponent(id)}/confirm`, { method: 'POST' });
+      const res = await fetch(`/api/offers/${encodeURIComponent(id)}/confirm`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ seen: version }),
+      });
       const j = (await res.json().catch(() => ({}))) as { confirmedAt?: string };
       if (res.ok && j.confirmedAt) setConfirmedAt(j.confirmedAt);
+      else if (res.status === 409) setStale(true);
       else setError(res.status === 429 ? c.rateLimited : c.error);
     } catch {
       setError(c.error);
@@ -107,7 +116,14 @@ export function OfferView({
         <p className="of-muted of-small">{c.totalHint}</p>
       </section>
 
-      {confirmedAt ? (
+      {stale ? (
+        <section className="of-confirm" role="alert">
+          <p className="of-center">{c.changed}</p>
+          <button type="button" className="bk-save of-button" onClick={() => window.location.reload()}>
+            {c.review}
+          </button>
+        </section>
+      ) : confirmedAt ? (
         <section className="live-card of-done" role="status">
           <p className="of-done-title" suppressHydrationWarning>
             <span aria-hidden>✓ </span>
