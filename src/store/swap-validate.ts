@@ -15,11 +15,15 @@ const entryBase = (e: unknown): e is Obj => isObj(e) && isStr(e.id) && isStr(e.k
 const terms = (x: unknown): x is Obj =>
   isObj(x) && (x.scope === 'event' || x.scope === 'series') && isStr(x.title) && isStr(x.venue) && isStr(x.currency) && isNum(x.createdAt);
 
+// Deletes waiting for signal (removing): only ids that can go in a URL; anything else is dropped, not the swap.
+const badRemoving = (x: Obj) => x.removing !== undefined && !(Array.isArray(x.removing) && x.removing.every((r) => isStr(r) && /^[\w-]{1,64}$/.test(r)));
+const withoutRemoving = ({ removing: _, ...rest }: Obj) => rest;
+
 export function fixSwap(x: unknown): Swap | null {
   if (!isObj(x) || !validSwapId(x.id) || !validSwapToken(x.token) || (x.side !== 'a' && x.side !== 'b') || !isNum(x.createdAt)) return null;
   if (!terms(x.terms) || !party(x.terms.a) || !party(x.terms.b)) return null;
   if (!Array.isArray(x.entries) || !x.entries.every((e) => entryBase(e) && (e.side === 'a' || e.side === 'b'))) return null;
-  return x as unknown as Swap;
+  return (badRemoving(x) ? withoutRemoving(x) : x) as unknown as Swap;
 }
 
 export function fixSwapGroup(x: unknown): SwapGroup | null {
@@ -28,5 +32,5 @@ export function fixSwapGroup(x: unknown): SwapGroup | null {
   if (!terms(x.terms) || !isNum(x.terms.pct)) return null;
   if (!Array.isArray(x.seats) || !x.seats.every((s) => isObj(s) && isSeat(s.seat) && isStr(s.name))) return null;
   if (!Array.isArray(x.entries) || !x.entries.every((e) => entryBase(e) && isSeat(e.seat) && (e.to === undefined || isSeat(e.to)))) return null;
-  return x as unknown as SwapGroup;
+  return (badRemoving(x) ? withoutRemoving(x) : x) as unknown as SwapGroup;
 }

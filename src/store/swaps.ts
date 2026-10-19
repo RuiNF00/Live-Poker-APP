@@ -85,6 +85,8 @@ export interface Swap {
   accounts?: boolean;
   /** Side a only: the RevenueCat id last sent as the creator's, to send it again when it changes. */
   ownerRc?: string;
+  /** Server ids of my entries deleted here without signal: gone from this phone, deleted there on the next sync. */
+  removing?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -275,7 +277,10 @@ export function swapsTotal(list: Swap[], groups: SwapGroup[] = []): SwapsTotal {
 
 /** The phone's copy updated from the server, keeping entries the server hasn't got yet. */
 export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): Swap {
-  const onServer = new Set(remote.entries.filter((e) => e.side === local.side).map((e) => e.cid));
+  // Mine deleted here without signal stay out until the server has deleted them too.
+  const removing = new Set(local.removing ?? []);
+  const fromServer = removing.size ? remote.entries.filter((e) => !(e.side === local.side && removing.has(e.id))) : remote.entries;
+  const onServer = new Set(fromServer.filter((e) => e.side === local.side).map((e) => e.cid));
   const stillPending = local.entries.filter((e) => e.pending && !onServer.has(e.cid));
   // A player who erased their data has their name scrubbed on the server; the copy on this
   // phone already knew it and keeps it (a restored phone shows "o outro jogador").
@@ -293,7 +298,7 @@ export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): 
     left: remote.leftSide ?? undefined,
     accounts: remote.accounts ?? local.accounts,
     // A copy the server saved twice shows and notifies once (onePerCid).
-    entries: [...onePerCid(remote.entries, (e) => e.side).map(({ pending: _, ...e }) => e), ...stillPending],
+    entries: [...onePerCid(fromServer, (e) => e.side).map(({ pending: _, ...e }) => e), ...stillPending],
     gone: false,
     syncedAt: now,
     updatedAt: now,

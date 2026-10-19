@@ -1,12 +1,14 @@
 // The phone's group swaps: a copy of each group on the server plus this seat's token, on disk
 // like every other list. Same shape as swaps-store.ts: prizes and payments added without
-// signal wait here (pending) and go out on the next sync.
+// signal wait here (pending) and go out on the next sync, and so do my deletes (removing);
+// a group left without signal goes from the phone at once and from the server through the outbox.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
 import { appUserId } from '@/billing/purchases';
 import { onReconnect } from '@/lib/online';
+import { queue } from '@/lib/sync';
 import { SwapError, newCid } from '@/lib/swap-api';
 import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, setGroupOwnerRc } from '@/lib/swap-group-api';
 
@@ -114,6 +116,18 @@ export async function syncGroup(id: string): Promise<boolean> {
     if (!g) return true;
   }
   try {
+    for (const rid of g.removing ?? []) {
+      try {
+        const remote = await removeGroupEntry(id, g.token, rid);
+        dropRemoving(id, rid);
+        applyRemote(id, remote);
+      } catch (err) {
+        // Already gone there, or refused: off the list. No signal or the server busy: the next sync.
+        if (!(err instanceof SwapError) || retryable(err.status)) throw err;
+        dropRemoving(id, rid);
+      }
+    }
+    g = getGroup(id)!;
     for (const e of g.entries.filter((x) => x.pending)) {
       try {
         applyRemote(id, await addGroupEntry(id, g.token, e));
@@ -135,7 +149,7 @@ export async function syncGroup(id: string): Promise<boolean> {
       }
     }
     const remote = await fetchGroup(id, g.token);
-    if (!remote) saveGroup({ ...g, gone: true, entries: g.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
+    if (!remote) saveGroup({ ...g, gone: true, removing: undefined, entries: g.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
     else applyRemote(id, remote);
     return true;
   } catch {
@@ -165,6 +179,16 @@ export async function addGroupPrize(id: string, e: Pick<GroupEntry, 'kind' | 'am
   return getGroup(id)?.entries.some((x) => x.cid === cid && x.pending) ? 'queued' : 'sent';
 }
 
+const retryable = (status: number) => status === 408 || status === 429 || status >= 500;
+
+function dropRemoving(id: string, rid: string) {
+  const g = getGroup(id);
+  if (!g?.removing?.includes(rid)) return;
+  const removing = g.removing.filter((x) => x !== rid);
+  saveGroup({ ...g, removing: removing.length ? removing : undefined });
+}
+
+/** Like removeEntry for a pair: without signal it goes from here now and from the server on the next sync. */
 export async function removeGroupEntryHere(id: string, entry: GroupEntry): Promise<boolean> {
   const g = getGroup(id);
   if (!g || entry.seat !== g.seat) return false;
@@ -176,8 +200,20 @@ export async function removeGroupEntryHere(id: string, entry: GroupEntry): Promi
   try {
     applyRemote(id, await removeGroupEntry(id, g.token, entry.id));
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    const cur = getGroup(id)!;
+    if (err instanceof SwapError && err.status === 404) {
+      saveGroup({ ...cur, entries: cur.entries.filter((x) => x.id !== entry.id || x.seat !== entry.seat), updatedAt: Date.now() });
+      return true;
+    }
+    if (err instanceof SwapError && !retryable(err.status)) return false;
+    saveGroup({
+      ...cur,
+      entries: cur.entries.filter((x) => x.id !== entry.id || x.seat !== entry.seat),
+      removing: [...(cur.removing ?? []).filter((x) => x !== entry.id), entry.id],
+      updatedAt: Date.now(),
+    });
+    return true;
   }
 }
 
@@ -193,15 +229,20 @@ export async function releaseSeatHere(id: string, seat: number): Promise<'done' 
   }
 }
 
-/** The creator deletes it for everyone; anyone else leaves. Then it's gone from this phone. */
+/**
+ * The creator deletes it for everyone; anyone else leaves. Then it's gone from this phone. Without
+ * signal the server part waits in the outbox ('swap-group-leave', kept until the server answers).
+ * False only when the server refused it.
+ */
 export async function leaveGroupEverywhere(id: string): Promise<boolean> {
   const g = getGroup(id);
   if (!g) return true;
   if (!g.gone) {
     try {
       await leaveGroup(id, g.token);
-    } catch {
-      return false;
+    } catch (err) {
+      if (err instanceof SwapError && !retryable(err.status)) return false;
+      queue('swap-group-leave', { id, token: g.token }, id);
     }
   }
   markDeleted('swapGroups', [id]);
@@ -218,5 +259,5 @@ boot();
 
 // The signal is back: results and payments saved without it go out now, not on the next visit.
 onReconnect(() => {
-  void boot().then(() => Promise.all(state.groups.filter((g) => !g.gone && g.entries.some((e) => e.pending)).map((g) => syncGroup(g.id))));
+  void boot().then(() => Promise.all(state.groups.filter((g) => !g.gone && (g.removing?.length || g.entries.some((e) => e.pending))).map((g) => syncGroup(g.id))));
 });

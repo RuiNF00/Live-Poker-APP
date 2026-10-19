@@ -1,13 +1,15 @@
 // The phone's swaps: a copy of each swap on the server plus this side's token, on disk like
 // every other list (per-item keys). Kept apart from the main store so swaps never re-render
 // hands or sessions. Prizes and payments added without signal wait here (pending) and go out
-// on the next sync.
+// on the next sync; so do my entries deleted without signal (removing). A swap deleted without
+// signal goes from the phone at once and from the server through the outbox.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo, useSyncExternalStore } from 'react';
 
 import { appUserId } from '@/billing/purchases';
 import { onReconnect } from '@/lib/online';
+import { queue } from '@/lib/sync';
 import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOwnerRc, SwapError } from '@/lib/swap-api';
 
 import { quarantine } from './boot';
@@ -126,6 +128,18 @@ export async function syncSwap(id: string): Promise<boolean> {
     if (!s) return true;
   }
   try {
+    for (const rid of s.removing ?? []) {
+      try {
+        const remote = await removeSwapEntry(id, s.token, rid);
+        dropRemoving(id, rid);
+        applyRemote(id, remote);
+      } catch (err) {
+        // Already gone there, or refused: off the list. No signal or the server busy: the next sync.
+        if (!(err instanceof SwapError) || retryable(err.status)) throw err;
+        dropRemoving(id, rid);
+      }
+    }
+    s = getSwap(id)!;
     for (const e of s.entries.filter((x) => x.pending)) {
       try {
         applyRemote(id, await addSwapEntry(id, s.token, e));
@@ -148,7 +162,7 @@ export async function syncSwap(id: string): Promise<boolean> {
       }
     }
     const remote = await fetchSwap(id, s.token);
-    if (!remote) saveSwap({ ...s, gone: true, entries: s.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
+    if (!remote) saveSwap({ ...s, gone: true, removing: undefined, entries: s.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
     else applyRemote(id, remote);
     return true;
   } catch {
@@ -181,7 +195,16 @@ export async function addEntry(id: string, e: Pick<SwapEntry, 'kind' | 'amount' 
   return getSwap(id)?.entries.some((x) => x.cid === cid && x.pending) ? 'queued' : 'sent';
 }
 
-/** Removes one of my entries. One not sent yet just goes; a sent one needs signal. */
+const retryable = (status: number) => status === 408 || status === 429 || status >= 500;
+
+function dropRemoving(id: string, rid: string) {
+  const s = getSwap(id);
+  if (!s?.removing?.includes(rid)) return;
+  const removing = s.removing.filter((x) => x !== rid);
+  saveSwap({ ...s, removing: removing.length ? removing : undefined });
+}
+
+/** Removes one of my entries. One not sent yet just goes; a sent one goes now, or here at once and there on the next sync. */
 export async function removeEntry(id: string, entry: SwapEntry): Promise<boolean> {
   const s = getSwap(id);
   if (!s || entry.side !== s.side) return false;
@@ -194,20 +217,39 @@ export async function removeEntry(id: string, entry: SwapEntry): Promise<boolean
   try {
     applyRemote(id, await removeSwapEntry(id, s.token, entry.id));
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    // Refused (not mine): stays. No signal or the server busy: off this phone now, sent later.
+    const cur = getSwap(id)!;
+    // Already gone there: gone here too.
+    if (err instanceof SwapError && err.status === 404) {
+      saveSwap({ ...cur, entries: cur.entries.filter((x) => x.id !== entry.id), updatedAt: Date.now() });
+      return true;
+    }
+    if (err instanceof SwapError && !retryable(err.status)) return false;
+    saveSwap({
+      ...cur,
+      entries: cur.entries.filter((x) => x.id !== entry.id),
+      removing: [...(cur.removing ?? []).filter((x) => x !== entry.id), entry.id],
+      updatedAt: Date.now(),
+    });
+    return true;
   }
 }
 
-/** Deletes it on the server for both players, then here. False without signal. */
+/**
+ * Deletes it on the server for both players, then here. Without signal it goes from here now and
+ * from the server when the signal is back (outbox 'swap-delete', kept until the server answers).
+ * False only when the server refused it.
+ */
 export async function deleteSwapEverywhere(id: string): Promise<boolean> {
   const s = getSwap(id);
   if (!s) return true;
   if (!s.gone) {
     try {
       await deleteSwap(id, s.token);
-    } catch {
-      return false;
+    } catch (err) {
+      if (err instanceof SwapError && !retryable(err.status)) return false;
+      queue('swap-delete', { id, token: s.token }, id);
     }
   }
   // So a backup or my other phone doesn't bring it back as «Apagado do servidor».
@@ -229,5 +271,5 @@ boot();
 
 // The signal is back: results and payments saved without it go out now, not on the next visit.
 onReconnect(() => {
-  void boot().then(() => Promise.all(state.swaps.filter((s) => !s.gone && s.entries.some((e) => e.pending)).map((s) => syncSwap(s.id))));
+  void boot().then(() => Promise.all(state.swaps.filter((s) => !s.gone && (s.removing?.length || s.entries.some((e) => e.pending))).map((s) => syncSwap(s.id))));
 });

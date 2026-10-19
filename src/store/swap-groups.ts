@@ -76,6 +76,8 @@ export interface SwapGroup {
   accounts?: boolean;
   /** Seat 0 only: the RevenueCat id last sent as the creator's, to send it again when it changes. */
   ownerRc?: string;
+  /** Server ids of my entries deleted here without signal: gone from this phone, deleted there on the next sync. */
+  removing?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -189,13 +191,16 @@ export function groupLedger(g: Pick<SwapGroup, 'terms' | 'seats' | 'entries' | '
 }
 
 export function mergeRemoteGroup(local: SwapGroup, remote: RemoteGroup, now = Date.now()): SwapGroup {
-  const onServer = new Set(remote.entries.filter((e) => e.seat === local.seat).map((e) => e.cid));
+  // Mine deleted here without signal stay out until the server has deleted them too.
+  const removing = new Set(local.removing ?? []);
+  const fromServer = removing.size ? remote.entries.filter((e) => !(e.seat === local.seat && removing.has(e.id))) : remote.entries;
+  const onServer = new Set(fromServer.filter((e) => e.seat === local.seat).map((e) => e.cid));
   const stillPending = local.entries.filter((e) => e.pending && !onServer.has(e.cid));
   return {
     ...local,
     terms: remote.terms,
     seats: remote.seats.map((s) => ({ seat: s.seat, name: s.name, confirmedAt: s.confirmedAt ? Date.parse(s.confirmedAt) : undefined })),
-    entries: [...onePerCid(remote.entries, (e) => e.seat).map(({ pending: _, ...e }) => e), ...stillPending],
+    entries: [...onePerCid(fromServer, (e) => e.seat).map(({ pending: _, ...e }) => e), ...stillPending],
     accounts: remote.accounts ?? local.accounts,
     gone: false,
     syncedAt: now,

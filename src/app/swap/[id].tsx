@@ -201,7 +201,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   function onEntry(e: SwapEntry) {
     if (e.side !== s.side) return;
     confirmAction(t('Apagar registo?'), t('{name} deixa de o ver. Usa isto só para corrigir um erro.', { name: them }), t('Apagar'), async () => {
-      if (!(await removeEntry(s.id, e))) notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (!(await removeEntry(s.id, e))) notice(t('Não deu para apagar'), t('Tenta outra vez.'));
     });
   }
 
@@ -333,7 +333,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
                 t('Apagar'),
                 async () => {
                   if (await deleteSwapEverywhere(s.id)) router.back();
-                  else notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+                  else notice(t('Não deu para apagar'), t('Tenta outra vez.'));
                 },
               )
             }
