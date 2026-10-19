@@ -232,3 +232,21 @@ update invite_offer_codes set created_at = now() + interval '1 hour' where code 
 set role service_role;
 select (select ios_code from referral_offer(('b0000000-0000-0000-0000-000000000001')::uuid, 'ios')) = 'INVITECCC333' as cap_frees_after_a_day;
 reset role;
+-- Ecrã P3: «Apagar todos os dados» doesn't reset the counts kept per RevenueCat user.
+set role service_role;
+select erase_referrals(:dref2);
+select referral_code_for('c0000000-0000-0000-0000-000000000001', 'DRFC2345', 'rc_dref') = 'DRFC2345' as referrer_after_erase;
+select referral_code_for('c0000000-0000-0000-0000-000000000002', 'DNEW2345', 'rc_dnew');
+select claim_referral('c0000000-0000-0000-0000-000000000002', 'DRFC2345', 'link');
+select activate_referral_discount('c0000000-0000-0000-0000-000000000002');
+-- A friend who already had theirs erases and comes back on a new install.
+select erase_referrals('b0000000-0000-0000-0000-000000000002');
+select referral_code_for('c0000000-0000-0000-0000-000000000003', 'DBAK2345', 'rc_cap_2');
+select referral_code_for('c0000000-0000-0000-0000-000000000004', 'DREF4567', 'rc_dref_new');
+select claim_referral('c0000000-0000-0000-0000-000000000003', 'DREF4567', 'link') = 'ok' as back_claim;
+select activate_referral_discount('c0000000-0000-0000-0000-000000000003');
+reset role;
+select count(*) = 0 as referrer_cap_survives_erase from referral_rewards where install_id = 'c0000000-0000-0000-0000-000000000001';
+select count(*) = 0 as friend_once_survives_erase from referral_rewards where install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'friend';
+select count(*) = 1 as referrer_still_paid_for_new_friend from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'referrer';
+select count(*) = 0 as tally_has_no_raw_ids from referral_rc_tally where rc_hash like 'rc_%';
