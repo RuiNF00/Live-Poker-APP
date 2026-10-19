@@ -13,7 +13,7 @@ const exe = fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chrom
 const TAGLINE = {
   pt: 'Regista mãos de póquer live em segundos',
   en: 'Log live poker hands in seconds',
-  'pt-BR': 'Registre mãos de pôquer live em segundos',
+  'pt-BR': 'Registre mãos de poker ao vivo em segundos',
   es: 'Registra manos de póker en vivo en segundos',
 };
 

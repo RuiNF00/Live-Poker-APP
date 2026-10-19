@@ -16,16 +16,16 @@ Data not linked to you:
 
 | Category → type | Purpose |
 |---|---|
-| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players, optional private coaching links with coach comments, optional action-package agreements sent to a backer) | App Functionality |
+| User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players, optional private coaching links with coach comments, optional action-package agreements sent to a backer, hand packs (a title and the shared hands in it), fixed backer pages (sealed in the app), swap groups) | App Functionality |
 | User Content → Other User Content (optional cancellation feedback: reason + up to 120 characters) | Analytics |
-| Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
+| Purchases → Purchase History (RevenueCat receives receipts; purchases, renewals and cancellations from the RevenueCat webhook are also stored as usage events on the random install ID and sent to PostHog EU, #334) | App Functionality, Analytics |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
 | User Content → Photos or Videos (iPhone only: front-camera clip for the hand video, #234, sent to our server only to put the face in a circle on the MP4, then deleted; never stored, no facial recognition) | App Functionality |
-| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward; since #305 also tap count and time on hand_saved, the interval on share_created and invite_rewarded, never amounts, text or location) | Analytics, App Functionality |
-| Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA; plus, only if the player turns on comment notices for a shared hand, the Expo push token, stored with that link, #247) | Analytics, App Functionality |
-| Diagnostics → Crash Data (Sentry, EU region, #166: crash stack, app/update version, device model and OS; no IP, user id, device name or device id, scrubbed in the app and by server rules; automatic sessions off, so no Performance Data; only in builds with a DSN and while the Settings switch is on) | App Functionality |
+| Usage Data → Product Interaction (first-party usage events: event name, random install ID, platform, app version, channel; also used to check an invited friend's first hand for the referral reward; since #305 also tap count and time on hand_saved, the interval on share_created and invite_rewarded; onboarding answers (goals, stakes range, sessions per month; stakes range kept out of PostHog) and counts (hands per session, length range, hours imported); never amounts, names, location or typed text, except the optional reason when cancelling) | Analytics, App Functionality |
+| Identifiers → Device ID (random per-install ID for those events and for invites; not the IDFA; plus, only if the player turns on comment notices for a shared hand, the Expo push token, stored with that link, #247; also the random `EAS-Client-ID` install ID that expo-updates sends to Expo on every launch to check for updates, App Functionality; the privacy manifest already lists DeviceID, so app.json does not change; also Sentry's random per-install ID, which native crash reports carry, only while crash reports are on) | Analytics, App Functionality |
+| Diagnostics → Crash Data (Sentry, EU region, #166: crash stack, app/update version, device model and OS; app language, channel and platform as tags; no IP and no device name; JavaScript errors are scrubbed in the app, native crashes carry Sentry's per-install ID (declared under Device ID); automatic sessions off, so no Performance Data; only in builds with a DSN and while the Settings switch is on) | App Functionality |
 | Usage Data → Advertising Data (iOS: the Apple Ads attribution token, collected by RevenueCat with `enableAdServicesAttributionTokenCollection` in `src/billing/purchases.ts`, which tells us which Apple Ads campaign and keyword led to a trial or purchase; plus the first-touch install source sent with our usage events: a source label such as invite or shared hand and a short campaign tag from our own links, `src/lib/attribution.ts`. No IDFA, no ATT prompt, no ad SDK) | Analytics |
 
 Advertising Data (Security decision, scorecard #9): declared, **not linked, not used for tracking, Analytics**, matching the manifest at ae923f4. No ATT prompt is needed: the AdServices token is not tracking and holds no IDFA. The Apple Ads campaign and keyword stay in RevenueCat and never go into our usage events or PostHog with the install ID. Play: no change (iOS only).
@@ -50,9 +50,11 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 - Gambling / contests, real-money gambling: **No**.
 - Mature themes, violence, profanity, medical, alcohol/tobacco/drugs: **None**.
 - User-generated content: **Yes** (shared hands and comments). Requires report + removal, see `review-risks.md`.
-- Messaging / chat: No. Unrestricted web access: No.
+- Social media: **No** (no feed, no follows, no conversations; /h and /u are noindex, no sitemap, no people search).
+- Messaging and chat: **Yes**. Apple's definition includes "public posting", and per-street comments on shared hands are public posts (pesquisa/apple-classificacao-etaria.md).
+- Unrestricted web access: **No**. No WebView; expo-web-browser only opens our own fixed URLs, with no editable address bar (Replayer, v17, qa/classificacao-etaria-codigo.md).
 - Age assurance questions (2025+): parental controls **No**, age verification **No**, ads **No** (the app shows no ads).
-- Then set the **age override to 18+**: the app is about casino poker and the terms require 18+. Over-rating never causes a rejection; under-rating a poker app sometimes draws a question.
+- The answers compute **4+** (Brazil A12). Then **Override to Higher Age Rating → 18+**, which Apple makes mandatory when the terms set a higher minimum age ("you must override"); ours say 18+. Over-rating never causes a rejection.
 
 ## Apple: other App Store Connect fields
 
@@ -86,11 +88,12 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 | App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
 | Financial info → Other financial info (amounts the user publishes on a live page, swap, public profile or action package; optional) | Yes | Yes | App functionality |
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
-| Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
-| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites; Expo push token, only if comment notices are on, #247) | No (the push token alone is optional) | App functionality, Analytics |
+| Financial info → Purchase history | Yes (RevenueCat; purchase and cancellation events from its webhook are usage events, #334) | No (RevenueCat: "the collection is required and can't be turned off") | App functionality, Analytics |
+| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites; Expo push token, only if comment notices are on, #247; the random `EAS-Client-ID` install ID that expo-updates sends to u.expo.dev on every launch; the per-install ID ML Kit sends to Google; the random per-install ID Sentry sends with crash reports, only when crash reports are on) | No (the push token alone is optional) | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
 | App activity → App interactions (first-party usage events, including the #305 launch metrics; also the referral check) | Yes | No | Analytics, App functionality |
 | App info and performance → Crash logs (Sentry, #166; switch in Settings → Os teus dados) | Yes | Yes (optional) | App functionality |
+| App info and performance → Diagnostics (Android only: Google ML Kit text recognition via expo-text-extractor → play-services-mlkit reads receipts and the structure sheet on the phone and sends Google performance and device data) | Yes, not shared (Google acts as service provider) | No | Analytics |
 
 Install source (`src/lib/attribution.ts`: source label + campaign tag from our own links, sent with usage events) has no own Play category; it is covered by App interactions above. The Apple Ads token is iOS only, so nothing changes on Play. Apple gets its own Advertising Data row to match the privacy manifest (added at ae923f4).
 
@@ -101,7 +104,7 @@ Processed ephemerally: No, except audio (Yes).
 - Privacy policy: `https://{{WEB_DOMAIN}}/privacy`
 - Ads: **No**: the app shows no ads.
 - App access: all functionality available without special access (paid features: give the reviewer a note that a test subscription can be bought with Play's license testers).
-- Target audience: **18 and over only**.
+- Target audience: **18 and over only**. Optional "Restrict Minor Access" box next to it: **Rui decides** (proposal: on; pesquisa/play-politicas-poker.md §2). Sentry has tracing off (`tracesSampleRate: 0`), so it adds nothing to Diagnostics.
 - Content rating (IARC): category "Utility, Productivity, Communication, or Other" (not Game). No real or simulated gambling. Users can interact / share content: **Yes**. Digital purchases: **Yes**.
 - Financial features: **None**. News: No. Health: No. Government: No.
 - Real-money gambling, games and contests: **No**.
