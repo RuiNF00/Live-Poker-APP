@@ -137,7 +137,7 @@ function verbs(kind: VerbDef['kind'], p0: string[], p1: string[], p3: string[], 
 }
 verbs('fold', ['fold', 'folded', 'foldeo', 'tiro', 'retiro'], ['foldo', 'foldei', 'folde', 'desisto', 'desisti', 'largo', 'larguei', 'corri', 'corro', 'fujo', 'fugi'], ['folds', 'folda', 'foge', 'fugiu', 'foldou', 'desiste', 'desistiu', 'larga', 'largou', 'correu', 'corre', 'foldea', 'tira', 'retira']);
 verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou']);
-verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
+verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'veo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
 verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou']);
 verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
 verbs('bet', ['cbet'], ['cbeto'], ['cbets'], { cbet: true });
@@ -158,7 +158,7 @@ const ES_PAST_3: Record<string, VerbDef> = {
 
 /** "Faço fold", "dei check", "vai all-in": the helper says who, the noun says what. */
 const AUX_1 = new Set(['faco', 'fiz', 'dou', 'dei', 'vou', 'fui', 'meto', 'meti', 'hago', 'hice', 'doy', 'di', 'voy', 'fiz', 'tento', 'mando', 'mandei']);
-const AUX_3 = new Set(['faz', 'fez', 'da', 'deu', 'vai', 'foi', 'mete', 'meteu', 'hace', 'hizo', 'dio', 'va', 'fue', 'manda', 'mandou']);
+const AUX_3 = new Set(['faz', 'fez', 'da', 'deu', 'vai', 'foi', 'mete', 'meteu', 'hace', 'hizo', 'dio', 'pone', 'puso', 'va', 'fue', 'manda', 'mandou']);
 const NOUNS: Record<string, VerbDef['kind']> = {
   fold: 'fold', check: 'check', mesa: 'check', call: 'call', limp: 'call', bet: 'bet', cbet: 'bet', aposta: 'bet', apuesta: 'bet', donk: 'bet', raise: 'raise',
   reraise: 'raise', '3bet': 'raise', '4bet': 'raise', '5bet': 'raise', squeeze: 'raise', iso: 'raise', allin: 'allin', tudo: 'allin', shove: 'allin', checkraise: 'raise', tribet: 'raise',
@@ -261,6 +261,10 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/[’']/g, '');
   // Card symbols typed or pasted: ♠ ♥ ♦ ♣ (with or without the emoji selector).
   s = s.replace(/♠\uFE0F?/g, ' espadas ').replace(/[♥♡]\uFE0F?/g, ' copas ').replace(/[♦♢]\uFE0F?/g, ' ouros ').replace(/[♣♧]\uFE0F?/g, ' paus ');
+  // "$2,500", "€2500": the symbol before the number (dictation writes it there) goes after it.
+  s = s.replace(/(?<!r)([$€£])\s?(\d[\d.,]*)/g, ' $2 $1 ');
+  // "Dá-me 3-bet", "faz-me raise": the "-me" only says it was against hero.
+  s = s.replace(/(\p{L})-(?:me|te|nos)(?![\p{L}\d])/gu, '$1');
   // 2.500 / 1.000.000 → 2500; 2,5 → 2.5
   while (/\d\.\d{3}(?!\d)/.test(s)) s = s.replace(/(\d)\.(\d{3})(?!\d)/g, '$1$2');
   // "2,500" (English) is a thousand-mark; "2,5" a decimal.
@@ -282,13 +286,14 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\bre[\s-]*raise/g, ' reraise'],
     [/\bc[\s-]*bet/g, ' cbet'],
     [/\bunder the gun\b/g, ' utg '],
+    [/\bbig slick\b/g, ' ace king '],
     [/\butg\s*(?:\+|mais|plus|mas)\s*(1|um|one|uno|2|dois|two|dos)\b/g, (m: string) => (/(1|um|one|uno)$/.test(m) ? ' utg1 ' : ' utg2 ')],
     [/\b(?:middle|mid)\s*position\b|\bposicao (?:do )?meio\b|\bposicion media\b/g, ' mp '],
     [/\b(?:lo|low)[\s-]*jack\b|\blojack\b/g, ' lj '],
     [/\b(?:hi|high)[\s-]*jack\b|\bhijack\b/g, ' hj '],
     [/\bcut[\s-]*off\b|\bcutoff\b/g, ' co '],
     [/\bbig[\s-]*blind\b|\bbigblind\b|\bbig blinde\b|\bciega grande\b/g, ' bb '],
-    [/\bsmall[\s-]*blind\b|\bsmallblind\b|\bciega pequena\b/g, ' sb '],
+    [/\bsmall[\s-]*blind\b|\bsmallblind\b|\bciega (?:pequena|chica)\b/g, ' sb '],
     [/\bbotao\b|\bboton\b|\bbutton\b|\bdealer\b|\bbtn\b/g, ' btn '],
     [/\barco[\s-]*iris\b/g, ' arcoiris '],
     [/\bheads[\s-]*up\b|\bheadsup\b|\bmano a mano\b/g, ' hu '],
@@ -549,7 +554,7 @@ export function atomise(text: string): Atom[] {
       continue;
     }
     // "o big", "small abre", "estou de big", "la pequeña": the blinds, but not "big pot" or "15 big blinds".
-    const blindWord = x === 'big' || x === 'small' || ((x === 'pequena' || x === 'grande') && w[i - 1] === 'la');
+    const blindWord = x === 'big' || x === 'small' || ((x === 'pequena' || x === 'chica' || x === 'grande') && w[i - 1] === 'la');
     if (blindWord && !['pot', 'pote', 'bote', 'bet', 'stack', 'hand', 'mao', 'mano', 'blinds', 'ciegas'].includes(w[i + 1] ?? '') && numToken(w[i - 1] ?? '') === null) {
       out.push({ t: 'actor', a: { k: 'pos', label: x === 'big' || x === 'grande' ? 'BB' : 'SB' }, at: i });
       i++;
@@ -573,6 +578,12 @@ export function atomise(text: string): Atom[] {
     }
     if (x === 'hu') {
       out.push({ t: 'size', n: 2, at: i });
+      i++;
+      continue;
+    }
+    // "O big me dá 3-bet", "la ciega grande me sube": "me" says whom it was against, the seat acts.
+    const clitic = x === 'me' && out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero' && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]));
+    if (clitic) {
       i++;
       continue;
     }
@@ -738,11 +749,13 @@ export function atomise(text: string): Atom[] {
     // "com o ás de copas", "con el siete": an article between the cue and the card.
     const cue = cardMode !== null || CUES.includes(w[i - 1] ?? '') || (ARTICLES.has(w[i - 1] ?? '') && CUES.includes(w[i - 2] ?? ''));
     // "Botão, ás rei": a weak rank word right before another rank is a card too.
+    // "With a $6 straddle": an amount, not the ace of anything.
+    const moneyAfter = (y?: string) => !!y && y !== 'de' && (UNIT_AFTER.has(y) || ['straddle', 'ante', 'dollar', 'euro', 'real', 'reais'].includes(y));
     const nextRank = (k: number) => !/^\d+$/.test(w[k] ?? '') && (w[k] in RANK_WORDS || w[k] in PAIR_WORDS);
     const weakPair = WEAK_RANKS.has(x) && x !== 'a' && (nextRank(i + 1) || (w[i + 1] in SUIT_WORDS && nextRank(i + 2)));
     const strongRank = (x in RANK_WORDS && !WEAK_RANKS.has(x) && !/^\d+$/.test(x) && numToken(x) === null) || x in PAIR_WORDS || (/^[akqjt2-9]{2}[so]?$/.test(x) && !/^\d+$/.test(x)) || /^(\d)\1$/.test(x);
     const pairCue = (x === 'par' || x === 'pair' || x === 'pocket' || x === 'pockets' || x === 'pareja') && (isCardWord(w[i + 1]) || ((w[i + 1] === 'de' || w[i + 1] === 'of') && isCardWord(w[i + 2])));
-    if ((cue && isCardWord(x)) || strongRank || pairCue || weakPair || (cue && x === 'a' && isCardWord(w[i + 1]))) {
+    if ((cue && isCardWord(x) && !(/^\d+$/.test(x) && moneyAfter(w[i + 1]))) || strongRank || pairCue || weakPair || (cue && x === 'a' && isCardWord(w[i + 1]) && !moneyAfter(w[i + 2]))) {
       const c = readCards(w, i, 2, cue || pairCue);
       if (c.cards.length) {
         out.push({ t: 'cards', cards: c.cards, suited: c.suited, at: i });

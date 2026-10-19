@@ -584,7 +584,7 @@ export default function NewHand() {
             {!hand.actions.length && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('Contar a mão por voz')}
+                accessibilityLabel={!pro.isPro && PRO_ONLY.voiceHand ? `${t('Contar a mão por voz')}, Pro` : t('Contar a mão por voz')}
                 onPress={() => {
                   tap();
                   // Pro: telling the hand. Entering it with taps stays free.

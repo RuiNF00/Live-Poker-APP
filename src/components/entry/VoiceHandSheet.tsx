@@ -17,7 +17,7 @@ import { C, R, S, ff, posColor } from '@/theme';
 
 import { CardPicker } from '../CardPicker';
 import { PlayingCard } from '../PlayingCard';
-import { STREET_LABEL, timeline } from '../replayer/model';
+import { STREET_LABEL, spokenCard, timeline } from '../replayer/model';
 import { Button, Field, Row, SheetHeader, T, tap, useSheetPad } from '../ui';
 
 /** Where a card sits: hero's two, the board's five, or an opponent's two. */
@@ -135,7 +135,8 @@ export function VoiceHandSheet({
       <Pressable
         key={slotKey(s)}
         accessibilityRole="button"
-        accessibilityLabel={g ? t('Carta com naipe escolhido por nós. Toca para mudar') : t('Toca para mudar a carta')}
+        accessibilityLabel={spokenCard(c)}
+        accessibilityHint={g ? t('Carta com naipe escolhido por nós. Toca para mudar') : t('Toca para mudar a carta')}
         onPress={() => {
           tap('select');
           setPicking(on ? null : s);
