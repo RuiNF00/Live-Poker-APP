@@ -35,6 +35,8 @@ import { numText, parseNum, syncText, typedText } from '@/lib/num-input';
 import { MASK, moneyMasked } from '@/poker/format';
 import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
 
+import { OfflineBadge, useOffline } from './NetStatus';
+
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 // Off in Settings › Vibração; kept here so every tap() call obeys it.
@@ -83,7 +85,7 @@ export type TV =
 // How far each style may grow with the iPhone's text size setting. Big titles and
 // numbers already read well and would break their rows; body text grows the most.
 // Reading text follows Larger Text to ~200%; big numbers and titles stop earlier so they never collide.
-const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.3, h1: 1.5, h2: 1.6, h3: 1.6, body: 2, callout: 2, small: 2, tiny: 1.6, label: 2, mono: 1.6, monoS: 1.6, monoL: 1.25, monoXL: 1.15 };
+const MAX_SCALE: Record<TV, number> = { display: 1.15, title: 1.3, h1: 1.5, h2: 1.6, h3: 1.6, body: 2, callout: 2, small: 2, tiny: 2, label: 2, mono: 1.6, monoS: 1.6, monoL: 1.25, monoXL: 1.15 };
 /** Text inside buttons, chips and pills. */
 const CONTROL_SCALE = 1.6;
 
@@ -140,8 +142,11 @@ export function FitText({ style, onLayout, ...rest }: TextProps) {
   );
 }
 
+// Titles are headers so VoiceOver's rotor and TalkBack can jump between sections.
+const HEADER: Partial<Record<TV, true>> = { title: true, h1: true, h2: true };
+
 export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string }) {
-  return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} {...rest} style={[ts[v], color ? { color } : null, style]} />;
+  return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} accessibilityRole={HEADER[v] ? 'header' : undefined} {...rest} style={[ts[v], color ? { color } : null, style]} />;
 }
 
 const mono: TextStyle = { fontFamily: F.mono, fontVariant: ['tabular-nums'], color: C.text };
@@ -243,20 +248,28 @@ export function Screen({
 export function ScreenHeader({ title, eyebrow, right, style }: { title: React.ReactNode; eyebrow?: string; right?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   // At 160%+ a text title keeps at least 60% of the row; the actions go under it when they don't fit
   // beside it (the live session read "EPT B…" next to Terminar, its venue broken mid-word).
-  const wrap = useWindowDimensions().fontScale >= 1.6 && typeof title === 'string' && !!right;
+  const offline = useOffline();
+  const wrap = useWindowDimensions().fontScale >= 1.6 && typeof title === 'string' && (!!right || offline);
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'flex-end', gap: S.md, minHeight: 52 }, wrap ? { flexWrap: 'wrap' } : null, style]}>
       <View style={[{ gap: 2 }, wrap ? { flexGrow: 1, flexShrink: 1, flexBasis: '60%' } : { flex: 1 }]}>
         {eyebrow ? <T v="label">{eyebrow}</T> : null}
         {typeof title === 'string' ? (
-          <T v="title" numberOfLines={1}>
+          // A long session name next to "Terminar" ("Main Event €1.100") shrinks before it is cut.
+          <T v="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {title}
           </T>
         ) : (
           title
         )}
       </View>
-      {right ? <Row gap={S.sm}>{right}</Row> : null}
+      {right || offline ? (
+        <Row gap={S.sm}>
+          {/* No signal: next to the screen's buttons, in the row, so it never covers the title. */}
+          <OfflineBadge />
+          {right}
+        </Row>
+      ) : null}
     </View>
   );
 }
@@ -577,7 +590,7 @@ export function Stat({
       // Read as one line: "Por hora: 26 €. Lucro ÷ horas à mesa".
       accessibilityLabel={`${label}: ${locked ? t('Pro') : value}${sub ? '. ' + sub : ''}`}>
       <Row gap={4}>
-        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
+        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ flexShrink: 1 }}>
           {label}
         </T>
         {locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
@@ -595,7 +608,10 @@ export function Stat({
 }
 
 /** Lays stats out in rows of `cols`, all the same width. */
-export function StatGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: number }) {
+export function StatGrid({ children, cols: want = 3 }: { children: React.ReactNode; cols?: number }) {
+  // With very large system text three tiles a row cut "RESULTADO" to "RESULT…": go to two.
+  const { fontScale } = useWindowDimensions();
+  const cols = fontScale >= 1.6 && want > 2 ? 2 : want;
   const items = React.Children.toArray(children).filter(Boolean);
   const rows: React.ReactNode[][] = [];
   for (let i = 0; i < items.length; i += cols) rows.push(items.slice(i, i + cols));

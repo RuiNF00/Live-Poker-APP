@@ -8,6 +8,7 @@ import { Alert, Platform, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { markupLabel } from '@/components/staking/sheets';
 import { backedLabel, useLiveSnapshots } from '@/components/staking/use-backing';
+import { headerRightWithBadge } from '@/components/NetStatus';
 import { Amount, Button, Card, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { chips, money, num, shortDate } from '@/poker/format';
@@ -51,7 +52,7 @@ export default function BackedPlayerScreen() {
         options={{
           title: st.pl || t('Jogador'),
           headerBackTitle: t('Voltar'),
-          headerRight: () => <IconButton name="trash-outline" size={36} label={t('Tirar da lista')} onPress={remove} />,
+          headerRight: headerRightWithBadge(() => <IconButton name="trash-outline" size={36} label={t('Tirar da lista')} onPress={remove} />),
         }}
       />
       <Screen contentStyle={{ paddingTop: S.lg }}>

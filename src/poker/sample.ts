@@ -18,7 +18,7 @@ export function sampleHand(id: string): Hand {
       { name: '', stack: 38000 },
       { name: '', stack: 72000 },
       { name: '', stack: 45000 },
-      { name: t('Reg alemão'), stack: 88000 },
+      { name: t('Alemão'), stack: 88000 },
       { name: '', stack: 30000 },
       { name: '', stack: 96000 },
     ],

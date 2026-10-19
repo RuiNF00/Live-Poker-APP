@@ -702,7 +702,7 @@ const ptBR: Record<string, string> = {
   'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'Nada foi apagado deste celular. Tente de novo; sem conexão, conecte-se primeiro.',
   'Sem rede': 'Sem conexão',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
-  'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Tudo salvo no celular. Envia quando houver sinal.',
+  'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Tudo salvo no celular. É enviado quando houver sinal.',
   '1 por confirmar': '1 a confirmar',
   'A mesma percentagem': 'A mesma porcentagem',
   'Ainda ninguém cobrou': 'Ninguém recebeu prêmio ainda',

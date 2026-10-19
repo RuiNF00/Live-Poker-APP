@@ -12,6 +12,7 @@ import { ensureBackerPage, pushBackerPage, statementFor } from '@/components/sta
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
+import { headerRightWithBadge } from '@/components/NetStatus';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { statementUrl } from '@/lib/backing-link';
@@ -193,7 +194,7 @@ function BackerScreen() {
         options={{
           title: backer.name,
           headerBackTitle: 'Staking',
-          headerRight: () => <IconButton name="create-outline" size={36} label={t('Editar')} onPress={gate(() => setEditing(true))} />,
+          headerRight: headerRightWithBadge(() => <IconButton name="create-outline" size={36} label={t('Editar')} onPress={gate(() => setEditing(true))} />),
         }}
       />
       <Screen contentStyle={{ paddingTop: S.lg }}>

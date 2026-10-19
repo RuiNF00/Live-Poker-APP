@@ -1,43 +1,52 @@
-// A quiet pill at the top while there's no signal. Everything keeps working
-// (it's all on the phone); it only says that sharing, backups and invites
-// will go out by themselves later. Not on hand entry, where it would cover the blinds.
+// A quiet badge while there's no signal. Everything keeps working (it's all on the
+// phone); it only says that sharing, backups and invites will go out by themselves later.
+// It sits in the header row (next to the screen's own buttons), never floating over the
+// content: a pill over the top centre covered the native titles and, at 200% text, the tab titles.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { usePathname } from 'expo-router';
 import React from 'react';
-import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { useOnline, usePending } from '@/lib/sync';
-import { C } from '@/theme';
+import { C, F } from '@/theme';
 
-import { T } from './ui';
+export function useOffline(): boolean {
+  return !useOnline();
+}
 
-export function NetStatus() {
-  const online = useOnline();
+export function OfflineBadge() {
+  const offline = useOffline();
   const pending = usePending();
-  const insets = useSafeAreaInsets();
-  const path = usePathname();
-  // Hand entry has its own header with the blinds right where the pill floats; the hand is saved on the phone anyway.
-  // First run has nothing to send yet, and the pill would sit on the progress bar.
-  if (online || path === '/hand/new' || path === '/welcome') return null;
+  if (!offline) return null;
   return (
     <View
-      pointerEvents="none"
+      accessible
       accessibilityLiveRegion="polite"
-      accessibilityLabel={(pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')) + '. ' + t('Tudo guardado no telemóvel. Envia quando houver sinal.')}
-      style={{ position: 'absolute', top: Math.max(0, insets.top - 4), left: 0, right: 0, alignItems: 'center', zIndex: 50 }}>
-      {/* Icon only (and what's waiting to go out): a text pill at the top centre ran over long titles at 375 px.
-          Small and tucked just under the status bar so it clears the header buttons (the search one sits under it at 375). */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 22, height: 22, justifyContent: 'center', paddingHorizontal: pending > 0 ? 7 : 0, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border, opacity: 0.95 }}>
-        <Ionicons name="cloud-offline-outline" size={12} color={C.textDim} />
-        {pending > 0 ? (
-          <T v="tiny" color={C.textDim} maxFontSizeMultiplier={1.2} numberOfLines={1}>
-            {pending}
-          </T>
-        ) : null}
-      </View>
+      accessibilityLabel={(pending > 0 ? t('Sem rede · {n} por enviar', { n: pending }) : t('Sem rede')) + '. ' + t('Tudo guardado no telemóvel. Segue quando houver sinal.')}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 26, height: 26, justifyContent: 'center', paddingHorizontal: pending > 0 ? 8 : 0, borderRadius: 999, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+      <Ionicons name="cloud-offline-outline" size={14} color={C.textDim} />
+      {pending > 0 ? (
+        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: C.textDim, fontSize: 12, fontFamily: F.medium }}>
+          {pending}
+        </Text>
+      ) : null}
     </View>
   );
+}
+
+/**
+ * A screen's own header buttons with the badge before them. Called by the header as a
+ * plain function, not rendered as a component, so it must not call hooks itself
+ * (the header's hook count changed when a screen swapped in its own buttons).
+ */
+export function headerRightWithBadge(right: () => React.ReactNode) {
+  return function HeaderRight() {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <OfflineBadge />
+        {right()}
+      </View>
+    );
+  };
 }

@@ -22,8 +22,8 @@ export const C = {
   surface3: '#223029',
   border: 'rgba(238,242,239,0.08)',
   borderStrong: 'rgba(238,242,239,0.16)',
-  // Outline of things you type in or switch: 3:1 against the background.
-  fieldBorder: 'rgba(238,242,239,0.30)',
+  // Outline of things you type in or switch: 3.08:1 on bg, 3.37:1 inside a card.
+  fieldBorder: 'rgba(238,242,239,0.40)',
   hairline: 'rgba(238,242,239,0.06)',
   // Text: primary, secondary, tertiary.
   text: '#F1F4F2',

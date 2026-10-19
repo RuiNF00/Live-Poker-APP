@@ -362,7 +362,7 @@ function PlanCard({
       style={({ pressed }) => ({
         borderRadius: R.lg,
         borderWidth: 2,
-        borderColor: active ? C.accent : C.border,
+        borderColor: active ? C.accent : C.fieldBorder,
         backgroundColor: active ? C.accentSoft : C.surface,
         paddingHorizontal: compact ? S.md : S.lg,
         paddingVertical: compact ? S.sm : S.lg,
@@ -462,7 +462,7 @@ function FreeVsPro() {
 
 function Radio({ active }: { active: boolean }) {
   return (
-    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: active ? C.accent : C.fieldBorder, alignItems: 'center', justifyContent: 'center' }}>
       {active ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.accent }} /> : null}
     </View>
   );

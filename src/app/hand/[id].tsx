@@ -16,6 +16,7 @@ import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet, type ShareOption } from '@/components/ShareSheet';
+import { OfflineBadge } from '@/components/NetStatus';
 import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -419,6 +420,7 @@ ${link}`;
           title: '',
           headerRight: () => (
             <Row gap={S.sm}>
+              <OfflineBadge />
               {/* Share stays one tap away while the replayer is scrolled into view. */}
               <IconButton name="share-social-outline" size={36} label={t('Partilhar')} onPress={() => setShareOpen(true)} />
               <IconButton name="create-outline" size={36} label={t('Editar mão')} onPress={edit} />
