@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { mergeById } from '../backup';
 import { mergeBackups } from '../backup-merge';
-import { autoBankrollId, balanceOf, bankrollOf, emptyDuplicates, foldSeparated, refold, rehome, rehomeDeleted, separateBankrolls, sessionsIn } from '../bankroll-math';
+import { autoBankrollId, balanceOf, bankrollOf, dropUnusedAuto, emptyDuplicates, foldSeparated, refold, rehome, rehomeDeleted, separateBankrolls, sessionsIn } from '../bankroll-math';
 import { homeTotals } from '../fx-math';
 import { alive, bankrollMark, joinDeleted, type Deleted } from '../deleted-math';
 import { totals } from '../session-math';
@@ -252,4 +252,29 @@ test('the server copy moves the deposit too, so the other phone never sees it in
   const up = mergeBackups(backup(A), backup(B), 50);
   assert.deepEqual(up.bankrolls?.map((b) => b.id), ['b_live']);
   assert.deepEqual(up.transfers?.map((x) => [x.id, x.bankrollId, x.updatedAt]), [['tA', 'b_live', 50]]);
+});
+
+test('restore path: the moved deposit lands in one of the other phone\'s bankrolls, and where it lands is never dropped as unused (Staking)', () => {
+  // This phone: an untouched "Principal" €, "Live" and "Casino" with a 500 € deposit made here. The other phone deleted Casino.
+  const P: Bankroll = { id: ID, name: 'Principal', currency: '€', createdAt: 1 };
+  const L: Bankroll = { id: 'br_live', name: 'Live', currency: '€', createdAt: 2, updatedAt: 2 };
+  const G: Bankroll = { id: 'br_g', name: 'Casino', currency: '€', createdAt: 3, updatedAt: 3 };
+  const transfers = [dep('tA', 'br_g', 500, 5)];
+  const incoming = [L];
+  const del = { ['bankrolls:' + bankrollMark('br_g', '€')]: 10 };
+  // What importData does: rehome, then dropUnusedAuto with the moved lists, then fold.
+  const run = (theirs: Bankroll[]) => {
+    const before = mergeById([P, L, G], incoming).list;
+    const r = rehomeDeleted(before, alive(before, 'bankrolls', del), [], transfers, 100, theirs);
+    const moved = rehome(transfers, r.to, 100);
+    const kept = foldSeparated(dropUnusedAuto(r.bankrolls, incoming, { bankrolls: r.bankrolls, sessions: [], transfers: moved })).bankrolls;
+    return { kept, moved };
+  };
+  const a = run(incoming);
+  assert.equal(a.moved[0].bankrollId, 'br_live');
+  assert.equal(balanceOf({ bankrollId: 'br_live' }, [], a.moved, a.kept).balance, 500);
+  // Even with nothing of theirs in that currency, the bankroll it moves to stays.
+  const b = run([]);
+  assert.ok(b.kept.some((x) => x.id === b.moved[0].bankrollId), b.kept.map((x) => x.id).join(', '));
+  assert.equal(balanceOf({ bankrollId: b.moved[0].bankrollId }, [], b.moved, b.kept).balance, 500);
 });

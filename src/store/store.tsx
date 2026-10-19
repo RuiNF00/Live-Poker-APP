@@ -573,13 +573,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const allTransfers = [...transfers, ...(b.transfers ?? [])];
       const rehomed = (cur: Bankroll[]) => {
         const before = mergeById(cur, b.bankrolls ?? []).list;
-        return rehomeDeleted(before, alive(before, 'bankrolls', del), allSessions, allTransfers, now);
+        return rehomeDeleted(before, alive(before, 'bankrolls', del), allSessions, allTransfers, now, b.bankrolls ?? []);
       };
       const moved = rehomed(bankrolls).to;
       const keptNow = (cur: Bankroll[]) => {
-        const merged = rehomed(cur).bankrolls;
-        // What comes in counts as use too: imported € rows land in "Principal", which must stay.
-        return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: allSessions, transfers: allTransfers });
+        const r = rehomed(cur);
+        const merged = r.bankrolls;
+        // What comes in counts as use too: imported € rows land in "Principal", which must stay; so does where things just moved.
+        return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: rehome(allSessions, r.to, now), transfers: rehome(allTransfers, r.to, now) });
       };
       const predicted = foldSeparated(keptNow(bankrolls));
       const { to } = predicted;

@@ -131,11 +131,11 @@ function currencyMarks(local: Bankroll[], incoming: Bankroll[], d: Record<string
 /**
  * Bankrolls the other phone deleted, as they leave this one (`before` → `after`): what still points
  * at one here (a deposit made on this phone before the copy) moves to the first other bankroll in
- * its currency, as deleteBankroll did there, with a fresh edit time so the other phone takes the
+ * its currency (one of the other phone's, `theirs`, first), as deleteBankroll did there, with a fresh edit time so the other phone takes the
  * move. With none left in that currency the bankroll stays, edited now, so the delete can't take it:
  * a deposit is never lost nor counted in another currency. `to` says where things go.
  */
-export function rehomeDeleted(before: Bankroll[], after: Bankroll[], sessions: Pick<Session, 'bankrollId' | 'currency'>[], transfers: Pick<Transfer, 'bankrollId'>[], now: number): { bankrolls: Bankroll[]; to: Map<string, string> } {
+export function rehomeDeleted(before: Bankroll[], after: Bankroll[], sessions: Pick<Session, 'bankrollId' | 'currency'>[], transfers: Pick<Transfer, 'bankrollId'>[], now: number, theirs: Bankroll[] = []): { bankrolls: Bankroll[]; to: Map<string, string> } {
   const to = new Map<string, string>();
   const kept = new Set(after.map((b) => b.id));
   const gone = before.filter((b) => !kept.has(b.id));
@@ -143,9 +143,11 @@ export function rehomeDeleted(before: Bankroll[], after: Bankroll[], sessions: P
   const used = new Set<string>(transfers.map((x) => x.bankrollId));
   for (const x of sessions) if (x.bankrollId) used.add(x.bankrollId);
   const back: Bankroll[] = [];
+  const sent = new Set(theirs.map((b) => b.id));
   for (const g of gone) {
     if (!used.has(g.id)) continue;
-    const home = sortBankrolls(after).find((b) => b.currency === g.currency);
+    // Where the other phone's delete sent its own: the first of its bankrolls left in that currency.
+    const home = sortBankrolls(after.filter((b) => sent.has(b.id))).find((b) => b.currency === g.currency) ?? sortBankrolls(after).find((b) => b.currency === g.currency);
     if (home) to.set(g.id, home.id);
     else back.push({ ...g, updatedAt: now });
   }

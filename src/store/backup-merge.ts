@@ -24,7 +24,7 @@ export function mergeBackups(local: BackupData, remote: BackupData, now = Date.n
   for (const k of LISTS) (out as unknown as Record<string, unknown[]>)[k] = alive(mergeById((local[k] ?? []) as { id: string }[], (remote[k] ?? []) as { id: string }[]).list, k, deleted);
   // What this phone still had in a bankroll the other deleted moves to another in its currency (bankroll-math.ts).
   const before = mergeById(local.bankrolls ?? [], remote.bankrolls ?? []).list;
-  const moved = rehomeDeleted(before, out.bankrolls ?? [], out.sessions, out.transfers ?? [], now);
+  const moved = rehomeDeleted(before, out.bankrolls ?? [], out.sessions, out.transfers ?? [], now, remote.bankrolls ?? []);
   out.bankrolls = moved.bankrolls;
   out.sessions = rehome(out.sessions, moved.to, now);
   out.transfers = rehome(out.transfers ?? [], moved.to, now);
