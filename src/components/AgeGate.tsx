@@ -2,20 +2,19 @@
 // isn't a confirmed adult, a calm full screen explains why and asks again; it never closes the app
 // and never locks anyone out for good. Everywhere else it renders nothing.
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Linking, Modal, View } from 'react-native';
+import { AppState, Linking, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
 import { askAge, checkAge } from '@/lib/age-gate';
 import { opens, type AgeVerdict } from '@/lib/age-gate-core';
 import { C, S } from '@/theme';
 
 import { Button, T, Wordmark } from './ui';
 
-/** Apple's page on sharing an age range. */
-const LEARN_MORE = 'https://support.apple.com/en-us/122770';
+/** Apple's page on sharing an age range, in the player's language (es: the US Spanish page, as the law is the US one). */
+const LEARN_MORE = `https://support.apple.com/${({ 'pt-PT': 'pt-pt', 'pt-BR': 'pt-br', es: 'es-us', en: 'en-us' } as const)[variant]}/122770`;
 
 export function AgeGate() {
   const [v, setV] = useState<AgeVerdict | null>(null);
@@ -61,20 +60,21 @@ export function AgeGate() {
         : t('Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.');
   return (
     <Modal visible animationType="none" presentationStyle="fullScreen" statusBarTranslucent onRequestClose={() => {}}>
-      <View
+      {/* Scrolls, so with large text «Tentar de novo», the only way on, stays reachable. */}
+      <ScrollView
         accessibilityViewIsModal
-        style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top + 56, paddingBottom: insets.bottom + S.xl, paddingHorizontal: S.xl, alignItems: 'center', gap: S.xl }}>
+        style={{ flex: 1, backgroundColor: C.bg }}
+        contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 56, paddingBottom: insets.bottom + S.xl, paddingHorizontal: S.xl, alignItems: 'center', gap: S.xl }}>
         <Wordmark size={30} />
-        <Ionicons name="person-circle-outline" size={32} color={C.textDim} />
         <T v="title" accessibilityRole="header" style={{ textAlign: 'center' }}>
           {t('A Sweatbook é só para maiores de 18')}
         </T>
         <T color={C.textDim} style={{ textAlign: 'center' }}>
           {body}
         </T>
-        <Button title={t('Tentar de novo')} onPress={retry} disabled={busy} style={{ alignSelf: 'stretch' }} />
+        <Button title={busy ? t('A confirmar…') : t('Tentar de novo')} onPress={retry} disabled={busy} style={{ alignSelf: 'stretch' }} />
         <Button kind="ghost" size="md" title={t('Saber mais')} onPress={() => void Linking.openURL(LEARN_MORE).catch(() => {})} />
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
