@@ -72,7 +72,8 @@ function Sync() {
     if (!online) return;
     for (const b of backers) {
       const l = ledgers.get(b.id);
-      if (!b.page || !b.shareKey || !l) continue;
+      // Part of the deal with no rate yet: the page keeps its last numbers until the rate is here.
+      if (!b.page || !b.shareKey || !l || l.apart.length) continue;
       const st = statementFor({ ...b, shareKey: b.shareKey }, settings.nickname || '', l, { sessions, packages, payments, offers, home: settings.currency });
       const key = keyOf(st);
       const page = b.page;

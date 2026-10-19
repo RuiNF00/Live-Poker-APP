@@ -69,5 +69,10 @@ export function balanceLabel(balance: number, currency: string): { text: string;
     : { text: t('Deve-te {amount}', { amount: money(-balance, currency) }), color: C.good };
 }
 
+/** Festival action with no rate yet, one line per currency: «Deve-te 302,50 $ · sem câmbio, fora do total». */
+export function apartLines(l: BackerLedger): string[] {
+  return l.apart.filter((a) => Math.abs(a.balance) >= 0.01).map((a) => `${balanceLabel(a.balance, a.currency).text} · ${t('sem câmbio, fora do total')}`);
+}
+
 /** Backers made while Pro stay visible after it ends (withPro's `keep`). */
 export const useHasBackers = () => useStore().backers.length > 0;

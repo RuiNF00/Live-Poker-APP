@@ -8,7 +8,7 @@ import { View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { BackerSheet, blankBacker } from '@/components/staking/sheets';
-import { balanceLabel, splitMoney, useHasBackers, useStaking } from '@/components/staking/use-staking';
+import { apartLines, balanceLabel, splitMoney, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -62,7 +62,7 @@ function StakingScreen() {
                       key={b.id}
                       left={<Avatar name={b.name} />}
                       title={b.name}
-                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? parts(l, cur).join(' · ') : ''].filter(Boolean).join(', ')}
+                      accessibilityLabel={[b.name, bal.text, n === 1 ? t('1 sessão') : t('{n} sessões', { n }), l ? [...parts(l, cur), ...apartLines(l)].join(' · ') : ''].filter(Boolean).join(', ')}
                       subtitle={
                         <View style={{ gap: 1 }}>
                           <T v="small" numberOfLines={2}>
@@ -70,7 +70,7 @@ function StakingScreen() {
                           </T>
                           {/* One line per amount, never cut: what is still owed must always show. */}
                           {l
-                            ? parts(l, cur).map((p) => (
+                            ? [...parts(l, cur), ...apartLines(l)].map((p) => (
                                 <T key={p} v="tiny">
                                   {p}
                                 </T>

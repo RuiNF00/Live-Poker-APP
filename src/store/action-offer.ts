@@ -62,6 +62,8 @@ export interface AgreementPayload {
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+/** A name as the server keeps it: control characters as spaces, trimmed, cut. */
+const clean = (s: string, n: number) => s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 
 export function newOffer(f: Festival, picked: string[], id: string, now = Date.now()): ActionOffer {
   const events = f.events.filter((e) => picked.includes(e.id) && !e.day2).map((e) => e.id);
@@ -105,9 +107,9 @@ export function offerTotals(f: Festival, o: ActionOffer) {
 export function agreement(f: Festival, o: ActionOffer, line: PackageLine, player: string, backer: string, title: string, now = Date.now()): AgreementPayload {
   return {
     v: 1,
-    player: player.trim().slice(0, 40),
-    backer: backer.trim().slice(0, 40),
-    title: title.trim().slice(0, 60),
+    player: clean(player, 40),
+    backer: clean(backer, 40),
+    title: clean(title, 60),
     cur: f.currency.slice(0, 4),
     markup: r2(o.markup),
     events: offerEvents(f, o)

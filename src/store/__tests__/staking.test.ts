@@ -441,17 +441,23 @@ test("a session's makeup cut is the sum of the backers' rounded lines", () => {
   assert.equal(both[1].makeupCut, Math.round(rows.reduce((a, x) => a + x, 0) * 100) / 100);
 });
 
-test('festival action without a rate counts 1:1 and says which currency is missing (Bankroll P2)', () => {
+test('festival action without a rate is never added in: it stays apart in its own currency (QA P1, 19 Oct)', () => {
   const l = backerLedger('b1', [], [], []);
   l.currency = '€';
   l.rows.push({} as never); // the deal already has a currency
   addOfferDue(l, 'Kč', 1000, 0, () => null);
-  assert.equal(l.unpaid, 1000);
-  assert.equal(l.balance, -1000);
-  assert.deepEqual(l.missing, ['Kč']);
+  assert.equal(l.unpaid, 0);
+  assert.equal(l.balance, 0);
+  assert.deepEqual(l.apart, [{ currency: 'Kč', unpaid: 1000, balance: -1000 }]);
   addOfferDue(l, 'Kč', 0, 200, () => null);
-  assert.deepEqual(l.missing, ['Kč'], 'once');
-  assert.equal(l.balance, -800);
+  assert.deepEqual(l.apart, [{ currency: 'Kč', unpaid: 1000, balance: -800 }], 'one entry per currency');
+  // The totals show it in its own currency, never 1:1 in the deal's.
+  const only = stakingTotals([l], '€', {});
+  assert.deepEqual([only.currency, only.owed, only.split], ['Kč', 800, null]);
+  assert.equal(only.owedBy, 1);
+  l.balance = -50; // and 50€ in the deal's own currency: two numbers, not 850€
+  const tot = stakingTotals([l], '€', {});
+  assert.deepEqual(tot.split, [{ currency: '€', owe: 0, owed: 50 }, { currency: 'Kč', owe: 0, owed: 800 }]);
   // With a rate: converted, nothing missing.
   const m = backerLedger('b1', [], [], []);
   m.currency = '€';
@@ -477,17 +483,41 @@ test('no sessions: a second festival in another currency converts into the first
   addOfferDue(m, '$', 1000, 0, r);
   addOfferDue(m, 'Kč', 100, 0, r);
   assert.equal(m.currency, '$');
-  assert.deepEqual(m.missing, ['Kč']);
-  // A refund alone also fixes the currency, and payments already made keep theirs.
+  assert.equal(m.unpaid, 1000);
+  assert.deepEqual(m.apart, [{ currency: 'Kč', unpaid: 100, balance: -100 }]);
+  // A refund alone also fixes the currency.
   const n = backerLedger('b1', [], [], []);
   addOfferDue(n, '$', 0, 50, r);
   addOfferDue(n, '€', 100, 0, r);
   assert.equal(n.currency, '$');
-  const pay: BackerPayment[] = [{ id: 'p', backerId: 'b1', amount: 200, at: 1 } as BackerPayment];
-  const o = backerLedger('b1', [], [], pay, undefined, { table: {}, fallback: '€' });
-  addOfferDue(o, '$', 1000, 0, r);
-  assert.equal(o.currency, '€');
-  assert.equal(o.unpaid, 900);
+});
+
+test('no sessions: settling a festival keeps the deal in its currency (QA P1: «Deves 27,50€» after «Marcar como pago»)', () => {
+  const r = (a: string, b: string) => (a === b ? 1 : a === '$' && b === '€' ? 0.9 : a === '€' && b === '$' ? 1.1 : null);
+  const fx = { table: {}, fallback: '€' };
+  // Before: the backer owes 27,50$ for a festival in $.
+  const before = backerLedger('b1', [], [], [], undefined, fx);
+  addOfferDue(before, '$', 27.5, 0, r);
+  assert.equal(before.currency, '$');
+  assert.equal(before.balance, -27.5);
+  // «Marcar como pago» on the backer: a payment of the balance, counted in $ (the line stays due).
+  const pay: BackerPayment[] = [{ id: 'p', backerId: 'b1', amount: -27.5, at: 1 } as BackerPayment];
+  const after = backerLedger('b1', [], [], pay, undefined, fx);
+  addOfferDue(after, '$', 27.5, 0, r);
+  assert.equal(after.currency, '$');
+  assert.equal(after.balance, 0);
+  assert.deepEqual(after.missing, []);
+  // Or the line marked paid in the package: nothing due, still $, square.
+  const line = backerLedger('b1', [], [], [], undefined, fx);
+  addOfferDue(line, '$', 0, 0, r);
+  assert.equal(line.currency, '$');
+  assert.equal(line.balance, 0);
+  // Paid, then a second festival in €: converted into $, the payment stays in $.
+  const two = backerLedger('b1', [], [], pay, undefined, fx);
+  addOfferDue(two, '$', 27.5, 0, r);
+  addOfferDue(two, '€', 100, 0, r);
+  assert.equal(two.currency, '$');
+  assert.equal(Math.round(two.balance * 100) / 100, -110);
 });
 
 test('festival packages in another currency ask for rates too (Pronto P2: 165$ + 33€ stayed «Sem câmbio»)', () => {

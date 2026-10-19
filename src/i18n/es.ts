@@ -3186,6 +3186,7 @@ const es: Record<string, string> = {
   'Lisboa': 'Lisboa',
   'Praga': 'Praga',
   'Punta del Este, dezembro 2026': 'Punta del Este, diciembre 2026',
+  'sem câmbio, fora do total': 'sin tipo de cambio, fuera del total',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sin tipo de cambio para {list}: cuentas aproximadas hasta que haya conexión.',
   'All-in com menos': 'All-in por menos',
   'All-in para': 'All-in a',

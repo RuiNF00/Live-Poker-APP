@@ -11,7 +11,7 @@ import { Avatar } from '@/components/Avatar';
 import { ensureBackerPage, pushBackerPage, statementFor } from '@/components/staking/BackerPage';
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
-import { balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
+import { apartLines, balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { statementUrl } from '@/lib/backing-link';
@@ -134,6 +134,7 @@ function BackerScreen() {
         : l.balance > 0
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
           : t('Deves-me {amount}.', { amount: money(-l.balance, cur) }),
+      ...apartLines(l),
     ].filter((x) => x !== '');
     // The statement as a link they can open, or save in their own Sweatbook to follow every session.
     // It carries only this backer's own pieces (see lib/backing-link).
@@ -209,6 +210,12 @@ function BackerScreen() {
               {t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.join(', ') })}
             </T>
           ) : null}
+          {/* Festival action with no rate: never added in, shown apart in its own currency. */}
+          {apartLines(l).map((x) => (
+            <T key={x} v="small" color={C.warn} style={{ textAlign: 'center' }}>
+              {x}
+            </T>
+          ))}
           {backer.note ? (
             <T v="small" style={{ textAlign: 'center' }} numberOfLines={3}>
               {backer.note}

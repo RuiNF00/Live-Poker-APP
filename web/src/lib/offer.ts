@@ -41,8 +41,8 @@ const num = (v: unknown, min: number, max: number): number | null => {
   return r >= min && r <= max ? r : null;
 };
 const str = (v: unknown, n: number) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '');
-// Schedule ids ("12", "12-2A") and the player's own tournaments (uid('fe_'), 17 characters).
-const EVENT_ID = /^[A-Za-z0-9_-]{1,32}$/;
+// Schedule ids ("12", "12-2A", "85-1F Turbo") and the player's own tournaments (uid('fe_'), 17 characters).
+const EVENT_ID = /^[A-Za-z0-9_-][A-Za-z0-9 _-]{0,31}$/;
 
 function parseEvent(x: unknown): AgreementEvent | null {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
