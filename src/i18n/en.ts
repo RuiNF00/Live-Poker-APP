@@ -338,7 +338,7 @@ const en: Record<string, string> = {
   'Pára antes da tua decisão e esconde o resultado. Quem quiser saber tem de abrir o link.': 'Stops before your decision and hides the result. Anyone who wants to know has to open the link.',
   'Mostra a mão até ao fim, com as cartas e quem ganhou.': 'Shows the hand to the end, with the cards and who won.',
   'O teu comentário': 'Your comment',
-  'Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?': 'e.g. Bubble with 58 left, he only 3-bet once in 3h. Fold?',
+  'Ex.: Bolha a 58, ele só abriu uma vez em 3h. Fold?': 'e.g. Bubble with 58 left, he only opened once in 3h. Fold?',
   'Usar as notas': 'Use my notes',
   'A juntar a tua voz…': 'Adding your voice…',
   'A preparar…': 'Preparing…',

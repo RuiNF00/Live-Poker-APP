@@ -131,7 +131,7 @@ const ptBR: Record<string, string> = {
   'Pára antes da tua decisão e esconde o resultado. Quem quiser saber tem de abrir o link.': 'Pausa antes da sua decisão e esconde o resultado. Quem quiser saber tem que abrir o link.',
   'Mostra a mão até ao fim, com as cartas e quem ganhou.': 'Mostra a mão até o fim, com as cartas e quem ganhou.',
   'O teu comentário': 'Seu comentário',
-  'Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?': 'Ex.: Bolha com 58, ele só deu 3-bet uma vez em 3h. Fold?',
+  'Ex.: Bolha a 58, ele só abriu uma vez em 3h. Fold?': 'Ex.: Bolha com 58, ele só abriu uma vez em 3h. Fold?',
   'A juntar a tua voz…': 'Adicionando sua voz…',
   'A preparar…': 'Preparando…',
   'Partilhar no Instagram': 'Compartilhar no Instagram',
