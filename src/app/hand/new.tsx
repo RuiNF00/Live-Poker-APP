@@ -38,7 +38,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, cutAt, entryLine, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -133,10 +133,10 @@ export default function NewHand() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand]);
 
-  const update = (h: Hand, posChosen = draft.posChosen, autoFrom?: number, checkDownFrom = draft.checkDownFrom) => {
+  // checkDownFrom left out carries «Check até ao fim» over; null turns it off.
+  const update = (h: Hand, posChosen = draft.posChosen, autoFrom?: number, checkDownFrom: number | null | undefined = draft.checkDownFrom) => {
     setHistory((x) => [...x.slice(-60), draft]);
-    const down = checkDownFrom !== undefined && h.actions.length >= checkDownFrom ? checkDownFrom : undefined;
-    setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen, autoFrom, checkDownFrom: down });
+    setDraftState({ hand: { ...h, updatedAt: Date.now() }, posChosen, autoFrom, checkDownFrom: keepCheckDown(h, checkDownFrom) });
   };
   // A reopened or edited hand has no tap history: undo then steps back through the hand itself.
   const back = history.length ? null : stepBack(hand);
@@ -609,7 +609,9 @@ export default function NewHand() {
               <Row gap={10}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
-                {shortScreen && !hand.actions.length ? <Chip label={t('Voz')} onPress={openVoice} /> : null}
+                {shortScreen && !hand.actions.length ? (
+                  <Chip label={!pro.isPro && PRO_ONLY.voiceHand ? t('Voz') + ' · Pro' : t('Voz')} icon={!pro.isPro && PRO_ONLY.voiceHand ? 'lock-closed' : 'mic'} onPress={openVoice} />
+                ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
                   <T v="small">
@@ -688,8 +690,10 @@ export default function NewHand() {
                 ) : null}
                 <Chip
                   label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}`}
-                  // Back before that action, with «Check até ao fim» off: it was set for the line being undone.
-                  onPress={() => update(cutAt(hand, x.i), draft.posChosen, undefined, undefined)}
+                  onPress={() => {
+                    const f = fixAt(hand, x.i);
+                    update(f.hand, draft.posChosen, undefined, f.checkDownFrom);
+                  }}
                 />
               </React.Fragment>
             ))}

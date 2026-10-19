@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, closingCall, showdownCall, cutAt, entryLine, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -128,10 +128,15 @@ class Entry {
   }
   /** "Check até ao fim": this street now, every later street once its card is in. */
   checkDown() {
+    const from = this.hand.actions.length;
     this.push(checkDownNow(this.hand, this.s));
-    this.down = true;
+    this.checkDownFrom = keepCheckDown(this.hand, from);
   }
-  private down = false;
+  /** As in hand/new.tsx: «Check até ao fim» from this action on. */
+  private checkDownFrom?: number;
+  private get down() {
+    return this.checkDownFrom !== undefined;
+  }
   board(...cards: string[]) {
     assert.ok(this.s.needsBoard);
     this.taps += cards.length;
@@ -190,13 +195,19 @@ class Entry {
     this.settle();
   }
   /** A chip on «Corrigir:»: back to just before that action, «Check até ao fim» off. */
+  /** A tap on a «Corrigir:» chip, through the same fixAt and update() defaults the screen uses. */
   fix(i: number) {
     this.taps++;
     this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
-    this.hand = cutAt(this.hand, i);
-    this.autoFrom = undefined;
-    this.down = false;
+    const f = fixAt(this.hand, i);
+    this.update(f.hand, f.checkDownFrom);
     this.settle();
+  }
+  /** hand/new.tsx's update(): checkDownFrom left out carries over, null turns it off. */
+  private update(h: Hand, checkDownFrom: number | null | undefined = this.checkDownFrom) {
+    this.hand = h;
+    this.autoFrom = undefined;
+    this.checkDownFrom = keepCheckDown(h, checkDownFrom);
   }
   undo() {
     const prev = this.history.pop()!;

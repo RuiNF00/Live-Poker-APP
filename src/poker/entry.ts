@@ -398,6 +398,19 @@ export function entryLine(hand: Hand): LineItem[] {
   return out.reverse();
 }
 
+/**
+ * «Check até ao fim» after a change to the hand: still on from `from` while the
+ * hand reaches that far. `null` turns it off.
+ */
+export function keepCheckDown(h: Hand, from: number | null | undefined): number | undefined {
+  return typeof from === 'number' && h.actions.length >= from ? from : undefined;
+}
+
+/** A tap on a «Corrigir:» chip: back before action `i`, with «Check até ao fim» off (it was set for the line being undone). */
+export function fixAt(hand: Hand, i: number): { hand: Hand; checkDownFrom: null } {
+  return { hand: cutAt(hand, i), checkDownFrom: null };
+}
+
 /** The hand back to just before action `i`: that action, the ones after it, the board they dealt and the winners go. */
 export function cutAt(hand: Hand, i: number): Hand {
   const back: Hand = { ...hand, actions: hand.actions.slice(0, i), winners: undefined, winners2: undefined, board2: undefined };
