@@ -44,6 +44,8 @@ test('an app that rounds to whole units still matches; two decimals that differ 
   const have = [s('a', '2025-02-03T21:00', 100, 250.6)];
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 251)], have).size, 1);
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 250.4)], have).size, 0);
+  // Rounding never moves more than 0.50: 150.01 against 151 is another night.
+  assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 251)], [s('a', '2025-02-03T21:00', 100, 250.01)]).size, 0);
   // +100 and +101 on the same day are two different nights.
   assert.equal(likelyDuplicates([s('x', '2025-02-03T21:00', 100, 201)], [s('a', '2025-02-03T21:00', 100, 200)]).size, 0);
 });
