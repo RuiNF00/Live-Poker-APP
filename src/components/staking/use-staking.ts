@@ -7,7 +7,7 @@ import { missedRefund, pendingCost, useOffers } from '@/store/action-offer';
 import { getPlan, planFestival, useFestivalPlans } from '@/store/festival-plan';
 import { useFestivals } from '@/store/my-festivals';
 import { rate } from '@/store/fx-math';
-import { backerLedger, packageStates, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
+import { addOfferDue, backerLedger, packageStates, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
 import { useStore } from '@/store/store';
 import { C } from '@/theme';
 
@@ -42,11 +42,7 @@ export function useStaking() {
         const due = l ? pendingCost(f, o, line, started) : 0;
         // Paid for events that went by with no session: that money goes back to them.
         const back = l ? missedRefund(f, o, line, started) : 0;
-        if (!l || (!due && !back)) continue;
-        if (!l.rows.length) l.currency = f.currency;
-        const k = rate(table, f.currency, l.currency, o.createdAt, manual) ?? 1;
-        l.unpaid += due * k;
-        l.balance += (back - due) * k;
+        if (l) addOfferDue(l, f.currency, due, back, (from, to) => rate(table, from, to, o.createdAt, manual));
       }
     }
     const totals = stakingTotals([...ledgers.values()], home, table, manual);

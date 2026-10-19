@@ -170,6 +170,21 @@ export interface BackerLedgerRow {
   owed: number;
 }
 
+/**
+ * Festival action not yet in a session, onto a backer's ledger: what they owe for it (`due`) and what
+ * comes back for events that went by unplayed (`back`), both in the festival's currency. Without a
+ * rate it counts 1:1, as the sessions do, and the currency goes to `missing` so the screen says so.
+ */
+export function addOfferDue(l: BackerLedger, currency: string, due: number, back: number, rateTo: (from: string, to: string) => number | null) {
+  if (!due && !back) return;
+  if (!l.rows.length) l.currency = currency;
+  const x = rateTo(currency, l.currency);
+  if (x === null && !l.missing.includes(currency)) l.missing.push(currency);
+  const k = x ?? 1;
+  l.unpaid += due * k;
+  l.balance += (back - due) * k;
+}
+
 export interface BackerLedger {
   rows: BackerLedgerRow[];
   /**

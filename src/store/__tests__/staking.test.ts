@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 
@@ -439,4 +439,29 @@ test("a session's makeup cut is the sum of the backers' rounded lines", () => {
   const r2 = packageStates([loss, win], thirds);
   const rows = thirds.map((p) => backerLedger(p.backerId, [loss, win], thirds, [], r2).rows.find((x) => x.session.id === win.id)!.cut);
   assert.equal(both[1].makeupCut, Math.round(rows.reduce((a, x) => a + x, 0) * 100) / 100);
+});
+
+test('festival action without a rate counts 1:1 and says which currency is missing (Bankroll P2)', () => {
+  const l = backerLedger('b1', [], [], []);
+  l.currency = '€';
+  l.rows.push({} as never); // the deal already has a currency
+  addOfferDue(l, 'Kč', 1000, 0, () => null);
+  assert.equal(l.unpaid, 1000);
+  assert.equal(l.balance, -1000);
+  assert.deepEqual(l.missing, ['Kč']);
+  addOfferDue(l, 'Kč', 0, 200, () => null);
+  assert.deepEqual(l.missing, ['Kč'], 'once');
+  assert.equal(l.balance, -800);
+  // With a rate: converted, nothing missing.
+  const m = backerLedger('b1', [], [], []);
+  m.currency = '€';
+  m.rows.push({} as never);
+  addOfferDue(m, '$', 100, 0, () => 0.9);
+  assert.equal(m.unpaid, 90);
+  assert.deepEqual(m.missing, []);
+  // A backer with no sessions yet takes the festival's currency.
+  const n = backerLedger('b1', [], [], []);
+  addOfferDue(n, '$', 100, 0, (a, b) => (a === b ? 1 : null));
+  assert.equal(n.currency, '$');
+  assert.deepEqual(n.missing, []);
 });
