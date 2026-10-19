@@ -178,10 +178,16 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
   if (!LIVE) return null;
   try {
-    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    const info = await (await rc()).getCustomerInfo();
+    const e = info.entitlements.active[ENTITLEMENT];
     if (!e || e.store === 'PROMOTIONAL') return null;
-    const plan = (Object.keys(PRODUCTS) as PlanId[]).find((id) => e.productIdentifier.startsWith(PRODUCTS[id]));
-    return plan ? { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null } : null;
+    const planOf = (product: string) => (Object.keys(PRODUCTS) as PlanId[]).find((id) => product.startsWith(PRODUCTS[id]));
+    const plan = planOf(e.productIdentifier);
+    if (plan) return { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null };
+    // «Pagar uma vez» bought while a subscription still runs: the entitlement shows the lifetime
+    // (it lasts longest), but the subscription keeps renewing until it is cancelled in the store.
+    const sub = Object.values(info.subscriptionsByProductIdentifier ?? {}).find((x) => x.isActive && planOf(x.productIdentifier));
+    return sub ? { plan: planOf(sub.productIdentifier)!, willRenew: sub.willRenew, product: sub.productIdentifier, ends: sub.expiresDate ? Date.parse(sub.expiresDate) : null } : null;
   } catch {
     return null;
   }

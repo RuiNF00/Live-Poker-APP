@@ -247,16 +247,19 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && !period ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && period?.renews ? t('Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.', { date: period.date }) : forGood ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               // A failed renewal goes straight to the store's page, where the card is changed.
               onPress={() =>
-                forGood && !period
-                  ? notice(t('Pro para sempre'), t('Pagaste uma vez: não há subscrição para cancelar nem renovações.'))
-                  : pro.billingIssue
-                    ? manageSubscription()
-                    : pro.isPro
-                      ? router.push('/cancel')
-                      : manageSubscription()
+                // Paid once while a subscription still renews: straight to the store to cancel it.
+                forGood && period?.renews
+                  ? manageSubscription()
+                  : forGood
+                    ? notice(t('Pro para sempre'), t('Pagaste uma vez: não há subscrição para cancelar nem renovações.'))
+                    : pro.billingIssue
+                      ? manageSubscription()
+                      : pro.isPro
+                        ? router.push('/cancel')
+                        : manageSubscription()
               }
             />
             <ListItem

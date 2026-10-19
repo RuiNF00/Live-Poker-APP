@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerTaken, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
@@ -32,6 +32,8 @@ export default function Cancel() {
   const [product, setProduct] = useState<string | null>(null);
   const [storeOffer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
+  // Paid once: the subscription still renews until it is cancelled in the store, which stays one tap away.
+  const [paidOnce, setPaidOnce] = useState(false);
   const annual = plans.find((p) => p.id === 'annual');
   const monthly = plans.find((p) => p.id === 'monthly');
   // The discount shows only with the store's own numbers for every part of its line: price, % off, months and the price after.
@@ -98,6 +100,8 @@ export default function Cancel() {
     if (offerTaken(res)) void markOfferSeen('lifetime');
     if (res === 'ok') {
       track('lifetime_purchased', lifetimeProps());
+      setPaidOnce(true);
+      AccessibilityInfo.announceForAccessibility(t('A tua subscrição continua a renovar até a cancelares na {store}.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
       // The subscription keeps renewing until the player cancels it: straight to the store's page (payments audit §7).
       toStore();
     } else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));
@@ -211,7 +215,11 @@ export default function Cancel() {
               ) : null}
 
               {reason === 'noSubscription' ? (
-                lifetime ? (
+                paidOnce ? (
+                  <OfferCard icon="infinite" title={t('Pro para sempre')} body={t('A tua subscrição continua a renovar até a cancelares na {store}.', { store })}>
+                    <Button kind="secondary" title={t('Gerir subscrição')} onPress={() => void manageSubscription()} />
+                  </OfferCard>
+                ) : lifetime ? (
                   <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
                     <Button kind="secondary" title={t('Pagar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
                   </OfferCard>
