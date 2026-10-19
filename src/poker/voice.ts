@@ -388,7 +388,8 @@ type Atom =
   | { t: 'heroMark'; at: number }
   | { t: 'have'; at: number }
   | { t: 'verb'; v: VerbDef; at: number }
-  | { t: 'amount'; amt: Amount; at: number }
+  /** held: said after «com/con/with» («o CO, com 45 mil, paga»), the way a stack is said. */
+  | { t: 'amount'; amt: Amount; at: number; held?: true }
   | { t: 'cards'; cards: CardSpec[]; suited?: boolean; ds?: 1 | 2; texture?: Texture; at: number }
   | { t: 'street'; s: Street; at: number }
   | { t: 'show'; at: number }
@@ -685,7 +686,10 @@ export function atomise(text: string, hole = 2): Atom[] {
     if (HAVE_1.has(x)) {
       // "tenho 30 mil" is a stack, "tenho ás rei" are cards.
       const num = readNumber(w, i + 1);
-      if (num && !(isCardWord(w[i + 1]) && !UNIT_AFTER.has(w[num.next] ?? ''))) {
+      // «tengo 25 mil»: «25» reads as cards too, but a unit right after it makes it chips.
+      // «tenho 7 de copas»: «de» and a suit make it a card (Registo P3).
+      const suited = isCardWord(w[i + 1]) && w[i + 2] === 'de' && (w[i + 3] ?? '') in SUIT_WORDS;
+      if (num && !suited && !(isCardWord(w[i + 1]) && !UNIT_AFTER.has(w[num.next] ?? '') && !UNIT_AFTER.has(w[i + 2] ?? ''))) {
         out.push({ t: 'heroMark', at: i }, { t: 'stack', at: i });
         i++;
         continue;
@@ -869,7 +873,8 @@ export function atomise(text: string, hole = 2): Atom[] {
       const u = readAmountUnit(w, j);
       j = u.next;
       const by = BY_WORDS.has(w[i - 1] ?? '');
-      out.push({ t: 'amount', amt: { v: num.value, unit: u.unit, ...(by ? { by } : {}) }, at: i });
+      const held = ['com', 'con', 'with'].includes(w[i - 1] ?? '');
+      out.push({ t: 'amount', amt: { v: num.value, unit: u.unit, ...(by ? { by } : {}) }, at: i, ...(held ? { held: true as const } : {}) });
       i = j;
       continue;
     }
@@ -1140,6 +1145,16 @@ function toEvents(atoms: Atom[], hole = 2): { setup: Setup; events: Event[] } {
       break;
     }
     setup.stacks.push({ actor: who, amt: a.amt, implicit: true });
+  }
+  // Later on too: "o CO, com 45 mil, paga" says the seat's stack between the seat and its verb. Only after
+  // «com»: «O UTG, 2000, aposta» is a bet said first (Registo P2).
+  for (let k = Math.max(1, firstVerb); k < atoms.length - 1; k++) {
+    const a = atoms[k];
+    const p = atoms[k - 1]?.t === 'break' ? atoms[k - 2] : atoms[k - 1];
+    const next = atoms[k + 1].t === 'break' ? atoms[k + 2] : atoms[k + 1];
+    if (a.t !== 'amount' || !a.held || used.has(k) || a.amt.unit !== 'chips' || a.amt.by || next?.t !== 'verb' || !p) continue;
+    if (!isActor(p) || p.a.k !== 'pos' || p.a.label === setup.heroPos) continue;
+    setup.stacks.push({ actor: p.a, amt: a.amt, implicit: true });
   }
   return { setup, events };
 }
