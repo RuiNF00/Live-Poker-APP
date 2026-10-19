@@ -3,9 +3,10 @@
 // on only when a build asks for it: EXPO_PUBLIC_APP_GROUP=1, set for prebuild and for the
 // xcodebuild that bundles the JS (src/lib/lock-screen/index.tsx reads the same flag). Without it
 // the iOS build is what the cable builds have been: no group in either entitlements file, no App
-// Group reason (1C8F.1) in the privacy manifests, and the app shows no Live Activity or widget
-// data. expo-widgets always adds the group (falling back to group.<bundle id>), so this takes it
-// out again once every file is written. Android is not touched.
+// Group reason (1C8F.1) in the privacy manifests, no Live Activity, and no home widget on iOS
+// (left out in app.config.js, since it could never get data). expo-widgets always adds the group
+// (falling back to group.<bundle id>), so this takes it out again once every file is written.
+// Android is not touched.
 const { withFinalizedMod } = require('expo/config-plugins');
 const plist = require('@expo/plist').default;
 const fs = require('fs');
@@ -44,6 +45,18 @@ function withoutEasGroup(config) {
   return config;
 }
 
+/**
+ * Plugin list for app.config.js: without the group the home widget can never get data on iOS,
+ * so it leaves the iOS widget gallery (expo-widgets skips widgets with `ios: null`). The widget
+ * target stays, with the Live Activity only, and Android keeps its widget.
+ */
+function withoutIosWidgets(plugins) {
+  return plugins.map((p) => {
+    if (!Array.isArray(p) || p[0] !== 'expo-widgets') return p;
+    return [p[0], { ...p[1], widgets: (p[1]?.widgets ?? []).map((w) => ({ ...w, ios: null })) }];
+  });
+}
+
 function rewrite(file, change) {
   if (!fs.existsSync(file)) return;
   fs.writeFileSync(file, plist.build(change(plist.parse(fs.readFileSync(file, 'utf8')))));
@@ -72,3 +85,4 @@ module.exports.appGroupOn = appGroupOn;
 module.exports.withoutGroup = withoutGroup;
 module.exports.withoutGroupReason = withoutGroupReason;
 module.exports.withoutEasGroup = withoutEasGroup;
+module.exports.withoutIosWidgets = withoutIosWidgets;

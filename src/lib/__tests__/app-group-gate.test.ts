@@ -14,7 +14,9 @@ const gate = require('../../../plugins/with-app-group-gate') as {
   withoutGroup: (e: Ent) => Ent;
   withoutGroupReason: (m: Manifest) => Manifest;
   withoutEasGroup: (c: Config) => Config;
+  withoutIosWidgets: (p: Plugin[]) => Plugin[];
 };
+type Plugin = string | [string, { widgets?: { name: string; ios?: object | null; android?: object }[]; enableAndroid?: boolean }];
 
 const GROUPS = 'com.apple.security.application-groups';
 const defaults = (reasons: string[]): ApiType => ({ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: reasons });
@@ -49,4 +51,16 @@ test('app group gate: the EAS entry for the widget loses the group', () => {
   const ext = gate.withoutEasGroup(config).extra!.eas!.build!.experimental!.ios!.appExtensions![0];
   assert.deepEqual(ext.entitlements, {});
   assert.deepEqual(gate.withoutEasGroup({}), {});
+});
+
+test('app group gate: without the group the home widget leaves iOS only', () => {
+  const plugins: Plugin[] = ['expo-router', ['expo-widgets', { enableAndroid: true, widgets: [{ name: 'SweatbookHome', ios: { supportedFamilies: ['systemSmall'] }, android: { minWidth: 2 } }] }]];
+  const out = gate.withoutIosWidgets(plugins);
+  assert.equal(out[0], 'expo-router');
+  const [, props] = out[1] as [string, { widgets: { ios?: object | null; android?: object }[]; enableAndroid?: boolean }];
+  assert.equal(props.widgets[0].ios, null);
+  assert.deepEqual(props.widgets[0].android, { minWidth: 2 });
+  assert.equal(props.enableAndroid, true);
+  // The app.json entry itself is left as it was.
+  assert.ok((plugins[1] as [string, { widgets: { ios?: object | null }[] }])[1].widgets[0].ios);
 });
