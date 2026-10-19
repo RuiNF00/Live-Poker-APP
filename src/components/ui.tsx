@@ -420,6 +420,7 @@ export function ListItem({
   left,
   numberOfLines = 2,
   accessibilityLabel,
+  checked,
 }: {
   icon?: IconName;
   iconColor?: string;
@@ -435,6 +436,8 @@ export function ListItem({
   numberOfLines?: number;
   /** What VoiceOver reads for the row, when the visible text alone reads out of order. */
   accessibilityLabel?: string;
+  /** A row that is picked or not: read as a checkbox with its state. */
+  checked?: boolean;
 }) {
   // At 160%+ text the icon tile and chevron leave too little room: titles broke mid-word ("Viagen s").
   const bigText = useWindowDimensions().fontScale >= 1.6;
@@ -486,7 +489,8 @@ export function ListItem({
     );
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={checked === undefined ? 'button' : 'checkbox'}
+      accessibilityState={checked === undefined ? undefined : { checked }}
       accessibilityLabel={accessibilityLabel}
       onPress={() => {
         tap();

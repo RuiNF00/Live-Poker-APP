@@ -11,9 +11,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { ImportSupport } from '@/components/ImportSupport';
-import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T } from '@/components/ui';
+import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T, ToggleItem } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
+import { likelyDuplicateMoves, likelyDuplicates } from '@/import/duplicates';
 import { prepare, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
@@ -27,7 +28,8 @@ import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
-type Pick = Exclude<SourceId, 'generic'> | 'csv';
+// Poker Ledger has no tile: its file is recognised from the header when picked as CSV.
+type Pick = Exclude<SourceId, 'generic' | 'pokerledger'> | 'csv';
 
 const SOURCES: { id: Pick; name: string; sub: string; icon: React.ComponentProps<typeof Ionicons>['name']; color: string }[] = [
   { id: 'pbt', name: 'Poker Bankroll Tracker', sub: t('Sessões cash e torneios'), icon: 'stats-chart', color: '#5AA9FF' },
@@ -65,6 +67,7 @@ const SOURCE_NAME: Record<SourceId, string> = {
   pbt: 'Poker Bankroll Tracker',
   pokerbase: 'Pokerbase',
   pokeranalytics: 'Poker Analytics',
+  pokerledger: 'Poker Ledger',
   sweatbook: 'Sweatbook',
   generic: 'CSV',
 };
@@ -107,7 +110,7 @@ function useTight() {
   return width / Math.max(1, fontScale) < 320;
 }
 
-type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
+type Step = { at: 'pick' } | { at: 'review'; file: Prepared; first: ImportResult } | { at: 'done'; added: number; total: number; skipped?: { sessions: number; moves: number }; moves?: number; summary?: string; recap: ImportRecap; source: SourceId };
 
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -163,7 +166,8 @@ export default function ImportScreen() {
       if (first) setStep({ at: 'review', file, first });
     } catch (e) {
       // A backup from a later version: refused whole, so say why instead of "can't read".
-      if ((e as Error)?.message === 'newer') setError(t('Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.'));
+      if ((e as Error)?.message === 'too_big') setError(t('Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.'));
+      else if ((e as Error)?.message === 'newer') setError(t('Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.'));
       else setError(t('Não conseguimos ler este ficheiro. Escolhe o CSV exportado pela outra app (ou um .json do Sweatbook).'));
     } finally {
       setBusy(false);
@@ -259,7 +263,7 @@ export default function ImportScreen() {
           initial={step.first}
           bottom={insets.bottom}
           onBack={() => setStep({ at: 'pick' })}
-          onImport={(r, placement) => {
+          onImport={(r, placement, skipped) => {
             const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls, names: r.bankrollNames });
             const before = new Set(store.transfers.map((x) => x.id));
             const had = new Set(store.sessions.map((s) => s.id));
@@ -268,7 +272,7 @@ export default function ImportScreen() {
             const fresh = p.sessions.filter((s) => !had.has(s.id));
             const recap = importRecap(fresh, [...store.sessions, ...fresh]);
             track('import_done', { source: step.file.source, sessions: n.sessions, hours: Math.round(recap.hours) });
-            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, moves, recap, source: step.file.source });
+            setStep({ at: 'done', added: n.sessions, total: r.sessions.length, skipped, moves, recap, source: step.file.source });
           }}
         />
       ) : (
@@ -282,7 +286,15 @@ export default function ImportScreen() {
 function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; bottom: number; onAgain: () => void }) {
   const tight = useTight();
   const r = step.recap;
-  const sub =
+  const n = step.skipped?.sessions ?? 0;
+  const m = step.skipped?.moves ?? 0;
+  const skipped = [
+    n === 0 ? '' : n === 1 ? t('1 parecida com uma sessão que já tinhas ficou de fora.') : t('{n} parecidas com sessões que já tinhas ficaram de fora.', { n }),
+    m === 0 ? '' : m === 1 ? t('1 depósito ou levantamento igual a um que já tinhas ficou de fora.') : t('{n} depósitos ou levantamentos iguais a outros que já tinhas ficaram de fora.', { n: m }),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const before =
     step.summary ??
     (step.moves
       ? step.moves === 1
@@ -293,6 +305,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
           ? t('1 já estava no Sweatbook e ficou como estava.')
           : t('{n} já estavam no Sweatbook e ficaram como estavam.', { n: step.total - step.added })
         : null);
+  const sub = [before, skipped].filter(Boolean).join(' ') || null;
   const span = r.from === null ? null : r.from === r.to ? t('Em {year}', { year: r.from }) : t('De {from} a {to}', { from: r.from, to: r.to! });
   const best = r.best;
   return (
@@ -347,7 +360,10 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
   );
 }
 
-function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement) => void }) {
+const NO_DUPS = new Map<string, Session>();
+const NO_DUP_MOVES = new Set<string>();
+
+function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement, skipped: { sessions: number; moves: number }) => void }) {
   const tight = useTight();
   const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
@@ -379,9 +395,38 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
   const pending = stale && file.table.rows.length > 250;
   const r = conv.r;
   const have = useMemo(() => new Set([...local.map((s) => s.id), ...localTx.map((x) => x.id)]), [local, localTx]);
-  const fresh = r.sessions.filter((s) => !have.has(s.id)).length;
-  const freshMoves = r.moves.filter((m) => !have.has(m.id)).length;
-  const deposits = r.moves.filter((m) => m.kind === 'deposit').length;
+  // The same night from another app, or typed by hand: left out unless the player says otherwise.
+  // Looked for after the screen has drawn, and again when the file or the phone's data change;
+  // the import button waits for it, so a repeat is never let in while the search runs.
+  const [found, setFound] = useState<{ r: ImportResult; local: typeof local; localTx: typeof localTx; bankrolls: typeof bankrolls; dups: Map<string, Session>; dupMoves: Set<string> } | null>(null);
+  const searching = !found || found.r !== r || found.local !== local || found.localTx !== localTx || found.bankrolls !== bankrolls;
+  useEffect(() => {
+    if (!searching) return;
+    const id = setTimeout(() => setFound({ r, local, localTx, bankrolls, dups: likelyDuplicates(r.sessions, local), dupMoves: likelyDuplicateMoves(r.moves, localTx, bankrolls) }), 0);
+    return () => clearTimeout(id);
+  }, [searching, r, local, localTx, bankrolls]);
+  const dups = found?.dups ?? NO_DUPS;
+  const dupMoves = found?.dupMoves ?? NO_DUP_MOVES;
+  // The repeats the player chose to import anyway: all at once with the switch, or one by one with a tap.
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set());
+  const dupIds = [...dups.keys(), ...dupMoves];
+  const keepDups = dupIds.length > 0 && dupIds.every((id) => chosen.has(id));
+  const setKeepDups = (on: boolean) => setChosen(on ? new Set(dupIds) : new Set());
+  const pick = (id: string) =>
+    setChosen((c) => {
+      const next = new Set(c);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const skip = new Set(dupIds.filter((id) => !chosen.has(id)));
+  const fresh = r.sessions.filter((s) => !have.has(s.id) && !skip.has(s.id)).length;
+  // Same id: already in Sweatbook. Repeats found by day and result are listed apart, below.
+  const already = r.sessions.filter((s) => have.has(s.id)).length;
+  const freshMoves = r.moves.filter((m) => !have.has(m.id) && !skip.has(m.id)).length;
+  // Only what will reach the balance: not those already here, nor repeats left out.
+  const entering = r.moves.filter((m) => !have.has(m.id) && !skip.has(m.id));
+  const deposits = entering.filter((m) => m.kind === 'deposit').length;
   const fileCurrencies = currenciesOf(r.sessions, r.moves, settings.currency);
   const [placement, setPlacement] = useState<Placement>(() => defaultPlacement(fileCurrencies, bankrolls, defaultBankroll));
   // A currency that showed up after a column change gets its default too.
@@ -428,14 +473,14 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
         ) : null}
 
         {missing ? <Banner tone="warn" icon="alert-circle" title={t('Falta a coluna «{field}»', { field: missing })} body={t('Escolhe-a em Colunas, mais abaixo.')} /> : null}
-        {r.moves.length ? (
+        {entering.length ? (
           <Card tone="inset" style={{ gap: 6, paddingVertical: S.md }}>
             <Note
               icon="swap-vertical"
-              text={t(r.moves.length === 1 ? '{list} entra no saldo da bankroll.' : '{list} entram no saldo da bankroll.', {
+              text={t(entering.length === 1 ? '{list} entra no saldo da bankroll.' : '{list} entram no saldo da bankroll.', {
                 list: [
                   deposits ? (deposits === 1 ? t('1 depósito') : t('{n} depósitos', { n: deposits })) : '',
-                  r.moves.length - deposits ? (r.moves.length - deposits === 1 ? t('1 levantamento') : t('{n} levantamentos', { n: r.moves.length - deposits })) : '',
+                  entering.length - deposits ? (entering.length - deposits === 1 ? t('1 levantamento') : t('{n} levantamentos', { n: entering.length - deposits })) : '',
                 ]
                   .filter(Boolean)
                   .join(t(' e ')),
@@ -443,13 +488,66 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
             />
           </Card>
         ) : null}
-        {r.transfers || r.unreadable || fresh < r.sessions.length ? (
+        {r.transfers || r.unreadable || already ? (
           <Card tone="inset" style={{ gap: 6, paddingVertical: S.md }}>
-            {fresh < r.sessions.length ? <Note icon="copy-outline" text={r.sessions.length - fresh === 1 ? t('1 já está no Sweatbook e não entra outra vez.') : t('{n} já estão no Sweatbook e não entram outra vez.', { n: r.sessions.length - fresh })} /> : null}
+            {already ? <Note icon="copy-outline" text={already === 1 ? t('1 já está no Sweatbook e não entra outra vez.') : t('{n} já estão no Sweatbook e não entram outra vez.', { n: already })} /> : null}
             {r.transfers ? <Note icon="swap-horizontal" text={r.transfers === 1 ? t('1 depósito ou levantamento sem data ou valor fica de fora.') : t('{n} depósitos ou levantamentos sem data ou valor ficam de fora.', { n: r.transfers })} /> : null}
             {r.unreadable ? <Note icon="help-circle-outline" text={r.unreadable === 1 ? t('1 linha sem data ou sem valores fica de fora.') : t('{n} linhas sem data ou sem valores ficam de fora.', { n: r.unreadable })} /> : null}
             {currencies.size > 1 ? <Note icon="cash-outline" text={t('Há sessões em {n} moedas; cada uma fica na sua.', { n: currencies.size })} /> : null}
           </Card>
+        ) : null}
+
+        {dups.size + dupMoves.size ? (
+          <View style={{ gap: S.sm }}>
+            <ListGroup>
+              <ToggleItem
+                icon="copy-outline"
+                title={t('Importar também as que parecem repetidas')}
+                subtitle={[
+                  dups.size === 0 ? '' : dups.size === 1 ? t('1 sessão tem o mesmo dia e resultado de uma que já tens.') : t('{n} sessões têm o mesmo dia e resultado de outras que já tens.', { n: dups.size }),
+                  dupMoves.size === 0 ? '' : dupMoves.size === 1 ? t('1 depósito ou levantamento igual a um que já tens.') : t('{n} depósitos ou levantamentos iguais a outros que já tens.', { n: dupMoves.size }),
+                  dups.size ? t('Toca numa para a escolher.') : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                value={keepDups}
+                onChange={setKeepDups}
+                lines={6}
+              />
+              {/* Which ones, so two €100 tournaments lost on the same day can be told apart from a real repeat. */}
+              {list
+                .filter((s) => dups.has(s.id))
+                .slice(0, 20)
+                .map((s) => {
+                  const twin = dups.get(s.id)!;
+                  const on = chosen.has(s.id);
+                  const line = [whenOf(s.startedAt), s.kind === 'mtt' ? t('Torneio') : 'Cash', s.venue].filter(Boolean).join(' · ');
+                  const like = t('Parecida com: {session}', { session: [twin.name, whenOf(twin.startedAt), twin.venue].filter(Boolean).join(' · ') });
+                  const amount = money(Math.round(profit(s) * 100) / 100, s.currency);
+                  return (
+                    <ListItem
+                      key={s.id}
+                      icon={on ? 'checkmark-circle' : 'ellipse-outline'}
+                      iconColor={on ? C.good : C.muted}
+                      title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
+                      // Two lines of their own: the hour and place of the match are the point, never cut.
+                      subtitle={
+                        <View style={{ gap: 2 }}>
+                          <T v="small">{line}</T>
+                          <T v="small">{like}</T>
+                        </View>
+                      }
+                      right={<Amount value={profit(s)} text={amount} />}
+                      onPress={() => pick(s.id)}
+                      chevron={false}
+                      checked={on}
+                      accessibilityLabel={[s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'), line, amount, like, on ? t('Entra') : t('Fica de fora')].join(', ')}
+                    />
+                  );
+                })}
+            </ListGroup>
+            {dups.size > 20 ? <T v="small">{t('E mais {n}.', { n: dups.size - 20 })}</T> : null}
+          </View>
         ) : null}
 
         {r.failed.length ? <FailedRows file={file} picked={picked} failed={r.failed} read={r.sessions.length} /> : null}
@@ -557,14 +655,16 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
           <Button kind="secondary" title={t('Voltar')} onPress={onBack} style={{ paddingHorizontal: 18 }} />
           <Button
             style={tight ? undefined : { flex: 1 }}
-            title={importing ? t('A importar…') : pending ? t('A atualizar…') : r.sessions.length + r.moves.length === 0 ? t('Nada para importar') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
-            disabled={importing || stale || fresh + freshMoves === 0}
+            title={importing ? t('A importar…') : pending ? t('A atualizar…') : searching && r.sessions.length + r.moves.length > 250 ? t('A procurar repetidas…') : r.sessions.length + r.moves.length === 0 ? t('Nada para importar') : fresh + freshMoves === 0 ? t('Nada de novo para importar') : fresh === 0 ? t('Importar movimentos') : fresh === 1 ? t('Importar 1 sessão') : t('Importar {n} sessões', { n: fresh })}
+            disabled={importing || stale || searching || fresh + freshMoves === 0}
             onPress={async () => {
               // Thousands of sessions take a moment to add: say so first.
               setImporting(true);
               await paint();
               try {
-                onImport(r, placed);
+                const sessions = r.sessions.filter((s) => !skip.has(s.id));
+                const moves = r.moves.filter((m) => !skip.has(m.id));
+                onImport(skip.size ? { ...r, sessions, moves } : r, placed, { sessions: r.sessions.length - sessions.length, moves: r.moves.length - moves.length });
               } finally {
                 setImporting(false);
               }
@@ -621,6 +721,9 @@ const FAIL_TEXT: Record<FailReason, string> = {
   noMoney: t('Sem resultado, buy-in nem prémio'),
   badMoney: t('Valor que não é um número'),
   badMove: t('Depósito ou levantamento sem valor'),
+  running: t('Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez'),
+  short: t('Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez'),
+  tooLong: t('Acaba mais de 14 dias depois de começar: confirma a data de fim'),
 };
 
 /** Each row left out, with its line in the file and why, plus the choice to send the file to support. */
@@ -705,6 +808,11 @@ function Note({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['nam
       </T>
     </Row>
   );
+}
+
+/** Date and time: two €100 tournaments on the same day are told apart by the hour. */
+function whenOf(ts: number): string {
+  return new Date(ts).toLocaleString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function fullDate(ts: number): string {

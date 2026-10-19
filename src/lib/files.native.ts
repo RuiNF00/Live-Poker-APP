@@ -5,6 +5,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
+import { decodeText } from '@/import/decode';
+
 export async function saveTextFile(name: string, text: string, mime: string): Promise<void> {
   const f = new File(Paths.cache, name);
   if (f.exists) f.delete();
@@ -31,6 +33,11 @@ export async function pickTextFileWithName(): Promise<{ text: string; name: stri
   if (r.canceled || !r.assets?.[0]) return null;
   const a = r.assets[0];
   // An .xlsx or a PDF isn't text: keep the file anyway, so it can go to support as it is.
-  const text = (a.size ?? 0) > MAX_TEXT_BYTES ? '' : await new File(a.uri).text().catch(() => '');
+  // Read as bytes: Excel's CSV is often Windows-1252 or UTF-16, which text() would garble.
+  if ((a.size ?? 0) > MAX_TEXT_BYTES) throw new Error('too_big');
+  const b = await new File(a.uri).bytes().catch(() => null);
+  // Some pickers don't give a size: check what was read, so a huge file can't go on to the parser.
+  if (b && b.length > MAX_TEXT_BYTES) throw new Error('too_big');
+  const text = b ? decodeText(b).text : '';
   return { text, name: a.name, uri: a.uri };
 }

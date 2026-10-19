@@ -34,7 +34,7 @@ export interface ImportedMove {
 }
 
 /** Why a row of the file was left out. */
-export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove';
+export type FailReason = 'noDate' | 'badDate' | 'noMoney' | 'badMoney' | 'badMove' | 'running' | 'short' | 'tooLong';
 
 export interface FailedRow {
   /** Line in the file (1 = first line). */
@@ -120,8 +120,8 @@ interface DateParts {
   hasTime: boolean;
 }
 
-// English, Portuguese, Spanish and French short names (accents dropped first).
-const MONTHS: Record<string, number> = { jan: 1, ene: 1, feb: 2, fev: 2, mar: 3, apr: 4, abr: 4, avr: 4, may: 5, mai: 5, jun: 6, jul: 7, aug: 8, ago: 8, aou: 8, sep: 9, set: 9, oct: 10, out: 10, nov: 11, dec: 12, dez: 12, dic: 12 };
+// English, Portuguese, Spanish, French, German and Italian short names (accents dropped first).
+const MONTHS: Record<string, number> = { jan: 1, ene: 1, gen: 1, feb: 2, fev: 2, mar: 3, mrz: 3, apr: 4, abr: 4, avr: 4, may: 5, mai: 5, mag: 5, jun: 6, giu: 6, jul: 7, lug: 7, aug: 8, ago: 8, aou: 8, sep: 9, set: 9, oct: 10, out: 10, okt: 10, ott: 10, nov: 11, dec: 12, dez: 12, dic: 12 };
 const month = (w: string) => MONTHS[w.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()];
 
 function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: boolean } {
@@ -169,7 +169,7 @@ function splitDateOnce(raw: string): DateParts | null {
     return { a: +m[1], b: +m[2], y, ymd: false, ...timeOf(m[4]) };
   }
   // "20 Sep 2024", "Sep 20, 2024", "20-set-2024"
-  m = s.match(/^(\d{1,2})[\s-]+(?:de\s+)?([^\d\s-]{3})[^\d\s-]*\.?[\s-]+(?:de\s+)?(\d{4})(.*)$/iu) ?? null;
+  m = s.match(/^(\d{1,2})\.?[\s-]+(?:de\s+)?([^\d\s-]{3})[^\d\s-]*\.?[\s-]+(?:de\s+)?(\d{4})(.*)$/iu) ?? null;
   if (m && month(m[2])) return { y: +m[3], a: month(m[2]), b: +m[1], ymd: true, ...timeOf(m[4]) };
   m = s.match(/^([^\d\s]{3})[^\d\s]*\.?\s+(\d{1,2}),?\s+(\d{4})(.*)$/iu);
   if (m && month(m[1])) return { y: +m[3], a: month(m[1]), b: +m[2], ymd: true, ...timeOf(m[4]) };
@@ -196,9 +196,19 @@ export function parseDate(raw: string | undefined, order: DateOrder): { t: numbe
   const s = raw.trim();
   if (/^\d{10}$/.test(s)) return { t: Number(s) * 1000, hasTime: true };
   if (/^\d{13}$/.test(s)) return { t: Number(s), hasTime: true };
-  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
-    const t = Date.parse(s);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s) || /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2}(\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})$/.test(s)) {
+    const t = Date.parse(s.replace(' ', 'T').replace(/\s+(?=[Z+-][\d:]*$)/, ''));
     return Number.isFinite(t) ? { t, hasTime: true } : null;
+  }
+  // A date Excel or Google Sheets left as its serial number: days since 30 Dec 1899, the fraction the time of day.
+  if (/^\d{5}(\.\d+)?$/.test(s)) {
+    const v = Number(s);
+    if (v < 32874 || v > 73051) return null; // 1990 to 2100, as below
+    const day = Math.floor(v);
+    const date = new Date(1899, 11, 30 + day);
+    const secs = Math.round((v - day) * 86400);
+    date.setHours(Math.floor(secs / 3600), Math.floor((secs % 3600) / 60), secs % 60, 0);
+    return { t: date.getTime(), hasTime: secs > 0 };
   }
   const p = splitDate(s);
   if (!p) return null;
@@ -336,6 +346,9 @@ export function toSessions(table: Table, mapping: Mapping, opt: ImportOptions): 
   }
 }
 
+/** Longest a session can last: a festival day 1 to final table, with days off in between. */
+const MAX_SPAN = 14 * 86400000;
+
 /** Rows converted between two looks at the clock. */
 const CHUNK = 100;
 /** Longest the screen goes without drawing while a file is converted. */
@@ -372,6 +385,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const order = opt.order ?? guessOrder(table.rows.flatMap((r) => [get(r, 'start'), get(r, 'end')]));
   // A "type" column that holds Casino/Club, not cash or tournament, says nothing about the kind.
   const kindUseful = mapping.kind !== undefined && table.rows.some((r) => kindOf(get(r, 'kind')) !== null);
+  // No type column, but a "Jogo" column that says Torneio or Cash: that's the type.
+  const gameKind = (r: string[]) => {
+    const x = kindOf(get(r, 'game'));
+    return x === 'mtt' || x === 'cash' ? x : null;
+  };
+  const gameAsKind = !kindUseful && mapping.game !== undefined && table.rows.some((r) => gameKind(r) !== null);
   const sessions: Session[] = [];
   const seen = new Map<string, number>();
   let transfers = 0;
@@ -381,16 +400,27 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
   const bankrollNames: Record<string, string> = {};
   const money = moneyReader(table, get);
+  // Columns that hold money: a row that stops before one of them was cut in two (a line break in a cell).
+  const moneyCols = (['buyIn', 'cashOut', 'profit'] as const).map((f) => mapping[f]).filter((c): c is number => c !== undefined);
+  const short = (x: string[] | undefined): x is string[] => !!x && x.length < table.headers.length && moneyCols.some((c) => c >= x.length);
+  const dated = (x: string[]) => parseDate(get(x, 'start'), order) !== null;
 
   for (let ri = 0; ri < table.rows.length; ri++) {
     if (ri && ri % CHUNK === 0) yield ri;
     const r = table.rows[ri];
     const line = table.lines?.[ri] ?? ri + 2;
+    // A short row followed by one without a date is a line split in two: reading the half with the
+    // buy-in would save the whole buy-in as lost. A short row on its own is a bust typed without the last comma.
+    if (short(r) && (!dated(r) || (short(table.rows[ri + 1]) && !dated(table.rows[ri + 1])))) {
+      unreadable++;
+      failed.push({ line, reason: 'short', value: preview(r) });
+      continue;
+    }
     // Trip expenses in Sweatbook's CSV belong to a trip, not to the sessions.
     if (opt.source === 'sweatbook' && /^expense$/i.test(get(r, 'kind'))) continue;
     // Sweatbook's own id: importing the same file again merges instead of doubling.
     const own = opt.source === 'sweatbook' && /^[\w.-]{1,80}$/.test(get(r, 'id')) ? get(r, 'id') : '';
-    const k = kindUseful ? kindOf(get(r, 'kind')) : null;
+    const k = kindUseful ? kindOf(get(r, 'kind')) : gameAsKind ? gameKind(r) : null;
     const nameRaw = get(r, 'name');
     const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
     const startP = parseDate(get(r, 'start'), order);
@@ -448,6 +478,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       failed.push({ line, reason: 'badMoney', value: bad });
       continue;
     }
+    // Poker Ledger leaves the end and the cash-out empty while a session is still on: not a loss of the whole buy-in.
+    if (opt.source === 'pokerledger' && !get(r, 'end') && !get(r, 'cashOut')) {
+      // Listed with its own reason, not counted as a row without a date or values.
+      failed.push({ line, reason: 'running', value: get(r, 'start') });
+      continue;
+    }
     if (buyIn === null && cashOut === null && net === null) {
       unreadable++;
       failed.push({ line, reason: 'noMoney', value: [get(r, 'profit'), get(r, 'buyIn'), get(r, 'cashOut')].filter(Boolean).join(' · ') || preview(r) });
@@ -495,6 +531,12 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     // A clock time earlier than the start is past midnight.
     if (end < start && start - end < 86400000) end += 86400000;
     if (end < start) end = start;
+    if (end - start > MAX_SPAN) {
+      // An end weeks after the start is a typo (a year off): those hours would sink the hourly rate.
+      unreadable++;
+      failed.push({ line, reason: 'tooLong', value: get(r, 'end') || get(r, 'hours') || get(r, 'minutes') });
+      continue;
+    }
     const breaks: Session['breaks'] = [];
     // Minutes played, or hours: next to an end time, the difference is the breaks.
     const hrs = mapping.minutes === undefined && endP ? parseHours(get(r, 'hours')) : null;
@@ -562,7 +604,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
-  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful || gameAsKind, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */

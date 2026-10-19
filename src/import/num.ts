@@ -17,7 +17,7 @@ export function parseNum(raw: string | undefined, mark?: DecimalMark): number | 
   let s = raw.trim();
   if (!s) return null;
   // Most cells are plain numbers: skip the clean-up below (it adds up over thousands of rows).
-  if (mark !== 'comma' && /^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  if (mark !== 'comma' && /^-?\d+(\.\d+)?$/.test(s)) return sane(Number(s));
   s = s.replace(/[−‒–]/g, '-');
   let neg = false;
   if (/^\(.*\)$/.test(s)) {
@@ -45,7 +45,8 @@ export function parseNum(raw: string | undefined, mark?: DecimalMark): number | 
     // (a bare "1.250" took the fast path above and stays 1.25).
     s = s.replace(/\./g, '');
   }
-  const n = Number(s);
-  if (!Number.isFinite(n)) return null;
-  return (neg ? -n : n) * k;
+  return sane((neg ? -Number(s) : Number(s)) * k);
 }
+
+/** No buy-in or prize reaches a trillion: a longer run of digits is a broken cell, and Infinity would be saved as null. */
+const sane = (n: number) => (Number.isFinite(n) && Math.abs(n) < 1e12 ? n : null);
