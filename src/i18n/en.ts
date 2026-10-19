@@ -3358,6 +3358,11 @@ const en: Record<string, string> = {
   'Carrossel da viagem': 'Trip carousel',
   'Não dá para reabrir este pacote': "Can't reopen this package",
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
+  'Muitos vídeos seguidos': 'Too many videos in a row',
+  'Espera um pouco e tenta outra vez.': 'Wait a little and try again.',
+  'O vídeo não ficou pronto': "The video isn't ready",
+  'Desta vez demorou demais a montar. Tenta outra vez.': 'It took too long to put together this time. Try again.',
+  '{a} e {b}': '{a} and {b}',
 };
 
 export default en;

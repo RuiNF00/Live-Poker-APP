@@ -85,11 +85,15 @@ describe('parseDurations', () => {
 });
 
 describe('replayArgs', () => {
-  it('crossfades frames at their cumulative times and forces a demuxer per frame', () => {
+  it('holds each frame to its cumulative time with a fade between, and forces a demuxer per frame', () => {
     const args = replayArgs(['/t/a.jpg', '/t/b.jpg', '/t/c.jpg'], [1, 2, 3], null, '/t/o.mp4', null);
     const filter = args[args.indexOf('-filter_complex') + 1];
-    expect(filter).toContain('offset=1.00');
-    expect(filter).toContain('offset=3.00');
+    // 1 s, fade, 2 s, fade, 3 s at 24 fps: holds of 24, 42 and 66 frames and two 6-frame fades = 6 s.
+    expect(filter).toContain('[h0]loop=loop=23:');
+    expect(filter).toContain('[h1]loop=loop=41:');
+    expect(filter).toContain('[h2]loop=loop=65:');
+    expect(filter.match(/xfade=/g)).toHaveLength(2);
+    expect(filter).toContain('concat=n=5:v=1:a=0');
     expect(filter).toContain('anullsrc');
     expect(args[args.indexOf('-t', args.indexOf('-filter_complex')) + 1]).toBe('6.00');
     expect(args.filter((a) => a === 'mjpeg')).toHaveLength(3);

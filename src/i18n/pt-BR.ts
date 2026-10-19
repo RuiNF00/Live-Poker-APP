@@ -1666,6 +1666,11 @@ const ptBR: Record<string, string> = {
   'Carrossel da viagem': 'Carrossel da viagem',
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
+  'Muitos vídeos seguidos': 'Muitos vídeos seguidos',
+  'Espera um pouco e tenta outra vez.': 'Espere um pouco e tente de novo.',
+  'O vídeo não ficou pronto': 'O vídeo não ficou pronto',
+  'Desta vez demorou demais a montar. Tenta outra vez.': 'Dessa vez demorou demais para montar. Tente de novo.',
+  '{a} e {b}': '{a} e {b}',
 };
 
 export default ptBR;

@@ -184,7 +184,10 @@ export default function StoryScreen() {
       try {
         file = await renderReplayVideo(frames, durations, withVoice ? voice : null, withVoice ? voiceSlotPx() : null, withFace && face ? { uri: face.uri, slot: faceSlotPx() } : null);
       } catch (e) {
-        if (e instanceof Error && e.message === 'too_large') notice(t('O vídeo da cara é grande demais'), t('Grava outra vez, um pouco mais curto.'));
+        const why = e instanceof Error ? e.message : '';
+        if (why === 'too_large') notice(t('O vídeo da cara é grande demais'), t('Grava outra vez, um pouco mais curto.'));
+        else if (why === 'rate_limited') notice(t('Muitos vídeos seguidos'), t('Espera um pouco e tenta outra vez.'));
+        else if (why === 'render_failed') notice(t('O vídeo não ficou pronto'), t('Desta vez demorou demais a montar. Tenta outra vez.'));
         else notice(t('Não deu para criar o vídeo'), t('Verifica a internet e tenta outra vez daqui a pouco.'));
         return;
       }

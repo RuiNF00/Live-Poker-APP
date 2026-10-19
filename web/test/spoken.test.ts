@@ -36,7 +36,8 @@ describe('spoken table for screen readers', () => {
     const raise = find((s) => s.action?.type === 'raise');
     expect(spokenStep(raise, 2000, 'bb', 'pt')).toMatch(/^Vilão no BTN faz raise para 2,5 BB$/);
     expect(spokenStep(raise, 2000, 'bb', 'en')).toMatch(/^Vilão on the BTN raises to 2.5 BB$/);
-    expect(spokenStep(raise, 2000, 'bb', 'es')).toMatch(/^Vilão en BTN hace raise a 2,5 BB$/);
+    expect(spokenStep(raise, 2000, 'bb', 'es')).toMatch(/^Vilão en el BTN hace raise a 2,5 BB$/);
+    expect(spokenStep(raise, 2000, 'bb', 'pt-BR')).toMatch(/^Vilão no BTN dá raise para 2,5 BB$/);
     expect(spokenStep(find((s) => s.action?.type === 'fold'), 2000, 'bb', 'pt')).toBe('SB faz fold');
   });
 

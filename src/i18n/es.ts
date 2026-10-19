@@ -3155,7 +3155,7 @@ const es: Record<string, string> = {
   '{name} · Dia {n}: {chips} em fichas': '{name} · Día {n}: {chips} en fichas',
   // Replayer read aloud (VoiceOver/TalkBack).
   'Street anterior': 'Street anterior',
-  '{name} no {pos}': '{name} en {pos}',
+  '{name} no {pos}': '{name} en el {pos}',
   '{who} faz fold': '{who} hace fold',
   '{who} faz check': '{who} hace check',
   '{who} paga {amt}': '{who} paga {amt}',
@@ -3352,6 +3352,11 @@ const es: Record<string, string> = {
   'Carrossel da viagem': 'Carrusel del viaje',
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
+  'Muitos vídeos seguidos': 'Demasiados vídeos seguidos',
+  'Espera um pouco e tenta outra vez.': 'Espera un poco e inténtalo de nuevo.',
+  'O vídeo não ficou pronto': 'El vídeo no está listo',
+  'Desta vez demorou demais a montar. Tenta outra vez.': 'Esta vez tardó demasiado en montarse. Inténtalo de nuevo.',
+  '{a} e {b}': '{a} y {b}',
 };
 
 export default es;
