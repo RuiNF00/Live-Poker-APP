@@ -108,7 +108,7 @@ Processed ephemerally: No, except audio (Yes).
 - Content rating (IARC): category "Utility, Productivity, Communication, or Other" (not Game). No real or simulated gambling. Users can interact / share content: **Yes**. Digital purchases: **Yes**.
 - Financial features: **None**. News: No. Health: No. Government: No.
 - Real-money gambling, games and contests: **No**.
-- Account deletion: not applicable (no accounts). If Play still shows the question, answer "My app does not allow users to create an account".
+- Account deletion: answer **Yes**, users can create an account. There is no sign-in, but the optional public profile with a handle (`/u/handle`) fits Google's definition ("a unique user identity that developers provide as a user-facing feature"). Delete account URL: https://sweatbook.poker/delete-account (works without the app, covers the profile, and explains how to cancel the subscription). In the app: Settings → Delete all my data (`src/lib/erase-all.ts` queues the profile delete). Source: pesquisa/politicas-play-v32.md.
 
 ## Permissions as built (prebuild at cd6635d)
 - iOS usage strings: Camera, Photo Library, Face ID, Microphone (PT and EN). UIBackgroundModes: fetch, processing only (stray `audio` removed at 61cf15f).
