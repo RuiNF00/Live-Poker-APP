@@ -12,7 +12,7 @@ import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/componen
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { t } from '@/i18n';
-import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { track } from '@/lib/events';
 import { isRateLimited } from '@/lib/net';
 import { notice } from '@/lib/notice';
@@ -53,6 +53,7 @@ const FACE_FRAME_QUALITY = 0.6;
 const PROMPTS = [t('Fold é melhor?'), t('Call ou fold?'), t('Como jogavas isto?'), t('Hero call ou spew?'), t('Cooler ou erro meu?')];
 
 export default function StoryScreen() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   // `to=instagram`: Instagram was already picked in the hand's Partilhar sheet, so the button goes straight there.
   // `ask`: the "O que queres saber?" typed in that sheet; it opens as the story's comment and goes with the link.
   const { id, to, ask: asked } = useLocalSearchParams<{ id: string; to?: string; ask?: string }>();
@@ -341,6 +342,7 @@ export default function StoryScreen() {
 
   return (
     <>
+      {termsSheet}
       <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>

@@ -31,6 +31,14 @@ select count(*) = 0 as reports_cleared from hand_comment_reports where comment_i
 select restore_hand_comment(:'a2') = false as restore_again_false;
 reset role;
 select count(*) = 1 as ban_stays from banned_comment_authors where author_key = :'ka';
+select count(*) = 0 as only_hashes_kept from banned_comment_authors where author_key !~ '^[0-9a-f]{64}$';
+-- Lifting a ban by mistake lets the author comment again; lifting it twice says false.
+set role service_role;
+select unban_comment_author(:'a1') as unbanned;
+select unban_comment_author(:'a1') = false as unban_again_false;
+select count(*) = 1 as comments_again from add_hand_comment(:'b1', 'Ana', 'Desculpa.', null, :'ka');
+select ban_comment_author(:'a1') >= 1 as banned_again;
+reset role;
 -- Kept one year.
 update banned_comment_authors set banned_at = now() - interval '366 days';
 select purge_moderation() >= 0 as purged;
@@ -40,5 +48,12 @@ select count(*) = 0 as ban_purged_after_a_year from banned_comment_authors;
 set role anon;
 select ban_comment_author(:'rb');
 select restore_hand_comment(:'rb');
+select unban_comment_author(:'rb');
+select * from banned_comment_authors;
+reset role;
+set role authenticated;
+select ban_comment_author(:'rb');
+select restore_hand_comment(:'rb');
+select unban_comment_author(:'rb');
 select * from banned_comment_authors;
 reset role;

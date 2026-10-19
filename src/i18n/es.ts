@@ -3371,9 +3371,12 @@ const es: Record<string, string> = {
   'Toca para atualizar': 'Toca para actualizar',
   '{what}. Podes anular.': '{what}. Puedes deshacerlo.',
   'Antes de publicares': 'Antes de publicar',
-  'Comentários, mãos partilhadas e o perfil público ficam à vista de outras pessoas. Ao continuar, aceitas os Termos de utilização: não há tolerância para conteúdo ofensivo nem para quem abusa de outras pessoas. Removemos esse conteúdo e afastamos quem o publica.': 'Los comentarios, las manos compartidas y el perfil público quedan a la vista de otras personas. Al continuar, aceptas los Términos de uso: no hay tolerancia para el contenido ofensivo ni para quien abusa de otras personas. Eliminamos ese contenido y apartamos a quien lo publica.',
-  'Ler os termos': 'Leer los términos',
   'Aceito': 'Acepto',
+  'Ao aceitar, concordas com os': 'Al aceptar, aceptas los',
+  'Termos de utilização': 'Términos de uso',
+  'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Tus comentarios, las manos que compartes y tu perfil público pueden verlos otras personas.',
+  'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Tenemos tolerancia cero con el contenido ofensivo y los abusos. Puedes denunciar o bloquear a quien lo haga. Nosotros retiramos ese contenido y apartamos a quien lo publicó.',
+  'Só te perguntamos uma vez.': 'Solo te lo preguntamos una vez.',
 };
 
 export default es;

@@ -38,7 +38,7 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
-import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
@@ -57,6 +57,7 @@ const without = <V,>(o: Record<string, V>, k: string) => {
 };
 
 export default function HandScreen() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   // `f`: this hand was just finished in the editor; the next unfinished one is offered.
   const { id, c: fresh, f: justFinished } = useLocalSearchParams<{ id: string; c?: string; f?: string }>();
@@ -404,6 +405,7 @@ ${link}`;
   const nextHere = (!!activeSession && hand.sessionId === activeSession.id) || (isComplete(hand) && hands[0]?.id === hand.id && sameTable(hand, null));
   return (
     <>
+      {termsSheet}
       <Stack.Screen
         options={{
           title: '',

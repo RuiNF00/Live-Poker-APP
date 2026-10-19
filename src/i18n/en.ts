@@ -3377,9 +3377,12 @@ const en: Record<string, string> = {
   'Toca para atualizar': 'Tap to update',
   '{what}. Podes anular.': '{what}. You can undo it.',
   'Antes de publicares': 'Before you post',
-  'Comentários, mãos partilhadas e o perfil público ficam à vista de outras pessoas. Ao continuar, aceitas os Termos de utilização: não há tolerância para conteúdo ofensivo nem para quem abusa de outras pessoas. Removemos esse conteúdo e afastamos quem o publica.': 'Comments, shared hands and your public profile can be seen by other people. By continuing you agree to the Terms of Use: there is no tolerance for objectionable content or abusive users. We remove that content and remove whoever posted it.',
-  'Ler os termos': 'Read the terms',
   'Aceito': 'I agree',
+  'Ao aceitar, concordas com os': 'By accepting, you agree to the',
+  'Termos de utilização': 'Terms of Use',
+  'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Your comments, the hands you share and your public profile can be seen by other people.',
+  'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'We have zero tolerance for objectionable content and abuse. You can report or block anyone who does it. We remove that content and remove whoever posted it.',
+  'Só te perguntamos uma vez.': 'We only ask once.',
 };
 
 export default en;

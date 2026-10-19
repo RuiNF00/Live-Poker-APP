@@ -7,7 +7,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { t } from '@/i18n';
 import { isRateLimited } from '@/lib/net';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
-import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
 import { BRAND, C, F, R, S } from '@/theme';
@@ -67,6 +67,7 @@ export function CommentsList({
   /** The hand's own player: their replies don't send them a notice. */
   ownerToken?: string;
 }) {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   const comments = all.filter((c) => !VOTE_COMMENT.test(c.text.trim()));
   const [name, setName] = useState(defaultName);
   // The name used last time on this phone, so a friend's hand doesn't ask for it again.
@@ -124,6 +125,7 @@ export function CommentsList({
 
   return (
     <View style={{ gap: S.sm }}>
+      {termsSheet}
       {comments.length === 0 && !grouped ? (
         <Card tone="inset" style={{ alignItems: 'center', paddingVertical: S.lg }}>
           <T v="small">{t('Ainda sem comentários. Sê o primeiro a dar a tua opinião.')}</T>

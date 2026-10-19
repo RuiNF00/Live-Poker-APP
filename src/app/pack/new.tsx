@@ -16,7 +16,7 @@ import { withLang } from '@/lib/link-lang';
 import { createPack } from '@/lib/pack-api';
 import { MAX_PACK_HANDS, packHands } from '@/lib/pack-core';
 import { shareRef } from '@/lib/referrals';
-import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
+import { useUgcTerms } from '@/components/UgcTerms';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
@@ -26,6 +26,7 @@ function note(title: string, body?: string) {
 }
 
 export default function NewPack() {
+  const [termsSheet, acceptUgcTerms] = useUgcTerms();
   const { ids, folder, session } = useLocalSearchParams<{ ids?: string; folder?: string; session?: string }>();
   const { hands, sessions, settings, saveHand } = useStore();
   const pro = usePro();
@@ -82,6 +83,7 @@ export default function NewPack() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+      {termsSheet}
       <Card style={{ gap: S.md, paddingVertical: S.lg }}>
         <Row gap={S.md} style={{ alignItems: 'flex-start' }}>
           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>

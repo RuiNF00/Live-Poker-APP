@@ -5,7 +5,7 @@
 -- Used from the SQL editor by the person reviewing a report (security/incidentes.md §3).
 
 create table if not exists public.banned_comment_authors (
-  author_key text primary key,
+  author_key text primary key check (author_key ~ '^[0-9a-f]{64}$'),
   banned_at timestamptz not null default now()
 );
 alter table public.banned_comment_authors enable row level security;
@@ -30,6 +30,16 @@ begin
    where (id = p_comment_id or (v_key is not null and author_key = v_key)) and not hidden;
   get diagnostics n = row_count;
   return n;
+end $$;
+
+-- Lifts the ban on the author of p_comment_id, to correct a mistake; their hidden comments stay
+-- hidden (restore_hand_comment puts one back). False when there was no ban.
+create or replace function public.unban_comment_author(p_comment_id uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from banned_comment_authors b using hand_comments c
+   where c.id = p_comment_id and b.author_key = c.author_key;
+  return found;
 end $$;
 
 -- Undoes a report review on one comment: shown again and its reports cleared (like
@@ -91,8 +101,10 @@ end $$;
 
 revoke execute on function public.ban_comment_author(uuid) from public, anon, authenticated;
 revoke execute on function public.restore_hand_comment(uuid) from public, anon, authenticated;
+revoke execute on function public.unban_comment_author(uuid) from public, anon, authenticated;
 revoke execute on function public.add_hand_comment(text, text, text, integer, text) from public, anon, authenticated;
 revoke execute on function public.purge_moderation() from public, anon, authenticated;
 grant execute on function public.ban_comment_author(uuid) to service_role;
 grant execute on function public.restore_hand_comment(uuid) to service_role;
+grant execute on function public.unban_comment_author(uuid) to service_role;
 grant execute on function public.add_hand_comment(text, text, text, integer, text) to service_role;
