@@ -45,6 +45,15 @@ export function withPlanEvents(f: Festival, plan: FestivalPlan): Festival {
   return add.length ? { ...f, events: [...f.events, ...add].sort((a, b) => a.start.localeCompare(b.start)) } : f;
 }
 
+/**
+ * The festival an action package is for, shipped or the player's own, with the tournaments they
+ * added: the same schedule the festival screen shows, so the package counts what the list counts.
+ */
+export function planFestival(festivals: Festival[], id: string | undefined, plan: (festivalId: string) => FestivalPlan = getPlan): Festival | undefined {
+  const f = id ? festivals.find((x) => x.id === id) : undefined;
+  return f && withPlanEvents(f, plan(f.id));
+}
+
 export interface OwnEventInput {
   name: string;
   /** 'YYYY-MM-DDTHH:MM', venue wall clock. */

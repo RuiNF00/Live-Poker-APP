@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 
 import { t } from '@/i18n';
 import { useRates } from '@/lib/fx';
-import { FESTIVALS } from '@/poker/festivals';
 import { money } from '@/poker/format';
 import { missedRefund, pendingCost, useOffers } from '@/store/action-offer';
-import { getPlan } from '@/store/festival-plan';
+import { getPlan, planFestival, useFestivalPlans } from '@/store/festival-plan';
+import { useFestivals } from '@/store/my-festivals';
 import { rate } from '@/store/fx-math';
 import { backerLedger, packageStates, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
 import { useStore } from '@/store/store';
@@ -25,6 +25,8 @@ export function useStaking() {
   }, [sessions, home]);
   const table = useRates(since);
   const offers = useOffers();
+  const festivals = useFestivals();
+  const plans = useFestivalPlans();
   return useMemo(() => {
     const manual = settings.fxManual ?? {};
     const pk = packageStates(sessions, packages, { table, manual });
@@ -32,7 +34,7 @@ export function useStaking() {
     const ledgers = new Map<string, BackerLedger>(backers.map((b) => [b.id, backerLedger(b.id, sessions, packages, payments, pk, fx)]));
     // Festival action not paid for yet, for events no session carries yet: the backer owes it already.
     for (const o of offers) {
-      const f = FESTIVALS.find((x) => x.id === o.festivalId);
+      const f = planFestival(festivals, o.festivalId);
       if (!f) continue;
       const started = getPlan(f.id).sessions;
       for (const line of o.lines) {
@@ -49,7 +51,9 @@ export function useStaking() {
     }
     const totals = stakingTotals([...ledgers.values()], home, table, manual);
     return { pk, ledgers, totals, fx };
-  }, [sessions, packages, payments, backers, offers, table, home, settings.fxManual]);
+    // plans: getPlan() above reads them (started events, added tournaments).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions, packages, payments, backers, offers, festivals, plans, table, home, settings.fxManual]);
 }
 
 /** A total that may be split across currencies: "1 200€" or "300€ + 14 508$". */

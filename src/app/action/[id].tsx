@@ -21,7 +21,7 @@ import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { agreementUpdateWaiting, fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, queueAgreementUpdate, updateAgreement } from '@/lib/offer-api';
-import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
 import {
   MARKUPS,
@@ -46,7 +46,8 @@ import {
   type PackageLine,
   type SettlementState,
 } from '@/store/action-offer';
-import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
+import { festivalName, planFestival, updatePlan, useFestivalPlan } from '@/store/festival-plan';
+import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -58,8 +59,10 @@ export default function ActionPackageScreen() {
   const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const offers = useOffers();
   const o = offers.find((x) => x.id === id);
-  const f = FESTIVALS.find((x) => x.id === o?.festivalId);
   const plan = useFestivalPlan(o?.festivalId ?? '');
+  // An own festival too, with the tournaments the player added (as the festival screen).
+  const f = planFestival(useFestivals(), o?.festivalId, () => plan);
+  const ready = useFestivalsReady();
   const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession, trips, saveTrip } = useStore();
   const pro = usePro();
   const [busy, setBusy] = useState<string | null>(null);
@@ -95,6 +98,8 @@ export default function ActionPackageScreen() {
     }, [refresh]),
   );
 
+  // An own festival not read from the phone yet: wait, it isn't gone.
+  if (o && !f && !ready) return <Stack.Screen options={{ title: t('Ação vendida') }} />;
   if (!o || !f)
     return (
       <>

@@ -4,6 +4,8 @@ import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
 import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
+import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
 
 // Event 2 ($26,000), event 3 ($50,000), and a Day 2 that has no buy-in.
@@ -177,3 +179,23 @@ test("a backer's usual terms: their newest piece, from a festival package or sol
   assert.equal(usualTerms('b2', [pkgOld], [loose]), null);
 });
 
+
+test("a package counts the player's own tournaments and own festivals, as the festival list does (QA P2)", () => {
+  // A tournament the player added to a shipped festival, picked with event 2.
+  const mine = ownEvent('own-1', { name: 'Deepstack', start: '2026-12-06T12:00', game: 'NLH', buyIn: 550 }, 1);
+  const plan = { ...EMPTY_PLAN, events: [mine] };
+  const o = { ...newOffer(withPlanEvents(F, plan), ['2', 'own-1'], 'o1', 1), lines: [{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }] };
+  assert.equal(offerTotals(F, o).events, 1, 'the schedule alone misses the added one');
+  const f = planFestival([F], F.id, () => plan)!;
+  assert.equal(offerTotals(f, o).events, 2);
+  assert.equal(offerTotals(f, o).buyIns, 26000 + 550);
+  assert.equal(lineCost(f, o, 10), 2920.5);
+  // A festival of the player's own: found among all festivals, with its tournaments.
+  const own = ownFestival('own-f', { name: 'Clube', city: 'Porto', currency: '€', from: '2026-11-01', to: '2026-11-02' });
+  const ev = ownEvent('own-2', { name: 'Main', start: '2026-11-01T20:00', game: 'NLH', buyIn: 60.5 }, 2);
+  const o2 = newOffer({ ...own, events: [ev] }, ['own-2'], 'o2', 1);
+  const g = planFestival([F, own], own.id, () => ({ ...EMPTY_PLAN, events: [ev] }));
+  assert.ok(g, 'no «Este pacote já não existe»');
+  assert.equal(offerTotals(g, o2).buyIns, 60.5);
+  assert.equal(planFestival([F], own.id), undefined);
+});

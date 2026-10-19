@@ -10,9 +10,9 @@ import { buildStatement, type Statement } from '@/lib/backing-link';
 import { createBackerPage, newPageKey, sealPage, updateBackerPage, type BackerPage } from '@/lib/backer-page';
 import { createKey, forgetCreateKey } from '@/lib/create-key';
 import { useOnline } from '@/lib/sync';
-import { FESTIVALS } from '@/poker/festivals';
 import { nextEventFor, useOffers, type ActionOffer } from '@/store/action-offer';
-import { getPlan } from '@/store/festival-plan';
+import { getPlan, planFestival } from '@/store/festival-plan';
+import { allFestivals } from '@/store/my-festivals';
 import type { BackerLedger, YearStatement } from '@/store/staking';
 import { uid, useStore } from '@/store/store';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
@@ -28,7 +28,8 @@ export function statementFor(
   year?: YearStatement,
 ): Statement {
   const st = buildStatement(backer, player, l.currency || data.home, data.sessions, data.packages, data.payments, now, year, l);
-  const nx = nextEventFor(FESTIVALS, data.offers, backer.id, (id) => getPlan(id).sessions);
+  const festivals = data.offers.flatMap((o) => planFestival(allFestivals(), o.festivalId) ?? []);
+  const nx = nextEventFor(festivals, data.offers, backer.id, (id) => getPlan(id).sessions);
   if (nx) st.nx = nx;
   return st;
 }
