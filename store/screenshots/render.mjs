@@ -19,11 +19,13 @@ const TARGETS = [
   { store: 'ios-6.5', w: 1284, h: 2778 },
   { store: 'android', w: 1080, h: 1920 },
 ];
-const BG = '#0C1311', ACCENT = '#FF6A3D';
+const BG = '#0C1311', ACCENT = '#F45A27'; // brand orange for the frame; the app's own #FF6A3D stays inside the screens
 
 const browser = await chromium.launch({ executablePath: exe });
 
 async function capture(locale, key) {
+  const map = seed.typed[key] ?? {};
+  const tr = (v) => (typeof v === 'string' ? map[v] ?? v : Array.isArray(v) ? v.map(tr) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, tr(x)])) : v);
   const ctx = await browser.newContext({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3, locale });
   await ctx.addInitScript((s) => {
     // One-time coach-mark tours (rl.coach.<screen>.v1) would cover their screens: report every one as seen.
@@ -31,7 +33,7 @@ async function capture(locale, key) {
     Storage.prototype.getItem = function (k) { return /^rl\.coach\./.test(k) ? '1' : get.call(this, k); };
     if (localStorage.getItem('rl.hands.v1')) return;
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-  }, { 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'rl.trial.defer.v1': { shown: 1 }, 'sweatbook.replayer.tips.v1': '1', 'rl.trips.v1': seed.trips.map((x) => x.id), ...Object.fromEntries(seed.trips.map((x) => ['rl.trip.v1.' + x.id, x])), 'rl.backing.v1': seed.backing.map((x) => x.id), ...Object.fromEntries(seed.backing.map((x) => ['rl.backed.v1.' + x.id, x])), 'rl.start.hidden.v1': '1' });
+  }, tr({ 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'rl.trial.defer.v1': { shown: 1 }, 'sweatbook.replayer.tips.v1': '1', 'rl.trips.v1': seed.trips.map((x) => x.id), ...Object.fromEntries(seed.trips.map((x) => ['rl.trip.v1.' + x.id, x])), 'rl.backing.v1': seed.backing.map((x) => x.id), ...Object.fromEntries(seed.backing.map((x) => ['rl.backed.v1.' + x.id, x])), 'rl.start.hidden.v1': '1' }));
   // The sandbox has no route to the backend, so the app would show its
   // "no signal" pill on every frame. Answer every outside request with an
   // empty 204: the app sees itself online, as on a phone with signal.
@@ -111,7 +113,7 @@ function html(lines, shot, t) {
 <style>
 html,body{margin:0;width:${t.w}px;height:${t.h}px;background:${BG};overflow:hidden}
 body{display:flex;flex-direction:column;align-items:center;font-family:'Hanken Grotesk',system-ui,sans-serif;
- background:radial-gradient(120% 60% at 50% 0%, rgba(255,106,61,.22), transparent 60%), ${BG}}
+ background:radial-gradient(120% 60% at 50% 0%, rgba(244,90,39,.22), transparent 60%), ${BG}}
 h1{color:#F4F1EC;font-weight:800;font-size:${capSize}px;line-height:1.08;text-align:center;letter-spacing:-.02em;margin:${Math.round(t.h*0.055)}px 0 ${Math.round(t.h*0.035)}px}
 h1 span{color:${ACCENT}}
 .phone{width:${shotW}px;border-radius:${Math.round(shotW*0.09)}px;overflow:hidden;border:${Math.round(t.w*0.008)}px solid #26302C;

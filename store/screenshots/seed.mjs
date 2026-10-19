@@ -5,12 +5,12 @@ const P = (n, s, c) => (c ? { name: n, stack: s, cards: c } : { name: n, stack: 
 const g = (name, sb, bb, stage, level, left) => ({ kind: 'mtt', name, sb, bb, ante: bb, anteType: 'bb', currency: '$', stage, level, playersLeft: left });
 export const hands = [
   base({ id: 'h7', t: now - 3*DAY - 2*3600000, game: g('Madrid Open', 1500, 3000, 'ft', 20, 6),
-    players: [P('',120000),P('',150000),P('',95000),P('Hero',210000,['Jc','Jd']),P('Reg alemão',260000,['Ad','Kh']),P('',180000)],
+    players: [P('',120000),P('',150000),P('',95000),P('Hero',210000,['Jc','Jd']),P('Alemão',260000,['Ad','Kh']),P('',180000)],
     button: 4, hero: 3, actions: [{p:1,kind:'fold'},{p:2,kind:'fold'},{p:3,kind:'raise',to:6600},{p:4,kind:'raise',to:21000},{p:5,kind:'fold'},{p:0,kind:'fold'},{p:3,kind:'raise',to:210000},{p:4,kind:'call'}],
     board: ['As','9c','4d','7s','2h'], board2: ['Js','6d','3c','Tc','5h'], tags: ['Mesa final','Run it twice'], notes: '' }),
 
   base({ id: 'h1', t: now - 20*60000, game: g('Lisboa Open', 1000, 2000, 'bubble', 14, 58),
-    players: [P('Hero',64000,['Ah','Qh']),P('',51000),P('Boné azul',120000,['Kc','Kd']),P('',38000),P('',72000),P('',45000),P('Reg alemão',88000),P('',30000),P('',96000)],
+    players: [P('Hero',64000,['Ah','Qh']),P('',51000),P('Boné azul',120000,['Kc','Kd']),P('',38000),P('',72000),P('',45000),P('Alemão',88000),P('',30000),P('',96000)],
     button: 0, hero: 0, actions: [{p:3,kind:'fold'},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:6,kind:'raise',to:4400},{p:7,kind:'fold'},{p:8,kind:'fold'},{p:0,kind:'raise',to:12000},{p:1,kind:'fold'},{p:2,kind:'raise',to:30000},{p:6,kind:'fold'},{p:0,kind:'raise',to:64000},{p:2,kind:'call'}],
     board: ['Qd','8h','3h','2s','Jh'], tags: ['Bolha','Pote grande','Dúvida'], notes: 'Bolha a 58 com 54 pagos. O boné azul só tinha entrado em duas mãos em 3 horas. Fold era melhor?' }),
   base({ id: 'h2', t: now - 55*60000, game: g('Lisboa Open', 800, 1600, 'mid', 12, 112),
@@ -18,7 +18,7 @@ export const hands = [
     button: 0, hero: 1, actions: [{p:3,kind:'raise',to:3500},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:0,kind:'fold'},{p:1,kind:'call'},{p:2,kind:'fold'},{p:1,kind:'check'},{p:3,kind:'bet',to:4000},{p:1,kind:'call'},{p:1,kind:'check'},{p:3,kind:'check'},{p:1,kind:'bet',to:20000},{p:3,kind:'call'}],
     board: ['7c','Ah','2d','Ks','4h'], tags: ['Set','Value'], notes: '' }),
   base({ id: 'h3', t: now - 2*3600000, game: g('Lisboa Open', 600, 1200, 'mid', 10, 160),
-    players: [P('Hero',48000,['Kh','Jh']),P('',36000),P('Reg alemão',80000),P('',29000),P('',55000),P('',41000)],
+    players: [P('Hero',48000,['Kh','Jh']),P('',36000),P('Alemão',80000),P('',29000),P('',55000),P('',41000)],
     button: 0, hero: 0, actions: [{p:3,kind:'fold'},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:0,kind:'raise',to:2600},{p:1,kind:'fold'},{p:2,kind:'call'},{p:2,kind:'check'},{p:0,kind:'bet',to:3000},{p:2,kind:'call'},{p:2,kind:'check'},{p:0,kind:'bet',to:8000},{p:2,kind:'call'},{p:2,kind:'check'},{p:0,kind:'bet',to:20000},{p:2,kind:'fold'}],
     board: ['Th','9h','2c','5s','3d'], tags: ['Bluff','Três ruas'], notes: 'Barrel em três ruas, ele largou.' }),
   base({ id: 'h4', t: now - DAY - 3600000, game: { kind: 'cash', name: 'Cash 25/50', sb: 25, bb: 50, ante: 0, anteType: 'none', currency: '$' },
@@ -39,11 +39,11 @@ const res = [[25000,0],[25000,88000],[10000,0],[50000,131000],[25000,0],[10000,0
 res.forEach(([b,c],i)=>{ const st = now - (i+1)*7*DAY; sess.push({ id:'s'+i, kind:'mtt', name: ({10000:'Porto Turbo',25000:'Lisboa Open',50000:'Madrid Open'})[b], venue:'Lisboa', currency:'$', startedAt: st, endedAt: st+6*3600000, breaks:[], buyIn:b, entries:1, addOn:0, cashOut:c, sb:100, bb:200, ante:200, anteType:'bb', tableSize:9, stack:0, stackLog:[], roster:[], notes:'' }); });
 sess.unshift({ id:'live', kind:'mtt', name:'Lisboa Open', venue:'Lisboa', currency:'$', startedAt: now-5*3600000, breaks:[], buyIn:25000, entries:1, addOn:0, cashOut:0, sb:1000, bb:2000, ante:2000, anteType:'bb', level:14, stage:'bubble', tableSize:9, stack:64000,
   stackLog:[{t:now-5*3600000,stack:30000,level:1},{t:now-4*3600000,stack:41000,level:5},{t:now-3*3600000,stack:36000,level:8},{t:now-2*3600000,stack:52000,level:10},{t:now-3600000,stack:71000,level:12},{t:now-20*60000,stack:64000,level:14}],
-  roster:['Hero','','Boné azul','','','','Reg alemão','',''], notes:'' });
+  roster:['Hero','','Boné azul','','','','Alemão','',''], notes:'' });
 export const sessions = sess;
 export const players = [
   { id:'p1', name:'Boné azul', look:'Boné azul, mesa 12', tags:['Tight','Nit'], notes:'Só entra com premiums.', createdAt: now-DAY, updatedAt: now },
-  { id:'p2', name:'Reg alemão', look:'Óculos, hoodie preto', tags:['Reg','Agressivo'], notes:'Abre muito do CO e BTN.', createdAt: now-DAY, updatedAt: now },
+  { id:'p2', name:'Alemão', look:'Óculos, hoodie preto', tags:['Reg','Agressivo'], notes:'Abre muito do CO e BTN.', createdAt: now-DAY, updatedAt: now },
   { id:'p3', name:'Fish casaco', look:'Casaco de cabedal', tags:['Fish','Calling station'], notes:'Paga até ao river com qualquer par.', createdAt: now-DAY, updatedAt: now },
 ];
 export const settings = { inBB:false, currency:'$', nickname:'Hero', defaultTableSize:9, onboarded:true };
@@ -65,3 +65,11 @@ export const backing = [
   { id:'b3', createdAt: now-50*DAY, statement: { v:1, id:'b3', pl:'Kenji S.', bk:'Hero', cur:'$', at: now-3*DAY, bal: -2750, mk: 8250, inv: 8250, res: -8250,
     rows: [row(3,'Lisboa Open',30,8250,0)] } },
 ];
+
+// Seed text that the player typed (names, looks, notes) is in Portuguese; the other locales get
+// their own so no frame mixes languages. Exact-match only: anything not listed stays as is.
+export const typed = {
+  en: { 'Boné azul': 'Blue cap', 'Alemão': 'German', 'Fish casaco': 'Jacket', 'Boné azul, mesa 12': 'Blue cap, table 12', 'Óculos, hoodie preto': 'Glasses, black hoodie', 'Casaco de cabedal': 'Leather jacket', 'Só entra com premiums.': 'Only plays premiums.', 'Abre muito do CO e BTN.': 'Opens a lot from CO and BTN.', 'Paga até ao river com qualquer par.': 'Calls to the river with any pair.', 'Bolha a 58 com 54 pagos. O boné azul só tinha entrado em duas mãos em 3 horas. Fold era melhor?': 'Bubble with 58 left, 54 paid. Blue cap had played two hands in 3 hours. Was fold better?', 'Barrel em três ruas, ele largou.': 'Barreled three streets, he folded.', 'Fiz straight no turn.': 'Made a straight on the turn.' },
+  'pt-BR': { 'Óculos, hoodie preto': 'Óculos, moletom preto', 'Casaco de cabedal': 'Jaqueta de couro', 'Fish casaco': 'Fish jaqueta', 'Paga até ao river com qualquer par.': 'Paga até o river com qualquer par.', 'Bolha a 58 com 54 pagos. O boné azul só tinha entrado em duas mãos em 3 horas. Fold era melhor?': 'Bolha com 58, pagam 54. O boné azul só tinha entrado em duas mãos em 3 horas. Fold era melhor?', 'Barrel em três ruas, ele largou.': 'Barrel em três streets, ele largou.', 'Fiz straight no turn.': 'Fiz sequência no turn.' },
+  es: { 'Boné azul': 'Gorra azul', 'Alemão': 'Alemán', 'Fish casaco': 'Fish chaqueta', 'Boné azul, mesa 12': 'Gorra azul, mesa 12', 'Óculos, hoodie preto': 'Gafas, sudadera negra', 'Casaco de cabedal': 'Chaqueta de cuero', 'Só entra com premiums.': 'Solo entra con premiums.', 'Abre muito do CO e BTN.': 'Abre mucho desde CO y BTN.', 'Paga até ao river com qualquer par.': 'Paga hasta el river con cualquier pareja.', 'Bolha a 58 com 54 pagos. O boné azul só tinha entrado em duas mãos em 3 horas. Fold era melhor?': 'Burbuja con 58, pagan 54. La gorra azul solo había jugado dos manos en 3 horas. ¿Era mejor fold?', 'Barrel em três ruas, ele largou.': 'Barrel en tres calles, foldeó.', 'Fiz straight no turn.': 'Hice escalera en el turn.' },
+};
