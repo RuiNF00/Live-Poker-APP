@@ -129,6 +129,7 @@ export default function RootLayout() {
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
             <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
+            <Stack.Screen name="festival-event" options={{ title: t('Torneio') }} />
             <Stack.Screen name="festivals" options={{ title: t('Festivais') }} />
             <Stack.Screen name="festival-new" options={{ title: t('Adicionar o meu festival'), presentation: 'modal', ...sheetClose }} />
             <Stack.Screen name="tournament" options={{ title: t('Modo torneio') }} />

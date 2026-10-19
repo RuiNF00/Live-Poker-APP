@@ -378,7 +378,12 @@ function EventRow({
     : t('Hora do late reg');
   return (
     <Card tone={on ? 'accent' : 'default'} padded={false}>
-      <Pressable onPress={onToggle} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md }}>
+      {/* The row opens the tournament in full; the circle alone adds it to the plan. */}
+      <Pressable
+        onPress={() => router.push({ pathname: '/festival-event', params: { id: f.id, event: e.id } })}
+        accessibilityRole="button"
+        accessibilityHint={t('Abre os detalhes do torneio')}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md }}>
         <View style={{ minWidth: 48 }}>
           <T v="mono">{e.start.slice(11)}</T>
           <T v="tiny">{e.game}</T>
@@ -397,7 +402,14 @@ function EventRow({
           <T v="mono" color={e.day2 ? C.muted : C.text} maxFontSizeMultiplier={1.3}>
             {e.day2 ? '—' : money(e.buyIn, f.currency)}
           </T>
-          <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />
+          <Pressable
+            onPress={onToggle}
+            hitSlop={12}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on }}
+            accessibilityLabel={t('No plano: {name}', { name: eventTitle(e) + (e.flight ? ` · ${e.flight}` : '') })}>
+            <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? C.accent : C.muted} />
+          </Pressable>
         </View>
       </Pressable>
       {on || action?.kind === 'resume' ? (

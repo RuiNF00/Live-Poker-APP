@@ -1813,6 +1813,19 @@ const ptBR: Record<string, string> = {
   'Sem as sessões em {list}: vê-as no Bankroll.': 'Sem as sessões em {list}: veja-as no Bankroll.',
   'Aqui vês tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.': 'Aqui você vê tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.',
   'Apagar nota': 'Excluir nota',
+  // Festival tournament screen.
+  'O teu stack do Dia 1': 'Seu stack do Dia 1',
+  'Adicionado por ti': 'Adicionado por você',
+  'No teu telemóvel: {time}': 'No seu celular: {time}',
+  'A hora que marcaste: {d} depois do início.': 'O horário que você marcou: {d} depois do início.',
+  'A tabela de blinds nível a nível ainda não está na app. Pede-a no balcão do torneio.': 'A tabela de blinds nível a nível ainda não está no app. Peça no balcão do torneio.',
+  'O teu plano': 'Seu plano',
+  'No teu plano': 'No seu plano',
+  'Toca para tirar': 'Toque para tirar',
+  'Hora oficial: {d} depois do início.': 'Horário oficial: {d} depois do início.',
+  'O organizador ainda não publicou quando fecha o late reg. Marca a hora no plano quando a souberes.': 'O organizador ainda não publicou quando fecha o late reg. Marque o horário no plano quando souber.',
+  'Começas com {stack} fichas e os blinds sobem a cada {min} min.': 'Você começa com {stack} fichas e os blinds sobem a cada {min} min.',
+  'No plano: {name}': 'No plano: {name}',
 };
 
 export default ptBR;
