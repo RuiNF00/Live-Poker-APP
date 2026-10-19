@@ -9,6 +9,7 @@ import { liveCopy } from '../src/components/live/copy';
 import { offerCopy } from '../src/components/offer/copy';
 import { profileCopy } from '../src/components/profile/copy';
 import { swapCopy } from '../src/components/swap/copy';
+import { notFoundCopy } from '../src/components/not-found/copy';
 import { describeStep, formatAmount, formatChips, streetLabel } from '../src/lib/hand-i18n';
 
 describe('pickLocale', () => {
@@ -94,6 +95,7 @@ const copies: [string, (l: Locale) => unknown][] = [
   ['swap', swapCopy],
   ['pack', packCopy],
   ['link preview', previewCopy],
+  ['404', notFoundCopy],
 ];
 
 describe.each(copies)('%s copy', (_name, copy) => {
@@ -163,5 +165,11 @@ describe('pageLocale', () => {
     expect(pageLocale(undefined, 'fr-FR')).toBe('en');
     expect(pickLocale('fr-FR')).toBe('en');
     expect(pickLocale('')).toBe('pt');
+  });
+});
+
+describe('landing main button before the stores', () => {
+  it.each(LOCALES)('%s promises no download', (l) => {
+    expect(landingCopy(l).ctaSoon).not.toMatch(/descarreg|baixar|descarg|download/i);
   });
 });

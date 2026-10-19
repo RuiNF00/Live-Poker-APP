@@ -401,7 +401,7 @@ export default function StoryScreen() {
           {canShareStory && !withFace ? <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} /> : null}
 
           <View style={{ gap: S.sm }}>
-            <Field label={t('O teu comentário')} value={comment} onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))} placeholder={t('Ex.: Bolha a 58, ele só 3-betou uma vez em 3h. Fold?')} multiline inputStyle={{ minHeight: 72 }} />
+            <Field label={t('O teu comentário')} value={comment} onChangeText={(v) => setComment(v.slice(0, MAX_COMMENT))} placeholder={t('Ex.: Bolha a 58, ele só abriu uma vez em 3h. Fold?')} multiline inputStyle={{ minHeight: 72 }} />
             <ChipRow>
               {noteHint ? <Chip label={t('Usar as notas')} icon="document-text-outline" onPress={() => setComment(noteHint)} /> : null}
               {PROMPTS.map((p) => (

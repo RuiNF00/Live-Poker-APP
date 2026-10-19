@@ -1,13 +1,16 @@
 import Link from 'next/link';
-import { brand } from '@/config/brand';
+import { headers } from 'next/headers';
+import { notFoundCopy } from '@/components/not-found/copy';
+import { pickLocale } from '@/lib/i18n';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const c = notFoundCopy(pickLocale((await headers()).get('accept-language')));
   return (
     <main className="page page-center">
-      <h1 className="hand-title">Esta mão já não existe.</h1>
-      <p className="muted">O link pode ter sido apagado por quem o partilhou.</p>
+      <h1 className="hand-title">{c.title}</h1>
+      <p className="muted">{c.body}</p>
       <Link className="btn btn-primary" href="/">
-        {brand.name}
+        {c.home}
       </Link>
     </main>
   );
