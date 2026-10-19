@@ -4,7 +4,13 @@ import type { SharedHand } from './types';
 /** Example hand served at /h/demo (the landing page links to it). */
 export const DEMO_SHARE: SharedHand = {
   id: 'demo',
-  payload: SAMPLE_TOURNAMENT_HAND,
+  // The landing page links here: no real series or venue, and no «bet» tag on the page or its preview.
+  payload: {
+    ...SAMPLE_TOURNAMENT_HAND,
+    tournament: SAMPLE_TOURNAMENT_HAND.tournament && { ...SAMPLE_TOURNAMENT_HAND.tournament, name: 'Main Event' },
+    location: 'Lisboa',
+    tags: ['Cooler?'],
+  },
   title: 'AQs vs big stack',
   revealAll: false,
   quiz: { street: 'turn', actionIndex: 1 },
