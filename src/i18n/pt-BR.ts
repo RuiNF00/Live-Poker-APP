@@ -1809,6 +1809,10 @@ const ptBR: Record<string, string> = {
   'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Seus comentários, as mãos que você compartilha e seu perfil público podem ser vistos por outras pessoas.',
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Temos tolerância zero para conteúdo ofensivo e abusos. Você pode denunciar ou bloquear quem fizer isso. Nós retiramos esse conteúdo e afastamos quem o publicou.',
   'Só te perguntamos uma vez.': 'Só perguntamos uma vez.',
+  // Início (resumo) e Notas
+  'Sem as sessões em {list}: vê-as no Bankroll.': 'Sem as sessões em {list}: veja-as no Bankroll.',
+  'Aqui vês tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.': 'Aqui você vê tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.',
+  'Apagar nota': 'Excluir nota',
 };
 
 export default ptBR;

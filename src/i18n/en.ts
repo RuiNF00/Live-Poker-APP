@@ -3483,6 +3483,16 @@ const en: Record<string, string> = {
   'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Your comments, the hands you share and your public profile can be seen by other people.',
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'We have zero tolerance for objectionable content and abuse. You can report or block anyone who does it. We remove that content and ban whoever posted it.',
   'Só te perguntamos uma vez.': 'We only ask once.',
+  // Início (resumo) e Notas
+  'Resumo': 'Summary',
+  'Últimas mãos': 'Latest hands',
+  'Ver todas': 'See all',
+  'Atalhos': 'Shortcuts',
+  'Sem as sessões em {list}: vê-as no Bankroll.': "Sessions in {list} aren't included: see them in Bankroll.",
+  'Nova nota': 'New note',
+  'Aqui vês tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.': 'Everything at a glance: your result, your latest hands and sessions, and your table notes.',
+  'Começar uma sessão': 'Start a session',
+  'Apagar nota': 'Delete note',
 };
 
 export default en;

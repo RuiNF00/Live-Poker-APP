@@ -37,8 +37,8 @@ test('at the table the free-hands cell never offers the trial and opens the live
 });
 
 test('one picked hand goes to the solver on the free plan', () => {
-  const home = src.find(([f]) => f === path.join('app', '(tabs)', 'index.tsx'))![1];
-  assert.match(home, /isPro \|\| picked\.size === 1 \? toSolver/);
+  const list = src.find(([f]) => f === path.join('app', '(tabs)', 'hands.tsx'))![1];
+  assert.match(list, /isPro \|\| picked\.size === 1 \? toSolver/);
 });
 
 test('buying from a bankroll lock carries on with what was tapped', () => {

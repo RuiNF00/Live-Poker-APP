@@ -3477,6 +3477,16 @@ const es: Record<string, string> = {
   'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Tus comentarios, las manos que compartes y tu perfil público pueden verlos otras personas.',
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Tenemos tolerancia cero con el contenido ofensivo y los abusos. Puedes denunciar o bloquear a quien lo haga. Nosotros retiramos ese contenido y apartamos a quien lo publicó.',
   'Só te perguntamos uma vez.': 'Solo te lo preguntamos una vez.',
+  // Início (resumo) e Notas
+  'Resumo': 'Resumen',
+  'Últimas mãos': 'Últimas manos',
+  'Ver todas': 'Ver todas',
+  'Atalhos': 'Atajos',
+  'Sem as sessões em {list}: vê-as no Bankroll.': 'Sin las sesiones en {list}: las ves en Bankroll.',
+  'Nova nota': 'Nueva nota',
+  'Aqui vês tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.': 'Aquí ves todo de un vistazo: el resultado, las últimas manos y sesiones y las notas de la mesa.',
+  'Começar uma sessão': 'Empezar una sesión',
+  'Apagar nota': 'Borrar nota',
 };
 
 export default es;
