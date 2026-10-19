@@ -48,6 +48,15 @@ export function cloudAhead(data: Counts, c: CloudState): boolean {
   return !!c.lastAt && !!uploadBlock(data, c);
 }
 
+/**
+ * May a copy just made with code `id` become the saved state? Not when a restore with
+ * another code finished meanwhile; yes over a code whose copy was deleted elsewhere
+ * («Criar cópia nova»), or else the new code is lost on the next launch.
+ */
+export function savesOver(now: CloudState | null, id: string): boolean {
+  return !now || now.id === id || !!now.gone;
+}
+
 /** What the launch auto-backup does: nothing, or upload. It never forces. */
 export function autoBackup(c: CloudState | null, data: Counts, now: number): 'skip' | 'upload' {
   if (!c || c.gone || (c.lastAt && now - c.lastAt < AUTO_EVERY_MS)) return 'skip';

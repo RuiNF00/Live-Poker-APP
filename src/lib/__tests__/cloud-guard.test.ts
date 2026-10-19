@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, BACKUP_MAX_BYTES, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
+import { autoBackup, BACKUP_MAX_BYTES, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, savesOver, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -125,4 +125,13 @@ test('after a saved hand: copy once things settle, at most every 10 minutes, nev
   assert.equal(changeBackupIn(big, { ...full, hands: 121 }, t0 + 2 * H), 5 * H);
   // A network failure doesn't slow it down.
   assert.equal(changeBackupIn({ ...c, failedAt: t0 + H, failure: 'network' }, { ...full, hands: 121 }, t0 + 2 * H), CHANGE_DEBOUNCE_MS);
+});
+
+test('a new copy is saved over a deleted code, never over a code restored meanwhile', () => {
+  assert.equal(savesOver(null, 'NEW'), true);
+  assert.equal(savesOver({ ...code, id: 'NEW' }, 'NEW'), true);
+  // «Criar cópia nova» after the copy was deleted elsewhere: the new code is what stays.
+  assert.equal(savesOver({ ...code, id: 'OLD', gone: true }, 'NEW'), true);
+  // A restore with another code finished while this was uploading: keep it.
+  assert.equal(savesOver({ ...code, id: 'OTHER' }, 'NEW'), false);
 });

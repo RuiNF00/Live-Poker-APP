@@ -11,7 +11,7 @@ import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
 import { ALPHA, parseCloud, type CloudState } from './cloud-code';
-import { BACKUP_MAX_BYTES, countsOf, uploadBlock } from './cloud-guard';
+import { BACKUP_MAX_BYTES, countsOf, savesOver, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 import { isOnline } from './online';
 import { outcomeOf, queueOrThrow, registerSender } from './sync';
@@ -221,10 +221,7 @@ async function send(c: CloudState, data: BackupData, opts: UploadOpts): Promise<
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const { failedAt: _f, failure: _r, ...ok } = c;
   const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt, bytes: body.length };
-  // A restore with another code may have finished while this was uploading;
-  // don't put the old code back.
-  const now = await loadCloud();
-  if (!now || now.id === c.id) await saveCloud(next);
+  if (savesOver(await loadCloud(), c.id)) await saveCloud(next);
   return next;
 }
 
