@@ -21,8 +21,13 @@ function ageRange(): AgeRange | null {
   }
 }
 
-const timeout = <T>(p: Promise<T>, ms: number): Promise<T> =>
-  Promise.race([p, new Promise<T>((_, no) => setTimeout(() => no(Object.assign(new Error('timeout'), { code: 'ERR_TIMEOUT' })), ms))]);
+function timeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<T>((_, no) => {
+    timer = setTimeout(() => no(Object.assign(new Error('timeout'), { code: 'ERR_TIMEOUT' })), ms);
+  });
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
+}
 
 /** Apple's answer about this account, in at most 5 s. */
 async function eligibility(m: AgeRange): Promise<boolean | null | 'error'> {
