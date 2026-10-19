@@ -18,6 +18,55 @@ export interface Table {
  * phone's engine that is what made a 5,000-session file take seconds.
  */
 export function parseCsv(text: string, sep = detectSeparator(text)): string[][] {
+  return finish(scan(text, sep));
+}
+
+/** Rows read between two looks at the clock. */
+const ROWS_PER_STEP = 200;
+/** Longest the screen goes without drawing while a file is read. */
+const SLICE_MS = 50;
+
+export interface Steps {
+  onProgress?: (done: number, total: number) => void;
+  cancelled?: () => boolean;
+  sliceMs?: number;
+  pause?: () => Promise<void>;
+}
+
+/** A step generator run to the end in one go. */
+export function finish<T>(run: Generator<number, T>): T {
+  for (;;) {
+    const step = run.next();
+    if (step.done) return step.value;
+  }
+}
+
+/**
+ * A step generator run in slices, so a file with years of sessions doesn't freeze the screen
+ * before the progress bar shows: hands control back every SLICE_MS and says how far it got
+ * (`done` of `total`). Same result as finish (the same code). Null when `cancelled` turns true.
+ */
+export async function inSteps<T>(run: Generator<number, T>, total: number, progress?: Steps): Promise<T | null> {
+  const pause = progress?.pause ?? (() => new Promise<void>((r) => setTimeout(r, 0)));
+  let since = Date.now();
+  for (;;) {
+    const step = run.next();
+    if (step.done) return step.value;
+    if (Date.now() - since < (progress?.sliceMs ?? SLICE_MS)) continue;
+    progress?.onProgress?.(step.value, total);
+    await pause();
+    if (progress?.cancelled?.()) return null;
+    since = Date.now();
+  }
+}
+
+/** parseCsv in steps: see inSteps. */
+export function parseCsvAsync(text: string, sep = detectSeparator(text), progress?: Steps): Promise<string[][] | null> {
+  return inSteps(scan(text, sep), text.length, progress);
+}
+
+/** Yields the place in the text every ROWS_PER_STEP rows; returns the rows. */
+function* scan(text: string, sep: string): Generator<number, string[][]> {
   const s = text.replace(/^\uFEFF/, '');
   const n = s.length;
   const SEP = sep.charCodeAt(0);
@@ -67,6 +116,7 @@ export function parseCsv(text: string, sep = detectSeparator(text)): string[][] 
       row = [];
       cell = '';
       from = ++i;
+      if (rows.length % ROWS_PER_STEP === 0) yield i;
     } else i++;
   }
   const last = cell + s.slice(from, n);
@@ -75,17 +125,17 @@ export function parseCsv(text: string, sep = detectSeparator(text)): string[][] 
     rows.push(row);
   }
   // Text our own export kept from running as a formula ('=…, '-…): back to what was typed.
-  for (const r of rows) for (let c = 0; c < r.length; c++) if (r[c].charCodeAt(0) === 39 && /^'[=+\-@\t\r]/.test(r[c])) r[c] = r[c].slice(1);
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    for (let c = 0; c < r.length; c++) if (r[c].charCodeAt(0) === 39 && /^'[=+\-@\t\r]/.test(r[c])) r[c] = r[c].slice(1);
+    if (i % 2000 === 1999) yield n;
+  }
   return rows;
 }
 
 /** The separator that splits the first lines most evenly: comma, semicolon or tab. */
 export function detectSeparator(text: string): string {
-  const lines = text
-    .replace(/^﻿/, '')
-    .split(/\r?\n/)
-    .filter((l) => l.trim() && !/^-+[^,;\t]*-*$/.test(l.trim()))
-    .slice(0, 20);
+  const lines = firstLines(text.replace(/^﻿/, ''), 20);
   let best = ',';
   let bestScore = 0;
   for (const sep of [',', ';', '\t']) {
@@ -101,6 +151,22 @@ export function detectSeparator(text: string): string {
     }
   }
   return best;
+}
+
+/**
+ * The first `n` lines with content, junk lines ("---PBT Bankroll Export---") left out. Only the start
+ * of the text is split, a bigger piece each time, rather than every line of a 20 MB file.
+ */
+function firstLines(s: string, n: number): string[] {
+  const keep = (l: string) => l.trim() && !/^-+[^,;\t]*-*$/.test(l.trim());
+  for (let size = 64 * 1024; ; size *= 4) {
+    const whole = size >= s.length;
+    const lines = (whole ? s : s.slice(0, size)).split(/\r?\n/);
+    // The last line of a piece may be cut short.
+    if (!whole) lines.pop();
+    const got = lines.filter(keep);
+    if (whole || got.length >= n) return got.slice(0, n);
+  }
 }
 
 function countOutsideQuotes(line: string, sep: string): number {
@@ -136,11 +202,31 @@ export function norm(s: string): string {
  * names rather than data; `known` scores rows by how many cells it recognises.
  */
 export function readTable(text: string, known: (h: string) => boolean): Table {
+  return finish(readSteps(text, known));
+}
+
+/** readTable with the text read in steps (see inSteps). Null when cancelled. */
+export function readTableAsync(text: string, known: (h: string) => boolean, progress?: Steps): Promise<Table | null> {
+  return inSteps(readSteps(text, known), text.length, progress);
+}
+
+/** Rows looked at between two yields once the text is read. */
+const ROWS_PER_LOOK = 2000;
+
+/** Yields the place in the text while reading, then the end of it while picking the header and rows. */
+function* readSteps(text: string, known: (h: string) => boolean): Generator<number, Table> {
   const sep = detectSeparator(text);
-  const parsed = parseCsv(text, sep);
+  const parsed = yield* scan(text, sep);
   // Record number in the file; quoted line breaks inside a cell are rare enough to ignore.
   const lineOf: number[] = [];
-  const all = parsed.filter((r, i) => r.some((c) => c !== '') && lineOf.push(i + 1) > 0);
+  const all: string[][] = [];
+  for (let i = 0; i < parsed.length; i++) {
+    if (parsed[i].some((c) => c !== '')) {
+      all.push(parsed[i]);
+      lineOf.push(i + 1);
+    }
+    if (i % ROWS_PER_LOOK === ROWS_PER_LOOK - 1) yield text.length;
+  }
   let at = -1;
   let fallback = -1;
   let bestHits = 0;
@@ -159,10 +245,12 @@ export function readTable(text: string, known: (h: string) => boolean): Table {
   const headers = all[at].map((h, i) => h || `#${i + 1}`);
   const rows: string[][] = [];
   const lines: number[] = [];
-  for (let i = at + 1; i < all.length; i++)
+  for (let i = at + 1; i < all.length; i++) {
     if (all[i].filter((c) => c !== '').length >= 2) {
       rows.push(all[i]);
       lines.push(lineOf[i]);
     }
+    if (i % ROWS_PER_LOOK === 0) yield text.length;
+  }
   return { headers, rows, lines, sep };
 }

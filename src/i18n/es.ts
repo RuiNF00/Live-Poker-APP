@@ -3189,6 +3189,7 @@ const es: Record<string, string> = {
   'Mais limps?': '¿Más limps?',
   'A atualizar…': 'Actualizando…',
   'A ler {done} de {total} linhas…': 'Leyendo {done} de {total} filas…',
+  'A abrir o ficheiro…': 'Abriendo el archivo…',
   'Exportar sessões em CSV': 'Exportar sesiones en CSV',
   'Todas, para o Excel ou para importar outra vez': 'Todas, para Excel o para volver a importarlas',
   'São Paulo, novembro 2026': 'São Paulo, noviembre 2026',

@@ -15,7 +15,7 @@ import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, 
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
 import { likelyDuplicateMoves, likelyDuplicates } from '@/import/duplicates';
-import { prepare, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
+import { prepareAsync, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
@@ -154,8 +154,13 @@ export default function ImportScreen() {
       }
       // A spreadsheet (.xlsx), an image or a zip is not text: say so instead of listing junk rows.
       if (text.includes('\0') || (text.match(/\uFFFD/g)?.length ?? 0) > text.length / 100) throw new Error('binary');
-      const file = prepare(text);
+      // Years of sessions take a moment to read: the bar shows before the first row is.
+      progress.set({ done: 0, total: text.length, opening: true });
+      await paint();
+      const file = await prepareAsync(text, { onProgress: (done, total) => progress.set({ done, total, opening: true }), cancelled: () => !alive.current });
+      if (!file) return;
       if (!file.table.rows.length) throw new Error('empty');
+      await paint();
       if (file.source === 'generic' && source === 'pokeranalytics') file.source = 'pokeranalytics';
       const first = await toSessionsAsync(
         file.table,
@@ -751,7 +756,8 @@ function FailedRows({ file, picked, failed, read }: { file: Prepared; picked: { 
   );
 }
 
-type Progress = { done: number; total: number };
+/** Rows converted, or (`opening`) how far into the file's text it is read. */
+type Progress = { done: number; total: number; opening?: boolean };
 
 function progressBar() {
   let now: Progress | null = null;
@@ -773,12 +779,13 @@ function ReadProgress({ bar }: { bar: ReturnType<typeof progressBar> }) {
   const p = useSyncExternalStore(bar.subscribe, bar.get);
   if (!p) return null;
   const { done, total } = p;
+  const label = p.opening ? t('A abrir o ficheiro…') : t('A ler {done} de {total} linhas…', { done, total });
   return (
-    <View style={{ gap: 6, marginBottom: S.sm }} accessible accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: done }} accessibilityLabel={t('A ler {done} de {total} linhas…', { done, total })}>
+    <View style={{ gap: 6, marginBottom: S.sm }} accessible accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: done }} accessibilityLabel={label}>
       <View style={{ height: 4, borderRadius: 2, backgroundColor: C.border, overflow: 'hidden' }}>
         <View style={{ height: 4, width: `${Math.round((done / Math.max(total, 1)) * 100)}%`, backgroundColor: C.accent }} />
       </View>
-      <T v="small">{t('A ler {done} de {total} linhas…', { done, total })}</T>
+      <T v="small">{label}</T>
     </View>
   );
 }
