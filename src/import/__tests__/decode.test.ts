@@ -38,3 +38,45 @@ test('a large file decodes without overflowing the stack', () => {
   assert.equal(decodeText(new Uint8Array(Buffer.from(s, 'utf8'))).text, s);
   assert.equal(decodeText(utf16le(s, true)).text, s);
 });
+
+test('engines without TextDecoder read the same text, and a long file stays fast', () => {
+  const samples = [
+    new TextEncoder().encode('Data;Local;Lucro\n12/03/2024;São Paulo — Café “Ñ”;+120,50 €\n🂡 ok\n'.repeat(50)),
+    new Uint8Array([0x53, 0xe3, 0x6f, 0x20, 0x50, 0x61, 0x75, 0x6c, 0x6f, 0x0a]), // Windows-1252 São Paulo
+    new Uint8Array([0xef, 0xbb, 0xbf, 0x61, 0xc3, 0xa9, 0x0a]), // BOM + "aé"
+    new Uint8Array([0x61, 0xed, 0xa0, 0x80, 0x62]), // a surrogate written as UTF-8: not UTF-8
+    new Uint8Array([0x61, 0xc0, 0xaf]), // overlong: not UTF-8
+  ];
+  const withEngine = samples.map((b) => decodeText(b));
+  const saved = globalThis.TextDecoder;
+  // @ts-expect-error: an engine without one
+  delete globalThis.TextDecoder;
+  try {
+    const own = samples.map((b) => decodeText(b));
+    assert.deepEqual(own, withEngine);
+    const big = new TextEncoder().encode('2024-01-01,Casino Lisboa,cash,100,250\n'.repeat(60000) + 'Café\n');
+    const t = performance.now();
+    assert.ok(decodeText(big).text.endsWith('Café\n'));
+    assert.ok(performance.now() - t < 1000);
+  } finally {
+    globalThis.TextDecoder = saved;
+  }
+});
+
+test('a TextDecoder that ignores strict mode never turns Windows-1252 into replacement marks', () => {
+  const saved = globalThis.TextDecoder;
+  class Loose {
+    fatal = false;
+    decode(b: Uint8Array) {
+      return new saved('utf-8').decode(b);
+    }
+  }
+  // @ts-expect-error: a stand-in engine decoder
+  globalThis.TextDecoder = Loose;
+  try {
+    const r = decodeText(new Uint8Array([0x53, 0xe3, 0x6f, 0x20, 0x50, 0x61, 0x75, 0x6c, 0x6f]));
+    assert.deepEqual(r, { text: 'São Paulo', encoding: 'windows-1252' });
+  } finally {
+    globalThis.TextDecoder = saved;
+  }
+});
