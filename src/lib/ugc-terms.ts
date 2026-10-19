@@ -24,9 +24,13 @@ export function ugcTerms(kv: Kv) {
   }
 
   return {
-    /** True once the player accepted; `ask` shows the sheet (one at a time). False when they closed it. */
+    /**
+     * True once the player accepted; `ask` shows the sheet. False when they closed it, and for a tap
+     * made while the sheet is still being asked: only the first tap goes on to publish.
+     */
     accept(ask: () => Promise<boolean>): Promise<boolean> {
-      pending ??= run(ask).finally(() => (pending = null));
+      if (pending) return Promise.resolve(false);
+      pending = run(ask).finally(() => (pending = null));
       return pending;
     },
     /** After «Apagar todos os meus dados»: the key is gone, so the next post asks again. */

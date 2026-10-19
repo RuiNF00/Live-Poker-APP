@@ -4,7 +4,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { legalUrl } from '@/billing/disclosure';
@@ -22,6 +22,7 @@ onEraseAll(() => gate.forget());
 export function useUgcTerms(): [React.ReactNode, () => Promise<boolean>] {
   const [open, setOpen] = useState(false);
   const done = useRef<((ok: boolean) => void) | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accept = useCallback(
     () =>
@@ -30,9 +31,20 @@ export function useUgcTerms(): [React.ReactNode, () => Promise<boolean>] {
           new Promise<boolean>((resolve) => {
             done.current = resolve;
             // A share sheet that called this may still be closing: one modal at a time on iOS.
-            setTimeout(() => setOpen(true), 350);
+            timer.current = setTimeout(() => setOpen(true), 350);
           }),
       ),
+    [],
+  );
+
+  // Leaving the screen with the sheet open (or about to open) is a «no»; otherwise nothing could be
+  // published again until the app restarts.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+      done.current?.(false);
+      done.current = null;
+    },
     [],
   );
 

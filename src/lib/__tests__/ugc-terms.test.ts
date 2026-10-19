@@ -38,7 +38,7 @@ test('a «no» publishes nothing and asks again next time', async () => {
   assert.equal(await g.accept(ask), true);
 });
 
-test('two taps at once show one sheet', async () => {
+test('two taps at once show one sheet and publish once', async () => {
   const { kv } = memory();
   const g = ugcTerms(kv);
   let asked = 0;
@@ -48,8 +48,21 @@ test('two taps at once show one sheet', async () => {
   const b = g.accept(ask);
   await new Promise((r) => setTimeout(r, 0));
   answer(true);
-  assert.deepEqual(await Promise.all([a, b]), [true, true]);
+  assert.deepEqual(await Promise.all([a, b]), [true, false]);
   assert.equal(asked, 1);
+  // The next tap, once the sheet is gone, goes through.
+  assert.equal(await g.accept(ask), true);
+});
+
+test('a sheet closed by leaving the screen frees the next tap', async () => {
+  const { kv } = memory();
+  const g = ugcTerms(kv);
+  let answer: (v: boolean) => void = () => {};
+  const first = g.accept(() => new Promise<boolean>((r) => (answer = r)));
+  await new Promise((r) => setTimeout(r, 0));
+  answer(false); // what useUgcTerms does on unmount
+  assert.equal(await first, false);
+  assert.equal(await g.accept(async () => true), true);
 });
 
 test('after erasing all data it asks again', async () => {
