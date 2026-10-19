@@ -77,6 +77,8 @@ class SupabaseOffers implements OffersStore {
 
   async confirm(id: string, seen: string | null) {
     const { data, error } = await this.db.rpc('confirm_action_offer', { p_id: id, p_seen: seen });
+    // A version the database can't read as a time (the route only lets ISO through): no version, so stale.
+    if (error && (error.code === '22007' || error.code === '22008')) return 'stale' as const;
     if (error) throw error;
     const r = data as { stale?: boolean; confirmed_at?: string } | null;
     if (r?.stale) return 'stale' as const;

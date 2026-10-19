@@ -2,7 +2,9 @@
 -- player changed the markup or the events stamped the new terms. The confirm now carries the
 -- updated_at the page showed and only counts while it still matches. updated_at now moves
 -- only when the terms do (QA P2: sharing the link again with the same terms made the page stale).
-drop function if exists public.confirm_action_offer(text);
+-- The old confirm_action_offer(text) stays for now (QA P2, 19 Oct): the web from before this
+-- migration still calls it, so the migration can go before the deploy without the backer's confirm
+-- failing in between. The new web only calls the one below. It goes in a migration of the 1st update.
 
 -- Null when the link is gone; {"stale": true} when the terms changed since p_seen (nothing
 -- stamped); else {"confirmed_at": …}, idempotent (a second call keeps the first time).

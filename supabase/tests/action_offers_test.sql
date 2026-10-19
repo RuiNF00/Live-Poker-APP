@@ -72,3 +72,8 @@ select * from get_action_offer('x');
 select confirm_action_offer('x', now());
 \set ON_ERROR_STOP on
 reset role;
+
+-- The old confirm (no version) stays for the web from before 20261019060000, still server-only.
+select not has_function_privilege('anon', 'public.confirm_action_offer(text)', 'execute')
+   and not has_function_privilege('authenticated', 'public.confirm_action_offer(text)', 'execute')
+   and has_function_privilege('service_role', 'public.confirm_action_offer(text)', 'execute') as old_confirm_server_only;
