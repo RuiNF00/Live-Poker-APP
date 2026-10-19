@@ -278,7 +278,9 @@ test('parseCsv: quotes, doubled quotes, line breaks inside quotes and text after
   assert.deepEqual(parseCsv('a, "b, c" ,"d ""e"""\r\n"x\ny",z\n"unclosed, \nend', ','), [
     ['a', 'b, c', 'd "e"'],
     ['x\ny', 'z'],
-    ['unclosed, \nend'],
+    // A quote that never closes is just text, so the rows after it stay rows.
+    ['unclosed', ''],
+    ['end'],
   ]);
   assert.deepEqual(parseCsv('"a"b,c "d"\n', ','), [['ab', 'c "d"']]);
   assert.deepEqual(parseCsv('﻿x;y\n1;2', ';'), [['x', 'y'], ['1', '2']]);
@@ -353,4 +355,32 @@ test('Sweatbook CSV round trip: export, import, and import again into the same p
   // A file from before the exact-time columns still reads.
   const old = sessionsCsv([mk(3, { venue: 'Estoril', notes: '' })]).trim().split('\n').map((l) => l.split(',').slice(0, -3).join(','));
   assert.equal(run(old.join('\n')).sessions[0].startedAt, mk(3).startedAt - 17_000, 'to the minute, as before');
+});
+
+test('Sweatbook CSV round trip keeps tax withheld at the cashier (form and status), in both layouts', () => {
+  const at = (d: number, h: number) => new Date(2026, 6, d, h).getTime();
+  const mk = (id: string, d: number, withheld?: Session['withheld']): Session => ({
+    id, kind: 'mtt', name: 'Main Event', venue: 'Las Vegas', currency: '$', startedAt: at(d, 12), endedAt: at(d, 22), breaks: [], buyIn: 1000, entries: 1, addOn: 0, cashOut: 7500,
+    sb: 0, bb: 0, ante: 0, anteType: 'none', tableSize: 9, stack: 0, stackLog: [], roster: [], notes: '', country: 'US', ...(withheld ? { withheld } : null),
+  });
+  const list = [mk('w1', 1, { amount: 1750, form: 'W-2G', status: 'final' }), mk('w2', 2, { amount: 2250.5, form: '1042-S', status: 'recover' }), mk('w3', 3, { amount: 300, status: 'recovered' }), mk('w4', 4)];
+  for (const sep of [',', ';'] as const) {
+    const r = run(sessionsCsv(list, [], [], [], sep));
+    assert.equal(r.failed.length, 0);
+    assert.deepEqual(
+      r.sessions.map((s) => [s.id, s.withheld, profit(s)]),
+      list.map((s) => [s.id, s.withheld, profit(s)]),
+      sep,
+    );
+  }
+});
+
+test('Sweatbook CSV: an unknown tax status still keeps the amount, as still to recover; an unreadable amount fails the row', () => {
+  const csv = (amount: string, form: string, status: string) =>
+    ['date,type,currency,buy_in,total_cost,cash_out,profit,country,tax_withheld,tax_form,tax_status,started_at,ended_at,id', `2026-07-01,mtt,$,1000,1000,7500,6500,US,${amount},${form},${status},2026-07-01 12:00:00,2026-07-01 22:00:00,x1`].join('\n');
+  assert.deepEqual(run(csv('1750', 'w-2g', 'pago')).sessions[0].withheld, { amount: 1750, form: 'W-2G', status: 'recover' });
+  assert.equal(run(csv('', '', '')).sessions[0].withheld, undefined);
+  assert.equal(run(csv('0', 'W-2G', 'final')).sessions[0].withheld, undefined);
+  const bad = run(csv('mil', 'W-2G', 'final'));
+  assert.deepEqual([bad.sessions.length, bad.failed[0]?.reason], [0, 'badMoney']);
 });

@@ -8,6 +8,8 @@ import { track } from '@/lib/track';
 /** Pro first (it's what we sell), annual by default, Free below. Purchases happen in the app. */
 export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
   const href = useStoreLink(stores);
+  // No store link yet: no trial or subscription to start, so the Pro button says "Em breve" (Store, 19 Oct).
+  const early = !stores.ios && !stores.android;
   const [period, setPeriod] = useState<'annual' | 'monthly'>('annual');
   const p = c.plan[period];
   return (
@@ -37,7 +39,7 @@ export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
           ))}
         </ul>
         <a className="lp-btn main" href={href} onClick={() => track('store_click', { from: 'pricing_pro', plan: period })}>
-          {p.cta}
+          {early ? c.ctaSoon : p.cta}
         </a>
         <p className="lp-fine">{p.fine}</p>
       </div>
@@ -58,6 +60,7 @@ export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
           {c.freeCta}
         </a>
       </div>
+      <p className="lp-fine lp-center">{c.recordsOnly}</p>
       <p className="lp-fine lp-center">{c.storeOnly}</p>
     </div>
   );

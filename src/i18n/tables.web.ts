@@ -18,14 +18,17 @@ const load = {
   es: () => import('./es'),
 };
 
-/** The tables `v` needs (Spanish falls back to English). Never rejects. */
+const fetchTable = (k: 'pt-BR' | 'en' | 'es') =>
+  load[k]()
+    .then((m) => void (TABLES[k] = m.default))
+    .catch(() => {});
+
+/**
+ * The table `v` needs before the app starts. Never rejects. Spanish translates every
+ * string (i18n:missing), so its English fallback loads after the start instead of before.
+ */
 export async function loadTables(v: Variant): Promise<void> {
-  const need: ('pt-BR' | 'en' | 'es')[] = v === 'pt-PT' ? [] : v === 'es' ? ['es', 'en'] : [v];
-  await Promise.all(
-    need.map((k) =>
-      load[k]()
-        .then((m) => void (TABLES[k] = m.default))
-        .catch(() => {}),
-    ),
-  );
+  if (v === 'pt-PT') return;
+  await fetchTable(v);
+  if (v === 'es') void fetchTable('en');
 }

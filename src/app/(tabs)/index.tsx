@@ -215,7 +215,7 @@ export default function HandsScreen() {
                   <>
                     {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ(''), setFilter((f) => ({ ...f, result: null, session: null }))) : setSearching(true))} /> : null}
                     {hands.length > 1 ? <IconButton name={activeFilters(filter) || filter.sort !== 'recent' ? 'options' : 'options-outline'} label={t('Filtrar mãos')} onPress={() => setFiltering(true)} /> : null}
-                    <IconButton name="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
+                    <IconButton name="calculator-outline" label={t('Calculadora de equity')} onPress={() => router.push('/odds')} />
                     {/* New comments also show here, so they aren't lost when another card wins the one-card slot below. */}
                     <IconButton
                       name="settings-outline"

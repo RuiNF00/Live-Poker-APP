@@ -732,12 +732,13 @@
   font-size: 15px;
   border-radius: 11px;
 }
-.lp-save {
+/* Inside .lp-seg: beats `.lp-seg span` above. */
+.lp-seg .lp-save {
   margin-left: 4px;
   padding: 2px 6px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--text); /* accent on accent-soft is 3.98:1 at 11 px */
   font-size: 11px;
 }
 .lp-plan {
@@ -1009,10 +1010,21 @@
 .lp-store b {
   font-size: 17px;
 }
-.lp-store.soon {
-  background: var(--surface, #141d1a);
+/* Before launch: one line of text, no store logo (Apple and Google don't allow a "coming soon" badge). */
+.lp-stores-soon {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text, #f1f4f2);
-  border: 1px solid rgba(238, 242, 239, 0.16);
+  opacity: 0.85;
+}
+/* The stores' official artwork, as published. */
+.lp-badge {
+  display: inline-flex;
+}
+.lp-badge img {
+  height: 52px;
+  width: auto;
 }
 
 /* ---------- Final + footer ---------- */

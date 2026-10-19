@@ -28,7 +28,7 @@ const pt = {
   next: 'Mão seguinte',
   log: 'Ação',
   privacy: 'Só quem tem este link vê estas mãos. Não aparece em pesquisas nem no perfil do jogador, e o jogador pode desligá-lo quando quiser.',
-  cta: 'Feito com o Sweatbook, o caderno de mãos para jogadores live.',
+  cta: 'Feito com a Sweatbook, o caderno de mãos para jogadores live.',
   goneTitle: 'Este link já não está ativo',
   goneBody: 'O jogador desligou-o ou o prazo acabou. Pede-lhe um link novo.',
   offensive: 'O comentário tem linguagem ofensiva. Reescreve-o, por favor.',

@@ -21,10 +21,12 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
  * replayer is on marked "you are here". There the player also keeps a private note per street.
  */
 const NAME_KEY = 'rl.commentName.v1';
+// Challenge votes made in the app are posted as "🗳️ Fold" comments: counted in the tally, not listed (as on the web page).
+const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|c-?bet|[3-9]-?bet|bet|raise|open|all-?in)\b/i;
 
 export function CommentsList({
   shareId,
-  comments,
+  comments: all,
   onPosted,
   defaultName = '',
   streets,
@@ -63,6 +65,7 @@ export function CommentsList({
   /** The hand's own player: their replies don't send them a notice. */
   ownerToken?: string;
 }) {
+  const comments = all.filter((c) => !VOTE_COMMENT.test(c.text.trim()));
   const [name, setName] = useState(defaultName);
   // The name used last time on this phone, so a friend's hand doesn't ask for it again.
   useEffect(() => {

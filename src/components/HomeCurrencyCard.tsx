@@ -48,7 +48,7 @@ export function HomeCurrencyCard({ hidden }: { hidden: boolean }) {
         <T v="monoL" color={C.muted}>
           •••
         </T>
-        <Button kind="secondary" size="sm" icon="lock-closed" title={t('Juntar as moedas com Pro')} onPress={() => paywall('homeTotal')} style={{ alignSelf: 'flex-start' }} />
+        <Button kind="secondary" size="sm" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('homeTotal')} style={{ alignSelf: 'flex-start' }} />
       </Card>
     );
 

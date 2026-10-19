@@ -27,17 +27,23 @@ export function parseCsv(text: string, sep = detectSeparator(text)): string[][] 
   let cell = '';
   let from = 0;
   let i = 0;
+  // Past here a quote is just a character: one that never closes would otherwise swallow every row after it.
+  let literal = n;
   while (i < n) {
     const ch = s.charCodeAt(i);
-    if (ch === 34 /* " */ && (cell + s.slice(from, i)).trim() === '') {
+    if (ch === 34 /* " */ && i < literal && (cell + s.slice(from, i)).trim() === '') {
       // A quoted part: up to the closing quote, "" being a quote.
+      const open = i;
+      const before = cell;
       cell = '';
       i++;
       for (;;) {
         const q = s.indexOf('"', i);
         if (q < 0) {
-          cell += s.slice(i);
-          i = n;
+          // Never closed: read it again as text, line by line.
+          cell = before;
+          literal = open;
+          i = open + 1;
           break;
         }
         if (s.charCodeAt(q + 1) === 34) {

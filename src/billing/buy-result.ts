@@ -33,3 +33,18 @@ export type BuyResult = 'ok' | 'cancelled' | 'pending' | 'unavailable' | 'busy' 
 
 /** Google Play reports a product as `subscription:baseplan`; a plan change names only the subscription. */
 export const playSubscriptionId = (product: string) => product.split(':')[0];
+
+/** The part of RevenueCat's CustomerInfo a restore reads. */
+export interface RestoredInfo {
+  entitlements: { active: Record<string, { productIdentifier: string; expirationDate: string | null } | undefined> };
+}
+
+/**
+ * What a restore found. Pro is the active entitlement, whatever bought it: a subscription, or the
+ * one-time Pro, which has no end date and is no subscription ('lifetime', said in its own words).
+ */
+export function restoreFound(info: RestoredInfo, entitlement: string, lifetimeProduct: string): 'ok' | 'lifetime' | 'none' {
+  const e = info.entitlements.active[entitlement];
+  if (!e) return 'none';
+  return e.productIdentifier === lifetimeProduct || !e.expirationDate ? 'lifetime' : 'ok';
+}

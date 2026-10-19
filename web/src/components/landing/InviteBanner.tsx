@@ -63,7 +63,7 @@ export function InviteHero({ code, c, stores }: { code: string; c: LandingCopy; 
       </ol>
 
       <div id="hero-cta" className="lp-hero-actions">
-        <MainCta label={c.ctaFree} stores={stores} from="invite" onClick={ios ? () => void navigator.clipboard?.writeText(`${location.origin}/r/${code}`).catch(() => {}) : undefined} />
+        <MainCta label={c.ctaFree} soon={c.ctaSoon} stores={stores} from="invite" onClick={ios ? () => void navigator.clipboard?.writeText(`${location.origin}/r/${code}`).catch(() => {}) : undefined} />
         {(ios || android) && (
           <a className="lp-btn ghost" href={appHref(`r/${code}`, android)}>
             {c.invite.open}
@@ -84,7 +84,7 @@ export function InvalidInvite({ c, stores }: { c: LandingCopy; stores: StoreLink
       <h1 id="invite-title">{c.invite.invalidTitle}</h1>
       <p className="lp-lede">{c.invite.invalidBody}</p>
       <div id="hero-cta" className="lp-hero-actions">
-        <MainCta label={c.ctaFree} stores={stores} from="invite_invalid" />
+        <MainCta label={c.ctaFree} soon={c.ctaSoon} stores={stores} from="invite_invalid" />
       </div>
     </section>
   );

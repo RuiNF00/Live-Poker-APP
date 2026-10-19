@@ -6,6 +6,7 @@
 import type { Festival } from '@/poker/festivals';
 
 import { mergeById, type BackupData } from './backup';
+import { separateBankrolls } from './bankroll-math';
 import { alive, joinDeleted } from './deleted-math';
 import { mergePlan, type FestivalPlan } from './festival-plan';
 import { mergeGroups } from './swap-groups';
@@ -15,6 +16,8 @@ const LISTS = ['hands', 'sessions', 'players', 'backers', 'packages', 'payments'
 
 /** What goes up: this phone's backup with the server copy's items joined in. This phone's settings stay. */
 export function mergeBackups(local: BackupData, remote: BackupData): BackupData {
+  // Same bankroll id in two currencies: the server copy's takes its own id (bankroll-math.ts).
+  remote = separateBankrolls(local.bankrolls ?? [], remote);
   const out: BackupData = { ...local };
   const deleted = joinDeleted(local.deleted, remote.deleted);
   out.deleted = deleted;

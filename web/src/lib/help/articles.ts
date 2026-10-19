@@ -568,8 +568,17 @@ const ARTICLES: Article[] = [
       title: 'Importar de outra app',
       summary: 'Traz o teu histórico de sessões e bankroll.',
       body: [
-        'Definições → Cópia de segurança → Importar de outra app. Funciona com Poker Bankroll Tracker, Pokerbase, Poker Analytics, qualquer CSV (confirmas as colunas antes de importar) e cópias .json da Sweatbook.',
+        'Definições → Cópia de segurança → Importar. Escolhe a app de onde vens, ou «Outra app ou Excel» para qualquer CSV, e o ficheiro que essa app exportou (até 20 MB). Também lê cópias .json da Sweatbook.',
+        'Antes de importar vês as colunas que lemos e podes mudar qualquer uma. Datas em vários formatos, vírgula ou ponto nos decimais, vírgula, ponto e vírgula ou tab entre colunas e várias moedas são lidos sozinhos, e cada moeda fica na sua banca.',
         'Entram sessões, depósitos e levantamentos. Mãos de outras apps não são importadas.',
+        {
+          list: [
+            'Nada é apagado nem alterado: o que importas junta-se ao que já tens. Importar o mesmo ficheiro outra vez não duplica nada.',
+            'Uma sessão com o mesmo dia e o mesmo resultado de uma que já tens (a mesma noite registada nas duas apps, por exemplo) fica de fora. Para a importar na mesma, toca nela, ou liga «Importar também as que parecem repetidas».',
+            'Uma linha que não dá para ler fica de fora com o número e o motivo: sem data, data que não se lê, valor que não é um número, linha incompleta (partida em duas), sessão que acaba mais de 14 dias depois de começar, ou sessão ainda a decorrer. Corrige o ficheiro e importa outra vez: o que já entrou não se repete.',
+            'Se alguma coisa não ficar bem lida, toca em «Enviar ao suporte» no ecrã de importação.',
+          ],
+        },
       ],
     },
     en: {
@@ -577,8 +586,17 @@ const ARTICLES: Article[] = [
       title: 'Import from another app',
       summary: 'Bring your session and bankroll history.',
       body: [
-        'Settings → Backup → Import from another app. It works with Poker Bankroll Tracker, Pokerbase, Poker Analytics, any CSV (you check the columns before importing) and Sweatbook .json backups.',
+        'Settings → Backup → Import. Pick the app you are coming from, or «Another app or Excel» for any CSV, and the file that app exported (up to 20 MB). Sweatbook .json backups work too.',
+        'Before importing you see the columns we read, and you can change any of them. Dates in many formats, comma or point decimals, comma, semicolon or tab between columns and several currencies are read on their own, and each currency goes to its own bankroll.',
         "Sessions, deposits and withdrawals come in. Hands from other apps aren't imported.",
+        {
+          list: [
+            'Nothing is deleted or changed: what you import is added to what you already have. Importing the same file again adds nothing twice.',
+            'A session on the same day and with the same result as one you already have (the same night logged in both apps, for example) is left out. To import it anyway, tap it, or turn on «Also import the ones that look repeated».',
+            "A row that can't be read is left out with its line number and the reason: no date, a date that can't be read, a value that isn't a number, an incomplete line (split in two), a session that ends more than 14 days after it starts, or a session still running. Fix the file and import again: what already came in isn't repeated.",
+            "If something isn't read right, tap «Send to support» on the import screen.",
+          ],
+        },
       ],
     },
   },
@@ -660,7 +678,7 @@ const ARTICLES: Article[] = [
             'Partilha por link ilimitada, com replay e votação.',
             'Importar de outras apps.',
             'Segurança: cópia na nuvem, esconder valores e bloqueio da app.',
-            'A sessão no ecrã bloqueado, a calculadora de odds, o ICM e o planeador do festival com os horários.',
+            'A sessão no ecrã bloqueado, a calculadora de equity, o ICM e o planeador do festival com os horários.',
             'Criar swaps e registar resultados.',
             'Partilhar a contagem de fichas.',
             'Um bankroll e uma viagem.',
@@ -681,7 +699,7 @@ const ARTICLES: Article[] = [
             'Unlimited link sharing, with replay and voting.',
             'Import from other apps.',
             'Security: cloud backup, hide amounts and app lock.',
-            'Your session on the lock screen, the odds calculator, ICM and the festival planner with schedules.',
+            'Your session on the lock screen, the equity calculator, ICM and the festival planner with schedules.',
             'Creating swaps and recording results.',
             'Sharing your chip count.',
             'One bankroll and one trip.',
@@ -812,7 +830,7 @@ const ARTICLES: Article[] = [
       title: 'Há um plano vitalício?',
       summary: 'Há, para quem não quer uma subscrição. Aparece ao cancelar.',
       body: [
-        'O Pro é uma subscrição mensal ou anual. Para quem prefere pagar uma vez, há o Pro para sempre, por 499 US$ (o preço na tua moeda é o da loja).',
+        'O Pro é uma subscrição mensal ou anual. Para quem prefere pagar uma vez, há o Pro para sempre. O preço é o que a loja mostra na tua moeda.',
         'Não está no ecrã do Pro. Aparece quando cancelas e escolhes «Não quero uma subscrição»:',
         {
           steps: [
@@ -830,7 +848,7 @@ const ARTICLES: Article[] = [
       title: 'Is there a lifetime plan?',
       summary: "Yes, for people who don't want a subscription. It shows when you cancel.",
       body: [
-        'Pro is a monthly or annual subscription. If you prefer to pay once, there is Pro for good, for US$499 (the price in your currency is the store’s).',
+        'Pro is a monthly or annual subscription. If you prefer to pay once, there is Pro for good. The price is the one the store shows in your currency.',
         "It isn't on the Pro screen. It shows when you cancel and pick “I don't want a subscription”:",
         {
           steps: [

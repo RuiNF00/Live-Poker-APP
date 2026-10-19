@@ -179,7 +179,7 @@ export const BR: Record<string, ArticleText> = {
           'Ele toca em Confirmo o swap no navegador, com ou sem o app. A partir daí, os termos e o horário ficam fixados e os dois recebem o código do acordo.',
         ],
       },
-      'Quando alguém ganhar prêmio, toque em Ganhei prêmio e registre o valor. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
+      'Quando alguém receber prêmio, toque em Recebi prêmio e registre o valor. O app mostra quem deve quanto a quem; quando você pagar, registre em Paguei. Compartilhar as contas manda o resumo para o outro jogador.',
       'Se você vendeu ação, o swap sai só da sua parte: seus backers continuam com a porcentagem deles do prêmio inteiro.',
       'Criar swaps e registrar resultados é grátis. O acerto (quem deve a quem) e o histórico fazem parte do Pro. Confirmar um swap pelo link é sempre grátis.',
       { note: 'Só registro e contas: nenhum dinheiro passa pelo Sweatbook, os pagamentos são feitos entre vocês. Só para maiores de 18 anos.' },
@@ -213,8 +213,17 @@ export const BR: Record<string, ArticleText> = {
     title: 'Importar de outro app',
     summary: 'Traga seu histórico de sessões e bankroll.',
     body: [
-      'Configurações → Backup → Importar de outro app. Funciona com Poker Bankroll Tracker, Pokerbase, Poker Analytics, qualquer CSV (você confere as colunas antes de importar) e backups .json do Sweatbook.',
+      'Configurações → Backup → Importar. Escolha o app de onde você vem, ou «Outro app ou Excel» para qualquer CSV, e o arquivo que esse app exportou (até 20 MB). Também lê backups .json do Sweatbook.',
+      'Antes de importar, você vê as colunas que lemos e pode mudar qualquer uma. Datas em vários formatos, vírgula ou ponto nos decimais, vírgula, ponto e vírgula ou tab entre colunas e várias moedas são lidos sozinhos, e cada moeda fica no seu próprio bankroll.',
       'Entram sessões, depósitos e saques. Mãos de outros apps não são importadas.',
+      {
+        list: [
+          'Nada é apagado nem alterado: o que você importa se junta ao que você já tem. Importar o mesmo arquivo de novo não duplica nada.',
+          'Uma sessão do mesmo dia e com o mesmo resultado de uma que você já tem (a mesma noite registrada nos dois apps, por exemplo) fica de fora. Para importá-la mesmo assim, toque nela ou ative «Importar também as que parecem repetidas».',
+          'Uma linha que não dá para ler fica de fora com o número e o motivo: sem data, data que não se lê, valor que não é um número, linha incompleta (quebrada em duas), sessão que termina mais de 14 dias depois de começar ou sessão ainda em andamento. Corrija o arquivo e importe de novo: o que já entrou não se repete.',
+          'Se algo não for bem lido, toque em «Enviar ao suporte» na tela de importação.',
+        ],
+      },
     ],
   },
   export: {
@@ -256,7 +265,7 @@ export const BR: Record<string, ArticleText> = {
           'Compartilhamento por link ilimitado, com replay e votação.',
           'Importar de outros apps.',
           'Segurança: backup na nuvem, esconder valores e bloqueio do app.',
-          'A sessão na tela de bloqueio, a calculadora de odds, o ICM e o planejador do festival com os horários.',
+          'A sessão na tela de bloqueio, a calculadora de equity, o ICM e o planejador do festival com os horários.',
           'Criar swaps e registrar resultados.',
           'Compartilhar a contagem de fichas.',
           'Um bankroll e uma viagem.',
@@ -310,7 +319,7 @@ export const BR: Record<string, ArticleText> = {
     title: 'Existe um plano vitalício?',
     summary: 'Existe, para quem não quer assinatura. Aparece ao cancelar.',
     body: [
-      'O Pro é uma assinatura mensal ou anual. Para quem prefere pagar uma vez, existe o Pro para sempre, por US$ 499 (o preço na sua moeda é o da loja).',
+      'O Pro é uma assinatura mensal ou anual. Para quem prefere pagar uma vez, existe o Pro para sempre. O preço é o que a loja mostra na sua moeda.',
       'Ele não está na tela do Pro. Aparece quando você cancela e escolhe «Não quero uma assinatura»:',
       {
         steps: [
