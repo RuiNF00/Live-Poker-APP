@@ -68,7 +68,8 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     <HStack spacing={8}>
       {newHand}
       {small(p.pauseUrl, p.paused ? 'play.fill' : 'pause.fill', p.labels.pause, p.pauseTarget)}
-      {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy, p.rebuyTarget)}
+      {/* Money: the rebuy always opens the app, where it comes with «Anular» (Security P3). */}
+      {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy)}
       {/* A tournament: its chip count as a story, without opening the session first. */}
       {p.shareUrl ? small(p.shareUrl, 'square.and.arrow.up', p.labels.shareStack) : null}
       {p.endUrl ? small(p.endUrl, 'flag.checkered', p.labels.end) : null}

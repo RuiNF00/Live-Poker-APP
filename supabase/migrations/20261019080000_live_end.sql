@@ -3,7 +3,7 @@
 -- Holds no session data: `slot` is HMAC(backup key, session id) made on the phone, `token` is the
 -- Live Activity's APNs token. Rows are scoped to the backup id and its key hash (as app_backups),
 -- taken (deleted) when used, and gone after 13 hours (a Live Activity lives 12 at most).
--- Number to be checked against main's next free migration before this is merged.
+-- Numbered after 20261019070000 (Security, 19 Oct); check again against the integration before merging.
 
 create table public.live_end (
   backup_id text not null check (backup_id ~ '^[0-9A-HJKMNP-TV-Z]{10}$'),

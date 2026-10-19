@@ -81,6 +81,15 @@ export function apnsJwt(keyId: string, teamId: string, pem: string, now = Date.n
   return `${head}.${body}.${b64url(sig)}`;
 }
 
+// Apple refuses a provider token refreshed more than once every 20 minutes (429
+// TooManyProviderTokenUpdates) and one older than an hour: one is reused for 50 minutes.
+let cachedJwt: { key: string; jwt: string; at: number } | null = null;
+export function providerToken(keyId: string, teamId: string, pem: string, now = Date.now()): string {
+  const key = `${keyId}:${teamId}`;
+  if (!cachedJwt || cachedJwt.key !== key || now - cachedJwt.at >= 50 * 60_000) cachedJwt = { key, jwt: apnsJwt(keyId, teamId, pem, now), at: now };
+  return cachedJwt.jwt;
+}
+
 /** Sends the end to each token. Never throws: a failed end leaves the app's launch check to clear it. */
 export async function sendEnds(tokens: string[]): Promise<number> {
   const keyId = process.env.APNS_KEY_ID;
@@ -90,7 +99,7 @@ export async function sendEnds(tokens: string[]): Promise<number> {
   const host = process.env.APNS_HOST ?? 'api.push.apple.com';
   let jwt: string;
   try {
-    jwt = apnsJwt(keyId, teamId, pem);
+    jwt = providerToken(keyId, teamId, pem);
   } catch (e) {
     console.warn('[live-end] key', (e as Error)?.message);
     return 0;

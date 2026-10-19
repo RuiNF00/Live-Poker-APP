@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('../src/lib/supabase', () => ({ serviceClient: () => null }));
 vi.mock('../src/lib/abuse', () => ({ limited: async () => false }));
 
-const { apnsJwt, endPayload, liveEnd } = await import('../src/lib/live-end');
+const { apnsJwt, endPayload, liveEnd, providerToken } = await import('../src/lib/live-end');
 const { PUT, POST } = await import('../src/app/api/live-end/[id]/route');
 
 const ID = '0123456789';
@@ -44,4 +44,12 @@ describe('push-to-end', () => {
     expect((await PUT(req('PUT', { slot: SLOT, token: 'not-hex' }), { params })).status).toBe(422);
     expect((await POST(req('POST', { slot: SLOT }, 'short'), { params })).status).toBe(404);
   });
+});
+
+it('reuses the APNs provider token for 50 minutes, then refreshes it', () => {
+  const pem = generateKeyPairSync('ec', { namedCurve: 'P-256' }).privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+  const t0 = 1_800_000_000_000;
+  const a = providerToken('KEY1', 'TEAM', pem, t0);
+  expect(providerToken('KEY1', 'TEAM', pem, t0 + 49 * 60_000)).toBe(a);
+  expect(providerToken('KEY1', 'TEAM', pem, t0 + 50 * 60_000)).not.toBe(a);
 });

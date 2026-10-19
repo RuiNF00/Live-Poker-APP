@@ -53,7 +53,6 @@ export interface LiveProps {
   inPlace: boolean;
   /** Button targets for the in-place actions: "pause:<id>", read back by parseTarget. */
   pauseTarget: string;
-  rebuyTarget: string;
   labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string; end: string };
 }
 
@@ -172,7 +171,6 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inP
     endUrl: `sweatbook://session?do=end&id=${encodeURIComponent(s.id)}`,
     inPlace,
     pauseTarget: `${paused ? 'resume' : 'pause'}:${s.id}`,
-    rebuyTarget: `rebuy:${s.id}`,
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
@@ -188,9 +186,12 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inP
   };
 }
 
-/** What a lock-screen button can do in place (no app open); 'end' always opens the end form. */
-export type InPlaceAction = 'pause' | 'resume' | 'rebuy';
-export type LockAction = InPlaceAction | 'end';
+/**
+ * What a lock-screen button can do in place (no app open): pause and resume only. A rebuy moves
+ * money, so it opens the app, where it comes with «Anular»; 'end' opens the end form.
+ */
+export type InPlaceAction = 'pause' | 'resume';
+export type LockAction = InPlaceAction | 'rebuy' | 'end';
 
 /**
  * The action a lock-screen button asked for, if it still applies: same session (not one the
@@ -229,17 +230,10 @@ export function parseTarget(target: string): { what: string; id: string } {
   return i < 0 ? { what: target, id: '' } : { what: target.slice(0, i), id: target.slice(i + 1) };
 }
 
-/**
- * What a lock-screen action changes, the same as the session screen's buttons: a pause opens a
- * break, a resume closes it, a rebuy adds an entry and its chips (cash: the buy-in on top;
- * tournament: a fresh starting stack).
- */
+/** What a pause or resume from the lock screen changes, the same as the session screen's button. */
 export function lockActionPatch(s: Session, a: InPlaceAction, now = Date.now()): Partial<Session> {
   if (a === 'pause') return { breaks: [...s.breaks, { start: now }] };
-  if (a === 'resume') return { breaks: s.breaks.map((b, i) => (i === s.breaks.length - 1 && !b.end ? { ...b, end: now } : b)) };
-  const first = s.stackLog[0]?.stack ?? s.stack;
-  const stack = s.kind === 'mtt' ? s.tourney?.startStack || first : s.stack + s.buyIn;
-  return { entries: s.entries + 1, stack, stackLog: [...s.stackLog, { t: now, stack, level: s.level }] };
+  return { breaks: s.breaks.map((b, i) => (i === s.breaks.length - 1 && !b.end ? { ...b, end: now } : b)) };
 }
 
 /** Text of the level-up reminder. */

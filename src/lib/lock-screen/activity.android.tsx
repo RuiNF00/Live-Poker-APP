@@ -60,12 +60,12 @@ const SessionNotification = createCustomNotification<LiveProps>('SweatbookSessio
             {'+ ' + p.labels.newHand}
           </Text>
         </Row>
-        {/* With no app lock on: pause/resume and rebuy right here (a button press reaches the app as an
-            event; see onLockButton). With a lock, the notification only opens the app. */}
+        {/* With no app lock on: pause/resume right here (a button press reaches the app as an event;
+            see onLockButton). A rebuy moves money, so it is done in the app, with «Anular». With a
+            lock, the notification only opens the app. */}
         {p.inPlace ? (
           <Row modifiers={[fillMaxWidth(), padding(0, 8, 0, 0)]}>
             {btn(p.pauseTarget, p.labels.pause)}
-            {btn(p.rebuyTarget, p.labels.rebuy)}
           </Row>
         ) : null}
       </Column>

@@ -117,7 +117,8 @@ export function SessionLockScreen() {
         if (!s) return;
         const { what, id } = parseTarget(target);
         const a = lockAction(what, id, s);
-        if (a && a !== 'end') save({ ...s, ...lockActionPatch(s, a) });
+        // Only pause and resume happen in place: a rebuy moves money and is done in the app, with «Anular».
+        if (a === 'pause' || a === 'resume') save({ ...s, ...lockActionPatch(s, a) });
       })();
     });
   }, []);

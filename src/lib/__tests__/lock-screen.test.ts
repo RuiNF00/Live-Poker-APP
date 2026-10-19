@@ -206,23 +206,18 @@ test('Android lock-screen ask: the preview is the notification line, with privac
   assert.match(hidden.body, /••• · 1\/2$/);
 });
 
-test('in-place lock-screen actions: targets carry the session, patches match the session screen', () => {
+test('in-place lock-screen actions: pause and resume only, targets carry the session', () => {
   const running = mk({ stackLog: [{ t: 0, stack: 30000, level: 1 }] });
   const p = liveProps(running, 20 * MIN, false, true);
   assert.equal(p.inPlace, true);
   assert.equal(liveProps(running, 20 * MIN).inPlace, false);
   assert.deepEqual(parseTarget(p.pauseTarget), { what: 'pause', id: 's' });
-  assert.deepEqual(parseTarget(p.rebuyTarget), { what: 'rebuy', id: 's' });
+  // A rebuy moves money: never a target, always a link into the app (with «Anular» there).
+  assert.ok(!Object.values(p).some((v) => typeof v === 'string' && v.startsWith('rebuy:')));
+  assert.equal(p.rebuyUrl, 'sweatbook://session?do=rebuy&id=s');
   assert.deepEqual(lockActionPatch(running, 'pause', 5 * MIN).breaks, [{ start: 5 * MIN }]);
   const paused = mk({ breaks: [{ start: 5 * MIN }] });
   assert.deepEqual(lockActionPatch(paused, 'resume', 9 * MIN).breaks, [{ start: 5 * MIN, end: 9 * MIN }]);
-  // Re-entry: a fresh starting stack (the structure's, else the first logged).
-  const re = lockActionPatch(running, 'rebuy', 9 * MIN);
-  assert.equal(re.entries, 2);
-  assert.equal(re.stack, 30000);
-  assert.equal(lockActionPatch(mk({ tourney: { startStack: 50000 } } as Partial<Session>), 'rebuy', 1).stack, 50000);
-  // Cash rebuy: the buy-in on top of the stack.
-  assert.equal(lockActionPatch(mk({ kind: 'cash', stack: 150, buyIn: 200 }), 'rebuy', 1).stack, 350);
 });
 
 test('"end" from the lock screen: opens the end form for this running session only, never in place', () => {
