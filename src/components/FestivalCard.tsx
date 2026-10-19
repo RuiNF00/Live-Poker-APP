@@ -7,7 +7,7 @@ import { FitText } from "./FitText";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Text, View } from "react-native";
-import Svg, { Defs, Path, RadialGradient, Rect, Stop } from "react-native-svg";
+import { Defs, Path, RadialGradient, Rect, Stop, Svg } from "@/components/svg";
 
 import { locale, t } from "@/i18n";
 import { positions } from "@/poker/engine";

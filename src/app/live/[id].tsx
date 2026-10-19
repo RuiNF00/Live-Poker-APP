@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { AppState, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Line, Path } from 'react-native-svg';
+import { Line, Path, Svg } from '@/components/svg';
 
 import { Amount, Button, Card, Empty, IconButton, Pill, Row, Stat, StatGrid, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';

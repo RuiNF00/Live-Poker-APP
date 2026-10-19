@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Defs, LinearGradient, Line, Path, Stop } from 'react-native-svg';
+import { Defs, LinearGradient, Line, Path, Stop, Svg } from '@/components/svg';
 
 import { C } from '@/theme';
 

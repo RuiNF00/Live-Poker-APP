@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { BackerPageSync } from '@/components/staking/BackerPage';
+import { preloadSvg } from '@/components/svg';
 import { SwapSettleReminder } from '@/components/swaps/SwapSettleReminder';
 import { TrialFollowUp } from '@/components/TrialFollowUp';
 import { languageChanged } from '@/i18n';
@@ -41,6 +42,10 @@ function LanguageWatch() {
 }
 
 export default function AfterStart() {
+  // Web: the charts and share cards draw with svg, which is not in the launch chunk.
+  useEffect(() => {
+    void preloadSvg();
+  }, []);
   return (
     <>
       <React.Suspense fallback={null}>

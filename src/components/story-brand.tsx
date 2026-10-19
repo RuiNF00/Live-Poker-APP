@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Path, Svg } from '@/components/svg';
 
 import { BRAND, C, ff } from '@/theme';
 

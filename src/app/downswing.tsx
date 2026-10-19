@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Line, Path } from 'react-native-svg';
+import { Line, Path, Svg } from '@/components/svg';
 
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { Card, Row, Section, Stat, StatGrid, T } from '@/components/ui';
