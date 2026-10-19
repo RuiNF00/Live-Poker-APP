@@ -54,3 +54,12 @@ test('a lifetime owner is never told they will lose Pro in the cancel flow', () 
   assert.match(c, /hasLifetime\(\)\.then\(setForGood\)/);
   assert.match(c, /forGood \? null : <T v="small">\{t\('Fica tudo guardado\. Sem Pro/);
 });
+
+test('on 760-900 pt screens the paywall keeps both plans above the footer', () => {
+  const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
+  assert.match(p, /const medium = !compact && win\.height < 900;/);
+  assert.match(p, /\{compact \|\| medium \? null : \(/);
+  assert.match(p, /featuresFor\(reason\)\.slice\(0, medium \? 1 : undefined\)/);
+  assert.match(p, /table && !compact && !medium \? <FreeVsPro/);
+  assert.match(p, /reason !== 'welcome' && !medium \? <Pill/);
+});

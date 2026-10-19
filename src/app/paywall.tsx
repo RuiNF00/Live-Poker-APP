@@ -28,6 +28,9 @@ export default function Paywall() {
   const win = useWindowDimensions();
   // Short screens and large text both: the plans stay above the fold.
   const compact = win.height < 760 || win.fontScale > 1.3;
+  // Most iPhones (844-874 pt): without the icon and with only the feature this paywall is about,
+  // both plans sit above the footer (Store, 19 Oct: the monthly card was half under it at 844).
+  const medium = !compact && win.height < 900;
   // Very short screens (320×568): the fixed footer keeps the billed price, the button and
   // the disclosures; Restore and the other ways out move to the end of the scroll.
   const short = win.height < 640;
@@ -230,21 +233,21 @@ export default function Paywall() {
         <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
         <View style={{ gap: short ? S.sm : S.md }}>
-          {compact ? null : (
+          {compact || medium ? null : (
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
               <Ionicons name="flash" size={28} color={C.accentInk} />
             </View>
           )}
           <T v={compact ? 'h1' : 'title'}>{copy.title}</T>
           <T v="callout">{copy.body}</T>
-          {hands.length >= 3 && reason !== 'welcome' ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
+          {hands.length >= 3 && reason !== 'welcome' && !medium ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
-        {table && !compact ? <FreeVsPro /> : null}
+        {table && !compact && !medium ? <FreeVsPro /> : null}
 
         {/* Small phones skip the feature list so both plans fit above the footer. */}
         <View style={{ gap: S.sm, display: compact || table ? 'none' : 'flex' }}>
-          {featuresFor(reason).map(({ feature: f, highlight }) => (
+          {featuresFor(reason).slice(0, medium ? 1 : undefined).map(({ feature: f, highlight }) => (
             <Row key={f.key} gap={S.md} style={{ minHeight: 40 }}>
               <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={f.icon as IconName} size={18} color={highlight ? C.accentInk : C.accent} />
