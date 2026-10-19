@@ -8,6 +8,9 @@ import * as seed from './seed.mjs';
 const [appUrl = 'http://localhost:4173', outDir = 'out'] = process.argv.slice(2);
 const here = path.dirname(new URL(import.meta.url).pathname);
 const frames = JSON.parse(fs.readFileSync(path.join(here, 'frames.json'), 'utf8'));
+// ONLY=2,5 renders just those frames (1-based), each still written as <its number>.png.
+const only = process.env.ONLY ? new Set(process.env.ONLY.split(',').map(Number)) : null;
+const picked = frames.map((f, i) => ({ f, n: i + 1 })).filter(({ n }) => !only || only.has(n));
 const exe = fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined;
 
 // Output sizes: App Store 6.9" and 6.5", and Google Play phone (Play caps the aspect ratio at 2:1).
@@ -38,13 +41,28 @@ async function capture(locale, key) {
   // The seed is dated at seed.now; run the clock from there so session timers and "yesterday" match it.
   await page.clock.install({ time: seed.now });
   const shots = [];
-  for (const f of frames) {
+  for (const { f } of picked) {
     // Opening the hand editor leaves a draft banner on other screens; clear it.
     // rl.offer.welcome.v1 and sweatbook.replayer.tips.v1 (seeded above) stop the one-time welcome paywall
     // and the replayer's first-open tip from covering their frames.
     await page.evaluate(() => localStorage.removeItem('rl.draft.v1')).catch(() => {});
-    await page.goto(appUrl + f.route, { waitUntil: 'networkidle' });
+    await page.goto(appUrl + f.route.split('#')[0], { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
+    // A frame can open something first: tap the button whose label matches `act.click`, then type `act.fill` (per language) into the sheet's text box.
+    if (f.act) {
+      await page.evaluate((re) => {
+        const rx = new RegExp(re, 'i');
+        const el = [...document.querySelectorAll('[role="button"],button')].find((b) => rx.test(b.getAttribute('aria-label') ?? b.textContent ?? ''));
+        el?.click();
+      }, f.act.click);
+      await page.waitForTimeout(1500);
+      if (f.act.fill) {
+        const box = page.locator('textarea').last();
+        await box.fill(f.act.fill[key] ?? f.act.fill.en);
+        await box.blur();
+        await page.waitForTimeout(1200);
+      }
+    }
     // Web-only hints (e.g. "open the app on your phone to post") don't exist on the phone; hide them.
     for (const txt of f.hide ?? []) {
       await page.evaluate((txt) => {
@@ -106,9 +124,9 @@ for (const [locale, key] of [['pt-PT', 'pt'], ['en-US', 'en'], ['pt-BR', 'pt-BR'
     fs.mkdirSync(dir, { recursive: true });
     const ctx = await browser.newContext({ viewport: { width: t.w, height: t.h }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
-    for (let i = 0; i < frames.length; i++) {
-      await page.setContent(html(frames[i][key], shots[i], t), { waitUntil: 'networkidle' });
-      await page.screenshot({ path: path.join(dir, `${i + 1}.png`) });
+    for (let i = 0; i < picked.length; i++) {
+      await page.setContent(html(picked[i].f[key], shots[i], t), { waitUntil: 'networkidle' });
+      await page.screenshot({ path: path.join(dir, `${picked[i].n}.png`) });
     }
     await ctx.close();
   }

@@ -18,7 +18,7 @@ Data not linked to you:
 |---|---|
 | User Content → Other User Content (shared hands, comments, optional cloud backup of hands and notes, optional live session page for backers, optional public player profile with display name, bio and picked session cards, optional swaps between two players, optional private coaching links with coach comments, optional action-package agreements sent to a backer) | App Functionality |
 | User Content → Other User Content (optional cancellation feedback: reason + up to 120 characters) | Analytics |
-| Purchases → Purchase History (RevenueCat receives receipts) | App Functionality |
+| Purchases → Purchase History (RevenueCat receives receipts; purchases, renewals and cancellations from the RevenueCat webhook are also stored as usage events on the random install ID and sent to PostHog EU, #334) | App Functionality, Analytics |
 | Identifiers → User ID (RevenueCat anonymous app user ID, random, not tied to identity) | App Functionality |
 | Financial Info → Other Financial Info (amounts the user chooses to publish: live session page result and stack, swap prizes and payments, public profile buy-ins/results when "Hide amounts" is off, action-package costs; optional) | App Functionality |
 | Audio Data (voice notes for Instagram story videos, processed on our server and not retained) | App Functionality |
@@ -86,7 +86,7 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 | App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
 | Financial info → Other financial info (amounts the user publishes on a live page, swap, public profile or action package; optional) | Yes | Yes | App functionality |
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
-| Financial info → Purchase history | Yes (RevenueCat) | Yes (only subscribers) | App functionality |
+| Financial info → Purchase history | Yes (RevenueCat; purchase and cancellation events from its webhook are usage events, #334) | Yes (only subscribers) | App functionality, Analytics |
 | Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites; Expo push token, only if comment notices are on, #247; the random `EAS-Client-ID` install ID that expo-updates sends to u.expo.dev on every launch; the per-install ID ML Kit sends to Google) | No (the push token alone is optional) | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
 | App activity → App interactions (first-party usage events, including the #305 launch metrics; also the referral check) | Yes | No | Analytics, App functionality |
