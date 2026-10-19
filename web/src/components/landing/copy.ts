@@ -112,6 +112,10 @@ export function landingCopy(locale: Locale) {
     privacy: 'Privacidade',
     terms: 'Termos',
     support: 'Suporte',
+    help: 'Ajuda',
+    helpHref: '/ajuda',
+    // The press page is in English only.
+    press: 'Imprensa',
     invite: {
       eyebrow: 'Convite',
       title: 'Um amigo convidou-te para o Sweatbook',
@@ -219,6 +223,9 @@ export function landingCopy(locale: Locale) {
       privacy: 'Privacy',
       terms: 'Terms',
       support: 'Support',
+      help: 'Help',
+      helpHref: '/help',
+      press: 'Press',
       invite: {
         eyebrow: 'Invite',
         title: 'A friend invited you to Sweatbook',
@@ -327,6 +334,9 @@ export function landingCopy(locale: Locale) {
       privacy: 'Privacidade',
       terms: 'Termos',
       support: 'Suporte',
+      help: 'Ajuda',
+      helpHref: '/pt-br/ajuda',
+      press: 'Imprensa',
       invite: {
         eyebrow: 'Convite',
         title: 'Um amigo convidou você para o Sweatbook',
@@ -435,6 +445,9 @@ export function landingCopy(locale: Locale) {
       privacy: 'Privacidad',
       terms: 'Términos',
       support: 'Soporte',
+      help: 'Ayuda',
+      helpHref: '/es/ayuda',
+      press: 'Prensa',
       invite: {
         eyebrow: 'Invitación',
         title: 'Un amigo te invitó a Sweatbook',
