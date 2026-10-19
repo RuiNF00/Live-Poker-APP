@@ -70,7 +70,7 @@ function ranks(r: Rank, single: string[], plural: string[]) {
 }
 ranks('A', ['as', 'ace', 'az'], ['ases', 'aces', 'azes']);
 ranks('K', ['rei', 'rey', 'king', 'k', 'ka', 'capa'], ['reis', 'reyes', 'kings', 'kas']);
-ranks('Q', ['dama', 'rainha', 'reina', 'queen', 'q', 'qu'], ['damas', 'rainhas', 'reinas', 'queens']);
+ranks('Q', ['dama', 'rainha', 'reina', 'queen', 'q', 'qu', 'cu'], ['damas', 'rainhas', 'reinas', 'queens']);
 ranks('J', ['valete', 'jota', 'jack', 'j', 'valet', 'jaque'], ['valetes', 'jotas', 'jacks', 'valets']);
 ranks('T', ['dez', 'diez', 'ten', '10'], ['dezes', 'dieces', 'tens']);
 ranks('9', ['nove', 'nueve', 'nine', '9'], ['noves', 'nueves', 'nines']);
@@ -85,7 +85,7 @@ ranks('2', ['dois', 'duas', 'dos', 'two', 'deuce', 'duque', '2'], ['duques', 'tw
 const ARTICLES = new Set(['o', 'a', 'the', 'el', 'la', 'um', 'uma', 'un', 'una', 'an', 'os', 'as', 'los', 'las']);
 
 /** Words that are also ordinary words: a card only next to another card word. */
-const WEAK_RANKS = new Set(['as', 'a', 'dos', 'k', 'q', 'qu', 'j', 'ka', 'az', 'two', 'ten', 'capa']);
+const WEAK_RANKS = new Set(['as', 'a', 'dos', 'k', 'q', 'qu', 'cu', 'j', 'ka', 'az', 'two', 'ten', 'capa']);
 
 const SUIT_WORDS: Record<string, Suit> = {
   espadas: 's', espada: 's', picas: 's', pica: 's', spades: 's', spade: 's',
@@ -282,7 +282,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d+(?:\.\d+)?)\s*(bbs?)\b/g, '$1 bb');
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 / $2');
   // "Abre para 900, não, para 1100", "subo a 1000, perdón, a 1100": the amount said last stands.
-  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|bueno|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
+  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|mas bien|bueno|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
   const sub: [RegExp, string | ((m: string) => string)][] = [
     // "O resto foge": the rest fold, it isn't "o resto" as in all-in.
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
@@ -290,6 +290,9 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     // es-MX: «me voy con todo», «se va con todo»; «se la pago», «me la paga», «le subo»: the
     // pronouns only say against whom.
     [/\b(?:me )?(voy|fui) con todo\b|\b(?:se )?(va|fue) con todo\b/g, (m: string) => ` ${m.split(' ').find((x) => ['voy', 'fui', 'va', 'fue'].includes(x))} allin `],
+    // «Me voy.» on its own is a fold; «sube a mil, voy.» a call.
+    [/\bme voy(?=\s*(?:[.,;!?]|$))/g, ' foldo '],
+    [/\bvoy(?=\s*(?:[.,;!?]|$))/g, ' pago '],
     [/\bse (?:la|lo) (?=\p{L})/gu, ' '],
     [/\bme (?:la|lo) (?=\p{L})/gu, ' me '],
     [/\ble (?=\p{L})/gu, ' '],
