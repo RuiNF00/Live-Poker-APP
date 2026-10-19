@@ -1297,7 +1297,6 @@ const ptBR: Record<string, string> = {
   "Regista só os teus prémios; {name} regista os seus.": "Registre só os seus prêmios; {name} registra os próprios.",
   "À espera do resultado de {name}": "Aguardando o resultado de {name}",
   "Enviar o meu resultado sozinho": "Enviar meu resultado automaticamente",
-  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.": "Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar.",
   "Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.": "Mãos, notas e bankroll nunca saem do seu celular. Desligue quando quiser.",
   "Enviado automaticamente: cobraste {amount}.": "Enviado automaticamente: você ganhou {amount} de prêmio.",
   "Enviado automaticamente: não cobraste.": "Enviado automaticamente: você não ganhou prêmio.",
@@ -1689,6 +1688,7 @@ const ptBR: Record<string, string> = {
   'O backer tem parte do prémio sem os bounties (PKO).': 'O backer tem parte do prêmio sem os bounties (PKO).',
   'O backer tem parte do prémio todo, bounties incluídos.': 'O backer tem parte do prêmio todo, bounties incluídos.',
   'Sem {amount} em bounties, que ficam contigo': 'Sem {amount} em bounties, que ficam com você',
+  'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar. O swap conta o prêmio inteiro, bounties incluídos.',
 };
 
 export default ptBR;

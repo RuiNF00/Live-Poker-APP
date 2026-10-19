@@ -2833,7 +2833,6 @@ const es: Record<string, string> = {
   "Quem deve a quem e quanto, já calculado. Com o Pro.": "Quién le debe a quién y cuánto, ya calculado. Con Pro.",
   "À espera do resultado de {name}": "Esperando el resultado de {name}",
   "Enviar o meu resultado sozinho": "Enviar mi resultado automáticamente",
-  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.": "Al terminar un torneo de este swap, el premio y el evento entran sin preguntar.",
   "Mãos, notas e bankroll nunca saem do teu telemóvel. Desliga quando quiseres.": "Las manos, las notas y el bankroll nunca salen de tu teléfono. Desactívalo cuando quieras.",
   "Enviado automaticamente: cobraste {amount}.": "Enviado automáticamente: cobraste {amount}.",
   "Enviado automaticamente: não cobraste.": "Enviado automáticamente: no cobraste.",
@@ -3385,6 +3384,7 @@ const es: Record<string, string> = {
   'dos quais bounties {amount}': 'de ellos, {amount} en bounties',
   'os bounties ficam com o jogador': 'el jugador se queda los bounties',
   'Sem {amount} em bounties, que ficam contigo': 'Sin contar {amount} en bounties, que son para ti',
+  "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.": "Al terminar un torneo de este swap, el premio y el evento entran sin preguntar. El swap cuenta el premio entero, bounties incluidos.",
 };
 
 export default es;
