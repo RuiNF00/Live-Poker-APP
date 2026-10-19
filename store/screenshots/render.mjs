@@ -50,11 +50,14 @@ async function capture(locale, key) {
     await page.waitForTimeout(1500);
     // A frame can open something first: tap the button whose label matches `act.click`, then type `act.fill` (per language) into the sheet's text box.
     if (f.act) {
-      await page.evaluate((re) => {
-        const rx = new RegExp(re, 'i');
-        const el = [...document.querySelectorAll('[role="button"],button')].find((b) => rx.test(b.getAttribute('aria-label') ?? b.textContent ?? ''));
-        el?.click();
-      }, f.act.click);
+      // `act.pro`: this frame shows a Pro screen, so turn on the screenshot build's Pro just for it (dev-pro.ts).
+      if (f.act.pro) {
+        await page.evaluate(() => localStorage.setItem('sweatbook.devPro', '1'));
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.waitForTimeout(1500);
+      }
+      // A real pointer tap: react-native-web's Pressable ignores a synthetic element.click().
+      await page.getByText(new RegExp(f.act.click, 'i')).first().click();
       await page.waitForTimeout(1500);
       if (f.act.fill) {
         const box = page.locator('textarea').last();
@@ -95,6 +98,7 @@ async function capture(locale, key) {
       }, [txt, by[key] ?? by.en]);
     }
     shots.push((await page.screenshot()).toString('base64'));
+    if (f.act?.pro) await page.evaluate(() => localStorage.removeItem('sweatbook.devPro'));
   }
   await ctx.close();
   return shots;

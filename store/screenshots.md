@@ -20,9 +20,9 @@ Each frame: real app screen inside a device frame, short caption on top, the bra
 | # | Screen | Caption EN | Legenda PT |
 |---|---|---|---|
 | 1 | Hand entry mid-action, card picker open (`/hand/new`) | Log a hand in seconds | Regista uma mão em segundos |
-| 2 | Replayer at showdown, run it twice with both boards (`/hand/h7`) | Replay every street, even run it twice | Revê cada rua, até o run it twice |
-| 3 | Instagram Story of a hand, question mode (`/story/h1`) | Share it and ask your friends | Partilha e pede a opinião dos amigos |
-| 4 | Hand list with filter chips (`/`) | Find any hand later | Encontra qualquer mão depois |
+| 2 | Voice hand sheet: typed or dictated hand parsed onto the table, Pro (`/hand/new`, act) | Tell the hand, we put it on the table | Conta a mão, nós pomos na mesa |
+| 3 | Replayer at showdown, run it twice with both boards (`/hand/h7`) | Replay every street, even run it twice | Revê cada rua, até o run it twice |
+| 4 | Instagram Story of a hand, question mode (`/story/h1`) | Share it and ask your friends | Partilha e pede a opinião dos amigos |
 | 5 | Live tournament session: clock, stack, level, table notes (`/session`) | Tournament and level, remembered | Torneio e nível, sempre guardados |
 | 6 | Tournament results: ROI, ITM, biggest scores (`/tournament-stats`) | ROI and ITM for every tournament | ROI e ITM de cada torneio |
 | 7 | Bankroll balance, rules and tools (`/bankroll`) | Your bankroll, no spreadsheets | O teu bankroll sem folhas de Excel |
@@ -45,7 +45,9 @@ cd store/screenshots && npm i playwright && node render.mjs http://localhost:417
 
 A frame can list `hide` strings: web-only hints ("Open the app on your phone to post to Instagram") that the phone never shows are hidden before the shot.
 
-Coordinator rule (17 Oct): a frame that opens the hand search must hide the chip row under the box ("Ganhei / Perdi", es "Gané / Perdí", en "Won / Lost"); a frame of the festival session end must hide or crop the amount on "Re-entrar · {valor}". Frame 4 uses `drop` for the chips; frame 5 shows "Re-entry" with no amount. A frame can also list `strip` strings, cut out of a text line: frame 9 strips " · sweatbook.poker" from the card footer until the domain is decided. Frame 6 keeps its "Ver com Pro" tile: it is a real Pro lock and the description lists what is Pro.
+Coordinator rule (17 Oct): a frame that opens the hand search must hide the chip row under the box ("Ganhei / Perdi", es "Gané / Perdí", en "Won / Lost"); a frame of the festival session end must hide or crop the amount on "Re-entrar · {valor}". The hand-search frame left the set on 19 Oct (frame 2 is now the voice hand), so no frame shows those chips today; `drop` stays for any future one. Frame 5 shows "Re-entry" with no amount. A frame can also list `strip` strings, cut out of a text line: frame 9 strips " · sweatbook.poker" from the card footer until the domain is decided. Frame 6 keeps its "Ver com Pro" tile: it is a real Pro lock and the description lists what is Pro.
+
+A frame can `act` before the shot: `click` taps the button whose label matches, `pro` turns on the screenshot build's Pro for that frame only (`sweatbook.devPro`, needs `EXPO_PUBLIC_SCREENSHOTS=1`), and `fill` types a per-language text into the sheet. Frame 2 uses all three. `ONLY=2,5 node render.mjs …` re-renders just those frames. The seed uses generic event names only (Lisboa Open, Madrid Open, Porto Turbo; trip Lisboa): no buy-in in a name, no real event. Rendered from v1 6b26c1a5 on 19 Oct.
 
 ## Feature graphic (Play)
 
