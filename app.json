@@ -227,6 +227,7 @@
       "expo-router",
       "./plugins/with-async-storage-size",
       "./plugins/with-android-backup",
+      "./plugins/with-android-portrait",
       [
         "expo-splash-screen",
         {
@@ -317,6 +318,7 @@
           ]
         }
       ],
+      "./plugins/with-app-group-gate",
       "expo-background-task",
       [
         "expo-localization",
@@ -342,6 +344,7 @@
       "es": "./locales/es.json"
     },
     "extra": {
+      "appGroup": false,
       "eas": {
         "projectId": "5e332dae-8677-4190-acbc-7912f606869b"
       }

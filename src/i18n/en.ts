@@ -831,6 +831,7 @@ const en: Record<string, string> = {
   'Só avisos que pediste. Nada de publicidade. Podes desligar nas definições do telemóvel.': 'Only alerts you asked for. No ads. You can turn them off in your phone settings.',
   'Ativar avisos': 'Turn on alerts',
   'Avisamos-te quando o nível sobe': 'We will tell you when the level goes up',
+  'Vê a sessão no ecrã bloqueado': 'See the session on your lock screen',
   'Avisamos-te antes de cada torneio que escolheres': 'We will remind you before each event you pick',
   'Guardar em pasta': 'Save to folder',
   'Guardar 1 mão em': 'Save 1 hand to',

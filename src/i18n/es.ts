@@ -759,6 +759,7 @@ const es: Record<string, string> = {
   'Só avisos que pediste. Nada de publicidade. Podes desligar nas definições do telemóvel.': 'Solo avisos que pediste. Nada de publicidad. Puedes desactivarlos en los ajustes del teléfono.',
   'Ativar avisos': 'Activar avisos',
   'Avisamos-te quando o nível sobe': 'Te avisamos cuando sube el nivel',
+  'Vê a sessão no ecrã bloqueado': 'Ve la sesión en la pantalla bloqueada',
   'Avisamos-te antes de cada torneio que escolheres': 'Te avisamos antes de cada torneo que elijas',
   'Guardar em pasta': 'Guardar en carpeta',
   'Guardar 1 mão em': 'Guardar 1 mano en',
