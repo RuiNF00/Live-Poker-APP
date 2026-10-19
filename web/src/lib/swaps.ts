@@ -18,12 +18,25 @@ export const MAX_SWAP_ENTRIES = 300;
 
 type NewEntry = Omit<SwapEntry, 'id' | 'side' | 'at'>;
 
+/** An id the app picked for a create (10 letters and digits, as short_id()), only with its own token. */
+export const ownId = (x: unknown, token: string | undefined): string | undefined => (token && typeof x === 'string' && /^[A-Za-z0-9]{10}$/.test(x) ? x : undefined);
+
+/** The id the app picked is another swap's: 409, and the app sends the create again with a new one. */
+export class IdTaken extends Error {
+  constructor() {
+    super('id_taken');
+  }
+}
+
 /** A token the app picked for a create (64 hex), or undefined when it sent none or a bad one. */
 export const ownToken = (x: unknown): string | undefined => (typeof x === 'string' && /^[a-f0-9]{64}$/.test(x) ? x : undefined);
 
 export interface SwapStore {
-  /** `token`: the app's own (64 hex), so a repeated create returns the swap it already made. */
-  create(t: SwapTerms, token?: string): Promise<{ id: string; token: string }>;
+  /**
+   * `token`: the app's own (64 hex), so a repeated create returns the swap it already made.
+   * `id`: the app's own too (made without signal, the link already sent); IdTaken when another swap has it.
+   */
+  create(t: SwapTerms, token?: string, id?: string): Promise<{ id: string; token: string }>;
   get(id: string): Promise<SwapRecord | null>;
   side(id: string, token: string): Promise<Side | null>;
   /**
@@ -57,9 +70,9 @@ interface Row {
 class SupabaseSwaps implements SwapStore {
   constructor(private db: SupabaseClient) {}
 
-  async create(t: SwapTerms, token?: string) {
-    const { data, error } = await this.db.rpc('create_swap', { p_terms: t, p_token: token ?? null });
-    if (error) throw error;
+  async create(t: SwapTerms, token?: string, id?: string) {
+    const { data, error } = await this.db.rpc('create_swap', { p_terms: t, p_token: token ?? null, p_id: id ?? null });
+    if (error) throw /id_taken/.test(error.message) ? new IdTaken() : error;
     const row = Array.isArray(data) ? data[0] : data;
     return { id: row.id as string, token: row.token as string };
   }
@@ -161,13 +174,14 @@ class LocalSwaps implements SwapStore {
     return null;
   }
 
-  async create(terms: SwapTerms, own?: string) {
+  async create(terms: SwapTerms, own?: string, ownId?: string) {
     const token = own ?? randomBytes(32).toString('hex');
     // Looked up inside the write, so two sends of the same draft at once make one swap.
     const id = await this.mutate((d) => {
       const again = Object.values(d).find((r) => r.aHash === sha256(token));
       if (again) return again.id;
-      const id = shortId();
+      if (ownId && d[ownId]) throw new IdTaken();
+      const id = ownId ?? shortId();
       const now = new Date().toISOString();
       d[id] = { id, terms, confirmedAt: null, confirmedName: null, entries: [], createdAt: now, updatedAt: now, aHash: sha256(token), bHash: null };
       return id;
