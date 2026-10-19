@@ -3488,8 +3488,8 @@ const en: Record<string, string> = {
   'os bounties ficam com o jogador': 'the player keeps the bounties',
   'Sem {amount} em bounties, que ficam contigo': 'Excluding {amount} in bounties, which you keep',
   'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'When a tournament in this swap ends, the prize and the event go in without asking. The swap counts the whole prize, bounties included.',
-  'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'In PLO the most is the pot: the {pos}\'s amount was cut to the size of the pot.',
-  'Por agora gravamos só PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'For now we only record four-card PLO, without Hi-Lo: the hand was kept as PLO.',
+  'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'In PLO you can\'t go above the pot: the {pos}\'s amount was cut to pot size.',
+  'Por agora só guardamos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'For now we only save four-card PLO, without Hi-Lo: the hand was kept as PLO.',
 };
 
 export default en;

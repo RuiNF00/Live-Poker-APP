@@ -1805,7 +1805,7 @@ const ptBR: Record<string, string> = {
   'Sem {amount} em bounties, que ficam contigo': 'Sem {amount} em bounties, que ficam com você',
   'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'Ao terminar um torneio deste swap, o prêmio e o evento entram sem perguntar. O swap conta o prêmio inteiro, bounties incluídos.',
   'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'No PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.',
-  'Por agora gravamos só PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por enquanto só registramos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.',
+  'Por agora só guardamos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por enquanto só registramos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.',
 };
 
 export default ptBR;

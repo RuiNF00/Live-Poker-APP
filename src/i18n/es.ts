@@ -3482,8 +3482,8 @@ const es: Record<string, string> = {
   'os bounties ficam com o jogador': 'el jugador se queda los bounties',
   'Sem {amount} em bounties, que ficam contigo': 'Sin contar {amount} en bounties, que son para ti',
   "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.": "Al terminar un torneo de este swap, el premio y el evento entran sin preguntar. El swap cuenta el premio entero, bounties incluidos.",
-  'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'En PLO el máximo es el bote: la cantidad del {pos} quedó del tamaño del bote.',
-  'Por agora gravamos só PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por ahora solo registramos PLO de 4 cartas, sin Hi-Lo: la mano quedó en PLO.',
+  'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'En PLO el máximo es el bote: la cantidad del {pos} se ajustó al tamaño del bote.',
+  'Por agora só guardamos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por ahora solo registramos PLO de 4 cartas, sin Hi-Lo: la mano quedó en PLO.',
 };
 
 export default es;
