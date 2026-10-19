@@ -1082,7 +1082,7 @@ const en: Record<string, string> = {
   '{n} depósitos ou levantamentos iguais a outros que já tens.': '{n} deposits or withdrawals are the same as ones you already have.',
   'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Session still running: end it in the other app and export again',
   'A procurar repetidas…': 'Looking for repeats…',
-  'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Line incomplete, maybe split in two: fix it in the file and import again',
+  'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Incomplete line, maybe split in two: fix it in the file and import again',
   'Acaba mais de 14 dias depois de começar: confirma a data de fim': 'Ends more than 14 days after it starts: check the end date',
   'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'This file is over 20 MB. Export only the sessions, or one year at a time, and try again.',
   'Importar também as que parecem repetidas': 'Also import the ones that look repeated',

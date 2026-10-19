@@ -173,6 +173,10 @@ test('a row split by a line break fails as incomplete instead of saving the whol
   // The last row only lacks the location: still read.
   assert.deepEqual(r.sessions.map((s) => profit(s)), [30, 30]);
   assert.deepEqual(r.failed.map((f) => [f.line, f.reason]), [[2, 'short'], [3, 'short']]);
+  // A bust typed without the last comma is still a bust.
+  const bust = run(['Data,Local,Buy-in,Cash-out', '01/02/2025,Casino,100', '02/02/2025,Casino,50,80'].join('\n'));
+  assert.deepEqual(bust.sessions.map((s) => profit(s)), [-100, 30]);
+  assert.equal(bust.failed.length, 0);
 });
 
 test('a run of digits too long for an amount fails instead of saving Infinity', () => {

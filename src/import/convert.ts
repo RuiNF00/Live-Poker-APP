@@ -402,13 +402,16 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const money = moneyReader(table, get);
   // Columns that hold money: a row that stops before one of them was cut in two (a line break in a cell).
   const moneyCols = (['buyIn', 'cashOut', 'profit'] as const).map((f) => mapping[f]).filter((c): c is number => c !== undefined);
+  const short = (x: string[] | undefined): x is string[] => !!x && x.length < table.headers.length && moneyCols.some((c) => c >= x.length);
+  const dated = (x: string[]) => parseDate(get(x, 'start'), order) !== null;
 
   for (let ri = 0; ri < table.rows.length; ri++) {
     if (ri && ri % CHUNK === 0) yield ri;
     const r = table.rows[ri];
     const line = table.lines?.[ri] ?? ri + 2;
-    if (r.length < table.headers.length && moneyCols.some((c) => c >= r.length)) {
-      // Reading the half that has a buy-in would save the whole buy-in as lost.
+    // A short row followed by one without a date is a line split in two: reading the half with the
+    // buy-in would save the whole buy-in as lost. A short row on its own is a bust typed without the last comma.
+    if (short(r) && (!dated(r) || (short(table.rows[ri + 1]) && !dated(table.rows[ri + 1])))) {
       unreadable++;
       failed.push({ line, reason: 'short', value: preview(r) });
       continue;

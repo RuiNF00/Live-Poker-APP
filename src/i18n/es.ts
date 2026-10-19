@@ -992,7 +992,7 @@ const es: Record<string, string> = {
   '{n} depósitos ou levantamentos iguais a outros que já tens.': '{n} depósitos o retiros iguales a otros que ya tienes.',
   'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Sesión todavía en curso: termínala en la otra app y exporta otra vez',
   'A procurar repetidas…': 'Buscando repetidas…',
-  'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Línea incompleta, quizá partida en dos: corrígela en el archivo e importa otra vez',
+  'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Línea incompleta, quizá dividida en dos: corrígela en el archivo e importa otra vez',
   'Acaba mais de 14 dias depois de começar: confirma a data de fim': 'Termina más de 14 días después de empezar: revisa la fecha de fin',
   'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este archivo tiene más de 20 MB. Exporta solo las sesiones, o año por año, y vuelve a intentarlo.',
   'Importar também as que parecem repetidas': 'Importar también las que parecen repetidas',
