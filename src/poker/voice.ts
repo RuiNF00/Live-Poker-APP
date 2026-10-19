@@ -137,7 +137,7 @@ function verbs(kind: VerbDef['kind'], p0: string[], p1: string[], p3: string[], 
 }
 verbs('fold', ['fold', 'folded', 'foldeo', 'tiro', 'retiro'], ['foldo', 'foldei', 'folde', 'desisto', 'desisti', 'largo', 'larguei', 'corri', 'corro', 'fujo', 'fugi'], ['folds', 'folda', 'foge', 'fugiu', 'foldou', 'desiste', 'desistiu', 'larga', 'largou', 'correu', 'corre', 'foldea', 'tira', 'retira']);
 verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou']);
-verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'veo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
+verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
 verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou']);
 verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
 verbs('bet', ['cbet'], ['cbeto'], ['cbets'], { cbet: true });
@@ -262,7 +262,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   // Card symbols typed or pasted: ♠ ♥ ♦ ♣ (with or without the emoji selector).
   s = s.replace(/♠\uFE0F?/g, ' espadas ').replace(/[♥♡]\uFE0F?/g, ' copas ').replace(/[♦♢]\uFE0F?/g, ' ouros ').replace(/[♣♧]\uFE0F?/g, ' paus ');
   // "$2,500", "€2500": the symbol before the number (dictation writes it there) goes after it.
-  s = s.replace(/(?<!r)([$€£])\s?(\d[\d.,]*)/g, ' $2 $1 ');
+  s = s.replace(/(?<!r)([$€£])\s?(\d[\d.,]*)/g, ' $2 $1 ').replace(/\br\$\s?(?=\d)/g, ' ');
   // "Dá-me 3-bet", "faz-me raise": the "-me" only says it was against hero.
   s = s.replace(/(\p{L})-(?:me|te|nos)(?![\p{L}\d])/gu, '$1');
   // 2.500 / 1.000.000 → 2500; 2,5 → 2.5
@@ -279,7 +279,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   const sub: [RegExp, string | ((m: string) => string)][] = [
     [/\ball[\s-]*ins?\b|\bol[\s-]*in\b|\ba tudo\b|\bo resto\b/g, ' allin '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
-    [/\b(\d)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' $1bet$2 '],
+    [/(?<!\+ ?)\b([2-5])[\s-]*bet(s|o|ei|ou|a)?\b/g, ' $1bet$2 '],
     [/\b(tres|three|tri|tree)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' 3bet$2 '],
     [/\b(quatro|cuatro|four)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' 4bet$2 '],
     [/\bmin[\s-]*raise[sd]?\b|\bmini[\s-]*raise\b|\bmin[\s-]*click\b/g, ' minraise '],
@@ -307,6 +307,8 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:um|one|a|un) (?:quarto|quarter|cuarto)(?: do| of the| del)?(?: pote| pot| bote)?\b/g, ' %25 pote '],
     [/\b(\d+(?:\.\d+)?) (?:%|por cento|percent|por ciento)(?: do| of the| del)?(?: pote| pot| bote)?/g, ' %$1 pote '],
     [/\bse retiran\b|\bse tiran\b/g, ' foldam '],
+    // "Lo veo", "yo veo." is a call; "veo que apuesta" is only seeing.
+    [/\b(?:lo|la|te|yo lo|yo la) veo\b|\bveo(?=\s*(?:[.,;!?]|$))/g, ' pago '],
     [/\bme retiro\b|\bse retira\b|\bme tiro\b|\bse tira\b/g, (m: string) => (m.startsWith('me') ? ' foldo ' : ' folds ')],
     [/\b(\d+)[\s-]*max\b/g, ' $1 max '],
     // "Toda a gente desiste" is pt-PT for everyone; "ninguém paga", "nobody calls": the rest fold.

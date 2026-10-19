@@ -165,6 +165,10 @@ export const CASES: Case[] = [
   { lang: 'es', text: 'Estoy en el botón con as rey, UTG sube a $2500, pago.', pos: 'BTN', cards: 'AK', line: 'UTG r2500, BTN c' },
   { lang: 'br', text: 'Tô no botão com ás rei, o UTG abre pra R$ 2.500, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r2500, BTN c' },
   { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, la ciega grande paga. Flop rey siete dos, apuesto 1000, me paga.', pos: 'BTN', line: 'BTN r1000, BB c, BTN b1000, BB c', board: 'K72' },
+  { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, la ciega grande paga. Flop rey siete dos. Veo que apuesta 600 y pago.', pos: 'BTN', line: 'BTN r1000, BB c, BB b600, BTN c', board: 'K72' },
+  { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, la ciega grande paga. Flop rey siete dos, apuesta 600, veo.', pos: 'BTN', line: 'BTN r1000, BB c, BB b600, BTN c', board: 'K72' },
+  { lang: 'en', text: "Live 1/3. I'm on the button with jack ten suited. UTG+1 raises to 20, I call. Flop queen nine two, UTG+1 bets 25, I call.", game: CASH, pos: 'BTN', line: 'UTG+1 r20, BTN c, UTG+1 b25, BTN c', board: 'Q92' },
+  { lang: 'br', text: 'Tô no botão com ás rei, o UTG abre pra R$2.500, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r2500, BTN c' },
   { lang: 'en', text: "Live 1/3 with a 6 dollar straddle. I'm on the button with jack ten suited. UTG+1 raises to 20, I call.", game: CASH, pos: 'BTN', cards: 'JT', line: 'UTG+1 r20, BTN c' },
   { lang: 'en', text: "I'm on the button with big slick, UTG opens to 1000, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 
