@@ -237,7 +237,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     if (!canAnnounce(quietRef.current)) return;
     const kept = await inviteNews.take();
     if (kept) {
-      if (!isProRef.current && canAnnounce(quietRef.current)) announceInviteOffer(kept.offer, kept.side, plansRef.current);
+      if (isProRef.current) return;
+      // A session opened (or the lock came up) while it was being read: kept again for later.
+      if (canAnnounce(quietRef.current)) announceInviteOffer(kept.offer, kept.side, plansRef.current);
+      else await inviteNews.hold(kept);
       return;
     }
     const offer = await newInviteOffer();
