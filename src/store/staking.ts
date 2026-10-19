@@ -206,6 +206,15 @@ export function addOfferDue(l: BackerLedger, currency: string, due: number, back
   l.balance += (back - due) * x;
 }
 
+/**
+ * Currencies of festival action still apart for want of a rate (see addOfferDue). While there are
+ * any, the backer is sent nothing: the text, the link and the fixed page would all show less than
+ * they owe or are owed (Voz/Bankroll P2, 19 Oct).
+ */
+export function unconverted(l: BackerLedger): string[] {
+  return l.apart.filter((a) => Math.abs(a.balance) >= 0.01 || Math.abs(a.unpaid) >= 0.01).map((a) => a.currency);
+}
+
 export interface BackerLedger {
   rows: BackerLedgerRow[];
   /**

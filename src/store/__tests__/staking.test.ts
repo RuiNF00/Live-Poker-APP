@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, withCuts } from '../staking';
+import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 
@@ -534,4 +534,18 @@ test('festival packages in another currency ask for rates too (Pronto P2: 165$ +
   assert.equal(l.currency, '$');
   assert.deepEqual(l.missing, []);
   assert.equal(Math.round(l.unpaid * 100) / 100, 201.3);
+});
+
+test('nothing goes to the backer while festival action has no rate (Voz/Bankroll P2: the text and the link showed less)', () => {
+  const l = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  addOfferDue(l, '€', 30, 0, (a, b) => (a === b ? 1 : null));
+  assert.deepEqual(unconverted(l), []);
+  addOfferDue(l, '$', 302.5, 0, (a, b) => (a === b ? 1 : null));
+  assert.deepEqual(unconverted(l), ['$'], 'the $ part is apart: «Enviar contas» waits');
+  // Even with the deal itself square, the part apart stops it («Estamos acertados» was sent).
+  const sq = backerLedger('b1', [], [], [{ id: 'p', backerId: 'b1', amount: -30, at: 1 } as BackerPayment], undefined, { table: {}, fallback: '€' });
+  addOfferDue(sq, '€', 30, 0, (a, b) => (a === b ? 1 : null));
+  addOfferDue(sq, '$', 302.5, 0, (a, b) => (a === b ? 1 : null));
+  assert.equal(sq.balance, 0);
+  assert.deepEqual(unconverted(sq), ['$']);
 });

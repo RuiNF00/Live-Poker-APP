@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, inFestivalPackage, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
@@ -220,4 +220,11 @@ test('a confirmation counts only for the terms the link holds: a refused change 
   assert.equal(sameTerms({ ...now, events: [...now.events].reverse(), at: 5, title: 'Outro' }, agreement(f, after, line, 'Rui', ' Ana ', 'Bahamas')), true);
   assert.equal(sameTerms(null, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
   assert.equal(sameTerms({ markup: 1.1 }, agreement(f, after, line, 'Rui', 'Ana', 'Bahamas')), false);
+});
+
+test('a backer with a festival piece is found, so deleting them is stopped (Bankroll P2: the line kept counting)', () => {
+  const o = { ...newOffer(F, [F.events[0].id], 'o1'), lines: [{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }] };
+  assert.equal(inFestivalPackage([o], 'b1'), true);
+  assert.equal(inFestivalPackage([o], 'b2'), false);
+  assert.equal(inFestivalPackage([], 'b1'), false);
 });

@@ -336,6 +336,11 @@ export function settleReminders(
     });
 }
 
+/** The backer has a piece in a festival package: deleting them would leave it counting, and its link open. */
+export function inFestivalPackage(offers: ActionOffer[], backerId: string): boolean {
+  return offers.some((o) => o.lines.some((l) => l.backerId === backerId));
+}
+
 /** Packages these offers created: their stakes on a session are replaced, the rest kept. */
 export function offerPackageIds(offers: ActionOffer[]): Set<string> {
   return new Set(offers.flatMap((o) => o.lines.map((l) => l.packageId)));

@@ -23,10 +23,11 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { offerPackageIds, useOffers } from '@/store/action-offer';
+import { inFestivalPackage, offerPackageIds, useOffers } from '@/store/action-offer';
+import { symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, ledgerYears, packageDefaults, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -35,6 +36,12 @@ import { ReadOnlyNote, useProReadOnly, withPro } from '@/components/ProGate';
 function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')) {
   if (Platform.OS === 'web') ok();
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: okLabel, style: 'destructive', onPress: ok }]);
+}
+
+/** A message with one OK (Alert.alert does nothing on react-native-web). */
+function tell(title: string, body: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
+  else Alert.alert(title, body);
 }
 
 function BackerScreen() {
@@ -105,6 +112,10 @@ function BackerScreen() {
 
   const shareSummary = async (withYear = false) => {
     if (sending.current) return;
+    // Festival action with no rate yet: the text and the link would show less than the real balance.
+    const apart = unconverted(l);
+    if (apart.length)
+      return tell(t('Falta o câmbio de {list}', { list: apart.map(symbolOf).join(', ') }), t('Sem ele, as contas que o backer recebe ficavam incompletas. Com rede, ou com o câmbio escrito no Bankroll, envia outra vez.'));
     sending.current = true;
     try {
       await sendSummary(withYear);
@@ -134,9 +145,8 @@ function BackerScreen() {
         : l.balance > 0
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
           : t('Deves-me {amount}.', { amount: money(-l.balance, cur) }),
-      ...apartLines(l),
-      // Sessions counted 1:1 for want of a rate: the backer is told, as the screen says.
-      l.missing.length ? t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.join(', ') }) : '',
+      // Sessions counted 1:1 for want of a rate: the backer is told, in the player's voice to them.
+      l.missing.length ? t('Contas aproximadas: falta o câmbio de {list}.', { list: l.missing.map(symbolOf).join(', ') }) : '',
     ].filter((x) => x !== '');
     // The statement as a link they can open, or save in their own Sweatbook to follow every session.
     // It carries only this backer's own pieces (see lib/backing-link).
@@ -417,7 +427,10 @@ function BackerScreen() {
           setEditing(false);
         }}
         onDelete={() =>
-          confirm(t('Apagar {name}?', { name: backer.name }), t('Os pacotes e pagamentos deste backer também são apagados. As sessões ficam, com a ação vendida sem nome.'), () => {
+          // Their festival pieces would keep counting as sold, and their links stay open: taken out there first.
+          inFestivalPackage(offers, backer.id)
+            ? tell(t('{name} tem ação de festival', { name: backer.name }), t('Tira {name} no pacote do festival, para o link mudar também.', { name: backer.name }))
+            : confirm(t('Apagar {name}?', { name: backer.name }), t('Os pacotes e pagamentos deste backer também são apagados. As sessões ficam, com a ação vendida sem nome.'), () => {
             setEditing(false);
             deleteBacker(backer.id);
             router.back();
@@ -458,12 +471,7 @@ function BackerScreen() {
           pkg && packages.some((p) => p.id === pkg.id)
             ? () => {
                 // A festival package's piece lives in the festival's package (and the backer's link): taken out there.
-                if (offerPackageIds(offers).has(pkg.id)) {
-                  const [title, body] = [t('Este pacote é de uma ação de festival'), t('Tira {name} no pacote do festival, para o link mudar também.', { name: backer.name })];
-                  if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
-                  else Alert.alert(title, body);
-                  return;
-                }
+                if (offerPackageIds(offers).has(pkg.id)) return tell(t('Este pacote é de uma ação de festival'), t('Tira {name} no pacote do festival, para o link mudar também.', { name: backer.name }));
                 confirm(t('Apagar pacote?'), t('As sessões ficam vendidas a {name}, fora de pacote.', { name: backer.name }), () => {
                   deletePackage(pkg.id);
                   setPkg(null);
