@@ -355,3 +355,20 @@ test('«Marcar como pago» with event 2 already played: the package agrees, and 
   // «Pago» tapped again on the package: already paid, nothing moves.
   assert.equal(linesSettledWith([{ ...o, lines: [paid] }], 'b1', fest, () => started, () => 1, () => 0).length, 0);
 });
+
+test('«Marcar como pago» with a refund owed for an event not played: paid back, and the package says so (QA P2, 19 Oct)', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10, paid: true };
+  const o = { ...pkg([line]), skipped: ['3'] };
+  const fest = (id: string) => (id === F.id ? F : undefined);
+  const back = missedRefund(F, o, line, {});
+  assert.equal(back, 6000);
+  // In the balance as +6000 × x (you owe them): settling takes it out.
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', due: -3000 }]);
+  // Marked with the events started now: event 3 is no longer covered, so nothing more goes back.
+  const settled = { ...line, paidSkipped: paidSkippedNow(o, {}) };
+  assert.equal(missedRefund(F, o, settled, {}), 0);
+  assert.equal(lineSettlement(F, o, settled, {}, []).net, 0);
+  assert.deepEqual(linesSettledWith([{ ...o, lines: [settled] }], 'b1', fest, () => ({}), () => 0.5), []);
+  // Played after all: that event is owed again, never free.
+  assert.equal(pendingCost(F, { ...o, skipped: [] }, settled, {}), 6000);
+});
