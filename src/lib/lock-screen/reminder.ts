@@ -1,7 +1,7 @@
 // Level-up reminder: one local notification at the end of the current level,
 // rescheduled whenever the level, its length or a pause changes it. Local
 // notifications work in Expo Go too, so this is the part Rui can try there.
-// expo-notifications is required lazily so web and the Node tests never load it.
+// expo-notifications is required lazily, on phones only (notifications-module), so web and the Node tests never load it.
 
 import { Platform } from 'react-native';
 
@@ -10,6 +10,7 @@ import { KINDS } from '@/lib/notify-policy';
 import { isPaused } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
+import { loadNotifications } from './notifications-module';
 import { breakEndMessage, breakOf, levelUpMessage, nextLevelAt } from './live-state';
 
 const ID = 'sweatbook-level-up';
@@ -27,14 +28,7 @@ let mod: N | null | undefined;
 
 /** expo-notifications, or null where it can't load (web, tests). Shared with the Pro nudges. */
 export function notifications(): N | null {
-  if (mod !== undefined) return mod;
-  if (Platform.OS === 'web') return (mod = null);
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    mod = require('expo-notifications') as N;
-  } catch {
-    mod = null;
-  }
+  if (mod === undefined) mod = loadNotifications();
   return mod;
 }
 

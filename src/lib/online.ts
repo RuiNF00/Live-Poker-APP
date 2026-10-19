@@ -9,6 +9,15 @@ type Listener = (online: boolean) => void;
 let online = true;
 const listeners = new Set<Listener>();
 
+// The browser knows before any request fails (right after «Apagar tudo» offline, say): use it there.
+// React Native has a navigator without onLine and no window events, so this is web only.
+const nav = typeof navigator === 'undefined' ? undefined : (navigator as { onLine?: unknown });
+if (typeof nav?.onLine === 'boolean' && typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  online = nav.onLine;
+  window.addEventListener('offline', () => reportNetwork(false));
+  window.addEventListener('online', () => reportNetwork(true));
+}
+
 export function isOnline(): boolean {
   return online;
 }

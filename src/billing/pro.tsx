@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 
-import { devPro, localProFrom } from './dev-pro';
+import { devPro, localProFrom, TEST_BUILD_MARK } from './dev-pro';
 import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
 import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
@@ -22,6 +22,7 @@ import { notice } from '@/lib/notice';
 import { activateInvite, claimState, newInviteOffer, type InviteOffer } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
+import { useOnline } from '@/lib/sync';
 import { useStore } from '@/store/store';
 
 /**
@@ -70,6 +71,8 @@ interface ProValue {
 
 const Ctx = createContext<ProValue | null>(null);
 const DEV_PRO = devPro();
+// Kept in the bundle (and the log) of a test build, so the pre-upload check can find it.
+if (TEST_BUILD_MARK) console.info(TEST_BUILD_MARK);
 /** Test-iPhone build only (dev-pro.ts); never written to the cached Pro flag, so turning it off removes Pro at once. */
 export const LOCAL_PRO = localProFrom(process.env.EXPO_PUBLIC_LOCAL_PRO, store.LIVE);
 
@@ -241,9 +244,12 @@ export function usePro(): ProValue {
 export function useOnboarding() {
   const { ready, hands, sessions } = useStore();
   const fresh = ready && hands.length === 0 && sessions.length === 0;
+  // On the web the screen comes from the server: offline (say, right after «Apagar tudo») it waits for the signal.
+  const online = useOnline();
+  const reachable = Platform.OS !== 'web' || online;
   useFocusEffect(
     useCallback(() => {
-      if (!fresh) return;
+      if (!fresh || !reachable) return;
       let live = true;
       AsyncStorage.getItem(ONBOARDING_KEY)
         .then((seen) => {
@@ -255,7 +261,7 @@ export function useOnboarding() {
       return () => {
         live = false;
       };
-    }, [fresh]),
+    }, [fresh, reachable]),
   );
 }
 

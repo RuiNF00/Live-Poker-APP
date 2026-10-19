@@ -8,7 +8,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import * as Updates from 'expo-updates';
+import { Updates } from './updates-info';
 import { Platform } from 'react-native';
 
 import { variant } from '@/i18n';

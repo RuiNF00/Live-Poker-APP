@@ -11,21 +11,18 @@ import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
 import { ALPHA, parseCloud, type CloudState } from './cloud-code';
-import { countsOf, uploadBlock } from './cloud-guard';
+import { BACKUP_MAX_BYTES, countsOf, savesOver, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 import { isOnline } from './online';
-import { outcomeOf, queue, registerSender } from './sync';
+import { outcomeOf, queueOrThrow, registerSender } from './sync';
 
-// The ciphers build their tables when loaded: only once a copy is actually sent or read, not at launch.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const crypto = () => require('./backup-crypto') as typeof import('./backup-crypto');
+// The ciphers and gzip (fflate, noble: ~90 KB) load only once a copy is actually sent or read, not at launch.
+const crypto = () => import('./backup-crypto');
 
 export { formatCode, parseCode, type CloudState } from './cloud-code';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 const KEY = 'rl.cloud.v1';
-/** Same as BACKUP_MAX_BYTES on the server. */
-const MAX_BYTES = 2 * 1024 * 1024;
 /** How long the quick "is the server there?" may take before a big transfer. */
 const REACH_MS = 8000;
 
@@ -42,6 +39,8 @@ export async function loadCloud(): Promise<CloudState | null> {
     const c = parseCloud(await AsyncStorage.getItem(KEY));
     // Codes made before the keychain copy existed get one on the first read.
     if (c) void keepCode(c).catch(() => {});
+    // With the copy on, the ciphers load now: «Apagar tudo» offline needs them to queue the delete.
+    if (c) void crypto().catch(() => {});
     return c;
   } catch {
     return null;
@@ -139,10 +138,10 @@ export async function upload(c: CloudState, data: BackupData, opts: UploadOpts =
     // It reached the server: no longer waiting on the network; the card shows the real reason.
     setWaiting(false);
     // Remembered for the backup warning (would_shrink is the player's call, not a failure).
-    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden'].includes(msg) ? msg : 'network';
+    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden', 'gone'].includes(msg) ? msg : 'network';
     if (reason !== 'would_shrink') {
       const now = await loadCloud();
-      if (now && now.id === c.id) await saveCloud({ ...now, failedAt: Date.now(), failure: reason }).catch(() => {});
+      if (now && now.id === c.id) await saveCloud({ ...now, failedAt: Date.now(), failure: reason, ...(reason === 'gone' ? { gone: true } : {}) }).catch(() => {});
     }
     throw e;
   }
@@ -179,24 +178,35 @@ export function onCopyWaiting(fn: (w: boolean) => void): () => void {
 }
 
 async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<CloudState> {
+  // Deleted on purpose somewhere else: this code is never written again, not even when forced.
+  if (c.gone) throw new Error('gone');
   let data = local;
-  if (!opts.force && c.lastAt) {
+  if (c.lastAt) {
     // Read and decrypted here, on the phone; the server never sees either copy.
+    // Also when forced: a copy this phone wrote or restored that is no longer there was deleted
+    // («Apagar tudo» on another phone, the website), and must not come back with the same code.
     const remote = await get(c).catch((e: Error) => {
-      if (e.message === 'not_found') return null;
+      if (e.message === 'not_found') throw new Error('gone');
+      // Replacing on purpose: a copy that can't be read (a later version, damaged) is what gets replaced.
+      if (opts.force) return null;
       throw e;
     });
-    if (remote && writtenElsewhere(remote, c.sent)) {
+    if (remote && !opts.force && writtenElsewhere(remote, c.sent)) {
       data = mergeBackups(local, remote);
       opts.onRemote?.(remote);
     }
   }
+  return send(c, data, opts);
+}
+
+async function send(c: CloudState, data: BackupData, opts: UploadOpts): Promise<CloudState> {
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
-  const { auth, enc } = crypto().deriveKeys(c.secret);
-  const body = await crypto().sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
+  const cr = await crypto();
+  const { auth, enc } = cr.deriveKeys(c.secret);
+  const body = await cr.sealAsync(JSON.stringify(data), enc, Crypto.getRandomBytes(12));
   // The server's limit: no point sending what it will refuse.
-  if (body.length > MAX_BYTES) throw new Error('too_big');
+  if (body.length > BACKUP_MAX_BYTES) throw new Error('too_big');
   const res = await fetch(`${API}/api/backup/${c.id}`, {
     method: 'PUT',
     // Encrypted on the phone; the server only ever sees a key derived from the code.
@@ -210,11 +220,8 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const { failedAt: _f, failure: _r, ...ok } = c;
-  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt };
-  // A restore with another code may have finished while this was uploading;
-  // don't put the old code back.
-  const now = await loadCloud();
-  if (!now || now.id === c.id) await saveCloud(next);
+  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt, bytes: body.length };
+  if (savesOver(await loadCloud(), c.id)) await saveCloud(next);
   return next;
 }
 
@@ -226,17 +233,19 @@ export async function download(c: CloudState): Promise<BackupData> {
 }
 
 async function get(c: CloudState): Promise<BackupData> {
-  const { auth, enc } = crypto().deriveKeys(c.secret);
+  const cr = await crypto();
+  const { auth, enc } = cr.deriveKeys(c.secret);
   const res = await fetch(`${API}/api/backup/${c.id}`, { headers: { 'x-backup-key': auth }, signal: longSignal() });
   if (res.status === 404) throw new Error('not_found');
   if (res.status === 503) throw new Error('disabled');
   if (!res.ok) throw new Error('network');
   // Encrypted with this code's key or nothing: never a plain copy someone put on the server.
-  return parseBackup(await crypto().unsealAsync(new Uint8Array(await res.arrayBuffer()), enc, undefined, true));
+  return parseBackup(await cr.unsealAsync(new Uint8Array(await res.arrayBuffer()), enc, undefined, true));
 }
 
 export async function removeRemote(c: CloudState): Promise<void> {
-  const res = await fetch(`${API}/api/backup/${c.id}`, { method: 'DELETE', headers: { 'x-backup-key': crypto().deriveKeys(c.secret).auth } }).catch(() => null);
+  const { auth } = (await crypto()).deriveKeys(c.secret);
+  const res = await fetch(`${API}/api/backup/${c.id}`, { method: 'DELETE', headers: { 'x-backup-key': auth } }).catch(() => null);
   // 404: already gone. Anything else means the copy may still be on the server.
   if (!res || (!res.ok && res.status !== 404)) throw new Error(res?.status === 403 ? 'forbidden' : res?.status === 503 ? 'disabled' : 'network');
 }
@@ -245,8 +254,9 @@ export async function removeRemote(c: CloudState): Promise<void> {
  * Deletes the server copy now or when the signal is back. Only the derived key goes in
  * the queue: it can delete the copy but not read it.
  */
-export function queueCloudDelete(c: CloudState) {
-  queue('cloud-delete', { id: c.id, auth: crypto().deriveKeys(c.secret).auth }, c.id);
+export async function queueCloudDelete(c: CloudState): Promise<void> {
+  // If it can't be saved, «Apagar tudo» stops and keeps the code (eraseInOrder).
+  await queueOrThrow('cloud-delete', { id: c.id, auth: (await crypto()).deriveKeys(c.secret).auth }, c.id);
 }
 
 registerSender('cloud-delete', async (p) => {

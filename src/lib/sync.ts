@@ -49,6 +49,15 @@ export function queue(kind: string, payload: unknown, key?: string) {
     .catch(() => {});
 }
 
+/**
+ * Like queue(), but resolves only once the job is saved on the phone and throws
+ * if it couldn't be: for a delete the player is promised before anything else is erased.
+ */
+export async function queueOrThrow(kind: string, payload: unknown, key?: string): Promise<void> {
+  await outbox.enqueue(kind, payload, key);
+  drainSoon().catch(() => {});
+}
+
 /** Forget a job that hasn't been sent yet (say, the thing it was about was deleted). */
 export function unqueue(kind: string, key: string): Promise<boolean> {
   return outbox.cancel(kind, key).catch(() => false);

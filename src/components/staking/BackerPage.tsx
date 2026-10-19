@@ -47,7 +47,7 @@ export async function ensureBackerPage(backer: Backer, save: (b: Backer) => void
 
 /** Sends one page now; false when it is gone. */
 export async function pushBackerPage(page: BackerPage, st: Statement): Promise<boolean> {
-  return updateBackerPage(page, sealPage(st, page));
+  return updateBackerPage(page, await sealPage(st, page));
 }
 
 const RETRY_MS = 60000;

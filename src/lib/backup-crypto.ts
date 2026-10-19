@@ -1,12 +1,13 @@
 // End-to-end encryption for the cloud backup. The recovery code's secret never
 // leaves the phone: the server gets an auth key derived from it (to tell owners
-// apart) and an AES-256-GCM sealed blob it cannot read. Pure, so it can be tested.
+// apart) and an AES-256-GCM sealed blob it cannot read. The cipher is the platform's
+// (aes-gcm.ts); the rest is pure, so it can be tested.
 
-import { gcm } from '@noble/ciphers/aes';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
 import { Gunzip, Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
 
+import { gcmDecrypt, gcmEncrypt } from './aes-gcm';
 import { ALPHA } from './cloud-code';
 
 const SALT = strToU8('sweatbook-backup-v1');
@@ -58,8 +59,8 @@ interface Sealed {
   c: string;
 }
 
-function envelope(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): string {
-  const env: Sealed = { sweatbook: 'backup', v: 1, alg: 'A256GCM', n: toB64(nonce), c: toB64(gcm(key, nonce).encrypt(zipped)) };
+async function envelope(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): Promise<string> {
+  const env: Sealed = { sweatbook: 'backup', v: 1, alg: 'A256GCM', n: toB64(nonce), c: toB64(await gcmEncrypt(key, nonce, zipped)) };
   return JSON.stringify(env);
 }
 
@@ -71,8 +72,8 @@ function envelope(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): strin
  */
 const V2 = [0x53, 0x57, 0x42, 0x32];
 
-function pack(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): Uint8Array {
-  const ct = gcm(key, nonce).encrypt(zipped);
+async function pack(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): Promise<Uint8Array> {
+  const ct = await gcmEncrypt(key, nonce, zipped);
   const body = new Uint8Array(V2.length + nonce.length + ct.length);
   body.set(V2, 0);
   body.set(nonce, V2.length);
@@ -82,16 +83,16 @@ function pack(zipped: Uint8Array, key: Uint8Array, nonce: Uint8Array): Uint8Arra
 
 const isV2 = (b: Uint8Array) => b.length > 16 && V2.every((x, i) => b[i] === x);
 
-function openV2(b: Uint8Array, key: Uint8Array): Uint8Array {
+async function openV2(b: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
   try {
-    return gcm(key, b.subarray(4, 16)).decrypt(b.subarray(16));
+    return await gcmDecrypt(key, b.subarray(4, 16), b.subarray(16));
   } catch {
     throw new Error('forbidden');
   }
 }
 
 /** v1: gzip + AES-GCM, base64 in JSON. Still read; written only by older versions (and the tests). */
-export function seal(plain: string, key: Uint8Array, nonce: Uint8Array): string {
+export function seal(plain: string, key: Uint8Array, nonce: Uint8Array): Promise<string> {
   return envelope(gzipSync(strToU8(plain)), key, nonce);
 }
 
@@ -127,9 +128,9 @@ export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Arra
  * ('forbidden'), so whoever controls the server can't hand the phone data of
  * their own. Files the player imports by hand may still be plain JSON.
  */
-export function unseal(raw: Uint8Array, key: Uint8Array, sealedOnly = false): string {
+export async function unseal(raw: Uint8Array, key: Uint8Array, sealedOnly = false): Promise<string> {
   const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw;
-  if (isV2(bytes)) return strFromU8(gunzipSync(openV2(bytes, key)));
+  if (isV2(bytes)) return strFromU8(gunzipSync(await openV2(bytes, key)));
   const text = strFromU8(bytes);
   let env: Partial<Sealed>;
   try {
@@ -143,7 +144,7 @@ export function unseal(raw: Uint8Array, key: Uint8Array, sealedOnly = false): st
     return text;
   }
   try {
-    return strFromU8(gunzipSync(gcm(key, fromB64(env.n)).decrypt(fromB64(env.c))));
+    return strFromU8(gunzipSync(await gcmDecrypt(key, fromB64(env.n), fromB64(env.c))));
   } catch {
     throw new Error('forbidden');
   }
@@ -181,7 +182,7 @@ async function gunzipSliced(raw: Uint8Array, pause: () => Promise<void>): Promis
 export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe, sealedOnly = false): Promise<string> {
   const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await gunzipSliced(raw, pause) : raw;
   if (isV2(bytes)) {
-    const zipped = openV2(bytes, key);
+    const zipped = await openV2(bytes, key);
     await pause();
     return strFromU8(await gunzipSliced(zipped, pause));
   }
@@ -199,7 +200,7 @@ export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () =>
   }
   let zipped: Uint8Array;
   try {
-    zipped = gcm(key, fromB64(env.n)).decrypt(fromB64(env.c));
+    zipped = await gcmDecrypt(key, fromB64(env.n), fromB64(env.c));
   } catch {
     throw new Error('forbidden');
   }

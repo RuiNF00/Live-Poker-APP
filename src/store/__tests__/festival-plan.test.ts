@@ -490,3 +490,10 @@ test('an added tournament with a start the planner cannot read, or no buy-in, is
     assert.equal(dropped.any, true);
   }
 });
+
+test('the shipped festivals: Bahamas first, unique ids, November to January included', () => {
+  assert.equal(FESTIVALS.length, 21);
+  assert.equal(FESTIVALS[0], F);
+  assert.equal(new Set(FESTIVALS.map((f) => f.id)).size, FESTIVALS.length);
+  assert.ok(FESTIVALS.includes(SAO_PAULO_NOV_2026));
+});

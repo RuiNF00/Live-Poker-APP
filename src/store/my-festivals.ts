@@ -90,9 +90,21 @@ function load(): Promise<void> {
     .then(async (raw) => ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates))
     .catch(() => [] as Festival[])
     .then((saved) => set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]));
-  // The schedules (~70 KB) stay out of the launch bundle: their own chunk, read next to the player's list.
-  // If it doesn't come (web, offline), the next read tries again and the screens update when it does.
-  dataRead ??= import('../poker/festival-data').then(
+  // Called on every read, so a chunk that failed is tried again.
+  const data = loadShippedFestivals();
+  loaded ??= Promise.all([ownRead, data]).then(() => {
+    ready = true;
+    set(mine);
+  });
+  return loaded;
+}
+
+/**
+ * The schedules (~70 KB) stay out of the launch bundle: their own chunk, read next to the player's list.
+ * If it doesn't come (web, offline), the next read tries again and the screens update when it does.
+ */
+export function loadShippedFestivals(load: () => Promise<{ FESTIVALS: Festival[] }> = () => import('../poker/festival-data')): Promise<void> {
+  dataRead ??= load().then(
     (m) => {
       shipped = m.FESTIVALS;
       set(mine);
@@ -101,11 +113,7 @@ function load(): Promise<void> {
       dataRead = null;
     },
   );
-  loaded ??= Promise.all([ownRead, dataRead]).then(() => {
-    ready = true;
-    set(mine);
-  });
-  return loaded;
+  return dataRead;
 }
 
 function subscribe(l: () => void) {

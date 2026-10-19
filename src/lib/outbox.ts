@@ -72,14 +72,18 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
     return loading;
   };
 
-  const save = async () => {
+  // Strict: the caller needs to know the job is on disk (a promised delete), so a failed write throws.
+  const save = async (strict = false) => {
     for (const l of listeners) l(count(jobs));
-    await kv.setItem(KEY, JSON.stringify(jobs ?? [])).catch(() => {});
+    const w = kv.setItem(KEY, JSON.stringify(jobs ?? []));
+    await (strict ? w : w.catch(() => {}));
   };
 
   const api = {
     async enqueue(kind: string, payload: unknown, key?: string) {
       const list = await load();
+      // Put back as it was if the write fails: a job the caller was told isn't queued must not go out from memory.
+      const before = [...list];
       const t = now();
       const job: Job = { id: `${t.toString(36)}${(seq++).toString(36)}`, kind, key, payload, tries: 0, nextAt: t, createdAt: t };
       const i = key === undefined ? -1 : list.findIndex((j) => j.kind === kind && j.key === key);
@@ -90,7 +94,14 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
         if (keep.has(list[j].kind)) j++;
         else list.splice(j, 1);
       }
-      await save();
+      // A write that failed throws: queue() ignores it, queueOrThrow() passes it on.
+      try {
+        await save(true);
+      } catch (e) {
+        list.splice(0, list.length, ...before);
+        for (const l of listeners) l(count(jobs));
+        throw e;
+      }
     },
 
     /** Forgets a job that hasn't gone out yet. True when there was one. */
