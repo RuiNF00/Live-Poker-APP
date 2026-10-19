@@ -3383,6 +3383,11 @@ const en: Record<string, string> = {
   'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Your comments, the hands you share and your public profile can be seen by other people.',
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'We have zero tolerance for objectionable content and abuse. You can report or block anyone who does it. We remove that content and ban whoever posted it.',
   'Só te perguntamos uma vez.': 'We only ask once.',
+  'A Sweatbook é só para maiores de 18': 'Sweatbook is for adults 18 and over only',
+  'A tua conta Apple indica menos de 18 anos. Onde a lei o exige, a app só abre a quem tem 18 ou mais.': 'Your Apple Account says you are under 18. Where the law requires it, the app only opens for people 18 or over.',
+  'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Só fica no telemóvel a indicação de que tens 18 ou mais.': 'Where the law requires it, the app asks Apple for your age range before it opens. Only the fact that you are 18 or over stays on your phone.',
+  "Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.": "We couldn't confirm your age. Make sure you are signed in with your Apple Account and try again.",
+  'Saber mais': 'Learn more',
 };
 
 export default en;
