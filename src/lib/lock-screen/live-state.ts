@@ -45,6 +45,7 @@ export interface LiveProps {
   /** Pause or resume, and a rebuy (cash) or re-entry (tournament), one tap from the lock screen: see lockAction. */
   pauseUrl: string;
   rebuyUrl: string;
+  endUrl: string;
   /**
    * The buttons act without opening the app (iOS LiveActivityIntent, Android notification button).
    * Only with no app lock known to be on: otherwise they open the app, which asks for the lock first.
@@ -53,7 +54,7 @@ export interface LiveProps {
   /** Button targets for the in-place actions: "pause:<id>", read back by parseTarget. */
   pauseTarget: string;
   rebuyTarget: string;
-  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string };
+  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string; end: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -167,6 +168,8 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inP
     shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
     pauseUrl: `sweatbook://session?do=${paused ? 'resume' : 'pause'}&id=${encodeURIComponent(s.id)}`,
     rebuyUrl: `sweatbook://session?do=rebuy&id=${encodeURIComponent(s.id)}`,
+    // Ending needs the cash-out or the prize, so it always opens the app, on the end form.
+    endUrl: `sweatbook://session?do=end&id=${encodeURIComponent(s.id)}`,
     inPlace,
     pauseTarget: `${paused ? 'resume' : 'pause'}:${s.id}`,
     rebuyTarget: `rebuy:${s.id}`,
@@ -180,11 +183,14 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inP
       shareStack: t('Partilhar stack'),
       pause: paused ? t('Retomar') : t('Pausa'),
       rebuy: mtt ? 'Re-entry' : 'Rebuy',
+      end: t('Terminar sessão'),
     },
   };
 }
 
-export type LockAction = 'pause' | 'resume' | 'rebuy';
+/** What a lock-screen button can do in place (no app open); 'end' always opens the end form. */
+export type InPlaceAction = 'pause' | 'resume' | 'rebuy';
+export type LockAction = InPlaceAction | 'end';
 
 /**
  * The action a lock-screen button asked for, if it still applies: same session (not one the
@@ -195,6 +201,7 @@ export type LockAction = 'pause' | 'resume' | 'rebuy';
 export function lockAction(what: string | undefined, id: string | undefined, s: Session): LockAction | null {
   if (!id || id !== s.id || s.endedAt) return null;
   if (what === 'rebuy') return 'rebuy';
+  if (what === 'end') return 'end';
   if (what === 'pause') return isPaused(s) ? null : 'pause';
   if (what === 'resume') return isPaused(s) ? 'resume' : null;
   return null;
@@ -227,7 +234,7 @@ export function parseTarget(target: string): { what: string; id: string } {
  * break, a resume closes it, a rebuy adds an entry and its chips (cash: the buy-in on top;
  * tournament: a fresh starting stack).
  */
-export function lockActionPatch(s: Session, a: LockAction, now = Date.now()): Partial<Session> {
+export function lockActionPatch(s: Session, a: InPlaceAction, now = Date.now()): Partial<Session> {
   if (a === 'pause') return { breaks: [...s.breaks, { start: now }] };
   if (a === 'resume') return { breaks: s.breaks.map((b, i) => (i === s.breaks.length - 1 && !b.end ? { ...b, end: now } : b)) };
   const first = s.stackLog[0]?.stack ?? s.stack;

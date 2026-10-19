@@ -117,7 +117,7 @@ export function SessionLockScreen() {
         if (!s) return;
         const { what, id } = parseTarget(target);
         const a = lockAction(what, id, s);
-        if (a) save({ ...s, ...lockActionPatch(s, a) });
+        if (a && a !== 'end') save({ ...s, ...lockActionPatch(s, a) });
       })();
     });
   }, []);

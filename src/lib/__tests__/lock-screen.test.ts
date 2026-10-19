@@ -224,3 +224,16 @@ test('in-place lock-screen actions: targets carry the session, patches match the
   // Cash rebuy: the buy-in on top of the stack.
   assert.equal(lockActionPatch(mk({ kind: 'cash', stack: 150, buyIn: 200 }), 'rebuy', 1).stack, 350);
 });
+
+test('"end" from the lock screen: opens the end form for this running session only, never in place', () => {
+  const running = mk();
+  const p = liveProps(running, 20 * MIN, false, true);
+  assert.equal(p.endUrl, 'sweatbook://session?do=end&id=s');
+  assert.equal(p.labels.end, 'Terminar sessão');
+  assert.equal(lockAction('end', 's', running), 'end');
+  assert.equal(lockAction('end', 's', mk({ breaks: [{ start: 10 * MIN }] })), 'end');
+  assert.equal(lockAction('end', 'other', running), null);
+  assert.equal(lockAction('end', 's', mk({ endedAt: 1 })), null);
+  // No in-place target for it: an "end:" target from a button would be ignored by the listener.
+  assert.ok(!Object.values(p).some((v) => typeof v === 'string' && v.startsWith('end:')));
+});

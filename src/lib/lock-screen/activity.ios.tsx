@@ -71,6 +71,7 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
       {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy, p.rebuyTarget)}
       {/* A tournament: its chip count as a story, without opening the session first. */}
       {p.shareUrl ? small(p.shareUrl, 'square.and.arrow.up', p.labels.shareStack) : null}
+      {p.endUrl ? small(p.endUrl, 'flag.checkered', p.labels.end) : null}
     </HStack>
   );
   const stackCol = (size: number) => (
