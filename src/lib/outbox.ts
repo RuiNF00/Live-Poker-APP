@@ -82,11 +82,10 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
   const api = {
     async enqueue(kind: string, payload: unknown, key?: string) {
       const list = await load();
-      // Put back as it was if the write fails: a job the caller was told isn't queued must not go out from memory.
-      const before = [...list];
       const t = now();
       const job: Job = { id: `${t.toString(36)}${(seq++).toString(36)}`, kind, key, payload, tries: 0, nextAt: t, createdAt: t };
       const i = key === undefined ? -1 : list.findIndex((j) => j.kind === kind && j.key === key);
+      const replaced = i >= 0 ? list[i] : undefined;
       if (i >= 0) list[i] = job;
       else list.push(job);
       // Oldest go first, but never a promised delete.
@@ -98,7 +97,11 @@ export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>,
       try {
         await save(true);
       } catch (e) {
-        list.splice(0, list.length, ...before);
+        // Undo only this job, so what other calls changed during the write stays: a job the caller
+        // was told isn't queued must not go out from memory.
+        const k = list.findIndex((j) => j.id === job.id);
+        if (k >= 0 && replaced) list[k] = replaced;
+        else if (k >= 0) list.splice(k, 1);
         for (const l of listeners) l(count(jobs));
         throw e;
       }
