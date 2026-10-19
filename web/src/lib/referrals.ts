@@ -116,8 +116,24 @@ class SupabaseReferrals implements ReferralBackend {
 // Local JSON file for development, same rules as the SQL functions.
 interface LocalReferrals {
   codes: Record<string, { code: string; appCode?: string; rcUserId: string | null }>;
-  referrals: Record<string, { referrer: string; source: string; shareId: string | null; claimedAt: string; activatedAt: string | null }>;
+  referrals: Record<string, { referrer: string; source: string; shareId: string | null; claimedAt: string; activatedAt: string | null; referrerPending?: string | null }>;
   rewards: { installId: string; friend: string; role: 'friend' | 'referrer'; kind?: 'discount'; days: number; proUntil: string; grantedAt: string | null; createdAt: string; offerUntil?: string }[];
+}
+
+/** Books an inviter's waiting parts once their RevenueCat user is known, as settle_referrer_pending(). */
+function settleReferrer(d: LocalReferrals, referrer: string, refRc: string) {
+  const now = Date.now();
+  const rc = (id: string) => d.codes[id]?.rcUserId ?? null;
+  for (const [friend, r] of Object.entries(d.referrals)) {
+    if (r.referrer !== referrer || !r.referrerPending) continue;
+    const friendRc = r.referrerPending;
+    r.referrerPending = null;
+    if (!r.activatedAt || Date.parse(r.activatedAt) < now - 30 * 86_400_000 || friendRc === refRc) continue;
+    const earned = d.rewards.filter((w) => rc(w.installId) === refRc && w.role === 'referrer' && Date.parse(w.createdAt) > now - 365 * 86_400_000).length;
+    if (earned >= 10 || d.rewards.some((w) => w.friend === friend && w.role === 'referrer')) continue;
+    const at = new Date(now).toISOString();
+    d.rewards.push({ installId: referrer, friend, role: 'referrer', kind: 'discount', days: 0, proUntil: at, grantedAt: at, createdAt: at, offerUntil: new Date(now + OFFER_HOURS * 3_600_000).toISOString() });
+  }
 }
 
 class LocalBackend implements ReferralBackend {
@@ -145,6 +161,7 @@ class LocalBackend implements ReferralBackend {
     return this.mutate((d) => {
       const cur = d.codes[installId];
       const c = (d.codes[installId] = { ...cur, code: cur?.code ?? code, rcUserId: cur?.rcUserId ?? rcUserId ?? null });
+      if (!cur?.rcUserId && c.rcUserId) settleReferrer(d, installId, c.rcUserId);
       // The app's code lost the race to a server one: keep both, as the SQL does.
       const isApp = (x: string) => /^[0-9a-f]{10}$/.test(x);
       const taken = Object.values(d.codes).some((o) => o.code === code || o.appCode === code);
@@ -190,6 +207,8 @@ class LocalBackend implements ReferralBackend {
       const yearAgo = now - 365 * 86_400_000;
       const earned = d.rewards.filter((w) => rc(w.installId) === refRc && w.role === 'referrer' && Date.parse(w.createdAt) > yearAgo).length;
       if (refRc && earned < 10) d.rewards.push({ installId: r.referrer, friend, role: 'referrer', ...discount });
+      // No RevenueCat user for the inviter yet (invited from the web): their part waits (settleReferrer).
+      if (!refRc && !hadFriendReward) r.referrerPending = friendRc;
       return [friend, r.referrer];
     });
     return (await Promise.all(ids.map((id) => this.pending(id)))).flat();

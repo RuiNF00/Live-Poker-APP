@@ -264,3 +264,72 @@ set role anon;
 select log_rc_event('rc-evt-2', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{}');
 reset role;
 \set ON_ERROR_STOP on
+
+-- 1st update (Replayer QA P3): an inviter with no RevenueCat user gets their part once they report one.
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000001', 'WEBA2345', null) = 'WEBA2345' as web_inviter_code;
+select referral_code_for('e0000000-0000-0000-0000-000000000011', 'WFRA2345', 'rc_wf1');
+select claim_referral('e0000000-0000-0000-0000-000000000011', 'WEBA2345', 'link') = 'ok' as web_friend_claimed;
+select activate_referral_discount('e0000000-0000-0000-0000-000000000011');
+reset role;
+select count(*) filter (where role = 'friend') = 1 and count(*) filter (where role = 'referrer') = 0 as web_friend_booked_inviter_waits
+  from referral_rewards where friend_install_id = 'e0000000-0000-0000-0000-000000000011';
+select referrer_pending_hash = encode(sha256(convert_to('sweatbook-referral:rc_wf1', 'UTF8')), 'hex') as wait_keeps_only_a_hash
+  from referrals where friend_install_id = 'e0000000-0000-0000-0000-000000000011';
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000001', 'WEBA2345', 'rc_web1') = 'WEBA2345' as web_inviter_reports_rc;
+select referral_code_for('e0000000-0000-0000-0000-000000000001', 'WEBA2345', 'rc_web1') = 'WEBA2345';
+select discounts = 1 as web_inviter_status_shows_it from referral_status('e0000000-0000-0000-0000-000000000001');
+reset role;
+select count(*) = 1 and bool_and(offer_until > now() + interval '71 hours') as web_inviter_booked_once
+  from referral_rewards where friend_install_id = 'e0000000-0000-0000-0000-000000000011' and role = 'referrer';
+select referrer_pending_hash is null as wait_cleared from referrals where friend_install_id = 'e0000000-0000-0000-0000-000000000011';
+select count(*) = 1 as web_inviter_tallied from referral_rc_tally where rc_hash = referral_rc_hash('rc_web1') and role = 'referrer';
+-- The friend turns out to be the inviter's own store account: nothing.
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000002', 'WEBB2345', null);
+select referral_code_for('e0000000-0000-0000-0000-000000000012', 'WFRB2345', 'rc_wself');
+select claim_referral('e0000000-0000-0000-0000-000000000012', 'WEBB2345', 'link');
+select activate_referral_discount('e0000000-0000-0000-0000-000000000012');
+select referral_code_for('e0000000-0000-0000-0000-000000000002', 'WEBB2345', 'rc_wself');
+reset role;
+select count(*) = 0 as web_self_invite_books_nothing from referral_rewards where friend_install_id = 'e0000000-0000-0000-0000-000000000012' and role = 'referrer';
+-- After 30 days the wait is over.
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000003', 'WEBC2345', null);
+select referral_code_for('e0000000-0000-0000-0000-000000000013', 'WFRC2345', 'rc_wf3');
+select claim_referral('e0000000-0000-0000-0000-000000000013', 'WEBC2345', 'link');
+select activate_referral_discount('e0000000-0000-0000-0000-000000000013');
+reset role;
+update referrals set activated_at = now() - interval '31 days' where friend_install_id = 'e0000000-0000-0000-0000-000000000013';
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000003', 'WEBC2345', 'rc_web3');
+reset role;
+select count(*) = 0 as web_wait_expires from referral_rewards where friend_install_id = 'e0000000-0000-0000-0000-000000000013' and role = 'referrer';
+select referrer_pending_hash is null as expired_wait_cleared from referrals where friend_install_id = 'e0000000-0000-0000-0000-000000000013';
+-- The 10 a year still hold.
+insert into referral_rc_tally (rc_hash, role) select referral_rc_hash('rc_web4'), 'referrer' from generate_series(1, 10);
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000004', 'WEBD2345', null);
+select referral_code_for('e0000000-0000-0000-0000-000000000014', 'WFRD2345', 'rc_wf4');
+select claim_referral('e0000000-0000-0000-0000-000000000014', 'WEBD2345', 'link');
+select activate_referral_discount('e0000000-0000-0000-0000-000000000014');
+select referral_code_for('e0000000-0000-0000-0000-000000000004', 'WEBD2345', 'rc_web4');
+reset role;
+select count(*) = 0 as web_inviter_cap_holds from referral_rewards where friend_install_id = 'e0000000-0000-0000-0000-000000000014' and role = 'referrer';
+select count(*) = 0 as capped_wait_cleared from referrals where referrer_install_id = 'e0000000-0000-0000-0000-000000000004' and referrer_pending_hash is not null;
+-- The friend erases before the inviter reports a RevenueCat user: the wait goes with the referral.
+set role service_role;
+select referral_code_for('e0000000-0000-0000-0000-000000000005', 'WEBE2345', null);
+select referral_code_for('e0000000-0000-0000-0000-000000000015', 'WFRE2345', 'rc_wf5');
+select claim_referral('e0000000-0000-0000-0000-000000000015', 'WEBE2345', 'link');
+select activate_referral_discount('e0000000-0000-0000-0000-000000000015');
+select erase_referrals('e0000000-0000-0000-0000-000000000015');
+select referral_code_for('e0000000-0000-0000-0000-000000000005', 'WEBE2345', 'rc_web5');
+reset role;
+select count(*) = 0 as erased_friend_no_wait from referral_rewards where install_id = 'e0000000-0000-0000-0000-000000000005';
+\set ON_ERROR_STOP off
+set role anon;
+select settle_referrer_pending('e0000000-0000-0000-0000-000000000001');
+reset role;
+\set ON_ERROR_STOP on
