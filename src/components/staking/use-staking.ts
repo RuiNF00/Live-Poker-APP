@@ -34,7 +34,13 @@ export function useStaking() {
     const manual = settings.fxManual ?? {};
     const pk = packageStates(sessions, packages, { table, manual });
     const fx = { table, fallback: home, manual };
-    const ledgers = new Map<string, BackerLedger>(backers.map((b) => [b.id, backerLedger(b.id, sessions, packages, payments, pk, fx)]));
+    // With no sessions, a deal is in its oldest festival's currency (addOfferDue): payments convert to that one.
+    const deal = new Map<string, string>();
+    for (const o of offers) {
+      const f = planFestival(festivals, o.festivalId);
+      if (f) for (const line of o.lines) if (!deal.has(line.backerId)) deal.set(line.backerId, f.currency);
+    }
+    const ledgers = new Map<string, BackerLedger>(backers.map((b) => [b.id, backerLedger(b.id, sessions, packages, payments, pk, { ...fx, deal: deal.get(b.id) })]));
     // Festival action not paid for yet, for events no session carries yet: the backer owes it already.
     for (const o of offers) {
       const f = planFestival(festivals, o.festivalId);
