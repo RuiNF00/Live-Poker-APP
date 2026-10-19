@@ -1726,6 +1726,21 @@ const ptBR: Record<string, string> = {
   'Escolhe a carta certa': 'Escolha a carta certa',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Depois você corrige o que faltar com toques, como numa mão normal.',
   'Pôr na mesa': 'Colocar na mesa',
+  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
+  'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este arquivo tem mais de 20 MB. Exporte só as sessões, ou um ano de cada vez, e tente de novo.',
+  '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 sessão tem o mesmo dia e resultado de uma que você já tem.',
+  '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sessões têm o mesmo dia e resultado de outras que você já tem.',
+  'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Sessão ainda em andamento: termine-a no outro app e exporte de novo',
+  'A procurar repetidas…': 'Procurando repetidas…',
+  'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Linha incompleta, talvez quebrada em duas: corrija no arquivo e importe de novo',
+  'Acaba mais de 14 dias depois de começar: confirma a data de fim': 'Termina mais de 14 dias depois de começar: confira a data de término',
+  '1 depósito ou levantamento igual a um que já tens.': '1 depósito ou saque igual a um que você já tem.',
+  '{n} depósitos ou levantamentos iguais a outros que já tens.': '{n} depósitos ou saques iguais a outros que você já tem.',
+  '1 parecida com uma sessão que já tinhas ficou de fora.': '1 parecida com uma sessão que você já tinha ficou de fora.',
+  '{n} parecidas com sessões que já tinhas ficaram de fora.': '{n} parecidas com sessões que você já tinha ficaram de fora.',
+  '1 depósito ou levantamento igual a um que já tinhas ficou de fora.': '1 depósito ou saque igual a um que você já tinha ficou de fora.',
+  '{n} depósitos ou levantamentos iguais a outros que já tinhas ficaram de fora.': '{n} depósitos ou saques iguais a outros que você já tinha ficaram de fora.',
+  'Toca numa para a escolher.': 'Toque em uma para escolher.',
 };
 
 export default ptBR;
