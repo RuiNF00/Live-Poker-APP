@@ -200,7 +200,8 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   const health = backupHealth(cloud, now);
   // Only a copy that is on can be waiting: a failed «Ativar» offline must not promise one.
   const pendingCopy = !!cloud && waiting;
-  const warn = pendingCopy || stalled || health.level !== 'ok';
+  // Close to the limit nothing has failed yet: the card stays calm, only the export shows.
+  const warn = pendingCopy || stalled || (health.level !== 'ok' && health.level !== 'near');
   // Over the limit, or close to it: the file keeps everything.
   const overLimit = (health.level === 'failed' && health.reason === 'too_big') || health.level === 'near';
 
@@ -221,7 +222,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
               {t('Cópia parada: tens menos do que a nuvem')}
             </T>
           ) : health.level !== 'ok' ? (
-            <T v="tiny" color={C.warn}>
+            <T v="tiny" color={health.level === 'near' ? undefined : C.warn}>
               {healthTitle(health)}
             </T>
           ) : (
@@ -233,7 +234,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
         // The last copy that fit stays on the server; the file keeps everything.
         <>
           {health.level === 'near' ? <T v="small">{t('Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.')}</T> : null}
-          <Button size="sm" icon="download-outline" title={t('Exportar tudo (ficheiro)')} onPress={onExport} />
+          <Button size="sm" kind={health.level === 'near' ? 'secondary' : undefined} icon="download-outline" title={t('Exportar tudo (ficheiro)')} onPress={onExport} />
         </>
       ) : null}
       {cloud ? (
