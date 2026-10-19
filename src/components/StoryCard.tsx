@@ -14,6 +14,7 @@ import { amount, blindsLabel } from '@/poker/format';
 import { STAGES, type Hand, type Suit } from '@/poker/types';
 import { SUIT_SYMBOL } from '@/poker/cards';
 import { positions } from '@/poker/engine';
+import { posterTitle } from '@/share/hand-poster';
 import type { StoryMoment } from '@/story/moment';
 import { BRAND, C, F, R, ff, posColor } from '@/theme';
 
@@ -136,7 +137,8 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
   const view = viewAt(hand, moment.replay, reel ? step : moment.stepIndex, { inBB, reveal: !isQ && !reel, atEnd, at: reel ? at : undefined });
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
-  const title = g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
+  // Like the poster: the game name's words, never the buy-in or the stakes' currency.
+  const title = posterTitle(g.name) || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
   const text = comment.trim();
   const long = text.length > 80;
   // A new street reads better as the cards that came than as its name twice.
