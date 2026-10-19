@@ -49,12 +49,16 @@ export async function updateAgreement(remote: { id: string; token: string }, off
  * A newer change replaces one still waiting.
  */
 export function queueAgreementUpdate(remote: { id: string; token: string }, offer: AgreementPayload) {
+  // Known at once: the screen checks right after, before the outbox has written the job.
+  sending.add(remote.id);
   queue('offer-update', { id: remote.id, token: remote.token, offer }, remote.id);
 }
 
+const sending = new Set<string>();
+
 /** New terms for this link still waiting to go out. */
-export function agreementUpdateWaiting(id: string): Promise<boolean> {
-  return queued('offer-update', id);
+export async function agreementUpdateWaiting(id: string): Promise<boolean> {
+  return sending.has(id) || queued('offer-update', id);
 }
 
 registerSender('offer-update', async (p) => {
@@ -65,7 +69,9 @@ registerSender('offer-update', async (p) => {
       headers: { 'content-type': 'application/json', 'x-edit-token': r.token },
       body: JSON.stringify({ offer: r.offer }),
     });
-    return outcomeOf(res.status);
+    const out = outcomeOf(res.status);
+    if (out !== 'retry') sending.delete(r.id);
+    return out;
   } catch {
     return 'retry';
   }
