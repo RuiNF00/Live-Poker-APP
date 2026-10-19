@@ -1,14 +1,14 @@
-// Player notes: who is who at the table, how they play, and the hands you have
-// recorded against them.
+// Notas: who is who at the table, how they play, and the hands you have recorded
+// against them. Opens from Início; `id` opens one note, `id=new` a blank one.
 
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, ScrollView, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { OpponentStatsRow, tagColor } from '@/components/OpponentStats';
 import { CardRow } from '@/components/PlayingCard';
-import { Button, Card, Chip, confirmAction, Empty, Field, IconButton, ListGroup, ListItem, Pill, Row, Screen, ScreenHeader, SearchField, Section, SheetHeader, T } from '@/components/ui';
+import { Button, Card, Chip, confirmAction, Empty, Field, ListGroup, ListItem, Pill, Row, SearchField, Section, SheetHeader, T } from '@/components/ui';
 import { sampleColor, SmallSample } from '@/components/SmallSample';
 import { usePaged } from '@/components/ShowMore';
 import { t } from '@/i18n';
@@ -27,11 +27,14 @@ function handsWith(hands: Hand[], p: PlayerNote) {
   return hands.filter((h) => h.players.some((x, i) => i !== h.hero && (x.playerId === p.id || (n && x.name.trim().toLowerCase() === n))));
 }
 
-export default function PlayersScreen() {
+export default function NotesScreen() {
   const sheetAnim = useSheetAnimation();
   const { players, savePlayer, deletePlayer, hands } = useStore();
   const [q, setQ] = useState('');
-  const [edit, setEdit] = useState<PlayerNote | null>(null);
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
+  // From Início: straight into the note that was tapped, or a new one.
+  const [edit, setEdit] = useState<PlayerNote | null>(() => (id === 'new' ? blank() : (players.find((p) => p.id === id) ?? null)));
   // Closing the sheet (X, swipe, back) keeps what was typed: notes are written at the table, in a hurry.
   const draft = useRef<PlayerNote | null>(null);
   const setDraft = useCallback((d: PlayerNote) => {
@@ -54,10 +57,8 @@ export default function PlayersScreen() {
   const counts = useMemo(() => handCounts(hands, players), [hands, players]);
   const stats = useMemo(() => opponentStats(hands, players), [hands, players]);
 
-  const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
-
   return (
-    <Screen scroll={false}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
       <FlatList
         data={rows}
         keyExtractor={(p) => p.id}
@@ -66,17 +67,21 @@ export default function PlayersScreen() {
         contentContainerStyle={{ paddingHorizontal: S.gutter, paddingTop: S.sm, gap: S.sm, paddingBottom: 40 }}
         ListHeaderComponent={
           <View style={{ gap: S.md, marginBottom: S.sm }}>
-            <ScreenHeader title={t('Jogadores')} right={<IconButton name="person-add-outline" label={t('Novo jogador')} onPress={() => setEdit(blank())} />} />
-            {players.length > 0 && <SearchField value={q} onChange={setQ} placeholder={t('Nome, aspeto, tag…')} />}
+            {players.length > 0 ? (
+              <Row gap={S.sm}>
+                <SearchField value={q} onChange={setQ} placeholder={t('Nome, aspeto, tag…')} style={{ flex: 1 }} />
+                <Button title={t('Nova nota')} icon="create-outline" size="md" kind="secondary" onPress={() => setEdit(blank())} />
+              </Row>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
           players.length === 0 ? (
             <Empty
-              icon="people-outline"
+              icon="create-outline"
               title={t('Conhece a tua mesa')}
               body={t('Quem é quem, como joga e as mãos que tiveste contra ele. Na próxima vez que o vires, já sabes.')}
-              action={<Button title={t('Adicionar jogador')} icon="person-add-outline" onPress={() => setEdit(blank())} />}
+              action={<Button title={t('Nova nota')} icon="create-outline" onPress={() => setEdit(blank())} />}
             />
           ) : (
             <Empty icon="search" title={t('Nada encontrado')} />
@@ -146,7 +151,7 @@ export default function PlayersScreen() {
           />
         )}
       </Modal>
-    </Screen>
+    </View>
   );
 }
 
@@ -157,7 +162,7 @@ function PlayerEditor({ p, hands, onDraft, onSave, onClose, onDelete }: { p: Pla
   const { shown, more } = usePaged(hands);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-      <SheetHeader title={p.name ? p.name : t('Novo jogador')} onClose={onClose} closeLabel={t('Fechar')} />
+      <SheetHeader title={p.name ? p.name : t('Nova nota')} onClose={onClose} closeLabel={t('Fechar')} />
       <Card style={{ gap: S.lg }}>
         <Field label={t('Nome ou alcunha')} value={x.name} onChangeText={(name) => setX({ ...x, name })} placeholder={t('Ex.: Boné azul')} autoFocus={!p.name} maxLength={MAX_NAME_LENGTH} />
         <Field label={t('Como o reconheces')} value={x.look} onChangeText={(look) => setX({ ...x, look })} placeholder={t('Boné, óculos, lugar 3…')} />
@@ -195,7 +200,7 @@ function PlayerEditor({ p, hands, onDraft, onSave, onClose, onDelete }: { p: Pla
           {more}
         </Section>
       )}
-      {p.name ? <Button title={t('Apagar jogador')} kind="danger" size="md" icon="trash-outline" onPress={onDelete} /> : null}
+      {p.name ? <Button title={t('Apagar nota')} kind="danger" size="md" icon="trash-outline" onPress={onDelete} /> : null}
     </ScrollView>
   );
 }
