@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
@@ -23,6 +23,9 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
 const NAME_KEY = 'rl.commentName.v1';
 // Challenge votes made in the app are posted as "🗳️ Fold" comments: counted in the tally, not listed (as on the web page).
 const VOTE_COMMENT = /^🗳️?\s*(fold|check|call|c-?bet|[3-9]-?bet|bet|raise|open|all-?in)\b/i;
+
+/** Off screen but read: for live regions that have nothing to show. */
+const HIDDEN = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 } as const;
 
 export function CommentsList({
   shareId,
@@ -106,7 +109,9 @@ export function CommentsList({
     } catch (e) {
       const m = e instanceof Error ? e.message : '';
       // Blocked by the hand's owner: said plainly, without inviting retries (and without saying why).
-      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.'));
+      const msg = m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.');
+      setErr(msg);
+      AccessibilityInfo.announceForAccessibility(msg);
     } finally {
       setBusy(false);
     }
@@ -119,8 +124,18 @@ export function CommentsList({
       ].filter((g) => g.items.length > 0 || (g.street && (g.street === street || notes?.[g.street]?.trim())))
     : [{ street: null, items: comments }];
 
+  // The web has no announceForAccessibility: a live region that is always there says the removal.
+  const goneId = Object.keys(pending ?? {}).at(-1);
+  const goneC = goneId ? comments.find((c) => c.id === goneId) : undefined;
+  const goneSaid = goneC ? `${pending![goneC.id] === 'block' ? t('{name} bloqueado nesta mão', { name: goneC.name }) : t('Comentário apagado')}. ${t('Desfazer disponível.')}` : '';
+
   return (
     <View style={{ gap: S.sm }}>
+      {Platform.OS === 'web' ? (
+        <T v="small" accessibilityLiveRegion="polite" style={HIDDEN}>
+          {goneSaid}
+        </T>
+      ) : null}
       {comments.length === 0 && !grouped ? (
         <Card tone="inset" style={{ alignItems: 'center', paddingVertical: S.lg }}>
           <T v="small">{t('Ainda sem comentários. Sê o primeiro a dar a tua opinião.')}</T>
@@ -162,7 +177,7 @@ export function CommentsList({
                     <T v="small" style={{ flex: 1 }}>
                       {gone === 'block' ? t('{name} bloqueado nesta mão', { name: c.name }) : t('Comentário apagado')}
                     </T>
-                    <Pressable hitSlop={10} accessibilityRole="button" onPress={() => onUndo?.(c)} style={{ minHeight: 24, justifyContent: 'center' }}>
+                    <Pressable hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Desfazer, {name}', { name: c.name })} onPress={() => onUndo?.(c)} style={{ minHeight: 24, justifyContent: 'center' }}>
                       <T v="small" color={C.accent}>
                         {t('Desfazer')}
                       </T>
@@ -252,11 +267,10 @@ export function CommentsList({
             </T>
           </Pressable>
         ) : null}
-        {err ? (
-          <T v="small" color={C.danger}>
-            {err}
-          </T>
-        ) : null}
+        {/* Always mounted, so a screen reader hears the error when the text arrives. */}
+        <T v="small" color={C.danger} accessibilityLiveRegion="assertive" style={err ? undefined : HIDDEN}>
+          {err}
+        </T>
         <Button size="md" icon="send" title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
         <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>
           {t('Ao comentar aceitas os')}{' '}

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { buildReplay, stakesText, type Card, type HandRecord } from '@livepoker/hand-format';
+import { buildReplay, stakesText, withoutMoney, type Card, type HandRecord } from '@livepoker/hand-format';
 import { brand } from '@/config/brand';
 import { heroLastSpot, resolveHand } from '@/lib/hand';
 import { numberTag, type Locale } from '@/lib/i18n';
@@ -129,17 +129,20 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean, 
     ? stakesText(hand.blinds)
     : '';
   const wordmark = /^(.*?)(book)$/i.exec(brand.name);
-  const where = hand?.tournament?.name || hand?.location || (hand?.format === 'cash' ? 'Cash game' : '');
+  const where = withoutMoney(hand?.tournament?.name) || withoutMoney(hand?.location) || (hand?.format === 'cash' ? 'Cash game' : '');
   const heroCards = hero?.cards?.length ? hero.cards : [null, null];
   // PLO (4 cards) and a full board must fit side by side in 1072px.
   const heroW = heroCards.length > 2 ? 104 : 150;
   const boardW = heroCards.length > 2 ? 84 : 96;
   const situation = hand && quiz ? spotLine(hand, quiz, locale) : null;
-  const headline = quiz ? c.challengeHeadline : share?.title || c.headline;
-  const subline = quiz
-    ? // The spot is what makes a friend tap; the title is already in the link's text.
-      [situation, share?.title].filter(Boolean).join(' · ')
-    : [where, c.subline].filter(Boolean).join(' · ');
+  // A deleted, taken-down or broken link says so, like its page, instead of inviting to a hand that isn't there.
+  const headline = !hand ? c.notFound : quiz ? c.challengeHeadline : share?.title || c.headline;
+  const subline = !hand
+    ? c.goneBody
+    : quiz
+      ? // The spot is what makes a friend tap; the title is already in the link's text.
+        [situation, share?.title].filter(Boolean).join(' · ')
+      : [where, c.subline].filter(Boolean).join(' · ');
 
   return new ImageResponse(
     (
@@ -216,6 +219,7 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean, 
         </div>
       </div>
     ),
-    { ...OG_SIZE, fonts: await brandFonts(), headers: { 'cache-control': 'public, max-age=3600, s-maxage=86400' } },
+    // Short at the edge: a hand deleted or taken down stops showing within minutes, not a day.
+    { ...OG_SIZE, fonts: await brandFonts(), headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } },
   );
 }

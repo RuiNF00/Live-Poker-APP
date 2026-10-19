@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { AccessibilityInfo, Alert, Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { usePro } from '@/billing/pro';
 import { CoachThread } from '@/components/CoachThread';
@@ -80,6 +80,17 @@ export default function HandScreen() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [pending, setPending] = useState<Record<string, 'remove' | 'block'>>({});
   const later = useRef(new Map<string, { run: () => void; timer: ReturnType<typeof setTimeout> }>());
+  // Whether VoiceOver or TalkBack is on, for the comment undo's time.
+  const reader = useRef(false);
+  useEffect(() => {
+    // react-native-web always answers true here: the web keeps the normal time.
+    if (Platform.OS === 'web') return;
+    AccessibilityInfo.isScreenReaderEnabled()
+      .then((on) => (reader.current = on))
+      .catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('screenReaderChanged', (on) => (reader.current = on));
+    return () => sub.remove();
+  }, []);
   // Leaving the hand before "Desfazer" runs out: the removal goes through then.
   useEffect(() => {
     const queued = later.current;
@@ -323,7 +334,9 @@ ${link}`;
   const removeOne = (c: Comment, block: boolean) => {
     tap();
     setPending((p) => ({ ...p, [c.id]: block ? 'block' : 'remove' }));
-    later.current.set(c.id, { run: () => commitRemove(c, block), timer: setTimeout(() => commitRemove(c, block), UNDO_MS) });
+    // With a screen reader the undo is said out loud and stays longer: 5 s is not enough to reach it.
+    later.current.set(c.id, { run: () => commitRemove(c, block), timer: setTimeout(() => commitRemove(c, block), reader.current ? UNDO_MS * 4 : UNDO_MS) });
+    AccessibilityInfo.announceForAccessibility(`${block ? t('{name} bloqueado nesta mão', { name: c.name }) : t('Comentário apagado')}. ${t('Desfazer disponível.')}`);
   };
   const undoRemove = (c: Comment) => {
     const p = later.current.get(c.id);

@@ -4,7 +4,7 @@ import { normalizeCode } from '@/lib/refcode';
 import { after } from 'next/server';
 import Link from 'next/link';
 import { cache } from 'react';
-import { handTitle } from '@livepoker/hand-format';
+import { handTitle, withoutMoney } from '@livepoker/hand-format';
 import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
 import { ogLocale, pageLocale, previewLocale, t } from '@/lib/i18n';
@@ -38,7 +38,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   }
   const challenge = q === '1' || !!share.quiz;
   const title = challenge ? c.challengeTitle(share.title || handTitle(hand)) : share.title || handTitle(hand);
-  const where = hand.tournament?.name || hand.location;
+  const where = withoutMoney(hand.tournament?.name) || withoutMoney(hand.location);
   const description = [where, challenge ? c.challengeDescription : c.description].filter(Boolean).join(' · ');
   // The challenge preview stops at the hero's decision so it never spoils the result. The image's
   // language is in its URL, so a cached copy never answers in another one.

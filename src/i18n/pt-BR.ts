@@ -1741,6 +1741,8 @@ const ptBR: Record<string, string> = {
   'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'Não conseguimos montar o vídeo. Tente de novo daqui a pouco.',
   '{a} e {b}': '{a} e {b}',
   'A tua parte, re-entries incluídas': 'Sua parte, re-entries incluídos',
+  'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'A mão como um card de coleção: suas cartas em destaque e os números em bb.',
+  'Póster': 'Pôster',
 };
 
 export default ptBR;

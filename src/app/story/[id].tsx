@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { CardShareSheet } from '@/components/CardShareSheet';
+import { HandPoster } from '@/components/HandPoster';
 import { useLocked } from '@/components/ProGate';
 import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
@@ -23,6 +24,7 @@ import {
   canShareStory,
   captureFrame,
   dropLocal,
+  capturePost,
   captureStory,
   ensureShareId,
   MAX_FACE_BYTES,
@@ -60,8 +62,10 @@ export default function StoryScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const ask = hand ? canAsk(hand) : false;
-  const [mode, setMode] = useState<StoryMode | 'video'>(ask ? 'question' : 'result');
+  const [mode, setMode] = useState<StoryMode | 'video' | 'poster'>(ask ? 'question' : 'result');
   const video = mode === 'video';
+  // The hand as a collector card instead of the table (components/HandPoster.tsx).
+  const isPoster = mode === 'poster';
   const [comment, setComment] = useState(() => (asked || hand?.ask || '').slice(0, MAX_COMMENT));
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(false);
@@ -93,7 +97,7 @@ export default function StoryScreen() {
     setFace(clip);
   }, []);
   const withFace = video && !!face && !faceLocked;
-  const withVoice = !!voice && pro.isPro && !withFace;
+  const withVoice = !!voice && pro.isPro && !withFace && !isPoster;
   const direct = withVoice || to === 'instagram';
   // Whether the Instagram button opens Instagram's editor (where the Poll sticker goes) rather than the system sheet.
   const [igDirect, setIgDirect] = useState(false);
@@ -103,10 +107,12 @@ export default function StoryScreen() {
       .catch(() => {});
   }, []);
   const card = useRef<React.ComponentRef<typeof View>>(null);
+  const poster = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
   const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
-  const moment = useMemo(() => (shown ? storyMoment(shown, video ? 'result' : mode, settings.inBB) : null), [shown, mode, video, settings.inBB]);
+  // Shared pictures are always in big blinds, like the poster: in cash, chips are money.
+  const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', true) : null), [shown, mode]);
   // The replayer's own motion timeline, so the video plays what the app shows.
   const motion = useMemo(() => (shown && moment ? motionTimeline(shown, moment.replay) : []), [shown, moment]);
   const talkS = withFace && face ? face.ms / 1000 : withVoice ? voiceMs / 1000 : null;
@@ -294,7 +300,8 @@ export default function StoryScreen() {
     try {
       const l = await linkFor(to === 'any' ? 'link' : to);
       if (!l) return;
-      await sharePost([await captureAs('preview', 'post')], postText(l.link), to);
+      // The 4:5 poster: a 9:16 story gets cut in the X and WhatsApp feeds.
+      await sharePost([await capturePost(poster)], postText(l.link), to);
       track('story_shared', { target: to, share_id: l.shareId, ref: l.ref, question: mode === 'question' });
     } catch {
       notice(t('Não deu'), t('Não conseguimos preparar a imagem. Tenta outra vez.'));
@@ -342,6 +349,10 @@ export default function StoryScreen() {
     <>
       <CardShareSheet visible={sheet} onClose={() => setSheet(false)} instagram={post} whatsapp={() => postTo('whatsapp')} x={() => postTo('x')} other={() => postTo('any')} copy={copy} />
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
+      {/* The 4:5 poster for X and other apps: drawn off screen, only ever captured. */}
+      <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
+        <HandPoster ref={poster} hand={shown} moment={moment} comment={comment} brand={brand || !pro.isPro} format="post" />
+      </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center' }}>
@@ -361,7 +372,11 @@ export default function StoryScreen() {
                   top: (STORY_H * scale - STORY_H) / 2,
                   transform: [{ scale }],
                 }}>
-                <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
+                {isPoster ? (
+                  <HandPoster ref={card} hand={shown} moment={moment} comment={comment} brand={brand || !pro.isPro} />
+                ) : (
+                  <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
+                )}
               </View>
             </View>
           </View>
@@ -370,6 +385,7 @@ export default function StoryScreen() {
             options={[
               { key: 'question', label: t('Pergunta') },
               { key: 'result', label: t('Resultado') },
+              { key: 'poster', label: t('Póster') },
               { key: 'video', label: t('Vídeo') },
             ]}
             value={mode}
@@ -380,7 +396,9 @@ export default function StoryScreen() {
             }}
           />
           <T v="small" style={{ textAlign: 'center', marginTop: -4 }}>
-            {video
+            {isPoster
+              ? t('A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.')
+              : video
               ? t('A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.')
               : mode === 'question'
                 ? direct && igDirect
@@ -401,7 +419,7 @@ export default function StoryScreen() {
               {face ? <ListItem icon="trash-outline" title={t('Tirar a cara')} destructive chevron={false} onPress={() => setFaceClip(null)} /> : null}
             </ListGroup>
           ) : null}
-          {canShareStory && !withFace ? (
+          {canShareStory && !withFace && !isPoster ? (
             <Suspense fallback={null}>
               <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} />
             </Suspense>

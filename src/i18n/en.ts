@@ -3414,6 +3414,12 @@ const en: Record<string, string> = {
   'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': "We couldn't put the video together. Try again in a moment.",
   '{a} e {b}': '{a} and {b}',
   'A tua parte, re-entries incluídas': 'Your share, re-entries included',
+  'Street': 'Street',
+  'Para pagar': 'To call',
+  'Póster': 'Poster',
+  'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'Your hand as a collector card: your cards up big and the numbers in bb.',
+  'Desfazer, {name}': 'Undo, {name}',
+  'Desfazer disponível.': 'Undo available.',
 };
 
 export default en;
