@@ -1,0 +1,9 @@
+{
+  "ios": {
+    "NSMicrophoneUsageDescription": "O Sweatbook usa o microfone para gravares notas de voz sobre as tuas mãos e para as histórias e os vídeos das mãos.",
+    "NSFaceIDUsageDescription": "O Sweatbook usa o Face ID para desbloquear a app, se ligares o bloqueio nas Definições.",
+    "NSCameraUsageDescription": "O Sweatbook usa a câmara para fotografares recibos, formulários de impostos (W-2G, 1042-S) e a folha da estrutura de um torneio, e para gravares a tua cara nos vídeos das mãos.",
+    "NSPhotoLibraryAddUsageDescription": "O Sweatbook adiciona às tuas fotos as imagens e os vídeos das mãos que partilhas, quando escolhes guardá-los.",
+    "NSPhotoLibraryUsageDescription": "O Sweatbook usa as tuas fotos para guardares recibos e formulários de impostos junto das tuas sessões."
+  }
+}

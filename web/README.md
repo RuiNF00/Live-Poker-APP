@@ -1,0 +1,69 @@
+# Sweatbook · partilha de mãos (web)
+
+Página pública `/h/<id>` que reproduz uma mão partilhada a partir da app: replayer, comentários dos amigos (sem conta), votação "O que fazias aqui?" e imagem de pré-visualização para WhatsApp/Telegram/X.
+
+## Correr localmente
+
+```bash
+cd web
+npm install
+npm run dev        # http://localhost:3000/h/demo
+```
+
+Sem variáveis do Supabase, os dados ficam num ficheiro local (`web/.data/store.json`).
+
+## API para a app
+
+Contrato usado por `src/lib/share-api.ts` da app. O corpo `hand` é o `Hand` da app (v1) tal e qual; também aceita um `HandRecord` de `packages/hand-format`.
+
+| Pedido | Resposta |
+|---|---|
+| `POST /api/hands` `{ hand, title?, quiz?: { action: n }, revealAll?, allowComments? }` | `201 { id, token, url }` |
+| `GET /api/hands/<id>` | `{ id, hand, title, quiz, createdAt }` |
+| `DELETE /api/hands/<id>` com header `x-edit-token: <token>` | `{ deleted }` |
+| `GET /api/hands/<id>/comments` | `{ comments: [{ id, name, text, createdAt (ms), stepIndex }] }` |
+| `POST /api/hands/<id>/comments` `{ name, text, stepIndex? }` | `201 { comment }` |
+| `POST /api/hands/<id>/vote` `{ voterId (uuid), choice }` | `{ counts }` (inclui comentários "🗳️ <escolha>" da app) |
+| `POST /api/events` `{ event, installId (uuid), platform: ios\|android\|web, props? }` | `204`. Eventos do funil: `app_open`, `hand_saved`, `limit_hit`, `paywall_shown`, `purchase`, `share_created`, `story_shared` (app) e `share_viewed`, `store_click`, `landing_view` (site). Sem dados pessoais. Contagens diárias no Supabase: `select * from app_event_daily limit 100;` |
+| `POST /api/referrals/code` `{ installId, myCode? \| code?, rcUserId? }` | `{ code, url }` (convite `https://sweatbook.poker/r/<code>`; o mesmo código sempre; `code` regista o código da app, 10 hex) |
+| `POST /api/referrals/claim` `{ installId, code, myCode?, source?: share\|story\|link\|manual\|play_referrer, shareId?, rcUserId? }` | `{ result: ok\|already\|unknown_code\|self\|too_late }` (até 7 dias depois do primeiro `app_open`) |
+| `POST /api/referrals/activate` `{ installId, myCode?, rcUserId? }` | `{ status }`. Chamar depois de o amigo guardar a primeira mão: dá 7 dias Pro aos dois (RevenueCat), uma vez |
+| `POST /api/referrals/status` `{ installId, myCode?, rcUserId? }` | `{ code, url, invited, activated, daysEarned, proUntil }` e repete prémios pendentes |
+| `POST /api/referrals/erase` `{ installId }` | `{ erased: true }`. "Apagar todos os meus dados": apaga o código desta instalação, o convite que aceitou e os que enviou. O servidor apaga sozinho convites 400 dias depois do último evento e códigos sem convites 400 dias depois do último uso |
+
+Todas as rotas de convites aceitam `myCode` (o código local da app, 10 hex). A primeira que registar a instalação usa esse código. Se a instalação já tinha um código do servidor, o `myCode` fica como alias: os dois funcionam e a resposta passa a devolver o da app.
+| `PUT /api/backup/<id>` header `x-backup-key: <secret>`, corpo gzip ou JSON (até ~4,4 MB) | `204`; `403` se o id já existe com outro segredo |
+| `GET /api/backup/<id>` (mesmo header) | o corpo guardado + `x-updated-at`; `404` se o código está errado ou não há cópia |
+| `DELETE /api/backup/<id>` (mesmo header) | `204`. Cópias sem alterações há 18 meses são apagadas |
+| `POST /api/hands/<id>/report` `{ reporterId (uuid), reason? }` | `{ reported }` (5 denúncias tiram a mão do ar) |
+| `POST /api/hands/<id>/comments/<commentId>/report` `{ reporterId }` | `{ reported }` (3 denúncias escondem o comentário) |
+| `POST /api/story-video` multipart `frame` (PNG 1080×1920), `voice` (m4a, até 30 s), `slot` (JSON `{x,y,w,h}` em px), `rcUserId` | `200 video/mp4` (403 `pro_required` sem Pro): a história com a voz e uma onda animada no `slot` (ffmpeg via `ffmpeg-static`) |
+
+Links de desafio: `/h/<id>?q=1` pára na última ação do herói e pergunta "O que fazias aqui?". Até a pessoa votar, a página esconde notas, tags, ações seguintes e comentários. `quiz: { action: n }` no upload fixa outro ponto.
+
+O motor de replay, o avaliador e o conversor do `Hand` da app estão em `packages/hand-format`.
+
+## Pôr online
+
+1. Supabase: criar projeto, correr `supabase/migrations/*.sql` (SQL editor ou `supabase db push`).
+2. Vercel: importar o repositório com **Root Directory = `web`**.
+3. Variáveis (ver `web/.env.example`, inclui `APPLE_TEAM_ID` e `ANDROID_CERT_SHA256` para os links abrirem a app): `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (só no servidor; a chave anon já não serve para nada), `NEXT_PUBLIC_SITE_URL` (por defeito `https://sweatbook.poker`), e quando existirem `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_PLAY_STORE_URL`.
+
+## Segurança e moderação
+
+- O servidor é o único cliente do Supabase e usa a service role. O `anon` e o `authenticated` não leem nem chamam nada (migração `20261017090000`).
+- Denúncias e votos não confiam no id que o cliente manda: o servidor usa um HMAC do IP que muda todos os dias. 5 IPs diferentes escondem uma mão "em revisão" e 3 escondem um comentário. Se `MODERATION_WEBHOOK_URL` existir, recebe um aviso. Para repor uma mão: `select restore_shared_hand('<id>');` no SQL editor. O que fica escondido é apagado ao fim de 30 dias (`purge_moderation()`, pg_cron e a API).
+- "Apagar link" apaga a linha (comentários, votos e denúncias vão atrás).
+- Limites por IP e por hora guardados na base de dados (`hit_rate_limit`), que valem em todas as instâncias. Backups: 2 MB cada, 300 novos por hora no total e 250 MB no total (a API responde 507 `quota`).
+- Convites: o `rc_user_id` de um install é gravado uma vez e nunca substituído. Um utilizador RevenueCat recebe a recompensa de amigo uma vez na vida e ganha no máximo 10 por ano como quem convida (somando todos os installs). Com `REVENUECAT_SECRET_KEY`, o amigo tem de existir na RevenueCat e ter sido visto pela primeira vez nos últimos 7 dias.
+- `/api/story-video` exige `rcUserId` com Pro ativo na RevenueCat.
+
+## Testes
+
+- `cd packages/hand-format && npm test` (motor de replay, potes, side pots, avaliador)
+- `cd web && npm test` (filtro de linguagem ofensiva)
+- `supabase/tests/run.sh` com um Postgres local (políticas RLS e funções)
+
+## Páginas legais
+
+`/privacy`, `/terms`, `/support` e `/delete-account` são os HTML gerados a partir de `store/web` (`store/scripts/fill.sh`) e copiados para `web/public/`. Se o texto mudar, volta a gerar e copia.

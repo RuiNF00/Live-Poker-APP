@@ -1,0 +1,13 @@
+node_modules
+.next
+.data
+.env*.local
+# Secrets never go in git (keys live in Projetos-Claude/sweatbook-chaves)
+.env
+.env.*
+!.env.example
+*.p12
+*.mobileprovision
+*service-account*.json
+next-env.d.ts
+*.tsbuildinfo

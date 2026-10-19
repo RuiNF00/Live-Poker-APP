@@ -1,0 +1,92 @@
+# Checks every push and pull request: the app (types, lint, tests, web export),
+# the shared hand-format package, the share site (types, tests, build) and the
+# Supabase migrations with their SQL checks.
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npx eslint .
+      - name: Tests
+        run: npm test
+      - name: Web export
+        run: npx expo export --platform web --output-dir dist
+
+  hand-format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/hand-format
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/hand-format/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            packages/hand-format/package-lock.json
+      - run: npm ci
+        working-directory: packages/hand-format
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build
+        run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrations and SQL checks
+        run: |
+          bash supabase/tests/run.sh 2>&1 | tee sql.log
+          # Every check prints a boolean column; any "f" is a failed check.
+          if grep -qE '^ f$' sql.log; then echo "::error::A SQL check returned false"; exit 1; fi

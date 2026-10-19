@@ -1,0 +1,373 @@
+// Everything about what Sweatbook Pro costs and what the free plan allows
+// lives here, so prices, limits and paywall copy change in one place.
+// Real prices shown on the paywall come from the store (RevenueCat); the
+// numbers below are only the fallback when the store can't be reached.
+
+import { t } from '../i18n';
+
+export const ENTITLEMENT = 'pro';
+
+/** Store product ids. Create these exactly in App Store Connect and Google Play. */
+export const PRODUCTS = {
+  monthly: 'sweatbook_pro_monthly',
+  annual: 'sweatbook_pro_annual',
+} as const;
+
+export type PlanId = keyof typeof PRODUCTS;
+
+export interface PlanInfo {
+  id: PlanId;
+  /** USD price, used when the store prices haven't loaded. */
+  price: number;
+  /** Portuguese key; show it with t(). */
+  period: 'mês' | 'ano';
+  /** Free trial days (store intro offer). 0 = none. */
+  trialDays: number;
+}
+
+export const PLANS: Record<PlanId, PlanInfo> = {
+  monthly: { id: 'monthly', price: 29.99, period: 'mês', trialDays: 0 },
+  // Demo store only: real builds read the trial from the store product (3 days, Rui 17 Oct).
+  annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 3 },
+};
+
+/**
+ * Offers in the cancel flow. Only ever offered there, never after onboarding.
+ * The price the player sees always comes from the store offer itself; `pct`
+ * and `months` are what to create in the stores. Until an offer with this id
+ * exists there, the app hides it.
+ */
+export const RETENTION = {
+  /** "Não cabe no meu bankroll": App Store promotional offer / Google Play offer on the monthly plan. */
+  discount: { pct: 40, months: 3, ios: 'sweatbook_retention_40', android: 'sweatbook-retention-40' },
+  /** Google Play lets subscribers pause; the App Store doesn't. */
+  pauseMonths: 3,
+};
+
+/**
+ * One-time Pro, offered only in the cancel flow to players who don't want a
+ * subscription (Rui, 17 Oct). Never on the paywall. Without a release, turn it
+ * off by removing the Lifetime package from the RevenueCat offering or by
+ * setting `"lifetime": false` in its metadata. Create `product` in both stores as a
+ * non-consumable granting the `pro` entitlement, in RevenueCat's offering as
+ * the Lifetime package. The price shown always comes from the store; `usd`
+ * is what to set there.
+ */
+export const LIFETIME = { enabled: true, product: 'sweatbook_lifetime', usd: 499 };
+
+/**
+ * Invite reward (Rui, 17 Oct): when the friend saves a first hand, both players get `pct` off
+ * the first month of Pro, usable for `hours`. Never Pro days: a festival lasts 1-2 weeks, so free
+ * days covered the trip. Google Play: a developer-determined offer tagged `android` on the
+ * monthly base plan. App Store: one-time offer codes on the monthly, loaded on the server.
+ */
+export const INVITE = { pct: 50, hours: 72, android: 'sweatbook-invite-50' };
+
+/**
+ * High-stakes features that need Pro (Rui, 17 Oct: "Sim, Pro"). Fixed from
+ * launch: after launch a feature may go from Pro to free, never the other way.
+ * The shared sides stay free (a backer's page, confirming a swap by link).
+ */
+export const PRO_ONLY = {
+  /** Backers, makeup and settling up (staking screens). */
+  staking: true,
+  /** Swap settlement: who owes whom, the group's minimum transfers and the history breakdowns. Creating, sharing and recording results stay free. */
+  swaps: true,
+  /** The yearly report with tax per country (PDF export). */
+  taxReport: true,
+  /** Net worth and results across currencies in one total (bankroll). */
+  homeTotal: true,
+  /** "Onde ganhas e onde perdes" and the mental journal's cards: the patterns in the player's sessions. Check-ins stay free. */
+  insights: true,
+  /** "É normal?" on Downswings: the read on the player's own variance. The downswing numbers and chart stay free. */
+  downswingRead: true,
+  /** Win rate by game, stake, venue and weekday, and how many hours until it is known. The headline win rate stays free. */
+  winrateDetail: true,
+  monthCompare: true,
+  moveUpPlan: true,
+  /** Drawing villain's range on the 13×13 grid in the replayer. Equity against the range read from the preflop raises stays free. */
+  villainRange: true,
+  /** The player's face (front camera) in a circle on the hand video. The video itself, with or without the brand, stays free. */
+  faceVideo: true,
+};
+export type ProFeature = keyof typeof PRO_ONLY;
+
+/** Free plan. `null` means no limit. */
+export const FREE = {
+  /** New hands saved per calendar day. The 4th waits as a draft, never lost. */
+  handsPerDay: 3 as number | null,
+  /** Bankroll date and stake filters ("Sempre" and every stake stay free). */
+  bankrollFilters: false,
+  /** Bankrolls the player can have. Ones made automatically for older data are kept either way. */
+  bankrolls: 1 as number | null,
+  /** Trips (festivals) with expenses. The first is free so a player sees it work on a real trip. */
+  trips: 1 as number | null,
+};
+
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
+
+/** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
+export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
+  hands: {
+    title: t('Mão guardada como rascunho'),
+    body: t('Com Pro, guardas mãos sem limite.'),
+  },
+  staking: {
+    title: t('Staking sem folhas de cálculo'),
+    body: t('Backers, makeup e acertos, sempre certos.'),
+  },
+  swaps: {
+    title: t('Swaps acertados sozinhos'),
+    body: t('Percentagens, prémios e quem deve a quem.'),
+  },
+  taxReport: {
+    title: t('O relatório do ano, pronto'),
+    body: t('Resultados por país e imposto retido, em PDF.'),
+  },
+  homeTotal: {
+    title: t('Tudo numa moeda'),
+    body: t('Património e resultado do ano, ao câmbio de cada dia.'),
+  },
+  insights: {
+    title: t('Onde ganhas e onde perdes'),
+    body: t('Salas, stakes, horas, sono e tilt: o que mexe no teu resultado.'),
+  },
+  downswingRead: {
+    title: t('Azar ou sinal?'),
+    body: t('Vê se o teu downswing é normal para os teus resultados.'),
+  },
+  // Shown once the first live session is closed (TrialFollowUp), never at the table.
+  sessionStart: {
+    title: t('A próxima sessão, com Pro'),
+    body: t('Mãos sem limite na mesa. Os dias grátis contam a partir de hoje.'),
+  },
+  sessionEnd: {
+    title: t('Cada sessão, toda revista'),
+    body: t('Mãos sem limite, e em que sala e stake ganhas mais.'),
+  },
+  handsLive: {
+    title: t('A sessão continua'),
+    body: t('Guarda esta mão e as próximas sem limite.'),
+  },
+  views: {
+    title: t('A tua mão está a ser vista'),
+    body: t('Com Pro, guardas todas as mãos da sessão.'),
+  },
+  bigWin: {
+    title: t('Vê de onde vem o teu lucro'),
+    body: t('Salas, jogos e stakes, com filtros.'),
+  },
+  winrateDetail: {
+    title: t('Sabe onde o teu win rate é real'),
+    body: t('Por jogo, stake, sala e dia, com a margem de erro de cada um.'),
+  },
+  monthCompare: {
+    title: t('Este mês foi melhor?'),
+    body: t('Compara cada mês com os anteriores e vê onde ganhaste.'),
+  },
+  mttStats: {
+    title: t('ROI e ITM onde jogas'),
+    body: t('Por buy-in, festival e jogo: onde os teus torneios dão lucro.'),
+  },
+  varianceMine: {
+    title: t('A variância com os teus números'),
+    body: t('O teu win rate e desvio padrão, já preenchidos, em vez de exemplos.'),
+  },
+  villainRange: {
+    title: t('Desenha a range do vilão'),
+    body: t('Escolhe as mãos dele na grelha e vê a tua equity contra elas.'),
+  },
+  faceVideo: {
+    title: t('A tua cara no vídeo da mão'),
+    body: t('Explica a mão a falar, com a tua cara num canto.'),
+  },
+  moveUpPlan: {
+    title: t('Decide a stake com os teus números'),
+    body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
+  },
+  stats: {
+    title: t('Conhece o teu bankroll'),
+    body: t('Vários bankrolls, filtros, salas e jogos.'),
+  },
+  trips: {
+    title: t('Todas as tuas viagens'),
+    body: t('Despesas e resultado líquido de cada festival.'),
+  },
+  story: {
+    title: t('Stories com a tua voz'),
+    body: t('Vídeo com voz, sem marca de água.'),
+  },
+  solver: {
+    title: t('Leva as mãos todas para o solver'),
+    body: t('Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.'),
+  },
+  coach: {
+    title: t('Revê as mãos com o teu coach'),
+    body: t('Com Pro, envias ao coach todas as pastas e mãos que quiseres.'),
+  },
+  welcome: {
+    title: t('Primeira mão feita'),
+    body: t('Com Pro, guardas todas as mãos da sessão.'),
+  },
+  plan: {
+    title: t('Começa o teu plano'),
+    body: t('Tudo o que escolheste. Sem limites.'),
+  },
+  generic: {
+    title: 'Sweatbook Pro',
+    body: t('Todas as mãos. Todo o bankroll.'),
+  },
+};
+
+export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mttStats' | 'varianceMine' | 'trips' | ProFeature;
+
+/** The first three are the generic rows; the rest lead only when they triggered the paywall. */
+export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
+  { key: 'hands', icon: 'infinite', title: t('Mãos ilimitadas'), body: t('Sem limite diário') },
+  { key: 'stats', icon: 'stats-chart', title: t('Bankroll completo'), body: t('Vários bankrolls e filtros') },
+  { key: 'story', icon: 'mic', title: t('Stories com voz'), body: t('Sem marca de água') },
+  { key: 'solver', icon: 'analytics', title: t('Mãos para o solver'), body: t('Várias de uma vez') },
+  { key: 'coach', icon: 'school', title: t('Revisão com coach'), body: t('Pastas e mãos sem limite') },
+  { key: 'staking', icon: 'people', title: t('Staking'), body: t('Backers, makeup, acertos') },
+  { key: 'swaps', icon: 'swap-horizontal', title: t('Swaps'), body: t('Quem deve a quem') },
+  { key: 'taxReport', icon: 'document-text', title: t('Relatório do ano'), body: t('Por país, com imposto') },
+  { key: 'homeTotal', icon: 'globe', title: t('Tudo numa moeda'), body: t('Ao câmbio de cada dia') },
+  { key: 'insights', icon: 'bulb', title: t('Onde ganhas e onde perdes'), body: t('Salas, stakes, sono e tilt') },
+  { key: 'downswingRead', icon: 'pulse', title: t('Azar ou sinal?'), body: t('O teu downswing é normal?') },
+  { key: 'winrateDetail', icon: 'speedometer', title: t('Win rate a sério'), body: t('Por jogo, stake e sala') },
+  { key: 'monthCompare', icon: 'calendar', title: t('Mês a mês'), body: t('Compara com os anteriores') },
+  { key: 'moveUpPlan', icon: 'layers', title: t('Subir de stake'), body: t('Risco de ruína e plano') },
+  { key: 'mttStats', icon: 'trophy', title: t('Torneios a fundo'), body: t('ROI e ITM por buy-in e festival') },
+  { key: 'varianceMine', icon: 'pulse', title: t('A tua variância'), body: t('Com os teus números') },
+  { key: 'trips', icon: 'airplane', title: t('Viagens'), body: t('Despesas e líquido por festival') },
+  { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
+  { key: 'faceVideo', icon: 'videocam', title: t('Vídeo com a tua cara'), body: t('A explicar a mão, num canto') },
+];
+
+const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
+  hands: 'hands',
+  handsLive: 'hands',
+  sessionStart: 'hands',
+  sessionEnd: 'hands',
+  welcome: 'hands',
+  views: 'hands',
+  stats: 'stats',
+  bigWin: 'stats',
+  story: 'story',
+  solver: 'solver',
+  coach: 'coach',
+  staking: 'staking',
+  swaps: 'swaps',
+  taxReport: 'taxReport',
+  homeTotal: 'homeTotal',
+  insights: 'insights',
+  downswingRead: 'downswingRead',
+  winrateDetail: 'winrateDetail',
+  monthCompare: 'monthCompare',
+  moveUpPlan: 'moveUpPlan',
+  mttStats: 'mttStats',
+  varianceMine: 'varianceMine',
+  villainRange: 'villainRange',
+  trips: 'trips',
+  faceVideo: 'faceVideo',
+};
+
+/** Three rows: the feature the player just reached for first, then generic ones. */
+export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATURES)[number]; highlight: boolean }[] {
+  const key = LEADS[reason] ?? null;
+  const first = PRO_FEATURES.filter((f) => f.key === key);
+  const generic = PRO_FEATURES.slice(0, 3).filter((f) => f.key !== key);
+  return [...first, ...generic].slice(0, 3).map((feature) => ({ feature, highlight: feature.key === key }));
+}
+
+type Cell = string | boolean;
+
+/** Free vs Pro, for the "table" paywall. Built from FREE so the limits never drift. Portuguese labels; show with t(). */
+export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
+  const n = (v: number | null): Cell => (v === null ? '∞' : String(v));
+  return [
+    { label: 'Mãos novas por dia', free: n(FREE.handsPerDay), pro: '∞' },
+    { label: 'Replayer e partilha por link', free: true, pro: true },
+    { label: 'Bankrolls', free: n(FREE.bankrolls), pro: '∞' },
+    { label: 'Filtros e salas', free: FREE.bankrollFilters, pro: true },
+    { label: 'Stories com voz', free: false, pro: true },
+    { label: 'Várias mãos para o solver', free: false, pro: true },
+    { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
+    { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
+    { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
+    { label: 'Onde ganhas e onde perdes', free: !PRO_ONLY.insights, pro: true },
+  ];
+}
+
+export function perMonth(annualPrice: number, currency?: string): number {
+  // To the currency's own smallest unit: KWD 59.990 a year is 4.999 a month, not 5.
+  const f = 10 ** (currency ? fractionDigits(currency) : 2);
+  return Math.round((annualPrice / 12) * f) / f;
+}
+
+/** Price in the store's own currency, for numbers we derive (per month, a year of monthly). */
+export function formatPrice(n: number, currency: string, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n);
+  } catch {
+    return `${n.toFixed(2)} ${currency}`;
+  }
+}
+
+/**
+ * A derived amount (the annual plan per month) written exactly like the store's own price
+ * string: same symbol, side and decimal mark. Two prices on one screen never disagree
+ * ("$199.99" next to "US$16.67"). Falls back to Intl when the string has no number.
+ */
+export function priceLike(priceString: string, n: number, currency: string, locale: string): string {
+  const num = priceString.match(/\d(?:[\d.,\s\u00a0\u202f'\u2019]*\d)?/)?.[0];
+  if (!num) return formatPrice(n, currency, locale);
+  // The currency's own decimals (¥ and ₩ none, KWD three), so the store's separators read the right way round.
+  const fd = fractionDigits(currency);
+  const decAt = fd > 0 && /[.,]/.test(num[num.length - fd - 1] ?? '') && /^\d+$/.test(num.slice(-fd)) ? num.length - fd - 1 : -1;
+  const intPart = decAt >= 0 ? num.slice(0, decAt) : num;
+  const group = intPart.match(/[^\d]/)?.[0] ?? localeGroup(locale);
+  // A store price written without its cents ("199 kr") still gets them here when the monthly
+  // figure has some (16,58 kr, not a rounded-up 17 kr), with the separator the locale uses.
+  // Not past 1000 a month, though: stores write Ft and Rp whole even where ISO gives them cents.
+  const fractional = fd > 0 && n < 1000 && Math.round(n * 10 ** fd) % 10 ** fd !== 0;
+  const dec = decAt >= 0 ? num[decAt] : fractional ? localeDecimal(locale, group) : null;
+  const [i, f] = n.toFixed(dec ? fd : 0).split('.');
+  const grouped = i.replace(/\B(?=(\d{3})+(?!\d))/g, group);
+  return priceString.replace(num, dec && f ? grouped + dec + f : grouped);
+}
+
+/** The locale's decimal mark, never the same as the group mark the store used. */
+function localeDecimal(locale: string, group: string): string {
+  let d = ',';
+  try {
+    d = new Intl.NumberFormat(locale).formatToParts(1.5).find((p) => p.type === 'decimal')?.value ?? ',';
+  } catch {}
+  return d === group ? (d === ',' ? '.' : ',') : d;
+}
+
+export function fractionDigits(currency: string): number {
+  try {
+    return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+  } catch {
+    return 2;
+  }
+}
+
+function localeGroup(locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale).formatToParts(1234567).find((p) => p.type === 'group')?.value ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Never more discount than the real one: 40.9% reads −40%. (The epsilon keeps an exact 40% from float noise.) */
+const floorPct = (x: number) => Math.floor(x * 100 + 1e-9);
+
+export function annualSavingPct(monthly: number, annual: number): number {
+  return floorPct(1 - annual / (monthly * 12));
+}
+
+/** Apple and Google require these links next to the subscribe button (disclosure.ts: legalUrl opens the player's language). */
+export { LEGAL } from './disclosure';
