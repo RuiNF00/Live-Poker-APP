@@ -60,6 +60,7 @@ export function Pricing({ c, stores }: { c: LandingCopy; stores: StoreLinks }) {
           {c.freeCta}
         </a>
       </div>
+      <p className="lp-fine lp-center">{c.recordsOnly}</p>
       <p className="lp-fine lp-center">{c.storeOnly}</p>
     </div>
   );

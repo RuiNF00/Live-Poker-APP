@@ -5,7 +5,7 @@ import type { SharedHand } from './types';
 export const DEMO_SHARE: SharedHand = {
   id: 'demo',
   payload: SAMPLE_TOURNAMENT_HAND,
-  title: 'AQ suited vs 3-bet do big stack',
+  title: 'AQs vs big stack',
   revealAll: false,
   quiz: { street: 'turn', actionIndex: 1 },
   allowComments: true,

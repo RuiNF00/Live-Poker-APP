@@ -21,7 +21,7 @@ const FACTS: [string, string][] = [
   ['Product', `${brand.name}, a hand log and replayer for live poker players`],
   ['Platforms', 'iPhone and Android'],
   ['Launch', LAUNCH],
-  ['Languages', 'English, European Portuguese, Brazilian Portuguese and Spanish from day one; dedicated launches in Brazil and Spanish-speaking markets in early 2027'],
+  ['Languages', 'English, European Portuguese, Brazilian Portuguese and Spanish'],
   ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan'],
   ['Founder', 'Rui, a live tournament player'],
   ['Based in', 'Portugal'],
@@ -38,19 +38,17 @@ const FEATURES: [string, string][] = [
   LIVE_FEATURES.swaps
     ? ['Backer and swap accounts', 'Record the action you sold, makeup and swaps agreed with other players. Records and accounts only: no money moves through the app.']
     : ['Backer accounts', 'Record the action you sold, makeup and a statement for each backer. Records and accounts only: no money moves through the app.'],
+  ['Bring your history', 'Import from the app you use today, from CSV.'],
+  ['Encrypted backup, free', 'Cloud backup encrypted on your phone with a recovery code. No account.'],
   ['Privacy built in', 'Hide the amounts with one tap, lock the app with Face ID and export or erase everything.'],
 ];
 
+// Only the 4 approved for the press in marketing/kit-imprensa.md: the others show amounts.
 const SHOTS: [number, string][] = [
   [1, 'Log a hand in seconds'],
   [2, 'Replay every street'],
   [3, 'Share it and ask your friends'],
-  [4, 'Find any hand later'],
-  [5, 'The tournament and level, remembered'],
-  [6, 'Your bankroll, no spreadsheets'],
-  [7, 'The whole trip, expenses included'],
-  [8, "Notes on who's at your table"],
-  [9, 'Everyone you back, in one place'],
+  [4, 'Your festival, in one story'],
 ];
 
 const LOGOS: [string, string, string][] = [
@@ -112,18 +110,20 @@ export default function PressPage() {
           </p>
         </section>
 
-        <section className="pk-section" aria-labelledby="quote">
-          <h2 id="quote">From the founder</h2>
-          <figure className={`pk-quote${QUOTE_APPROVED ? '' : ' draft'}`}>
-            {!QUOTE_APPROVED && <span className="pk-draft">Draft · awaiting Rui&apos;s approval</span>}
-            <blockquote>
-              &ldquo;I play live tournaments and I used to write my hands in my phone&apos;s notes. I never looked at them again.
-              I wanted something fast enough to use between levels and good enough that my friends would actually open the hand and
-              tell me what they think.&rdquo;
-            </blockquote>
-            <figcaption>Rui, founder of {brand.name}</figcaption>
-          </figure>
-        </section>
+        {/* Hidden, not shown as a draft, until Rui approves it: the kit and the outreach link here. */}
+        {QUOTE_APPROVED && (
+          <section className="pk-section" aria-labelledby="quote">
+            <h2 id="quote">From the founder</h2>
+            <figure className="pk-quote">
+              <blockquote>
+                &ldquo;I play live tournaments and I used to write my hands in my phone&apos;s notes. I never looked at them again.
+                I wanted something fast enough to use between levels and good enough that my friends would actually open the hand and
+                tell me what they think.&rdquo;
+              </blockquote>
+              <figcaption>Rui, founder of {brand.name}</figcaption>
+            </figure>
+          </section>
+        )}
 
         <section className="pk-section" aria-labelledby="features">
           <h2 id="features">What it does</h2>
