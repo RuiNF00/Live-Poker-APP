@@ -129,6 +129,36 @@ function currencyMarks(local: Bankroll[], incoming: Bankroll[], d: Record<string
 }
 
 /**
+ * Bankrolls the other phone deleted, as they leave this one (`before` → `after`): what still points
+ * at one here (a deposit made on this phone before the copy) moves to the first other bankroll in
+ * its currency, as deleteBankroll did there, with a fresh edit time so the other phone takes the
+ * move. With none left in that currency the bankroll stays, edited now, so the delete can't take it:
+ * a deposit is never lost nor counted in another currency. `to` says where things go.
+ */
+export function rehomeDeleted(before: Bankroll[], after: Bankroll[], sessions: Pick<Session, 'bankrollId' | 'currency'>[], transfers: Pick<Transfer, 'bankrollId'>[], now: number): { bankrolls: Bankroll[]; to: Map<string, string> } {
+  const to = new Map<string, string>();
+  const kept = new Set(after.map((b) => b.id));
+  const gone = before.filter((b) => !kept.has(b.id));
+  if (!gone.length) return { bankrolls: after, to };
+  const used = new Set<string>(transfers.map((x) => x.bankrollId));
+  for (const x of sessions) if (x.bankrollId) used.add(x.bankrollId);
+  const back: Bankroll[] = [];
+  for (const g of gone) {
+    if (!used.has(g.id)) continue;
+    const home = sortBankrolls(after).find((b) => b.currency === g.currency);
+    if (home) to.set(g.id, home.id);
+    else back.push({ ...g, updatedAt: now });
+  }
+  return { bankrolls: back.length ? [...after, ...back] : after, to };
+}
+
+/** Sessions or transfers moved by rehomeDeleted, with a fresh edit time. The same array when nothing moves. */
+export function rehome<T extends { bankrollId?: string; updatedAt?: number }>(list: T[], to: Map<string, string>, now: number): T[] {
+  if (!to.size || !list.some((x) => x.bankrollId && to.has(x.bankrollId))) return list;
+  return list.map((x) => (x.bankrollId && to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)!, updatedAt: now } : x));
+}
+
+/**
  * A separated copy next to the bankroll it was made from, now in the same currency (this phone's
  * own one in the other currency went, unused): the same bankroll twice. The copy folds into it,
  * with the copy's name and rules when it was edited later; `to` says where its sessions and
