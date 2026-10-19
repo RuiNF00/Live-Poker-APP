@@ -412,7 +412,9 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
   // Same id: already in Sweatbook. Repeats found by day and result are listed apart, below.
   const already = r.sessions.filter((s) => have.has(s.id)).length;
   const freshMoves = r.moves.filter((m) => !have.has(m.id) && !skip.has(m.id)).length;
-  const deposits = r.moves.filter((m) => m.kind === 'deposit').length;
+  // Only what will reach the balance: not those already here, nor repeats left out.
+  const entering = r.moves.filter((m) => !have.has(m.id) && !skip.has(m.id));
+  const deposits = entering.filter((m) => m.kind === 'deposit').length;
   const fileCurrencies = currenciesOf(r.sessions, r.moves, settings.currency);
   const [placement, setPlacement] = useState<Placement>(() => defaultPlacement(fileCurrencies, bankrolls, defaultBankroll));
   // A currency that showed up after a column change gets its default too.
@@ -459,14 +461,14 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
         ) : null}
 
         {missing ? <Banner tone="warn" icon="alert-circle" title={t('Falta a coluna «{field}»', { field: missing })} body={t('Escolhe-a em Colunas, mais abaixo.')} /> : null}
-        {r.moves.length ? (
+        {entering.length ? (
           <Card tone="inset" style={{ gap: 6, paddingVertical: S.md }}>
             <Note
               icon="swap-vertical"
-              text={t(r.moves.length === 1 ? '{list} entra no saldo da bankroll.' : '{list} entram no saldo da bankroll.', {
+              text={t(entering.length === 1 ? '{list} entra no saldo da bankroll.' : '{list} entram no saldo da bankroll.', {
                 list: [
                   deposits ? (deposits === 1 ? t('1 depósito') : t('{n} depósitos', { n: deposits })) : '',
-                  r.moves.length - deposits ? (r.moves.length - deposits === 1 ? t('1 levantamento') : t('{n} levantamentos', { n: r.moves.length - deposits })) : '',
+                  entering.length - deposits ? (entering.length - deposits === 1 ? t('1 levantamento') : t('{n} levantamentos', { n: entering.length - deposits })) : '',
                 ]
                   .filter(Boolean)
                   .join(t(' e ')),
@@ -498,7 +500,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
                   .join(' ')}
                 value={keepDups}
                 onChange={setKeepDups}
-                lines={3}
+                lines={6}
               />
               {/* Which ones, so two €100 tournaments lost on the same day can be told apart from a real repeat. */}
               {list
@@ -507,20 +509,27 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
                 .map((s) => {
                   const twin = dups.get(s.id)!;
                   const on = chosen.has(s.id);
+                  const line = [whenOf(s.startedAt), s.kind === 'mtt' ? t('Torneio') : 'Cash', s.venue].filter(Boolean).join(' · ');
+                  const like = t('Parecida com: {session}', { session: [twin.name, whenOf(twin.startedAt), twin.venue].filter(Boolean).join(' · ') });
+                  const amount = money(Math.round(profit(s) * 100) / 100, s.currency);
                   return (
                     <ListItem
                       key={s.id}
                       icon={on ? 'checkmark-circle' : 'ellipse-outline'}
                       iconColor={on ? C.good : C.muted}
                       title={s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
-                      subtitle={[
-                        [whenOf(s.startedAt), s.kind === 'mtt' ? t('Torneio') : 'Cash', s.venue].filter(Boolean).join(' · '),
-                        t('Parecida com: {session}', { session: [twin.name, whenOf(twin.startedAt), twin.venue].filter(Boolean).join(' · ') }),
-                      ].join('\n')}
-                      numberOfLines={4}
-                      right={<Amount value={profit(s)} text={money(Math.round(profit(s) * 100) / 100, s.currency)} />}
+                      // Two lines of their own: the hour and place of the match are the point, never cut.
+                      subtitle={
+                        <View style={{ gap: 2 }}>
+                          <T v="small">{line}</T>
+                          <T v="small">{like}</T>
+                        </View>
+                      }
+                      right={<Amount value={profit(s)} text={amount} />}
                       onPress={() => pick(s.id)}
-                      accessibilityLabel={(on ? t('Entra: {name}', { name: s.name }) : t('Fica de fora: {name}', { name: s.name }))}
+                      chevron={false}
+                      checked={on}
+                      accessibilityLabel={[s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'), line, amount, like, on ? t('Entra') : t('Fica de fora')].join(', ')}
                     />
                   );
                 })}
