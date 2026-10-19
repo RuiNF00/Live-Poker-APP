@@ -1807,6 +1807,8 @@ const en: Record<string, string> = {
   'Formulário': 'Form',
   'Galeria': 'Photos',
   'Ganhos': 'Winnings',
+  'Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).': "The whole document's amount; your backers' share can be reported on Form 5754 (US).",
+  'Inclui swaps e a tua parte dos pacotes de staking.': 'Includes swaps and your share of staking packages.',
   'Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).': 'Winnings and losses add up your winning and losing sessions, before expenses. Withheld: tax the casino kept from the prize (W-2G, 1042-S).',
   'Imposto retido ({currency})': 'Tax withheld ({currency})',
   'Imposto retido a recuperar: {amount}': 'Withheld tax to recover: {amount}',

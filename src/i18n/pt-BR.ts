@@ -836,6 +836,8 @@ const ptBR: Record<string, string> = {
   'Fica guardado para esta sala: da próxima vez já vem preenchido.': 'Fica salvo para esta sala: da próxima vez já vem preenchido.',
   'Ficheiro': 'Arquivo',
   'Ficou no outro telemóvel': 'Ficou no outro celular',
+  'Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).': 'Valor total do documento; a parte dos seus backers pode ser declarada com o formulário 5754 (EUA).',
+  'Inclui swaps e a tua parte dos pacotes de staking.': 'Inclui swaps e a sua parte dos pacotes de staking.',
   'Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).': 'Ganhos e perdas somam as sessões que você ganhou e as que perdeu, antes de despesas. Retido: imposto que o cassino reteve no prêmio (W-2G, 1042-S).',
   'Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.': 'Isto não é consultoria fiscal. São os números que você registrou, organizados por país. Confirme com um contador as regras do seu país e de onde você jogou.',
   'Não residentes nos EUA: 30% se o teu país não tem tratado. Pode pedir-se de volta até 3 anos depois.': 'Não residentes nos EUA: 30% se o seu país não tem tratado. Dá para pedir de volta até 3 anos depois.',
