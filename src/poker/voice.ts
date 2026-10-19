@@ -277,7 +277,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d+(?:\.\d+)?)\s*(bbs?)\b/g, '$1 bb');
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 / $2');
   // "Abre para 900, não, para 1100", "subo a 1000, perdón, a 1100": the amount said last stands.
-  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)/g, '');
+  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
   const sub: [RegExp, string | ((m: string) => string)][] = [
     // "O resto foge": the rest fold, it isn't "o resto" as in all-in.
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
@@ -320,6 +320,11 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     // "Toda a gente desiste" is pt-PT for everyone; "ninguém paga", "nobody calls": the rest fold.
     [/\btoda a gente\b/g, ' todos '],
     [/\b(?:ninguem|nadie|nobody|no one|noone) (?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
+    // "Passamos ao flop", "pasamos al turn": only the street changes.
+    [/\b(?:pasamos|passamos|vamos)(?: (?:a|ao|al|pro|pra|para o|para el|to the|to))? (?=flop|turn|river|rio\b)/g, ' , '],
+    [/\b(flop|turn|river) ?[.,:;]? ?(?:o |el |the )?\1\b/g, ' $1 '],
+    // "No 3-bet", "sem 3bet": nobody re-raised; nothing to add.
+    [/\b(?:no|sem|sin|without) [2-5]bet\b/g, ' , '],
     // "Pasamos los dos", "passamos": everyone checks.
     [/\b(?:pasamos|passamos|checamos|checkeamos|we (?:both )?check(?:ed)?)(?: (?:los|las|os|as) (?:dos|dois|duas|tres))?\b/g, ' todos check '],
     [/\b(?:nao (?:paga|pagou) ninguem|no (?:paga|pago) nadie)\b/g, ' foldall '],
