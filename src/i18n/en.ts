@@ -71,7 +71,7 @@ const en: Record<string, string> = {
   'Notas: ': 'Notes: ',
   // Sample hand
   'Boné azul': 'Blue cap',
-  'Reg alemão': 'German reg',
+  'Alemão': 'German',
   'Bolha a 58 com 54 pagos. O boné azul só tinha 3-betado uma vez em 3 horas. Fold era melhor?': 'Bubble with 58 left and 54 paid. Blue cap had only 3-bet once in 3 hours. Was fold better?',
   // Hands tab
   'Já usaste as mãos grátis de hoje': 'You\'ve used today\'s free hands',

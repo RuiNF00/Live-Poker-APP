@@ -12,6 +12,7 @@ import type { CardCode } from '@/poker/types';
 import { C, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
+import { FitText } from './ui';
 
 export interface SeatView {
   name: string;
@@ -234,9 +235,10 @@ export function Table({
                     s.folded && { opacity: 0.6 },
                   ]}>
                   <View style={styles.plateTop}>
-                    <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.name, s.hero && { color: C.accent }]} numberOfLines={1}>
+                    {/* A long name next to its position shrinks a little before it is cut (320 px). */}
+                    <FitText maxFontSizeMultiplier={TABLE_SCALE} style={[styles.name, s.hero && { color: C.accent }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                       {s.name}
-                    </Text>
+                    </FitText>
                     {s.pos && s.pos !== s.name ? (
                       <View style={styles.pos}>
                         <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.posText}>{s.pos}</Text>
