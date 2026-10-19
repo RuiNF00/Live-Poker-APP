@@ -159,6 +159,16 @@ describe('LocalOffers', () => {
     expect(await store.confirm(id, await seen(id))).toMatchObject({ confirmedAt: expect.any(String) });
   });
 
+  it('sharing the link again with the same terms, or a new title, keeps an open page valid (QA P2, 19 Oct)', async () => {
+    const { id, editToken } = await store.create(agreement());
+    const shown = await seen(id);
+    await tick();
+    expect(await store.update(id, editToken, agreement())).toBe(true);
+    expect(await store.update(id, editToken, agreement({ title: 'Outro' }))).toBe(true);
+    expect(await seen(id)).toBe(shown);
+    expect(await store.confirm(id, shown)).toMatchObject({ confirmedAt: expect.any(String) });
+  });
+
   it('needs the token to change or delete', async () => {
     const { id, editToken } = await store.create(agreement());
     expect(await store.update(id, 'wrong', agreement({ markup: 2 }))).toBe(false);

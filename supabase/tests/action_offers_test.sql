@@ -13,10 +13,16 @@ select confirmed_at as first_at from get_action_offer(:'oid') \gset
 select (confirm_action_offer(:'oid', :'v')->>'confirmed_at')::timestamptz = :'first_at'::timestamptz as confirm_idempotent;
 select confirm_action_offer('nope', now()) is null as confirm_unknown_null;
 select confirm_action_offer(:'oid', null) = '{"stale": true}'::jsonb as confirm_without_version_stale;
+-- The version rounded to the millisecond (through a JS Date) still confirms.
+select confirm_action_offer(:'oid', date_trunc('milliseconds', :'v'::timestamptz)) ? 'confirmed_at' as ms_version_confirms;
 
 -- A new title keeps the confirmation; new markup or events clear it.
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{title}', '"Outro"')) as title_updated from action_offers where id = :'oid';
 select confirmed_at = :'first_at'::timestamptz as title_keeps_confirmation from get_action_offer(:'oid');
+-- Neither a new title nor the same terms sent again (sharing the link again) make an open page stale.
+select update_action_offer(:'oid', :'otok', payload) as same_updated from action_offers where id = :'oid';
+select updated_at = :'v'::timestamptz as same_terms_keep_version from get_action_offer(:'oid');
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as same_terms_page_confirms;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{markup}', '1.2')) as markup_updated from action_offers where id = :'oid';
 select confirmed_at is null as markup_clears_confirmation from get_action_offer(:'oid');
 -- A page opened before the new markup can't confirm it: nothing is stamped.

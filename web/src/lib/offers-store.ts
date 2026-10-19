@@ -139,7 +139,9 @@ export class LocalOffers implements OffersStore {
     return this.mutate((d) => {
       const r = d[id];
       if (r?.editTokenHash !== sha256(editToken)) return false;
-      d[id] = { ...r, offer: a, confirmedAt: termsChanged(r.offer, a) ? null : r.confirmedAt, updatedAt: new Date().toISOString() };
+      // updatedAt is the version the backer's page confirms against: it moves only with the terms.
+      const changed = termsChanged(r.offer, a);
+      d[id] = { ...r, offer: a, confirmedAt: changed ? null : r.confirmedAt, updatedAt: changed ? new Date().toISOString() : r.updatedAt };
       return true;
     });
   }

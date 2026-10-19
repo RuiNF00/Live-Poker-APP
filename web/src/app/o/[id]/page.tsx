@@ -35,6 +35,7 @@ export default async function OfferPage({ params, searchParams }: Params & Searc
   if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
+  // version: updatedAt as the store gave it; the confirm compares it to the millisecond.
   return (
     <>
       <OfferView id={id} locale={locale} agreement={rec.offer} initialConfirmedAt={rec.confirmedAt} version={rec.updatedAt} invite={invite} />
