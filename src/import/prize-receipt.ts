@@ -2,7 +2,7 @@
 // the phone's text recognition found in the photo. Fills a swap result: the prize, the place,
 // the event. Pure, so it can be tested: what can't be read is left out, never guessed.
 
-import { amounts, currencyOf, eventName } from './receipt';
+import { amounts, currencyOf, eventName } from './receipt-text';
 
 export interface PrizeGuess {
   /** The whole prize, before any tax held back (the swap is on the prize). */
