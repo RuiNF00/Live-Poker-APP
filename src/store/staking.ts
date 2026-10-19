@@ -177,7 +177,9 @@ export interface BackerLedgerRow {
  */
 export function addOfferDue(l: BackerLedger, currency: string, due: number, back: number, rateTo: (from: string, to: string) => number | null) {
   if (!due && !back) return;
-  if (!l.rows.length) l.currency = currency;
+  // An empty deal (no sessions, payments or earlier festival) takes the first festival's currency;
+  // later ones convert into it, and payments already made keep the one they were counted in.
+  if (!l.rows.length && !l.paid && !l.unpaid && !l.balance) l.currency = currency;
   const x = rateTo(currency, l.currency);
   if (x === null && !l.missing.includes(currency)) l.missing.push(currency);
   const k = x ?? 1;

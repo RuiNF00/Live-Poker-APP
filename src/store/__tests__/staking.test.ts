@@ -465,3 +465,27 @@ test('festival action without a rate counts 1:1 and says which currency is missi
   assert.equal(n.currency, '$');
   assert.deepEqual(n.missing, []);
 });
+
+test('no sessions: a second festival in another currency converts into the first one (Bankroll P2)', () => {
+  const r = (a: string, b: string) => (a === b ? 1 : a === '$' && b === '€' ? 0.9 : a === '€' && b === '$' ? 1.1 : null);
+  const l = backerLedger('b1', [], [], []);
+  addOfferDue(l, '$', 1000, 0, r);
+  addOfferDue(l, '€', 100, 0, r);
+  assert.equal(l.currency, '$');
+  assert.equal(Math.round(l.unpaid * 100) / 100, 1110);
+  const m = backerLedger('b1', [], [], []);
+  addOfferDue(m, '$', 1000, 0, r);
+  addOfferDue(m, 'Kč', 100, 0, r);
+  assert.equal(m.currency, '$');
+  assert.deepEqual(m.missing, ['Kč']);
+  // A refund alone also fixes the currency, and payments already made keep theirs.
+  const n = backerLedger('b1', [], [], []);
+  addOfferDue(n, '$', 0, 50, r);
+  addOfferDue(n, '€', 100, 0, r);
+  assert.equal(n.currency, '$');
+  const pay: BackerPayment[] = [{ id: 'p', backerId: 'b1', amount: 200, at: 1 } as BackerPayment];
+  const o = backerLedger('b1', [], [], pay, undefined, { table: {}, fallback: '€' });
+  addOfferDue(o, '$', 1000, 0, r);
+  assert.equal(o.currency, '€');
+  assert.equal(o.unpaid, 900);
+});
