@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { buildReplay, stakesText, type Card, type HandRecord } from '@livepoker/hand-format';
+import { buildReplay, stakesText, withoutMoney, type Card, type HandRecord } from '@livepoker/hand-format';
 import { brand } from '@/config/brand';
 import { heroLastSpot, resolveHand } from '@/lib/hand';
 import { numberTag, type Locale } from '@/lib/i18n';
@@ -9,7 +9,6 @@ import { previewCopy } from '@/lib/preview-copy';
 import type { QuizSpot, SharedHand } from '@/lib/types';
 import { SUIT_COLORS, SUIT_PATHS } from '@/components/PlayingCard';
 import { MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX } from '@/components/Brand';
-import { withoutMoney } from './no-money';
 
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -136,11 +135,14 @@ export async function handOgImage(share: SharedHand | null, challenge: boolean, 
   const heroW = heroCards.length > 2 ? 104 : 150;
   const boardW = heroCards.length > 2 ? 84 : 96;
   const situation = hand && quiz ? spotLine(hand, quiz, locale) : null;
-  const headline = quiz ? c.challengeHeadline : share?.title || c.headline;
-  const subline = quiz
-    ? // The spot is what makes a friend tap; the title is already in the link's text.
-      [situation, share?.title].filter(Boolean).join(' · ')
-    : [where, c.subline].filter(Boolean).join(' · ');
+  // A deleted, taken-down or broken link says so, like its page, instead of inviting to a hand that isn't there.
+  const headline = !hand ? c.notFound : quiz ? c.challengeHeadline : share?.title || c.headline;
+  const subline = !hand
+    ? c.goneBody
+    : quiz
+      ? // The spot is what makes a friend tap; the title is already in the link's text.
+        [situation, share?.title].filter(Boolean).join(' · ')
+      : [where, c.subline].filter(Boolean).join(' · ');
 
   return new ImageResponse(
     (
