@@ -28,7 +28,7 @@ import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { alive, DELETED_LISTS, joinDeleted, keyOf, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
-import { keepCuts, withCuts } from './staking';
+import { anonymousStake, keepCuts, withCuts } from './staking';
 import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
 import type { SwapGroup } from './swap-groups';
@@ -440,7 +440,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return l.map((s) => {
         const stakes = kept.get(s.id) ?? s.stakes;
         return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
-          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.bountiesKept ? { bountiesKept: true as const } : {}) } : x)), updatedAt: now }
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? anonymousStake(x) : x)), updatedAt: now }
           : s;
       });
     });

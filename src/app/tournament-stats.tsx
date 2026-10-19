@@ -121,7 +121,7 @@ export default function TournamentStatsScreen() {
               <Section title="Bounties">
                 <StatGrid cols={2}>
                   <Stat label={t('ROI sem bounties')} value={signedPct(((sum.net - sum.bounties) / sum.invested) * 100)} />
-                  <Stat label={t('Do retorno')} value={sum.net + sum.invested > 0 ? pct((sum.bounties / (sum.net + sum.invested)) * 100) : '—'} sub={hidden ? undefined : t('{amount} em bounties', { amount: money(sum.bounties, currency) })} />
+                  <Stat label={t('Dos prémios')} value={sum.net + sum.invested > 0 ? pct((sum.bounties / (sum.net + sum.invested)) * 100) : '—'} sub={hidden ? undefined : t('{amount} em bounties', { amount: money(sum.bounties, currency) })} />
                 </StatGrid>
               </Section>
             ) : null}

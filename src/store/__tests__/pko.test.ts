@@ -10,7 +10,7 @@ import { buildStatement, checkStatement } from '../../lib/backing-link';
 import { liveSnapshot } from '../../lib/live-link';
 import { taxReport } from '../../tax/tax-math';
 import { backedReturn, bountiesOf, gross, ownBounties, owedToBackers, profit, totals } from '../session-math';
-import { backerLedger, packageStates, pieceSteps, withCuts, withPackageBounties } from '../staking';
+import { anonymousStake, backerLedger, packageStates, pieceSteps, withCuts, withPackageBounties } from '../staking';
 import type { Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 
@@ -165,4 +165,22 @@ test('a backup with junk in the PKO fields never turns a result into NaN', () =>
   assert.equal(owedToBackers(s), 100);
   assert.equal(bountiesOf(mk({ cashOut: 500, tourney: { bounties: Number.NaN } })), 0);
   assert.ok(Number.isFinite(profit(mk({ cashOut: 500, bounties: 'x' as unknown as number }))));
+});
+
+test('deleting a backer keeps their piece as a plain sale, bounties term included', () => {
+  const x = { backerId: 'b1', packageId: 'p1', share: 20, markup: 1.1, cut: 12, bountiesKept: true as const, unpaid: true as const };
+  assert.deepEqual(anonymousStake(x), { share: 20, markup: 1.1, cut: 12, bountiesKept: true });
+  const s = mk({ cashOut: 1650, bounties: 450, stakes: [x] });
+  assert.equal(owedToBackers({ ...s, stakes: [anonymousStake(x)] }), owedToBackers(s), 'what the player owes does not change');
+  assert.deepEqual(anonymousStake({ share: 10, markup: 1 }), { share: 10, markup: 1 });
+});
+
+test('live link: each backer link knows its own term, so mixed packages are both right', () => {
+  const s = mk({ cashOut: 1000, bounties: 400, stakes: [{ backerId: 'a', share: 10, markup: 1, bountiesKept: true }, { backerId: 'b', share: 30, markup: 1 }] });
+  const snap = liveSnapshot(s, 'Rui', 0);
+  assert.equal(snap.bounties, 400);
+  // The page: mine × (cashOut − (k=1 ? bounties : 0)).
+  assert.equal((10 / 100) * (snap.cashOut - snap.bounties!), owedToBackers({ ...s, stakes: [s.stakes![0]] }));
+  assert.equal((30 / 100) * snap.cashOut, owedToBackers({ ...s, stakes: [s.stakes![1]] }));
+  assert.equal(liveSnapshot({ ...s, endedAt: undefined }, 'Rui', 0).bounties, undefined);
 });

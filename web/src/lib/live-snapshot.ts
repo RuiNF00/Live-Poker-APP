@@ -33,6 +33,8 @@ export interface LiveSnapshot {
   sold: number;
   /** PKO: the part of cashOut the backers have no piece of (bounties kept by the player). */
   kept?: number;
+  /** PKO: all the bounties, inside cashOut; a backer's link with k=1 has no piece of them. */
+  bounties?: number;
   hands: number;
   /** Day of a multi-day tournament, 1-based (1 from older apps). */
   day: number;
@@ -94,6 +96,8 @@ export function parseSnapshot(x: unknown): LiveSnapshot | 'offensive' | null {
   };
   const kept = snap.endedAt !== null ? num(o.kept, 0, snap.cashOut) : null;
   if (kept) snap.kept = kept;
+  const bounties = snap.endedAt !== null ? num(o.bounties, 0, snap.cashOut) : null;
+  if (bounties) snap.bounties = bounties;
   // Only a day that has ended can be in the bag.
   snap.bagged = o.bagged === true && snap.endedAt !== null && snap.kind === 'mtt';
   if ([snap.player, snap.name, snap.venue].some((s) => s && isOffensive(s))) return 'offensive';
@@ -112,5 +116,5 @@ export const RESULT_DELAY_MS = 3600_000;
 export function holdResult(s: LiveSnapshot, now = Date.now()): LiveSnapshot {
   // A bagged day has no result to hold: the stack is what backers want to see.
   if (!s.endedAt || s.bagged || now - s.endedAt >= RESULT_DELAY_MS) return s;
-  return { ...s, cashOut: 0, kept: undefined, finish: null, field: null, stack: 0, stackLog: [], heldUntil: s.endedAt + RESULT_DELAY_MS };
+  return { ...s, cashOut: 0, kept: undefined, bounties: undefined, finish: null, field: null, stack: 0, stackLog: [], heldUntil: s.endedAt + RESULT_DELAY_MS };
 }

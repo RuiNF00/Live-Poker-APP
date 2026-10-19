@@ -25,9 +25,9 @@ function note(title: string, body: string) {
 }
 
 /** `share`: one backer's %, after #p= so their page shows their own piece (the fragment never reaches the server). */
-async function shareLink(s: Session, id: string, share?: number) {
+async function shareLink(s: Session, id: string, share?: number, bountiesKept?: boolean) {
   const ref = await shareRef().catch(() => '');
-  const url = withLang(`${liveUrl(id)}?utm_source=app&utm_medium=backer_live${ref ? `&r=${encodeURIComponent(ref)}` : ''}`, variant) + (share ? `#p=${share}` : '');
+  const url = withLang(`${liveUrl(id)}?utm_source=app&utm_medium=backer_live${ref ? `&r=${encodeURIComponent(ref)}` : ''}`, variant) + (share ? `#p=${share}${bountiesKept ? '&k=1' : ''}` : '');
   const msg = t('Segue a minha sessão em direto: {name}{url}', { name: s.name ? s.name + '\n' : '', url });
   track('link_shared', { channel: 'backer_live' });
   if (Platform.OS === 'web') {
@@ -41,7 +41,7 @@ export function BackerLiveCard({ s }: { s: Session }) {
   // Named backers on this session: each can get the link with their own %.
   const named = (s.stakes ?? []).flatMap((x) => {
     const b = x.backerId ? backers.find((y) => y.id === x.backerId) : undefined;
-    return b ? [{ id: b.id, name: b.name, share: x.share }] : [];
+    return b ? [{ id: b.id, name: b.name, share: x.share, bountiesKept: !!x.bountiesKept }] : [];
   });
   const [busy, setBusy] = useState(false);
   // The session as it is now, not as it was at the tap: a stack typed while the link was being made stays.
@@ -133,7 +133,7 @@ export function BackerLiveCard({ s }: { s: Session }) {
       {s.live && named.length ? (
         <ChipRow>
           {named.map((b) => (
-            <Chip key={b.id} icon="paper-plane-outline" label={t('Enviar a {name} ({n}%)', { name: b.name, n: b.share })} onPress={() => shareLink(s, s.live!.id, b.share)} />
+            <Chip key={b.id} icon="paper-plane-outline" label={t('Enviar a {name} ({n}%)', { name: b.name, n: b.share })} onPress={() => shareLink(s, s.live!.id, b.share, b.bountiesKept)} />
           ))}
         </ChipRow>
       ) : null}

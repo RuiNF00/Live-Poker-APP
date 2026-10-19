@@ -46,6 +46,8 @@ export interface LiveSnapshot {
    * player), so `sold` × (cashOut − kept) is what they get. Absent when they share every bounty.
    */
   kept?: number;
+  /** PKO, ended: all the bounties, inside cashOut; a backer whose link says k=1 has no piece of them. */
+  bounties?: number;
   hands: number;
   /** Day of a multi-day tournament, 1-based. */
   day: number;
@@ -90,6 +92,7 @@ export function liveSnapshot(s: Session, player: string, hands: number, now = Da
     bagged: isBagged(s),
     updatedAt: now,
     ...keptOf(s),
+    ...(s.endedAt && bountiesOf(s) ? { bounties: Math.round(bountiesOf(s) * 100) / 100 } : null),
   };
 }
 

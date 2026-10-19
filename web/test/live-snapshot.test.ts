@@ -88,6 +88,9 @@ describe('PKO bounties kept by the player', () => {
   it('is held back with the prize', () => {
     const s = parseSnapshot({ ...ended, kept: 450 }) as LiveSnapshot;
     expect(holdResult(s, s.endedAt! + 1).kept).toBeUndefined();
+    const b = parseSnapshot({ ...ended, bounties: 450 }) as LiveSnapshot;
+    expect(b.bounties).toBe(450);
+    expect(holdResult(b, b.endedAt! + 1).bounties).toBeUndefined();
     expect(holdResult(s, s.endedAt! + RESULT_DELAY_MS).kept).toBe(450);
   });
 });

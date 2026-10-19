@@ -149,6 +149,11 @@ export function closePackage(p: StakePackage, makeup: number, carry: boolean, ne
   return { closed, next };
 }
 
+/** A deleted backer's piece, kept as a plain sale: the same share, markup, kept makeup cut and bounties term. */
+export function anonymousStake(x: Stake): Stake {
+  return { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.bountiesKept ? { bountiesKept: true as const } : {}) };
+}
+
 /**
  * The sessions whose stakes in this package change when its "bounties stay with you" term is set
  * as `kept`: every stake of the package carries the term, so the package's makeup stays coherent.

@@ -39,10 +39,13 @@ export function LiveView({
   // The player can send each backer the link with their own % after #p= (the fragment never
   // reaches the server): the page then shows that backer's piece instead of only the total sold.
   const [mine, setMine] = useState<number | null>(null);
+  // k=1: this backer's package leaves the bounties to the player (PKO).
+  const [noBounties, setNoBounties] = useState(false);
 
   useEffect(() => {
     const p = Number(new URLSearchParams(window.location.hash.slice(1)).get('p'));
     if (p > 0 && p <= 100) setMine(p);
+    setNoBounties(new URLSearchParams(window.location.hash.slice(1)).get('k') === '1');
   }, []);
 
   useEffect(() => {
@@ -140,7 +143,7 @@ export function LiveView({
           {/* The result above is the whole session's; backers own only their piece of the prize. */}
           {mine && s.cashOut ? (
             <p className="live-delta up">
-              {c.yourPrize(mine)} {money((mine / 100) * (s.cashOut - (s.kept ?? 0)))}
+              {c.yourPrize(mine)} {money((mine / 100) * (s.cashOut - (noBounties ? (s.bounties ?? 0) : 0)))}
             </p>
           ) : s.sold && s.cashOut ? (
             <p className="live-delta">
