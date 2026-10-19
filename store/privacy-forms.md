@@ -86,8 +86,8 @@ Declare only what was tested on an iPhone (source: `/mnt/project-files/design/au
 | App activity → Other user-generated content (shared hands, comments, optional cloud backup, optional live session page for backers, optional public profile bio and session cards, optional swaps, optional coaching links and comments, optional action-package agreements, optional cancellation feedback) | Yes | Yes (only when the user shares, comments, turns on backup, shares a session, makes a profile or types feedback) | App functionality, Analytics (feedback only) |
 | Financial info → Other financial info (amounts the user publishes on a live page, swap, public profile or action package; optional) | Yes | Yes | App functionality |
 | Personal info → Name (a nickname the user types: comment name, backer page nickname, profile display name and handle, coaching link names) | Yes | Yes | App functionality |
-| Financial info → Purchase history | Yes (RevenueCat; purchase and cancellation events from its webhook are usage events, #334) | Yes (only subscribers) | App functionality, Analytics |
-| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites; Expo push token, only if comment notices are on, #247; the random `EAS-Client-ID` install ID that expo-updates sends to u.expo.dev on every launch; the per-install ID ML Kit sends to Google) | No (the push token alone is optional) | App functionality, Analytics |
+| Financial info → Purchase history | Yes (RevenueCat; purchase and cancellation events from its webhook are usage events, #334) | No (RevenueCat: "the collection is required and can't be turned off") | App functionality, Analytics |
+| Device or other IDs | Yes (RevenueCat random app user ID; random install ID for usage events and invites; Expo push token, only if comment notices are on, #247; the random `EAS-Client-ID` install ID that expo-updates sends to u.expo.dev on every launch; the per-install ID ML Kit sends to Google; the random per-install ID Sentry sends with crash reports, only when crash reports are on) | No (the push token alone is optional) | App functionality, Analytics |
 | Audio → Voice or sound recordings | Yes (voice notes for story videos) | Yes | App functionality, **processed ephemerally: Yes** |
 | App activity → App interactions (first-party usage events, including the #305 launch metrics; also the referral check) | Yes | No | Analytics, App functionality |
 | App info and performance → Crash logs (Sentry, #166; switch in Settings → Os teus dados) | Yes | Yes (optional) | App functionality |
@@ -102,7 +102,7 @@ Processed ephemerally: No, except audio (Yes).
 - Privacy policy: `https://{{WEB_DOMAIN}}/privacy`
 - Ads: **No**: the app shows no ads.
 - App access: all functionality available without special access (paid features: give the reviewer a note that a test subscription can be bought with Play's license testers).
-- Target audience: **18 and over only**.
+- Target audience: **18 and over only**. Optional "Restrict Minor Access" box next to it: **Rui decides** (proposal: on; pesquisa/play-politicas-poker.md §2). Sentry has tracing off (`tracesSampleRate: 0`), so it adds nothing to Diagnostics.
 - Content rating (IARC): category "Utility, Productivity, Communication, or Other" (not Game). No real or simulated gambling. Users can interact / share content: **Yes**. Digital purchases: **Yes**.
 - Financial features: **None**. News: No. Health: No. Government: No.
 - Real-money gambling, games and contests: **No**.
