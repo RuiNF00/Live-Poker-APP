@@ -156,7 +156,8 @@ function BackerScreen() {
       t('Marcar como pago?'),
       square ? t('{name} pagou-te {amount} e ficam acertados.', { name: backer.name, amount }) : t('{name} pagou-te {amount}.', { name: backer.name, amount }),
       () => {
-        for (const x of apartDue) setLinePaid(x.offerId, x.lineId, true);
+        // No event of these packages started (unpaidLinesIn): every skipped one is not played.
+        for (const x of apartDue) setLinePaid(x.offerId, x.lineId, true, {});
         tap('medium');
       },
       t('Marcar como pago'),
