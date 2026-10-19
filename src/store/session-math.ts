@@ -132,16 +132,17 @@ export interface Breakdown {
 
 /** Results grouped by venue, game or any key (blank keys skipped), best first, in one currency. */
 export function breakdown(list: Session[], by: 'venue' | 'name' | ((s: Session) => string), currency = mainCurrency(list)): Breakdown[] {
-  const m = new Map<string, Breakdown & { mttInv: number; mttProfit: number }>();
+  const m = new Map<string, Breakdown & { mttInv: number; mttProfit: number; timedProfit: number }>();
   for (const s of inCurrency(list, currency)) {
     if (!s.endedAt) continue;
     const key = (typeof by === 'function' ? by(s) : s[by] || '').trim();
     if (!key) continue;
-    const b = m.get(key.toLowerCase()) ?? { key, sessions: 0, profit: 0, hours: 0, hourly: 0, mtts: 0, roi: null, mttInv: 0, mttProfit: 0 };
+    const b = m.get(key.toLowerCase()) ?? { key, sessions: 0, profit: 0, hours: 0, hourly: 0, mtts: 0, roi: null, mttInv: 0, mttProfit: 0, timedProfit: 0 };
     const p = profit(s);
     b.sessions++;
     b.profit += p;
     b.hours += playedMs(s) / 3600000;
+    if (playedMs(s) > 0) b.timedProfit += p;
     if (s.kind === 'mtt') {
       b.mtts++;
       b.mttInv += ownBuyIns(s);
@@ -150,8 +151,16 @@ export function breakdown(list: Session[], by: 'venue' | 'name' | ((s: Session) 
     m.set(key.toLowerCase(), b);
   }
   return [...m.values()]
-    .map(({ mttInv, mttProfit, ...b }) => ({ ...b, hourly: b.hours > 0 ? b.profit / b.hours : 0, roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null }))
+    .map(({ mttInv, mttProfit, timedProfit, ...b }) => ({ ...b, hourly: b.hours > 0 ? timedProfit / b.hours : 0, roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null }))
     .sort((a, b) => b.profit - a.profit);
+}
+
+/**
+ * The profit of the sessions with time played: the only ones an hourly rate can be over. Imported
+ * sessions with no hours count in the profit, never in €/h (Pesquisa: queixas-apps-poker.md).
+ */
+export function timedProfit(list: Session[]): number {
+  return list.reduce((a, s) => a + (playedMs(s) > 0 ? profit(s) : 0), 0);
 }
 
 export interface Totals {
@@ -196,7 +205,7 @@ export function totals(list: Session[], currency?: string): Totals {
     profit: p,
     invested: inv,
     hours,
-    hourly: hours > 0 ? p / hours : 0,
+    hourly: hours > 0 ? timedProfit(done) / hours : 0,
     roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null,
     itm: mtts.length ? (mtts.filter((s) => s.cashOut > 0).length / mtts.length) * 100 : null,
     best: profits.length ? Math.max(...profits) : 0,

@@ -5,7 +5,7 @@
 import { locale, t } from '@/i18n';
 import { rawMoney } from '@/poker/format';
 
-import { mainCurrency, playedMs, profit } from './session-math';
+import { mainCurrency, playedMs, profit, timedProfit } from './session-math';
 import type { Session } from './types';
 
 const H = 3600000;
@@ -81,7 +81,7 @@ export function monthRecap(sessions: Session[], key: string, currency?: string):
     sessions: list.length,
     hours,
     profit: total,
-    hourly: hours > 0 ? total / hours : 0,
+    hourly: hours > 0 ? timedProfit(list) / hours : 0,
     bbHourly: cashHours >= MIN_BB_HOURS ? cash.reduce((a, x) => a + x.profit / x.session.bb, 0) / cashHours : null,
     cashSessions: cash.length,
     cashHours,
@@ -129,7 +129,7 @@ export function compareMonths(sessions: Session[], key: string, currency: string
     history: recaps.map((r) => ({ key: r.key, profit: r.profit, hours: r.hours })),
     prev: p.sessions > 0 ? p : null,
     avg: earlier.length
-      ? { profit: earlier.reduce((a, r) => a + r.profit, 0) / earlier.length, hours: hrs / earlier.length, hourly: hrs > 0 ? earlier.reduce((a, r) => a + r.profit, 0) / hrs : 0, months: earlier.length }
+      ? { profit: earlier.reduce((a, r) => a + r.profit, 0) / earlier.length, hours: hrs / earlier.length, hourly: hrs > 0 ? earlier.reduce((a, r) => a + r.hourly * r.hours, 0) / hrs : 0, months: earlier.length }
       : null,
     rank: played.filter((r) => r.profit > me.profit).length + 1,
     of: played.length,

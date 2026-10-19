@@ -5,7 +5,7 @@
 
 import type { Hand } from '@/poker/types';
 import { downswings, type Downswing } from '@/store/results-math';
-import { mainCurrency, ownBuyIns, playedMs, profit } from '@/store/session-math';
+import { mainCurrency, ownBuyIns, playedMs, profit, timedProfit } from '@/store/session-math';
 import { weekStart, type Pause } from '@/store/streak';
 import type { Session } from '@/store/types';
 
@@ -199,6 +199,8 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
     const h = list.reduce((a, s) => a + hoursOf(s), 0);
     if (list.length < STAKE_MIN_SESSIONS || h < STAKE_MIN_HOURS) continue;
     const p = list.reduce((a, s) => a + profit(s), 0);
+    // Per hour: only what sessions with hours made (imported ones with a date only have none).
+    const timed = timedProfit(list);
     const s0 = list[0];
     const spent = list.reduce((a, s) => a + ownBuyIns(s), 0);
     stakes.push({
@@ -210,8 +212,8 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
       sessions: list.length,
       hours: h,
       profit: p,
-      hourly: p / h,
-      bbPerHour: s0.kind === 'cash' && s0.bb ? p / s0.bb / h : null,
+      hourly: timed / h,
+      bbPerHour: s0.kind === 'cash' && s0.bb ? timed / s0.bb / h : null,
       roi: s0.kind === 'mtt' && spent ? p / spent : null,
     });
   }
@@ -242,7 +244,7 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
     topVenue,
     countries,
     profit: total,
-    hourly: mainHours >= 1 ? total / mainHours : null,
+    hourly: mainHours >= 1 ? timedProfit(main) / mainHours : null,
     best,
     score,
     stakes,
