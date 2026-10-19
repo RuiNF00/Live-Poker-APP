@@ -6,7 +6,7 @@ select id as oid, edit_token as otok from create_action_offer('{"v":1,"player":"
 select last_event_at = to_timestamp(1790100000) as last_event_set from action_offers where id = :'oid';
 select payload->>'backer' = 'Ana' and confirmed_at is null as readable_unconfirmed from get_action_offer(:'oid');
 
--- Confirming is idempotent: the first time stays. It needs the version the page showed (20261017400000).
+-- Confirming is idempotent: the first time stays. It needs the version the page showed (20261019060000).
 select updated_at as v from get_action_offer(:'oid') \gset
 select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as confirmed;
 select confirmed_at as first_at from get_action_offer(:'oid') \gset
