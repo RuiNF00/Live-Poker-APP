@@ -812,7 +812,7 @@ const ARTICLES: Article[] = [
       title: 'Há um plano vitalício?',
       summary: 'Há, para quem não quer uma subscrição. Aparece ao cancelar.',
       body: [
-        'O Pro é uma subscrição mensal ou anual. Para quem prefere pagar uma vez, há o Pro para sempre, por 499 US$ (o preço na tua moeda é o da loja).',
+        'O Pro é uma subscrição mensal ou anual. Para quem prefere pagar uma vez, há o Pro para sempre. O preço é o que a loja mostra na tua moeda.',
         'Não está no ecrã do Pro. Aparece quando cancelas e escolhes «Não quero uma subscrição»:',
         {
           steps: [
@@ -830,7 +830,7 @@ const ARTICLES: Article[] = [
       title: 'Is there a lifetime plan?',
       summary: "Yes, for people who don't want a subscription. It shows when you cancel.",
       body: [
-        'Pro is a monthly or annual subscription. If you prefer to pay once, there is Pro for good, for US$499 (the price in your currency is the store’s).',
+        'Pro is a monthly or annual subscription. If you prefer to pay once, there is Pro for good. The price is the one the store shows in your currency.',
         "It isn't on the Pro screen. It shows when you cancel and pick “I don't want a subscription”:",
         {
           steps: [

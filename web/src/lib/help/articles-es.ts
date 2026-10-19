@@ -314,7 +314,7 @@ export const ES: Record<string, ArticleText> = {
     title: '¿Hay un plan vitalicio?',
     summary: 'Sí, para quien no quiere suscripción. Aparece al cancelar.',
     body: [
-      'El Pro es una suscripción mensual o anual. Si prefieres pagar una vez, existe Pro para siempre, por 499 US$ (el precio en tu moneda es el de la tienda).',
+      'El Pro es una suscripción mensual o anual. Si prefieres pagar una vez, existe Pro para siempre. El precio es el que muestra la tienda en tu moneda.',
       'No está en la pantalla del Pro. Aparece cuando cancelas y eliges «No quiero una suscripción»:',
       {
         steps: [
