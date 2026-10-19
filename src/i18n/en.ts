@@ -1280,6 +1280,8 @@ const en: Record<string, string> = {
   'deve-te': 'owes you',
   'Marcar como pago': 'Mark as paid',
   'Pagaste {amount} a {name} e ficam acertados.': 'You paid {name} {amount} and you are square.',
+  'Câmbio escrito: {list} · mudar ›': 'Your rate: {list} · change ›',
+  'Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.': 'To send the statement or record the payment, the exchange rate for {list} is needed.',
   '{name} pagou-te {amount}.': '{name} paid you {amount}.',
   '{name} pagou-te {amount} e ficam acertados.': '{name} paid you {amount} and you are square.',
   'Pagamento de outro valor': 'Pay a different amount',

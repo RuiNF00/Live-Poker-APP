@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, inFestivalPackage, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, covers, inFestivalPackage, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
@@ -252,4 +252,25 @@ test('a piece marked paid after an event was skipped: that event is never refund
   // A package with an event already in a session is left to the package screen (its stake changes too).
   const fest = (id: string) => (id === F.id ? F : undefined);
   assert.deepEqual(unpaidLinesIn([pkg([line])], 'b1', [F.currency], fest, () => ({ '2': 's1' })), []);
+});
+
+test('skipped, then paid, then played after all: that event was never paid for, so it is owed (QA P1, 19 Oct)', () => {
+  const line = { id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 };
+  // Event 2 skipped, the piece paid (event 3 only: 6 000), then event 2 played after all.
+  const o = { ...pkg([line]), skipped: ['2'] };
+  const paid = { ...line, paid: true, paidSkipped: ['2'] };
+  assert.equal(covers(paid, '2'), false);
+  assert.equal(covers(paid, '3'), true);
+  // Its session's stake counts against the backer; the others stay paid.
+  assert.equal(stakesFor([{ ...o, lines: [paid] }], F.id, '2')[0].unpaid, true);
+  assert.equal(stakesFor([{ ...o, lines: [paid] }], F.id, '3')[0].unpaid, undefined);
+  const stake = [{ backerId: 'b1', packageId: 'p1', share: 10, markup: 1.2, unpaid: true as const }];
+  const st = lineSettlement(F, o, paid, { '2': 's1' }, [session('s1', 0, stake)], 0);
+  // Not «Acertado | (pago)»: 3 120 still to pay, nothing refunded.
+  assert.deepEqual([st.paid, st.cost, st.refund, st.net], [false, 3120, 0, -3120]);
+  assert.equal(pendingCost(F, o, paid, { '2': 's1' }), 0);
+  assert.equal(missedRefund(F, o, paid, { '2': 's1' }), 0);
+  // Paid with nothing skipped: as before.
+  const all = lineSettlement(F, pkg([line]), { ...line, paid: true }, { '2': 's1' }, [session('s1', 0, [{ ...stake[0], unpaid: undefined }])], 0);
+  assert.deepEqual([all.paid, all.cost, all.net], [true, 9120, 0]);
 });

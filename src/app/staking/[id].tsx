@@ -97,6 +97,15 @@ function BackerScreen() {
   const ratesNow = () => offerRatesNow(backer.id, cur, offers, (fid) => planFestival(allFestivals(), fid)?.currency, (from, to, at) => rate(fx.table, from, to, at, fx.manual));
   // Currencies the ECB doesn't publish never get a rate with the signal: the player types theirs here (QA P2).
   const typedApart = apart.filter((c) => CURRENCY_INFO[c]?.ecb === false);
+  // Rates already typed for this backer's festivals: shown, and changed here too (QA P2: nowhere else had them).
+  const typedSet = [
+    ...new Set(
+      offers
+        .filter((o) => o.lines.some((x) => x.backerId === backer.id))
+        .map((o) => planFestival(allFestivals(), o.festivalId)?.currency ?? '')
+        .filter((c) => CURRENCY_INFO[c]?.ecb === false && (settings.fxManual?.[isoOf(c) ?? c] ?? 0) > 0),
+    ),
+  ];
   // Festival pieces with no rate, still to pay for: «Marcar como pago» marks them paid (QA P2).
   const apartDue = unpaidLinesIn(offers, backer.id, apart, (fid) => planFestival(allFestivals(), fid), (fid) => getPlan(fid).sessions);
   const mine = packages.filter((p) => p.backerId === backer.id).sort((a, b) => Number(!!a.closedAt) - Number(!!b.closedAt) || b.createdAt - a.createdAt);
@@ -159,7 +168,7 @@ function BackerScreen() {
     // Festival action with no rate yet: the text and the link would show less than the real balance.
     if (apart.length)
       return typedApart.length
-        ? tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('O BCE não publica {list}. Escreve o teu câmbio e envia outra vez.', { list: typedApart.map(curName).join(', ') }), { label: t('Escrever o câmbio'), ask: t('Escrever o câmbio?'), run: () => setTyping(true) })
+        ? tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('O BCE não publica {list}. Escreve o teu câmbio e envia outra vez.', { list: typedApart.map(curName).join(', ') }), { label: t('Escrever o câmbio'), ask: t('Escrever o câmbio?'), run: gate(() => setTyping(true)) })
         : tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('Sem ele, as contas que o backer recebe ficavam incompletas. Com rede, ou com o câmbio escrito no Bankroll, envia outra vez.'));
     sending.current = true;
     try {
@@ -301,11 +310,18 @@ function BackerScreen() {
             <T v="small" color={C.accent} onPress={gate(() => setTyping(true))} accessibilityRole="button" style={{ textAlign: 'center' }}>
               {t('O BCE não publica {list}: escreve o teu câmbio ›', { list: typedApart.map(curName).join(', ') })}
             </T>
+          ) : typedSet.length ? (
+            <T v="small" color={C.accent} onPress={gate(() => setTyping(true))} accessibilityRole="button" style={{ textAlign: 'center' }}>
+              {t('Câmbio escrito: {list} · mudar ›', { list: typedSet.map((c) => `1 € = ${num(settings.fxManual?.[isoOf(c) ?? c] ?? 0)} ${curName(c)}`).join(', ') })}
+            </T>
           ) : null}
-          {/* Known before the tap: the statement waits for the rate (Design P3). */}
+          {/* Known before the tap: the statement waits for the rate (Design P3). With only an amount apart to
+              settle and no piece to mark paid, recording it waits for the rate too (QA P2). */}
           {apart.length ? (
             <T v="tiny" color={C.warn} style={{ textAlign: 'center' }}>
-              {t('Para enviar as contas, falta o câmbio de {list}.', { list: apart.map(curName).join(', ') })}
+              {square && head.apart && !apartDue.length
+                ? t('Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.', { list: apart.map(curName).join(', ') })
+                : t('Para enviar as contas, falta o câmbio de {list}.', { list: apart.map(curName).join(', ') })}
             </T>
           ) : null}
           {backer.page ? (
@@ -552,7 +568,7 @@ function BackerScreen() {
       />
       <Sheet visible={typing} title={t('Câmbio escrito por ti')} onClose={() => setTyping(false)}>
         <ManualRatesForm
-          codes={typedApart}
+          codes={typedApart.length ? typedApart : typedSet}
           initial={settings.fxManual ?? {}}
           onSave={(fxManual) => {
             setSettings({ fxManual });

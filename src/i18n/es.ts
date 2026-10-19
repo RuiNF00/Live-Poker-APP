@@ -1184,6 +1184,8 @@ const es: Record<string, string> = {
   'deve-te': 'te debe',
   'Marcar como pago': 'Marcar como pagado',
   'Pagaste {amount} a {name} e ficam acertados.': 'Pagaste {amount} a {name} y quedan a mano.',
+  'Câmbio escrito: {list} · mudar ›': 'Tu tipo de cambio: {list} · cambiar ›',
+  'Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.': 'Para enviar las cuentas o registrar el pago, falta el tipo de cambio de {list}.',
   '{name} pagou-te {amount}.': '{name} te pagó {amount}.',
   '{name} pagou-te {amount} e ficam acertados.': '{name} te pagó {amount} y quedan a mano.',
   'Pagamento de outro valor': 'Pago de otro importe',
