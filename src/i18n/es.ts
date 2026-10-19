@@ -3492,7 +3492,7 @@ const es: Record<string, string> = {
   'Restam {n}': 'Quedan {n}',
   '{n} inscritos': '{n} inscritos',
   'Nota: {text}': 'Nota: {text}',
-  'Toca no microfone do teclado e diz o que mudou: o stack, o nível, um rebuy, quantos restam. Também podes escrever.': 'Toca el micrófono del teclado y di qué cambió: tu stack, el nivel, una recompra, cuántos quedan. También puedes escribirlo.',
+  'Toca no microfone do teclado e diz o que mudou: o stack, o nível, um rebuy, quantos restam. Também podes escrever.': 'Toca el micrófono del teclado y di qué cambió: tu stack, el nivel, un rebuy, cuántos quedan. También puedes escribirlo.',
   'O que mudou, por palavras tuas': 'Qué cambió, con tus palabras',
   'Nível 12, stack 45 mil, restam 80': 'Nivel 12, stack 45 mil, quedan 80',
   'Ainda não percebemos. Experimenta «stack 45 mil» ou «nível 12».': 'Aún no lo entendimos. Prueba «stack 45 mil» o «nivel 12».',

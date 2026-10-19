@@ -1808,6 +1808,7 @@ const ptBR: Record<string, string> = {
   'Por agora só guardamos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por enquanto só registramos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.',
   'Toca no microfone do teclado e diz o que mudou: o stack, o nível, um rebuy, quantos restam. Também podes escrever.': 'Toque no microfone do teclado e diga o que mudou: o stack, o nível, um rebuy, quantos restam. Você também pode escrever.',
   'O que mudou, por palavras tuas': 'O que mudou, com suas palavras',
+  'Ainda não percebemos. Experimenta «stack 45 mil» ou «nível 12».': 'Ainda não entendemos. Tente «stack 45 mil» ou «nível 12».',
 };
 
 export default ptBR;
