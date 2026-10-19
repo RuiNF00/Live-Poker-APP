@@ -111,7 +111,7 @@ const ptBR: typeof pt = {
   youPaid: (amount: string) => `você pagou ${amount}`,
   saveTitle: 'Acompanhe todos os jogadores que você banca',
   saveBody: 'Salve estas contas no Sweatbook: você vê a ação em aberto, o que devem a você, o makeup e as sessões ao vivo de cada jogador, num só lugar.',
-  save: 'Salvar na minha Sweatbook',
+  save: 'Salvar no meu Sweatbook',
   noApp: 'Ainda não tem o app?',
   year: (y: number) => `O ano de ${y}`,
   outside: 'Fora de pacote',

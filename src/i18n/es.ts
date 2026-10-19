@@ -703,7 +703,7 @@ const es: Record<string, string> = {
   'Converte fichas em dinheiro tendo em conta os prémios que faltam: duplicar o stack não duplica o valor.': 'Convierte fichas en dinero según los premios que faltan: duplicar el stack no duplica su valor.',
   'M de Harrington': 'M de Harrington',
   'Lucro ÷ buy-ins': 'Ganancia ÷ buy-ins',
-  'Lucro a dividir pelo total gasto em buy-ins. 20% quer dizer 20 cêntimos de lucro por cada euro de buy-in.': 'Ganancia dividida entre el total gastado en buy-ins. 20% significa 20 céntimos de ganancia por cada euro de buy-in.',
+  'Lucro a dividir pelo total gasto em buy-ins. 20% quer dizer 20 cêntimos de lucro por cada euro de buy-in.': 'Ganancia dividida entre el total gastado en buy-ins. Un 20% significa 20 de ganancia por cada 100 de buy-in.',
   'Percentagem de torneios em que acabaste nos prémios.': 'Porcentaje de torneos en los que terminaste en premios.',
   'amostra pequena': 'muestra pequeña',
   'Toca num número para o explicar': 'Toca un número para ver qué es',

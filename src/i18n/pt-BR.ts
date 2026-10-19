@@ -550,7 +550,7 @@ const ptBR: Record<string, string> = {
   'Ou escreve-o aqui': 'Ou digite aqui',
   'Este link não tem contas da Sweatbook. Confirma que copiaste a mensagem toda.': 'Este link não tem contas do Sweatbook. Confira se copiou a mensagem toda.',
   'Segue quem bancas': 'Acompanhe quem você banca',
-  'Quando um jogador te envia as contas da Sweatbook, guarda o link aqui. Vês a ação em aberto, o que te deve, o makeup e as sessões em direto, de todos num só sítio.': 'Quando um jogador te envia as contas do Sweatbook, salve o link aqui. Veja a ação em aberto, o que te deve, o makeup e as sessões ao vivo, de todos em um só lugar.',
+  'Quando um jogador te envia as contas da Sweatbook, guarda o link aqui. Vês a ação em aberto, o que te deve, o makeup e as sessões em direto, de todos num só sítio.': 'Quando um jogador enviar as contas do Sweatbook, salve o link aqui. Você vê a ação em aberto, o que te devem, o makeup e as sessões ao vivo, de todos em um só lugar.',
   'Estás acertado com os jogadores': 'Você está acertado com os jogadores',
   'No total, os jogadores devem-te': 'No total, os jogadores te devem',
   'No total, deves aos jogadores': 'No total, você deve aos jogadores',
