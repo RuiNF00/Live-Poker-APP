@@ -17,11 +17,15 @@ const AMT = `(?:${CUR}\\s*${NUM}|${NUM}\\s*${CUR}(?!\\s*\\d)|${NUM})`;
 const AMOUNTS = new RegExp(`(?<![A-Za-z])${AMT}(?:\\s*\\/\\s*${AMT})*`, 'gi');
 const HAS_CUR = new RegExp(CUR, 'i');
 
+const MAX = 200;
+
 /** The text without amounts of money; numbers without a currency («Day 1A», «6-Max 2025», «1/2») stay. */
 export function withoutMoney(text: string | null | undefined): string {
+  // Names are short; a long one is cut first so no pattern below ever runs over a megabyte of spaces.
   return (text ?? '')
+    .slice(0, MAX)
     .replace(AMOUNTS, (m) => (HAS_CUR.test(m.replace(/\d/g, '')) ? ' ' : m))
-    .replace(/\s+\+\s+(?=\s|$)/g, ' ')
+    .replace(/(?<!\s)\s+\+\s+(?=\s|$)/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .replace(/^[\s·|,–+-]+|[\s·|,–+-]+$/g, '')
     .trim();

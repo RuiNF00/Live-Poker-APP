@@ -40,4 +40,12 @@ describe('link previews carry no money', () => {
     expect(withoutMoney(undefined)).toBe('');
     expect(withoutMoney(null)).toBe('');
   });
+
+  it('stays fast on a hostile name (a megabyte of spaces or pluses)', () => {
+    for (const bad of [' '.repeat(100_000) + 'x', 'a' + ' +'.repeat(50_000) + ' ', '€'.repeat(100_000), '1'.repeat(100_000) + '€']) {
+      const t0 = performance.now();
+      withoutMoney(bad);
+      expect(performance.now() - t0).toBeLessThan(50);
+    }
+  });
 });
