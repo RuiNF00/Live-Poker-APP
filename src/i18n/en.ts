@@ -3361,7 +3361,7 @@ const en: Record<string, string> = {
   'Muitos vídeos seguidos': 'Too many videos in a row',
   'Espera um pouco e tenta outra vez.': 'Wait a little and try again.',
   'O vídeo não ficou pronto': "The video isn't ready",
-  'Desta vez demorou demais a montar. Tenta outra vez.': 'It took too long to put together this time. Try again.',
+  'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': "We couldn't put the video together. Try again in a moment.",
   '{a} e {b}': '{a} and {b}',
 };
 

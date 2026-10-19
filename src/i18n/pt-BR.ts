@@ -1669,7 +1669,7 @@ const ptBR: Record<string, string> = {
   'Muitos vídeos seguidos': 'Muitos vídeos seguidos',
   'Espera um pouco e tenta outra vez.': 'Espere um pouco e tente de novo.',
   'O vídeo não ficou pronto': 'O vídeo não ficou pronto',
-  'Desta vez demorou demais a montar. Tenta outra vez.': 'Dessa vez demorou demais para montar. Tente de novo.',
+  'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'Não conseguimos montar o vídeo. Tente de novo daqui a pouco.',
   '{a} e {b}': '{a} e {b}',
 };
 

@@ -3352,10 +3352,10 @@ const es: Record<string, string> = {
   'Carrossel da viagem': 'Carrusel del viaje',
   'Não dá para reabrir este pacote': 'No se puede reabrir este paquete',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
-  'Muitos vídeos seguidos': 'Demasiados vídeos seguidos',
+  'Muitos vídeos seguidos': 'Demasiados videos seguidos',
   'Espera um pouco e tenta outra vez.': 'Espera un poco e inténtalo de nuevo.',
-  'O vídeo não ficou pronto': 'El vídeo no está listo',
-  'Desta vez demorou demais a montar. Tenta outra vez.': 'Esta vez tardó demasiado en montarse. Inténtalo de nuevo.',
+  'O vídeo não ficou pronto': 'El video no está listo',
+  'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'No pudimos montar el video. Inténtalo de nuevo en un rato.',
   '{a} e {b}': '{a} y {b}',
 };
 
