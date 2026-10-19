@@ -176,7 +176,7 @@ export async function getTrial(): Promise<{ start: number; end: number; willRene
 }
 
 /** The player's current plan, for the cancel flow. Null when not subscribed through a store (demo, promo days). */
-export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null } | null> {
+export async function getSubscription(): Promise<{ plan: PlanId; willRenew: boolean; product: string; ends: number | null; trial?: boolean } | null> {
   if (!LIVE) return null;
   try {
     const info = await (await rc()).getCustomerInfo();
@@ -188,7 +188,7 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
     // «Pagar uma vez» bought while a subscription still runs: the entitlement shows the lifetime
     // (it lasts longest), but the subscription keeps renewing until it is cancelled in the store.
     const sub = Object.values(info.subscriptionsByProductIdentifier ?? {}).find((x) => x.isActive && planOf(x.productIdentifier));
-    return sub ? { plan: planOf(sub.productIdentifier)!, willRenew: sub.willRenew, product: sub.productIdentifier, ends: sub.expiresDate ? Date.parse(sub.expiresDate) : null } : null;
+    return sub ? { plan: planOf(sub.productIdentifier)!, willRenew: sub.willRenew, product: sub.productIdentifier, ends: sub.expiresDate ? Date.parse(sub.expiresDate) : null, trial: sub.periodType === 'TRIAL' } : null;
   } catch {
     return null;
   }
