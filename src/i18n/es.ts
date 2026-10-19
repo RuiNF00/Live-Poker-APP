@@ -3505,6 +3505,7 @@ const es: Record<string, string> = {
   'Como ditar uma mão': 'Cómo dictar una mano',
   'Conta pela ordem em que aconteceu, como a contarias a um amigo. Não precisa de frases certas.': 'Cuéntala en el orden en que pasó, como se la contarías a un amigo. No hacen falta frases perfectas.',
   'A tua posição e as tuas cartas.': 'Tu posición y tus cartas.',
+  'Em PLO, começa por «PLO» ou «Omaha» e diz as quatro cartas.': 'En PLO, empieza con «PLO» u «Omaha» y di las cuatro cartas.',
   'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Cada acción en orden, con la cantidad: quién abre, quién paga, quién sube.',
   'As cartas de cada rua: flop, turn e river.': 'Las cartas de cada calle: flop, turn y river.',
   'No fim, o que mostraram, se mostraram.': 'Al final, lo que mostraron, si mostraron algo.',
@@ -3517,7 +3518,7 @@ const es: Record<string, string> = {
   'O stack de alguém dito no fim: diz antes da ação dele, «o UTG, com 12 mil, abre».': 'El stack de alguien dicho al final: dilo antes de su acción, «el UTG, con 12 mil, sube».',
   'Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».': 'Decimales dichos en palabras («uno coma dos»): di «1200» o «mil doscientos».',
   'Duas mãos de seguida: conta uma de cada vez.': 'Dos manos seguidas: cuéntalas de una en una.',
-  'Jogos que não sejam Hold\'em ou PLO de 4 cartas.': 'Juegos que no sean Hold\'em o PLO de 4 cartas.',
+  'Jogos que não sejam Hold\'em ou PLO (Omaha de 4 cartas, sem Hi-Lo).': 'Juegos que no sean Hold\'em o PLO (Omaha de 4 cartas, sin Hi-Lo).',
   'Trocar o que escreveste pelo exemplo?': '¿Cambiar lo que escribiste por el ejemplo?',
   'Trocar': 'Cambiar',
 };

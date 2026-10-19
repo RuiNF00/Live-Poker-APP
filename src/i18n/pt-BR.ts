@@ -1816,6 +1816,7 @@ const ptBR: Record<string, string> = {
   // Como ditar uma mão (voice help)
   'Conta pela ordem em que aconteceu, como a contarias a um amigo. Não precisa de frases certas.': 'Conte na ordem em que aconteceu, como contaria a um amigo. Não precisa de frases certas.',
   'A tua posição e as tuas cartas.': 'Sua posição e suas cartas.',
+  'Em PLO, começa por «PLO» ou «Omaha» e diz as quatro cartas.': 'No PLO, comece com «PLO» ou «Omaha» e diga as quatro cartas.',
   'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Cada ação na ordem, com o valor: quem abre, quem paga, quem aumenta.',
   'Enganaste-te? Diz logo a seguir: «900, não, 1100».': 'Errou? Diga logo em seguida: «900, não, 1100».',
   'Toca num exemplo para o experimentar.': 'Toque em um exemplo para testar.',

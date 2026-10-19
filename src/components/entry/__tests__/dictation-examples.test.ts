@@ -16,7 +16,8 @@ test('each help example is read in full: position, cards, a valid line, no warni
       const r = handFromSpeech(text, base());
       const h = r.hand;
       assert.ok(r.posKnown, `${lang}: ${text}`);
-      assert.equal(h.players[h.hero].cards?.length, 2, `${lang}: ${text}`);
+      // «PLO.» or «Omaha» first: four cards (Registo P2).
+      assert.equal(h.players[h.hero].cards?.length, /^(PLO|Omaha)\b/.test(text) ? 4 : 2, `${lang}: ${text}`);
       assert.ok(line(h).length > 0, `${lang}: ${text}`);
       assert.equal(replay(h).invalidAt, null, `${lang}: ${text}`);
       const bad = r.notes.map((n) => n.code).filter((c) => c !== 'suits');

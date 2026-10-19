@@ -3511,6 +3511,7 @@ const en: Record<string, string> = {
   'Como ditar uma mão': 'How to dictate a hand',
   'Conta pela ordem em que aconteceu, como a contarias a um amigo. Não precisa de frases certas.': 'Tell it in the order it happened, the way you would tell a friend. It doesn\'t need perfect sentences.',
   'A tua posição e as tuas cartas.': 'Your position and your cards.',
+  'Em PLO, começa por «PLO» ou «Omaha» e diz as quatro cartas.': 'In PLO, start with “PLO” or “Omaha” and say all four cards.',
   'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Each action in order, with the amount: who opens, who calls, who raises.',
   'As cartas de cada rua: flop, turn e river.': 'The cards on each street: flop, turn and river.',
   'No fim, o que mostraram, se mostraram.': 'At the end, what was shown, if anything.',
@@ -3523,7 +3524,7 @@ const en: Record<string, string> = {
   'O stack de alguém dito no fim: diz antes da ação dele, «o UTG, com 12 mil, abre».': 'Someone\'s stack said at the end: say it before their action, “UTG, with 12k, opens”.',
   'Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».': 'Decimals said in words (“one point two”): say “1200” or “twelve hundred”.',
   'Duas mãos de seguida: conta uma de cada vez.': 'Two hands in a row: tell one at a time.',
-  'Jogos que não sejam Hold\'em ou PLO de 4 cartas.': 'Games other than Hold\'em or 4-card PLO.',
+  'Jogos que não sejam Hold\'em ou PLO (Omaha de 4 cartas, sem Hi-Lo).': 'Games other than Hold\'em or PLO (4-card Omaha, no Hi-Lo).',
   'Trocar o que escreveste pelo exemplo?': 'Replace what you wrote with the example?',
   'Trocar': 'Replace',
 };

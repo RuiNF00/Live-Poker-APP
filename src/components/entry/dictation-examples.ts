@@ -10,7 +10,7 @@ export const EXAMPLES: Record<DictationLang, string[]> = {
   'pt-PT': [
     'Estou no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago.',
     'Estou no big com nove oito. O botão abre para 1000, eu pago. Flop rei sete dois, passo, ele dispara 800, eu pago.',
-    'Estou no UTG com noves, abro para 1100, o botão paga e o big também. Flop dez cinco dois, o big passa, eu faço bet de 2000, o botão paga.',
+    'PLO. Estou no botão com ás ás rei dez, o UTG abre para 1000, eu subo o pote e ele paga.',
     'Estou no botão com A K, 15 bb. O UTG abre para 1000, eu vou all-in e ele paga.',
     'Estou no big com sete seis de espadas. O botão abre para 900, não, para 1100, eu pago.',
     'Estou no botão com ás rei. O UTG abre para 1000, eu pago. Flop rei sete dois, turn três, river quatro. Ele mostra dama dama.',

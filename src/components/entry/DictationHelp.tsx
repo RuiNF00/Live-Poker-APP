@@ -14,6 +14,7 @@ import { dictationLang, EXAMPLES } from './dictation-examples';
 export function DictationHelp({ onTry, onBack }: { onTry: (text: string) => void; onBack: () => void }) {
   const say = [
     t('A tua posição e as tuas cartas.'),
+    t('Em PLO, começa por «PLO» ou «Omaha» e diz as quatro cartas.'),
     t('Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.'),
     t('As cartas de cada rua: flop, turn e river.'),
     t('No fim, o que mostraram, se mostraram.'),
@@ -24,7 +25,7 @@ export function DictationHelp({ onTry, onBack }: { onTry: (text: string) => void
     t('O stack de alguém dito no fim: diz antes da ação dele, «o UTG, com 12 mil, abre».'),
     t('Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».'),
     t('Duas mãos de seguida: conta uma de cada vez.'),
-    t("Jogos que não sejam Hold'em ou PLO de 4 cartas."),
+    t("Jogos que não sejam Hold'em ou PLO (Omaha de 4 cartas, sem Hi-Lo)."),
   ];
   const back = (
     <Pressable onPress={onBack} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
