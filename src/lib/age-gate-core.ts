@@ -1,11 +1,10 @@
-// The US age-range check (Texas, Utah, Louisiana: Apple's Declared Age Range). Pure, so it can be
-// tested; the native calls are in age-gate.ts. Only a "confirmed adult" flag and the day it was
-// confirmed stay on the phone: never the range or the age, and nothing of it leaves the phone.
+// The US age-range check (Texas today; Utah and Louisiana in 2027: Apple's Declared Age Range). Pure,
+// so it can be tested; the native calls are in age-gate.ts. Nothing of the answer is stored: Texas
+// §121.055 wants what comes from the store deleted after verification, so the result lives only in
+// memory for this run of the app, and nothing of it leaves the phone.
 
-/** AsyncStorage key; "rl." so «Apagar todos os dados» removes it and the next launch asks again. */
-export const AGE_KEY = 'rl.age.v1';
-/** Asked again after a year, so a change in the rules or the account is picked up. */
-export const RECHECK_MS = 365 * 24 * 3_600_000;
+/** Where the first prototype kept a "confirmed adult" flag; removed at launch so test builds leave nothing. */
+export const OLD_AGE_KEY = 'rl.age.v1';
 
 export type AgeVerdict =
   /** Apple says the law doesn't apply here, or this iPhone can't tell (below iOS 26.2): no question asked. */
@@ -16,21 +15,6 @@ export type AgeVerdict =
   | 'declined'
   /** Not signed in to an Apple account, no answer, or an error. */
   | 'unavailable';
-
-/** True while a confirmed-adult flag is stored and less than a year old. */
-export function adultStillConfirmed(raw: string | null, now = Date.now()): boolean {
-  if (!raw) return false;
-  try {
-    const v = JSON.parse(raw) as { adult?: unknown; at?: unknown };
-    return v.adult === true && typeof v.at === 'number' && v.at <= now && now - v.at < RECHECK_MS;
-  } catch {
-    return false;
-  }
-}
-
-export function adultRecord(now = Date.now()): string {
-  return JSON.stringify({ adult: true, at: now });
-}
 
 /**
  * Apple's eligibility answer → ask or not. `false`: the law doesn't cover this account. `null`: iOS

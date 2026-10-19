@@ -55,7 +55,7 @@ export function AgeGate() {
     v === 'minor'
       ? t('A tua conta Apple indica menos de 18 anos. Onde a lei o exige, a app só abre a quem tem 18 ou mais.')
       : v === 'declined'
-        ? t('Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Só fica no telemóvel a indicação de que tens 18 ou mais.')
+        ? t('Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Não guardamos a tua idade.')
         : t('Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.');
   return (
     <Modal visible animationType="none" presentationStyle="fullScreen" statusBarTranslucent onRequestClose={() => {}}>

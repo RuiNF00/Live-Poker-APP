@@ -1,12 +1,15 @@
-// The US age-range check on iOS (see age-gate-core.ts for the rules). One call at launch: a stored
-// "confirmed adult" skips everything; otherwise Apple says whether the law covers this account, and
-// only then the system sheet asks to share the age range. Nothing here is logged, tracked or sent.
+// The US age-range check on iOS (see age-gate-core.ts for the rules). At each cold launch Apple says
+// whether the law covers this account, and only then the system sheet asks to share the age range
+// (iOS may answer from its own cache). Kept in memory only; nothing is stored, logged, tracked or sent.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { requireOptionalNativeModule } from 'expo';
 import { Platform } from 'react-native';
 
-import { adultRecord, adultStillConfirmed, AGE_KEY, shouldAsk, verdictOf, type AgeVerdict } from './age-gate-core';
+import { OLD_AGE_KEY, shouldAsk, verdictOf, type AgeVerdict } from './age-gate-core';
+
+/** This run of the app only. */
+let adultThisRun = false;
 
 type AgeRange = typeof import('expo-age-range');
 
@@ -39,16 +42,18 @@ async function eligibility(m: AgeRange): Promise<boolean | null | 'error'> {
 }
 
 /** Is the app allowed to open? Asks only where Apple says the law applies. */
-export async function checkAge(now = Date.now()): Promise<AgeVerdict> {
+export async function checkAge(): Promise<AgeVerdict> {
   const m = ageRange();
+  // The first prototype's flag, if a test build left one.
+  void AsyncStorage.removeItem(OLD_AGE_KEY).catch(() => {});
   if (!m) return 'not-required';
-  if (adultStillConfirmed(await AsyncStorage.getItem(AGE_KEY).catch(() => null), now)) return 'adult';
+  if (adultThisRun) return 'adult';
   if (!shouldAsk(await eligibility(m))) return 'not-required';
-  return askAge(now);
+  return askAge();
 }
 
 /** The system sheet (also «Tentar de novo»). The person answers it, so the limit is generous. */
-export async function askAge(now = Date.now()): Promise<AgeVerdict> {
+export async function askAge(): Promise<AgeVerdict> {
   const m = ageRange();
   if (!m) return 'not-required';
   let v: AgeVerdict;
@@ -58,6 +63,6 @@ export async function askAge(now = Date.now()): Promise<AgeVerdict> {
   } catch (e) {
     v = verdictOf({ code: String((e as { code?: unknown })?.code ?? '') });
   }
-  if (v === 'adult') await AsyncStorage.setItem(AGE_KEY, adultRecord(now)).catch(() => {});
+  if (v === 'adult') adultThisRun = true;
   return v;
 }

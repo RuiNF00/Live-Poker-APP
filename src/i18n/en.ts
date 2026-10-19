@@ -3385,7 +3385,7 @@ const en: Record<string, string> = {
   'Só te perguntamos uma vez.': 'We only ask once.',
   'A Sweatbook é só para maiores de 18': 'Sweatbook is for adults 18 and over only',
   'A tua conta Apple indica menos de 18 anos. Onde a lei o exige, a app só abre a quem tem 18 ou mais.': 'Your Apple Account says you are under 18. Where the law requires it, the app only opens for people 18 or over.',
-  'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Só fica no telemóvel a indicação de que tens 18 ou mais.': 'Where the law requires it, the app asks Apple for your age range before it opens. Only the fact that you are 18 or over stays on your phone.',
+  'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Não guardamos a tua idade.': 'Where the law requires it, the app asks Apple for your age range before it opens. We don\'t store your age.',
   "Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.": "We couldn't confirm your age. Make sure you are signed in with your Apple Account and try again.",
   'Saber mais': 'Learn more',
 };
