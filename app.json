@@ -341,6 +341,7 @@
       "es": "./locales/es.json"
     },
     "extra": {
+      "appGroup": false,
       "eas": {
         "projectId": "5e332dae-8677-4190-acbc-7912f606869b"
       }

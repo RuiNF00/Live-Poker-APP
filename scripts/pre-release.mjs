@@ -31,6 +31,7 @@ const steps = [
   { name: 'Configuração Expo válida', cmd: 'npx expo config --type public --json > /dev/null' },
   { name: 'iOS: modos em segundo plano e textos de permissão', cmd: 'node scripts/check-ios-plist.mjs' },
   { name: 'Atualizações over-the-air (EAS Update)', cmd: 'node scripts/check-updates.mjs' },
+  { name: 'OTA: builds e eas update com o mesmo runtime', cmd: 'node scripts/check-ota-runtime.mjs' },
   { name: 'Relatórios de erros (Sentry) e source maps', cmd: 'node scripts/check-crash.mjs' },
   ...(quick
     ? []

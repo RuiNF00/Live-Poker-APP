@@ -1,7 +1,9 @@
 // The App Group (group.com.ruinf.sweatbook) lets the Live Activity and the home widget read
 // the session from the app. Registering it writes to the App IDs in the Apple account, so it is
-// on only when a build asks for it: EXPO_PUBLIC_APP_GROUP=1, set for prebuild and for the
-// xcodebuild that bundles the JS (src/lib/lock-screen/index.tsx reads the same flag). Without it
+// on only when app.json says so: "extra": { "appGroup": true }. That one committed value is read
+// the same way by prebuild, an EAS build, `eas update` and the app itself (src/lib/lock-screen/index.tsx,
+// through expo-constants), and it is part of the OTA runtime fingerprint, so a build and an update can
+// never disagree about it (scripts/check-ota-runtime.mjs). No environment variable. Without it
 // the iOS build is what the cable builds have been: no group in either entitlements file, no App
 // Group reason (1C8F.1) in the privacy manifests, no Live Activity, and no home widget on iOS
 // (left out in app.config.js, since it could never get data). expo-widgets always adds the group
@@ -15,7 +17,8 @@ const path = require('path');
 const GROUPS = 'com.apple.security.application-groups';
 const WIDGET_TARGET = 'ExpoWidgetsTarget';
 
-const appGroupOn = (env = process.env) => env.EXPO_PUBLIC_APP_GROUP === '1';
+/** The App Group switch: app.json extra.appGroup, true to turn it on. Anything else is off. */
+const appGroupOn = (config) => config?.extra?.appGroup === true;
 
 /** The entitlements without any App Group. */
 function withoutGroup(entitlements) {
@@ -63,7 +66,7 @@ function rewrite(file, change) {
 }
 
 const withAppGroupGate = (config) => {
-  if (appGroupOn()) return config;
+  if (appGroupOn(config)) return config;
   // Listed after expo-widgets in app.json, so its EAS entry is already there.
   config = withoutEasGroup(config);
   return withFinalizedMod(config, [
