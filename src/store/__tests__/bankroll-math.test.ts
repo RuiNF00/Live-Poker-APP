@@ -12,8 +12,10 @@ import {
   balanceOf,
   bankrollOf,
   endOfDay,
+  emptyDuplicates,
   ensureBankrolls,
   separateBankrolls,
+  sepId,
   NO_FILTER,
   presetRange,
   scopeOptions,
@@ -89,7 +91,8 @@ test('a backup bankroll under an id held here in another currency gets its own i
     transfers: [tx(theirs.id, 'deposit', 500)],
   };
   const out = separateBankrolls([here], backup);
-  const id = autoBankrollId('€') + '_2';
+  const id = sepId(autoBankrollId('€'), '€');
+  assert.ok(id.startsWith('br_auto_'));
   assert.deepEqual(out.bankrolls!.map((b) => [b.id, b.currency, b.name]), [[id, '€', 'Principal']]);
   assert.equal(out.sessions[0].bankrollId, id);
   // A $ session pointing at that id is this phone's $ bankroll's.
@@ -101,6 +104,75 @@ test('a backup bankroll under an id held here in another currency gets its own i
   assert.equal(balanceOf({ bankrollId: id }, out.sessions, out.transfers!, all).balance, 700);
   // Nothing in common: the same backup back.
   assert.equal(separateBankrolls([br('x', '$')], backup), backup);
+});
+
+// Two phones with the same cloud code copying to each other, as merge + import do: the incoming copy is
+// separated against this phone's bankrolls, then joined by id.
+function copy(to: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }, from: { bankrolls: Bankroll[]; sessions: Session[]; transfers: Transfer[] }) {
+  const inc = separateBankrolls(to.bankrolls, from);
+  const join = <T extends { id: string }>(a: T[], b: T[]) => [...a, ...b.filter((x) => !a.some((y) => y.id === x.id))];
+  const bankrolls = join(to.bankrolls, inc.bankrolls ?? []);
+  const sessions = join(to.sessions, inc.sessions);
+  const transfers = join(to.transfers, inc.transfers ?? []);
+  const extra = emptyDuplicates(bankrolls, sessions, transfers);
+  return { bankrolls: bankrolls.filter((b) => !extra.includes(b.id)), sessions, transfers };
+}
+const where = (p: { bankrolls: Bankroll[]; sessions: Session[] }) => p.sessions.map((s) => [s.id, bankrollOf(s, p.bankrolls)!.currency]).sort();
+
+test('two phones with one bankroll id in two currencies end with the same two, copy after copy', () => {
+  const X = autoBankrollId('€');
+  let a = { bankrolls: [{ ...br(X, '€'), name: 'Principal' }], sessions: [mk({ id: 'ea', currency: '€', bankrollId: X, cashOut: 300 })], transfers: [tx(X, 'deposit', 500)] };
+  let b = { bankrolls: [{ ...br(X, '$'), name: 'Principal' }], sessions: [mk({ id: 'db', currency: '$', bankrollId: X, cashOut: 50 })], transfers: [] as Transfer[] };
+  a = copy(a, b);
+  assert.deepEqual(a.bankrolls.map((x) => [x.id, x.currency]), [[X, '€'], [sepId(X, '$'), '$']]);
+  b = copy(b, a);
+  assert.deepEqual(b.bankrolls.map((x) => [x.id, x.currency]), [[X, '$'], [sepId(X, '€'), '€']]);
+  const once = a;
+  for (let i = 0; i < 3; i++) {
+    a = copy(a, b);
+    b = copy(b, a);
+  }
+  assert.deepEqual(a.bankrolls.map((x) => x.id), once.bankrolls.map((x) => x.id));
+  assert.equal(b.bankrolls.length, 2);
+  // Every session counts in its own currency on both phones, with the same balances.
+  assert.deepEqual(where(a), where(b));
+  for (const p of [a, b]) {
+    const eur = p.bankrolls.find((x) => x.currency === '€')!;
+    const usd = p.bankrolls.find((x) => x.currency === '$')!;
+    assert.equal(balanceOf({ bankrollId: eur.id }, p.sessions, p.transfers, p.bankrolls).balance, 700);
+    assert.equal(balanceOf({ bankrollId: usd.id }, p.sessions, p.transfers, p.bankrolls).balance, -50);
+  }
+});
+
+test('the empty copies older syncs multiplied go, one of each stays, and none with sessions', () => {
+  const X = autoBankrollId('€');
+  const Y = autoBankrollId('$');
+  // What QA found after two rounds: six "Principal" in dollars, all empty but one.
+  const list: Bankroll[] = [
+    { ...br(X, '€'), name: 'Principal' },
+    ...[2, 3, 4, 5].map((n) => ({ ...br(`${Y}_${n}`, '$', n), name: 'Principal' })),
+    { ...br(`${Y}_6`, '$', 6), name: 'Principal' },
+    { ...br(`${Y}_7`, '$', 7), name: 'Bankroll Vegas' },
+  ];
+  const sessions = [mk({ id: 'e', currency: '€', bankrollId: X }), mk({ id: 'd', currency: '$', bankrollId: `${Y}_6` })];
+  const drop = emptyDuplicates(list, sessions, []);
+  // _6 has a session, _7 has a name of its own; of the empty ones, the oldest stays.
+  assert.deepEqual(drop, [`${Y}_3`, `${Y}_4`, `${Y}_5`]);
+  // The currency's own id is the one kept, then the separated one.
+  assert.deepEqual(emptyDuplicates([{ ...br(`${Y}_2`, '$', 1), name: 'P' }, { ...br(Y, '$', 9), name: 'P' }], [], []), [`${Y}_2`]);
+  assert.deepEqual(emptyDuplicates([{ ...br(`${Y}_2`, '$', 1), name: 'P' }, { ...br(sepId(X, '$'), '$', 9), name: 'P' }], [], []), [`${Y}_2`]);
+  // One the player picked stays; rules, a shot or a transfer count as use, so the empty one left is alone and stays.
+  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P' }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], [], `${Y}_2`), [Y]);
+  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P' }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], [tx(Y, 'deposit', 1)]), []);
+  assert.deepEqual(emptyDuplicates([{ ...br(Y, '$', 1), name: 'P', rules: { cashBuyIns: 1, mttBuyIns: 1, stopLoss: 0, stopLossPer: 'day', target: 0 } }, { ...br(`${Y}_2`, '$', 2), name: 'P' }], [], []), []);
+  // Ones the player made (not automatic) are never touched.
+  assert.deepEqual(emptyDuplicates([br('a', '$'), br('a2', '$')].map((b) => ({ ...b, name: 'P' })), [], []), []);
+});
+
+test('a session with no bankroll counts in its currency\'s own, not in an older restored one', () => {
+  const Y = autoBankrollId('€');
+  const bs = [{ ...br(`${Y}_2`, '€', 1), name: 'Antiga' }, { ...br(Y, '€', 5), name: 'Principal' }];
+  assert.equal(bankrollOf(mk(), bs)!.id, Y);
 });
 
 test('sessions without a bankroll count towards the first one in their currency', () => {
