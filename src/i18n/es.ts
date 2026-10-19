@@ -3496,6 +3496,11 @@ const es: Record<string, string> = {
   'O que mudou, por palavras tuas': 'Qué cambió, con tus palabras',
   'Nível 12, stack 45 mil, restam 80': 'Nivel 12, stack 45 mil, quedan 80',
   'Ainda não percebemos. Experimenta «stack 45 mil» ou «nível 12».': 'Aún no lo entendimos. Prueba «stack 45 mil» o «nivel 12».',
+  // Atualizar a sessão por voz: a paywall do botão «Voz» da sessão
+  'Diz o que mudou, nós atualizamos': 'Di qué cambió y lo actualizamos',
+  'Stack, nível, rebuy ou pausa por voz, sem largar as cartas.': 'Stack, nivel, rebuy o pausa por voz, sin soltar las cartas.',
+  'Sessão por voz': 'Sesión por voz',
+  'Stack e nível sem escrever': 'Stack y nivel sin escribir',
 };
 
 export default es;

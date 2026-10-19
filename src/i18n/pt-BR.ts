@@ -1809,6 +1809,10 @@ const ptBR: Record<string, string> = {
   'Toca no microfone do teclado e diz o que mudou: o stack, o nível, um rebuy, quantos restam. Também podes escrever.': 'Toque no microfone do teclado e diga o que mudou: o stack, o nível, um rebuy, quantos restam. Você também pode escrever.',
   'O que mudou, por palavras tuas': 'O que mudou, com suas palavras',
   'Ainda não percebemos. Experimenta «stack 45 mil» ou «nível 12».': 'Ainda não entendemos. Tente «stack 45 mil» ou «nível 12».',
+  // Atualizar a sessão por voz: a paywall do botão «Voz» da sessão
+  'Diz o que mudou, nós atualizamos': 'Diga o que mudou, a gente atualiza',
+  'Stack e nível sem escrever': 'Stack e nível sem digitar',
+  'Stack, nível, rebuy ou pausa por voz, sem largar as cartas.': 'Stack, nível, rebuy ou pausa por voz, sem soltar as cartas.',
 };
 
 export default ptBR;

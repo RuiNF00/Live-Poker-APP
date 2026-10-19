@@ -105,3 +105,12 @@ test('the paywall at the hand limit says the hand is kept as a draft, at the tab
   assert.match(plans, /hands: \{\n    title: t\('Mão guardada como rascunho'\)/);
   assert.match(body('handsLive'), /rascunho/);
 });
+
+test('the locked «Voz» of a live session opens its own paywall, about updating the session', async () => {
+  const live = src.find(([f]) => f === path.join('app', '(tabs)', 'session.tsx'))![1];
+  assert.match(live, /voiceLocked \? pro\.paywall\('voiceLive'\)/);
+  const { PAYWALL_COPY, featuresFor } = await import('../plans');
+  assert.match(PAYWALL_COPY.voiceLive.title, /mudou/);
+  assert.equal(featuresFor('voiceLive')[0].feature.key, 'voiceLive');
+  assert.equal(featuresFor('voiceLive')[0].highlight, true);
+});

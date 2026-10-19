@@ -804,7 +804,7 @@ function Live({ s }: { s: Session }) {
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
-        <ThumbAction icon={voiceLocked ? 'lock-closed' : 'mic-outline'} label={t('Voz')} a11y={voiceLocked ? `${t('Atualizar por voz')}, Pro` : t('Atualizar por voz')} onPress={() => (voiceLocked ? pro.paywall('voiceHand') : setVoice('open'))} />
+        <ThumbAction icon={voiceLocked ? 'lock-closed' : 'mic-outline'} label={t('Voz')} a11y={voiceLocked ? `${t('Atualizar por voz')}, Pro` : t('Atualizar por voz')} onPress={() => (voiceLocked ? pro.paywall('voiceLive') : setVoice('open'))} />
         </View>
         <View ref={handRef} collapsable={false} style={{ flex: 2 }}>
           {/* "Nueva mano" / "Nova mão" at 200%: two lines rather than "Nueva m…". */}
