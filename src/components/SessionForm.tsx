@@ -120,7 +120,7 @@ export function SessionForm({
     // Editing a played session only fixes its kind: times, result, staking and notes stay.
     if (initial.endedAt) {
       const { sb, bb, ante, anteType, level, stage, stack } = blank;
-      return setS({ ...s, kind: k, sb, bb, ante, anteType, level, stage, stack, tourney: undefined, ...(k === 'mtt' ? {} : { finish: undefined, field: undefined }) });
+      return setS({ ...s, kind: k, sb, bb, ante, anteType, level, stage, stack, tourney: undefined, ...(k === 'mtt' ? {} : { finish: undefined, field: undefined, bounties: undefined }) });
     }
     setS({ ...blank, id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
   };
@@ -220,7 +220,7 @@ export function SessionForm({
                 money
                 label={t('Bounties ({currency})', { currency: s.currency })}
                 value={bountiesOf(s)}
-                onChange={(b) => set({ cashOut: s.cashOut - bountiesOf(s) + b, bounties: b || undefined, ...(s.tourney ? { tourney: { ...s.tourney, bounties: b || undefined } } : null) })}
+                onChange={(b) => set({ cashOut: s.cashOut - bountiesOf(s) + b, bounties: b, ...(s.tourney ? { tourney: { ...s.tourney, bounties: b || undefined } } : null) })}
                 selectOnFocus
               />
               {bountiesOf(s) > 0 ? <T v="small" style={{ flex: 1 }}>{t('Total: {amount}', { amount: money(s.cashOut, s.currency) })}</T> : <View style={{ flex: 1 }} />}

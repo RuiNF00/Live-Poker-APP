@@ -62,6 +62,7 @@ export function pieceOf(s: Session, x: Stake): number {
  * (older sessions). Never below 0 nor above the prize.
  */
 export function bountiesOf(s: Session): number {
+  if (s.kind !== 'mtt') return 0;
   const b = s.bounties ?? s.tourney?.bounties;
   return Number.isFinite(b) ? Math.min(Math.max(0, b!), s.cashOut || 0) : 0;
 }

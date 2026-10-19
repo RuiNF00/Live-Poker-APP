@@ -3381,7 +3381,7 @@ const es: Record<string, string> = {
   'O backer tem parte do prémio todo, bounties incluídos.': 'El backer recibe parte de todo el premio, bounties incluidos.',
   'Dos quais bounties': 'Bounties incluidos',
   'Os ganhos incluem os bounties recebidos em dinheiro.': 'Las ganancias incluyen los bounties cobrados en efectivo.',
-  'dos quais bounties {amount}': 'de ellos, {amount} en bounties',
+  'dos quais {amount} em bounties': 'de ellos, {amount} en bounties',
   'os bounties ficam com o jogador': 'el jugador se queda los bounties',
   'Sem {amount} em bounties, que ficam contigo': 'Sin contar {amount} en bounties, que son para ti',
   "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.": "Al terminar un torneo de este swap, el premio y el evento entran sin preguntar. El swap cuenta el premio entero, bounties incluidos.",

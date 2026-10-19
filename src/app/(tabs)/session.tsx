@@ -387,7 +387,10 @@ function Live({ s }: { s: Session }) {
     const ended: Session = {
       ...s,
       cashOut: total,
-      bounties: mtt && finish.bounties > 0 ? finish.bounties : undefined,
+      // 0 is kept (not left out), so a count tournament mode made earlier can't come back.
+      bounties: mtt ? finish.bounties : undefined,
+      // Older versions read tournament mode's count: it says the same.
+      ...(s.tourney ? { tourney: { ...s.tourney, bounties: (mtt && finish.bounties) || undefined } } : null),
       finish: finish.place || undefined,
       field: finish.field || undefined,
       tips: finish.tips || undefined,

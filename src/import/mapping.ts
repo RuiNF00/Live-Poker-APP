@@ -35,7 +35,8 @@ export const FIELDS = [
   'tableSize',
   'notes',
   'tags',
-  // PKO: only read from a column named exactly "bounties" (cash won in bounties, inside cashOut).
+  // PKO: cash won in bounties, inside cashOut. Only from Sweatbook's own CSV: elsewhere a
+  // "Bounties" column can be the number of knockouts.
   'bounties',
   // Only in Sweatbook's own CSV: never guessed from another app's headers.
   'id',
@@ -87,7 +88,7 @@ const SYN: Record<Field, string[]> = {
   country: [],
   day: [],
   makeupCut: [],
-  bounties: ['bounties'],
+  bounties: [],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());

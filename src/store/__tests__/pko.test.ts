@@ -184,3 +184,10 @@ test('live link: each backer link knows its own term, so mixed packages are both
   assert.equal((30 / 100) * snap.cashOut, owedToBackers({ ...s, stakes: [s.stakes![1]] }));
   assert.equal(liveSnapshot({ ...s, endedAt: undefined }, 'Rui', 0).bounties, undefined);
 });
+
+test('bounties set to 0 at the end win over the count tournament mode made; cash has none', () => {
+  const s = mk({ cashOut: 1000, bounties: 0, tourney: { bounties: 300 }, stakes: [{ backerId: 'b1', share: 50, markup: 1, bountiesKept: true }] });
+  assert.equal(bountiesOf(s), 0);
+  assert.equal(owedToBackers(s), 500);
+  assert.equal(bountiesOf(mk({ kind: 'cash', cashOut: 1000, bounties: 300 })), 0);
+});

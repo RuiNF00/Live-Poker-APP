@@ -358,15 +358,8 @@ test('Sweatbook CSV round trip: export, import, and import again into the same p
   assert.equal(run(old.join('\n')).sessions[0].startedAt, mk(3).startedAt - 17_000, 'to the minute, as before');
 });
 
-test('a column named "bounties" is read in tournaments only, capped at the prize', () => {
-  const r = run('date,type,buy_in,cash_out,bounties\n2026-03-01,tournament,100,500,200\n2026-03-02,tournament,100,150,400\n2026-03-03,cash,100,300,50\n2026-03-04,tournament,100,0,\n');
-  assert.deepEqual(
-    r.sessions.map((x) => x.bounties),
-    [200, 150, undefined, undefined],
-  );
-  assert.deepEqual(
-    r.sessions.map((x) => x.cashOut),
-    [500, 150, 300, 0],
-    'cash_out is never changed by the bounties',
-  );
+test('a "bounties" column from another app is left alone (it can be the number of knockouts)', () => {
+  const r = run('date,type,buy_in,cash_out,bounties\n2026-03-01,tournament,100,500,3\n');
+  assert.equal(r.sessions[0].bounties, undefined);
+  assert.equal(r.sessions[0].cashOut, 500);
 });

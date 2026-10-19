@@ -3387,7 +3387,7 @@ const en: Record<string, string> = {
   'O backer tem parte do prémio todo, bounties incluídos.': 'The backer gets a piece of the whole prize, bounties included.',
   'Dos quais bounties': 'Bounties included',
   'Os ganhos incluem os bounties recebidos em dinheiro.': 'Winnings include bounties received in cash.',
-  'dos quais bounties {amount}': 'of which {amount} in bounties',
+  'dos quais {amount} em bounties': 'of which {amount} in bounties',
   'os bounties ficam com o jogador': 'the player keeps the bounties',
   'Sem {amount} em bounties, que ficam contigo': 'Excluding {amount} in bounties, which you keep',
   'Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.': 'When a tournament in this swap ends, the prize and the event go in without asking. The swap counts the whole prize, bounties included.',
