@@ -4,7 +4,7 @@
 
 import { t } from '@/i18n';
 import { storedCurrency } from '@/store/currencies';
-import type { Session } from '@/store/types';
+import type { Session, Withholding } from '@/store/types';
 
 import { readTable, type Table } from './csv';
 import { type DecimalMark, NO_VALUE, parseNum } from './num';
@@ -317,7 +317,7 @@ function moveOf(r: string[], get: (r: string[], f: Field) => string, at: number,
 
 const TRANSFER_IN = /deposit|dep[oó]sito|cash ?in\b|top ?up|carregamento|einzahl|d[eé]p[oô]t/i;
 
-const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn', 'expenses', 'tips'];
+const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn', 'expenses', 'tips', 'taxWithheld'];
 
 /**
  * Amounts read with the file's own decimal mark: "12,50" anywhere (or semicolons and no "12.50")
@@ -472,7 +472,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     // Sweatbook's own CSV: the makeup cut is inside profit; kept apart so cash_out stays as entered.
     const cut = opt.source === 'sweatbook' ? (money(get(r, 'makeupCut')) ?? 0) : 0;
     // "cem" or "?" where an amount goes: reading it as 0 would change the result without a word.
-    const bad = (['profit', 'buyIn', 'cashOut'] as const).map((f) => get(r, f)).find((v) => v && !NO_VALUE.test(v.trim()) && money(v) === null);
+    const bad = (['profit', 'buyIn', 'cashOut', 'taxWithheld'] as const).map((f) => get(r, f)).find((v) => v && !NO_VALUE.test(v.trim()) && money(v) === null);
     if (bad) {
       unreadable++;
       failed.push({ line, reason: 'badMoney', value: bad });
@@ -570,6 +570,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     if (get(r, 'bankroll')) bankrollNames[id] = get(r, 'bankroll');
     const country = get(r, 'country').toUpperCase();
     const day = parseNum(get(r, 'day'));
+    const withheld = withheldOf(money(get(r, 'taxWithheld')), get(r, 'taxForm'), get(r, 'taxStatus'));
     sessions.push({
       id,
       kind,
@@ -601,10 +602,25 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       ...(format ? { format } : null),
       ...(/^[A-Z]{2}$/.test(country) ? { country } : null),
       ...(kind === 'mtt' && day && day > 1 ? { day: Math.round(day) } : null),
+      ...(withheld ? { withheld } : null),
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
   return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful || gameAsKind, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+}
+
+const TAX_FORMS: NonNullable<Withholding['form']>[] = ['W-2G', '1042-S', 'other'];
+const TAX_STATUS: Withholding['status'][] = ['recover', 'recovered', 'final'];
+
+/**
+ * Tax withheld at the cashier, from Sweatbook's own CSV (tax_withheld, tax_form, tax_status).
+ * An unknown status reads as still to recover, as the session screen starts it: never dropped.
+ */
+function withheldOf(amount: number | null, form: string, status: string): Withholding | undefined {
+  if (!amount || amount <= 0) return undefined;
+  const f = TAX_FORMS.find((x) => x.toLowerCase() === form.toLowerCase());
+  const st = TAX_STATUS.find((x) => x === status.toLowerCase()) ?? 'recover';
+  return { amount: round2(amount), ...(f ? { form: f } : null), status: st };
 }
 
 /** 03/04/2025 could be either; 2025-04-03 and 25/04/2025 can't. */
@@ -614,4 +630,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut' && f !== 'taxWithheld' && f !== 'taxForm' && f !== 'taxStatus');

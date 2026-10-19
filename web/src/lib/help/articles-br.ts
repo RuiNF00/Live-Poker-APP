@@ -213,8 +213,17 @@ export const BR: Record<string, ArticleText> = {
     title: 'Importar de outro app',
     summary: 'Traga seu histórico de sessões e bankroll.',
     body: [
-      'Configurações → Backup → Importar de outro app. Funciona com Poker Bankroll Tracker, Pokerbase, Poker Analytics, qualquer CSV (você confere as colunas antes de importar) e backups .json do Sweatbook.',
+      'Configurações → Backup → Importar. Escolha o app de onde você vem, ou «Outro app ou Excel» para qualquer CSV, e o arquivo que esse app exportou (até 20 MB). Também lê backups .json do Sweatbook.',
+      'Antes de importar, você vê as colunas que lemos e pode mudar qualquer uma. Datas em vários formatos, vírgula ou ponto nos decimais, vírgula, ponto e vírgula ou tab entre colunas e várias moedas são lidos sozinhos, e cada moeda fica no seu próprio bankroll.',
       'Entram sessões, depósitos e saques. Mãos de outros apps não são importadas.',
+      {
+        list: [
+          'Nada é apagado nem alterado: o que você importa se junta ao que você já tem. Importar o mesmo arquivo de novo não duplica nada.',
+          'Uma sessão do mesmo dia e com o mesmo resultado de uma que você já tem (a mesma noite registrada nos dois apps, por exemplo) fica de fora. Para importá-la mesmo assim, toque nela ou ative «Importar também as que parecem repetidas».',
+          'Uma linha que não dá para ler fica de fora com o número e o motivo: sem data, data que não se lê, valor que não é um número, linha incompleta (quebrada em duas), sessão que termina mais de 14 dias depois de começar ou sessão ainda em andamento. Corrija o arquivo e importe de novo: o que já entrou não se repete.',
+          'Se algo não for bem lido, toque em «Enviar ao suporte» na tela de importação.',
+        ],
+      },
     ],
   },
   export: {

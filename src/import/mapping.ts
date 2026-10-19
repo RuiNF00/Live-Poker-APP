@@ -41,6 +41,9 @@ export const FIELDS = [
   'country',
   'day',
   'makeupCut',
+  'taxWithheld',
+  'taxForm',
+  'taxStatus',
 ] as const;
 export type Field = (typeof FIELDS)[number];
 
@@ -85,6 +88,9 @@ const SYN: Record<Field, string[]> = {
   country: [],
   day: [],
   makeupCut: [],
+  taxWithheld: [],
+  taxForm: [],
+  taxStatus: [],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());
@@ -217,6 +223,9 @@ export function mappingFor(source: SourceId, headers: string[], rows: string[][]
       country: idx(headers, 'country'),
       day: idx(headers, 'mttday'),
       makeupCut: idx(headers, 'makeupcut'),
+      taxWithheld: idx(headers, 'taxwithheld'),
+      taxForm: idx(headers, 'taxform'),
+      taxStatus: idx(headers, 'taxstatus'),
       hours: idx(headers, 'hours'),
       handsDealt: idx(headers, 'hands'),
       kind: idx(headers, 'type'),

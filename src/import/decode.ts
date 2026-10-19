@@ -1,7 +1,8 @@
 // Bytes of a picked file → text. Exports aren't all UTF-8: Excel on Windows
 // saves "CSV" in Windows-1252 (São Paulo comes out as S�o Paulo), and its
 // "Unicode text" is UTF-16 with tabs. Worked out from the bytes themselves.
-// Pure, so it can be tested; no TextDecoder (not every phone engine has one).
+// Pure, so it can be tested. UTF-8 goes through TextDecoder where the engine has
+// one; the code below is the fallback, and the reading of the other encodings.
 
 const CP1252: Record<number, number> = {
   0x80: 0x20ac, 0x82: 0x201a, 0x83: 0x0192, 0x84: 0x201e, 0x85: 0x2026, 0x86: 0x2020, 0x87: 0x2021, 0x88: 0x02c6, 0x89: 0x2030, 0x8a: 0x0160, 0x8b: 0x2039, 0x8c: 0x0152, 0x8e: 0x017d,
@@ -20,6 +21,14 @@ function writer() {
         buf.length = 0;
       }
     },
+    /** Bytes from..to, all under 0x80, as they are. */
+    run(b: Uint8Array, from: number, to: number) {
+      if (buf.length) {
+        parts.push(String.fromCodePoint(...buf));
+        buf.length = 0;
+      }
+      parts.push(String.fromCharCode.apply(null, b.subarray(from, to) as unknown as number[]));
+    },
     done() {
       if (buf.length) parts.push(String.fromCodePoint(...buf));
       return parts.join('');
@@ -27,15 +36,34 @@ function writer() {
   };
 }
 
+/** The engine's own strict UTF-8 reader: undefined where there is none, null when the bytes aren't UTF-8. */
+function nativeUtf8(b: Uint8Array): string | null | undefined {
+  if (typeof TextDecoder === 'undefined') return undefined;
+  try {
+    const d = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+    // One that takes the option but isn't strict would turn a Windows-1252 file into «S�o Paulo»: use ours.
+    if (d.fatal !== true) return undefined;
+    return d.decode(b);
+  } catch (e) {
+    // A decoder that can't do strict mode says so with a RangeError at construction: use ours.
+    return e instanceof TypeError ? null : undefined;
+  }
+}
+
 /** Null when the bytes aren't valid UTF-8. */
 function utf8(b: Uint8Array, start: number): string | null {
+  const fast = nativeUtf8(b.subarray(start));
+  if (fast !== undefined) return fast;
   const out = writer();
   let i = start;
   while (i < b.length) {
     const c = b[i];
     if (c < 0x80) {
-      out.push(c);
-      i++;
+      // Runs of plain ASCII (most of any CSV) go over in one piece, not a byte at a time.
+      let j = i + 1;
+      while (j < b.length && b[j] < 0x80 && j - i < 8192) j++;
+      out.run(b, i, j);
+      i = j;
       continue;
     }
     const len = c >= 0xf0 && c < 0xf5 ? 4 : c >= 0xe0 ? 3 : c >= 0xc2 && c < 0xe0 ? 2 : 0;
