@@ -43,16 +43,21 @@ export async function createBackerPage(token: string): Promise<{ id: string; tok
   return { id: j.id, token: j.token };
 }
 
-/** False when the page is gone (removed, or purged): stop sending. */
-export async function updateBackerPage(page: BackerPage, sealed: Sealed): Promise<boolean> {
+/**
+ * 'gone' when the page is gone (removed, or purged): stop sending. 'newer' when the server has a
+ * page with a newer version (backer-page-version.ts), from another phone: leave it, this phone's
+ * data catches up when the cloud joins both copies.
+ */
+export async function updateBackerPage(page: BackerPage, sealed: Sealed, v: number): Promise<'ok' | 'gone' | 'newer'> {
   const res = await fetch(`${API}/api/backer-pages/${encodeURIComponent(page.id)}`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json', 'x-edit-token': page.token },
-    body: JSON.stringify({ sealed }),
+    body: JSON.stringify({ sealed, v }),
   });
-  if (res.status === 404 || res.status === 403) return false;
+  if (res.status === 404 || res.status === 403) return 'gone';
+  if (res.status === 409) return 'newer';
   if (!res.ok) throw new Error('page ' + res.status);
-  return true;
+  return 'ok';
 }
 
 async function deleteBackerPage(page: Pick<BackerPage, 'id' | 'token'>): Promise<void> {

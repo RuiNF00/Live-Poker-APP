@@ -17,6 +17,7 @@ import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, List
 import { t, variant } from '@/i18n';
 import { statementUrl } from '@/lib/backing-link';
 import { backerPageUrl, queueBackerPageDelete } from '@/lib/backer-page';
+import { pageVersion } from '@/lib/backer-page-version';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
 import { shareRef } from '@/lib/referrals';
@@ -25,6 +26,7 @@ import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
 import { useOffers } from '@/store/action-offer';
+import { currentDeleted } from '@/store/deleted';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
 import { carriedTo, closePackage, ledgerYears, packageDefaults, yearStatement, type BackerLedgerRow } from '@/store/staking';
@@ -149,8 +151,10 @@ function BackerScreen() {
       try {
         const b = await ensureBackerPage(next, saveBacker);
         next = b;
-        // Filled before the message goes, so the backer never opens an empty page.
-        if (await pushBackerPage(b.page, statementFor(b, settings.nickname || '', l, data))) url = withLang(backerPageUrl(b.page, ref), variant);
+        // Filled before the message goes, so the backer never opens an empty page. 'newer': another
+        // phone already filled it with fresher numbers, so the link is good as it is.
+        const v = pageVersion({ backers, sessions, packages, payments, offers, deleted: currentDeleted() });
+        if ((await pushBackerPage(b.page, statementFor(b, settings.nickname || '', l, data), v)) !== 'gone') url = withLang(backerPageUrl(b.page, ref), variant);
         else next = { ...b, page: undefined };
       } catch {
         // No signal: the one-off link works anyway (its numbers ride in the link itself).
