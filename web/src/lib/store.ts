@@ -111,12 +111,15 @@ export const APP_EVENTS = [
   'review_prompt',
   'receipt_read',
   'invite_rewarded',
-  // From RevenueCat's webhook, not the app: how a trial ended (result: paid / ended).
+  // From RevenueCat's webhook, not the app: how a trial ended (result: paid / ended), a first
+  // purchase as the store saw it, and auto-renew turned off.
   'trial_end',
+  'store_purchase',
+  'sub_cancel',
 ] as const;
 export type AppEventName = (typeof APP_EVENTS)[number];
 /** Written only by our own server (webhooks): /api/events refuses them, so a client can't fake the trial outcome. */
-export const SERVER_EVENTS: readonly AppEventName[] = ['trial_end'];
+export const SERVER_EVENTS: readonly AppEventName[] = ['trial_end', 'store_purchase', 'sub_cancel'];
 
 export interface AppEvent {
   event: AppEventName;

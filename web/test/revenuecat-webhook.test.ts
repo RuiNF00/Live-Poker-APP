@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { installIdForRc, trialEndFrom } from '@/lib/rc-webhook';
+import { funnelFrom, installIdForRc, trialEndFrom } from '@/lib/rc-webhook';
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: () => {} }));
@@ -53,6 +53,28 @@ describe('trial_end from RevenueCat', () => {
   });
 });
 
+describe('store purchases and cancellations from RevenueCat', () => {
+  const buy = { type: 'INITIAL_PURCHASE', period_type: 'NORMAL', environment: 'PRODUCTION', store: 'APP_STORE', product_id: 'sweatbook_pro_monthly', app_user_id: '$RCAnonymousID:abc' };
+  it('records a first purchase with its plan, trial and kind of offer, never the code itself', () => {
+    expect(funnelFrom(buy)).toEqual({ event: 'store_purchase', appUserId: '$RCAnonymousID:abc', platform: 'ios', props: { plan: 'monthly', trial: false, offer: 'none' } });
+    expect(funnelFrom({ ...buy, offer_code: 'INVITEAB12' })?.props).toEqual({ plan: 'monthly', trial: false, offer: 'code' });
+    expect(JSON.stringify(funnelFrom({ ...buy, offer_code: 'INVITEAB12' }))).not.toContain('INVITEAB12');
+    expect(funnelFrom({ ...buy, store: 'PLAY_STORE', period_type: 'INTRO' })?.props).toEqual({ plan: 'monthly', trial: false, offer: 'intro' });
+    expect(funnelFrom({ ...buy, product_id: 'sweatbook_pro_annual', period_type: 'TRIAL' })?.props).toEqual({ plan: 'annual', trial: true, offer: 'none' });
+    expect(funnelFrom({ ...buy, type: 'NON_RENEWING_PURCHASE', product_id: 'sweatbook_lifetime' })?.props.plan).toBe('lifetime');
+  });
+  it('records auto-renew turned off with a known reason only', () => {
+    expect(funnelFrom({ ...buy, type: 'CANCELLATION', cancel_reason: 'UNSUBSCRIBE' })).toEqual({ event: 'sub_cancel', appUserId: '$RCAnonymousID:abc', platform: 'ios', props: { plan: 'monthly', trial: false, reason: 'unsubscribe' } });
+    expect(funnelFrom({ ...buy, type: 'CANCELLATION', cancel_reason: 'something new' })?.props.reason).toBe('unknown');
+  });
+  it('ignores sandbox, renewals and other events, and keeps trial_end', () => {
+    expect(funnelFrom({ ...buy, environment: 'SANDBOX' })).toBeNull();
+    expect(funnelFrom({ ...buy, type: 'RENEWAL' })).toBeNull();
+    expect(funnelFrom({ ...buy, type: 'PRODUCT_CHANGE' })).toBeNull();
+    expect(funnelFrom(conversion)?.event).toBe('trial_end');
+  });
+});
+
 describe('the webhook route', () => {
   it('is closed without the secret and refuses a wrong header', async () => {
     expect((await post({ event: conversion }, 'x')).status).toBe(503);
@@ -67,17 +89,21 @@ describe('the webhook route', () => {
     expect((await post({ event: conversion }, 'Bearer s3cret')).status).toBe(204);
     expect(log).toHaveBeenCalledTimes(1);
     expect(log).toHaveBeenCalledWith({ event: 'trial_end', installId: await installIdForRc('$RCAnonymousID:abc'), platform: 'ios', props: { result: 'paid', plan: 'annual' } });
-    expect((await post({ event: { ...conversion, type: 'CANCELLATION' } }, 'Bearer s3cret')).status).toBe(204);
+    expect((await post({ event: { ...conversion, type: 'TRANSFER' } }, 'Bearer s3cret')).status).toBe(204);
     expect((await post({ event: { ...conversion, environment: 'SANDBOX' } }, 'Bearer s3cret')).status).toBe(204);
     expect(log).toHaveBeenCalledTimes(1);
+    expect((await post({ event: { ...conversion, type: 'CANCELLATION', cancel_reason: 'UNSUBSCRIBE' } }, 'Bearer s3cret')).status).toBe(204);
+    expect(log).toHaveBeenLastCalledWith(expect.objectContaining({ event: 'sub_cancel' }));
   });
 });
 
 describe('the public events route', () => {
-  it('refuses trial_end, which only the webhook writes', async () => {
+  it('refuses the events only the webhook writes', async () => {
     const send = (event: string) =>
       events.POST(new Request('http://x/api/events', { method: 'POST', body: JSON.stringify({ event, installId: '67cd51ed-e23f-4c8e-84a5-41a61637b53a', platform: 'ios', props: { result: 'paid' } }) }));
     expect((await send('trial_end')).status).toBe(422);
+    expect((await send('store_purchase')).status).toBe(422);
+    expect((await send('sub_cancel')).status).toBe(422);
     expect((await send('trial_start')).status).toBe(204);
   });
 });
