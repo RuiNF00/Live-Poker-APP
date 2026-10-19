@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
 import { OWNER_RE, PACK_ID_RE, packStore } from '@/lib/packs';
 
@@ -11,6 +12,8 @@ export function OPTIONS() {
 
 /** DELETE with `x-owner-token`: the pack goes (its hands stay shared on their own links). */
 export async function DELETE(req: Request, { params }: Ctx) {
+  // Long tokens, so only the cost: 60 an hour per address is plenty for «Apagar tudo».
+  if (await limited(req, 'pack-delete', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: headers });
   const { id } = await params;
   const owner = req.headers.get('x-owner-token') ?? '';
   const ok = PACK_ID_RE.test(id) && OWNER_RE.test(owner) && (await packStore().remove(id, owner));

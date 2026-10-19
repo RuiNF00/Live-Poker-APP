@@ -1,7 +1,7 @@
 import { after, NextResponse } from 'next/server';
 import { brand } from '@/config/brand';
 import { limited } from '@/lib/abuse';
-import { coachStore, expiryFrom, HAND_ID_RE, MAX_CREATE_BYTES, MAX_HANDS, stripPrivate, tooBig } from '@/lib/coach';
+import { cappedJson, coachStore, expiryFrom, HAND_ID_RE, MAX_CREATE_BYTES, MAX_HANDS, stripPrivate, tooBig } from '@/lib/coach';
 import { resolveHand } from '@/lib/hand';
 import { coachCors } from './cors';
 
@@ -19,7 +19,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: coachCors });
   }
   if (tooBig(req, MAX_CREATE_BYTES)) return NextResponse.json({ error: 'too_big' }, { status: 413, headers: coachCors });
-  const body = (await req.json().catch(() => null)) as { title?: unknown; player?: unknown; expiresInDays?: unknown; hands?: unknown } | null;
+  const read = await cappedJson(req, MAX_CREATE_BYTES);
+  if (read === 'too_big') return NextResponse.json({ error: 'too_big' }, { status: 413, headers: coachCors });
+  const body = read as { title?: unknown; player?: unknown; expiresInDays?: unknown; hands?: unknown } | null;
   const raw = Array.isArray(body?.hands) ? body.hands : [];
   const seen = new Set<string>();
   const hands: { id: string; payload: unknown }[] = [];

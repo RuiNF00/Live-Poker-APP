@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { limited } from '@/lib/abuse';
 import { isOffensive } from '@/lib/moderation';
-import { coachStore, MAX_COMMENT_BYTES, OWNER_RE, parseComment, TOKEN_RE, tooBig } from '@/lib/coach';
+import { cappedJson, coachStore, MAX_COMMENT_BYTES, OWNER_RE, parseComment, TOKEN_RE, tooBig } from '@/lib/coach';
 import { coachCors } from '../../cors';
 
 type Ctx = { params: Promise<{ token: string }> };
@@ -30,7 +30,9 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!TOKEN_RE.test(token)) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: coachCors });
   if (tooBig(req, MAX_COMMENT_BYTES)) return NextResponse.json({ error: 'too_big' }, { status: 413, headers: coachCors });
   if (await limited(req, 'coach-comment', 120, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: coachCors });
-  const c = parseComment(await req.json().catch(() => null));
+  const raw = await cappedJson(req, MAX_COMMENT_BYTES);
+  if (raw === 'too_big') return NextResponse.json({ error: 'too_big' }, { status: 413, headers: coachCors });
+  const c = parseComment(raw);
   if (!c) return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: coachCors });
   if (isOffensive(c.name) || isOffensive(c.body)) return NextResponse.json({ error: 'offensive' }, { status: 422, headers: coachCors });
   const comment = await coachStore().comment(token, c);

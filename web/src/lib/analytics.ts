@@ -5,6 +5,7 @@
 // event and its small props, with free text and content ids dropped. It is sent from the
 // server, so the player's IP address never reaches PostHog.
 
+import 'server-only';
 import type { AppEvent } from './store';
 
 /**
