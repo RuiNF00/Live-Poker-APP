@@ -115,3 +115,17 @@ test('groups: every share and transfer is to the cent, and paying the transfers 
     assert.ok(tr.length <= size - 1, 'at most one transfer fewer than players');
   }
 });
+
+test('the same entry saved twice by the server (a retry at the same moment) counts once', () => {
+  const r = e('b', 'result', 1000, { cid: 'r1' });
+  const p = e('b', 'payment', 50, { cid: 'p1~0' });
+  const twice = swap({ entries: [r, { ...r, id: 'dup1' }, p, { ...p, id: 'dup2' }] });
+  assert.equal(swapLedger(twice).balance, 50);
+  assert.equal(swapLedger({ ...twice, side: 'b' }).balance, -50);
+  // The same cid from the other side is their own entry: both count.
+  const both = swap({ entries: [r, e('a', 'result', 1000, { cid: 'r1' })] });
+  assert.equal(swapLedger(both).balance, 0);
+  const ge = (seat: number, cid: string, id = cid): GroupEntry => ({ id, cid, seat, kind: 'result', amount: 1000, event: '', finish: null, at: 1 });
+  const g: SwapGroup = { id: 'g', token: 't', seat: 0, entries: [ge(1, 'x'), ge(1, 'x', 'dup')], createdAt: 1, updatedAt: 1, terms: { v: 1, scope: 'series', title: 'G', venue: '', currency: '€', pct: 10, note: '', createdAt: 1 }, seats: [0, 1, 2].map((seat) => ({ seat, name: `P${seat}`, confirmedAt: 1 })) };
+  assert.equal(groupNet(g).get(1), -200);
+});

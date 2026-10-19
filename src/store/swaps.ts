@@ -4,7 +4,7 @@
 //
 // Same shapes as web/src/lib/swap-terms.ts (the server rebuilds them field by field).
 
-import { assignGroups, groupLedger, groupNet, groupReady, HALF_CENT, minTransfers, type SwapGroup } from './swap-groups';
+import { assignGroups, groupLedger, groupNet, groupReady, HALF_CENT, minTransfers, onePerCid, type SwapGroup } from './swap-groups';
 import { t } from '@/i18n';
 
 import type { Session } from './types';
@@ -190,11 +190,12 @@ export function seenTag(entries: Pick<SwapEntry, 'side' | 'kind' | 'amount'>[], 
 /** Where I stand in one swap, from my side. Pending entries count: they are mine and real. */
 export function swapLedger(s: Pick<Swap, 'terms' | 'entries' | 'side'>): SwapLedger {
   const me = s.side;
+  const entries = onePerCid(s.entries, (e) => e.side);
   let iOwe = 0;
   let theyOwe = 0;
   let myPrizes = 0;
   let theirPrizes = 0;
-  for (const e of s.entries) {
+  for (const e of entries) {
     const mine = e.side === me;
     if (e.kind === 'result') {
       const o = owedOn(s.terms, e);
@@ -207,7 +208,7 @@ export function swapLedger(s: Pick<Swap, 'terms' | 'entries' | 'side'>): SwapLed
       }
     }
   }
-  const paid = paidBySide(s.entries);
+  const paid = paidBySide(entries);
   const iPaid = paid[me];
   const theyPaid = paid[other(me)];
   return {
@@ -352,7 +353,7 @@ export function assignSwaps(sessions: Session[], swaps: Swap[]): SwapAssignment 
     const cur = sw.terms.currency;
     const from = sw.terms.createdAt - 2 * DAY;
     const mine = ended.filter((s) => s.currency === cur && s.startedAt >= from);
-    for (const e of sw.entries) {
+    for (const e of onePerCid(sw.entries, (x) => x.side)) {
       if (e.kind !== 'result' || !e.amount) continue;
       const owed = owedOn(sw.terms, e);
       let id: string | undefined;

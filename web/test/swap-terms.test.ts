@@ -66,6 +66,14 @@ describe('swapBalance', () => {
     ]);
     expect(b).toEqual({ aOwes: 1000, bOwes: 3000, aPaid: 0, bPaid: 0, net: 2000 });
   });
+  it('the same entry saved twice by the server counts once, as in the app', () => {
+    const b = swapBalance(terms, [
+      { side: 'b', kind: 'result', amount: 100000, cid: 'r1' },
+      { side: 'b', kind: 'result', amount: 100000, cid: 'r1' },
+      { side: 'a', kind: 'result', amount: 20000, cid: 'r1' },
+    ]);
+    expect(b).toEqual({ aOwes: 1000, bOwes: 3000, aPaid: 0, bPaid: 0, net: 2000 });
+  });
   it('payments settle it', () => {
     const b = swapBalance(terms, [
       { side: 'b', kind: 'result', amount: 100000 },

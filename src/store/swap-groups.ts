@@ -90,11 +90,28 @@ export const groupShareOf = (g: Pick<SwapGroup, 'terms'>, amount: number) => r2(
 /** What one prize costs its winner in total: each share, rounded, times the others. */
 export const groupOwedOn = (g: Pick<SwapGroup, 'terms' | 'seats'>, amount: number) => r2(groupShareOf(g, amount) * (g.seats.length - 1));
 
+/**
+ * Each entry once per player and cid. Before swap_entry_lock.sql the server could save a retry
+ * sent at the same moment as the first try twice; those copies never count twice.
+ */
+export function onePerCid<E extends { cid?: string }>(entries: E[], who: (e: E) => string | number): E[] {
+  const seen = new Set<string>();
+  let dup = false;
+  const out = entries.filter((e) => {
+    if (!e.cid) return true;
+    const k = `${who(e)}:${e.cid}`;
+    if (seen.has(k)) return !(dup = true);
+    seen.add(k);
+    return true;
+  });
+  return dup ? out : entries;
+}
+
 /** Per seat: positive, the others owe them; negative, they owe. Payments already count. */
 export function groupNet(g: Pick<SwapGroup, 'terms' | 'seats' | 'entries'>): Map<number, number> {
   const net = new Map(g.seats.map((s) => [s.seat, 0]));
   const add = (seat: number, d: number) => net.set(seat, (net.get(seat) ?? 0) + d);
-  for (const e of g.entries) {
+  for (const e of onePerCid(g.entries, (x) => x.seat)) {
     if (e.kind === 'result') {
       const k = groupShareOf(g, e.amount);
       for (const s of g.seats) if (s.seat !== e.seat) {
@@ -155,7 +172,7 @@ export function groupLedger(g: Pick<SwapGroup, 'terms' | 'seats' | 'entries' | '
   let effect = 0;
   let myPrizes = 0;
   let othersPrizes = 0;
-  for (const e of g.entries) {
+  for (const e of onePerCid(g.entries, (x) => x.seat)) {
     if (e.kind !== 'result') continue;
     if (e.seat === g.seat) {
       effect -= groupOwedOn(g, e.amount);
@@ -239,7 +256,7 @@ export function assignGroups(sessions: Session[], groups: SwapGroup[]): { bySess
     if (!groupReady(g)) continue;
     const from = g.terms.createdAt - 2 * DAY;
     const mine = ended.filter((s) => s.currency === g.terms.currency && s.startedAt >= from);
-    for (const e of g.entries) {
+    for (const e of onePerCid(g.entries, (x) => x.seat)) {
       if (e.kind !== 'result' || !e.amount) continue;
       let id: string | undefined;
       if (e.seat === g.seat) {

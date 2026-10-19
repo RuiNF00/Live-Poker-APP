@@ -1,5 +1,5 @@
 import { isOffensive } from './moderation';
-import { parseEntry } from './swap-terms';
+import { onePerCid, parseEntry } from './swap-terms';
 
 /**
  * A group swap: 3 to 8 players, each gives the same percentage of their own prizes to every
@@ -102,10 +102,10 @@ export function parseGroupEntry(x: unknown): Omit<GroupEntry, 'id' | 'seat' | 'a
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Per seat: positive, the others owe them; negative, they owe. Payments already count. */
-export function groupNet(terms: Pick<GroupTerms, 'pct'>, seats: Pick<GroupSeat, 'seat'>[], entries: Pick<GroupEntry, 'seat' | 'kind' | 'amount' | 'to'>[]): Map<number, number> {
+export function groupNet(terms: Pick<GroupTerms, 'pct'>, seats: Pick<GroupSeat, 'seat'>[], entries: (Pick<GroupEntry, 'seat' | 'kind' | 'amount' | 'to'> & { cid?: string })[]): Map<number, number> {
   const net = new Map(seats.map((s) => [s.seat, 0]));
   const add = (seat: number, d: number) => net.set(seat, (net.get(seat) ?? 0) + d);
-  for (const e of entries) {
+  for (const e of onePerCid(entries, (x) => x.seat)) {
     if (e.kind === 'result') {
       const k = r2((terms.pct / 100) * e.amount);
       for (const s of seats) if (s.seat !== e.seat) {
