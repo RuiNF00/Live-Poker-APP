@@ -324,7 +324,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:pasamos|passamos|vamos)(?: (?:a|ao|al|pro|pra|para o|para el|to the|to))? (?=flop|turn|river|rio\b)/g, ' , '],
     [/\b(flop|turn|river) ?[.,:;]? ?(?:o |el |the )?\1\b/g, ' $1 '],
     // "No 3-bet", "sem 3bet": nobody re-raised; nothing to add.
-    [/\b(?:no|sem|sin|without) [2-5]bet\b/g, ' , '],
+    [/\b(?:no|sem|sin|without|nao ha|nao houve|no hay|no hubo|theres no|there is no|there was no|nobody|ninguem|nadie)(?: (?:da|faz|deu|fez|hace|hizo|makes|made))? (?:um |una? |a )?[2-5]bets?\b/g, ' , '],
     // "Pasamos los dos", "passamos": everyone checks.
     [/\b(?:pasamos|passamos|checamos|checkeamos|we (?:both )?check(?:ed)?)(?: (?:los|las|os|as) (?:dos|dois|duas|tres))?\b/g, ' todos check '],
     [/\b(?:nao (?:paga|pagou) ninguem|no (?:paga|pago) nadie)\b/g, ' foldall '],

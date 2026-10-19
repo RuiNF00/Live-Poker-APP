@@ -193,6 +193,10 @@ export const CASES: Case[] = [
   { lang: 'br', text: 'Tô no botão com ás rei, abro pra 1000, o big paga, passamos pro flop rei sete dois, ele passa, eu aposto 600.', pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c, BTN b600', board: 'K72' },
   { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, la ciega grande paga y pasamos al flop: rey siete dos, pasa, apuesto 600.', pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c, BTN b600', board: 'K72' },
 
+  { lang: 'pt', text: 'Estou no botão com ás rei, abro para 1000, não há 3-bet, o big paga.', pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c' },
+  { lang: 'br', text: 'Tô no botão com ás rei, abro pra 1000, ninguém dá 3-bet, o big paga.', pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c' },
+  { lang: 'es', text: 'Estoy en el botón con as rey, subo a 1000, no hay 3bet, la ciega grande paga.', pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c' },
+  { lang: 'en', text: "I'm on the button with ace king, I open to 1000, there's no 3-bet, the big blind calls.", pos: 'BTN', cards: 'AK', line: 'BTN r1000, BB c' },
   // ── P3s.
   { lang: 'pt', text: 'Blinds 400/200. Estou no botão com ás rei, o UTG abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 ];
