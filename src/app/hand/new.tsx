@@ -38,7 +38,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, cutAt, entryLine, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, cutAt, entryLine, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -261,6 +261,11 @@ export default function NewHand() {
   // The next street's first card after a call that closes the street: one tap for both.
   const callWithCard = (a: HandAction, c: string) => {
     tap();
+    // River: the card is the first one the caller showed; the showdown picker takes the second.
+    if (s.street === 'river') {
+      const players = hand.players.map((p, i) => (i === a.p ? { ...p, cards: [c] } : p));
+      return update({ ...hand, players, actions: [...hand.actions, a] });
+    }
     const next = { ...hand, actions: [...hand.actions, a], board: [...hand.board, c] };
     const done = next.board.length === (s.street === 'preflop' ? 3 : s.street === 'flop' ? 4 : 5);
     const down = draft.checkDownFrom !== undefined && done ? checkDownNext(next) : [];
@@ -394,7 +399,7 @@ export default function NewHand() {
   const seatsView = seatViews(hand, s, { inBB, reveal: phase === 'showdown' || phase === 'done', result: r.result, hideActing: phase !== 'action' });
   const l = legal(s);
   const line = phase === 'action' || phase === 'board' ? entryLine(hand) : [];
-  const cardCall = phase === 'action' && raiseAt !== autoKey ? closingCall(hand, s) : null;
+  const cardCall = phase === 'action' && raiseAt !== autoKey ? (closingCall(hand, s) ?? showdownCall(hand, s)) : null;
   // Heads-up the grid already says it: «Só X paga» is the Call button, «Todos fold» the Fold.
   const callers = phase === 'action' && !cardCall ? callerCandidates(hand, s) : [];
   const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
@@ -775,7 +780,11 @@ export default function NewHand() {
             {cardCall && (
               <View style={{ gap: 6 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
-                  <T v="label">{t('Call? Toca já na carta do {street}', { street: s.street === 'preflop' ? 'flop' : s.street === 'flop' ? 'turn' : 'river' })}</T>
+                  <T v="label">
+                    {s.street === 'river'
+                      ? t('Call? Toca já nas cartas que mostrou')
+                      : t('Call? Toca já na carta do {street}', { street: s.street === 'preflop' ? 'flop' : s.street === 'flop' ? 'turn' : 'river' })}
+                  </T>
                   <Chip label={raiseName(s)} onPress={() => setRaiseAt(autoKey)} />
                 </Row>
                 <CardPicker used={usedCards(hand)} onPick={(c) => callWithCard(cardCall, c)} />

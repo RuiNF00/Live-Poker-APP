@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, closingCall, cutAt, entryLine, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, showdownCall, cutAt, entryLine, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -82,7 +82,7 @@ class Entry {
     const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.label.replace(',', '.') === label);
     assert.ok(p, `no preset ${label}`);
     // Where the next card stands for a call, the sizes are one tap away («Raise»).
-    if (closingCall(this.hand, this.s)) this.taps++;
+    if (closingCall(this.hand, this.s) || showdownCall(this.hand, this.s)) this.taps++;
     this.bet(p.to);
   }
   /** The keypad: open it, switch to bb, type the digits (e.g. "2,2" is 3), confirm. */
@@ -870,4 +870,90 @@ test('round 6 · the action line: newest first, no app folds, one tap takes the 
   const pre = cutAt(e.hand, line.find((x) => x.a.p === e.hand.hero && x.street === 'preflop')!.i);
   assert.deepEqual(pre.board, []);
   assert.equal(replay(pre).final.toAct, e.hand.hero);
+});
+
+test('round 7 · a river call to showdown is the first card shown: hero bets, BTN calls and shows — 16 taps (was 17)', () => {
+  const run = (card: boolean) => {
+    const e = new Entry('CO', ['Ah', 'Kh']);
+    e.size('2.5x');
+    e.only('BTN');
+    e.board('Kc', '8d', '3s');
+    e.checkAround();
+    e.board('7h');
+    e.checkAround();
+    e.board('2c');
+    e.size('½');
+    if (card) {
+      const a = showdownCall(e.hand, e.s);
+      assert.ok(a, 'cards shown not offered');
+      e.taps += 2; // first card = the call, the picker stays open on the second
+      e.hand = { ...e.hand, actions: [...e.hand.actions, a], players: e.hand.players.map((p, i) => (i === a.p ? { ...p, cards: ['Kd', 'Qs'] } : p)) };
+    } else {
+      e.act('call');
+      e.shows('BTN', ['Kd', 'Qs']);
+    }
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 17);
+  assert.equal(after.taps, 16);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 7 · no river shortcut for hero, multiway, a check, or a caller whose cards are known', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.act('call');
+  e.only(null);
+  e.board('Kc', '8d', '3s');
+  assert.equal(showdownCall(e.hand, e.s), null, 'flop');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  assert.equal(showdownCall(e.hand, e.s), null, 'CO can check');
+  e.act('check');
+  assert.equal(e.s.toAct, 0);
+  e.size('½');
+  const co = e.s.toAct!;
+  assert.ok(showdownCall(e.hand, e.s), 'CO facing the river bet');
+  e.hand = { ...e.hand, players: e.hand.players.map((p, i) => (i === co ? { ...p, cards: ['Kd', 'Qs'] } : p)) };
+  assert.equal(showdownCall(e.hand, e.s), null, 'cards already known');
+});
+
+test('round 7 · a river bet by the villain: hero calls with the buttons, no shortcut', () => {
+  const e = new Entry('CO', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  e.act('check');
+  e.size('½');
+  assert.equal(e.s.toAct, 0);
+  assert.equal(showdownCall(e.hand, e.s), null);
+});
+
+test('round 7 · multiway river: no shortcut while a third player is in', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('UTG');
+  e.size('2.5x');
+  e.coldCall('LJ');
+  e.act('call');
+  e.only(null);
+  e.board('Kc', '8d', '3s');
+  e.checkAround();
+  e.board('7h');
+  e.checkAround();
+  e.board('2c');
+  e.act('check');
+  e.act('check');
+  e.size('½');
+  assert.equal(showdownCall(e.hand, e.s), null, 'UTG and LJ both still in');
 });

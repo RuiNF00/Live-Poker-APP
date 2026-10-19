@@ -350,6 +350,20 @@ export function closingCall(hand: Hand, s: TableState): HandAction | null {
   return next && next.needsBoard ? a : null;
 }
 
+/**
+ * Heads-up on the river: the opponent's call that ends the betting, when their cards are still
+ * unknown. The first card they showed can then stand for it, like the next street's card above.
+ */
+export function showdownCall(hand: Hand, s: TableState): HandAction | null {
+  const l = legal(s);
+  if (!l || l.p === hand.hero || !l.canCall || l.canCheck || s.street !== 'river' || s.folded[hand.hero]) return null;
+  if (hand.players.some((_, i) => i !== hand.hero && i !== l.p && !s.folded[i])) return null;
+  if (hand.players[l.p].cards?.length) return null;
+  const a: HandAction = { p: l.p, kind: 'call' };
+  const next = apply(s, a, hand);
+  return next && next.toAct === null && !next.needsBoard && !next.foldWin ? a : null;
+}
+
 /** An entered action, as the line above the buttons shows it. */
 export interface LineItem {
   i: number;

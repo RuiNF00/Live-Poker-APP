@@ -1682,6 +1682,7 @@ const ptBR: Record<string, string> = {
   'Não dá para reabrir este pacote': 'Não dá para reabrir este pacote',
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
   'Call? Toca já na carta do {street}': 'Call? Toque agora na carta do {street}',
+  'Call? Toca já nas cartas que mostrou': 'Call? Toque agora nas cartas mostradas',
   'Carta tapada': 'Carta virada para baixo',
   'Mão guardada como rascunho. Mãos grátis hoje: {left} de {n}.': 'Mão salva como rascunho. Mãos grátis hoje: {left} de {n}.',
   'O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}». Continua sendo recuperado lá.',
