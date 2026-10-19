@@ -188,3 +188,11 @@ test('screen reader: each step announces the same sentence as its timeline entry
     assert.equal(viewAt(hand, r, it.k, { ...opts, inBB: true, atEnd: false }).spoken, it.spoken);
   }
 });
+
+test('raises carry their size against the bet they raise: open 3x, 3-bet 3x', () => {
+  // UTG opens to 6 (3x the 2 big blind), BTN 3-bets to 18.
+  const h = spot([{ p: 3, kind: 'raise', to: 6 }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'raise', to: 18 }]);
+  const v = lastView(h);
+  assert.equal(v.seats[3].badge?.label, 'RAISE 6 (3x)');
+  assert.equal(v.seats[0].badge?.label, 'RAISE 18 (3x)');
+});

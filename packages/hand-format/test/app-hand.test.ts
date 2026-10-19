@@ -70,3 +70,40 @@ describe('fromAppHand', () => {
     expect(end.winners).toEqual([{ seat: 3, amount: 72, handLabel: undefined }]);
   });
 });
+
+describe('fromAppHand · PLO', () => {
+  const plo: AppHand = {
+    v: 1,
+    game: { kind: 'cash', name: 'PLO 1/2', sb: 1, bb: 2, ante: 0, anteType: 'bb', currency: 'EUR', variant: 'plo' },
+    players: [
+      { name: 'Hero', stack: 400, cards: ['Ah', 'As', '7d', '6c'] },
+      { name: '', stack: 400, cards: ['Jc', 'Td', '3s', '3d'] },
+    ],
+    button: 0,
+    hero: 0,
+    actions: [
+      { p: 0, kind: 'call' }, { p: 1, kind: 'check' },
+      { p: 1, kind: 'check' }, { p: 0, kind: 'check' },
+      { p: 1, kind: 'check' }, { p: 0, kind: 'check' },
+      { p: 1, kind: 'check' }, { p: 0, kind: 'check' },
+    ],
+    board: ['Kh', 'Qh', '9h', '4h', '2c'],
+    tags: [],
+    notes: '',
+  };
+
+  it('is a valid PLO record with four cards a seat', () => {
+    const { hand } = fromAppHand(plo);
+    expect(hand.game).toBe('PLO');
+    expect(validateHand(hand)).toEqual([]);
+  });
+
+  it('marks a PLO hand as PLO even before any cards are entered', () => {
+    const { hand } = fromAppHand({ ...plo, players: plo.players.map(({ cards: _, ...p }) => p) });
+    expect(hand.game).toBe('PLO');
+  });
+
+  it('a hold\'em hand stays NLHE', () => {
+    expect(fromAppHand(APP_HAND).hand.game).toBe('NLHE');
+  });
+});

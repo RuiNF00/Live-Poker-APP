@@ -114,6 +114,11 @@ export function stakesText(blinds: HandRecord['blinds'], fmt: (n: number) => str
   return `${fmt(blinds.sb)}/${fmt(blinds.bb)}${straddle > 0 ? `/${fmt(straddle)}` : ''}${extra ? sep + extra : ''}`;
 }
 
+/** Stakes as a PLO hand reads them, like the app: "PLO 1/2"; hold'em stays "1/2". */
+export function gameStakes(hand: Pick<HandRecord, 'game'>, stakes: string): string {
+  return hand.game === 'PLO' && stakes ? `PLO ${stakes}` : stakes;
+}
+
 /** The biggest straddle posted preflop (0 when none), so stakes read "1/2/4" like in the app. */
 export function straddleOf(hand: HandRecord): number {
   return Math.max(0, ...(hand.actions.preflop ?? []).filter((a) => a.type === 'post_straddle').map((a) => a.amount ?? 0));
@@ -125,7 +130,7 @@ export function handTitle(hand: HandRecord): string {
   const heroCards = hero?.cards?.length ? hero.cards.map(cardText).join('') : '';
   const st = straddleOf(hand);
   const stakes = `${formatChips(hand.blinds.sb)}/${formatChips(hand.blinds.bb)}${st ? `/${formatChips(st)}` : ''}${hand.blinds.ante ? ` (${formatChips(hand.blinds.ante)})` : ''}`;
-  return [heroCards, stakes].filter(Boolean).join(' · ');
+  return [heroCards, gameStakes(hand, stakes)].filter(Boolean).join(' · ');
 }
 
 export function isValidCard(c: unknown): c is Card {

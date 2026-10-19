@@ -304,10 +304,13 @@ const ptBR: Record<string, string> = {
   'Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.': 'Quando passar do limite, a nuvem guarda o último backup que coube. Exporte para um arquivo para guardar tudo.',
   'Na tua mesa': 'Na sua mesa',
   'Escolhe as cartas': 'Escolha as cartas',
+  'Toca num lugar para o mudar.': 'Toque em um lugar para mudá-lo.',
   'Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.': 'Toque em um lugar para mudá-lo. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.',
   'Escolhe as tuas duas cartas.': 'Escolha suas duas cartas.',
   'Completa o flop (ou tira o turn e o river).': 'Complete o flop (ou tire o turn e o river).',
   'Escolhe as duas cartas do vilão.': 'Escolha as duas cartas do vilão.',
+  'Escolhe as tuas quatro cartas.': 'Escolha suas quatro cartas.',
+  'Escolhe as quatro cartas do vilão.': 'Escolha as quatro cartas do vilão.',
   'Prémios ({currency})': 'Prêmios ({currency})',
   'Preenche todos os stacks e pelo menos o 1.º prémio.': 'Preencha todos os stacks e pelo menos o 1º prêmio.',
   'Para dividir o prémio na mesa final': 'Para dividir o prêmio na mesa final',
@@ -1788,6 +1791,7 @@ const ptBR: Record<string, string> = {
   'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'O swap “{title}” já tinha sido confirmado. Abra o link de novo para ver.',
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Seu lugar em “{title}” já tinha sido escolhido. Abra o link de novo para escolher outro.',
   'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'Ficou sem registrar o acerto em “{titles}”: ele já tem o máximo de registros. Os outros foram registrados.',
+  'Em PLO o máximo é o pote: o valor do {pos} ficou no pote.': 'No PLO o máximo é o pote: o valor do {pos} ficou no pote.',
 };
 
 export default ptBR;

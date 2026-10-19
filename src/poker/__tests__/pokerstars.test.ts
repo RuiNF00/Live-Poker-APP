@@ -320,3 +320,15 @@ test('a whole-euro chop at cent blinds still splits to the cent: €1 is 0.50 + 
   const txt = pokerStarsText(h);
   assert.ok(txt.includes('SB collected €0.50 from pot\nBB collected €0.50 from pot'), txt);
 });
+
+test('PLO: the header says Omaha Pot Limit and hero is dealt four cards', () => {
+  const h = mk({
+    game: { kind: 'cash', name: 'Casino Lisboa', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', variant: 'plo' },
+    players: mk().players.map((p, i) => (i === 0 ? { ...p, cards: ['As', 'Kd', 'Qh', 'Jc'] } : { ...p, cards: undefined })),
+    actions: [{ p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'raise', to: 7 }, { p: 1, kind: 'fold' }, { p: 2, kind: 'fold' }],
+  });
+  const txt = pokerStarsText(h, replay(h));
+  assert.match(txt, /^PokerStars Hand #\d+: {2}Omaha Pot Limit \(€1\/€2 EUR\)/);
+  assert.match(txt, /Dealt to Hero \[As Kd Qh Jc\]/);
+  assert.doesNotMatch(pokerStarsText(mk(), replay(mk())), /Omaha/, "hold'em stays Hold'em No Limit");
+});

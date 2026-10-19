@@ -11,6 +11,7 @@
 // had to make (a suit, a size, a missing card) is listed for the player to fix.
 
 import { apply, buttonForHeroPosition, legal, positions, replay, straddleSeats, totalPot, type TableState } from './engine';
+import { holeCount, isPLO } from './variant';
 import { resizeTable, rescaleStacks } from './factory';
 import type { ActionKind, CardCode, Hand, HandAction, Street, Suit } from './types';
 
@@ -32,7 +33,9 @@ export type VoiceNoteCode =
   /** Something said couldn't happen at that point of the hand and was left out. */
   | 'skipped'
   /** A stack grew so a bet that was said would fit. */
-  | 'stackGrew';
+  | 'stackGrew'
+  /** PLO: a size above the pot, brought down to a pot-sized bet or raise. */
+  | 'potLimit';
 
 export interface VoiceNote {
   code: VoiceNoteCode;
@@ -283,6 +286,13 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
     [/\ball[\s-]*ins?\b|\bol[\s-]*in\b|\ba tudo\b|\bo resto\b/g, ' allin '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
+    // "PLO", "Pot-Limit Omaha", "Omaha": four hole cards (see handFromSpeech).
+    [/\bpot[\s-]*limit[\s-]*omaha\b|\bplo ?[45]?\b|\bomaha\b/g, ' plo '],
+    // "Dá pot", "faz pote", "va al bote": a pot-sized bet, or raise if there's one to face.
+    [/\b(?:da|dou|deu|dei|faz|faco|fiz|fez|vai|vou|foi|fui|hace|hago|hizo|va|voy|go|goes|went|makes|made)(?: (?:o|el|the|a|al|ao))? (?:pot|pote|bote)\b/g, ' bet pote '],
+    // "Double suited", "duplo naipe", "doble palo": two pairs of suits; "single suited", one.
+    [/\bdouble[\s-]*suited\b|\bduplo[\s-]*naipe\b|\bduplamente naipad[ao]s?\b|\bdoble[\s-]*(?:palo|suited)\b|\bdos palos\b|\bdois naipes\b/g, ' dsuited '],
+    [/\bsingle[\s-]*suited\b|\bnaipe simples\b|\bum naipe\b|\bun palo\b|\bsimple[\s-]*suited\b/g, ' ssuited '],
     [/(?<!\+ ?)\b([2-5])[\s-]*bet(s|o|ei|ou|a)?\b/g, ' $1bet$2 '],
     [/\b(tres|three|tri|tree)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' 3bet$2 '],
     [/\b(quatro|cuatro|four)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' 4bet$2 '],
@@ -359,7 +369,7 @@ type Atom =
   | { t: 'have'; at: number }
   | { t: 'verb'; v: VerbDef; at: number }
   | { t: 'amount'; amt: Amount; at: number }
-  | { t: 'cards'; cards: CardSpec[]; suited?: boolean; texture?: Texture; at: number }
+  | { t: 'cards'; cards: CardSpec[]; suited?: boolean; ds?: 1 | 2; texture?: Texture; at: number }
   | { t: 'street'; s: Street; at: number }
   | { t: 'show'; at: number }
   | { t: 'win'; who: 'hero' | 'other' | 'split'; at: number }
@@ -383,9 +393,10 @@ const UNIT_AFTER = new Set([...THOUSAND, ...BB_UNIT, ...X_UNIT, 'fichas', 'chips
  * Cards from i on: up to `max`, in any of the ways players say them. Stops at
  * the first word that isn't a card or a filler.
  */
-function readCards(w: string[], i: number, max: number, eager: boolean): { cards: CardSpec[]; suited?: boolean; texture?: Texture; next: number } {
+function readCards(w: string[], i: number, max: number, eager: boolean): { cards: CardSpec[]; suited?: boolean; ds?: 1 | 2; texture?: Texture; next: number } {
   const cards: CardSpec[] = [];
   let suited: boolean | undefined;
+  let ds: 1 | 2 | undefined;
   let texture: Texture | undefined;
   let j = i;
   let lastCountWord = -1;
@@ -477,6 +488,12 @@ function readCards(w: string[], i: number, max: number, eager: boolean): { cards
       end = j;
       continue;
     }
+    if ((x === 'dsuited' || x === 'ssuited') && cards.length > 2) {
+      ds = x === 'dsuited' ? 2 : 1;
+      j++;
+      end = j;
+      continue;
+    }
     if (RAINBOW.has(x)) {
       texture = { n: 1 };
       j++;
@@ -501,10 +518,11 @@ function readCards(w: string[], i: number, max: number, eager: boolean): { cards
     else if (OFFSUIT.has(w[j])) suited = false;
     else if (RAINBOW.has(w[j])) texture = { n: 1 };
     else if (MONOTONE.has(w[j])) texture = { n: 3 };
+    else if ((w[j] === 'dsuited' || w[j] === 'ssuited') && cards.length > 2) ds = w[j] === 'dsuited' ? 2 : 1;
     else continue;
     end = j + 1;
   }
-  return { cards, suited, texture, next: Math.max(end, i + (cards.length ? 1 : 0)) };
+  return { cards, suited, ds, texture, next: Math.max(end, i + (cards.length ? 1 : 0)) };
 }
 
 function readAmountUnit(w: string[], j: number): { unit: Amount['unit']; next: number } {
@@ -518,7 +536,8 @@ function readAmountUnit(w: string[], j: number): { unit: Amount['unit']; next: n
   return { unit: 'chips', next: j };
 }
 
-export function atomise(text: string): Atom[] {
+/** `hole`: cards each player is dealt (4 in PLO). */
+export function atomise(text: string, hole = 2): Atom[] {
   const { words: w } = normalise(text);
   const out: Atom[] = [];
   let cardMode: 'hole' | 'board' | 'show' | null = null;
@@ -569,7 +588,7 @@ export function atomise(text: string): Atom[] {
       i++;
       continue;
     }
-    if (x === 'preflop') {
+    if (x === 'preflop' || x === 'plo') {
       i++;
       continue;
     }
@@ -783,9 +802,9 @@ export function atomise(text: string): Atom[] {
     const strongRank = (x in RANK_WORDS && !WEAK_RANKS.has(x) && !/^\d+$/.test(x) && numToken(x) === null) || x in PAIR_WORDS || (/^[akqjt2-9]{2}[so]?$/.test(x) && !/^\d+$/.test(x)) || /^(\d)\1$/.test(x);
     const pairCue = (x === 'par' || x === 'pair' || x === 'pocket' || x === 'pockets' || x === 'pareja') && (isCardWord(w[i + 1]) || ((w[i + 1] === 'de' || w[i + 1] === 'of') && isCardWord(w[i + 2])));
     if ((cue && isCardWord(x) && !(/^\d+$/.test(x) && moneyAfter(w[i + 1]))) || strongRank || pairCue || weakPair || (cue && x === 'a' && isCardWord(w[i + 1]) && !moneyAfter(w[i + 2]))) {
-      const c = readCards(w, i, 2, cue || pairCue);
+      const c = readCards(w, i, hole, cue || pairCue);
       if (c.cards.length) {
-        out.push({ t: 'cards', cards: c.cards, suited: c.suited, at: i });
+        out.push({ t: 'cards', cards: c.cards, suited: c.suited, ds: c.ds, at: i });
         i = c.next;
         cardMode = null;
         continue;
@@ -889,6 +908,8 @@ interface Setup {
   heroPos?: string;
   heroCards?: CardSpec[];
   heroSuited?: boolean;
+  /** PLO: "double suited" (2) or "single suited" (1). */
+  heroDs?: 1 | 2;
   size?: number;
   blinds?: { sb: number; bb: number; ante?: number };
   straddle?: 'utg' | 'btn';
@@ -897,7 +918,7 @@ interface Setup {
 }
 
 /** Atoms into events: who did what, in the order it was said. */
-function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
+function toEvents(atoms: Atom[], hole = 2): { setup: Setup; events: Event[] } {
   const setup: Setup = { stacks: [] };
   const events: Event[] = [];
   const used = new Set<number>();
@@ -942,8 +963,9 @@ function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
         const heroActs = lastAct.actor?.k === 'hero' || (!lastAct.actor && lastAct.person === 1);
         if (heroActs) {
           if (!setup.heroCards) {
-            setup.heroCards = a.cards.slice(0, 2);
+            setup.heroCards = a.cards.slice(0, hole);
             setup.heroSuited = a.suited;
+            setup.heroDs = a.ds;
           }
         } else events.push({ kind: 'show', actor: lastAct.actor ?? { k: 'villain' }, cards: a.cards, suited: a.suited });
         continue;
@@ -952,8 +974,9 @@ function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
         events.push({ kind: 'show', actor: owner && owner.a.k !== 'hero' ? owner.a : owner ? { k: 'hero' } : null, cards: a.cards, suited: a.suited });
         if (owner) used.add(atoms.indexOf(owner));
       } else if (!setup.heroCards && (have || !owner || owner.a.k === 'hero' || (owner.a.k === 'pos' && !events.some((e) => e.kind === 'act')))) {
-        setup.heroCards = a.cards.slice(0, 2);
+        setup.heroCards = a.cards.slice(0, hole);
         setup.heroSuited = a.suited;
+        setup.heroDs = a.ds;
         // "Botão, ás rei": a position right before hero's cards, before any action, is hero's.
         if (owner && owner.a.k === 'pos' && !setup.heroPos && !have) {
           setup.heroPos = owner.a.label;
@@ -1134,13 +1157,34 @@ function quietSuits(board: CardCode[], hero: CardCode[]): Suit[] {
   return [...ALL_SUITS].sort((a, b) => count(a) - count(b));
 }
 
+/**
+ * PLO suits said as "double/single suited": for each of the four cards, the index of the
+ * card it shares a suit with. Pairs are of different ranks ("ases e reis double suited" is
+ * A♠K♠ A♥K♥), and the other cards get suits of their own.
+ */
+function omahaMates(specs: CardSpec[], ds: 1 | 2): (number | undefined)[] {
+  const pairs: [number, number][][] = [
+    [[0, 1], [2, 3]],
+    [[0, 2], [1, 3]],
+    [[0, 3], [1, 2]],
+  ];
+  const ok = (a: number, b: number) => specs[a].r !== specs[b].r && !(specs[a].s && specs[b].s && specs[a].s !== specs[b].s);
+  const pick = pairs.find((pp) => pp.slice(0, ds).every(([a, b]) => ok(a, b)));
+  const out: (number | undefined)[] = [];
+  for (const [a, b] of pick?.slice(0, ds) ?? []) out[b] = a;
+  return out;
+}
+
 export function handFromSpeech(text: string, base: Hand): VoiceResult {
-  const atoms = atomise(text);
-  const { setup, events } = toEvents(atoms);
+  // "PLO", "Omaha" said, or a PLO table already: four hole cards, bets capped at the pot.
+  if (!isPLO(base.game) && normalise(text).words.includes('plo')) base = { ...base, game: { ...base.game, variant: 'plo' } };
+  const hole = holeCount(base.game);
+  const atoms = atomise(text, hole);
+  const { setup, events } = toEvents(atoms, hole);
   // Cards already picked on the entry screen stay, unless the player says others.
   const picked = base.players[base.hero].cards;
   const saidCards = !!setup.heroCards?.length;
-  if (!setup.heroCards?.length && picked?.length === 2) setup.heroCards = picked.map((c) => ({ r: c[0] as Rank, s: c[1] as Suit }));
+  if (!setup.heroCards?.length && picked?.length === hole) setup.heroCards = picked.map((c) => ({ r: c[0] as Rank, s: c[1] as Suit }));
   const notes: VoiceNote[] = [];
   const note = (n: VoiceNote) => {
     if (!notes.some((x) => x.code === n.code && x.street === n.street && x.pos === n.pos)) notes.push(n);
@@ -1225,8 +1269,12 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       specs = [{ ...specs[0], s: specs[1].s }, specs[1]];
     }
     const suited = setup.heroSuited === true && specs.length === 2 && specs[0].r !== specs[1].r;
+    // PLO "double suited": two pairs of cards of different ranks share a suit each; "single suited", one pair.
+    const mate = specs.length === 4 && setup.heroDs ? omahaMates(specs, setup.heroDs) : null;
     heroCards = resolveNamed(specs, (k, chosen) => {
       if (suited) return chosen.length ? [chosen[0][1] as Suit] : ['h'];
+      const m = mate?.[k];
+      if (m !== undefined && m < chosen.length) return [chosen[m][1] as Suit];
       return ALL_SUITS.filter((s) => !chosen.some((c) => c[1] === s));
     });
     if (suited && heroCards.length === 2 && heroCards[0][1] !== heroCards[1][1]) {
@@ -1415,7 +1463,7 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       const seat: number = i ?? hand.players.findIndex((_, x) => x !== hand.hero && !s.folded[x]);
       if (seat < 0 || seat === hand.hero) continue;
       const suited = e.suited === true && e.cards.length === 2 && e.cards[0].r !== e.cards[1].r;
-      const cards = resolveNamed(e.cards.slice(0, 2), (kk, chosen) =>
+      const cards = resolveNamed(e.cards.slice(0, hole), (kk, chosen) =>
         suited && chosen.length ? [chosen[0][1] as Suit] : quietSuits(hand.board, [...heroCards, ...chosen]),
       );
       if (cards.some((c) => deck.guessed.includes(c))) note({ code: 'suits', pos: positions(n, hand.button)[seat] });
@@ -1566,6 +1614,11 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       if (to === null) continue;
       if (e.verb === 'allin' && !e.amt) to = l.maxTo;
       if (e.verb === 'allin' && e.amt && to > l.maxTo && stated.has(p)) to = l.maxTo;
+      // PLO: nothing above the pot; a bigger size said is a pot-sized bet or raise.
+      if (s.potLimit && to > l.maxTo && l.maxTo < s.bets[p] + s.stacks[p]) {
+        to = l.maxTo;
+        if (!(e.amt?.unit === 'pot' || e.verb === 'allin')) note({ code: 'potLimit', street: s.street, pos: positions(n, hand.button)[p] });
+      }
       // A size bigger than the stack the app assumed: the stack was bigger (or it's all-in, if the stack was said).
       if (to > l.maxTo) {
         if (stated.has(p)) to = l.maxTo;
@@ -1605,7 +1658,7 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
   if (hand.winners) {
     const r = replay(hand);
     const live = hand.players.map((_, i) => i).filter((i) => !r.final.folded[i]);
-    const known = live.every((i) => (hand.players[i].cards?.length ?? 0) === 2) && hand.board.length === 5;
+    const known = live.every((i) => (hand.players[i].cards?.length ?? 0) === hole) && hand.board.length === 5;
     if (known || r.final.foldWin || !r.result) hand = { ...hand, winners: undefined };
   }
 

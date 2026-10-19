@@ -626,11 +626,14 @@ const en: Record<string, string> = {
   'Qualquer': 'Any hand',
   'vs cartas do vilão': "vs villain's cards",
   'Escolhe as cartas': 'Pick the cards',
+  'Toca num lugar para o mudar.': 'Tap a slot to change it.',
   'Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.': 'Tap a slot to change it. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.',
   'vazio': 'empty',
   'Escolhe as tuas duas cartas.': 'Pick your two cards.',
   'Completa o flop (ou tira o turn e o river).': 'Finish the flop (or take out the turn and river).',
   'Escolhe as duas cartas do vilão.': "Pick villain's two cards.",
+  'Escolhe as tuas quatro cartas.': 'Pick your four cards.',
+  'Escolhe as quatro cartas do vilão.': "Pick villain's four cards.",
   'Jogadores que restam': 'Players left',
   'Stacks': 'Stacks',
   'Prémios ({currency})': 'Payouts ({currency})',
@@ -3461,6 +3464,7 @@ const en: Record<string, string> = {
   'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'The swap “{title}” had already been confirmed. Open the link again to see it.',
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Your seat in “{title}” had already been taken. Open the link again to pick another.',
   'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'The settle-up in “{titles}” wasn\'t recorded: it already has the most entries it can hold. The others were recorded.',
+  'Em PLO o máximo é o pote: o valor do {pos} ficou no pote.': 'In PLO the most is the pot: the {pos}\'s amount was set to the pot.',
 };
 
 export default en;

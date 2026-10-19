@@ -19,7 +19,7 @@ const n0 = (n: number) => Math.round(n).toLocaleString(locale);
 const bb1 = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 });
 
 export default function WinRateScreen() {
-  const { sessions, defaultBankroll, settings } = useStore();
+  const { sessions, hands, defaultBankroll, settings } = useStore();
   const locked = useLocked('winrateDetail');
   const params = useLocalSearchParams<{ currency?: string }>();
   const cur = params.currency || defaultBankroll.currency;
@@ -27,7 +27,7 @@ export default function WinRateScreen() {
   const [by, setBy] = useState<WinRateBy>('stake');
   const cash = useMemo(() => cashDone(sessions, cur), [sessions, cur]);
   const w = useMemo(() => winRate(cash), [cash]);
-  const groups = useMemo(() => winRateBy(cash, by, cur), [cash, by, cur]);
+  const groups = useMemo(() => winRateBy(cash, by, cur, hands), [cash, by, cur, hands]);
 
   const lock = (title: string, body: React.ReactNode) => (
     <ProBlur feature="winrateDetail" locked={locked} title={title}>

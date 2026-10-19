@@ -10,6 +10,7 @@
 import { inRange } from './bankroll-math';
 import { isBagged } from './multi-day';
 import { cost, gross, mainCurrency, ownBuyIns, profit, soldShare } from './session-math';
+import { gameOfName } from '@/poker/variant';
 import type { Session, Trip } from './types';
 
 export type StatsView = 'mine' | 'action';
@@ -30,11 +31,10 @@ export const BANDS: { key: string; from: number; to: number }[] = [
 
 export type Game = 'NLH' | 'PLO' | 'Mix';
 
-/** The game from the tournament's name: festivals name them "PLO", "8-Game", "H.O.R.S.E."… No game named means hold'em. */
+/** The game from the tournament's name: festivals name them "PLO", "8-Game", "H.O.R.S.E."… PLO8 groups with PLO here, short deck with hold'em. */
 export function gameOf(name: string): Game {
-  if (/\b(mix(ed)?|h\.?o\.?r\.?s\.?e\.?|[0-9]+[- ]?game|dealer'?s? choice|stud|razz|2-7|triple draw|badugi|o\.?e\.?)\b/i.test(name)) return 'Mix';
-  if (/\b(plo\d?|omaha|pot[- ]limit omaha|big o)\b/i.test(name)) return 'PLO';
-  return 'NLH';
+  const g = gameOfName(name);
+  return g === 'PLO8' ? 'PLO' : g === 'Short Deck' ? 'NLH' : g;
 }
 
 export function bandOf(buyIn: number): string {

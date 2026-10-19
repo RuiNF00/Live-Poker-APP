@@ -10,6 +10,8 @@ import { t } from '@/i18n';
 import { stakeKey, stakeLabel } from './bankroll-math';
 import { playedMs, profit, rateShown } from './session-math';
 import type { Session } from './types';
+import { handCounts, sessionGame } from '@/poker/variant';
+import type { GameInfo } from '@/poker/types';
 
 const H = 3600000;
 const Z95 = 1.96;
@@ -91,13 +93,10 @@ export function hoursToKnow(w: WinRate, useful = USEFUL_BB): HoursToKnow {
 
 export type WinRateBy = 'game' | 'stake' | 'venue' | 'weekday';
 
-/** NLH unless the name says otherwise. */
-export function gameOf(s: Session): string {
-  const n = s.name ?? '';
-  if (/plo|omaha/i.test(n)) return 'PLO';
-  if (/mix|horse|8-game|dealer'?s choice/i.test(n)) return 'Mix';
-  if (/short ?deck|6\+/i.test(n)) return 'Short Deck';
-  return 'NLH';
+/** NLH unless the name says otherwise, or most of the session's hands are PLO (`counts` from `handCounts`). */
+export function gameOf(s: Session, counts?: Map<string, { plo: number; all: number }>): string {
+  const c = counts?.get(s.id);
+  return sessionGame(s.name ?? '', c?.plo, c?.all);
 }
 
 const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
@@ -109,10 +108,11 @@ export interface WinRateGroup {
 }
 
 /** Win rate per game, stake, venue or weekday; groups of 2+ sessions, most hours first. */
-export function winRateBy(cash: Session[], by: WinRateBy, currency: string): WinRateGroup[] {
+export function winRateBy(cash: Session[], by: WinRateBy, currency: string, hands: { sessionId?: string; game: Pick<GameInfo, 'variant'> }[] = []): WinRateGroup[] {
+  const counts = by === 'game' ? handCounts(hands) : undefined;
   const days = WEEKDAYS();
   const key = (s: Session): string | null =>
-    by === 'game' ? gameOf(s) : by === 'stake' ? stakeLabel(stakeKey(s), currency) : by === 'venue' ? (s.venue || '').trim() || null : days[new Date(s.startedAt).getDay()];
+    by === 'game' ? gameOf(s, counts) : by === 'stake' ? stakeLabel(stakeKey(s), currency) : by === 'venue' ? (s.venue || '').trim() || null : days[new Date(s.startedAt).getDay()];
   const groups = new Map<string, Session[]>();
   for (const s of cash) {
     const k = key(s);

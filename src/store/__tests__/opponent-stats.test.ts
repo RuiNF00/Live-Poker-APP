@@ -62,3 +62,10 @@ test('"visto em n sessões": one per session, or per day for hands outside a ses
   assert.equal(sessionsSeen(hands, [ZE]).get(ZE.id), 3);
   assert.equal(sessionsSeen(hands, [note('p_x', 'Ninguém')]).get('p_x'), undefined);
 });
+
+test('PLO hands stay out of the hold\'em reads', () => {
+  const plo = hand('p', 'CO', [['CO', 'raise', 250], ['Hero', 'call'], ['SB', 'fold'], ['BB', 'fold']]);
+  plo.game = { ...plo.game, variant: 'plo' };
+  assert.equal(opponentStats([plo], [ZE]).get(ZE.id), undefined);
+  assert.equal(handCounts([plo], [ZE]).get(ZE.id), 1, 'still a hand played together');
+});

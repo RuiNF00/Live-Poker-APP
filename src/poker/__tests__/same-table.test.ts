@@ -123,3 +123,12 @@ test('the first hand ever takes the game from the first-run answer', () => {
   assert.equal(gameForPlays(null), null);
   assert.equal(gameForPlays('weird'), null);
 });
+
+test('in a session, PLO carries to the next hand at the same table and stops at a new one', () => {
+  const session = { id: 's1', kind: 'cash', name: 'Casino', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', tableSize: 6, stack: 200, roster: [] } as unknown as Session;
+  const last = played({ sessionId: 's1', game: { ...played().game, variant: 'plo' } });
+  assert.equal(newHand({ id: 'n', session, last }).game.variant, 'plo');
+  const moved = { ...session, tableSize: 9 } as Session;
+  assert.equal(newHand({ id: 'n', session: moved, last }).game.variant, undefined, 'a new table starts as hold\'em');
+  assert.equal(newHand({ id: 'n', session, last: played({ sessionId: 's1' }) }).game.variant, undefined, 'hold\'em stays hold\'em');
+});

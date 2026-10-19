@@ -44,9 +44,13 @@ export function cardName(c: CardCode): string {
   return t('{rank} de {suit}', { rank: rankName(c[0]), suit: t(SUIT_NAME[suitOf(c)] ?? c[1]) });
 }
 
-/** "AKs", "QJo", "77" — the usual shorthand for a starting hand. */
+/**
+ * "AKs", "QJo", "77" — the usual shorthand for a starting hand. PLO hands read as all four
+ * ranks, highest first ("AA76"), so they never pass for a hold'em combo (or match its filter).
+ */
 export function comboLabel(cards?: CardCode[]): string {
   if (!cards || cards.length < 2) return '';
+  if (cards.length > 2) return [...cards].sort((x, y) => rankValue(y) - rankValue(x)).map((c) => c[0]).join('');
   const [a, b] = [...cards].sort((x, y) => rankValue(y) - rankValue(x));
   if (a[0] === b[0]) return a[0] + b[0];
   return a[0] + b[0] + (a[1] === b[1] ? 's' : 'o');

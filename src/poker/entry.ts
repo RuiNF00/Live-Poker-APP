@@ -64,6 +64,19 @@ function sizeLabel(spot: SizeSpot, m: number) {
   return `${Math.round(m * 100)}%`;
 }
 
+/**
+ * How big a bet or raise to `to` is, from the table before it: postflop bets
+ * against the pot ("75%"), opens in big blinds and raises against the bet they
+ * raise ("3x"). Null for anything that isn't a bet or raise.
+ */
+export function sizeText(hand: Hand, s: TableState, to: number): string | null {
+  if (!(to > s.currentBet)) return null;
+  const { spot, base, extra } = sizeSpot(hand, s);
+  const m = (to - extra) / base;
+  if (!(m > 0)) return null;
+  return spot === 'bet' ? `${Math.round(m * 100)}%` : `${decimal(Math.round(m * 10) / 10).replace(/[.,]0$/, '')}x`;
+}
+
 /** Default sizes per spot. Live cash opens bigger than tournaments do. */
 function defaults(hand: Hand, spot: SizeSpot): number[] {
   if (spot === 'open') return hand.game.kind === 'cash' ? [3, 4, 5] : [2, 2.5, 3];
@@ -108,7 +121,9 @@ export function sizePresets(hand: Hand, s: TableState, memory?: SizeMemory): Siz
     }
     out.push({ label: sizeLabel(spot, m), to, ...(i === lastAt ? { last: true } : {}) });
   });
-  out.push({ label: 'All-in', to: l.maxTo, allIn: true });
+  // PLO: when the pot is less than the stack, the top chip is the pot, not an all-in.
+  if (l.maxTo < s.bets[l.p] + s.stacks[l.p]) out.push({ label: t('Pote'), to: l.maxTo });
+  else out.push({ label: 'All-in', to: l.maxTo, allIn: true });
   return out;
 }
 
@@ -373,6 +388,8 @@ export interface LineItem {
   verb: string;
   /** The street total after a bet, raise or all-in. */
   to?: number;
+  /** Its size: "75%" of the pot for a postflop bet, "3x" for an open or a raise. */
+  size?: string;
 }
 
 /**
@@ -393,7 +410,9 @@ export function entryLine(hand: Hand): LineItem[] {
     const kind = last?.kind ?? a.kind;
     const allIn = !!last?.allIn;
     const verb = allIn ? 'All-in' : kind === 'bet' || kind === 'raise' ? (before ? raiseName(before) : kind === 'bet' ? 'Bet' : 'Raise') : kind[0].toUpperCase() + kind.slice(1);
-    out.push({ i, street: st.actStreet ?? st.street, a, verb, ...(kind === 'bet' || kind === 'raise' ? { to: last?.to ?? a.to } : {}) });
+    const to = kind === 'bet' || kind === 'raise' ? last?.to ?? a.to : undefined;
+    const size = to !== undefined && before ? sizeText(hand, before, to) : null;
+    out.push({ i, street: st.actStreet ?? st.street, a, verb, ...(to !== undefined ? { to } : {}), ...(size ? { size } : {}) });
   });
   return out.reverse();
 }

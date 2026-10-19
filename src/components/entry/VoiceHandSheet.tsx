@@ -77,6 +77,8 @@ function noteText(n: VoiceNote, hand: Hand): string {
       return t('Uma ação não encaixou na mão e ficou de fora.');
     case 'stackGrew':
       return t('O stack do {pos} subiu para caber o valor que disseste.', { pos: n.pos ?? '' });
+    case 'potLimit':
+      return t('Em PLO o máximo é o pote: o valor do {pos} ficou no pote.', { pos: n.pos ?? '' });
   }
 }
 

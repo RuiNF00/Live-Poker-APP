@@ -38,7 +38,8 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { holeCount } from '@/poker/variant';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -108,6 +109,8 @@ export default function NewHand() {
   const n = hand.players.length;
   const pos = positions(n, hand.button);
   const heroCards = hand.players[hand.hero].cards ?? [];
+  // 4 in PLO, 2 in hold'em: how many hole cards hero (and a hand shown) needs.
+  const holes = holeCount(hand.game);
   const r = useMemo(() => replay(hand), [hand]);
   const s = r.final;
 
@@ -157,7 +160,7 @@ export default function NewHand() {
   // ── phase ─────────────────────────────────────────
   type Phase = 'hero' | 'action' | 'board' | 'board2' | 'showdown' | 'done';
   let phase: Phase;
-  if (!draft.posChosen || heroCards.length < 2) phase = 'hero';
+  if (!draft.posChosen || heroCards.length < holes) phase = 'hero';
   else if (s.needsBoard) phase = 'board';
   else if (r.needsBoard2) phase = 'board2';
   else if (s.toAct !== null) phase = 'action';
@@ -208,8 +211,8 @@ export default function NewHand() {
   const pickHeroCard = (c: string) => {
     let cards = [...heroCards];
     if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-    else if (cards.length < 2) cards.push(c);
-    else cards = [cards[1], c];
+    else if (cards.length < holes) cards.push(c);
+    else cards = [...cards.slice(1), c];
     setPlayer(hand.hero, { ...hand.players[hand.hero], cards });
   };
   const setHeroPos = (label: string) => {
@@ -223,6 +226,14 @@ export default function NewHand() {
     if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
     setToldOpened(true);
     setTelling(true);
+  };
+  // PLO deals four cards: hero's hand and any shown hand start over, the action too.
+  const togglePLO = () => {
+    tap('select');
+    const { variant, ...g } = hand.game;
+    const game = variant ? g : { ...g, variant: 'plo' as const };
+    autoDone.current.clear();
+    update({ ...hand, game, players: hand.players.map(({ cards: _, ...p }) => p), actions: [], board: [], winners: undefined });
   };
   // Straddles change who acts first: the action starts over, as in the context sheet.
   const toggleStraddle = () => {
@@ -424,7 +435,7 @@ export default function NewHand() {
   // Heads-up showdown: the picker for the opponent's cards is already open.
   const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
   // The picker opens on the first seat whose cards are still unknown (multiway too): a showdown is two taps per hand shown.
-  const sdSeat = showdownFor !== undefined ? showdownFor : (liveVillains.find((i) => (hand.players[i].cards?.length ?? 0) < 2) ?? null);
+  const sdSeat = showdownFor !== undefined ? showdownFor : (liveVillains.find((i) => (hand.players[i].cards?.length ?? 0) < holes) ?? null);
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
   const busy = hand.actions.length || heroCards.length || isEdit;
@@ -605,7 +616,7 @@ export default function NewHand() {
         {!capturing && phase === 'hero' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
+              <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < holes ? t('As tuas cartas') : ''}</T>
               <Row gap={10}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
@@ -613,6 +624,7 @@ export default function NewHand() {
                   <Chip label={!pro.isPro && PRO_ONLY.voiceHand ? t('Voz') + ' · Pro' : t('Voz')} icon={!pro.isPro && PRO_ONLY.voiceHand ? 'lock-closed' : 'mic'} onPress={openVoice} />
                 ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
+                <Chip label="PLO" active={holes === 4} onPress={togglePLO} />
                 <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
                   <T v="small">
                     {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
@@ -689,7 +701,7 @@ export default function NewHand() {
                   </T>
                 ) : null}
                 <Chip
-                  label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}`}
+                  label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}${x.size ? ' · ' + x.size : ''}`}
                   onPress={() => {
                     const f = fixAt(hand, x.i);
                     update(f.hand, draft.posChosen, undefined, f.checkDownFrom);
@@ -868,7 +880,7 @@ export default function NewHand() {
                       </Row>
                     ))}
                   {/* Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
-                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== 2)) && (
+                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== holes)) && (
                     <View style={{ gap: 6 }}>
                       {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
                         <View key={key} style={{ gap: 6 }}>
@@ -901,7 +913,7 @@ export default function NewHand() {
                           key={i}
                           big
                           active={sdSeat === i}
-                          label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
+                          label={`${displayName(hand, i, pos)} ${p.cards?.length === holes ? comboLabel(p.cards) : '??'}`}
                           onPress={() => setShowdownFor(sdSeat === i ? null : i)}
                         />
                       ),
@@ -915,11 +927,11 @@ export default function NewHand() {
                         const p = hand.players[sdSeat];
                         let cards = [...(p.cards ?? [])];
                         if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-                        else if (cards.length < 2) cards.push(c);
-                        else cards = [cards[1], c];
+                        else if (cards.length < holes) cards.push(c);
+                        else cards = [...cards.slice(1), c];
                         setPlayer(sdSeat, { ...p, cards });
                         // Multiway: the next seat whose cards are still unknown opens by itself.
-                        if (cards.length === 2) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < 2) ?? null);
+                        if (cards.length === holes) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < holes) ?? null);
                       }}
                     />
                   )}
@@ -1025,6 +1037,7 @@ export default function NewHand() {
           initialInBB={inBB}
           min={pad === 'allin' ? undefined : l.minTo}
           max={pad === 'allin' ? undefined : l.maxTo}
+          sizeOf={pad === 'raise' ? (v) => sizeText(hand, s, v) : undefined}
           onClose={() => setPad(false)}
           onDone={(v) => {
             setPad(false);

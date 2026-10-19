@@ -5,6 +5,7 @@
 
 import { centGame, positions, replay, splitPot, straddleSeats, totalPot, type HandResult, type Replay } from './engine';
 import type { Hand, Street } from './types';
+import { holeCount, isPLO } from './variant';
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Flop', flop: 'Flop', turn: 'Turn', river: 'River' };
 const CURRENCY: Record<string, string> = { '€': 'EUR', $: 'USD', '£': 'GBP' };
@@ -90,11 +91,13 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
   const id = num(hand.id + ':' + hand.createdAt);
   // Stars' "local [ET]" form; parsers that want the bracketed ET accept it, and so do the rest.
   const when = `${utcTime(hand.createdAt)} [${easternTime(hand.createdAt)}]`;
-  if (cash) out.push(`PokerStars Hand #${id}:  Hold'em No Limit (${fmt(g.sb)}/${fmt(g.bb)} ${code}) - ${when}`);
+  // PLO reads the way Stars writes it: "Omaha Pot Limit".
+  const game = isPLO(g) ? 'Omaha Pot Limit' : "Hold'em No Limit";
+  if (cash) out.push(`PokerStars Hand #${id}:  ${game} (${fmt(g.sb)}/${fmt(g.bb)} ${code}) - ${when}`);
   else {
     const tid = num(hand.sessionId || g.name || hand.id, 10);
     const buyIn = g.buyIn ? `${g.currency in CURRENCY ? g.currency : '$'}${g.buyIn}+${g.currency in CURRENCY ? g.currency : '$'}0 ${code}` : 'Freeroll';
-    out.push(`PokerStars Hand #${id}: Tournament #${tid}, ${buyIn} Hold'em No Limit - Level ${roman(g.level || 1)} (${fmt(g.sb)}/${fmt(g.bb)}) - ${when}`);
+    out.push(`PokerStars Hand #${id}: Tournament #${tid}, ${buyIn} ${game} - Level ${roman(g.level || 1)} (${fmt(g.sb)}/${fmt(g.bb)}) - ${when}`);
   }
   // Stars has no bomb pots; the table name is free text trackers keep, so the note goes there.
   const base = cash ? clean(g.name || g.venue || 'Sweatbook') : `${num(hand.sessionId || g.name || hand.id, 10)} 1`;
@@ -114,7 +117,7 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
 
   out.push('*** HOLE CARDS ***');
   const heroCards = hand.players[hand.hero].cards;
-  if (heroCards?.length === 2) out.push(`Dealt to Hero [${heroCards.join(' ')}]`);
+  if (heroCards?.length === holeCount(g)) out.push(`Dealt to Hero [${heroCards.join(' ')}]`);
 
   // Run it twice: streets dealt after the all-in come out once per run.
   const twice = r.boards.length === 2 && r.runoutFrom !== null;
@@ -152,7 +155,7 @@ export function pokerStarsText(hand: Hand, r: Replay = replay(hand)): string {
 
   const res = r.result;
   const fin = r.final;
-  const shows = (i: number) => !fin.folded[i] && hand.players[i].cards?.length === 2;
+  const shows = (i: number) => !fin.folded[i] && hand.players[i].cards?.length === holeCount(g);
   const runs = res ? runWinnings(res, centGame(hand)) : [];
   // More than one pot (an all-in for less): named the way Stars does, so trackers split them right.
   const sides = !!res && res.pots.length > 1 && res.pots.every((p) => p.winners?.length);

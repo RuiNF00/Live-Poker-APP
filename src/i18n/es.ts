@@ -597,11 +597,14 @@ const es: Record<string, string> = {
   'Qualquer': 'Cualquiera',
   'vs cartas do vilão': 'vs cartas del rival',
   'Escolhe as cartas': 'Elige las cartas',
+  'Toca num lugar para o mudar.': 'Toca un hueco para cambiarlo.',
   'Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.': 'Toca un hueco para cambiarlo. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.',
   'vazio': 'vacío',
   'Escolhe as tuas duas cartas.': 'Elige tus dos cartas.',
   'Completa o flop (ou tira o turn e o river).': 'Completa el flop (o quita el turn y el river).',
   'Escolhe as duas cartas do vilão.': 'Elige las dos cartas del rival.',
+  'Escolhe as tuas quatro cartas.': 'Elige tus cuatro cartas.',
+  'Escolhe as quatro cartas do vilão.': 'Elige las cuatro cartas del rival.',
   'Jogadores que restam': 'Jugadores que quedan',
   'Stacks': 'Stacks',
   'Prémios ({currency})': 'Premios ({currency})',
@@ -3455,6 +3458,7 @@ const es: Record<string, string> = {
   "O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.": "El swap «{title}» ya estaba confirmado. Abre el link otra vez para verlo.",
   "O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.": "Tu lugar en «{title}» ya estaba elegido. Abre el link otra vez para elegir otro.",
   "Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.": "Quedó sin registrar el ajuste en «{titles}»: ya tiene el máximo de registros. Los demás quedaron registrados.",
+  'Em PLO o máximo é o pote: o valor do {pos} ficou no pote.': 'En PLO el máximo es el bote: la cantidad del {pos} quedó en el bote.',
 };
 
 export default es;

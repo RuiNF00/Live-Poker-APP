@@ -38,6 +38,8 @@ export type StageId = 'early' | 'mid' | 'bubble' | 'itm' | 'ft' | 'hu';
 
 export interface GameInfo {
   kind: GameKind;
+  /** Pot-Limit Omaha (see poker/variant.ts). Absent = no-limit hold'em, as every older hand. */
+  variant?: 'plo';
   /** Tournament name, or venue/game name for cash. */
   name: string;
   stage?: StageId;
