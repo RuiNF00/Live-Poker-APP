@@ -23,7 +23,7 @@ import { C, F, R, ff, posColor } from '@/theme';
 import { FitText } from './FitText';
 import { STREET_LABEL, viewAt } from './replayer/model';
 import { Watermark } from './SessionCard';
-import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './StoryCard';
+import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './story-brand';
 
 const CREAM = '#F6F2E8';
 

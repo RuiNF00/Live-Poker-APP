@@ -13,7 +13,7 @@ import { CardShareSheet } from '@/components/CardShareSheet';
 import { MonthCard } from '@/components/MonthCard';
 import { SmallSample } from '@/components/SmallSample';
 import { ProBlur, useLocked } from '@/components/ProGate';
-import { STORY_H, STORY_W } from '@/components/StoryCard';
+import { STORY_H, STORY_W } from '@/components/story-brand';
 import { Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { lang, locale, t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';

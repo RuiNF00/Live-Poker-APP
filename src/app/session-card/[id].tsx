@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePro } from '@/billing/pro';
 import { SessionCard, STICKER_H, STICKER_W } from '@/components/SessionCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
-import { STORY_H, STORY_W } from '@/components/StoryCard';
+import { STORY_H, STORY_W } from '@/components/story-brand';
 import { Button, Empty, IconButton, ListGroup, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';

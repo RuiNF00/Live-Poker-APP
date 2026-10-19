@@ -22,7 +22,7 @@ import { BRAND, C, R } from '@/theme';
 import { dateRange } from './FestivalCard';
 import { FestivalPlanCard } from './FestivalPlanCard';
 import { ShareSheet, type ShareOption } from './ShareSheet';
-import { STORY_H, STORY_W } from './StoryCard';
+import { STORY_H, STORY_W } from './story-brand';
 import { Button, ListGroup, tap, ToggleItem } from './ui';
 
 const PREVIEW = 0.5;

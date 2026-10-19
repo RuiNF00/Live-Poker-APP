@@ -18,7 +18,7 @@ import { C, F, R, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
 import { Logo, Watermark } from './SessionCard';
-import { STORY_H, STORY_W } from './StoryCard';
+import { STORY_H, STORY_W } from './story-brand';
 
 const INK = C.accentInk;
 const LOOK: Record<YearCardKind, 'noite' | 'brasa'> = { year: 'brasa', best: 'noite', stakes: 'noite', bankroll: 'noite', pot: 'noite', streak: 'brasa' };

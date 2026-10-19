@@ -23,7 +23,7 @@ import type { CardStyle } from "@/share/session-card";
 import { C, F, R, ff, posColor } from "@/theme";
 
 import { PlayingCard } from "./PlayingCard";
-import { linkHost, Mark, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, STORY_H, STORY_W } from "./StoryCard";
+import { linkHost, Mark, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, STORY_H, STORY_W } from "./story-brand";
 
 export type FestivalLook = Exclude<CardStyle, "sticker">;
 export const FESTIVAL_LOOKS: FestivalLook[] = ["noite", "brasa"];

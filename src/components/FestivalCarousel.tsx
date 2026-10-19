@@ -19,7 +19,7 @@ import { dateRange, dayTicks, Logo } from './FestivalCard';
 import { STAGE_RATIO } from './replayer/layout';
 import { viewAt } from './replayer/model';
 import { ReplayerTable } from './replayer/ReplayerTable';
-import { linkHost, Mark } from './StoryCard';
+import { linkHost, Mark } from './story-brand';
 
 export const SLIDE_W = 360;
 export const SLIDE_H = 450;
