@@ -336,6 +336,27 @@ export function settleReminders(
     });
 }
 
+/**
+ * A backer's festival pieces still to pay for, in these currencies: what «Marcar como pago» marks paid
+ * when only festival action with no rate is left (QA P2, 19 Oct). Paid outside the app, in the
+ * festival's currency, like the package screen's own «Marcar como pago».
+ */
+export function unpaidLinesIn(
+  offers: ActionOffer[],
+  backerId: string,
+  currencies: string[],
+  festival: (id: string) => Festival | undefined,
+  started: (festivalId: string) => Record<string, string>,
+): { offerId: string; lineId: string }[] {
+  const out: { offerId: string; lineId: string }[] = [];
+  for (const o of offers) {
+    const f = festival(o.festivalId);
+    if (!f || !currencies.includes(f.currency)) continue;
+    for (const l of o.lines) if (l.backerId === backerId && pendingCost(f, o, l, started(f.id)) > 0) out.push({ offerId: o.id, lineId: l.id });
+  }
+  return out;
+}
+
 /** The backer has a piece in a festival package: deleting them would leave it counting, and its link open. */
 export function inFestivalPackage(offers: ActionOffer[], backerId: string): boolean {
   return offers.some((o) => o.lines.some((l) => l.backerId === backerId));

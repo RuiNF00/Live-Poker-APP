@@ -8,6 +8,7 @@ import { sessionsCsv } from '../backup';
 import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
+import { rate } from '../fx-math';
 
 let n = 0;
 function mk(over: Partial<Session> = {}): Session {
@@ -565,4 +566,18 @@ test('the headline never says «Acertado» above festival action with no rate (D
   addOfferDue(m, 'Kč', 7650, 0, none);
   assert.deepEqual(headlineOf(m, '€'), { balance: -30, currency: '€', apart: false });
   assert.deepEqual(headlineOf(backerLedger('b1', [], [], []), '€'), { balance: 0, currency: '€', apart: false });
+});
+
+test('a currency the ECB does not publish: the rate the player types brings it in, and the send goes (QA P2, 19 Oct)', () => {
+  const l = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  l.rows.push({} as never); // a deal in € (a session)
+  l.currency = '€';
+  addOfferDue(l, 'ARS', 10000, 0, (a, b) => rate({}, a, b, 0, {}));
+  assert.deepEqual(unconverted(l), ['ARS'], 'no rate: the send waits');
+  const m = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  m.rows.push({} as never);
+  m.currency = '€';
+  addOfferDue(m, 'ARS', 10000, 0, (a, b) => rate({}, a, b, 0, { ARS: 1000 }));
+  assert.deepEqual(unconverted(m), []);
+  assert.equal(m.unpaid, 10);
 });

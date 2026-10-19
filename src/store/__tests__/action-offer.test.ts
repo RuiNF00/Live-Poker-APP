@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
-import { agreement, inFestivalPackage, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
+import { agreement, inFestivalPackage, unpaidLinesIn, sameTerms, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import { EMPTY_PLAN, ownEvent, planFestival, withPlanEvents } from '../festival-plan';
 import { ownFestival } from '../my-festivals';
 import type { Session } from '../types';
@@ -227,4 +227,14 @@ test('a backer with a festival piece is found, so deleting them is stopped (Bank
   assert.equal(inFestivalPackage([o], 'b1'), true);
   assert.equal(inFestivalPackage([o], 'b2'), false);
   assert.equal(inFestivalPackage([], 'b1'), false);
+});
+
+test('only festival action with no rate left: «Marcar como pago» marks the backer\'s unpaid pieces in those currencies (QA P2, 19 Oct)', () => {
+  const ev = F.events.filter((e) => !e.day2)[0].id;
+  const o = { ...newOffer(F, [ev], 'o1'), lines: [{ id: 'l1', backerId: 'b1', packageId: 'p1', pct: 10 }, { id: 'l2', backerId: 'b1', packageId: 'p2', pct: 5, paid: true }, { id: 'l3', backerId: 'b2', packageId: 'p3', pct: 5 }] };
+  const fest = (id: string) => (id === F.id ? F : undefined);
+  assert.deepEqual(unpaidLinesIn([o], 'b1', [F.currency], fest, () => ({})), [{ offerId: 'o1', lineId: 'l1' }]);
+  // Another currency, or the event already in a session: nothing to mark here.
+  assert.deepEqual(unpaidLinesIn([o], 'b1', ['Kč'], fest, () => ({})), []);
+  assert.deepEqual(unpaidLinesIn([o], 'b1', [F.currency], fest, () => ({ [ev]: 's1' })), []);
 });
