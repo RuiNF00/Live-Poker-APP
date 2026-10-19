@@ -6,8 +6,8 @@
 
 import { inRange, type DateRange } from '@/store/bankroll-math';
 import { profit, soldShare } from '@/store/session-math';
-import { EXPENSE_KINDS, type TripSummary } from '@/store/trip-math';
-import type { ExpenseKind, Session } from '@/store/types';
+import { EXPENSE_KINDS, toTripCurrency } from '@/store/trip-math';
+import type { ExpenseKind, Session, Trip } from '@/store/types';
 
 export interface TaxRow {
   country: string;
@@ -62,8 +62,8 @@ export function usLossShare(year: number): number {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-/** `trips`: the summaries of the trips in the range (from the report), for their expenses. */
-export function taxReport(sessions: Session[], range: DateRange, trips: { summary: TripSummary }[] = []): TaxReport {
+/** `trips`: the trips in the range (from the report), for their expenses. */
+export function taxReport(sessions: Session[], range: DateRange, trips: { trip: Pick<Trip, 'currency' | 'fx' | 'expenses'> }[] = []): TaxReport {
   const list = sessions.filter((s) => s.endedAt && inRange(s.startedAt, range));
   const rows = new Map<string, TaxRow>();
   for (const s of list) {
@@ -112,13 +112,17 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { summar
   const exp = new Map<string, TaxReport['expenses'][number]>();
   const bucket = (currency: string) =>
     exp.get(currency) ?? exp.set(currency, { currency, byKind: Object.fromEntries(EXPENSE_KINDS.map((k) => [k, 0])) as Record<ExpenseKind, number>, sessions: 0, total: 0 }).get(currency)!;
-  for (const { summary } of trips)
-    for (const k of EXPENSE_KINDS)
-      if (summary.byKind[k]) {
-        const b = bucket(summary.currency);
-        b.byKind[k] += summary.byKind[k];
-        b.total += summary.byKind[k];
-      }
+  // Each trip expense once, in the year it was paid: a trip over the new year splits between the two.
+  // In the trip's currency where the trip has a rate for it, else in its own, never left out.
+  for (const { trip } of trips)
+    for (const x of trip.expenses) {
+      if (!inRange(x.at, range)) continue;
+      const v = toTripCurrency(Math.abs(x.amount), x.currency, trip);
+      const b = bucket(v === null ? x.currency : trip.currency);
+      const k = EXPENSE_KINDS.includes(x.kind) ? x.kind : 'other';
+      b.byKind[k] += v ?? Math.abs(x.amount);
+      b.total += v ?? Math.abs(x.amount);
+    }
   for (const s of list)
     if (s.expenses || s.tips) {
       // Dealer tips count with the expenses typed on sessions.

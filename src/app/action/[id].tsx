@@ -21,7 +21,7 @@ import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, updateAgreement } from '@/lib/offer-api';
-import { eventTitle, FESTIVALS, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
 import {
   MARKUPS,
@@ -47,6 +47,7 @@ import {
   type SettlementState,
 } from '@/store/action-offer';
 import { festivalName, updatePlan, useFestivalPlan } from '@/store/festival-plan';
+import { shippedFestivals } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
 import type { Session } from '@/store/types';
@@ -58,7 +59,7 @@ export default function ActionPackageScreen() {
   const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const offers = useOffers();
   const o = offers.find((x) => x.id === id);
-  const f = FESTIVALS.find((x) => x.id === o?.festivalId);
+  const f = shippedFestivals().find((x) => x.id === o?.festivalId);
   const plan = useFestivalPlan(o?.festivalId ?? '');
   const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession, trips, saveTrip } = useStore();
   const pro = usePro();

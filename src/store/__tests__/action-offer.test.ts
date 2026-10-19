@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { BAHAMAS_DEC_2026 as F, venueTime } from '../../poker/festivals';
+import { BAHAMAS_DEC_2026 as F } from '../../poker/festival-data';
+import { venueTime } from '../../poker/festivals';
 import { agreement, lineCost, lineRecords, lineSettlement, missedRefund, nextEventFor, settleReminders, usualTerms, unanswered, newOffer, offerEvents, offerPackageIds, offerTotals, pendingCost, stakesFor, withOfferStakes, type ActionOffer } from '../action-offer';
 import type { Session } from '../types';
 

@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { festivalOn, linkSource } from '../attribution';
-import { FESTIVALS, venueTime } from '@/poker/festivals';
+import { FESTIVALS } from '@/poker/festival-data';
+import { venueTime } from '@/poker/festivals';
+import { loadOwnFestivals } from '@/store/my-festivals';
 
 test('each kind of link gets its source', () => {
   assert.equal(linkSource('hand', {}), 'shared_hand');
@@ -16,7 +18,8 @@ test('each kind of link gets its source', () => {
   assert.equal(linkSource('backer', {}), 'backer_page');
 });
 
-test('festival_on is true during a shipped festival and false far from it', () => {
+test('festival_on is true during a shipped festival and false far from it', async () => {
+  await loadOwnFestivals();
   const f = FESTIVALS[0];
   const mid = venueTime(f, f.events[Math.floor(f.events.length / 2)].start);
   assert.equal(festivalOn(mid), true);

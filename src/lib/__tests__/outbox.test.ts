@@ -201,3 +201,29 @@ test('a promised delete past MAX_TRIES waits 6 h between tries, not 10 min, and 
   assert.equal(backoff(MAX_TRIES + 1), 600000);
   assert.ok(await box.has('cloud-delete', 'c'));
 });
+
+test('enqueue throws when the job could not be saved; drain keeps going on a failed write', async () => {
+  const kv = mem();
+  let broken = true;
+  const flaky = { getItem: kv.getItem, setItem: async (k: string, v: string) => (broken ? Promise.reject(new Error('disk')) : kv.setItem(k, v)) };
+  const box = createOutbox(flaky, { x: async () => 'done' as Outcome });
+  await assert.rejects(box.enqueue('x', 1, 'k'), /disk/);
+  // Sending and its bookkeeping never throw.
+  await box.drain(true);
+  broken = false;
+  await box.enqueue('x', 2, 'k');
+  assert.equal(JSON.parse(kv.m.get('rl.outbox.v1')!)[0].payload, 2);
+});
+
+test('a job that could not be saved is not sent from memory either', async () => {
+  const kv = mem();
+  let broken = true;
+  const flaky = { getItem: kv.getItem, setItem: async (k: string, v: string) => (broken ? Promise.reject(new Error('disk')) : kv.setItem(k, v)) };
+  const sent: unknown[] = [];
+  const box = createOutbox(flaky, { del: async (p) => (sent.push(p), 'done' as Outcome) });
+  await assert.rejects(box.enqueue('del', { id: 'x' }, 'x'), /disk/);
+  broken = false;
+  await box.drain(true);
+  assert.deepEqual(sent, []);
+  assert.equal(await box.size(), 0);
+});

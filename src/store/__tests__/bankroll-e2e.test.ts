@@ -123,7 +123,7 @@ test('the trip: poker and expenses in the trip currency, each converted once', (
   assert.equal(cents(s.converted!.net), cents(s.net * 0.9));
   assert.deepEqual(s.skipped, []);
   // The tax view lists the trip's expenses once, in the trip's currency.
-  const tax = taxReport(sessions, {}, [{ summary: s }]);
+  const tax = taxReport(sessions, {}, [{ trip }]);
   assert.deepEqual(tax.expenses.map((x) => [x.currency, cents(x.total)]), [['$', cents(s.expenses)]]);
   // Trip expenses stay out of the bankroll balance: the balance is the money in the bankroll.
   assert.equal(cents(balanceOf({ bankrollId: 'br_usd' }, sessions, transfers, bankrolls).balance), EXPECTED.usd);

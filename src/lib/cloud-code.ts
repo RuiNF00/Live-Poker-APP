@@ -10,6 +10,10 @@ export interface CloudState {
   counts?: Partial<Record<string, number>>;
   /** exportedAt of the copy this phone last uploaded or restored: a different one on the server was written by another phone. */
   sent?: number;
+  /** Size of the last copy this phone uploaded (sealed bytes), for the warning before the server limit. */
+  bytes?: number;
+  /** The server copy this phone wrote or restored was deleted (another phone's «Apagar tudo», the website): never written again with this code. */
+  gone?: boolean;
   /** Last upload that failed, and why ('network', 'quota'…); cleared by the next one that works. */
   failedAt?: number;
   failure?: string;

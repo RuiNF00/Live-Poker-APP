@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { CloudState } from '../cloud-code';
-import { autoBackup, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, uploadBlock } from '../cloud-guard';
+import { autoBackup, BACKUP_MAX_BYTES, backupHealth, CHANGE_DEBOUNCE_MS, changeBackupIn, cloudAhead, countsOf, savesOver, uploadBlock } from '../cloud-guard';
 
 const H = 3600000;
 const code = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
@@ -71,6 +71,34 @@ test('backup health: warns when the last copy failed or is a week old, never whe
   assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 1000, failedAt: now - day, failure: 'network' }, now), { level: 'ok' });
 });
 
+test('backup health: says so before the copy stops fitting (80 % of the server limit)', () => {
+  const day = 86400000;
+  const now = 100 * day;
+  const at = (share: number) => backupHealth({ id: 'a', secret: 's', lastAt: now - 1000, bytes: Math.round(BACKUP_MAX_BYTES * share) }, now);
+  assert.equal(BACKUP_MAX_BYTES, 2 * 1024 * 1024); // same as the server
+  assert.deepEqual(at(0.5), { level: 'ok' });
+  assert.deepEqual(at(0.79), { level: 'ok' });
+  assert.deepEqual(at(0.8), { level: 'near', pct: 80 });
+  assert.deepEqual(at(0.876), { level: 'near', pct: 87 });
+  // Never 100 % while it still fits.
+  assert.deepEqual(at(1), { level: 'near', pct: 99 });
+  // Copies made before the size was kept: no warning until the next one.
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 1000 }, now), { level: 'ok' });
+  // A failure or an old copy says more than the size does.
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - day, bytes: BACKUP_MAX_BYTES, failedAt: now - 1000, failure: 'too_big' }, now), { level: 'failed', reason: 'too_big' });
+  assert.deepEqual(backupHealth({ id: 'a', secret: 's', lastAt: now - 9 * day, bytes: BACKUP_MAX_BYTES }, now), { level: 'stale', days: 9 });
+});
+
+test('a copy deleted elsewhere: stays off, says so, never copied again by itself', () => {
+  const now = 100 * 86400000;
+  const gone = { id: 'a', secret: 's', lastAt: now - 1000, counts: { hands: 3 }, gone: true };
+  assert.deepEqual(backupHealth(gone, now), { level: 'failed', reason: 'gone' });
+  // Even over the limit or a week old, the deletion is what the player needs to know.
+  assert.deepEqual(backupHealth({ ...gone, lastAt: now - 9 * 86400000, bytes: BACKUP_MAX_BYTES }, now), { level: 'failed', reason: 'gone' });
+  assert.equal(autoBackup(gone, { hands: 3 }, now + 7 * 86400000), 'skip');
+  assert.equal(changeBackupIn(gone, { hands: 4 }, now), null);
+});
+
 test('"Cópia parada" only when the cloud holds a copy: not on the first backup of an empty phone', () => {
   assert.equal(cloudAhead({}, code), false); // just turned on, nothing to copy yet
   assert.equal(uploadBlock({}, code), 'would_shrink'); // and still nothing is uploaded
@@ -97,4 +125,13 @@ test('after a saved hand: copy once things settle, at most every 10 minutes, nev
   assert.equal(changeBackupIn(big, { ...full, hands: 121 }, t0 + 2 * H), 5 * H);
   // A network failure doesn't slow it down.
   assert.equal(changeBackupIn({ ...c, failedAt: t0 + H, failure: 'network' }, { ...full, hands: 121 }, t0 + 2 * H), CHANGE_DEBOUNCE_MS);
+});
+
+test('a new copy is saved over a deleted code, never over a code restored meanwhile', () => {
+  assert.equal(savesOver(null, 'NEW'), true);
+  assert.equal(savesOver({ ...code, id: 'NEW' }, 'NEW'), true);
+  // «Criar cópia nova» after the copy was deleted elsewhere: the new code is what stays.
+  assert.equal(savesOver({ ...code, id: 'OLD', gone: true }, 'NEW'), true);
+  // A restore with another code finished while this was uploading: keep it.
+  assert.equal(savesOver({ ...code, id: 'OTHER' }, 'NEW'), false);
 });

@@ -1,16 +1,14 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
-import { before, test } from 'node:test';
+import { test } from 'node:test';
 
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
-import { eventDay, FESTIVALS, festivalSpan, LAS_VEGAS_DEC_2026 as LV, loadShippedFestivals, venueTime, BAHAMAS_DEC_2026 as F } from '../../poker/festivals';
+import { BAHAMAS_DEC_2026 as F, FESTIVALS, LAS_VEGAS_DEC_2026 as LV } from '../../poker/festival-data';
+import { eventDay, festivalSpan, venueTime } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
 import { nextLevelAt } from '../../lib/lock-screen/live-state';
 import { bagDay, resumeDay } from '../multi-day';
 import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, stampPlan, togglePicked, withPlanEvents } from '../festival-plan';
-
-// The November-January schedules load apart from the launch bundle (the store waits for them).
-before(() => loadShippedFestivals());
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -539,8 +537,7 @@ test('an added tournament with a start the planner cannot read, or no buy-in, is
   }
 });
 
-test('the November-January festivals load once, after the others', async () => {
-  await loadShippedFestivals();
+test('the shipped festivals: Bahamas first, unique ids, November to January included', () => {
   assert.equal(FESTIVALS.length, 21);
   assert.equal(FESTIVALS[0], F);
   assert.equal(new Set(FESTIVALS.map((f) => f.id)).size, FESTIVALS.length);
