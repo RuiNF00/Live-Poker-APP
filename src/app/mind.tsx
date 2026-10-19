@@ -19,8 +19,8 @@ import type { MindCheck, Session } from '@/store/types';
 import { C, S } from '@/theme';
 
 // Only when the check-in shows (it can be turned off): off the first frame.
-const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore })));
-const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter })));
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore }), () => ({ default: (() => null) as never })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter }), () => ({ default: (() => null) as never })));
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const one = (n: number | null) => (n === null ? '—' : n.toLocaleString(locale, { maximumFractionDigits: 1 }));

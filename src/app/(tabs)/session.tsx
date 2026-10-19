@@ -49,9 +49,9 @@ import { reduceMotion, useSheetAnimation } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
 import { useScreenReader } from '@/lib/screen-reader';
 
-// Only when the check-in shows (it can be turned off): off the first frame.
-const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore })));
-const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter })));
+// Only when the check-in shows (it can be turned off): off the first frame. A chunk that fails to load leaves it out.
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore }), () => ({ default: (() => null) as never })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter }), () => ({ default: (() => null) as never })));
 
 // The parts of the live screen that change with time each keep their own tick,
 // so the clock redraws one line a second instead of the whole screen (chart,
@@ -443,7 +443,10 @@ function Live({ s }: { s: Session }) {
   };
 
   // No "Are you sure?": it happens at once with "Anular" for a few seconds, which is quicker at the table and as safe.
-  const [undo, setUndo] = useState<{ title: string; prev: Partial<Session> } | null>(null);
+  const [kept, setUndo] = useState<{ title: string; prev: Partial<Session>; stack: number; log: number } | null>(null);
+  // A stack saved since (a hand with «Guardar já», the stack pad) is newer than what «Anular» would put back:
+  // the offer goes, even when a screen reader kept it on screen long after.
+  const undo = kept && kept.stack === s.stack && kept.log === s.stackLog.length ? kept : null;
   const reader = useScreenReader();
   useEffect(() => {
     if (!undo || reader) return;
@@ -453,7 +456,7 @@ function Live({ s }: { s: Session }) {
   const undoable = (title: string, next: Partial<Session>) => {
     tap('success');
     const prev = Object.fromEntries(Object.keys(next).map((k) => [k, s[k as keyof Session]])) as Partial<Session>;
-    setUndo({ title, prev });
+    setUndo({ title, prev, stack: next.stack ?? s.stack, log: (next.stackLog ?? s.stackLog).length });
     save(next);
     // Six seconds is too short to find «Anular» with VoiceOver or TalkBack: it is said, and stays until closed (below).
     AccessibilityInfo.announceForAccessibility(t('{what}. Podes anular.', { what: title }));

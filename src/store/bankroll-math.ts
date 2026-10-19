@@ -424,11 +424,6 @@ export function activeFilters(f: SessionFilter): number {
 
 // ---- Bankroll changes ------------------------------------------------------
 
-/** Sessions of a bankroll being deleted move to another one in the same currency. */
-export function moveSessions(sessions: Session[], fromId: string, to: Bankroll, bankrolls: Bankroll[]): Session[] {
-  return sessions.filter((s) => bankrollOf(s, bankrolls)?.id === fromId).map((s) => ({ ...s, bankrollId: to.id }));
-}
-
 /** Newest first: sessions and transfers of the scope as one history. */
 export type LedgerEntry = { t: number; session: Session } | { t: number; transfer: Transfer };
 

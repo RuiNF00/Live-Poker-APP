@@ -18,8 +18,8 @@ import { TaxFields } from './TaxFields';
 import { Button, Card, Chip, ChipRow, confirmAction, Field, NumField, Row, Section, Segmented, T, ToggleItem } from './ui';
 
 // Only when the check-in shows (it can be turned off): off the first frame.
-const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore })));
-const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter })));
+const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore }), () => ({ default: (() => null) as never })));
+const MindAfter = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindAfter }), () => ({ default: (() => null) as never })));
 
 export function blankSession(kind: GameKind, currency: string, tableSize = 9): Session {
   const mtt = kind === 'mtt';
