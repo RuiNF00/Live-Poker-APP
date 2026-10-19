@@ -2,8 +2,8 @@ import type { Locale } from '@/lib/i18n';
 
 // Text for public profiles (/u/<handle>), in the site's languages.
 const pt = {
-  follow: (h: string) => `Seguir @${h}`,
-  followNote: 'Segue na app do Sweatbook. É grátis.',
+  follow: (_h: string) => 'Experimenta a Sweatbook',
+  followNote: 'Regista as tuas sessões. É grátis.',
   sessions: 'Sessões',
   hands: 'Mãos',
   hours: 'h à mesa',
@@ -29,8 +29,8 @@ const pt = {
 };
 
 const en: typeof pt = {
-  follow: (h: string) => `Follow @${h}`,
-  followNote: 'Follow in the Sweatbook app. It is free.',
+  follow: (_h: string) => 'Try Sweatbook',
+  followNote: "Log your sessions. It's free.",
   sessions: 'Sessions',
   hands: 'Hands',
   hours: 'h at the table',
@@ -56,8 +56,8 @@ const en: typeof pt = {
 };
 
 const ptBR: typeof pt = {
-  follow: (h: string) => `Seguir @${h}`,
-  followNote: 'Siga no app do Sweatbook. É grátis.',
+  follow: (_h: string) => 'Experimente o Sweatbook',
+  followNote: 'Registre suas sessões. É grátis.',
   sessions: 'Sessões',
   hands: 'Mãos',
   hours: 'h na mesa',
@@ -83,8 +83,8 @@ const ptBR: typeof pt = {
 };
 
 const es: typeof pt = {
-  follow: (h: string) => `Seguir a @${h}`,
-  followNote: 'Síguelo en la app de Sweatbook. Es gratis.',
+  follow: (_h: string) => 'Prueba Sweatbook',
+  followNote: 'Registra tus sesiones. Es gratis.',
   sessions: 'Sesiones',
   hands: 'Manos',
   hours: 'h en la mesa',

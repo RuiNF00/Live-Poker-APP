@@ -44,14 +44,14 @@ const FEATURES: [string, string][] = [
   ['Privacy built in', 'Hide the amounts with one tap, lock the app with Face ID and export or erase everything.'],
 ];
 
-// Rendered from the v1 with generic event names. Without the bankroll, trip and backer
-// screens: press images show no money amounts (marketing/kit-imprensa.md).
+// Rendered from the v1 with generic event names and no money amounts: the trip recap
+// is shown only in buy-ins (marketing/kit-imprensa.md).
 const SHOTS: [number, string][] = [
   [1, 'Log a hand in seconds'],
   [2, 'Tell the hand, we put it on the table'],
-  [3, 'Replay every street'],
+  [3, 'Replay every street, even run it twice'],
   [4, 'Share it and ask your friends'],
-  [5, 'The tournament and level, remembered'],
+  [5, 'Tournament and level, remembered'],
   [6, 'Wrap up the festival in one Story'],
 ];
 
