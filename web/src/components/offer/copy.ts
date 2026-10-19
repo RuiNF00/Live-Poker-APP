@@ -81,7 +81,7 @@ const ptBR: typeof pt = {
   rateLimited: 'Muitas tentativas seguidas. Tente mais tarde.',
   footer: 'Registro do acordo entre você e seus backers. Nenhum dinheiro passa pelo Sweatbook.',
   ctaTitle: 'Acompanhe todos os jogadores que você banca',
-  ctaBody: 'Na Sweatbook você vê suas partes, o que devem a você, o makeup e as sessões ao vivo de cada jogador, num só lugar.',
+  ctaBody: 'No Sweatbook você vê suas partes, o que devem a você, o makeup e as sessões ao vivo de cada jogador, num só lugar.',
   notFound: 'Este acordo não existe mais.',
   metaTitle: (player: string) => (player ? `${player} registrou a sua parte` : 'Sua parte registrada'),
   metaDescription: 'Confirme a sua parte acordada com o jogador.',
