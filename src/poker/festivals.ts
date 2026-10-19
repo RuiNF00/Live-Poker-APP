@@ -183,7 +183,8 @@ const LV_STRUCTURE: Record<number, [stack: number, levelMinutes: number]> = {
   52: [20000, 25],
   53: [20000, 25],
   54: [30000, 20],
-  55: [30000, 30],
+  // The WPT schedule page gives 40,000 (the Wynn PDF's columns read 30,000 by machine; corrected 2026-10-19).
+  55: [40000, 30],
   56: [30000, 30],
   57: [20000, 25],
   58: [20000, 20],

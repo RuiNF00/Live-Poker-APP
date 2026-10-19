@@ -3187,6 +3187,7 @@ const en: Record<string, string> = {
   'Lisboa': 'Lisbon',
   'Praga': 'Prague',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Main Event: €550, 40,000 starting stack, 45-minute levels. The organiser has not published the flight days and times yet.',
+  'Super High Roller: o Dia 2 também aceita inscrições até às 17:50.': 'Super High Roller: Day 2 also takes new entries until 17:50.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'The organiser publishes each tournament\'s starting stack but not its level length, except for a few.',
   'Punta del Este, dezembro 2026': 'Punta del Este, December 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'No exchange rate for {list}: approximate until you are back online.',
