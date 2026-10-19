@@ -304,6 +304,9 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\bse retiran\b|\bse tiran\b/g, ' foldam '],
     [/\bme retiro\b|\bse retira\b|\bme tiro\b|\bse tira\b/g, (m: string) => (m.startsWith('me') ? ' foldo ' : ' folds ')],
     [/\b(\d+)[\s-]*max\b/g, ' $1 max '],
+    // "Toda a gente desiste" is pt-PT for everyone; "ninguém paga", "nobody calls": the rest fold.
+    [/\btoda a gente\b/g, ' todos '],
+    [/\b(?:ninguem|nadie|nobody|no one|noone) (?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
     // "fold até mim", "checked to the button": the action passes to that seat.
     [/\b(?:todos |todo mundo |all |everyone |everybody |it )?(?:fold|folds|folded|folda|foldou|foldam|foldaram|foldaron|foldean|foldea|check|checks|checked|checkam|checkaram|passa|passou|passam|passaram|pasa|pasan|corre|correm|correu|foge|fogem|desiste|desistem|larga|largam|sai|saem|is folded|gets folded|comes|vem|vai)(?: around)? (?:ate|to|hasta|pra|para) (?:o |a |ao |a la |al |the |el |la |me )?(eu|mim|me|mi|hero|ti|utg1|utg2|utg|mp|lj|hj|co|btn|sb|bb)\b/g, ' passto $1 '],
     [/\b(?:todos|all|everyone|everybody|o resto|the rest|el resto|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desistem|largam|correm|correram)\b|\b(?:fold|foldam|foldaram) (?:todos|all|around)\b|\beveryone folds\b/g, ' foldall '],

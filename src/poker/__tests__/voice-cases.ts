@@ -2,7 +2,7 @@
 // sentence came from a QA round (or a report a player could make); voice.test.ts
 // runs them all, and `npx tsx src/poker/__tests__/voice-cases.ts` prints the hit rate per language.
 
-import { positions } from '../engine';
+import { positions, replay } from '../engine';
 import type { GameInfo, Hand } from '../types';
 import { handFromSpeech } from '../voice';
 
@@ -25,6 +25,8 @@ export interface Case {
   stacks?: Record<string, number>;
   /** Note codes that must not show up. */
   noNotes?: string[];
+  /** The hand ends with everyone else folded. */
+  foldWin?: boolean;
   game?: GameInfo;
   n?: number;
 }
@@ -74,6 +76,7 @@ export function check(c: Case): string | null {
     const got = h.players[pos.indexOf(p)]?.stack;
     if (got !== want) wrong.push(`${p} stack ${got} ≠ ${want}`);
   }
+  if (c.foldWin !== undefined && !!replay(h).final.foldWin !== c.foldWin) wrong.push(`foldWin ≠ ${c.foldWin}`);
   for (const code of c.noNotes ?? []) if (r.notes.some((x) => x.code === code)) wrong.push(`note ${code}`);
   return wrong.length ? wrong.join('; ') : null;
 }
@@ -141,6 +144,12 @@ export const CASES: Case[] = [
   { lang: 'en', text: 'Hero is on the button with king queen and opens to 900, the big blind calls.', pos: 'BTN', cards: 'KQ', line: 'BTN r900, BB c' },
   { lang: 'pt', text: 'O UTG faz minraise, eu pago no botão com ás rei.', pos: 'BTN', cards: 'AK', line: 'UTG r800, BTN c' },
   { lang: 'br', text: 'Tô no botão com rei rei. O UTG abre pra 1000, eu pago. Flop ás oito três, ele dá mesa, eu dou mesa. Turn dois, mesa, mesa.', pos: 'BTN', cards: 'KK', line: 'UTG r1000, BTN c', board: 'A832', noNotes: ['boardMissing'] },
+
+  // ── Everyone else folds: «toda a gente», «ninguém paga».
+  { lang: 'pt', text: 'Estou no UTG com ás rei, abro para seis, toda a gente desiste.', pos: 'UTG', cards: 'AK', line: 'UTG r2400', foldWin: true },
+  { lang: 'pt', text: 'Estou no UTG com ás rei, abro para seis e ninguém paga.', pos: 'UTG', cards: 'AK', line: 'UTG r2400', foldWin: true },
+  { lang: 'es', text: 'Estoy en UTG con as rey, subo a seis y nadie paga.', pos: 'UTG', cards: 'AK', line: 'UTG r2400', foldWin: true },
+  { lang: 'en', text: 'I am UTG with ace king, I open to six and nobody calls.', pos: 'UTG', cards: 'AK', line: 'UTG r2400', foldWin: true },
 
   // ── P3s.
   { lang: 'pt', text: 'Blinds 400/200. Estou no botão com ás rei, o UTG abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
