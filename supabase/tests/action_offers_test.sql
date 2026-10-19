@@ -41,6 +41,16 @@ select updated_at as v from get_action_offer(:'oid') \gset
 select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as reconfirmed_3;
 select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{backer}', '"Bea"')) as backer_updated from action_offers where id = :'oid';
 select confirmed_at is null as backer_clears_confirmation from get_action_offer(:'oid');
+-- The bounties term (PKO) is a term too; an absent one is the same as false (20261019170000).
+select updated_at as v from get_action_offer(:'oid') \gset
+select confirm_action_offer(:'oid', :'v') ? 'confirmed_at' as reconfirmed_4;
+select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{bountiesKept}', 'false')) as kept_false_updated from action_offers where id = :'oid';
+select confirmed_at is not null and updated_at = :'v'::timestamptz as absent_equals_false from get_action_offer(:'oid');
+select update_action_offer(:'oid', :'otok', jsonb_set(payload, '{bountiesKept}', 'true')) as kept_updated from action_offers where id = :'oid';
+select confirmed_at is null and updated_at > :'v'::timestamptz as bounties_clear_confirmation from get_action_offer(:'oid');
+select updated_at as v from get_action_offer(:'oid') \gset
+select update_action_offer(:'oid', :'otok', payload) as kept_same_updated from action_offers where id = :'oid';
+select updated_at = :'v'::timestamptz as same_bounties_keep_version from get_action_offer(:'oid');
 select update_action_offer(:'oid', 'wrong', '{"v":1,"events":[]}') = false as update_wrong_token;
 select (payload->'events'->0->>'p')::numeric = 6 as unchanged_by_wrong_token from get_action_offer(:'oid');
 
@@ -73,7 +83,5 @@ select confirm_action_offer('x', now());
 \set ON_ERROR_STOP on
 reset role;
 
--- The old confirm (no version) stays for the web from before 20261019060000, still server-only.
-select not has_function_privilege('anon', 'public.confirm_action_offer(text)', 'execute')
-   and not has_function_privilege('authenticated', 'public.confirm_action_offer(text)', 'execute')
-   and has_function_privilege('service_role', 'public.confirm_action_offer(text)', 'execute') as old_confirm_server_only;
+-- The old confirm (no version) is gone in the 1st update (20261019170000).
+select to_regprocedure('public.confirm_action_offer(text)') is null as old_confirm_dropped;
