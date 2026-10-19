@@ -3484,6 +3484,18 @@ const es: Record<string, string> = {
   "Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.": "Al terminar un torneo de este swap, el premio y el evento entran sin preguntar. El swap cuenta el premio entero, bounties incluidos.",
   'Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.': 'En PLO el máximo es el bote: la cantidad del {pos} se ajustó al tamaño del bote.',
   'Por agora só guardamos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.': 'Por ahora solo registramos PLO de 4 cartas, sin Hi-Lo: la mano quedó en PLO.',
+  'Atualizar por voz': 'Actualizar por voz',
+  'Stack: {n} bb': 'Stack: {n} bb',
+  'Stack: {chips}': 'Stack: {chips}',
+  'Blinds {sb}/{bb}, ante {ante}': 'Ciegas {sb}/{bb}, ante {ante}',
+  'Blinds {sb}/{bb}': 'Ciegas {sb}/{bb}',
+  'Restam {n}': 'Quedan {n}',
+  '{n} inscritos': '{n} inscritos',
+  'Nota: {text}': 'Nota: {text}',
+  'Toca no microfone do teclado e diz o que mudou: o stack, o nível, um rebuy, quantos restam. Também podes escrever.': 'Toca el micrófono del teclado y di qué cambió: tu stack, el nivel, una recompra, cuántos quedan. También puedes escribirlo.',
+  'O que mudou, por palavras tuas': 'Qué cambió, con tus palabras',
+  'Nível 12, stack 45 mil, restam 80': 'Nivel 12, stack 45 mil, quedan 80',
+  'Ainda não percebemos. Experimenta «stack 45 mil» ou «nível 12».': 'Aún no lo entendimos. Prueba «stack 45 mil» o «nivel 12».',
 };
 
 export default es;

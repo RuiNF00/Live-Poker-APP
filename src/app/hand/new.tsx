@@ -62,7 +62,7 @@ interface Draft {
 }
 
 // Loaded the first time the player opens it: the parser and the sheet stay out of the launch bundle.
-const VoiceHandSheet = React.lazy(() => import('@/components/entry/VoiceHandSheet').then((m) => ({ default: m.VoiceHandSheet })));
+const VoiceHandSheet = React.lazy(() => import('@/components/voice-chunk').then((m) => ({ default: m.VoiceHandSheet })));
 
 export default function NewHand() {
   crashProbe('hand');

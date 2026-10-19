@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
@@ -40,6 +40,8 @@ import { eventDay } from '@/poker/festivals';
 import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
+import { usePro } from '@/billing/pro';
+import { PRO_ONLY } from '@/billing/plans';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
@@ -360,6 +362,10 @@ function Live({ s }: { s: Session }) {
   // The clock and stack first; the chart, money and staking a frame later.
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
+  const pro = usePro();
+  const voiceLocked = !pro.isPro && PRO_ONLY.voiceHand;
+  // Mounted on first open, so the parser isn't loaded for players who never use it.
+  const [voice, setVoice] = useState<'closed' | 'open' | 'shut'>('closed');
   // MTT: cashOut is the place's prize here, bounties apart; the session keeps their sum as its cashOut.
   const [finish, setFinish] = useState({ cashOut: 0, bounties: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
   const total = finish.cashOut + (s.kind === 'mtt' ? finish.bounties : 0);
@@ -792,10 +798,11 @@ function Live({ s }: { s: Session }) {
       ) : null}
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar} onLayout={onBarLayout}>
-        <View ref={barRef} collapsable={false} style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
+        <View ref={barRef} collapsable={false} style={{ flex: 4, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
+        <ThumbAction icon={voiceLocked ? 'lock-closed' : 'mic-outline'} label={t('Voz')} a11y={voiceLocked ? `${t('Atualizar por voz')}, Pro` : t('Atualizar por voz')} onPress={() => (voiceLocked ? pro.paywall('voiceHand') : setVoice('open'))} />
         </View>
         <View ref={handRef} collapsable={false} style={{ flex: 2 }}>
           {/* "Nueva mano" / "Nova mão" at 200%: two lines rather than "Nueva m…". */}
@@ -803,6 +810,19 @@ function Live({ s }: { s: Session }) {
         </View>
       </View>
       <CoachMarks id="live-session" steps={tour} />
+      {voice !== 'closed' ? (
+        <Suspense fallback={null}>
+          <LiveVoiceSheet
+            visible={voice === 'open'}
+            session={s}
+            onClose={() => setVoice('shut')}
+            onDone={(title, patch) => {
+              setVoice('shut');
+              undoable(title, patch);
+            }}
+          />
+        </Suspense>
+      ) : null}
       <NoteSheet
         visible={noteOpen}
         value={s.notes}
@@ -820,11 +840,11 @@ function Live({ s }: { s: Session }) {
 const SESSION_TAGS = ['Focado', 'Cansado', 'Tilt', 'Mesa fácil', 'Mesa difícil', 'Bem jogado', 'Azar'];
 
 /** Square icon-and-label button for the bar at the bottom of a live session. */
-function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; active?: boolean }) {
+function ThumbAction({ icon, label, onPress, active, a11y }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; active?: boolean; a11y?: string }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={a11y ?? label}
       onPress={() => {
         tap();
         onPress();
@@ -909,6 +929,9 @@ function TableReads({ roster }: { roster: string[] }) {
     </Section>
   );
 }
+
+// Lazy: the speech parser loads on the first tap, in the same chunk as the hand told by voice.
+const LiveVoiceSheet = React.lazy(() => import('@/components/voice-chunk').then((m) => ({ default: m.LiveVoiceSheet })));
 
 function mmss(ms: number) {
   const secs = Math.max(0, Math.ceil(ms / 1000));

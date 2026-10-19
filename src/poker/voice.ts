@@ -202,7 +202,7 @@ function numToken(w: string): number | null {
 }
 
 /** "dois mil e quinhentos", "2 mil 500", "2.5", "vinte e cinco" → a number; null if none starts at i. */
-function readNumber(w: string[], i: number): { value: number; next: number } | null {
+export function readNumber(w: string[], i: number): { value: number; next: number } | null {
   let total = 0;
   let current = 0;
   let any = false;
