@@ -39,14 +39,14 @@ export function useStoreLink(stores: StoreLinks) {
 const BADGES: Record<'ios' | 'android', Partial<Record<Locale, string>>> = { ios: {}, android: {} };
 const BADGE_NAME = { ios: 'App Store', android: 'Google Play' } as const;
 
-/** App Store and Google Play badges; on a phone, its own store comes first. Before launch, one line of text. */
+/** App Store and Google Play badges; on a phone, its own store comes first. Before launch, one line of text; with only the App Store live, a line saying Android is coming. */
 export function StoreButtons({
   c,
   stores,
   from,
   shareId,
 }: {
-  c: Pick<LandingCopy, 'soonBoth' | 'getOn' | 'getOnPlay' | 'lang'>;
+  c: Pick<LandingCopy, 'soonBoth' | 'soonAndroid' | 'getOn' | 'getOnPlay' | 'lang'>;
   stores: StoreLinks;
   from: string;
   /** Kept for callers: there is no "coming soon" badge to link anywhere any more. */
@@ -68,7 +68,10 @@ export function StoreButtons({
     );
   };
   const order: ('ios' | 'android')[] = platform === 'android' ? ['android', 'ios'] : ['ios', 'android'];
-  return <div className="lp-stores">{order.map(badge)}</div>;
+  const stack = <div className="lp-stores">{order.map(badge)}</div>;
+  // iPhone first, Android later: say so, or an Android visitor finds nothing to tap and no reason why.
+  if (stores.ios && !stores.android) return <>{stack}<p className="lp-stores-soon">{c.soonAndroid}</p></>;
+  return stack;
 }
 
 /** Counts a landing visit once per page load (top of the site → store funnel). */

@@ -8,6 +8,7 @@ import './press.css';
 // Press kit: sweatbook.poker/press. In English, the language journalists in the poker press write in.
 // Kept out of search until Rui approves the founder quote and the launch date (see QUOTE_APPROVED).
 const QUOTE_APPROVED = false;
+const IPHONE_FIRST = Boolean(brand.appStoreUrl && !brand.playStoreUrl);
 const LAUNCH = 'Late 2026'; // TODO(Rui): the store release date once both stores approve
 
 export const metadata: Metadata = {
@@ -19,8 +20,11 @@ export const metadata: Metadata = {
 
 const FACTS: [string, string][] = [
   ['Product', `${brand.name}, a hand log and replayer for live poker players`],
-  ['Platforms', 'iPhone and Android'],
-  ['Launch', `${LAUNCH}, on the App Store and Google Play in 175 countries`],
+  // Follows the store links: if only the App Store is live on launch day the page says so without an edit.
+  ['Platforms', IPHONE_FIRST ? 'iPhone, with Android coming soon' : 'iPhone and Android'],
+  ['Launch', IPHONE_FIRST
+    ? `${LAUNCH}, on the App Store in 175 countries. Android coming soon on Google Play`
+    : `${LAUNCH}, on the App Store and Google Play in 175 countries`],
   ['Languages', 'English, European Portuguese, Brazilian Portuguese and Spanish'],
   ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan. Pro adds unlimited hands, staking, swap settlement, a tax report, multi-currency totals and brand-free sharing'],
   ['Founder', 'Rui, a live tournament player'],
