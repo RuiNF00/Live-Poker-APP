@@ -129,3 +129,10 @@ test('the same entry saved twice by the server (a retry at the same moment) coun
   const g: SwapGroup = { id: 'g', token: 't', seat: 0, entries: [ge(1, 'x'), ge(1, 'x', 'dup')], createdAt: 1, updatedAt: 1, terms: { v: 1, scope: 'series', title: 'G', venue: '', currency: '€', pct: 10, note: '', createdAt: 1 }, seats: [0, 1, 2].map((seat) => ({ seat, name: `P${seat}`, confirmedAt: 1 })) };
   assert.equal(groupNet(g).get(1), -200);
 });
+
+test('a copy the server saved twice shows once in the history after a sync', () => {
+  const r = e('b', 'result', 1000, { cid: 'r1' });
+  const local = swap({ entries: [] });
+  const remote: RemoteSwap = { id: local.id, terms: local.terms, confirmedAt: '2026-10-18T10:00:00Z', confirmedName: null, code: null, you: 'a', updatedAt: '', entries: [r, { ...r, id: 'dup' }] };
+  assert.deepEqual(mergeRemote(local, remote).entries.map((x) => x.id), [r.id]);
+});

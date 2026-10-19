@@ -289,7 +289,8 @@ export function mergeRemote(local: Swap, remote: RemoteSwap, now = Date.now()): 
     code: remote.code ?? undefined,
     left: remote.leftSide ?? undefined,
     accounts: remote.accounts ?? local.accounts,
-    entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
+    // A copy the server saved twice shows and notifies once (onePerCid).
+    entries: [...onePerCid(remote.entries, (e) => e.side).map(({ pending: _, ...e }) => e), ...stillPending],
     gone: false,
     syncedAt: now,
     updatedAt: now,

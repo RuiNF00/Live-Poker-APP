@@ -58,3 +58,36 @@ revoke execute on function public.add_swap_entry(text, text, jsonb) from public,
 revoke execute on function public.add_swap_group_entry(text, text, jsonb) from public, anon, authenticated;
 grant execute on function public.add_swap_entry(text, text, jsonb) to service_role;
 grant execute on function public.add_swap_group_entry(text, text, jsonb) to service_role;
+
+-- Copies saved twice before this lock go: the first of each side's (or seat's) cid stays, in order.
+-- The app and the web page already count them once; this also stops them showing in the history.
+create or replace function public.swap_dedupe_entries() returns integer
+language plpgsql security definer set search_path = public as $$
+declare n integer; m integer;
+begin
+  update public.swaps s
+     set entries = (
+       select coalesce(jsonb_agg(x.e order by x.i), '[]'::jsonb) from (
+         select t.e, t.i, row_number() over (partition by t.e->>'side', t.e->>'cid' order by t.i) as k
+           from jsonb_array_elements(s.entries) with ordinality as t(e, i)) x
+        where x.k = 1 or x.e->>'cid' is null)
+   where exists (
+     select 1 from jsonb_array_elements(s.entries) d where d->>'cid' is not null
+      group by d->>'side', d->>'cid' having count(*) > 1);
+  get diagnostics n = row_count;
+  update public.swap_groups g
+     set entries = (
+       select coalesce(jsonb_agg(x.e order by x.i), '[]'::jsonb) from (
+         select t.e, t.i, row_number() over (partition by t.e->>'seat', t.e->>'cid' order by t.i) as k
+           from jsonb_array_elements(g.entries) with ordinality as t(e, i)) x
+        where x.k = 1 or x.e->>'cid' is null)
+   where exists (
+     select 1 from jsonb_array_elements(g.entries) d where d->>'cid' is not null
+      group by d->>'seat', d->>'cid' having count(*) > 1);
+  get diagnostics m = row_count;
+  return n + m;
+end $$;
+
+revoke execute on function public.swap_dedupe_entries() from public, anon, authenticated;
+grant execute on function public.swap_dedupe_entries() to service_role;
+select public.swap_dedupe_entries();

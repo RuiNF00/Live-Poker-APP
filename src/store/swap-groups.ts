@@ -192,7 +192,7 @@ export function mergeRemoteGroup(local: SwapGroup, remote: RemoteGroup, now = Da
     ...local,
     terms: remote.terms,
     seats: remote.seats.map((s) => ({ seat: s.seat, name: s.name, confirmedAt: s.confirmedAt ? Date.parse(s.confirmedAt) : undefined })),
-    entries: [...remote.entries.map(({ pending: _, ...e }) => e), ...stillPending],
+    entries: [...onePerCid(remote.entries, (e) => e.seat).map(({ pending: _, ...e }) => e), ...stillPending],
     accounts: remote.accounts ?? local.accounts,
     gone: false,
     syncedAt: now,

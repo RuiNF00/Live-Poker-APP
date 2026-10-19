@@ -9,7 +9,7 @@ import { readLocal, writeLocal } from '@/lib/local';
 import { appHref, useAndroid } from '@/lib/app-link';
 import { storeLinks } from '@/lib/storeLinks';
 import { OpenInApp } from '@/components/OpenInApp';
-import { newSwapKey, seenTag, swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
+import { newSwapKey, onePerCid, seenTag, swapBalance, type PublicSwap, type Side, type SwapEntry } from '@/lib/swap-terms';
 import { track } from '@/lib/track';
 import { swapCopy } from './copy';
 import '@/app/landing.css';
@@ -121,8 +121,9 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
   }
 
   const bal = swapBalance(t, swap.entries);
-  const results = swap.entries.filter((e) => e.kind === 'result');
-  const payments = swap.entries.filter((e) => e.kind !== 'result');
+  const entries = onePerCid(swap.entries, (e) => e.side);
+  const results = entries.filter((e) => e.kind === 'result');
+  const payments = entries.filter((e) => e.kind !== 'result');
   const confirmed = !!swap.confirmedAt;
   const creditor: Side | null = Math.abs(bal.net) < 0.005 ? null : bal.net > 0 ? 'a' : 'b';
   const stores = storeLinks({ utm_source: 'web', utm_medium: 'swap', utm_campaign: id }, invite);
