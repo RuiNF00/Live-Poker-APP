@@ -40,3 +40,19 @@ describe('a swap at the most entries the database keeps (Security P3, 19 Oct)', 
     expect(await g.addEntry(id, token, entry('c0'))).toBe(true);
   });
 });
+
+describe('the creator’s RevenueCat id never leaves the server (Security, 19 Oct)', () => {
+  it('is not in any read of a swap or a group', async () => {
+    const rc = '$RCAnonymousID:0123456789abcdef0123456789abcdef';
+    const s = swapStore();
+    const sw = await s.create(terms, k('9'));
+    expect(await s.setOwnerRc(sw.id, sw.token, rc)).toBe(true);
+    expect(await s.ownerRc(sw.id)).toBe(rc);
+    expect(JSON.stringify(await s.get(sw.id))).not.toContain('RCAnonymousID');
+    const g = groupStore();
+    const gt = { v: 1, scope: 'series', title: 'Bahamas', venue: '', currency: '$', pct: 2, note: '', createdAt: 1 } as never;
+    const gr = await g.create(gt, ['Rui', 'Ana', 'João'], { token: k('7'), invite: k('8') });
+    expect(await g.setOwnerRc(gr.id, gr.token, rc)).toBe(true);
+    expect(JSON.stringify(await g.get(gr.id))).not.toContain('RCAnonymousID');
+  });
+});
