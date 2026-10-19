@@ -6,6 +6,8 @@ import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, ownBuyIns, owedToB
 import type { Session } from '../types';
 import { mttStats } from '../results-math';
 import { summarize } from '../tourney-stats';
+import { homeTotals } from '../fx-math';
+import { yearOf, yearReview } from '../../share/year-review';
 
 function mk(over: Partial<Session> = {}): Session {
   return {
@@ -179,6 +181,11 @@ test('ROI is the result over your share of the buy-ins, the same on every screen
   assert.equal(breakdown(list, () => 'x')[0].roi, roi);
   assert.equal(summarize(list, 'mine').roi, roi);
   assert.equal(mttStats(list)!.roi, roi);
+  // The home-currency card and the year in review divide by the same thing.
+  assert.equal(homeTotals({ sessions: list, transfers: [], bankrolls: [] }, '€', {}, {}).roi, roi);
+  const row = yearReview(yearOf(0), list, []).stakes.find((x) => x.key === 'mtt|100')!;
+  assert.equal(row.roi, plain.reduce((a, s) => a + profit(s), 0) / 400);
+  assert.equal(yearReview(yearOf(0), [staked, { ...staked, id: 'b' }], []).stakes[0].roi, (2 * profit(staked)) / 2000);
 });
 
 test('ROI with a tournament sold 100%: its markup counts as result, nothing as buy-ins', () => {
