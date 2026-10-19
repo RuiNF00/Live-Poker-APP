@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { isRateLimited } from '@/lib/net';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
@@ -106,7 +107,7 @@ export function CommentsList({
     } catch (e) {
       const m = e instanceof Error ? e.message : '';
       // Blocked by the hand's owner: said plainly, without inviting retries (and without saying why).
-      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : t('Não deu para enviar. Tenta outra vez.'));
+      setErr(m === 'offensive' ? t('Comentário recusado: linguagem ofensiva.') : m === 'blocked' ? t('Não foi possível enviar o comentário.') : isRateLimited(e) ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Não deu para enviar. Tenta outra vez.'));
     } finally {
       setBusy(false);
     }

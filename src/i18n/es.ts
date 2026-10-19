@@ -1540,6 +1540,7 @@ const es: Record<string, string> = {
   'A tua parte em {title}: {pct} de {n} torneios, markup {markup}. Confirma aqui o que combinámos: {url}': 'Tu parte de {title}: {pct} de {n} torneos, markup {markup}. Confirma aquí lo que acordamos: {url}',
   'Um dos nomes não passou no filtro. Muda-o e tenta outra vez.': 'Uno de los nombres no pasó el filtro. Cámbialo e inténtalo de nuevo.',
   'Demasiadas tentativas. Tenta daqui a pouco.': 'Demasiados intentos. Inténtalo en un rato.',
+  'O servidor não respondeu. Tenta outra vez daqui a pouco.': 'El servidor no respondió. Inténtalo de nuevo en un rato.',
   'Demasiados pedidos. Tenta daqui a pouco.': 'Demasiadas solicitudes. Inténtalo en un rato.',
   'Regista cada backer com quem combinaste uma parte. As sessões destes torneios ficam com a parte de cada um.': 'Registra cada backer con quien acordaste una parte. Las sesiones de estos torneos llevan la parte de cada uno.',
   'Vendida a {n} backers por {price}. Pões {out} do teu bolso.': 'Vendida a {n} backers por {price}. Pones {out} de tu bolsillo.',

@@ -32,6 +32,7 @@ const ERR: Record<string, string> = {
   network: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   offline: 'Sem ligação. Tenta outra vez quando tiveres rede.',
   rate_limited: 'Demasiados pedidos. Tenta daqui a pouco.',
+  server: 'O servidor não respondeu. Tenta outra vez daqui a pouco.',
   not_found: 'Não encontrámos nenhuma cópia com esse código.',
   forbidden: 'Este código não dá acesso a esta cópia.',
   too_big: 'A cópia passou o limite da nuvem. A última que coube continua lá; exporta para ficheiro para guardar tudo.',
@@ -368,12 +369,15 @@ export function AutoCloudBackup() {
           asking.current = false;
           // The history comes back: no welcome flow, done as if «Saltar» (and no paywall either way).
           restoreOffer.set('accepted');
-          AsyncStorage.setItem(ONBOARDING_KEY, '{}').catch(() => {});
-          restoreFrom(c, latest.current.importData).catch((e) => {
-            // Offered again next launch: the code is only in the keychain, the player may not have it written down.
-            AsyncStorage.removeItem(OFFER_KEY).catch(() => {});
-            note(t('Não deu para recuperar'), errText(e));
-          });
+          restoreFrom(c, latest.current.importData)
+            .then(() => AsyncStorage.setItem(ONBOARDING_KEY, '{}').catch(() => {}))
+            .catch((e) => {
+              // Offered again next launch: the code is only in the keychain, the player may not have it written down.
+              // Nothing came back, so the empty app gets its welcome after all.
+              restoreOffer.failed();
+              AsyncStorage.removeItem(OFFER_KEY).catch(() => {});
+              note(t('Não deu para recuperar'), errText(e));
+            });
         },
         t('Agora não'),
         () => {
