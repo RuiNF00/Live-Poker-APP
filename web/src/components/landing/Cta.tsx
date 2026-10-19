@@ -55,7 +55,7 @@ export function StickyCta({ label, soon, note, stores }: { label: string; soon?:
     return () => io.disconnect();
   }, []);
   return (
-    <div className={`lp-sticky${show ? ' on' : ''}`} aria-hidden={!show}>
+    <div className={`lp-sticky${show ? ' on' : ''}`} aria-hidden={!show} inert={!show}>
       <span className="lp-sticky-note">{note}</span>
       <MainCta label={label} soon={soon} stores={stores} from="sticky" />
     </div>
