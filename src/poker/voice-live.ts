@@ -32,6 +32,17 @@ const STACK = new Set(['stack', 'fichas', 'chips', 'pilha']);
 const HAVE = new Set(['tenho', 'tinha', 'tengo', 'tenia', 'have', 'had', 'got', 'com', 'con', 'at', 'on']);
 const REBUY = new Set(['rebuy', 'rebuys', 'recompra', 'recompro', 'recomprei', 'recompre', 'reentry', 'reentrada', 'reentro', 'reentrei', 'reentre', 'reentrar']);
 const PAUSE = new Set(['pausa', 'intervalo', 'break', 'descanso', 'jantar', 'cena', 'dinner']);
+// "Não há pausa", "sin rebuy", "I didn't rebuy": the word is there, the change isn't.
+const NEG = new Set(['nao', 'sem', 'nem', 'sin', 'ni', 'not', 'without', 'didnt', 'dont', 'havent', 'never', 'nunca']);
+const NO_VERB = new Set(['hay', 'hubo', 'hice', 'fiz', 'tengo', 'tenho', 'vou', 'voy', 'more']);
+function negated(w: string[], i: number): boolean {
+  for (let j = Math.max(0, i - 3); j < i; j++) {
+    if (NEG.has(w[j])) return true;
+    // "no" is also pt "in the" ("no intervalo"): a negation only before a verb, or in English.
+    if (w[j] === 'no' && (NO_VERB.has(w[j + 1] ?? '') || (j === i - 1 && ['break', 'rebuy', 'addon', 'dinner', 'add'].includes(w[i])))) return true;
+  }
+  return false;
+}
 const RESUME = new Set(['retomar', 'retomo', 'retomei', 'voltei', 'volto', 'resume', 'resumed', 'seguimos', 'continuo', 'continuar', 'continua', 'vuelvo', 'volvi', 'regreso', 'regrese', 'reanudo', 'recomeca', 'recomeco']);
 const LEFT = new Set(['restam', 'faltam', 'sobram', 'sobraram', 'ficam', 'ficaram', 'restan', 'restaban', 'quedan', 'quedamos', 'faltan', 'left', 'remaining', 'remain', 'somos', 'sobran']);
 const PLAYERS = new Set(['jogadores', 'jugadores', 'players', 'pessoas', 'personas', 'people']);
@@ -112,15 +123,15 @@ export function liveChanges(text: string): LiveChange[] {
       i = b.next - 1;
       continue;
     }
-    if (REBUY.has(x) || (x === 're' && w[i + 1] === 'entry')) {
+    if ((REBUY.has(x) || (x === 're' && w[i + 1] === 'entry')) && !negated(w, i)) {
       out.push({ k: 'rebuy' });
       continue;
     }
-    if (x === 'addon' || (x === 'add' && w[i + 1] === 'on')) {
+    if ((x === 'addon' || (x === 'add' && w[i + 1] === 'on')) && !negated(w, i)) {
       out.push({ k: 'addon' });
       continue;
     }
-    if (PAUSE.has(x) && w[i - 1] !== 'do' && w[i - 1] !== 'del' && w[i - 1] !== 'after' && w[i - 1] !== 'depois') {
+    if (PAUSE.has(x) && !negated(w, i) && w[i - 1] !== 'do' && w[i - 1] !== 'del' && w[i - 1] !== 'after' && w[i - 1] !== 'depois') {
       out.push({ k: 'pause' });
       continue;
     }

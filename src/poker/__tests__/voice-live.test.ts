@@ -33,7 +33,14 @@ const CASES: [string, LiveChange[]][] = [
   ['Stack de 45 mil e restam 120 jogadores. Nota: mesa difícil', [{ k: 'stack', v: 45000 }, { k: 'left', v: 120 }, { k: 'note', text: 'mesa difícil' }]],
   ['52.500', [{ k: 'stack', v: 52500 }]],
   ['quarenta e cinco mil', [{ k: 'stack', v: 45000 }]],
+  // Spoken corrections keep the last value; a negated word makes no change.
+  ['Stack 45 mil, não, 47 mil', [{ k: 'stack', v: 47000 }]],
+  ['Restam 80, não, 78', [{ k: 'left', v: 78 }]],
+  ['Stack 45 mil e não há pausa', [{ k: 'stack', v: 45000 }]],
+  ['Estou no intervalo', [{ k: 'pause' }]],
+  ['Não fiz o add-on', []],
   // pt-BR
+  ['Sem rebuy, stack 25 mil', [{ k: 'stack', v: 25000 }]],
   ['Tô com 52 mil, nível 14', [{ k: 'stack', v: 52000 }, { k: 'level', v: 14 }]],
   ['Fiz rebuy', [{ k: 'rebuy' }]],
   ['Fiz o add-on', [{ k: 'addon' }]],
@@ -41,6 +48,8 @@ const CASES: [string, LiveChange[]][] = [
   ['Uns 45 mil', [{ k: 'stack', v: 45000 }]],
   ['Faltam 45 jogadores', [{ k: 'left', v: 45 }]],
   // es
+  ['Tengo 30000, perdón, 32000', [{ k: 'stack', v: 32000 }]],
+  ['No hay descanso, nivel 9', [{ k: 'level', v: 9 }]],
   ['Tengo 45 mil, nivel 12', [{ k: 'stack', v: 45000 }, { k: 'level', v: 12 }]],
   ['Quedan 80 jugadores', [{ k: 'left', v: 80 }]],
   ['Nivel 9, ciegas 400/800 ante 800', [{ k: 'level', v: 9 }, { k: 'blinds', sb: 400, bb: 800, ante: 800 }]],
@@ -49,6 +58,9 @@ const CASES: [string, LiveChange[]][] = [
   ['Mis fichas: cuarenta mil', [{ k: 'stack', v: 40000 }]],
   ['Apunta: el del asiento 4 paga todo', [{ k: 'note', text: 'el del asiento 4 paga todo' }]],
   // en
+  ['My stack is 40k, sorry, 42k', [{ k: 'stack', v: 42000 }]],
+  ['I did not rebuy, stack 20k', [{ k: 'stack', v: 20000 }]],
+  ['No rebuy', []],
   ['I have 45k, level 12', [{ k: 'stack', v: 45000 }, { k: 'level', v: 12 }]],
   ['Level up', [{ k: 'levelStep', dir: 1 }]],
   ['Stack is 61,500', [{ k: 'stack', v: 61500 }]],
