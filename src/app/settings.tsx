@@ -136,6 +136,9 @@ export default function SettingsScreen() {
           lockChanged();
           router.replace('/');
           note(t('Dados apagados'), t('A app está como nova.'));
+        } catch {
+          // Never silent: the player must know their data may still be here.
+          note(t('Não deu para apagar'), t('Tenta outra vez.'));
         } finally {
           setBusy(false);
         }
