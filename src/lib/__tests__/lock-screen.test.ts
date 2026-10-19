@@ -1,9 +1,12 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+// Its own line, so it merges cleanly with the integration's changes to the import below.
+/* eslint-disable import/no-duplicates */
+import { lockAction } from '../lock-screen/live-state';
 
 import type { Session } from '../../store/types';
-import { breakEndMessage, breakLabel, breakOf, levelAfter, levelsDue, levelUpMessage, liveProps, lockAction, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
+import { breakEndMessage, breakLabel, breakOf, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, withLevelClock } from '../lock-screen/live-state';
 
 const MIN = 60_000;
 
