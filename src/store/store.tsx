@@ -21,7 +21,7 @@ import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
-import { bankrollOf, bankrollsBack, dropUnusedAuto, emptyDuplicates, ensureBankrolls, separateBankrolls, sortBankrolls } from './bankroll-math';
+import { bankrollOf, bankrollsBack, dropUnusedAuto, emptyDuplicates, ensureBankrolls, foldSeparated, refold, separateBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } from './festival-plan';
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
@@ -277,19 +277,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (d.backing.persisted !== d.backing.items) w.backing.schedule(d.backing.items);
       if (d.transfers.persisted !== d.transfers.items) w.transfers.schedule(d.transfers.items);
       if (d.trips.persisted !== d.trips.items) w.trips.schedule(d.trips.items);
-      const st = d.settings;
+      // A separated copy back next to its bankroll in the same currency is that bankroll (bankroll-math.ts).
+      const fold = foldSeparated(d.bankrolls.items);
+      const ss = refold(d.sessions.items, fold.to);
+      const ts = refold(d.transfers.items, fold.to);
+      if (ss !== d.sessions.items) w.sessions.schedule(ss);
+      if (ts !== d.transfers.items) w.transfers.schedule(ts);
+      const st = d.settings.bankrollId && fold.to.has(d.settings.bankrollId) ? { ...d.settings, bankrollId: fold.to.get(d.settings.bankrollId) } : d.settings;
       // Older data has no bankrolls: one per currency is made on first launch.
-      const made = ensureBankrolls(d.bankrolls.items, d.sessions.items, st.currency);
-      // Empty copies that older syncs between two phones multiplied go, and stay gone on the other phone.
-      const extra = emptyDuplicates(made, d.sessions.items, d.transfers.items, st.bankrollId);
-      markDeleted('bankrolls', extra);
+      const made = ensureBankrolls(fold.bankrolls, ss, st.currency);
+      // Empty copies that older syncs between two phones multiplied go. No delete mark: the other phone
+      // may have used one since, and it drops its own empty ones the same way.
+      const extra = emptyDuplicates(made, ss, ts, st.bankrollId);
       const br = extra.length ? made.filter((b) => !extra.includes(b.id)) : made;
       if (d.bankrolls.persisted !== br) w.bankrolls.schedule(br);
       setHands(d.hands.items);
-      setSessions(d.sessions.items);
+      setSessions(ss);
       setPlayers(d.players.items);
       setBankrolls(br);
-      setTransfers(d.transfers.items);
+      setTransfers(ts);
       setBackers(d.backers.items);
       setPackages(d.packages.items);
       setPayments(d.payments.items);
@@ -557,18 +563,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         void restoredGoneShares(linked)
           .then((gone) => gone.size && setHands((l) => l.map((x) => (x.shareId && gone.get(x.id) === x.shareId ? unshared(x) : x))))
           .catch(() => {});
-      setSessions(into(incomingSessions, 'sessions'));
-      setPlayers(into(b.players, 'players'));
-      setBankrolls((cur) => {
+      // A separated copy that lands next to its bankroll in the same currency folds into it
+      // (bankroll-math.ts): worked out on what's loaded now, so sessions and transfers move with it.
+      const keptNow = (cur: Bankroll[]) => {
         const merged = alive(mergeById(cur, b.bankrolls ?? []).list, 'bankrolls', del);
         // What comes in counts as use too: imported € rows land in "Principal", which must stay.
+        return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: [...rawSessions, ...incomingSessions], transfers: [...transfers, ...(b.transfers ?? [])] });
+      };
+      const { to } = foldSeparated(keptNow(bankrolls));
+      setSessions((cur) => refold(into(incomingSessions, 'sessions')(cur), to));
+      setPlayers(into(b.players, 'players'));
+      setBankrolls((cur) => {
         const use = { sessions: mergeById(rawSessions, incomingSessions).list, transfers: mergeById(transfers, b.transfers ?? []).list };
-        const kept = dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: [...rawSessions, ...incomingSessions], transfers: [...transfers, ...(b.transfers ?? [])] });
-        const extra = emptyDuplicates(kept, use.sessions, use.transfers, settings.bankrollId);
-        markDeleted('bankrolls', extra);
+        const kept = foldSeparated(keptNow(cur)).bankrolls;
+        // No delete mark for the empty copies: the other phone may have used one since (it drops its own).
+        const extra = emptyDuplicates(kept, refold(use.sessions, to), refold(use.transfers, to), settings.bankrollId);
         return extra.length ? kept.filter((x) => !extra.includes(x.id)) : kept;
       });
-      setTransfers(into(b.transfers ?? [], 'transfers'));
+      setTransfers((cur) => refold(into(b.transfers ?? [], 'transfers')(cur), to));
+      if (to.size) setSettingsState((cur) => (cur.bankrollId && to.has(cur.bankrollId) ? { ...cur, bankrollId: to.get(cur.bankrollId) } : cur));
       setBackers(into(b.backers ?? [], 'backers'));
       setPackages(into(b.packages ?? [], 'packages'));
       setPayments(into(b.payments ?? [], 'payments'));

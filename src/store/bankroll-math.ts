@@ -83,14 +83,46 @@ export function separateBankrolls<B extends { bankrolls?: Bankroll[]; sessions: 
   };
   const list = incoming.bankrolls ?? [];
   const cur = new Map(list.map((b) => [b.id, b.currency]));
-  if (!list.some((b) => to(b.id, b.currency) !== b.id) && !incoming.sessions.some((x) => x.bankrollId && to(x.bankrollId, x.currency) !== x.bankrollId)) return incoming;
+  // A session follows the bankroll it points at, in that bankroll's currency: one in another currency
+  // stays a mismatch and counts where it did on the other phone (its currency's own bankroll).
+  const sid = (x: Session) => (x.bankrollId ? to(x.bankrollId, cur.get(x.bankrollId) ?? x.currency) : undefined);
+  if (!list.some((b) => to(b.id, b.currency) !== b.id) && !incoming.sessions.some((x) => sid(x) !== x.bankrollId)) return incoming;
   return {
     ...incoming,
     bankrolls: list.map((b) => (to(b.id, b.currency) !== b.id ? { ...b, id: to(b.id, b.currency) } : b)),
-    // Only a session in that bankroll's currency is its: a $ one pointing at it belongs to the $ one here.
-    sessions: incoming.sessions.map((x) => (x.bankrollId && to(x.bankrollId, x.currency) !== x.bankrollId ? { ...x, bankrollId: to(x.bankrollId, x.currency) } : x)),
+    sessions: incoming.sessions.map((x) => (sid(x) !== x.bankrollId ? { ...x, bankrollId: sid(x) } : x)),
     transfers: incoming.transfers?.map((x) => (cur.has(x.bankrollId) && to(x.bankrollId, cur.get(x.bankrollId)!) !== x.bankrollId ? { ...x, bankrollId: to(x.bankrollId, cur.get(x.bankrollId)!) } : x)),
   };
+}
+
+/**
+ * A separated copy next to the bankroll it was made from, now in the same currency (this phone's
+ * own one in the other currency went, unused): the same bankroll twice. The copy folds into it,
+ * with the copy's name and rules when it was edited later; `to` says where its sessions and
+ * transfers go. No delete mark: the other phone folds the same way.
+ */
+export function foldSeparated(bankrolls: Bankroll[]): { bankrolls: Bankroll[]; to: Map<string, string> } {
+  const byId = new Map(bankrolls.map((b) => [b.id, b]));
+  const to = new Map<string, string>();
+  for (const b of bankrolls) {
+    const cut = b.id.lastIndexOf('~');
+    const base = cut > 0 ? byId.get(b.id.slice(0, cut)) : undefined;
+    if (base && base.currency === b.currency && b.id === sepId(base.id, b.currency)) to.set(b.id, base.id);
+  }
+  if (!to.size) return { bankrolls, to };
+  const out = bankrolls
+    .filter((b) => !to.has(b.id))
+    .map((b) => {
+      const copy = bankrolls.find((x) => to.get(x.id) === b.id);
+      return copy && (copy.updatedAt ?? 0) > (b.updatedAt ?? 0) ? { ...copy, id: b.id, currency: b.currency, createdAt: b.createdAt } : b;
+    });
+  return { bankrolls: out, to };
+}
+
+/** Sessions or transfers moved with foldSeparated. The same array when nothing moves. */
+export function refold<T extends { bankrollId?: string }>(list: T[], to: Map<string, string>): T[] {
+  if (!to.size || !list.some((x) => x.bankrollId && to.has(x.bankrollId))) return list;
+  return list.map((x) => (x.bankrollId && to.has(x.bankrollId) ? { ...x, bankrollId: to.get(x.bankrollId)! } : x));
 }
 
 /**
