@@ -43,6 +43,17 @@ function negated(w: string[], i: number): boolean {
   }
   return false;
 }
+// "No intervalo comi", "fui ao bar no intervalo": the break as a time, not a pause now, unless
+// the player is in it ("estou no intervalo", "vamos a cenar").
+const WHEN = new Set(['no', 'na', 'ao', 'a', 'durante', 'during', 'en', 'in', 'at', 'on']);
+const BEING = new Set(['estou', 'tou', 'to', 'estamos', 'estoy', 'im', 'were', 'vamos', 'vou', 'voy', 'fomos', 'going', 'entramos', 'entrei', 'are', 'am', 'is', 'go']);
+function asTime(w: string[], i: number): boolean {
+  let j = i - 1;
+  if (['the', 'el', 'o', 'a', 'um', 'una'].includes(w[j] ?? '') && WHEN.has(w[j - 1] ?? '')) j--;
+  // "On break" said alone is being on it.
+  if (w[j] === 'on' && j === 0) return false;
+  return WHEN.has(w[j] ?? '') && !BEING.has(w[j - 1] ?? '');
+}
 const RESUME = new Set(['retomar', 'retomo', 'retomei', 'voltei', 'volto', 'resume', 'resumed', 'seguimos', 'continuo', 'continuar', 'continua', 'vuelvo', 'volvi', 'regreso', 'regrese', 'reanudo', 'recomeca', 'recomeco']);
 const LEFT = new Set(['restam', 'faltam', 'sobram', 'sobraram', 'ficam', 'ficaram', 'restan', 'restaban', 'quedan', 'quedamos', 'faltan', 'left', 'remaining', 'remain', 'somos', 'sobran']);
 const PLAYERS = new Set(['jogadores', 'jugadores', 'players', 'pessoas', 'personas', 'people']);
@@ -99,7 +110,9 @@ export function liveChanges(text: string): LiveChange[] {
       // "Subiu o nível", "next level", "nivel siguiente".
       const near = [w[i - 2], w[i - 1], w[i + 1], w[i + 2]];
       const after = numAfter(i);
-      if (after && !(BB_UNIT.has(w[after.next] ?? '') || w[after.next] === '/')) {
+      // "Nível 12 blinds 600 1200" with no comma: "blinds" starts the blinds, it isn't 12 bb.
+      const bbAfter = BB_UNIT.has(w[after?.next ?? -1] ?? '') && !nums.some((s) => s.start === after!.next + 1);
+      if (after && !(bbAfter || w[after.next] === '/')) {
         out.push({ k: 'level', v: Math.round(take(after)!) });
         continue;
       }
@@ -131,7 +144,7 @@ export function liveChanges(text: string): LiveChange[] {
       out.push({ k: 'addon' });
       continue;
     }
-    if (PAUSE.has(x) && !negated(w, i) && w[i - 1] !== 'do' && w[i - 1] !== 'del' && w[i - 1] !== 'after' && w[i - 1] !== 'depois') {
+    if (PAUSE.has(x) && !negated(w, i) && !asTime(w, i) && w[i - 1] !== 'do' && w[i - 1] !== 'del' && w[i - 1] !== 'after' && w[i - 1] !== 'depois') {
       out.push({ k: 'pause' });
       continue;
     }
@@ -159,11 +172,16 @@ export function liveChanges(text: string): LiveChange[] {
     if (HAVE.has(x)) {
       // "Estou com 45 mil", "tenho 30 bb": a number right after is the stack.
       const s = nums.find((n) => n.start === i + 1 && !n.used);
-      if (s && (x !== 'com' && x !== 'con' && x !== 'at' && x !== 'on' ? true : ['estou', 'tou', 'to', 'estoy', 'sigo', 'fico', 'quedo', 'im'].includes(w[i - 1] ?? '') || STACK.has(w[s.next] ?? '') || BB_UNIT.has(w[s.next] ?? '') || w[s.next] === 'mil')) {
+      if (s && (x !== 'com' && x !== 'con' && x !== 'at' && x !== 'on' ? true : ['estou', 'tou', 'to', 'estoy', 'sigo', 'fico', 'quedo', 'im', 'vou', 'voy', 'ando'].includes(w[i - 1] ?? '') || STACK.has(w[s.next] ?? '') || BB_UNIT.has(w[s.next] ?? '') || w[s.next] === 'mil')) {
         stackFrom(s);
       }
       continue;
     }
+  }
+  // "Estou short, 8 bb": a count of big blinds nothing else took is the stack.
+  if (!out.some((c) => c.k === 'stack')) {
+    const bb = nums.find((n) => !n.used && unit(n) === 'bb');
+    if (bb) stackFrom(bb);
   }
   // "45 mil" said alone: the stack, the thing players update most.
   if (!out.length && nums.length === 1 && w.every((y, k) => (k >= nums[0].start && k < nums[0].next) || BB_UNIT.has(y) || FILLER.has(y) || y === ',')) stackFrom(nums[0]);

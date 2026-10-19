@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -364,6 +364,8 @@ function Live({ s }: { s: Session }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const pro = usePro();
   const voiceLocked = !pro.isPro && PRO_ONLY.voiceHand;
+  // Four buttons beside «Nova mão»: on a narrow phone they sit closer, so «Re-entry» keeps its size.
+  const tight = useWindowDimensions().width < 380;
   // Mounted on first open, so the parser isn't loaded for players who never use it.
   const [voice, setVoice] = useState<'closed' | 'open' | 'shut'>('closed');
   // MTT: cashOut is the place's prize here, bounties apart; the session keeps their sum as its cashOut.
@@ -798,7 +800,7 @@ function Live({ s }: { s: Session }) {
       ) : null}
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar} onLayout={onBarLayout}>
-        <View ref={barRef} collapsable={false} style={{ flex: 4, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
+        <View ref={barRef} collapsable={false} style={{ flex: 4, flexDirection: 'row', alignItems: 'stretch', gap: tight ? S.xs : S.sm }}>
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
