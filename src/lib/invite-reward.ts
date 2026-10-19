@@ -31,6 +31,30 @@ export interface InviteOffer {
   iosCode: string | null;
 }
 
+export interface InviteStatus {
+  code: string;
+  url: string;
+  invited: number;
+  activated: number;
+  discounts: number;
+  offer: InviteOffer | null;
+}
+
+const count = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : 0);
+
+/**
+ * The /status answer, checked: without a code and an https link there is nothing to show, so
+ * the screen gets null and offers «Tentar outra vez» instead of crashing on s.url (Registo, 19 Oct).
+ */
+export function inviteStatusFrom(x: unknown): InviteStatus | null {
+  if (!x || typeof x !== 'object') return null;
+  const o = x as Record<string, unknown>;
+  if (typeof o.code !== 'string' || !o.code || typeof o.url !== 'string' || !o.url.startsWith('https://')) return null;
+  const f = o.offer as Record<string, unknown> | null | undefined;
+  const offer = f && typeof f === 'object' && typeof f.until === 'string' ? { until: f.until, iosCode: typeof f.iosCode === 'string' ? f.iosCode : null } : null;
+  return { code: o.code, url: o.url, invited: count(o.invited), activated: count(o.activated), discounts: count(o.discounts), offer };
+}
+
 /** The offer while it can still be used, else null. */
 export const openOffer = (o: InviteOffer | null | undefined, now = Date.now()) => (o && Date.parse(o.until) > now ? o : null);
 /** A hand was saved on this install (set even before any invite is known). */

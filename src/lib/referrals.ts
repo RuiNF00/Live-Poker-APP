@@ -12,7 +12,7 @@ import { BRAND } from '@/theme';
 
 import { onEraseAll } from './erase-hooks';
 import { installId, refCode, setRefCode, track } from './events';
-import { createInviteReward, OFFER_KEY, openOffer, type Activation, type ClaimState, type InviteOffer } from './invite-reward';
+import { createInviteReward, inviteStatusFrom, OFFER_KEY, openOffer, type Activation, type ClaimState, type InviteOffer, type InviteStatus } from './invite-reward';
 import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
 
@@ -157,14 +157,7 @@ export async function activateInvite(): Promise<boolean> {
   return retryLater(await reward.handSaved()) === 'granted';
 }
 
-export interface InviteStatus {
-  code: string;
-  url: string;
-  invited: number;
-  activated: number;
-  discounts: number;
-  offer: InviteOffer | null;
-}
+export type { InviteStatus };
 
 /** The last invite discount the server reported, while it can still be used (for the paywall, offline too). */
 export async function savedInviteOffer(): Promise<InviteOffer | null> {
@@ -176,7 +169,7 @@ export async function savedInviteOffer(): Promise<InviteOffer | null> {
 export async function inviteStatus(): Promise<InviteStatus | 'rate_limited' | null> {
   try {
     await ensureRegistered();
-    const s = await post<InviteStatus>('status', { myCode: await refCode() });
+    const s = inviteStatusFrom(await post<unknown>('status', { myCode: await refCode() }));
     if (s?.code && s.code !== (await refCode())) await setRefCode(s.code);
     if (s?.offer) await AsyncStorage.setItem(K.offer, JSON.stringify(s.offer)).catch(() => {});
     return s;
