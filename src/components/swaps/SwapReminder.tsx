@@ -19,12 +19,13 @@ import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { other, owedOn, swapLedger, swapNames, swapsForSession, type Swap, type SwapEntry } from '@/store/swaps';
-import { addEntry, getSwap, onSwapNews, syncAllSwaps, useSwaps } from '@/store/swaps-store';
+import { getSwap, onSwapNews, syncAllSwaps, useSwaps } from '@/store/swaps-store';
 import { groupOwedOn, groupShareOf, groupsForSession, type GroupEntry, type SwapGroup } from '@/store/swap-groups';
-import { addGroupPrize, getGroup, onGroupNews, syncAllGroups, useGroups } from '@/store/swap-groups-store';
+import { getGroup, onGroupNews, syncAllGroups, useGroups } from '@/store/swap-groups-store';
 import { C, S } from '@/theme';
 
 import { GroupHero, GroupSettle, seatLabel } from './group-parts';
+import { record } from './record';
 import { AccountsLocked, BalanceHero, pctLabel } from './parts';
 
 const ASKED = 'rl.swapAsked.v1';
@@ -305,15 +306,5 @@ async function notifyGroup(g: SwapGroup, news: GroupEntry[], amounts: boolean) {
     postMoney(n, `g-${g.id}`, t('Swap de grupo · {title}', { title: g.terms.title }), lines.join(' '), `sweatbook://swap/g/${g.id}`);
   } catch (e) {
     console.warn('[swaps] notify group', e);
-  }
-}
-
-/** My result in each swap and group of this tournament: the prize, the event and the place, nothing else. */
-export async function record(s: Session, swaps: Swap[], groups: SwapGroup[]) {
-  for (const sw of swaps) {
-    await addEntry(sw.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || sw.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
-  }
-  for (const g of groups) {
-    await addGroupPrize(g.id, { kind: 'result', amount: s.cashOut || 0, event: s.name || g.terms.title, finish: s.finish ?? null }, s.id).catch(() => 'queued');
   }
 }

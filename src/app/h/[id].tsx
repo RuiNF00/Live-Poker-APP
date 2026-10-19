@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
 import { HandHeader } from '@/components/HandHeader';
-import { Replayer } from '@/components/Replayer';
 import { Button, confirmAction, Empty, IconButton, Row, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
@@ -23,6 +22,9 @@ import { blindsLabel } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
 import { useStore } from '@/store/store';
 import { BRAND, C, R } from '@/theme';
+
+// The replayer (~20 KB; its table is shared with the cards) loads with the screen that shows it, not at launch.
+const Replayer = React.lazy(() => import('@/components/Replayer').then((m) => ({ default: m.Replayer })));
 
 // Loaded with the page, not at launch.
 const CommentsList = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.CommentsList })));
@@ -115,21 +117,23 @@ export default function SharedHand() {
               “{hand.ask}”
             </T>
           ) : null}
-          <Replayer
-            source="shared"
-            hand={hand}
-            initialInBB={settings.inBB}
-            onInBB={(inBB) => setSettings({ inBB })}
-            autoPlay={!seek}
-            seek={seek}
-            onStreet={setStreet}
-            quiz={q === '1'}
-            onVote={(choice) =>
-              postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
-                .then((c) => setComments((x) => [...(x ?? []), c]))
-                .catch(() => {})
-            }
-          />
+          <React.Suspense fallback={null}>
+            <Replayer
+              source="shared"
+              hand={hand}
+              initialInBB={settings.inBB}
+              onInBB={(inBB) => setSettings({ inBB })}
+              autoPlay={!seek}
+              seek={seek}
+              onStreet={setStreet}
+              quiz={q === '1'}
+              onVote={(choice) =>
+                postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
+                  .then((c) => setComments((x) => [...(x ?? []), c]))
+                  .catch(() => {})
+              }
+            />
+          </React.Suspense>
           {/* Not on the player's own hand, nor for Pro: there is nothing to try. */}
           {mine || isPro ? null : (
           <View style={{ backgroundColor: C.accentSoft, borderRadius: R.lg, padding: 14, gap: 8, borderWidth: 1, borderColor: 'rgba(255,106,61,0.35)' }}>

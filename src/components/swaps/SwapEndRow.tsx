@@ -12,7 +12,7 @@ import { other, swapNames, swapsForSession } from '@/store/swaps';
 import { useSwaps } from '@/store/swaps-store';
 import type { Session } from '@/store/types';
 
-import { record } from './SwapReminder';
+import { record } from './record';
 
 export function useSwapEnd(s: Session) {
   const { swaps } = useSwaps();
