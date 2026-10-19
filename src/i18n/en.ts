@@ -71,7 +71,7 @@ const en: Record<string, string> = {
   'Notas: ': 'Notes: ',
   // Sample hand
   'Boné azul': 'Blue cap',
-  'Reg alemão': 'German reg',
+  'Alemão': 'German',
   'Bolha a 58 com 54 pagos. O boné azul só tinha 3-betado uma vez em 3 horas. Fold era melhor?': 'Bubble with 58 left and 54 paid. Blue cap had only 3-bet once in 3 hours. Was fold better?',
   // Hands tab
   'Já usaste as mãos grátis de hoje': 'You\'ve used today\'s free hands',
@@ -1525,7 +1525,7 @@ const en: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'The hand you were entering and your live session are saved. Go back and carry on; if it happens again, close and reopen the app.',
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
-  'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
+  'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
   // Swaps
   "1 por confirmar": "1 awaiting confirmation",
   "1 swap ativo": "1 active swap",

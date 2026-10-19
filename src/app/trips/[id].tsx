@@ -7,6 +7,7 @@ import { Alert, Platform, View } from 'react-native';
 
 import { Sheet } from '@/components/BankrollSheets';
 import { ExpenseForm, KIND, TripForm, tripDates } from '@/components/TripSheets';
+import { headerRightWithBadge } from '@/components/NetStatus';
 import { Button, Card, Chip, ChipRow, Divider, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, T } from '@/components/ui';
 import { decimalComma, locale, t } from '@/i18n';
 import { spanLabel } from '@/components/FestivalItem';
@@ -73,7 +74,7 @@ export default function TripScreen() {
         options={{
           title: trip.name,
           headerBackTitle: t('Voltar'),
-          headerRight: () => <IconButton name="ellipsis-horizontal" label={t('Editar viagem')} onPress={() => setSheet({ type: 'trip' })} />,
+          headerRight: headerRightWithBadge(() => <IconButton name="ellipsis-horizontal" label={t('Editar viagem')} onPress={() => setSheet({ type: 'trip' })} />),
         }}
       />
       <Screen contentStyle={{ paddingTop: S.lg, gap: S.lg }}>

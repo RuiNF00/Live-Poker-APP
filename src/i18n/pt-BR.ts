@@ -697,7 +697,7 @@ const ptBR: Record<string, string> = {
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'A mão que você estava registrando e a sessão ao vivo ficaram salvas. Volte e continue; se acontecer de novo, feche e abra o app.',
   'Sem rede': 'Sem conexão',
   'Sem rede · {n} por enviar': 'Sem conexão · {n} para enviar',
-  'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Tudo salvo no celular. Envia quando houver sinal.',
+  'Tudo guardado no telemóvel. Segue quando houver sinal.': 'Tudo salvo no celular. É enviado quando houver sinal.',
   '1 por confirmar': '1 a confirmar',
   'A mesma percentagem': 'A mesma porcentagem',
   'Ainda ninguém cobrou': 'Ninguém ganhou prêmio ainda',

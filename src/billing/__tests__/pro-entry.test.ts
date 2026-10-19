@@ -84,8 +84,11 @@ test('restoring a one-time Pro inside the cancel flow reads lifetime again', () 
 });
 
 test('nothing floats over the paywall plans, and the trial steps stack with large text', () => {
+  // The no-signal badge sits in the header row, never floating, and the paywall has no header.
   const n = src.find(([f]) => f === path.join('components', 'NetStatus.tsx'))![1];
-  assert.match(n, /path === '\/paywall'\) return null;/);
+  assert.doesNotMatch(n, /position: 'absolute'/);
+  const l = src.find(([f]) => f === path.join('app', '_layout.tsx'))![1];
+  assert.match(l, /name="paywall" options=\{\{ headerShown: false/);
   const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
   assert.match(p, /const stacked = useWindowDimensions\(\)\.fontScale > 1\.3;/);
 });

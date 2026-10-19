@@ -46,7 +46,7 @@ export default function TournamentScreen() {
   const { activeSession } = useStore();
   if (!activeSession || activeSession.kind !== 'mtt') {
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: C.bg, padding: S.gutter }}>
         <Stack.Screen options={{ title: t('Modo torneio') }} />
         <Empty icon="trophy-outline" title={t('Sem torneio a decorrer')} body={t('Começa uma sessão de torneio para teres a estrutura, o relógio e os prémios aqui.')} action={<Button title={t('Ir para a sessão')} onPress={() => router.replace('/session')} />} />
       </View>
@@ -321,7 +321,7 @@ function LevelCard({ s, st, onLevel, onSync, onPause }: { s: Session; st?: Level
         <IconButton name="remove" label={t('Nível anterior')} onPress={() => onLevel(-1)} color={level <= 1 ? C.muted : undefined} />
         <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
           <T v="label">{t('Nível {n}', { n: level })}</T>
-          <T v="monoL" style={{ fontSize: 26, lineHeight: 32 }}>
+          <T v="monoL" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontSize: 26, lineHeight: 32 }}>
             {blindsOf(s)}
           </T>
         </View>
@@ -384,13 +384,13 @@ function PayCard({ pay, payouts, left, currency }: { pay: ReturnType<typeof payS
         ) : pay.toMoney > 0 ? (
           <>
             <Badge label={pay.toMoney <= Math.max(3, Math.round(pay.paid * 0.05)) ? t('Bolha') : t('Fora do dinheiro')} color={C.warn} />
-            <T v="h2">{pay.toMoney === 1 ? t('Falta 1 jogador para o dinheiro') : t('Faltam {n} jogadores para o dinheiro', { n: pay.toMoney })}</T>
+            <T v="h2" accessibilityRole="text">{pay.toMoney === 1 ? t('Falta 1 jogador para o dinheiro') : t('Faltam {n} jogadores para o dinheiro', { n: pay.toMoney })}</T>
             <T v="small">{t('Pagam {n} lugares · mínimo {amount}', { n: pay.paid, amount: money(payouts[pay.paid - 1], currency) })}</T>
           </>
         ) : (
           <>
             <Badge label={t('No dinheiro')} color={C.good} />
-            <T v="h2">{t('Garantido agora: {amount}', { amount: money(pay.now, currency) })}</T>
+            <T v="h2" accessibilityRole="text">{t('Garantido agora: {amount}', { amount: money(pay.now, currency) })}</T>
             {pay.next !== null ? <T v="small">{pay.toNext === 1 ? t('Próximo salto: {amount}, falta 1 jogador', { amount: money(pay.next, currency) }) : t('Próximo salto: {amount}, faltam {n} jogadores', { amount: money(pay.next, currency), n: pay.toNext! })}</T> : <T v="small">{t('Ganhaste o torneio')}</T>}
           </>
         )}
