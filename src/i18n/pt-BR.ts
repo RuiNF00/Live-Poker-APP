@@ -1525,6 +1525,8 @@ const ptBR: Record<string, string> = {
   'Espinho, dezembro 2026': 'Espinho, dezembro de 2026',
   'Praga, dezembro 2026': 'Praga, dezembro de 2026',
   'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e as horas dos flights.': 'Evento principal: €550, stack inicial de 40.000, níveis de 45 minutos. O organizador ainda não publicou os dias e os horários dos flights.',
+  'Super High Roller: o Dia 2 também aceita inscrições até às 17:50.': 'Super High Roller: o Dia 2 também aceita inscrições até as 17h50.',
+  'Mixed Games: o dia final também aceita inscrições até às 14:00.': 'Mixed Games: o dia final também aceita inscrições até as 14h.',
   'O organizador publica o stack inicial de cada torneio mas não a duração dos níveis, salvo em alguns.': 'O organizador publica o stack inicial de cada torneio, mas não a duração dos níveis, exceto em alguns.',
   'Punta del Este, dezembro 2026': 'Punta del Este, dezembro de 2026',
   'Sem câmbio para {list}: contas aproximadas até haver rede.': 'Sem câmbio para {list}: contas aproximadas até ter conexão.',
