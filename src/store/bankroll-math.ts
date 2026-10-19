@@ -184,6 +184,21 @@ export function foldSeparated(bankrolls: Bankroll[]): { bankrolls: Bankroll[]; t
   return { bankrolls: out, to };
 }
 
+/**
+ * A session with no bankroll (or one that is gone) counts in its currency's first bankroll, which each
+ * phone picks on its own: written into the session, with an edit time, so both phones agree on it.
+ * The same array when every session already says where it counts.
+ */
+export function pinBankrolls(sessions: Session[], bankrolls: Bankroll[], now = Date.now()): Session[] {
+  const ids = new Set(bankrolls.map((b) => b.id));
+  const loose = (s: Session) => !s.bankrollId || !ids.has(s.bankrollId);
+  if (!sessions.some(loose)) return sessions;
+  return sessions.map((s) => {
+    const b = loose(s) ? bankrollOf(s, bankrolls) : null;
+    return b ? { ...s, bankrollId: b.id, updatedAt: now } : s;
+  });
+}
+
 /** Sessions or transfers moved with foldSeparated. The same array when nothing moves. */
 export function refold<T extends { bankrollId?: string }>(list: T[], to: Map<string, string>): T[] {
   if (!to.size || !list.some((x) => x.bankrollId && to.has(x.bankrollId))) return list;
